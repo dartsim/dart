@@ -42,11 +42,33 @@ strict convergence nor paper or solver-superiority evidence.
 | Figs. 1-2 / incline segment | `fbf_paper_incline`; `incline` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | The current member and comparison artifacts pass timeline, solver-identity, stream, and decode gates. Both lanes visibly reproduce the DART threshold pair, with no material solver difference. Separate exact traces corroborate slide/stick behavior, but the combined render has eight contacts versus six across the traces and four per cell in the paper timing row. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | Current-head exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The author group passes solver, timeline, stream, decode, and independent replay gates; manual inspection shows ejected/ejected/retained-through-6-s/ejected in source order. All four paired proxies pass with the DART collision frontend fixed across lanes, and both solvers visibly produce ejected/ejected/captured/ejected over 4 s. These remain DART reconstructions rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
-| Fig. 5 / Painleve segment | `fbf_paper_painleve`, `fbf_paper_painleve_mu_0_55`; `painleve_mu05`, `painleve_mu055`, and `painleve` group | Paired exact/boxed captures, a neutral boxed lane-separated group, and solver-labeled synchronized comparisons are automated | The current media gates pass. The exact lane visibly rocks and returns upright for `mu=.5`, then tumbles and remains horizontal for `mu=.55`; the boxed lane stays upright in both proxies. These are DART proxies only: the paper does not publish the dimensions, mass, launch state, or timestamps, and the separate tracked fixtures are not trace-equivalent. | Local exact-vs-boxed clips ready below; GitHub URLs pending |
+| Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored current-head bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
 | Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Paired exact/boxed capture is automated for all three schedules | The current literal standing capture passes 600 exact solves with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; both lanes visibly remain standing through 10 s. A clean source-configuration exact smoke now clears the former step-68 local failure and completes 100 strict steps, then fails closed on an outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither lane has completed the 2,000-step schedule or a physical-outcome/media gate. Its 500-frame invocation is not the 400-frame source default, and the oriented-box proxy remains nonliteral. Impact and paper parity remain blocked. | Local literal-standing exact-vs-boxed clip ready; source-configuration exact media blocked at step 142; GitHub URL pending |
 | Fig. 8 / 101-stone arch segment | `fbf_paper_masonry_arch_101`; `masonry_arch_101` | Paired exact/boxed capture is automated | Blocked for parity: this is a reduced 38-contact oriented-box approximation; full-manifold long-run standing behavior and a matched Kamino comparison are unproven. | Pending |
 | Tables 6-7 / ten-level card house | `fbf_paper_card_house_10_dynamic`; `card_house_10_dynamics` (construction inspection is separate) | Paired exact/boxed capture is automated | Blocked: the 512-contact budget is known to saturate, and no completed zero-failure, zero-fallback 155-card trajectory exists. The source video has no corresponding segment. | Pending |
+
+The source-pinned Figure 5 adapter binds author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, tree
+`ffcdafb61adeda2239c8366d054b548b50d26685e`, and Painleve `run.py` blob
+`afaa03613b0ad0a30290168d2fd64221fc3523b7` (SHA-256
+`818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3`).
+The adapter contract also binds SHA-256
+`c48867ded0c3523e10eb47690aa5bf980db40281b219165cb8e31b0e492890f8`
+for `dart/constraint/ExactCoulombFbfConstraintSolver.hpp`, so exact-option
+default drift fails closed.
+It reproduces the public source configuration in a DART adapter: a
+`0.3 x 1.2 x 0.6 m` box in DART xyz order, density `200 kg/m^3`, mass
+`43.2 kg`, upright center at `z=.3 m`, initial velocity `(4,0,0) m/s`, gravity
+`9.81 m/s^2`, `dt=1/60 s`, 120 steps over 2 s, and the selected
+source-supported `mu=.5,.55` sweep. The public source defaults to `mu=.55` and
+does not identify the historical paper invocation. Source `gap=.005`,
+`ke=1e4`, and `kd=1e3` remain recorded source semantics; DART Native
+`FourPointPlanar` contact does not implement them equivalently. Exact and boxed
+lanes therefore compare two DART solvers under one pinned adapter. This is a
+DART adapter reproduction, not Warp/Newton backend, float32, trajectory,
+physical-outcome-equivalence, timing, renderer/golden, Fig. 5, video, or paper
+parity.
 
 The source-selected Figure 6 adapter pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and uses the supported selection
@@ -327,7 +349,62 @@ approximately real time rather than as a two-times time lapse. These proxy
 scenes use a square support and reconstructed ramp, body, camera, and horizon;
 they do not replace the source-pinned group or establish paper parity.
 
-### Figure 5: Painleve-style proxies
+### Figure 5: source-pinned Painleve adapter
+
+The north-star Figure 5 lane is now the paired source-parameterized schedule,
+not the earlier proxy. `painleve_author_mu05` runs
+`fbf_author_painleve_mu_0_5`, `painleve_author_mu055` runs
+`fbf_author_painleve_mu_0_55`, and `painleve_author` groups the two cells. Both
+cells support exact and boxed lanes under the same DART Native
+`FourPointPlanar` frontend. The exact lane's named
+`source_gamma_c_5_strict_dart_adapter` policy maps the public `gamma_c=5`
+request onto DART's adaptive safe-step convention; it remains a DART solver
+policy rather than a port of the authors' Warp/Newton backend.
+
+The ignored durable bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
+Its capture summary and independent `verify-summary.json` both pass with four
+member results and four group results. Each member and composite is a
+61-frame, 30 fps H.264/yuv420p MP4 with a passing full decode; the generated
+panels and selected keyframes were manually audited.
+
+| Cell/lane | Classified current-DART-adapter outcome | Horizontal travel | Exact strict audit |
+| --- | --- | ---: | --- |
+| `mu=.5`, exact | `upright_near_rest` | `1.5986787381 m` | 119 attempts/solves; 0 failures/fallbacks; final `5.2255077e-7`; worst `9.7391465e-7` |
+| `mu=.5`, boxed | `upright_near_rest` | `1.5977005918 m` | Not applicable |
+| `mu=.55`, exact | `tumbled_near_rest` | `1.5399225956 m` | 108 attempts/solves; 0 failures/fallbacks; final `9.1964345e-7`; worst `9.9977460e-7` |
+| `mu=.55`, boxed | `upright_near_rest` | `1.6623056217 m` | Not applicable |
+
+Group clip candidates and SHA-256 identities:
+
+- exact `mu=.5` / `mu=.55` group:
+  `groups/painleve_author/clip.mp4`,
+  `eba811334e0c4df5e9368196011607bcdd4f70d540b9b3f74717ff6163d97a3c`;
+- boxed `mu=.5` / `mu=.55` group:
+  `groups/painleve_author__boxed/clip.mp4`,
+  `be87ae107ba0afd4fc9dcf5e9f89e128d68862f1ae0b7db83a9bfc2eb1f10687`;
+- `mu=.5` exact-vs-boxed comparison:
+  `groups/painleve_author_mu05__exact_vs_boxed/clip.mp4`,
+  `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209`;
+- `mu=.55` exact-vs-boxed comparison:
+  `groups/painleve_author_mu055__exact_vs_boxed/clip.mp4`,
+  `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f`.
+
+The four member hashes are, in exact `.5`, exact `.55`, boxed `.5`, boxed
+`.55` order: `098c61ebf02bc8bb8e728c01f3c1a328d02c9abd7237d0f8f81df2ec8307668f`,
+`a7afe4e0c550a4a644451a9f146a4dd1178daf75df56e5f7c1ba16cea4cc037f`,
+`e2ae95ad2c9f189ef282374b31206686d85926e0448ae0d0dd2f964a9239d35d`,
+and `cd847896829bb67122d889fe57ffdf20d416392f7a825b71a94e99ca620321cf`.
+
+The defensible claim is exactly: under the pinned current DART adapter, exact
+and boxed lanes diverge at `mu=.55`. Source-backend equivalence, trajectory
+equivalence, paper Figure 5 parity, timing comparability, and solver
+superiority remain false. The local evidence closes the capture gates, but the
+PR row remains unpublished until a maintainer manually drags the two
+exact-vs-boxed clips into the browser composer and records the resulting
+GitHub user-attachment URLs.
+
+### Figure 5: historical Painleve-style proxies
 
 Both exact captures have 76 distinct frames. The `mu=.5` lane reports 150/150
 exact solves and worst residual `9.99349498066255e-7`; `mu=.55` reports
@@ -345,11 +422,13 @@ horizontal, and both boxed bodies remaining upright.
   SHA-256
   `870220659a473efd716a60c6bbb2727bef7f818e73c1340426c1730ae24a107d`.
 
-Each comparison is 1320x530 for 76 frames (2.533333 s). The visible divergence
-is a valid comparison of these declared DART proxy scenes, but it is not proof
-of paper geometry, source-renderer parity, solver superiority in general, or
-strict rest. The separate tracked fixtures corroborate only their own local
-classifier and are not trajectory-equivalent to the rendered demos.
+Each comparison is 1320x530 for 76 frames (2.533333 s). This retained evidence
+is a valid comparison of the declared DART proxy scenes, but it is historical
+diagnostic evidence and does not satisfy the north-star source-pinned Figure 5
+row. It is not proof of source or paper geometry, source-renderer parity,
+solver superiority in general, or strict rest. The separate tracked fixtures
+corroborate only their own local classifier and are not trajectory-equivalent
+to the rendered demos.
 
 All candidates remain ignored local evidence until a maintainer uploads them
 through the pull-request editor and records the resulting

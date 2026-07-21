@@ -307,7 +307,33 @@ recorded timings. No DART match, historical invocation, approved golden,
 media, paper timing, or performance claim follows; Fig. 1, Fig. 2, and
 video.03 remain partial.
 
-### Finalized Painleve Proxy Visual Evidence
+### Source-Pinned Figure 5 Painleve Adapter
+
+The primary Figure 5 lane is now `painleve_author_mu05` and
+`painleve_author_mu055`, paired exact/boxed DART schedules bound to the public
+author configuration at commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. The ignored durable bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
+Capture summary and independent verify both pass with four members, four
+groups, complete state traces, 61-frame H.264/yuv420p member/composite clips,
+full decode, and manually audited panels/keyframes. Exact/boxed outcomes and
+travel are `upright_near_rest`/`1.5986787381 m` and
+`upright_near_rest`/`1.5977005918 m` at `mu=.5`; they are
+`tumbled_near_rest`/`1.5399225956 m` and
+`upright_near_rest`/`1.6623056217 m` at `mu=.55`.
+
+Exact `mu=.5` records 119 attempts/solves, zero failures/fallbacks, final
+residual `5.2255077e-7`, and worst `9.7391465e-7`; exact `mu=.55` records 108
+attempts/solves, zero failures/fallbacks, final `9.1964345e-7`, and worst
+`9.9977460e-7`. The adapter binds the exact-options header hash. The defensible
+claim is only that under the pinned current DART adapter, exact and boxed lanes
+diverge at `mu=.55`. Source-backend equivalence, trajectory equivalence, paper
+Figure 5 parity, timing comparability, and solver superiority remain false.
+GitHub attachment URLs are pending manual browser-composer upload; use
+[PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) for the full pinned
+configuration, hashes, and clip paths.
+
+### Historical Finalized Painleve Proxy Visual Evidence
 
 Use
 `assets/paper_evidence/fig05_painleve_proxy_current_v1/`
@@ -782,6 +808,11 @@ fail-closed negative, retained in the ignored local evidence cache at
   scientific-negative/reference evidence. Matched DART trajectories,
   historical invocation/timing attestation, full-state external-solver
   equivalence, approved goldens, and media remain missing.
+- The source-pinned Painleve adapter has accepted local current-head
+  exact/boxed outcome and media evidence within the current-DART-adapter
+  boundary. GitHub attachment URLs, source-backend/trajectory equivalence,
+  paper Figure 5 parity, timing comparability, and solver superiority remain
+  missing or false. Its historical proxy bundle remains diagnostic only.
 - The 101-stone exact-inertia reconstruction is precisely blocked at step 1;
   a source-pinned DART scene and matched trajectory, valid
   long-run/media/external baselines, the 10-level card house, remaining smaller
@@ -881,10 +912,14 @@ only for an explicit live-closure recheck.
 
 1. Reinspect current diffs and active agents before taking file or shared-build
    ownership.
-2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
+2. Preserve the P-core, standing-visual, historical finalized Painleve proxy,
    finalized incline and backspin, pinned-author numeric incline sweep, and
    frozen impact-v1 negative bundles alongside the arch101-v7 and card-v2
-   blockers. Continue one-factor-at-a-time strict work without changing
+   blockers. Preserve the finalized source-pinned Painleve exact/boxed capture,
+   complete state-trace outcome audit, independent replay, and manual
+   inspection; upload its two exact-vs-boxed clips through the PR browser
+   composer and record the resulting URLs. Continue one-factor-at-a-time
+   strict work without changing
    tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
    Preserve and independently review the completed telemetry-rich continuation
    capture without calling accepted finite iterates strict success, then attach

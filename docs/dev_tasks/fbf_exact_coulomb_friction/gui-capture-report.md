@@ -173,8 +173,9 @@ diagnostic semantics are unchanged.
 
 The current output is
 `/tmp/fbf_visual_evidence_postreview_20260712`. It contains eight dynamic schedules:
-one combined incline scene, backspin, four turntable cells, and two Painleve
-proxies. It also contains a single static frame for 10-level card-house
+one combined incline scene, backspin, four turntable cells, and two historical
+Painleve proxies. The separately finalized source-pinned Painleve adapter is
+recorded below. The matrix also contains a single static frame for 10-level card-house
 construction; that frame is not dynamic evidence.
 
 For every completed step in all eight dynamic schedules, cumulative
@@ -187,10 +188,39 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Combined incline | Locally finalized 21-indexed/23-physical current-source bundle; five selected local stills, a 61-frame decoded schedule, and 240/240 exact attempts/solves with zero caps/failures/fallbacks | Reconstructed `mu=.4` slide and `mu=.5` stick-threshold separation visible | Partial: independent traces corroborate the threshold, but capture contacts 8 differ from aggregate trace contacts 6; strict `paper_cpu` `mu=.5` still fails at residual `1.439e-6`, and external/paper/golden/timing/real-time proof is missing |
 | Backspin | Locally finalized 18-indexed/20-physical current-source bundle; three selected local stills, MP4/GIF media, and 129/129 exact attempts/solves | Translational reversal, checker-cell changes, and the coral registration tile are visible | Partial: trace owns reversal; no signed angular direction, continuous contact, rest, landing, full-state equivalence, or external/paper/golden/timing/real-time parity |
 | Turntable 2x2 | Finalized 58-indexed/60-physical author-pinned bundle with four outcome stills; all four 360-step current visual cells are solver-valid | Segmented disc/coral wedge are legible; three cells eject and `mu=.5, omega=2` remains on support through 6 s | Partial: finite-horizon result only; no zero-slip/co-rotation, full-state, approved-golden, paper-timing, real-time, or paper-parity claim, and the separate strict lane fails the retained cell at step 40 |
-| Painleve pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; no author parity |
+| Source-pinned Painleve exact/boxed pair | Finalized ignored bundle passes capture summary and independent verify with four 121-sample members, four 61-frame H.264/yuv420p groups, strict exact audit, full decode, and manual panel/keyframe audit | At `mu=.5` both lanes finish upright near rest; at `mu=.55` exact finishes tumbled near rest while boxed finishes upright near rest | Current-DART-adapter divergence only; no source-backend/trajectory equivalence, paper Figure 5 parity, timing comparability, or solver-superiority claim; GitHub URLs pending |
+| Historical Painleve proxy pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; it remains separate historical diagnostic evidence and does not replace the source-pinned adapter result |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
 | Source-selected four-level Figure 6 adapter | Strict prefix remains a step-35 negative; separate source-continuation exact/boxed capture completes 2,400/2,400 through release with all acceptance telemetry, decoded 301-frame media, and manual inspection | Both stand through release; exact retains substantial multi-level endpoint structure while boxed is mostly collapsed | Continuation evidence only: exact has 3,351/3,351 solves, 113 plateau and 633 max-iteration accepts, 0 failures/fallbacks/shrink caps, and worst residual `0.917120`. No strict convergence, quantitative physical/trajectory/golden/backend/timing parity, superiority, or paper parity |
+
+### Source-pinned Figure 5 Painleve capture
+
+The ignored durable bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
+Capture summary and independent verify both pass with four member results and
+four group results. All member and composite clips are 61-frame,
+H.264/yuv420p MP4s with full-decode passes; the generated panels and selected
+keyframes were manually audited.
+
+| Cell/lane | Outcome | Horizontal travel | Exact audit |
+| --- | --- | ---: | --- |
+| `mu=.5`, exact | `upright_near_rest` | `1.5986787381 m` | 119 attempts/solves; 0 failures/fallbacks; final `5.2255077e-7`; worst `9.7391465e-7` |
+| `mu=.5`, boxed | `upright_near_rest` | `1.5977005918 m` | Not applicable |
+| `mu=.55`, exact | `tumbled_near_rest` | `1.5399225956 m` | 108 attempts/solves; 0 failures/fallbacks; final `9.1964345e-7`; worst `9.9977460e-7` |
+| `mu=.55`, boxed | `upright_near_rest` | `1.6623056217 m` | Not applicable |
+
+The adapter contract binds the exact-options header hash. The defensible claim
+is exactly that under the pinned current DART adapter, exact and boxed lanes
+diverge at `mu=.55`. Source-backend equivalence, trajectory equivalence, paper
+Figure 5 parity, timing comparability, and solver superiority remain false.
+The exact-vs-boxed upload candidates are
+`groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` (SHA-256
+`77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209`)
+and `groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` (SHA-256
+`2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f`).
+Their GitHub URLs remain pending manual browser-composer upload; the media is
+not checked into Git.
 
 The locally finalized current-source incline bundle is
 `assets/paper_evidence/fig01_02_incline_current_v1/`.
@@ -609,8 +639,10 @@ shown by `--help` and rejects hash or segment-boundary drift.
 
 ## Remaining Visual Gates
 
-- Preserve the finalized incline, Painleve, backspin, and turntable bundles
-  within their declared lane-specific boundaries; promote only the remaining
+- Preserve the finalized incline, historical Painleve proxy, source-pinned
+  Painleve adapter, backspin, and turntable bundles within their declared
+  lane-specific boundaries. Upload the two source-pinned Painleve exact-vs-boxed
+  clips through the PR browser composer and record their URLs; promote only the remaining
   small-matrix rows through validated local bundles, then publish required
   review media through recorded GitHub attachment URLs.
 - Keep manual observations separate from quantitative physical-outcome status.

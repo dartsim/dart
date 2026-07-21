@@ -41,7 +41,8 @@ renderer, Apple hardware, or paper timer boundary.
 | Literal 25-stone visual evidence | Locally finalized current-source bundle has 19 indexed artifacts / 21 physical files, five selected local stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Pass for the reconstructed no-projectile scene; the 6.1 s clip is a 1.639344x time-lapse |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source non-paper threshold evidence; capture contacts 8 versus aggregate trace contacts 6 are explicitly not compared, and Fig. 1/2 plus video.03 remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves separate current-source FBF, MuJoCo, and Kamino CPU runs on `mu=.3,.4,.45,.5,.55,.6,.8`; every lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric source-pinned scientific-negative/reference evidence only; FBF records 839/840 configured convergence flags, timing is excluded, and no DART/full-state/historical/golden/media/timing/performance/parity claim follows |
-| Painleve proxy visual evidence | Locally finalized `current_v1` bundle has 27 indexed artifacts / 29 physical files, two 151-row traces, fully decoded paired media, and bound manual inspection | Valid DART-side nonpaper proxy evidence only; rendered demos and tracked fixtures are not trace-equivalent, and paper/external/golden/timing/real-time/strict-rest claims remain unproven |
+| Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle passes capture and independent verify with four 121-sample exact/boxed traces, four 61-frame H.264/yuv420p members, four decoded groups, machine-classified outcomes, and manually audited panels/keyframes | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and no source-backend, trajectory, paper-Figure-5, timing, or solver-superiority claim follows |
+| Historical Painleve proxy visual evidence | Locally finalized `current_v1` bundle has 27 indexed artifacts / 29 physical files, two 151-row traces, fully decoded paired media, and bound manual inspection | Valid historical DART-side nonpaper proxy evidence only; it does not satisfy the source-pinned Fig. 5 row, rendered demos and tracked fixtures are not trace-equivalent, and paper/external/golden/timing/real-time/strict-rest claims remain unproven |
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and four complete 360-step author-configured visual-lane cells: three eject and `mu=.5, omega=2` remains on support through 6 s | Valid finite-horizon author-source-pinned non-paper DART evidence; no zero-slip, co-rotation, full-state, paper-golden, timing, real-time, or parity claim |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence; zero simulation substeps and no release, standing, dynamics, solver, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
@@ -342,7 +343,43 @@ establishes no DART/source trajectory match, historical invocation, approved
 golden, media, timing, performance, or paper-parity result. Fig. 1, Fig. 2,
 and video.03 remain partial.
 
-## Finalized Painleve Proxy Visual Evidence
+## Source-Pinned Figure 5 Painleve Adapter
+
+`painleve_author_mu05` / `fbf_author_painleve_mu_0_5` and
+`painleve_author_mu055` / `fbf_author_painleve_mu_0_55` bind the public author
+configuration at commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` to
+paired exact/boxed DART capture schedules. The pinned configuration uses the
+`0.3 x 1.2 x 0.6 m`, `43.2 kg` box, `(4,0,0) m/s` initial velocity,
+`dt=1/60 s`, 120 steps, and selected `mu=.5,.55` sweep. See
+[PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) for the complete
+source identity, adapter boundary, and acceptance gates.
+
+The ignored durable bundle is
+`assets/paper_evidence/fig05_painleve_author_current_v1/`. Capture summary and
+independent verify both pass with four member results and four group results.
+Every member and composite clip is a fully decoded 61-frame H.264/yuv420p MP4,
+and the panels and selected keyframes were manually audited.
+
+| Cell/lane | Current-DART-adapter outcome | Horizontal travel |
+| --- | --- | ---: |
+| `mu=.5`, exact | `upright_near_rest` | `1.5986787381 m` |
+| `mu=.5`, boxed | `upright_near_rest` | `1.5977005918 m` |
+| `mu=.55`, exact | `tumbled_near_rest` | `1.5399225956 m` |
+| `mu=.55`, boxed | `upright_near_rest` | `1.6623056217 m` |
+
+The exact `mu=.5` member records 119 attempts/solves, zero failures/fallbacks,
+final residual `5.2255077e-7`, and worst residual `9.7391465e-7`; exact
+`mu=.55` records 108 attempts/solves, zero failures/fallbacks, final residual
+`9.1964345e-7`, and worst residual `9.9977460e-7`. The adapter identity also
+binds the exact-options header hash, so solver-default drift fails closed.
+
+The defensible result is exactly: under the pinned current DART adapter, exact
+and boxed lanes diverge at `mu=.55`. Source-backend equivalence, trajectory
+equivalence, paper Figure 5 parity, timing comparability, and solver
+superiority remain false. GitHub user-attachment URLs remain pending manual
+browser-composer upload; the local capture must not be checked into Git.
+
+## Historical Finalized Painleve Proxy Visual Evidence
 
 The locally finalized current-source bundle is
 `assets/paper_evidence/fig05_painleve_proxy_current_v1/`.
@@ -847,8 +884,10 @@ taskset, topology, residency, and archived-prior-source provenance, recomputes
 CPU claims from raw rows, and enforces every current-truth promotion boundary.
 Fig. 1, Fig. 2, and video.03 bind the finalized lane-separated incline
 threshold evidence plus the pinned-author seven-cell numeric sweep while
-retaining their partial status; Fig. 5 and video.05
-bind the finalized Painleve DART-proxy traces and media;
+retaining their partial status. Fig. 5 and video.05 now bind the locally
+validated source-pinned DART-adapter outcome evidence above as well as the
+separately labeled historical proxy. They remain incomplete pending GitHub
+publication and the explicitly false source/backend/trajectory/paper gates.
 Fig. 7 and video.07 bind the validated standing
 trace/still/video/outcome/claim-map artifacts, while impact-v1 and arch101-v1
 are recorded as scientific negatives and card-manifold v2 as non-strict
@@ -919,7 +958,7 @@ closure check.
 | Projectile impact sequences | Frozen v1 is a locally sealed scientific negative: contact order/finite/fallback gates pass, but cap/residual/global/far-field gates fail | Preserve v1 without tuning; obtain source-equivalent passing evidence and inspected impact media only from a separately declared contract |
 | Card house | The strict adapter still fails the 56-contact group at step 35. A separate source-continuation exact/boxed capture completes 2,400 steps through release with full acceptance telemetry and qualitative manual inspection | Continue isolated strict solver A/B work; keep colored source parity separate; independently review and publish the continuation clip only as continuation evidence, never merge it with the reconstructed manifold claim or present accepted finite iterates as strict success |
 | 101-stone arch and 10-level card house | Identity-resolved 101-stone v7 step-1 failure and partial reconstructions | Full exact trajectories, physical outcomes, and current-build media or precise blockers |
-| Small figures and video | Incline `fig01_02_incline_current_v1`, Painleve `current_v1`, backspin `fig03_backspin_current_v3`, and author-pinned turntable `fig04_turntable_author_current_v1` are locally finalized within narrow DART-only boundaries; the separate author incline sweep is numeric source-run evidence | Preserve and reverify all four visual bundles plus the numeric sweep; retain the incline 8-versus-6 contact mismatch, strict-lane failure, and missing DART/external/history/golden/media comparisons, then finalize only the remaining affected rows before promotion |
+| Small figures and video | Incline `fig01_02_incline_current_v1`, historical Painleve proxy `current_v1`, source-pinned Painleve `fig05_painleve_author_current_v1`, backspin `fig03_backspin_current_v3`, and author-pinned turntable `fig04_turntable_author_current_v1` are locally finalized within narrow DART-only boundaries | Preserve and reverify the bundles; manually upload the two source-pinned Painleve exact-vs-boxed clips through the PR composer and record their URLs while retaining every DART/source/history/golden/media boundary |
 | Paper performance | Current source is available, but matched DART runs are pending and historical comparability remains partly external | Audit and run the pinned author workloads; keep the exact historical Apple host, renderer, and timing-attestation gaps explicit |
 | Manifest | Validator passes with 24 partial, 5 blocked, and 0 complete | Keep every row bound to current artifacts while retaining missing source-equivalence and historical-parity blockers |
 | CI/PR | Local dirty state and remote PR head one checkpoint behind; body is truthfully draft | Approved base merge, coherent commits/push, synchronized truthful body, and current-head CI |
@@ -929,15 +968,18 @@ closure check.
 
 1. Inspect current diffs and active agents before taking file or build-tree
    ownership.
-2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
+2. Preserve the P-core, standing-visual, historical finalized Painleve proxy,
    finalized incline and backspin, pinned-author numeric incline sweep,
-   frozen impact-v1/arch101-v1 negatives, and card-manifold-v2 diagnostic while
-   continuing one-factor-at-a-time strict work on the step-35 failure without
+   frozen impact-v1/arch101-v1 negatives, card-manifold-v2 diagnostic, and
+   finalized source-pinned Painleve exact/boxed capture with its complete state
+   traces, outcome audit, independent replay, and manual inspection. Continue
+   one-factor-at-a-time strict work on the step-35 failure without
    changing tolerance/caps/fallback/fail-fast. Keep colored source parity
    separate. Preserve and independently review the completed telemetry-rich
    source-continuation capture without calling accepted finite iterates strict
    success; upload it only through the PR editor after explicit approval and
-   record the user-attachment URL. Continue
+   record the user-attachment URL. Upload the two Painleve exact-vs-boxed clips
+   through the same browser-composer path and record their URLs. Continue
    generating the remaining full card, 101-stone, figure, and
    source-equivalent impact artifacts. Decode and manually inspect media; do
    not tune frozen protocols or infer outcomes from nonblank frames.

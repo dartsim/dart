@@ -418,8 +418,36 @@ remain `partial` without the full sweep/plot, matched external rows, approved
 source golden/diff, paper contact-count match, full 11 s semantic edit, paper
 timing, and real-time parity.
 
-The Painleve subset has since been independently recaptured and locally
-finalized at `assets/paper_evidence/fig05_painleve_proxy_current_v1`. Its
+The north-star Figure 5 lane is now the source-pinned
+`painleve_author_mu05` / `painleve_author_mu055` exact/boxed adapter. Its
+ignored durable bundle at
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`
+passes capture summary and independent verify with four member results, four
+groups, complete 121-sample traces, 61-frame H.264/yuv420p member/composite
+clips, full decode, and manually audited panels/keyframes. At `mu=.5`, exact
+and boxed classify `upright_near_rest` after `1.5986787381 m` and
+`1.5977005918 m`; at `mu=.55`, exact classifies `tumbled_near_rest` after
+`1.5399225956 m` while boxed remains `upright_near_rest` after
+`1.6623056217 m`. Exact `mu=.5` records 119 attempts/solves, zero
+failures/fallbacks, final residual `5.2255077e-7`, and worst
+`9.7391465e-7`; exact `mu=.55` records 108 attempts/solves, zero
+failures/fallbacks, final `9.1964345e-7`, and worst `9.9977460e-7`. The
+adapter binds the exact-options header hash.
+
+The defensible claim is exactly: under the pinned current DART adapter, exact
+and boxed lanes diverge at `mu=.55`. Source-backend equivalence, trajectory
+equivalence, paper Figure 5 parity, timing comparability, and solver
+superiority remain false. The two exact-vs-boxed candidates are
+`groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` (SHA-256
+`77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209`)
+and `groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` (SHA-256
+`2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f`).
+Their GitHub attachment URLs remain pending manual browser-composer upload;
+the media stays outside Git.
+
+The historical Painleve proxy subset has since been independently recaptured
+and locally finalized at
+`assets/paper_evidence/fig05_painleve_proxy_current_v1`. Its
 local-only paired clip is 1320x530 at 30 fps for 76 frames with SHA-256
 `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b`.
 Both exact-FBF proxy member clips, hardened sidecars, manual inspection, and
@@ -1040,8 +1068,11 @@ cross-platform CI.
   exact DART/source differences. Keep the unavailable historical
   renderer/goldens, Apple hardware, precision, and paper timing-attestation
   gaps explicit.
-- Preserve the finalized incline, Painleve, backspin, and turntable bundles
-  within their lane-specific claim boundaries. Promote only the remaining
+- Preserve the finalized incline, historical Painleve proxy, source-pinned
+  Painleve adapter, backspin, and turntable bundles within their lane-specific
+  claim boundaries. Upload the two source-pinned Painleve exact-vs-boxed clips
+  only through the browser composer and record their GitHub URLs. Promote only
+  the remaining
   post-review small rows through validated immutable bundles; produce
   long-scene sidecars/media only when their solver/outcome gates pass.
 - Complete the final integrated lint, build, test, Python, docs, manifest,

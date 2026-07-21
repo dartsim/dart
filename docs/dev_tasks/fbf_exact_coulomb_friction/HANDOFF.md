@@ -311,7 +311,31 @@ Pinned-author incline sweep truth:
   match, historical paper invocation, approved golden, media, paper timing,
   performance, or parity claim. Fig. 1, Fig. 2, and video.03 remain partial.
 
-Finalized Painleve proxy visual truth:
+Source-pinned Figure 5 Painleve truth:
+
+- `painleve_author_mu05` and `painleve_author_mu055` are the primary Fig. 5
+  exact/boxed DART schedules, pinned to public author commit
+  b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0.
+- The ignored durable bundle is
+  assets/paper_evidence/fig05_painleve_author_current_v1/. Capture summary and
+  independent verify both pass with four member results and four groups; every
+  member and composite MP4 is 61-frame H.264/yuv420p, fully decodes, and has
+  manually audited panels/keyframes.
+- Outcomes/travel are: mu=.5 exact upright_near_rest / 1.5986787381 m; mu=.5
+  boxed upright_near_rest / 1.5977005918 m; mu=.55 exact tumbled_near_rest /
+  1.5399225956 m; mu=.55 boxed upright_near_rest / 1.6623056217 m.
+- Exact mu=.5 has 119 attempts/solves, zero failures/fallbacks, final residual
+  5.2255077e-7, and worst residual 9.7391465e-7. Exact mu=.55 has 108
+  attempts/solves, zero failures/fallbacks, final residual 9.1964345e-7, and
+  worst residual 9.9977460e-7. The adapter binds the exact-options header hash.
+- The defensible claim is only that under the pinned current DART adapter,
+  exact and boxed lanes diverge at mu=.55. Source-backend equivalence,
+  trajectory equivalence, paper Figure 5 parity, timing comparability, and
+  solver superiority remain false. GitHub attachment URLs are pending manual
+  browser-composer upload; do not check the local bundle into Git. See
+  PAPER_DEMO_VIDEO_MATRIX.md for the complete configuration and gates.
+
+Historical finalized Painleve proxy visual truth:
 
 - Use assets/paper_evidence/fig05_painleve_proxy_current_v1/.
 - With the compact local bundle present, finalization and verify-only both pass with status
@@ -825,10 +849,10 @@ Evidence truth:
 - The pinned-author incline sweep preserves the current seven-cell FBF,
   MuJoCo, and Kamino source-run projection within its numeric
   scientific-negative boundary. It is not another visual bundle.
-- The Painleve `current_v1` bundle is locally finalized and verified
-  current-source within its DART-side proxy boundary. Its separate visual and
-  trace contracts must not be conflated with the current small paper_cpu
-  matrix.
+- The Painleve proxy `current_v1` bundle remains valid only within its
+  historical DART-side proxy boundary. It does not replace the separately
+  finalized source-pinned Figure 5 adapter bundle, and neither visual/trace
+  contract may be conflated with the current small paper_cpu matrix.
 - The locally finalized backspin `current_v3` bundle passes within its
   translational-trace and checker-texture-legibility boundary; both
   requirement rows remain partial.
@@ -891,9 +915,13 @@ Immediate order:
 
 1. Inspect current diffs and active agents before taking file/build ownership.
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
-   numeric incline sweep, verified current-source Painleve-proxy, finalized
+   numeric incline sweep, historical verified Painleve proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the
-   arch101-v7 and card-v2 blockers. The source-selected four-level card
+   arch101-v7 and card-v2 blockers. Preserve the finalized source-pinned
+   Painleve exact/boxed capture, complete state-trace outcome audit, independent
+   replay, and manual inspection; upload its two exact-vs-boxed clips only
+   through the PR browser composer and record the resulting URLs. The
+   source-selected four-level card
    adapter's completed-step-35 exact failure is precisely characterized but
    not corrected. Continue one-factor-at-a-time strict work without changing
    tolerance, caps, fallback, fail-fast, or accepted-cap policy. Preserve and

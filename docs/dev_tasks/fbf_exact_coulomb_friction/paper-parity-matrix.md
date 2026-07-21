@@ -230,13 +230,28 @@ colored-inner-BGS contract validated above.
 | Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Locally finalized 21-indexed/23-physical DART visual/trace bundle plus numeric author-pinned FBF/MuJoCo/Kamino runs over `mu=.3,.4,.45,.5,.55,.6,.8` | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; author FBF has 839/840 configured convergence flags, the separate strict DART `mu=.5` row has three accepted caps, and matched DART/full-state external/golden/paper-contact/history/timing/real-time proof remains missing |
 | Fig. 3 | Backspin sphere reverses toward analytical terminal state | Locally finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
-| Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Locally finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
+| Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
 | Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, sealed pinned-author 500-frame scientific negative, and a newly registered 2,000-substep source-configuration DART capture schedule | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags. The new DART exact lane clears the former step-68 local failure and completes 100 strict steps, then fails closed on a distinct outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks); neither lane has completed the 2,000-step physical/media gates, the 500-frame invocation is not the source default, and no source-matched DART impact or paper-timing row is established |
 | Fig. 8 | 101-stone arch remains balanced | Oriented-box bounded visual attempt plus provenance-bound exact-inertia literal v7 numeric run with failed-step-1 pair identities | Blocked: oriented-box attempt collapses by step 120/600; literal v7 identity-resolves the failed graph as the 100-edge adjacent chain but still fails closed on step 1 at residual `0.7815364614`, so neither supplies source-equivalent standing/physical outcome, timing, long-run behavior, or valid media |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
 | Fig. 10 | Gamma sweeps with physical-outcome interpretation | Sweep/trace infrastructure | Partial: the pinned recovery policy is inspectable, but DART equivalence and paper-profile contact-rich outcomes are not established |
 | GPU table | Card/arch outcomes and timing | Construction adapter and reconstructed Kamino runner | Non-comparable; dynamic 10-level capture does not complete step 1 |
+
+The ignored Figure 5 bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
+At `mu=.5`, exact and boxed classify `upright_near_rest` after
+`1.5986787381 m` and `1.5977005918 m`. At `mu=.55`, exact classifies
+`tumbled_near_rest` after `1.5399225956 m`, while boxed classifies
+`upright_near_rest` after `1.6623056217 m`. Exact `mu=.5` records 119
+attempts/solves, zero failures/fallbacks, final residual `5.2255077e-7`, and
+worst `9.7391465e-7`; exact `mu=.55` records 108 attempts/solves, zero
+failures/fallbacks, final `9.1964345e-7`, and worst `9.9977460e-7`. The adapter
+also binds the exact-options header hash. Capture summary and independent
+verify pass, all 61-frame H.264/yuv420p member/composite clips fully decode,
+and the panels/keyframes were manually audited. This evidence supports only
+current-DART-adapter divergence at `mu=.55`; the PR videos remain pending
+manual browser-composer upload.
 
 The Figure 6 adapter pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, uses 20 leaning plus 6 bridge
@@ -554,7 +569,7 @@ They were captured after the final review fixes and manually inspected. The
 turntable output and the historical Painleve hash remain external reconstructed
 evidence rather than repository-published or paper-golden media.
 
-The Painleve subset now also has a distinct locally finalized bundle at
+The historical Painleve proxy subset also has a distinct locally finalized bundle at
 `assets/paper_evidence/fig05_painleve_proxy_current_v1`. Its synchronized
 1320x530, 30 fps, 76-frame clip has SHA-256
 `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b`.
@@ -563,7 +578,9 @@ remaining visually horizontal. Separate tracked traces corroborate the local
 classifier and the 0.03836187995520213 m shorter pre-tumble distance. They do
 not establish trace equivalence, pinned-source geometry/configuration
 equivalence, external-solver parity, an approved source golden/diff,
-historical paper timing, or real-time performance.
+historical paper timing, or real-time performance, and it does not complete the
+new source-pinned Figure 5 lane or supersede its independently validated
+current-DART-adapter evidence.
 
 ## Arch Evidence Tiers
 

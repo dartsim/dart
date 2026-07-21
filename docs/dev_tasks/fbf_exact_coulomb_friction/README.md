@@ -43,7 +43,8 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Literal 25-stone visual evidence | Locally finalized current-source bundle has 19 indexed artifacts / 21 physical files, five selected local stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Valid reconstructed no-projectile, non-paper visual evidence; the 6.1 s clip is a 1.639344x time-lapse |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over `mu=.3,.4,.45,.5,.55,.6,.8`; each lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric current-source scientific-negative/reference evidence only; FBF has 839/840 configured convergence flags, every timing field is diagnostic-only, and no DART, historical-paper, full-state, golden, media, timing, performance, or parity claim follows |
-| Painleve proxy visual evidence | Locally finalized `current_v1` bundle has 27 indexed artifacts / 29 physical files, two 151-row tracked traces, fully decoded paired media, and bound manual inspection | Valid DART-side nonpaper proxy evidence only; rendered demos and tracked fixtures are not trace-equivalent, and no paper, external-solver, golden, timing, real-time, or strict-rest claim follows |
+| Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
+| Historical Painleve proxy visual evidence | Locally finalized `current_v1` bundle has 27 indexed artifacts / 29 physical files, two 151-row tracked traces, fully decoded paired media, and bound manual inspection | Valid historical DART-side nonpaper proxy evidence only; it does not satisfy the source-pinned Fig. 5 row, rendered demos and tracked fixtures are not trace-equivalent, and no paper, external-solver, golden, timing, real-time, or strict-rest claim follows |
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
@@ -308,13 +309,72 @@ historical paper run, a DART/source trajectory comparison, an approved
 golden, media evidence, or timing/performance evidence, and it does not add a
 seventh visual bundle. Fig. 1, Fig. 2, and video.03 remain partial.
 
-## Finalized Painleve Proxy Visual Evidence
+## Source-Pinned Figure 5 Painleve Adapter
+
+The north-star Figure 5 path now uses two source-parameterized demo schedules:
+
+- `painleve_author_mu05` runs `fbf_author_painleve_mu_0_5` at `mu=.5`;
+- `painleve_author_mu055` runs `fbf_author_painleve_mu_0_55` at `mu=.55`; and
+- `painleve_author` groups those cells, with both exact and boxed solver lanes
+  captured separately and compared under the same DART collision frontend.
+
+The adapter pins author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, tree
+`ffcdafb61adeda2239c8366d054b548b50d26685e`, and Painleve `run.py` blob
+`afaa03613b0ad0a30290168d2fd64221fc3523b7` (SHA-256
+`818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3`).
+Its pinned public-source configuration is a `0.3 x 1.2 x 0.6 m` box in DART xyz
+order, density `200 kg/m^3`, mass `43.2 kg`, upright center at `z=.3 m`, initial
+velocity `(4,0,0) m/s`, gravity `9.81 m/s^2`, `dt=1/60 s`, and 120 steps over
+2 s. The selected public-source sweep is `mu=.5,.55`; the source default is
+only `mu=.55`, and the historical paper invocation is unknown. Source
+`gap=.005`, `ke=1e4`, and `kd=1e3` are recorded but are not implemented with
+equivalent semantics by the DART Native `FourPointPlanar` adapter.
+
+This lane is implemented as a DART configuration adapter, not a port of the
+authors' Warp/Newton float32 backend. Its exact policy maps the public
+`gamma_c=5` request onto DART's adaptive safe-step convention, while the boxed
+lane uses DART's existing boxed-LCP solver under the same scene and collision
+contract. The adapter also binds SHA-256
+`c48867ded0c3523e10eb47690aa5bf980db40281b219165cb8e31b0e492890f8`
+for `dart/constraint/ExactCoulombFbfConstraintSolver.hpp`, so exact-option
+default drift fails closed.
+
+The ignored durable bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
+Capture summary and independent verify both pass with four member results and
+four group results. Every member and composite clip is a fully decoded
+61-frame H.264/yuv420p MP4; panels and selected keyframes were manually
+audited.
+
+| Cell/lane | Current-DART-adapter outcome | Horizontal travel |
+| --- | --- | ---: |
+| `mu=.5`, exact | `upright_near_rest` | `1.5986787381 m` |
+| `mu=.5`, boxed | `upright_near_rest` | `1.5977005918 m` |
+| `mu=.55`, exact | `tumbled_near_rest` | `1.5399225956 m` |
+| `mu=.55`, boxed | `upright_near_rest` | `1.6623056217 m` |
+
+Exact `mu=.5` records 119 attempts/solves, zero failures/fallbacks, final
+residual `5.2255077e-7`, and worst `9.7391465e-7`. Exact `mu=.55` records 108
+attempts/solves, zero failures/fallbacks, final `9.1964345e-7`, and worst
+`9.9977460e-7`.
+
+The defensible result is exactly: under the pinned current DART adapter, exact
+and boxed lanes diverge at `mu=.55`. Source-backend equivalence, trajectory
+equivalence, paper Figure 5 parity, timing comparability, and solver
+superiority remain false. GitHub attachment URLs remain pending manual upload
+through the PR browser composer; the bundle remains ignored and outside Git.
+See [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) for clip hashes
+and exact upload paths.
+
+## Historical Finalized Painleve Proxy Visual Evidence
 
 The locally finalized current-source bundle is
 `assets/paper_evidence/fig05_painleve_proxy_current_v1/`.
 It replaces the Painleve cells from the older session-local `/tmp` visual
-matrix as the retained local DART-side proxy evidence. With the compact local
-bundle present, finalization and verify-only both pass with status
+matrix as the retained local DART-side proxy evidence. It remains a historical
+diagnostic and does not complete the source-pinned Figure 5 lane above. With
+the compact local bundle present, finalization and verify-only both pass with status
 `valid_current_source_nonpaper_proxy`, 27 indexed artifacts, and 29 physical
 files; pruned raw capture staging is not required.
 
@@ -912,8 +972,11 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    frozen 101-v1 negative bundles. The 101 reconstruction is now precisely
    blocked at step 1, and card-manifold v2 is complete as non-strict diagnostic
    evidence. Preserve the finalized incline, the pinned-author numeric
-   incline sweep, current-source Painleve proxy, and finalized backspin
-   bundles, then continue with the other
+   incline sweep, historical current-source Painleve proxy, finalized
+   source-pinned Painleve adapter, and backspin bundles. Preserve its
+   trace/outcome audit, independent replay, and manual inspection, upload the
+   two exact-vs-boxed clips through the PR browser composer, then
+   continue with the other
    smaller-figure recaptures and strict card work. Continue isolated
    one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
    fallback, or fail-fast changes. Preserve and independently review the
