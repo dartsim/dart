@@ -28,6 +28,7 @@ pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_5
 pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_2
 pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
 pixi run demos -- --scene fbf_author_card_house_5_construction
+pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
 pixi run demos -- --scene fbf_paper_card_aframe
@@ -57,6 +58,16 @@ contract using convex voussoir wedges, exact prism inertia, Native
 FourPointPlanar contacts, and scoped ERP restoration; the older
 `fbf_paper_masonry_arch_25` scene remains the reduced oriented-box projectile
 proxy.
+
+`fbf_author_masonry_arch_25_crown_impact_current_source` preserves the public
+author repository's raw numeric 25-wedge geometry, mass/friction values, three
+initially kinematic cubes, and the declared 500-frame diagnostic schedule. Its
+`p` action releases those existing cubes immediately without respawning,
+moving, or accelerating them; the evidence runner invokes that action after
+completed substep 1600. DART Native collision, split impulse, float64
+arithmetic, exact/boxed solvers, camera, and rendering remain adapter choices;
+the scene does not claim source trajectory/outcome, the paper's 100-contact
+timing row, Fig. 7/video parity, or timing comparability.
 
 For a bounded off-screen GUI smoke of one scene, use the same app through the
 Pixi capture task. The final argument is the number of deterministic simulation

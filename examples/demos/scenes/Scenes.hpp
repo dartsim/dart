@@ -121,6 +121,10 @@ namespace dart_demos {
 /// Research > FBF author card house: source-pinned five-level construction.
 [[nodiscard]] DemoScene makeFbfAuthorCardHouseScene();
 
+/// Research > FBF author masonry arch: source-pinned 25-wedge crown impact.
+[[nodiscard]] DemoScene
+makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();
+
 /// Returns the canonical runtime-inspected configuration-only contract for
 /// fbf_author_card_house_5_construction. Renderer styling is disclosed but
 /// intentionally excluded from source parity. Throws std::invalid_argument

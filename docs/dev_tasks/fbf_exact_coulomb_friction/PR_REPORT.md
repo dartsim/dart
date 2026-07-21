@@ -17,12 +17,18 @@ claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six finalized bundles, and the visual workflow
-declares 19 schedules.
+declares 20 schedules.
 
 The sealed pinned-author masonry-arch run is scientific-negative source
 evidence, not a DART comparison: 40 true flags use the initial
 natural-residual shortcut, 117 use the configured outer `coulomb_rel` gate,
 and the other 1,843 outer solves are nonconverged.
+
+A separately named source-configuration DART demo and 2,000-step capture
+schedule are now registered. Current strict exact execution fails closed at
+completed step 68 (`inner_solver_failed`, 24 contacts, residual `2.5749e-4`,
+zero fallback), while a boxed smoke reaches step 100. This is a diagnostic
+solver blocker, not completed impact evidence or promotable media.
 
 The separate pinned-author incline sweep is also numeric current-source
 scientific-negative/reference evidence. It covers all seven Figure 1 friction

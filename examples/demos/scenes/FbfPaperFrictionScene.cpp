@@ -37,6 +37,7 @@
 // benchmark, and CSV trace exporter.
 
 #include "FbfAuthorCardHouseSpec.hpp"
+#include "FbfAuthorMasonryArchDartAdapter.hpp"
 #include "FbfAuthorTurntableSpec.hpp"
 #include "FbfLiteralMasonryArchSpec.hpp"
 #include "Scenes.hpp"
@@ -178,6 +179,15 @@ fbf_literal_masonry_arch::SolverLane literalMasonryArchSolverLane(
   return mode == SolverMode::ExactFbf
              ? fbf_literal_masonry_arch::SolverLane::ExactFbf
              : fbf_literal_masonry_arch::SolverLane::BoxedLcp;
+}
+
+//==============================================================================
+fbf_author_masonry_arch_adapter::SolverLane authorMasonryArchSolverLane(
+    SolverMode mode)
+{
+  return mode == SolverMode::ExactFbf
+             ? fbf_author_masonry_arch_adapter::SolverLane::ExactFbf
+             : fbf_author_masonry_arch_adapter::SolverLane::BoxedLcp;
 }
 
 struct FbfPaperState
@@ -1683,6 +1693,95 @@ DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
 }
 
 //==============================================================================
+void renderFbfAuthorMasonryArchControls(const WorldPtr& world)
+{
+  ImGui::Separator();
+  ImGui::TextDisabled("Pinned author schedule (b3f3c5c)");
+  const bool released = fbf_author_masonry_arch_adapter::cubesReleased(world);
+  ImGui::Text("Raw-scale wedges: 25 (23 mobile)");
+  ImGui::Text("Suspended cubes: 3 x edge 3, mass 54000");
+  ImGui::Text("Runtime dt: 1/240 s");
+  ImGui::Text("Runner: p after step 1600; interactive p/button: immediate");
+  ImGui::Text("Cube state: %s", released ? "released" : "kinematic");
+  if (!released && ImGui::Button("Release 3 source-configured cubes"))
+    fbf_author_masonry_arch_adapter::releaseCubes(world);
+  ImGui::TextWrapped(
+      "This DART adapter ports the pinned numeric geometry, masses, friction, "
+      "initial state, and release schedule. Collision, contact-gap, "
+      "solver-backend, float32, trajectory, outcome, timing, and Fig. 7 "
+      "parity remain unclaimed.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_masonry_arch_adapter;
+  return makeFbfPaperScene(
+      kDemoSceneId,
+      "FBF Author Masonry Arch 25: Crown Impact (Current Source)",
+      "Public-author raw-scale 25-wedge configuration and 500-frame release "
+      "schedule executed through DART exact/boxed dynamics adapters.",
+      CameraHome{
+          ::osg::Vec3d(135.0, -195.0, 110.0),
+          ::osg::Vec3d(0.0, 0.0, 28.0),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createWorld(authorMasonryArchSolverLane(state->solverMode));
+      },
+      fbf_author_masonry_arch::kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c: 25 quantized "
+      "literal OBJ wedges at raw numeric scale, fixed springers, mu=.8, and "
+      "three initially kinematic cubes above the crown. The evidence schedule "
+      "runs 500 display frames as 2,000 DART substeps at dt=1/240 s and "
+      "asks the immediate `p` action to release the existing cubes after "
+      "completed step 1,600; interactive `p`/button use releases them at once.",
+      "The expected evidence is a deterministic, finite DART exact/boxed "
+      "comparison spanning the pre-release construction and subsequent crown "
+      "impact. Exact media is promotable only if every constrained step passes "
+      "the strict residual, cap, failure, and fallback gates.",
+      "This is a DART dynamics adapter for a source-pinned configuration and "
+      "release schedule. Native FourPointPlanar collision, split impulse, "
+      "float64 arithmetic, exact-FBF options, boxed LCP, camera, materials, "
+      "and rendering are DART choices. Source trajectory/outcome equivalence, "
+      "the paper's 100-contact timing row, Fig. 7/video parity, and timing "
+      "comparability remain unproven.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorMasonryArchControls(world);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return adapterContractJson(
+              inspectAdapterContract(world),
+              DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_ADAPTER_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_IMPLEMENTATION_SHA256);
+        };
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, "Release 3 source-configured cubes", [world] {
+              releaseCubes(world);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installSolver(
+            world,
+            authorMasonryArchSolverLane(mode),
+            world->getNumSimulationThreads());
+      });
+}
+
+//==============================================================================
 DemoScene makeFbfPaperPainleveParameterizedScene(
     const std::string& id,
     const std::string& title,
@@ -1926,6 +2025,12 @@ DemoScene makeFbfAuthorCardHouseScene()
 {
   return makeFbfAuthorCardHouseParameterizedScene(
       fbf_author_card_house::kDefaultLevelCount);
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene()
+{
+  return makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene();
 }
 
 //==============================================================================

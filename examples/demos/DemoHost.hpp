@@ -201,7 +201,7 @@ public:
   /// returns 0.
   int listScenes() const;
 
-  /// Verifies every FBF paper scene has self-contained Scene-tab metadata.
+  /// Verifies every FBF research scene has self-contained Scene-tab metadata.
   int verifyFbfSceneDocs() const;
 
   /// Advances through every scene in the catalog, `framesPerScene` steps

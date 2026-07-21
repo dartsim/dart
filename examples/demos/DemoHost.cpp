@@ -1413,7 +1413,7 @@ int DemoHost::verifyFbfSceneDocs() const
   bool ok = true;
   std::size_t checked = 0u;
   for (const auto& scene : mScenes) {
-    if (!startsWith(scene.id, "fbf_paper_"))
+    if (!startsWith(scene.id, "fbf_"))
       continue;
 
     ++checked;
@@ -1441,12 +1441,12 @@ int DemoHost::verifyFbfSceneDocs() const
   }
 
   if (checked == 0u) {
-    std::cerr << "[verify-fbf-scene-docs] no fbf_paper_* scenes found.\n";
+    std::cerr << "[verify-fbf-scene-docs] no fbf_* scenes found.\n";
     return 1;
   }
 
   std::cout << "[verify-fbf-scene-docs] checked " << checked
-            << " FBF paper scene(s): " << (ok ? "OK" : "FAILED") << "\n";
+            << " FBF research scene(s): " << (ok ? "OK" : "FAILED") << "\n";
   return ok ? 0 : 1;
 }
 

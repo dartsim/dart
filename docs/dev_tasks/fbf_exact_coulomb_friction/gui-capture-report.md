@@ -11,7 +11,7 @@ repository-finalized: literal-wedge standing, the two-cell incline threshold,
 the two-cell Painleve proxy, backspin, and the author-pinned four-cell
 turntable matrix. They remain bounded
 DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 19 schedules. The task-wide manifest remains 29
+workflow inventory declares 20 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
@@ -538,6 +538,11 @@ shown by `--help` and rejects hash or segment-boundary drift.
   does not erase its separate strict failure.
 - Produce valid full-duration card/arch media only after every requested step
   satisfies the strict exact-solver and physical-outcome contracts.
+- The new raw-scale 25-stone author adapter currently fails strict exact-FBF at
+  completed step 68 (`inner_solver_failed`, 24 contacts, residual
+  `2.5749e-4`) before the runner's step-1,600 release. Do not promote its
+  bounded boxed step-100 smoke or create an exact comparison clip from this
+  failed trajectory.
 - Preserve card-manifold v2 as diagnostic-only sensitivity evidence; its two
   non-strict trajectories and raw wall times cannot promote media.
 - Keep the frozen crown-impact v1 negative unchanged. Any revised impact
