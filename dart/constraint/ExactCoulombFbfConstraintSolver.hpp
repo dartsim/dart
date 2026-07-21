@@ -70,6 +70,71 @@ enum class ExactCoulombFbfLocalBlockSolver
   ProjectedGradient,
 };
 
+/// Cross-step contact identity used by exact-Coulomb warm starts.
+enum class ExactCoulombFbfWarmStartMatchMode
+{
+  /// Match either body-local feature and allow reversed body-pair order.
+  ///
+  /// This preserves the existing DART exact-Coulomb warm-start policy.
+  EitherBodyLocalFeature,
+
+  /// Match only the body-B-local feature of an ordered body pair.
+  ///
+  /// This is an opt-in policy inspired by the pinned SCA 2026 author code.
+  OrderedBodyBLocalFeature,
+};
+
+/// Additive cross-step policy for exact-Coulomb warm starts and gamma reuse.
+///
+/// This value type is stored outside the solver object so the DART 6 class
+/// layout remains unchanged. Its defaults preserve the existing behavior.
+struct ExactCoulombFbfCrossStepPolicyOptions
+{
+  /// Contact identity rule used for reaction and persisted-gamma matching.
+  ExactCoulombFbfWarmStartMatchMode warmStartMatchMode
+      = ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature;
+
+  /// Minimum cosine between cached and current body-local normals.
+  double warmStartNormalCosine = 0.9;
+
+  /// Require distance to be strictly below `warmStartMatchDistance`.
+  ///
+  /// The default retains DART's inclusive distance boundary.
+  bool useStrictWarmStartMatchDistance = false;
+
+  /// Maximum consecutive unsuccessful cache updates before eviction.
+  ///
+  /// A negative value disables age-based eviction, preserving the existing
+  /// DART behavior.
+  int warmStartMaxAge = -1;
+
+  /// Scale applied to the fresh safe bound for a persisted gamma request.
+  double persistentStepSizeSafeBoundScale = 1.0;
+
+  /// Optional lower gamma bound. NaN disables the bound.
+  double minimumStepSize = std::numeric_limits<double>::quiet_NaN();
+
+  /// Optional upper gamma bound. NaN disables the bound.
+  double maximumStepSize = std::numeric_limits<double>::quiet_NaN();
+
+  /// Initial residual below which `warmStartStepSizeCap` is applied.
+  ///
+  /// NaN disables the cap. The threshold and cap must be enabled together.
+  double warmStartResidualThreshold = std::numeric_limits<double>::quiet_NaN();
+
+  /// Gamma cap used to protect an already-good warm start.
+  double warmStartStepSizeCap = std::numeric_limits<double>::quiet_NaN();
+
+  /// Persist the pre-cap gamma when the warm-start gamma cap is used.
+  bool persistUncappedStepSizeOnWarmStartCap = false;
+
+  /// Save an accepted unconverged reaction only when it improves residual.
+  ///
+  /// Converged reactions are always saved. The applied finite reaction is not
+  /// changed; this controls only the next step's cache contents.
+  bool requireResidualImprovementForUnconvergedCacheSave = false;
+};
+
 /// Options for the opt-in exact-Coulomb FBF constraint solver.
 struct ExactCoulombFbfConstraintSolverOptions
 {
@@ -338,6 +403,14 @@ public:
   /// Get exact-Coulomb FBF options.
   const ExactCoulombFbfConstraintSolverOptions& getExactCoulombOptions() const;
 
+  /// Set the additive cross-step warm-start and gamma policy.
+  void setExactCoulombCrossStepPolicyOptions(
+      const ExactCoulombFbfCrossStepPolicyOptions& options);
+
+  /// Get the additive cross-step warm-start and gamma policy.
+  ExactCoulombFbfCrossStepPolicyOptions getExactCoulombCrossStepPolicyOptions()
+      const;
+
   // Documentation inherited.
   void setFromOtherConstraintSolver(const ConstraintSolver& other) override;
 
@@ -577,6 +650,27 @@ public:
   /// Number of contacts warm-started by manifold matching in the last solve.
   std::size_t getLastExactCoulombWarmStartMatchedContacts() const;
 
+  /// Initial residual from the last exact-Coulomb FBF attempt.
+  double getLastExactCoulombInitialResidual() const;
+
+  /// Initial unscaled natural-map residual from the last exact attempt.
+  double getLastExactCoulombInitialNaturalMapResidual() const;
+
+  /// Final unscaled natural-map residual from the last exact attempt.
+  double getLastExactCoulombNaturalMapResidual() const;
+
+  /// Initial gamma before the opt-in warm-start residual cap.
+  double getLastExactCoulombUncappedInitialStepSize() const;
+
+  /// Whether the last exact attempt applied the warm-start residual gamma cap.
+  bool getLastExactCoulombWarmStartStepSizeCapApplied() const;
+
+  /// Number of exact attempts that applied the warm-start residual gamma cap.
+  std::size_t getNumExactCoulombWarmStartStepSizeCaps() const;
+
+  /// Number of accepted unconverged reactions omitted from the warm cache.
+  std::size_t getNumExactCoulombUnconvergedCacheSkips() const;
+
   /// Number of groups solved through the exact-Coulomb path.
   std::size_t getNumExactCoulombSolves() const;
 
@@ -643,7 +737,8 @@ private:
       const std::vector<ConstraintBase*>& constraints,
       const Eigen::Ref<const Eigen::VectorXd>& reaction,
       double stepSize,
-      std::size_t consecutiveNoRejectionSolves);
+      std::size_t consecutiveNoRejectionSolves,
+      bool updateReactionCache = true);
   void clearExactCoulombWarmStart();
   void clearExactCoulombPersistentStepSize();
 
@@ -744,9 +839,13 @@ private:
     bool hasLocalFeatureA = false;
     bool hasLocalFeatureB = false;
     Eigen::Vector3d worldImpulse = Eigen::Vector3d::Zero();
+    Eigen::Vector3d localImpulseB = Eigen::Vector3d::Zero();
+    bool hasLocalImpulseB = false;
+    bool reactionValid = true;
     std::size_t stepSizeGroupId = 0u;
     double stepSize = std::numeric_limits<double>::quiet_NaN();
     std::size_t consecutiveNoRejectionSolves = 0u;
+    int age = 0;
   };
   std::vector<ExactCoulombWarmStartContactRecord> mWarmStartContactRecords;
   std::size_t mNextExactCoulombStepSizeGroupId = 1u;

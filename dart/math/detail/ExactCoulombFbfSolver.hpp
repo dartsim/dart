@@ -92,6 +92,39 @@ struct ExactCoulombFbfOptions
   /// capped at the unscaled safe estimate when the cap is enabled.
   double stepSizeScale = 1.0;
 
+  /// Multiplier applied to the safe bound for an explicit initial gamma.
+  ///
+  /// The default preserves the unscaled explicit-gamma cap. An opt-in
+  /// cross-step policy can use the same scaled safe family as its automatic
+  /// gamma while still honoring a freshly computed bound.
+  double explicitStepSizeSafeBoundScale = 1.0;
+
+  /// Optional lower gamma bound. NaN leaves gamma unbounded below.
+  double minimumStepSize = std::numeric_limits<double>::quiet_NaN();
+
+  /// Optional upper gamma bound. NaN leaves gamma unbounded above.
+  double maximumStepSize = std::numeric_limits<double>::quiet_NaN();
+
+  /// Initial residual below which `initialResidualStepSizeCap` is applied.
+  ///
+  /// NaN disables the cap. This opt-in protects an already-good warm start
+  /// from an aggressive cross-step gamma without changing the safe-step or
+  /// line-search policy used by default.
+  double initialResidualStepSizeCapThreshold
+      = std::numeric_limits<double>::quiet_NaN();
+
+  /// Gamma cap applied when the initial residual is below the threshold.
+  ///
+  /// NaN disables the cap. This and
+  /// `initialResidualStepSizeCapThreshold` must be enabled together.
+  double initialResidualStepSizeCap = std::numeric_limits<double>::quiet_NaN();
+
+  /// Use the unscaled natural-map norm for the initial-residual gamma cap.
+  ///
+  /// Disabled by default. This opt-in matches the metric used by the pinned
+  /// author implementation without changing DART's convergence residual.
+  bool useNaturalMapResidualForInitialStepSizeCap = false;
+
   /// Relaxation applied to the accepted FBF correction.
   double outerRelaxation = 1.0;
 
@@ -239,8 +272,13 @@ struct ExactCoulombFbfResult
   int iterations = 0;
   int shrinkIterations = 0;
   double stepSize = std::numeric_limits<double>::quiet_NaN();
+  double uncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
+  bool initialStepSizeCapApplied = false;
   double safeStepSize = std::numeric_limits<double>::quiet_NaN();
   double couplingVariationRatio = 0.0;
+  double initialNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  double naturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  CoulombConeResidual initialResidual = makeInvalidCoulombConeResidual();
   CoulombConeResidual residual = makeInvalidCoulombConeResidual();
   int bestIteration = 0;
   CoulombConeResidual bestResidual = makeInvalidCoulombConeResidual();
@@ -266,10 +304,33 @@ inline bool isValidExactCoulombFbfOptions(const ExactCoulombFbfOptions& options)
   const bool validInitialStep = std::isnan(options.initialStepSize)
                                 || (std::isfinite(options.initialStepSize)
                                     && options.initialStepSize > 0.0);
+  const bool hasInitialResidualStepSizeCap
+      = std::isfinite(options.initialResidualStepSizeCapThreshold)
+        && std::isfinite(options.initialResidualStepSizeCap);
+  const bool validInitialResidualStepSizeCap
+      = (std::isnan(options.initialResidualStepSizeCapThreshold)
+         && std::isnan(options.initialResidualStepSizeCap))
+        || (hasInitialResidualStepSizeCap
+            && options.initialResidualStepSizeCapThreshold >= 0.0
+            && options.initialResidualStepSizeCap > 0.0);
+  const bool validMinimumStepSize = std::isnan(options.minimumStepSize)
+                                    || (std::isfinite(options.minimumStepSize)
+                                        && options.minimumStepSize > 0.0);
+  const bool validMaximumStepSize = std::isnan(options.maximumStepSize)
+                                    || (std::isfinite(options.maximumStepSize)
+                                        && options.maximumStepSize > 0.0);
+  const bool validStepSizeRange
+      = validMinimumStepSize && validMaximumStepSize
+        && (std::isnan(options.minimumStepSize)
+            || std::isnan(options.maximumStepSize)
+            || options.minimumStepSize <= options.maximumStepSize);
 
   return options.maxOuterIterations >= 0 && std::isfinite(options.tolerance)
          && options.tolerance >= 0.0 && validInitialStep
          && std::isfinite(options.stepSizeScale) && options.stepSizeScale > 0.0
+         && std::isfinite(options.explicitStepSizeSafeBoundScale)
+         && options.explicitStepSizeSafeBoundScale > 0.0 && validStepSizeRange
+         && validInitialResidualStepSizeCap
          && std::isfinite(options.outerRelaxation)
          && options.outerRelaxation > 0.0
          && std::isfinite(options.couplingVariationTolerance)
@@ -1818,12 +1879,21 @@ ExactCoulombFbfResult solveExactCoulombFbf(
     // Explicit gamma values, including a constraint solver's persisted gamma,
     // are capped at the fresh unscaled spectral bound. `stepSizeScale` applies
     // only when this solve chooses gamma automatically from a NaN request.
-    baseStepSize = (std::min)(baseStepSize, result.safeStepSize);
+    const double explicitSafeBound
+        = options.explicitStepSizeSafeBoundScale == 1.0
+              ? result.safeStepSize
+              : result.safeStepSize * options.explicitStepSizeSafeBoundScale;
+    baseStepSize = (std::min)(baseStepSize, explicitSafeBound);
   }
+  if (std::isfinite(options.minimumStepSize))
+    baseStepSize = (std::max)(baseStepSize, options.minimumStepSize);
+  if (std::isfinite(options.maximumStepSize))
+    baseStepSize = (std::min)(baseStepSize, options.maximumStepSize);
   if (!std::isfinite(baseStepSize) || baseStepSize <= 0.0) {
     result.status = ExactCoulombFbfStatus::InvalidInput;
     return result;
   }
+  result.uncappedInitialStepSize = baseStepSize;
   result.stepSize = baseStepSize;
 
   CoulombConeResidualScales residualScales = options.residualScales;
@@ -1840,6 +1910,33 @@ ExactCoulombFbfResult solveExactCoulombFbf(
 
   result.residual = computeExactCoulombContactResidualNormalFirst(
       problem, result.reaction, applyDelassus, residualScales);
+  result.initialResidual = result.residual;
+  if (options.useNaturalMapResidualForInitialStepSizeCap) {
+    result.initialNaturalMapResidual
+        = computeExactCoulombNaturalMapResidualNormalFirst(
+            problem, result.reaction, applyDelassus);
+    result.naturalMapResidual = result.initialNaturalMapResidual;
+    if (!std::isfinite(result.initialNaturalMapResidual)) {
+      result.status = ExactCoulombFbfStatus::InvalidInput;
+      return result;
+    }
+  }
+  const double initialStepSizeCapResidual
+      = options.useNaturalMapResidualForInitialStepSizeCap
+            ? result.initialNaturalMapResidual
+            : result.initialResidual.value;
+  if (std::isfinite(options.initialResidualStepSizeCapThreshold)
+      && std::isfinite(options.initialResidualStepSizeCap)
+      && std::isfinite(initialStepSizeCapResidual)
+      && initialStepSizeCapResidual
+             < options.initialResidualStepSizeCapThreshold
+      && baseStepSize > options.initialResidualStepSizeCap) {
+    baseStepSize = options.initialResidualStepSizeCap;
+    if (std::isfinite(options.minimumStepSize))
+      baseStepSize = (std::max)(baseStepSize, options.minimumStepSize);
+    result.stepSize = baseStepSize;
+    result.initialStepSizeCapApplied = true;
+  }
   result.bestIteration = 0;
   result.bestResidual = result.residual;
   result.bestReaction = result.reaction;
@@ -1929,6 +2026,8 @@ ExactCoulombFbfResult solveExactCoulombFbf(
         break;
 
       stepSize *= options.shrinkFactor;
+      if (std::isfinite(options.minimumStepSize))
+        stepSize = (std::max)(stepSize, options.minimumStepSize);
       ++result.shrinkIterations;
       result.stepSize = stepSize;
       if (!std::isfinite(stepSize) || stepSize <= 0.0) {
