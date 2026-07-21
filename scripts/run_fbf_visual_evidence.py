@@ -182,7 +182,7 @@ REQUIRED_VIDEO_SCHEDULES = {
         "turntable_author_mu05_omega2",
         "turntable_author_mu05_omega5",
     ),
-    "painleve": ("painleve_mu05", "painleve_mu055"),
+    "painleve": ("painleve_author_mu05", "painleve_author_mu055"),
     "card_house_26": (
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
@@ -627,6 +627,92 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "The source uses a three-solver semantic edit; this artifact would be "
             "the underlying DART proxy only.",
         ),
+    ),
+    "painleve_author_mu05": CaptureSchedule(
+        id="painleve_author_mu05",
+        scene="fbf_author_painleve_mu_0_5",
+        title="Author-pinned Painleve mu=.5",
+        source_segment="painleve",
+        total_steps=120,
+        frame_stride=2,
+        panel_steps=(0, 30, 60, 90, 120),
+        panel_labels=("t=0s", "t=.5s", "t=1s", "t=1.5s", "t=2s"),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("author_run_blob", "afaa03613b0ad0a30290168d2fd64221fc3523b7"),
+            ("mu", "0.5"),
+            ("source_default_mu", "0.55"),
+            ("selection", "source-supported --mu 0.5 0.55 sweep"),
+            ("box_size_m", "0.3 x 1.2 x 0.6 (DART xyz)"),
+            ("density_kg_m3", "200"),
+            ("mass_kg", "43.2"),
+            ("initial_velocity_m_s", "4"),
+            ("time_step_seconds", "1/60"),
+            ("duration_seconds", "2"),
+            (
+                "outcome",
+                "upright_near_rest under the current exact DART adapter",
+            ),
+        ),
+        mismatches=COMMON_DART_MISMATCH
+        + (
+            "The source-supported mu=.5/.55 sweep is selected for the public "
+            "paper-video cells; the public source defaults only to mu=.55 and "
+            "does not identify the historical paper invocation.",
+            "DART Native FourPointPlanar contact does not implement the source "
+            "gap=.005, ke=1e4, or kd=1e3 shape semantics equivalently.",
+            "The exact lane maps the public CLI gamma_c=5 request onto DART's "
+            "adaptive safe-step convention and uses a 1,000-iteration DART "
+            "budget; this is not a port of the authors' Warp/Newton backend.",
+        ),
+        known_gate_blockers=(),
+        boxed_comparison_gate_blockers=(),
+        collision_detector="native",
+        collision_detector_override=False,
+        pre_run_actions=("e", "e"),
+    ),
+    "painleve_author_mu055": CaptureSchedule(
+        id="painleve_author_mu055",
+        scene="fbf_author_painleve_mu_0_55",
+        title="Author-pinned Painleve mu=.55",
+        source_segment="painleve",
+        total_steps=120,
+        frame_stride=2,
+        panel_steps=(0, 30, 60, 90, 120),
+        panel_labels=("t=0s", "t=.5s", "t=1s", "t=1.5s", "t=2s"),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("author_run_blob", "afaa03613b0ad0a30290168d2fd64221fc3523b7"),
+            ("mu", "0.55"),
+            ("source_default_mu", "0.55"),
+            ("selection", "source-supported --mu 0.5 0.55 sweep"),
+            ("box_size_m", "0.3 x 1.2 x 0.6 (DART xyz)"),
+            ("density_kg_m3", "200"),
+            ("mass_kg", "43.2"),
+            ("initial_velocity_m_s", "4"),
+            ("time_step_seconds", "1/60"),
+            ("duration_seconds", "2"),
+            (
+                "outcome",
+                "tumbled_near_rest under the current exact DART adapter",
+            ),
+        ),
+        mismatches=COMMON_DART_MISMATCH
+        + (
+            "The source-supported mu=.5/.55 sweep is selected for the public "
+            "paper-video cells; the public source defaults only to mu=.55 and "
+            "does not identify the historical paper invocation.",
+            "DART Native FourPointPlanar contact does not implement the source "
+            "gap=.005, ke=1e4, or kd=1e3 shape semantics equivalently.",
+            "The exact lane maps the public CLI gamma_c=5 request onto DART's "
+            "adaptive safe-step convention and uses a 1,000-iteration DART "
+            "budget; this is not a port of the authors' Warp/Newton backend.",
+        ),
+        known_gate_blockers=(),
+        boxed_comparison_gate_blockers=(),
+        collision_detector="native",
+        collision_detector_override=False,
+        pre_run_actions=("e", "e"),
     ),
     "card_house_author_4_impact_current_source": CaptureSchedule(
         id="card_house_author_4_impact_current_source",
@@ -1086,6 +1172,54 @@ AUTHOR_TURN_TABLE_VISUAL_RESOURCES = (
     ),
 )
 PAINLEVE_MEMBERS = ("painleve_mu05", "painleve_mu055")
+AUTHOR_PAINLEVE_MEMBERS = ("painleve_author_mu05", "painleve_author_mu055")
+AUTHOR_PAINLEVE_OUTCOME_SCHEMA_VERSION = (
+    "dart.fbf_author_painleve_dart_adapter_outcome/v1"
+)
+AUTHOR_PAINLEVE_COMPARISON_SCHEMA_VERSION = (
+    "dart.fbf_author_painleve_solver_comparison/v1"
+)
+AUTHOR_PAINLEVE_OUTCOME_CLAIM_SCOPE = "current_dart_adapter_only"
+AUTHOR_PAINLEVE_TERMINAL_WINDOW = (105, 120)
+AUTHOR_PAINLEVE_MAX_LINEAR_SPEED_M_S = 0.02
+AUTHOR_PAINLEVE_MAX_ANGULAR_SPEED_RAD_S = 0.10
+AUTHOR_PAINLEVE_UPRIGHTNESS_MINIMUM = 0.90
+AUTHOR_PAINLEVE_UPRIGHT_HEIGHT_RANGE_M = (0.25, 0.35)
+AUTHOR_PAINLEVE_TUMBLED_ABS_UPRIGHTNESS_MAXIMUM = 0.25
+AUTHOR_PAINLEVE_TUMBLED_HEIGHT_RANGE_M = (0.08, 0.22)
+AUTHOR_PAINLEVE_MIN_HORIZONTAL_TRAVEL_M = 1.0
+AUTHOR_PAINLEVE_EXPECTED_OUTCOMES = {
+    ("painleve_author_mu05", "exact"): "upright_near_rest",
+    ("painleve_author_mu05", "boxed"): "upright_near_rest",
+    ("painleve_author_mu055", "exact"): "tumbled_near_rest",
+    ("painleve_author_mu055", "boxed"): "upright_near_rest",
+}
+AUTHOR_PAINLEVE_SCENE_STATE_FIELDS = (
+    "world_time_seconds",
+    "position_x_m",
+    "position_y_m",
+    "position_z_m",
+    "rotation_00",
+    "rotation_01",
+    "rotation_02",
+    "rotation_10",
+    "rotation_11",
+    "rotation_12",
+    "rotation_20",
+    "rotation_21",
+    "rotation_22",
+    "body_up_x",
+    "body_up_y",
+    "body_up_z",
+    "uprightness_cosine",
+    "pitch_rad",
+    "linear_velocity_x_m_s",
+    "linear_velocity_y_m_s",
+    "linear_velocity_z_m_s",
+    "angular_velocity_x_rad_s",
+    "angular_velocity_y_rad_s",
+    "angular_velocity_z_rad_s",
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1213,6 +1347,15 @@ GROUP_OUTPUTS: dict[str, GroupOutputSpec] = {
         layout="side-by-side",
         panel_step=150,
     ),
+    "painleve_author": GroupOutputSpec(
+        id="painleve_author",
+        source_segment="painleve",
+        members=AUTHOR_PAINLEVE_MEMBERS,
+        labels=("MU .5", "MU .55"),
+        layout="side-by-side",
+        panel_step=120,
+        panel_labels=("MU .5 | T 2.00S", "MU .55 | T 2.00S"),
+    ),
 }
 
 
@@ -1246,6 +1389,19 @@ def _derive_boxed_schedule(schedule: CaptureSchedule) -> CaptureSchedule:
             ("comparison_counterpart", "same_physics_boxed_lcp"),
             ("source_exact_policy", "source_continuation"),
             ("active_exact_policy", "not_applicable"),
+        )
+    if schedule.id in AUTHOR_PAINLEVE_MEMBERS:
+        boxed_outcome = AUTHOR_PAINLEVE_EXPECTED_OUTCOMES[(schedule.id, "boxed")]
+        configuration = tuple(
+            (
+                key,
+                (
+                    f"{boxed_outcome} under the current boxed DART adapter"
+                    if key == "outcome"
+                    else value
+                ),
+            )
+            for key, value in configuration
         )
     mismatches = schedule.boxed_comparison_mismatches
     if mismatches is None:
@@ -1381,7 +1537,7 @@ def _group_outputs_for_solver_lane(
     if requested in ("boxed", "both"):
         groups.extend(
             _derive_boxed_group(GROUP_OUTPUTS[group_id])
-            for group_id in ("turntable", "painleve")
+            for group_id in ("turntable", "painleve", "painleve_author")
         )
         skips.append(
             {
@@ -1598,6 +1754,41 @@ def _claim_value_matches(actual: Any, expected: Any) -> bool:
     return actual == expected
 
 
+def _contract_value_matches(actual: Any, expected: Any) -> bool:
+    """Compare decoded JSON contracts without depending on decimal spelling."""
+    if isinstance(expected, bool):
+        return actual is expected
+    if isinstance(expected, int):
+        return (
+            not isinstance(actual, bool)
+            and isinstance(actual, int)
+            and actual == expected
+        )
+    if isinstance(expected, float):
+        return _is_finite_number(actual) and math.isclose(
+            float(actual), expected, rel_tol=1e-12, abs_tol=1e-15
+        )
+    if isinstance(expected, list):
+        return (
+            isinstance(actual, list)
+            and len(actual) == len(expected)
+            and all(
+                _contract_value_matches(actual_item, expected_item)
+                for actual_item, expected_item in zip(actual, expected)
+            )
+        )
+    if isinstance(expected, dict):
+        return (
+            isinstance(actual, dict)
+            and actual.keys() == expected.keys()
+            and all(
+                _contract_value_matches(actual[key], expected_value)
+                for key, expected_value in expected.items()
+            )
+        )
+    return actual == expected
+
+
 def _validate_capture_claim_boundary(
     metadata: dict[str, Any],
     schedule: CaptureSchedule,
@@ -1644,6 +1835,23 @@ def _validate_capture_claim_boundary(
         "semantic_outcome_gate": CAPTURE_SEMANTIC_OUTCOME_GATE,
         "known_mismatches": list(schedule.mismatches),
     }
+    if _is_author_painleve_schedule(schedule):
+        timeline_outcome = metadata.get("timeline_validation", {}).get(
+            "dart_adapter_outcome"
+        )
+        if (
+            not isinstance(timeline_outcome, dict)
+            or timeline_outcome.get("pass") is not True
+        ):
+            raise ValueError(
+                f"{metadata_path}: current DART adapter outcome is unavailable"
+            )
+        capture_claims.update(
+            {
+                "automated_current_dart_adapter_outcome_validated": True,
+                "current_dart_adapter_outcome": timeline_outcome,
+            }
+        )
     for key, expected in capture_claims.items():
         if not _claim_value_matches(metadata.get(key), expected):
             raise ValueError(f"{metadata_path}: capture claim boundary {key} changed")
@@ -2255,6 +2463,10 @@ def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
     }
 
 
+def _is_author_painleve_schedule(schedule: CaptureSchedule) -> bool:
+    return (schedule.source_schedule_id or schedule.id) in AUTHOR_PAINLEVE_MEMBERS
+
+
 def _is_author_card_house_source_continuation_schedule(
     schedule: CaptureSchedule,
 ) -> bool:
@@ -2269,6 +2481,471 @@ def _is_finite_number(value: Any) -> bool:
         and isinstance(value, (int, float))
         and math.isfinite(value)
     )
+
+
+def _validate_author_painleve_scene_state_trace(
+    schedule: CaptureSchedule,
+    trajectory_steps: Any,
+    *,
+    sidecar_path: Path,
+    expected_last_step: int,
+) -> dict[str, Any] | None:
+    if not _is_author_painleve_schedule(schedule):
+        return None
+    if (
+        isinstance(expected_last_step, bool)
+        or not isinstance(expected_last_step, int)
+        or expected_last_step < 0
+        or expected_last_step > schedule.total_steps
+    ):
+        raise ValueError(f"{sidecar_path}: invalid Painleve trace endpoint")
+    if not isinstance(trajectory_steps, list) or len(trajectory_steps) != (
+        expected_last_step + 1
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve scene-state trace length")
+
+    samples: list[dict[str, Any]] = []
+    initial_position: list[float] | None = None
+    maximum_horizontal_displacement = 0.0
+    maximum_absolute_pitch = 0.0
+    minimum_uprightness = math.inf
+    maximum_angular_speed = 0.0
+    for expected_step, item in enumerate(trajectory_steps):
+        if not isinstance(item, dict) or item.get("step") != expected_step:
+            raise ValueError(
+                f"{sidecar_path}: author Painleve scene-state steps are out of order"
+            )
+        sim_time = item.get("sim_time")
+        expected_time = schedule.time_at_step(expected_step)
+        if not _is_finite_number(sim_time) or not math.isclose(
+            float(sim_time), expected_time, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author Painleve scene-state time mismatch at "
+                f"step {expected_step}"
+            )
+
+        state = item.get("scene_state")
+        label = f"{sidecar_path}: author Painleve scene state at step {expected_step}"
+        if not isinstance(state, dict):
+            raise ValueError(f"{label} is missing")
+        if set(state) != set(AUTHOR_PAINLEVE_SCENE_STATE_FIELDS) or not all(
+            _is_finite_number(state.get(name))
+            for name in AUTHOR_PAINLEVE_SCENE_STATE_FIELDS
+        ):
+            raise ValueError(f"{label} fields changed or are non-finite")
+        world_time = state.get("world_time_seconds")
+        if not math.isclose(
+            float(world_time), expected_time, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(f"{label} world time changed")
+
+        position = [float(state[f"position_{axis}_m"]) for axis in ("x", "y", "z")]
+        rotation = [
+            [float(state[f"rotation_{row}{column}"]) for column in range(3)]
+            for row in range(3)
+        ]
+        body_up = [float(state[f"body_up_{axis}"]) for axis in ("x", "y", "z")]
+        linear_velocity = [
+            float(state[f"linear_velocity_{axis}_m_s"]) for axis in ("x", "y", "z")
+        ]
+        angular_velocity = [
+            float(state[f"angular_velocity_{axis}_rad_s"]) for axis in ("x", "y", "z")
+        ]
+        uprightness = float(state["uprightness_cosine"])
+        pitch = float(state["pitch_rad"])
+
+        for row in range(3):
+            for column in range(3):
+                dot = sum(
+                    rotation[index][row] * rotation[index][column] for index in range(3)
+                )
+                expected_dot = 1.0 if row == column else 0.0
+                if not math.isclose(dot, expected_dot, rel_tol=0.0, abs_tol=1e-9):
+                    raise ValueError(f"{label} rotation is not orthonormal")
+        determinant = (
+            rotation[0][0]
+            * (rotation[1][1] * rotation[2][2] - rotation[1][2] * rotation[2][1])
+            - rotation[0][1]
+            * (rotation[1][0] * rotation[2][2] - rotation[1][2] * rotation[2][0])
+            + rotation[0][2]
+            * (rotation[1][0] * rotation[2][1] - rotation[1][1] * rotation[2][0])
+        )
+        if not math.isclose(determinant, 1.0, rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError(f"{label} rotation is not proper")
+
+        expected_body_up = [rotation[row][2] for row in range(3)]
+        if any(
+            not math.isclose(
+                body_up[index],
+                expected_body_up[index],
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+            for index in range(3)
+        ):
+            raise ValueError(f"{label} body-up vector disagrees with rotation")
+        if not math.isclose(
+            uprightness, expected_body_up[2], rel_tol=0.0, abs_tol=1e-12
+        ):
+            raise ValueError(f"{label} uprightness disagrees with rotation")
+        expected_pitch = math.atan2(rotation[0][2], rotation[2][2])
+        if not math.isclose(pitch, expected_pitch, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError(f"{label} pitch disagrees with rotation")
+
+        position_values = position
+        linear_values = linear_velocity
+        angular_values = angular_velocity
+        if initial_position is None:
+            initial_position = position_values
+        horizontal_displacement = math.hypot(
+            position_values[0] - initial_position[0],
+            position_values[1] - initial_position[1],
+        )
+        angular_speed = math.sqrt(sum(value * value for value in angular_values))
+        maximum_horizontal_displacement = max(
+            maximum_horizontal_displacement, horizontal_displacement
+        )
+        maximum_absolute_pitch = max(maximum_absolute_pitch, abs(pitch))
+        minimum_uprightness = min(minimum_uprightness, uprightness)
+        maximum_angular_speed = max(maximum_angular_speed, angular_speed)
+        samples.append(
+            {
+                "step": expected_step,
+                "time_seconds": float(sim_time),
+                "position_m": position_values,
+                "uprightness_cosine": uprightness,
+                "pitch_rad": pitch,
+                "linear_velocity_m_s": linear_values,
+                "angular_velocity_rad_s": angular_values,
+            }
+        )
+
+    initial = samples[0]
+    final = samples[-1]
+    displacement = [
+        final["position_m"][index] - initial["position_m"][index] for index in range(3)
+    ]
+    return {
+        "schema_version": "dart.fbf_author_painleve_scene_state_metrics/v1",
+        "scene_id": schedule.scene,
+        "body_name": "painleve_author_box",
+        "sample_count": len(samples),
+        "initial": initial,
+        "final": final,
+        "displacement_m": displacement,
+        "horizontal_displacement_m": math.hypot(displacement[0], displacement[1]),
+        "maximum_horizontal_displacement_from_initial_m": (
+            maximum_horizontal_displacement
+        ),
+        "maximum_absolute_pitch_rad": maximum_absolute_pitch,
+        "minimum_uprightness_cosine": minimum_uprightness,
+        "maximum_angular_speed_rad_s": maximum_angular_speed,
+    }
+
+
+def _validate_author_painleve_dart_adapter_outcome(
+    schedule: CaptureSchedule,
+    trajectory_steps: Any,
+    *,
+    sidecar_path: Path,
+    expected_last_step: int,
+) -> dict[str, Any] | None:
+    """Classify only the complete, current-DART author-Painleve trace."""
+    if not _is_author_painleve_schedule(schedule):
+        return None
+
+    source_schedule_id = schedule.source_schedule_id or schedule.id
+    expected_class = AUTHOR_PAINLEVE_EXPECTED_OUTCOMES.get(
+        (source_schedule_id, schedule.solver_lane)
+    )
+    if expected_class is None:
+        raise ValueError(
+            f"{sidecar_path}: unsupported author Painleve schedule/solver lane"
+        )
+    terminal_start, terminal_end = AUTHOR_PAINLEVE_TERMINAL_WINDOW
+    if (
+        schedule.total_steps != terminal_end
+        or expected_last_step != terminal_end
+        or not isinstance(trajectory_steps, list)
+        or len(trajectory_steps) != terminal_end + 1
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author Painleve outcome requires the complete "
+            f"{terminal_end + 1}-sample trace"
+        )
+
+    state_metrics = _validate_author_painleve_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=expected_last_step,
+    )
+    assert state_metrics is not None
+
+    initial_state = trajectory_steps[0]["scene_state"]
+    expected_initial_state = {
+        "world_time_seconds": 0.0,
+        "position_x_m": 0.0,
+        "position_y_m": 0.0,
+        "position_z_m": 0.3,
+        "rotation_00": 1.0,
+        "rotation_01": 0.0,
+        "rotation_02": 0.0,
+        "rotation_10": 0.0,
+        "rotation_11": 1.0,
+        "rotation_12": 0.0,
+        "rotation_20": 0.0,
+        "rotation_21": 0.0,
+        "rotation_22": 1.0,
+        "body_up_x": 0.0,
+        "body_up_y": 0.0,
+        "body_up_z": 1.0,
+        "uprightness_cosine": 1.0,
+        "pitch_rad": 0.0,
+        "linear_velocity_x_m_s": 4.0,
+        "linear_velocity_y_m_s": 0.0,
+        "linear_velocity_z_m_s": 0.0,
+        "angular_velocity_x_rad_s": 0.0,
+        "angular_velocity_y_rad_s": 0.0,
+        "angular_velocity_z_rad_s": 0.0,
+    }
+    if any(
+        not _contract_value_matches(initial_state.get(key), expected)
+        for key, expected in expected_initial_state.items()
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve initial state changed")
+
+    horizontal_travel = float(state_metrics["horizontal_displacement_m"])
+    if horizontal_travel < AUTHOR_PAINLEVE_MIN_HORIZONTAL_TRAVEL_M:
+        raise ValueError(
+            f"{sidecar_path}: author Painleve horizontal travel is below "
+            f"{AUTHOR_PAINLEVE_MIN_HORIZONTAL_TRAVEL_M} m"
+        )
+
+    terminal_samples = trajectory_steps[terminal_start : terminal_end + 1]
+    linear_speeds: list[float] = []
+    angular_speeds: list[float] = []
+    uprightness_values: list[float] = []
+    heights: list[float] = []
+    for item in terminal_samples:
+        state = item["scene_state"]
+        linear_speeds.append(
+            math.sqrt(
+                sum(
+                    float(state[f"linear_velocity_{axis}_m_s"]) ** 2
+                    for axis in ("x", "y", "z")
+                )
+            )
+        )
+        angular_speeds.append(
+            math.sqrt(
+                sum(
+                    float(state[f"angular_velocity_{axis}_rad_s"]) ** 2
+                    for axis in ("x", "y", "z")
+                )
+            )
+        )
+        uprightness_values.append(float(state["uprightness_cosine"]))
+        heights.append(float(state["position_z_m"]))
+
+    max_linear_speed = max(linear_speeds)
+    max_angular_speed = max(angular_speeds)
+    if (
+        max_linear_speed > AUTHOR_PAINLEVE_MAX_LINEAR_SPEED_M_S
+        or max_angular_speed > AUTHOR_PAINLEVE_MAX_ANGULAR_SPEED_RAD_S
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author Painleve terminal window is not near rest"
+        )
+
+    upright_height_minimum, upright_height_maximum = (
+        AUTHOR_PAINLEVE_UPRIGHT_HEIGHT_RANGE_M
+    )
+    tumbled_height_minimum, tumbled_height_maximum = (
+        AUTHOR_PAINLEVE_TUMBLED_HEIGHT_RANGE_M
+    )
+    upright = all(
+        uprightness >= AUTHOR_PAINLEVE_UPRIGHTNESS_MINIMUM
+        and upright_height_minimum <= height <= upright_height_maximum
+        for uprightness, height in zip(uprightness_values, heights)
+    )
+    tumbled = all(
+        abs(uprightness) <= AUTHOR_PAINLEVE_TUMBLED_ABS_UPRIGHTNESS_MAXIMUM
+        and tumbled_height_minimum <= height <= tumbled_height_maximum
+        for uprightness, height in zip(uprightness_values, heights)
+    )
+    if upright == tumbled:
+        raise ValueError(
+            f"{sidecar_path}: author Painleve terminal pose is unclassified"
+        )
+    observed_class = "upright_near_rest" if upright else "tumbled_near_rest"
+    if observed_class != expected_class:
+        raise ValueError(
+            f"{sidecar_path}: author Painleve outcome class {observed_class!r} "
+            f"does not match expected {expected_class!r}"
+        )
+
+    return {
+        "schema_version": AUTHOR_PAINLEVE_OUTCOME_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_PAINLEVE_OUTCOME_CLAIM_SCOPE,
+        "source_schedule_id": source_schedule_id,
+        "schedule_id": schedule.id,
+        "solver_lane": schedule.solver_lane,
+        "expected_class": expected_class,
+        "observed_class": observed_class,
+        "terminal_window": {
+            "start_step": terminal_start,
+            "end_step": terminal_end,
+            "sample_count": len(terminal_samples),
+            "max_linear_speed_m_s": max_linear_speed,
+            "max_angular_speed_rad_s": max_angular_speed,
+            "minimum_uprightness_cosine": min(uprightness_values),
+            "maximum_uprightness_cosine": max(uprightness_values),
+            "maximum_absolute_uprightness_cosine": max(
+                abs(value) for value in uprightness_values
+            ),
+            "minimum_height_m": min(heights),
+            "maximum_height_m": max(heights),
+            "thresholds": {
+                "max_linear_speed_m_s": AUTHOR_PAINLEVE_MAX_LINEAR_SPEED_M_S,
+                "max_angular_speed_rad_s": AUTHOR_PAINLEVE_MAX_ANGULAR_SPEED_RAD_S,
+                "uprightness_minimum": AUTHOR_PAINLEVE_UPRIGHTNESS_MINIMUM,
+                "upright_height_range_m": list(AUTHOR_PAINLEVE_UPRIGHT_HEIGHT_RANGE_M),
+                "tumbled_absolute_uprightness_maximum": (
+                    AUTHOR_PAINLEVE_TUMBLED_ABS_UPRIGHTNESS_MAXIMUM
+                ),
+                "tumbled_height_range_m": list(AUTHOR_PAINLEVE_TUMBLED_HEIGHT_RANGE_M),
+            },
+        },
+        "initial_state_gate": {
+            "expected": expected_initial_state,
+            "pass": True,
+        },
+        "horizontal_travel_m": horizontal_travel,
+        "minimum_horizontal_travel_m": AUTHOR_PAINLEVE_MIN_HORIZONTAL_TRAVEL_M,
+        "automated_current_dart_adapter_outcome_validated": True,
+        "source_backend_equivalent": False,
+        "trajectory_equivalent": False,
+        "paper_figure_parity": False,
+        "solver_superiority": False,
+        "pass": True,
+    }
+
+
+def _is_author_painleve_solver_comparison_group(group: GroupOutputSpec) -> bool:
+    return (
+        group.solver_lane == "both"
+        and len(group.members) == 2
+        and group.members[0] in AUTHOR_PAINLEVE_MEMBERS
+        and group.members[1] == _boxed_schedule_id(group.members[0])
+    )
+
+
+def _validate_author_painleve_solver_comparison(
+    group: GroupOutputSpec,
+    schedules: Sequence[CaptureSchedule],
+    outcome_reports: Any,
+    *,
+    label: str,
+) -> dict[str, Any] | None:
+    if not _is_author_painleve_solver_comparison_group(group):
+        return None
+    if (
+        len(schedules) != 2
+        or tuple(schedule.id for schedule in schedules) != group.members
+        or tuple(schedule.solver_lane for schedule in schedules) != SOLVER_LANES
+    ):
+        raise ValueError(f"{label}: author Painleve comparison lanes changed")
+    if not isinstance(outcome_reports, list) or len(outcome_reports) != 2:
+        raise ValueError(f"{label}: author Painleve comparison outcomes are missing")
+
+    source_schedule_id = schedules[0].id
+    expected_classes = [
+        AUTHOR_PAINLEVE_EXPECTED_OUTCOMES[(source_schedule_id, lane)]
+        for lane in SOLVER_LANES
+    ]
+    observed_classes: list[str] = []
+    travel_by_lane: dict[str, float] = {}
+    for schedule, report, expected_class in zip(
+        schedules, outcome_reports, expected_classes
+    ):
+        if not isinstance(report, dict):
+            raise ValueError(f"{label}: author Painleve comparison outcome is invalid")
+        expected_claims = {
+            "schema_version": AUTHOR_PAINLEVE_OUTCOME_SCHEMA_VERSION,
+            "claim_scope": AUTHOR_PAINLEVE_OUTCOME_CLAIM_SCOPE,
+            "source_schedule_id": source_schedule_id,
+            "schedule_id": schedule.id,
+            "solver_lane": schedule.solver_lane,
+            "expected_class": expected_class,
+            "observed_class": expected_class,
+            "automated_current_dart_adapter_outcome_validated": True,
+            "source_backend_equivalent": False,
+            "trajectory_equivalent": False,
+            "paper_figure_parity": False,
+            "solver_superiority": False,
+            "pass": True,
+        }
+        if any(report.get(key) != value for key, value in expected_claims.items()):
+            raise ValueError(
+                f"{label}: author Painleve comparison outcome claim changed"
+            )
+        travel = report.get("horizontal_travel_m")
+        if (
+            not _is_finite_number(travel)
+            or float(travel) < AUTHOR_PAINLEVE_MIN_HORIZONTAL_TRAVEL_M
+        ):
+            raise ValueError(f"{label}: author Painleve comparison travel is invalid")
+        observed_classes.append(expected_class)
+        travel_by_lane[schedule.solver_lane] = float(travel)
+
+    expected_relation = (
+        "same_upright_near_rest"
+        if source_schedule_id == "painleve_author_mu05"
+        else "exact_tumbled_boxed_upright"
+    )
+    if source_schedule_id == "painleve_author_mu05":
+        relation_valid = observed_classes == [
+            "upright_near_rest",
+            "upright_near_rest",
+        ]
+    else:
+        relation_valid = (
+            observed_classes == ["tumbled_near_rest", "upright_near_rest"]
+            and observed_classes[0] != observed_classes[1]
+        )
+    if not relation_valid:
+        raise ValueError(
+            f"{label}: author Painleve exact/boxed outcome relation changed"
+        )
+
+    return {
+        "schema_version": AUTHOR_PAINLEVE_COMPARISON_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_PAINLEVE_OUTCOME_CLAIM_SCOPE,
+        "source_schedule_id": source_schedule_id,
+        "group_id": group.id,
+        "expected_relation": expected_relation,
+        "observed_relation": expected_relation,
+        "members": [
+            {
+                "schedule_id": schedule.id,
+                "solver_lane": schedule.solver_lane,
+                "outcome_class": observed_class,
+                "horizontal_travel_m": travel_by_lane[schedule.solver_lane],
+            }
+            for schedule, observed_class in zip(schedules, observed_classes)
+        ],
+        "boxed_minus_exact_horizontal_travel_m": (
+            travel_by_lane["boxed"] - travel_by_lane["exact"]
+        ),
+        "automated_current_dart_adapter_outcome_validated": True,
+        "source_backend_equivalent": False,
+        "trajectory_equivalent": False,
+        "paper_figure_parity": False,
+        "solver_superiority": False,
+        "pass": True,
+    }
 
 
 def _validate_contract_vector(value: Any, size: int, *, label: str) -> None:
@@ -3172,6 +3849,210 @@ def _validate_author_card_house_adapter_contract(
     }
 
 
+def _validate_author_painleve_adapter_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_author_painleve_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(f"{sidecar_path}: author Painleve adapter contract is missing")
+    if (
+        contract.get("schema_version") != "dart.fbf_author_painleve_dynamics_adapter/v1"
+        or contract.get("kind") != "source_configuration_dynamics_adapter"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected author Painleve schema")
+
+    source_binding = contract.get("source_binding")
+    expected_binding = {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+        "painleve_run_blob": "afaa03613b0ad0a30290168d2fd64221fc3523b7",
+        "painleve_run_py_sha256": (
+            "818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3"
+        ),
+        "configuration_spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorPainleveSpec.hpp"
+        ),
+        "exact_solver_options_sha256": _sha256(
+            ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+        ),
+        "demo_implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+    }
+    if source_binding != expected_binding:
+        raise ValueError(f"{sidecar_path}: author Painleve source hashes changed")
+
+    mu = float(schedule.configuration_dict()["mu"])
+    source_configuration = contract.get("source_configuration")
+    if not _contract_value_matches(
+        source_configuration,
+        {
+            "gravity_m_s2": 9.81,
+            "box_width_m": 0.3,
+            "box_height_m": 0.6,
+            "box_depth_m": 1.2,
+            "density_kg_m3": 200.0,
+            "mass_kg": 43.2,
+            "initial_velocity_m_s": 4.0,
+            "critical_friction": 0.5,
+            "time_step_seconds": 1.0 / 60.0,
+            "duration_seconds": 2.0,
+            "total_steps": 120,
+            "source_default_mu_values": [0.55],
+            "selected_source_supported_mu_sweep": [0.5, 0.55],
+            "ground_half_extents_m": [5.0, 1.5, 0.05],
+            "box_initial_pose": {
+                "translation_m": [0.0, 0.0, 0.3],
+                "rotation": [
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+            },
+            "contact": {
+                "friction": mu,
+                "gap_m": 0.005,
+                "shape_stiffness": 10000.0,
+                "shape_damping": 1000.0,
+            },
+        },
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author Painleve source configuration changed"
+        )
+
+    adapter = contract.get("dart_adapter")
+    if not isinstance(adapter, dict) or adapter.get("scene_id") != schedule.scene:
+        raise ValueError(f"{sidecar_path}: author Painleve adapter identity changed")
+    if not _contract_value_matches(
+        adapter.get("world"),
+        {
+            "time_step_seconds": 1.0 / 60.0,
+            "gravity_m_s2": [0.0, 0.0, -9.81],
+            "simulation_threads": schedule.threads,
+            "deactivation_enabled": False,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve world policy changed")
+    if not _contract_value_matches(
+        adapter.get("collision"),
+        {
+            "detector": "native",
+            "contact_manifold": "four_point_planar",
+            "max_contacts": 4,
+            "max_contacts_per_pair": 4,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve collision contract changed")
+
+    exact = schedule.solver_lane == "exact"
+    expected_solver = {
+        "lane": "exact_fbf" if exact else "boxed_lcp",
+        "configuration_policy": "source_gamma_c_5_strict_dart_adapter",
+        "split_impulse_enabled": False,
+        "exact_options": (
+            {
+                "max_outer_iterations": 1000,
+                "tolerance": 1e-6,
+                "inner_max_sweeps": 120,
+                "inner_local_iterations": 32,
+                "step_size_scale": 10.0,
+                "step_size_persistence_enabled": True,
+                "persistent_step_size_safe_bound_scale": 10.0,
+                "post_correction_projection_enabled": True,
+                "fallback_to_boxed_lcp_enabled": True,
+            }
+            if exact
+            else None
+        ),
+    }
+    if not _contract_value_matches(adapter.get("solver"), expected_solver):
+        raise ValueError(f"{sidecar_path}: author Painleve solver contract changed")
+
+    identity = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ]
+    if not _contract_value_matches(
+        adapter.get("ground"),
+        {
+            "mobile": False,
+            "size_m": [10.0, 3.0, 0.1],
+            "initial_pose": {
+                "translation": [0.0, 0.0, -0.05],
+                "rotation": identity,
+            },
+            "friction": mu,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve ground changed")
+    if not _contract_value_matches(
+        adapter.get("box"),
+        {
+            "mobile": True,
+            "size_m": [0.3, 1.2, 0.6],
+            "initial_pose": {
+                "translation": [0.0, 0.0, 0.3],
+                "rotation": identity,
+            },
+            "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+            "initial_angular_velocity_rad_s": [0.0, 0.0, 0.0],
+            "friction": mu,
+            "mass_kg": 43.2,
+            "moment_kg_m2": [
+                [6.48, 0.0, 0.0],
+                [0.0, 1.62, 0.0],
+                [0.0, 0.0, 5.508],
+            ],
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author Painleve box changed")
+
+    if contract.get("adapter_boundaries") != {
+        "source_contact_gap_recorded_m": 0.005,
+        "source_contact_gap_semantics_implemented": False,
+        "source_shape_stiffness_semantics_implemented": False,
+        "source_shape_damping_semantics_implemented": False,
+        "source_collision_backend_implemented": False,
+        "source_solver_backend_semantics_implemented": False,
+        "source_float32_semantics_implemented": False,
+        "dart_native_four_point_planar_is_adapter_choice": True,
+    }:
+        raise ValueError(f"{sidecar_path}: author Painleve adapter boundaries changed")
+    if contract.get("claim_boundary") != {
+        "current_source_parameterized_configuration_port": True,
+        "historical_paper_invocation_known": False,
+        "trajectory_valid": False,
+        "physical_outcome_valid": False,
+        "trajectory_equivalence": False,
+        "solver_equivalence": False,
+        "physical_outcome_equivalence": False,
+        "fig05_parity": False,
+        "video05_parity": False,
+        "timing_comparability": False,
+        "paper_parity": False,
+    }:
+        raise ValueError(f"{sidecar_path}: author Painleve claim boundary changed")
+
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "solver_lane": expected_solver["lane"],
+        "friction": mu,
+        "mass_kg": adapter["box"]["mass_kg"],
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+
+
 def _validate_author_masonry_arch_adapter_contract(
     schedule: CaptureSchedule,
     data: dict[str, Any],
@@ -3324,6 +4205,11 @@ def _validate_schedule_physics_contract(
     sidecar_path: Path,
 ) -> dict[str, Any] | None:
     report = _validate_literal_masonry_arch_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    if report is not None:
+        return report
+    report = _validate_author_painleve_adapter_contract(
         schedule, data, sidecar_path=sidecar_path
     )
     if report is not None:
@@ -3731,6 +4617,13 @@ def _validate_failed_exact_fbf_sidecar(
         diagnostics_by_step[step] = diagnostics
         reason_by_step[step] = reason
 
+    scene_state_metrics = _validate_author_painleve_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=trigger_step,
+    )
+
     for collection_name in ("shots", "actions", "events"):
         collection = data.get(collection_name)
         if not isinstance(collection, list) or any(
@@ -3861,6 +4754,11 @@ def _validate_failed_exact_fbf_sidecar(
         "reason": state["reason"],
         "headless_exact_fbf_fail_fast": state,
         "physics_contract": physics_contract_report,
+        **(
+            {"scene_state_metrics": scene_state_metrics}
+            if scene_state_metrics is not None
+            else {}
+        ),
     }
 
 
@@ -4297,6 +5195,23 @@ def validate_sidecar(
                     prior_worst = float(current_worst)
         diagnostics_by_step[step] = diagnostics
 
+    scene_state_metrics = _validate_author_painleve_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=schedule.total_steps,
+    )
+    dart_adapter_outcome = (
+        _validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory_steps,
+            sidecar_path=sidecar_path,
+            expected_last_step=schedule.total_steps,
+        )
+        if schedule.total_steps == AUTHOR_PAINLEVE_TERMINAL_WINDOW[1]
+        else None
+    )
+
     shots = data.get("shots", [])
     expected_shots = list(schedule.capture_steps)
     if [shot.get("step") for shot in shots] != expected_shots:
@@ -4395,6 +5310,11 @@ def validate_sidecar(
             str(item["step"]): {
                 "sim_time": item["sim_time"],
                 "solver_diagnostics": item.get("solver_diagnostics", {}),
+                **(
+                    {"scene_state": item["scene_state"]}
+                    if "scene_state" in item
+                    else {}
+                ),
             }
             for item in trajectory_steps
         },
@@ -4422,6 +5342,16 @@ def validate_sidecar(
             else {}
         ),
         "physics_contract": physics_contract_report,
+        **(
+            {"scene_state_metrics": scene_state_metrics}
+            if scene_state_metrics is not None
+            else {}
+        ),
+        **(
+            {"dart_adapter_outcome": dart_adapter_outcome}
+            if dart_adapter_outcome is not None
+            else {}
+        ),
         "pass": True,
     }
 
@@ -4847,6 +5777,14 @@ def run_schedule(
         "actual_simulator": True,
         "generated_imagery": False,
         "paper_comparable": False,
+        **(
+            {
+                "automated_current_dart_adapter_outcome_validated": True,
+                "current_dart_adapter_outcome": timeline_report["dart_adapter_outcome"],
+            }
+            if _is_author_painleve_schedule(schedule)
+            else {}
+        ),
         "automated_semantic_outcome_validated": False,
         "semantic_outcome_gate": CAPTURE_SEMANTIC_OUTCOME_GATE,
         "known_mismatches": list(schedule.mismatches),
@@ -4905,6 +5843,13 @@ def _validate_group_claim_boundary(
         "automated_semantic_outcome_validated": False,
         "semantic_outcome_gate": _group_semantic_outcome_gate(group),
     }
+    if _is_author_painleve_solver_comparison_group(group):
+        comparison = metadata.get("current_dart_adapter_outcome_comparison")
+        if not isinstance(comparison, dict) or comparison.get("pass") is not True:
+            raise ValueError(
+                f"{metadata_path}: current DART adapter comparison is unavailable"
+            )
+        claims["automated_current_dart_adapter_outcome_validated"] = True
     for key, expected in claims.items():
         if not _claim_value_matches(metadata.get(key), expected):
             raise ValueError(f"{metadata_path}: group claim boundary {key} changed")
@@ -4957,6 +5902,7 @@ def _group_member_contract(
             raise ValueError(f"{group.id}: member viewport-size mismatch")
 
     members: list[dict[str, Any]] = []
+    outcome_reports: list[dict[str, Any]] = []
     durations: list[float] = []
     frame_counts: list[int | None] = []
     frame_rates: list[str | None] = []
@@ -4984,6 +5930,13 @@ def _group_member_contract(
             raise ValueError(
                 f"{metadata_path}: semantic outcome must remain a manual gate"
             )
+        if _is_author_painleve_solver_comparison_group(group):
+            outcome = metadata.get("current_dart_adapter_outcome")
+            if not isinstance(outcome, dict):
+                raise ValueError(
+                    f"{metadata_path}: current DART adapter outcome is unavailable"
+                )
+            outcome_reports.append(outcome)
 
         runtime = metadata.get("runtime", {})
         _validate_runtime_visual_resources(
@@ -5093,6 +6046,12 @@ def _group_member_contract(
     if any(rate is None for rate in frame_rates) or len(set(frame_rates)) != 1:
         raise ValueError(f"{group.id}: member frame-rate mismatch {frame_rates}")
 
+    outcome_comparison = _validate_author_painleve_solver_comparison(
+        group,
+        schedules,
+        outcome_reports,
+        label=group.id,
+    )
     return {
         "members": members,
         "total_steps": first.total_steps,
@@ -5104,6 +6063,11 @@ def _group_member_contract(
         "frame_rate": expected_member_stream["frame_rate_rational"],
         "tile_width": first.crop[0],
         "tile_height": first.crop[1],
+        **(
+            {"dart_adapter_outcome_comparison": outcome_comparison}
+            if outcome_comparison is not None
+            else {}
+        ),
     }
 
 
@@ -5443,6 +6407,16 @@ def run_group_output(
             )
         },
         "members": contract["members"],
+        **(
+            {
+                "automated_current_dart_adapter_outcome_validated": True,
+                "current_dart_adapter_outcome_comparison": contract[
+                    "dart_adapter_outcome_comparison"
+                ],
+            }
+            if _is_author_painleve_solver_comparison_group(group)
+            else {}
+        ),
         "panel_validation": panel_report,
         "media_validation": media_report,
         "actual_simulator": True,
@@ -5795,15 +6769,14 @@ def _verify_existing(
         raise ValueError(f"{metadata_path}: requested demo hash changed")
 
     stored_timeline = metadata.get("timeline_validation", {})
-    if stored_timeline.get("sidecar") != timeline["sidecar"]:
-        raise ValueError(f"{metadata_path}: timeline path is stale")
-    for step, frame in timeline["frames"].items():
-        stored_frame = stored_timeline.get("frames", {}).get(step, {})
-        if (
-            stored_frame.get("path") != frame["path"]
-            or stored_frame.get("sha256") != frame["sha256"]
-        ):
-            raise ValueError(f"{metadata_path}: frame {step} hash binding changed")
+    if stored_timeline != timeline:
+        raise ValueError(f"{metadata_path}: timeline validation binding changed")
+    if _is_author_painleve_schedule(schedule):
+        current_outcome = timeline.get("dart_adapter_outcome")
+        if metadata.get("current_dart_adapter_outcome") != current_outcome:
+            raise ValueError(
+                f"{metadata_path}: current DART adapter outcome binding changed"
+            )
 
     stored_panel = metadata.get("panel_validation", {})
     if stored_panel.get("path") != str(panel_path):
@@ -5874,6 +6847,12 @@ def _verify_existing_group(
     ):
         raise ValueError(f"{metadata_path}: group identity/order/labels changed")
     _validate_group_claim_boundary(metadata, group, metadata_path=metadata_path)
+    if _is_author_painleve_solver_comparison_group(group) and metadata.get(
+        "current_dart_adapter_outcome_comparison"
+    ) != contract.get("dart_adapter_outcome_comparison"):
+        raise ValueError(
+            f"{metadata_path}: current DART adapter comparison binding changed"
+        )
 
     stored_members = metadata.get("members", [])
     if [member.get("id") for member in stored_members] != list(group.members):

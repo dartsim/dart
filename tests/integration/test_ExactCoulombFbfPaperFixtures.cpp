@@ -31,6 +31,7 @@
  */
 
 #include "../../examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+#include "../../examples/demos/scenes/FbfAuthorPainleveSpec.hpp"
 #include "../../examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/native/NativeCollisionDetector.hpp"
@@ -236,6 +237,12 @@ struct PainleveRunResult
   double speed = std::numeric_limits<double>::quiet_NaN();
   double uprightness = std::numeric_limits<double>::quiet_NaN();
   double height = std::numeric_limits<double>::quiet_NaN();
+  double terminalMaxLinearSpeed = 0.0;
+  double terminalMaxAngularSpeed = 0.0;
+  double terminalMinUprightness = std::numeric_limits<double>::infinity();
+  double terminalMaxUprightness = -std::numeric_limits<double>::infinity();
+  double terminalMinHeight = std::numeric_limits<double>::infinity();
+  double terminalMaxHeight = -std::numeric_limits<double>::infinity();
   double residual = std::numeric_limits<double>::quiet_NaN();
   double primalResidual = std::numeric_limits<double>::quiet_NaN();
   double dualResidual = std::numeric_limits<double>::quiet_NaN();
@@ -252,6 +259,7 @@ struct PainleveRunResult
   std::size_t totalFbfIterations = 0u;
   bool projectedGradientRetryUsed = false;
   bool exactSuccess = false;
+  bool finiteState = true;
 };
 
 struct TurntableRunResult
@@ -455,6 +463,55 @@ dynamics::SkeletonPtr createPainleveBox(double frictionCoeff)
   transform.translation().z() = verticalHalfExtent - kInitialPenetration;
   joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
   joint->setLinearVelocity(Eigen::Vector3d(kPainleveInitialVelocity, 0.0, 0.0));
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createAuthorPainleveGround(double frictionCoeff)
+{
+  using namespace fbf_author_painleve;
+  auto skeleton = dynamics::Skeleton::create("painleve_author_ground");
+  auto pair
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(nullptr);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(groundSize()));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = -kGroundHalfExtentZ;
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  skeleton->setMobile(false);
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createAuthorPainleveBox(double frictionCoeff)
+{
+  using namespace fbf_author_painleve;
+  dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
+      std::string("painleve_author_box_joint"));
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("painleve_author_box_body"));
+  bodyProperties.mInertia.setMass(boxMass());
+  bodyProperties.mInertia.setMoment(boxMoment());
+
+  auto skeleton = dynamics::Skeleton::create("painleve_author_box");
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(boxSize()));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = 0.5 * kBoxHeight;
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  joint->setLinearVelocity(Eigen::Vector3d(kInitialVelocity, 0.0, 0.0));
   return skeleton;
 }
 
@@ -900,6 +957,47 @@ std::shared_ptr<simulation::World> createPainleveWorld(
 
   world->addSkeleton(createHorizontalPlane(frictionCoeff));
   world->addSkeleton(createPainleveBox(frictionCoeff));
+  return world;
+}
+
+std::shared_ptr<simulation::World> createAuthorPainleveWorld(
+    const fbf_author_painleve::ScenarioSpec& scenario, bool exactCoulomb)
+{
+  using namespace fbf_author_painleve;
+  auto world = simulation::World::create(scenario.demoScene);
+  world->setTimeStep(kTimeStep);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));
+  world->setNumSimulationThreads(1u);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  if (exactCoulomb) {
+    auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+        makeExactSolverOptions());
+    auto* exactSolver = solver.get();
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+    exactSolver->setExactCoulombCrossStepPolicyOptions(
+        makeExactCrossStepPolicyOptions());
+  } else {
+    auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+  }
+
+  auto& collisionOption = world->getConstraintSolver()->getCollisionOption();
+  collisionOption.maxNumContacts = kMaxContacts;
+  collisionOption.maxNumContactsPerPair = kMaxContactsPerPair;
+  world->addSkeleton(createAuthorPainleveGround(scenario.friction));
+  world->addSkeleton(createAuthorPainleveBox(scenario.friction));
   return world;
 }
 
@@ -1588,6 +1686,67 @@ PainleveRunResult runPainleveBox(double frictionCoeff, bool exactCoulomb)
   return result;
 }
 
+PainleveRunResult runAuthorPainleveBox(
+    const fbf_author_painleve::ScenarioSpec& scenario, bool exactCoulomb)
+{
+  constexpr std::size_t kTerminalWindowStartStep
+      = fbf_author_painleve::kTotalSteps - 15u;
+  auto world = createAuthorPainleveWorld(scenario, exactCoulomb);
+  const auto box = world->getSkeleton("painleve_author_box");
+  const auto* body = box->getBodyNode(0u);
+  const Eigen::Vector3d initialPosition
+      = body->getWorldTransform().translation();
+  const auto* exactSolver
+      = exactCoulomb ? getExactCoulombSolver(world) : nullptr;
+  ExactResidualTrace residualTrace;
+  std::size_t previousExactSolves = 0u;
+  PainleveRunResult result;
+
+  for (std::size_t step = 0u; step < fbf_author_painleve::kTotalSteps; ++step) {
+    world->step();
+    sampleExactResidualTrace(exactSolver, previousExactSolves, residualTrace);
+    const Eigen::Isometry3d transform = body->getWorldTransform();
+    const Eigen::Vector3d linearVelocity = body->getLinearVelocity();
+    const Eigen::Vector3d angularVelocity = body->getAngularVelocity();
+    const bool finiteState = transform.matrix().allFinite()
+                             && linearVelocity.allFinite()
+                             && angularVelocity.allFinite();
+    result.finiteState = result.finiteState && finiteState;
+    if (!finiteState)
+      continue;
+
+    const std::size_t completedStep = step + 1u;
+    if (completedStep >= kTerminalWindowStartStep) {
+      const double uprightness
+          = transform.linear().col(2).dot(Eigen::Vector3d::UnitZ());
+      result.terminalMaxLinearSpeed
+          = std::max(result.terminalMaxLinearSpeed, linearVelocity.norm());
+      result.terminalMaxAngularSpeed
+          = std::max(result.terminalMaxAngularSpeed, angularVelocity.norm());
+      result.terminalMinUprightness
+          = std::min(result.terminalMinUprightness, uprightness);
+      result.terminalMaxUprightness
+          = std::max(result.terminalMaxUprightness, uprightness);
+      result.terminalMinHeight
+          = std::min(result.terminalMinHeight, transform.translation().z());
+      result.terminalMaxHeight
+          = std::max(result.terminalMaxHeight, transform.translation().z());
+    }
+  }
+
+  const Eigen::Isometry3d finalTransform = body->getWorldTransform();
+  result.travel = finalTransform.translation().x() - initialPosition.x();
+  result.speed = body->getLinearVelocity().x();
+  result.uprightness = finalTransform.linear().col(2).normalized().dot(
+      Eigen::Vector3d::UnitZ());
+  result.height = finalTransform.translation().z();
+  result.lastContacts
+      = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
+  if (exactCoulomb)
+    copyExactCoulombDiagnostics(exactSolver, residualTrace, result);
+  return result;
+}
+
 TurntableRunResult runTurntable(
     double frictionCoeff, double angularVelocity, bool exactCoulomb)
 {
@@ -2192,6 +2351,10 @@ TEST(
         createInclineWorld(0.5, exactCoulomb), ManifoldMode::FourPointPlanar);
     expectNativeMode(
         createTurntableWorld(0.5, exactCoulomb), ManifoldMode::FourPointPlanar);
+    expectNativeMode(
+        createAuthorPainleveWorld(
+            fbf_author_painleve::kScenarios[0u], exactCoulomb),
+        ManifoldMode::FourPointPlanar);
   }
 
   expectDartFrontend(createPainleveWorld(0.5, true));
@@ -2387,6 +2550,197 @@ TEST(ExactCoulombFbfPaperFixtures, PainleveProxySlideTumbleThreshold)
   EXPECT_TRUE(std::isfinite(boxedTumble.travel));
   EXPECT_TRUE(std::isfinite(boxedSlide.uprightness));
   EXPECT_TRUE(std::isfinite(boxedTumble.uprightness));
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorPainleveSourceConfigurationIsPinned)
+{
+  using namespace fbf_author_painleve;
+  EXPECT_STREQ(kAuthorCommit, "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0");
+  EXPECT_STREQ(kAuthorRunBlob, "afaa03613b0ad0a30290168d2fd64221fc3523b7");
+  EXPECT_STREQ(
+      kAuthorRunSha256,
+      "818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3");
+  EXPECT_DOUBLE_EQ(boxMass(), 43.2);
+  EXPECT_TRUE(boxMoment().isApprox(
+      dynamics::BoxShape::computeInertia(boxSize(), boxMass()), 1e-12));
+
+  for (const auto& scenario : kScenarios) {
+    for (const bool exactCoulomb : {false, true}) {
+      const auto contract = inspectPhysicsContract(
+          createAuthorPainleveWorld(scenario, exactCoulomb),
+          scenario,
+          "fixture_implementation_sha256");
+      EXPECT_EQ(contract.solverLane, exactCoulomb ? "exact_fbf" : "boxed_lcp");
+      EXPECT_EQ(contract.exactOptionsAvailable, exactCoulomb);
+      EXPECT_TRUE(contract.groundSize.isApprox(groundSize(), 1e-12));
+      EXPECT_TRUE(contract.groundPose.linear().isApprox(
+          Eigen::Matrix3d::Identity(), 1e-12));
+      EXPECT_TRUE(contract.groundPose.translation().isApprox(
+          Eigen::Vector3d(0.0, 0.0, -kGroundHalfExtentZ), 1e-12));
+      EXPECT_TRUE(contract.observedBoxSize.isApprox(boxSize(), 1e-12));
+      EXPECT_DOUBLE_EQ(contract.observedBoxMass, boxMass());
+      EXPECT_TRUE(contract.observedBoxMoment.isApprox(boxMoment(), 1e-12));
+      EXPECT_DOUBLE_EQ(contract.boxFriction, scenario.friction);
+      EXPECT_DOUBLE_EQ(contract.groundFriction, scenario.friction);
+      const std::string json = physicsContractJson(contract);
+      EXPECT_NE(json.find(kAuthorRunSha256), std::string::npos);
+      EXPECT_NE(json.find(kSpecSourceSha256), std::string::npos);
+      EXPECT_NE(json.find(kExactSolverOptionsSha256), std::string::npos);
+      EXPECT_NE(json.find("fixture_implementation_sha256"), std::string::npos);
+      EXPECT_NE(
+          json.find("\"physical_outcome_valid\":false"), std::string::npos);
+      if (exactCoulomb) {
+        EXPECT_EQ(contract.maxOuterIterations, kDartMaxOuterIterations);
+        EXPECT_DOUBLE_EQ(contract.tolerance, kDartTolerance);
+        EXPECT_EQ(contract.innerMaxSweeps, kDartInnerMaxSweeps);
+        EXPECT_EQ(contract.innerLocalIterations, kDartInnerLocalIterations);
+        EXPECT_DOUBLE_EQ(contract.stepSizeScale, kDartStepSizeScale);
+        EXPECT_TRUE(contract.stepSizePersistenceEnabled);
+        EXPECT_DOUBLE_EQ(
+            contract.persistentStepSizeSafeBoundScale,
+            kDartPersistentStepSizeSafeBoundScale);
+        EXPECT_TRUE(contract.postCorrectionProjectionEnabled);
+        EXPECT_TRUE(contract.fallbackToBoxedLcpEnabled);
+        EXPECT_EQ(json.find("\"exact_options\":null"), std::string::npos);
+      } else {
+        EXPECT_NE(json.find("\"exact_options\":null"), std::string::npos);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorPainleveSourceSweepStrictlyConverges)
+{
+  constexpr double kNearRestLinearSpeed = 0.02;
+  constexpr double kNearRestAngularSpeed = 0.10;
+  constexpr double kUprightCosine = 0.90;
+  constexpr double kUprightMinHeight = 0.25;
+  constexpr double kUprightMaxHeight = 0.35;
+  constexpr double kTumbledAbsoluteCosine = 0.25;
+  constexpr double kTumbledMinHeight = 0.08;
+  constexpr double kTumbledMaxHeight = 0.22;
+
+  const auto expectNearRest = [&](const PainleveRunResult& result) {
+    EXPECT_LE(result.terminalMaxLinearSpeed, kNearRestLinearSpeed);
+    EXPECT_LE(result.terminalMaxAngularSpeed, kNearRestAngularSpeed);
+  };
+  const auto expectUpright = [&](const PainleveRunResult& result) {
+    expectNearRest(result);
+    EXPECT_GE(result.terminalMinUprightness, kUprightCosine);
+    EXPECT_GE(result.terminalMinHeight, kUprightMinHeight);
+    EXPECT_LE(result.terminalMaxHeight, kUprightMaxHeight);
+  };
+  const auto expectTumbled = [&](const PainleveRunResult& result) {
+    expectNearRest(result);
+    EXPECT_LE(
+        std::max(
+            std::abs(result.terminalMinUprightness),
+            std::abs(result.terminalMaxUprightness)),
+        kTumbledAbsoluteCosine);
+    EXPECT_GE(result.terminalMinHeight, kTumbledMinHeight);
+    EXPECT_LE(result.terminalMaxHeight, kTumbledMaxHeight);
+  };
+
+  for (const auto& scenario : fbf_author_painleve::kScenarios) {
+    SCOPED_TRACE(scenario.traceScenario);
+    const auto exact = runAuthorPainleveBox(scenario, true);
+    const auto boxed = runAuthorPainleveBox(scenario, false);
+    for (const auto* result : {&exact, &boxed}) {
+      EXPECT_TRUE(result->finiteState);
+      EXPECT_TRUE(std::isfinite(result->travel));
+      EXPECT_TRUE(std::isfinite(result->speed));
+      EXPECT_TRUE(std::isfinite(result->uprightness));
+      EXPECT_TRUE(std::isfinite(result->height));
+      EXPECT_GE(result->travel, 1.0);
+    }
+    EXPECT_GT(exact.exactSolves, 0u);
+    EXPECT_TRUE(std::isfinite(exact.residual));
+    expectConvergedResidualTrace(
+        exact.residualTrace, fbf_author_painleve::kDartTolerance);
+    EXPECT_EQ(exact.exactFailures, 0u);
+    EXPECT_EQ(exact.boxedFallbacks, 0u);
+    EXPECT_TRUE(exact.exactSuccess);
+    EXPECT_LE(exact.residual, fbf_author_painleve::kDartTolerance);
+    if (scenario.friction == fbf_author_painleve::kCriticalFriction) {
+      expectUpright(exact);
+      expectUpright(boxed);
+    } else {
+      expectTumbled(exact);
+      expectUpright(boxed);
+    }
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_successes",
+        exact.exactSolves);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_failures",
+        exact.exactFailures);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_fallbacks",
+        exact.boxedFallbacks);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_final_residual",
+        exact.residual);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_travel", exact.travel);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_speed", exact.speed);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_uprightness",
+        exact.uprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_height", exact.height);
+    RecordProperty(
+        std::string(scenario.traceScenario)
+            + "_exact_terminal_max_linear_speed",
+        exact.terminalMaxLinearSpeed);
+    RecordProperty(
+        std::string(scenario.traceScenario)
+            + "_exact_terminal_max_angular_speed",
+        exact.terminalMaxAngularSpeed);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_terminal_min_uprightness",
+        exact.terminalMinUprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_terminal_max_uprightness",
+        exact.terminalMaxUprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_terminal_min_height",
+        exact.terminalMinHeight);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_exact_terminal_max_height",
+        exact.terminalMaxHeight);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_travel", boxed.travel);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_speed", boxed.speed);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_uprightness",
+        boxed.uprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_height", boxed.height);
+    RecordProperty(
+        std::string(scenario.traceScenario)
+            + "_boxed_terminal_max_linear_speed",
+        boxed.terminalMaxLinearSpeed);
+    RecordProperty(
+        std::string(scenario.traceScenario)
+            + "_boxed_terminal_max_angular_speed",
+        boxed.terminalMaxAngularSpeed);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_terminal_min_uprightness",
+        boxed.terminalMinUprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_terminal_max_uprightness",
+        boxed.terminalMaxUprightness);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_terminal_min_height",
+        boxed.terminalMinHeight);
+    RecordProperty(
+        std::string(scenario.traceScenario) + "_boxed_terminal_max_height",
+        boxed.terminalMaxHeight);
+  }
 }
 
 //==============================================================================

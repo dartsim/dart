@@ -133,11 +133,11 @@ if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)
 endif()
 
-# Bind the queryable author-turntable, author-card-house, author-masonry-arch,
-# and literal-masonry-arch contracts in dart-demos to their exact shared specs
-# and production scene source. CMAKE_CONFIGURE_DEPENDS refreshes the embedded
-# hashes before any bound source is rebuilt, so a stale binary cannot satisfy
-# an evidence finalizer.
+# Bind the queryable author-turntable, author-Painleve, author-card-house,
+# author-masonry-arch, and literal-masonry-arch contracts in dart-demos to
+# their exact shared specs and production scene source. CMAKE_CONFIGURE_DEPENDS
+# refreshes the embedded hashes before any bound source is rebuilt, so a stale
+# binary cannot satisfy an evidence finalizer.
 set(
   fbf_author_turntable_spec_source
   "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorTurntableSpec.hpp"
@@ -145,6 +145,10 @@ set(
 set(
   fbf_paper_friction_demo_source
   "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfPaperFrictionScene.cpp"
+)
+set(
+  fbf_author_painleve_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorPainleveSpec.hpp"
 )
 set(
   fbf_author_card_house_spec_source
@@ -166,9 +170,10 @@ set(
   fbf_literal_masonry_arch_geometry_source
   "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/math/detail/MasonryArchGeometry.hpp"
 )
-set(
+get_filename_component(
   fbf_exact_solver_options_source
   "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+  ABSOLUTE
 )
 set_property(
   DIRECTORY
@@ -176,6 +181,7 @@ set_property(
   PROPERTY
     CMAKE_CONFIGURE_DEPENDS
       "${fbf_author_turntable_spec_source}"
+      "${fbf_author_painleve_spec_source}"
       "${fbf_author_card_house_spec_source}"
       "${fbf_author_masonry_arch_spec_source}"
       "${fbf_author_masonry_arch_adapter_source}"
@@ -187,6 +193,10 @@ set_property(
 file(
   SHA256 "${fbf_author_turntable_spec_source}"
   fbf_author_turntable_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_painleve_spec_source}"
+  fbf_author_painleve_spec_sha256
 )
 file(SHA256 "${fbf_paper_friction_demo_source}" fbf_paper_friction_demo_sha256)
 file(
@@ -220,6 +230,8 @@ set_property(
     COMPILE_DEFINITIONS
       DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
       DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_PAINLEVE_SPEC_SHA256="${fbf_author_painleve_spec_sha256}"
+      DART_FBF_AUTHOR_PAINLEVE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
       DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256="${fbf_author_masonry_arch_spec_sha256}"

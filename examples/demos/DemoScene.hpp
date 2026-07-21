@@ -40,6 +40,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dart_demos {
@@ -72,6 +73,11 @@ struct CameraHome
   ::osg::Vec3d center;
   ::osg::Vec3d up;
 };
+
+//==============================================================================
+/// Flat numeric state fields captured by a deterministic headless timeline.
+/// The host validates the keys and values, then owns JSON serialization.
+using SceneStateFields = std::vector<std::pair<std::string, double>>;
 
 //==============================================================================
 /// Context handed to DemoSceneSetup::onActivate so a scene can register extra
@@ -151,6 +157,15 @@ struct DemoSceneSetup
   /// Renderer-only meshes, materials, and textures belong to separate visual
   /// provenance and must not be represented here.
   std::function<std::string()> physicsContractProvider;
+
+  /// Optional numeric snapshot of scene-specific dynamic state. The
+  /// deterministic headless timeline evaluates this provider at every
+  /// completed step, including step zero and the final (or fail-fast) step,
+  /// and embeds a structured JSON object in that step's sidecar record. Empty
+  /// snapshots, empty or duplicate keys, non-finite values, and provider
+  /// exceptions fail the headless run closed. Interactive and other scenes
+  /// are unaffected when this provider is empty.
+  std::function<SceneStateFields()> sceneStateProvider;
 
   /// Whether the host should attach its default shadow technique.
   bool enableShadows = true;

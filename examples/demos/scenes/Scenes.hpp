@@ -145,6 +145,12 @@ makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();
 /// Research > FBF Painleve proxy: fixed mu=.55 outcome cell.
 [[nodiscard]] DemoScene makeFbfPaperPainleveMu055Scene();
 
+/// Research > FBF author Painleve: source-pinned mu=.5 adapter cell.
+[[nodiscard]] DemoScene makeFbfAuthorPainleveMu05Scene();
+
+/// Research > FBF author Painleve: source-pinned mu=.55 adapter cell.
+[[nodiscard]] DemoScene makeFbfAuthorPainleveMu055Scene();
+
 /// Research > FBF card A-frame: two-card Fig. 6 precursor.
 [[nodiscard]] DemoScene makeFbfPaperCardAFrameScene();
 
