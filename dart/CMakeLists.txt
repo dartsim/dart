@@ -223,7 +223,9 @@ if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 
-if(MSVC)
+if(MSVC AND NOT DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION)
+  # /LTCG pairs with the /GL whole-program objects; skip it when whole-program
+  # optimization is disabled so no uncached link-time codegen remains.
   set_target_properties(dart PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
