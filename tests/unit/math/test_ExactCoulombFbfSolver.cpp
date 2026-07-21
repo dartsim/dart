@@ -718,6 +718,168 @@ TEST(
   }
 }
 
+TEST(
+    ExactCoulombLocalConeQuadratic,
+    CertifiesCapturedLargeReactionBoundarySystems)
+{
+  struct RegressionCase
+  {
+    Eigen::Matrix3d hessian;
+    Eigen::Vector3d linearTerm;
+    Eigen::Vector3d rejectedReaction;
+  };
+
+  const std::vector<RegressionCase> cases{
+      {(Eigen::Matrix3d() << 7.1907589132276225e-6,
+        1.2169993349876767e-6,
+        1.2282536613576839e-6,
+        1.2169993349876767e-6,
+        5.0677346390504761e-6,
+        -1.4164574374109603e-6,
+        1.2282536613576839e-6,
+        -1.4164574374109603e-6,
+        5.073802380017959e-6)
+           .finished(),
+       Eigen::Vector3d(
+           -1.3271099209248689, -0.85711660281582613, -0.015438848287437671),
+       Eigen::Vector3d(
+           162567.92604690389, 130054.34078155806, -3.8153627644154415)},
+      {(Eigen::Matrix3d() << 7.1952997739510286e-6,
+        -1.216999334996704e-6,
+        -1.2282536613511058e-6,
+        -1.216999334996704e-6,
+        5.0722754997582079e-6,
+        -1.4164574374124178e-6,
+        -1.2282536613511058e-6,
+        -1.4164574374124178e-6,
+        5.0783432407557604e-6)
+           .finished(),
+       Eigen::Vector3d(
+           -1.3268461317823594, 0.85699742654855504, 0.015452913817274896),
+       Eigen::Vector3d(
+           162441.17684002011, -129952.94146521356, -1.3296683748809879)},
+      {(Eigen::Matrix3d() << 7.1907589132283509e-6,
+        1.2169993349899628e-6,
+        -1.2282536613556267e-6,
+        1.2169993349899628e-6,
+        5.0677346390464019e-6,
+        1.4164574374113103e-6,
+        -1.2282536613556267e-6,
+        1.4164574374113103e-6,
+        5.073802380022754e-6)
+           .finished(),
+       Eigen::Vector3d(
+           -1.3245892794059606, -0.85536439019449562, 0.01540428071767159),
+       Eigen::Vector3d(
+           162251.13171999122, 129800.9052912031, 4.6916527293924446)},
+      {(Eigen::Matrix3d() << 7.1952997739450671e-6,
+        -1.2169993349824522e-6,
+        1.2282536613635233e-6,
+        -1.2169993349824522e-6,
+        5.0722754997812116e-6,
+        1.4164574374095139e-6,
+        1.2282536613635233e-6,
+        1.4164574374095139e-6,
+        5.078343240726824e-6)
+           .finished(),
+       Eigen::Vector3d(
+           -1.3249758616679168, 0.85570616727935145, -0.015415797451800538),
+       Eigen::Vector3d(
+           162206.85145511033, -129765.48115433479, -1.5910145466114045)},
+  };
+
+  constexpr double kCoefficient = 0.8;
+  for (std::size_t index = 0; index < cases.size(); ++index) {
+    dart::math::detail::ExactCoulombLocalConeQuadraticFactorization
+        factorization;
+    ASSERT_TRUE(
+        dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+            cases[index].hessian, kCoefficient, factorization))
+        << "case " << index;
+    EXPECT_TRUE(dart::math::detail::
+                    isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                        factorization,
+                        cases[index].linearTerm,
+                        cases[index].rejectedReaction))
+        << "case " << index;
+
+    Eigen::Vector3d analyticReaction;
+    ASSERT_TRUE(
+        dart::math::detail::trySolveExactCoulombLocalConeQuadraticAnalytically(
+            factorization, cases[index].linearTerm, analyticReaction))
+        << "case " << index;
+    EXPECT_TRUE(
+        dart::math::detail::
+            isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                factorization, cases[index].linearTerm, analyticReaction))
+        << "case " << index;
+
+    Eigen::Vector3d fallbackReaction;
+    ASSERT_TRUE(
+        dart::math::detail::
+            solveExactCoulombLocalConeQuadraticProjectedGradientFallback(
+                factorization, cases[index].linearTerm, fallbackReaction))
+        << "case " << index;
+    EXPECT_TRUE(
+        dart::math::detail::
+            isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                factorization, cases[index].linearTerm, fallbackReaction))
+        << "case " << index;
+
+    Eigen::Vector3d dispatchedReaction;
+    ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+        factorization, cases[index].linearTerm, dispatchedReaction))
+        << "case " << index;
+    EXPECT_TRUE(
+        dart::math::detail::
+            isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                factorization, cases[index].linearTerm, dispatchedReaction))
+        << "case " << index;
+  }
+}
+
+TEST(ExactCoulombLocalConeQuadratic, ChecksBoundaryNormalConeStationarity)
+{
+  constexpr double kCoefficient = 0.8;
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+
+  const Eigen::Matrix3d smallHessian = 1e-6 * Eigen::Matrix3d::Identity();
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          smallHessian, kCoefficient, factorization));
+  const Eigen::Vector3d largeBoundaryReaction(1e6, 8e5, 0.0);
+  const Eigen::Vector3d signature(-0.64, 1.0, 1.0);
+  const Eigen::Vector3d nearlyNormalGradient
+      = -1e-7 * signature.cwiseProduct(largeBoundaryReaction)
+        + Eigen::Vector3d(8e-13, 0.0, 0.0);
+  const Eigen::Vector3d nearlyNormalLinearTerm
+      = nearlyNormalGradient - smallHessian * largeBoundaryReaction;
+  EXPECT_FALSE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, nearlyNormalLinearTerm, largeBoundaryReaction));
+  EXPECT_TRUE(
+      dart::math::detail::
+          isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+              factorization, nearlyNormalLinearTerm, largeBoundaryReaction));
+
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          Eigen::Matrix3d::Identity(), kCoefficient, factorization));
+  const Eigen::Vector3d boundaryReaction(1.0, 0.8, 0.0);
+  const Eigen::Vector3d nonNormalLinearTerm(-0.1, -1.8, 0.1);
+  EXPECT_FALSE(dart::math::detail::
+                   isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                       factorization, nonNormalLinearTerm, boundaryReaction));
+
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          Eigen::Matrix3d::Identity(), 0.0, factorization));
+  EXPECT_FALSE(dart::math::detail::
+                   isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+                       factorization,
+                       Eigen::Vector3d(-1.0, 0.0, 0.0),
+                       Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
 TEST(ExactCoulombLocalConeQuadratic, ExactlyMinimizesOverAFeasibleCoordinate)
 {
   const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
