@@ -98,8 +98,41 @@ automatically.
 
 ## Frozen v2 result
 
-Not executed yet. Fill this section only after the committed v2 protocol and
-wrapper produce a provenance-complete bundle.
+Executed once on 2026-07-21 UTC from committed, merged head `56480bf0343`
+into the fresh ignored local directory
+`assets/card_house_cross_step_policy_ab_v2_20260720/`. The packet is
+structurally valid. Both post-child identity rechecks match the initial
+identity, and every artifact-index digest rehashes successfully.
+
+Both arms are valid 90-step scientific negatives with
+`complete_terminal_convergence_gate_failure`. Neither arm had an exact
+failure or boxed fallback, but both accepted the 200-iteration cap on all 90
+steps and therefore fail the frozen strict gate:
+
+- `dart_current` made 90 attempts and solves. Its whole-run worst scaled
+  residual is `30.0279709536632`, and its terminal scaled residual is
+  `0.002833607911319349`.
+- `author_policy_inspired_b3f3c5c` made 91 attempts and solves. Its whole-run
+  worst scaled residual is `9.49797396077711`, and its terminal scaled
+  residual is `0.0014057555830970278`. Step 81 contains the sole two-group
+  solve; both diagnostics fields correctly carry the frozen multi-group
+  noncomparable label.
+
+The author-inspired compound policy improves the observed worst and terminal
+scaled residuals relative to `dart_current`, but neither value is within the
+strict contract and no component-level causality is claimed. Promotion to a
+separately preregistered 600-step run is false, and no 600-step child was
+launched. This result is not paper parity or source equivalence.
+
+The raw CSV SHA-256 values are
+`e93111c80c27368c7767254ed74b0bef505584899d0e90b3714031d73791d1c8`
+for `dart_current` and
+`bad152afb059cdb1e2d7137fac1f859fdda9cd2053c12bbe5ec1c5d624f34cad`
+for the author-inspired arm. The summary and comparison SHA-256 values are
+`13939f9c2bf8b8b606625818d3bba1a7ce11fdd03f252f42a4a1d6e15fb45bca`
+and `184a0847cc4475ce29725b990e349f2155b6ade70b57e599c12b4ce5e826e435`,
+respectively. These hashes identify local evidence only; the generated packet
+remains ignored and is not repository source.
 
 The frozen v2 protocol-contract SHA-256 is
 `084731bea140d8911570155ec41f15d11eb47047ed8e4c03d5dc04df729fdd21`.
