@@ -41,6 +41,11 @@ SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
 SOURCE_AUDIT_SCHEMA_VERSION = "dart.fbf_visual_source_audit/v1"
 SIDECAR_SCHEMA_VERSION = "dart.demos_headless_timeline/v1"
 SOLVER_LANES = ("exact", "boxed")
+SOLVER_COMPARISON_SUFFIX = "__exact_vs_boxed"
+SOLVER_COMPARISON_LABELS = (
+    "EXACT COULOMB FBF",
+    "EXISTING BOXED LCP",
+)
 EXACT_SOLVER_NAME = "ExactCoulombFbfConstraintSolver"
 BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
 BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
@@ -308,8 +313,10 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         configuration=(("mu_cells", "0.4,0.5"), ("tan_theta", "0.5")),
         mismatches=COMMON_DART_MISMATCH
         + (
-            "Both DART cells share one view, but the current collision frontend "
-            "reports three contacts per cell versus four in the paper timing row.",
+            "The combined DART render reports eight contacts per post-initial "
+            "step in aggregate and does not expose a per-cell split; independent "
+            "single-cell traces report three contacts per post-initial step, "
+            "versus four per cell in the paper timing row.",
             "The paper comparison edit and external panels last 11 seconds; this "
             "artifact is the underlying two-second DART trajectory.",
         ),
@@ -857,8 +864,31 @@ class GroupOutputSpec:
             self.members
         ):
             raise ValueError(f"{self.id}: panel labels and members differ")
-        if self.solver_lane not in SOLVER_LANES:
+        if self.solver_lane not in (*SOLVER_LANES, "both"):
             raise ValueError(f"{self.id}: unsupported solver lane {self.solver_lane!r}")
+        if self.solver_lane == "both":
+            if self.layout != "side-by-side" or len(self.members) != 2:
+                raise ValueError(
+                    f"{self.id}: solver comparison must be a two-member "
+                    "side-by-side group"
+                )
+            if self.members[1] != f"{self.members[0]}__boxed":
+                raise ValueError(
+                    f"{self.id}: solver comparison members must be exact then boxed"
+                )
+            if self.labels != SOLVER_COMPARISON_LABELS:
+                raise ValueError(
+                    f"{self.id}: solver comparison labels must identify only "
+                    "the solver lanes"
+                )
+            if (
+                self.panel_labels is not None
+                and self.panel_labels != SOLVER_COMPARISON_LABELS
+            ):
+                raise ValueError(
+                    f"{self.id}: solver comparison panel labels must identify "
+                    "only the solver lanes"
+                )
         if self.source_group_id == self.id:
             raise ValueError(f"{self.id}: derived source group cannot equal its id")
 
@@ -995,9 +1025,52 @@ def _derive_boxed_group(group: GroupOutputSpec) -> GroupOutputSpec:
         group,
         id=f"{group.id}__boxed",
         members=tuple(_boxed_schedule_id(member) for member in group.members),
+        labels=tuple(
+            f"EXISTING BOXED LCP | {SCHEDULES[member].title.upper()}"
+            for member in group.members
+        ),
+        panel_labels=tuple(
+            f"EXISTING BOXED LCP | {SCHEDULES[member].title.upper()}"
+            for member in group.members
+        ),
         solver_lane="boxed",
         source_group_id=group.id,
     )
+
+
+def _derive_solver_comparison_group(schedule: CaptureSchedule) -> GroupOutputSpec:
+    if (
+        schedule.solver_lane != "exact"
+        or set(schedule.supported_solver_lanes) != set(SOLVER_LANES)
+        or not schedule.encode_mp4
+        or not schedule.panel_steps
+    ):
+        raise ValueError(
+            f"{schedule.id}: an exact-versus-boxed video comparison cannot be derived"
+        )
+    return GroupOutputSpec(
+        id=f"{schedule.id}{SOLVER_COMPARISON_SUFFIX}",
+        source_segment=schedule.source_segment,
+        members=(schedule.id, _boxed_schedule_id(schedule.id)),
+        labels=SOLVER_COMPARISON_LABELS,
+        layout="side-by-side",
+        panel_step=schedule.panel_steps[-1],
+        solver_lane="both",
+    )
+
+
+def _solver_comparison_groups(
+    schedules: Sequence[CaptureSchedule], requested: str
+) -> list[GroupOutputSpec]:
+    if requested != "both":
+        return []
+    return [
+        _derive_solver_comparison_group(schedule)
+        for schedule in schedules
+        if schedule.solver_lane == "exact"
+        and set(schedule.supported_solver_lanes) == set(SOLVER_LANES)
+        and schedule.encode_mp4
+    ]
 
 
 def _group_outputs_for_solver_lane(
@@ -1334,7 +1407,11 @@ def build_plan(
                 "layout": (
                     "2x2 in source order"
                     if group.layout == "2x2"
-                    else "two synchronized parameter cells"
+                    else (
+                        "two synchronized solver lanes"
+                        if group.solver_lane == "both"
+                        else "two synchronized parameter cells"
+                    )
                 ),
                 **(
                     {"panel_step": group.panel_step}
@@ -2138,6 +2215,12 @@ def _media_stream(probe: dict[str, Any], *, label: str) -> dict[str, Any]:
 
 
 def _group_semantic_outcome_gate(group: GroupOutputSpec) -> str:
+    if group.solver_lane == "both":
+        return (
+            "the synchronized exact-versus-boxed composite is a presentation "
+            "artifact; it does not establish solver superiority; manual inspection "
+            "plus per-member physical trace/test contracts remain required"
+        )
     prefix = (
         "the composite video remains synchronized while the outcome-aware "
         "still uses explicitly recorded per-member source times; "
@@ -2183,6 +2266,18 @@ def _group_member_contract(
         raise ValueError(
             f"{group.id}: members are missing or out of source order; "
             f"expected {group.members}, got {member_order}"
+        )
+
+    member_lanes = tuple(schedule.solver_lane for schedule in schedules)
+    expected_lanes = (
+        SOLVER_LANES
+        if group.solver_lane == "both"
+        else (group.solver_lane,) * len(schedules)
+    )
+    if member_lanes != expected_lanes:
+        raise ValueError(
+            f"{group.id}: solver lanes are missing or out of order; "
+            f"expected {expected_lanes}, got {member_lanes}"
         )
 
     first = schedules[0]
@@ -3321,6 +3416,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             candidate_groups, group_lane_skips = _group_outputs_for_solver_lane(
                 args.solver_lane
+            )
+            candidate_groups.extend(
+                _solver_comparison_groups(source_schedules, args.solver_lane)
             )
             selected_ids = {schedule.id for schedule in schedules}
             selected_source_ids = {schedule.id for schedule in source_schedules}
