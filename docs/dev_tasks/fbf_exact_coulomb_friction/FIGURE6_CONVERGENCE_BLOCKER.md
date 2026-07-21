@@ -3,11 +3,12 @@
 ## Status And Claim Boundary
 
 This record covers the source-selected four-level/26-card adapter at commit
-`a099ca0b29d38f2df13438da13b4d22599bdedb2` plus the additive diagnostics and
-source-style correction policy in the current local checkpoint. The scene and
-capture contract are implemented, but the strict exact lane does not yet reach
-the projectile release. This is a solver blocker, not Figure 6 outcome, media,
-paper-parity, or superiority evidence.
+`a099ca0b29d38f2df13438da13b4d22599bdedb2` plus the additive diagnostics,
+source-style correction policy, and source-style inner-initialization policy
+in the current local checkpoint. The scene and capture contract are
+implemented, but the strict exact lane does not yet reach the projectile
+release. This is a solver blocker, not Figure 6 outcome, media, paper-parity,
+or superiority evidence.
 
 The adapter pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and the source-supported
@@ -21,6 +22,10 @@ matrices. The DART schedule contains 2,400 substeps at `dt=1/240 s` and invokes
 - exact-metric local cone projection and warm start/gamma persistence;
 - source `project_after_correction=false`, opt-in only for this adapter while
   the existing DART post-correction projection remains enabled by default;
+- source-style inner initialization, which copies the current outer reaction
+  without cone projection for every inner solve and rejected step-size trial,
+  opt-in only for this adapter while DART's carried, projected inner seed
+  remains the default;
 - no DART constraint regularization, boxed fallback, dense polish, or
   projected-gradient retry; and
 - `accept_outer_max_iterations=false` under the strict fail-fast gate.
@@ -108,6 +113,49 @@ SHA-256 1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77
 The two replays have byte-identical `solver_diagnostics`; only the requested
 horizon and output path differ. This closes a real pinned-source semantic
 mismatch but does not clear or move the strict blocker.
+
+## Source Inner Initialization A/B
+
+The pinned author's `BlockGSSolver.solve` starts each inner solve by copying
+the current outer reaction into the inner iterate. That raw seed is not
+projected before the first sweep, and the same current outer reaction is
+supplied again for every rejected step-size trial. The established DART path
+instead carries the previous accepted cone-QP iterate and projects the seed.
+
+The current checkpoint adds an ABI-neutral, default-off source-inner option.
+Only the exact lane of the source-selected four-level/26-card adapter enables
+it; all other exact-FBF callers retain DART's carried, projected default. The
+adapter sidecar records the requested, active, restart, and initial-projection
+fields. Strict replays isolate this policy on top of the already selected
+no-post-correction-projection behavior:
+
+| Policy | Requested steps | First failure | Residual / primal / dual / complementarity |
+| --- | ---: | ---: | --- |
+| Source no-post-correction projection only | 36 and 100 | 35 | `4.0845653576327421e-4` / `3.9380158679450451e-6` / `4.0845653576327421e-4` / `2.3818176330330057e-4` |
+| Source inner initialization also enabled | 36 and 100 | 35 | `4.0844850280896461e-4` / `3.9375947649884479e-6` / `4.0844850280896461e-4` / `2.3815426453852184e-4` |
+
+Both final replays stop on the same 56-contact group after 200 outer
+iterations. They record 103 attempts, 102 solves, one exact failure, zero
+accepted caps, zero boxed fallbacks, and zero line-search shrinks. Final and
+best residual are byte-identical across the two requested horizons. Final
+gamma is `2.7728679157546576`, safe gamma is `0.27728679157546576`, and the
+coupling-variation ratio is `0.015034989503967002`.
+
+```text
+/tmp/fbf_author_card_house_4_source_inner_exact36_v3_20260721/timeline.json
+SHA-256 8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e
+
+/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json
+SHA-256 3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73
+```
+
+The strict replay is serial because the Figure 6 adapter explicitly disables
+colored block Gauss-Seidel. The colored implementation accepts the same raw
+source-style seed for internal consistency, but colored source parity has not
+been demonstrated and remains a separate lane. Source shrink, cap, plateau,
+and continuation semantics also remain separate; none changed in this A/B.
+The source-inner option therefore closes another pinned-source semantic
+mismatch without clearing or moving the strict blocker.
 
 ## Pinned Author Continuation Control
 
@@ -205,17 +253,16 @@ SHA-256 0ade57d83cff8ed96ac19a253de79d51bbec84eaae60f55ae0237190e90e52ce
 ## Decision And Next Work
 
 Keep the checked-in lane strict and keep PR #3377 in draft. Retain the
-source-style no-projection option because it closes the pinned-source mismatch,
-not because it establishes convergence. Do not change the default to accept
-capped iterates, relabel the preview as a solver success, or publish Figure 6
-media from it.
+source-style no-projection and inner-initialization options because they close
+pinned-source mismatches, not because they establish convergence. Do not
+change the default to accept capped iterates, relabel the preview as a solver
+success, or publish Figure 6 media from it.
 
-The next isolated source mismatch is frozen-cone inner initialization: the
-author block-GS solve starts each outer iteration from the current outer
-reaction, while DART currently carries the previous outer iteration's inner
-trial. Test that as a separate A/B; do not combine it with tolerance, budget,
-fallback, fail-fast, or accepted-cap changes. The row remains blocked until the
-strict scientific lane completes all 2,400 steps with zero accepted caps,
-failures, and fallbacks. In parallel, design the separately labeled,
-telemetry-rich source-continuation lane before producing physical-outcome or
-video evidence. Neither lane currently has promotable full-resolution media.
+The row remains blocked until the strict scientific lane completes all 2,400
+steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
+must isolate one remaining source mismatch without combining tolerance,
+budget, fallback, fail-fast, or accepted-cap changes. Colored source parity is
+a separate unproven lane. Source shrink-cap, plateau, and continuation
+semantics likewise require a separately labeled, telemetry-rich physical/video
+lane before producing outcome or media evidence. Neither lane currently has
+promotable full-resolution media.

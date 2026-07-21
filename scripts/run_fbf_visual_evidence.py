@@ -2421,6 +2421,8 @@ def _expected_author_card_house_solver_contract(solver_lane: str) -> dict[str, A
     return {
         "lane": "exact_fbf" if exact else "boxed_lcp",
         "split_impulse_enabled": False,
+        "source_inner_initialization_requested": exact,
+        "source_inner_initialization_active": exact,
         "colored_block_gauss_seidel_enabled": False,
         "participant_affinity_enabled": False,
         "exact_options": (
@@ -2446,6 +2448,8 @@ def _expected_author_card_house_solver_contract(solver_lane: str) -> dict[str, A
                 "step_size_scale": 10.0,
                 "outer_relaxation": 1.0,
                 "project_after_correction": False,
+                "restart_inner_from_current_outer_reaction": True,
+                "project_inner_initial_reaction": False,
                 "coupling_variation_tolerance": 0.9,
                 "shrink_factor": 0.7,
                 "max_step_shrink_iterations": 8,
@@ -2644,6 +2648,8 @@ def _validate_author_card_house_adapter_contract(
             "armijo_max_backtracks": 8,
             "warm_start": True,
             "project_after_correction": False,
+            "restart_inner_from_current_outer_reaction": True,
+            "project_inner_initial_reaction": False,
             "baumgarte_erp": 0.0,
             "termination_residual": "coulomb_rel",
             "termination_tol": 1e-6,

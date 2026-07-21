@@ -774,7 +774,8 @@ SkeletonPtr createAuthorCardHouseBox(
 void installAuthorCardHouseSolver(
     const WorldPtr& world,
     SolverMode mode,
-    bool postCorrectionProjectionEnabled = true)
+    bool postCorrectionProjectionEnabled = true,
+    bool sourceInnerInitializationEnabled = false)
 {
   configureSolver(
       world,
@@ -799,6 +800,8 @@ void installAuthorCardHouseSolver(
         fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
     exactSolver->setExactCoulombPostCorrectionProjectionEnabled(
         postCorrectionProjectionEnabled);
+    exactSolver->setExactCoulombSourceInnerInitializationEnabled(
+        sourceInnerInitializationEnabled);
     exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     exactSolver
         ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
@@ -814,12 +817,17 @@ WorldPtr createAuthorCardHouseWorld(
     const std::string& name,
     std::size_t levelCount,
     SolverMode mode,
-    bool postCorrectionProjectionEnabled = true)
+    bool postCorrectionProjectionEnabled = true,
+    bool sourceInnerInitializationEnabled = false)
 {
   auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
   world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
-  installAuthorCardHouseSolver(world, mode, postCorrectionProjectionEnabled);
+  installAuthorCardHouseSolver(
+      world,
+      mode,
+      postCorrectionProjectionEnabled,
+      sourceInnerInitializationEnabled);
 
   world->addSkeleton(createAuthorCardHouseGround());
   for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
@@ -1766,7 +1774,11 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
           ::osg::Vec3d(0.0, 0.0, 1.0)},
       [](const auto& state) {
         return createAuthorCardHouseWorld(
-            kDynamicsDemoSceneId, kFigureLevelCount, state->solverMode, false);
+            kDynamicsDemoSceneId,
+            kFigureLevelCount,
+            state->solverMode,
+            false,
+            true);
       },
       kSourceMaxContacts,
       kDartMaxContactsPerPair,
@@ -1797,12 +1809,13 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
       },
       [](DemoSceneSetup& setup,
          const WorldPtr& world,
-         const std::shared_ptr<FbfPaperState>&) {
-        setup.physicsContractProvider = [world] {
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
           return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
               world,
               kFigureLevelCount,
-              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256));
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf));
         };
         setup.keyActions.push_back(KeyAction{
             kReleaseActionKey, "Release 4 source-configured cubes", [world] {
@@ -1815,7 +1828,7 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
         };
       },
       [](const WorldPtr& world, SolverMode mode) {
-        installAuthorCardHouseSolver(world, mode, false);
+        installAuthorCardHouseSolver(world, mode, false, true);
       });
 }
 

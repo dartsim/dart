@@ -1593,6 +1593,52 @@ TEST(
 
 TEST(
     ExactCoulombFbfConstraintSolver,
+    SourceInnerInitializationDefaultsOffCopiesAndResets)
+{
+  ExposedExactCoulombFbfConstraintSolver source;
+  EXPECT_FALSE(source.getExactCoulombSourceInnerInitializationEnabled());
+
+  source.setExactCoulombSourceInnerInitializationEnabled(true);
+  EXPECT_TRUE(source.getExactCoulombSourceInnerInitializationEnabled());
+
+  ExposedExactCoulombFbfConstraintSolver copy;
+  copy.setFromOtherConstraintSolver(source);
+  EXPECT_TRUE(copy.getExactCoulombSourceInnerInitializationEnabled());
+
+  dart::constraint::BoxedLcpConstraintSolver boxed;
+  copy.setFromOtherConstraintSolver(boxed);
+  EXPECT_FALSE(copy.getExactCoulombSourceInnerInitializationEnabled());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    ChangingSourceInnerInitializationInvalidatesCrossStepState)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  ExposedExactCoulombFbfConstraintSolver solver;
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+  solver.solveConstrainedGroup(group);
+  ASSERT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  ASSERT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  solver.setExactCoulombSourceInnerInitializationEnabled(true);
+  solver.solveConstrainedGroup(group);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
     PersistentStepSizeHoldsAfterAnyRejectedTrial)
 {
   const auto activeRow = std::make_shared<Eigen::Index>(-1);
