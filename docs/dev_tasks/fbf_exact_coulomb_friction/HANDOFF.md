@@ -496,6 +496,18 @@ Pinned-author masonry-arch truth:
   the source collision/contact-gap/backend/float32 semantics. Claim no DART or
   cross-solver dynamics/trajectory/outcome equivalence, Fig. 7/video.07
   parity, timing, repeatability, pair-contact, or visual/golden evidence.
+- A separate current-source DART adapter now exposes exact/boxed lanes and the
+  runner's 2,000-step release schedule. Strict exact fails closed at completed
+  step 68 (`inner_solver_failed`, 24 contacts, residual
+  `2.5749187816086726e-4`, 58/60 solves, zero caps/fallbacks); boxed reaches
+  step 100. These are local bounded diagnostics, not release/impact/media
+  evidence. GDB isolates two finite exact-metric local solves that exhaust the
+  4,096-step polish and miss only the unchanged boundary-complementarity
+  certificate by 1.1757x and 1.4630x; their 3x3 Hessians are SPD with condition
+  number about 2.67. The existing projected-gradient retry clears step 68 but
+  fails at step 69, so preserve the failure and pursue a bounded
+  high-precision/ULP candidate polish that must still pass the existing KKT
+  predicate. Do not loosen tolerances, rescale the scene, or enable fallback.
 
 Current reconstructed crown-impact truth:
 
@@ -640,7 +652,7 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six finalized bundles, and the visual workflow
-  declares 19 schedules; validator passes and fail-closed hashes repository artifacts, materializes
+  declares 20 schedules; validator passes and fail-closed hashes repository artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   enforces current-truth promotion boundaries.

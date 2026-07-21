@@ -107,7 +107,7 @@ void printUsage(const char* prog)
       << "  --list-scenes   Print the demo catalog grouped by category and "
          "exit.\n"
       << "  --verify-fbf-scene-docs\n"
-         "                  Verify FBF paper scenes have self-contained "
+         "                  Verify FBF research scenes have self-contained "
          "Scene-tab text and exit.\n"
       << "  --fbf-author-turntable-contract <scene-id>\n"
          "                  Print the runtime-inspected author-turntable "

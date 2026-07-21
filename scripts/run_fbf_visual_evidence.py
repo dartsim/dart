@@ -165,6 +165,7 @@ REQUIRED_VIDEO_SCHEDULES = {
     "card_house_26": ("card_house_26",),
     "masonry_arch_25": (
         "masonry_arch_25_literal_standing",
+        "masonry_arch_25_author_crown_impact_current_source",
         "masonry_arch_25",
     ),
     "masonry_arch_101": ("masonry_arch_101",),
@@ -664,6 +665,61 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "Passing this standing run cannot close the separate Fig. 7 impact "
             "parity gate.",
         ),
+        collision_detector="native",
+        collision_detector_override=False,
+        long_run=True,
+    ),
+    "masonry_arch_25_author_crown_impact_current_source": CaptureSchedule(
+        id="masonry_arch_25_author_crown_impact_current_source",
+        scene="fbf_author_masonry_arch_25_crown_impact_current_source",
+        title="Author-pinned 25-stone arch crown-impact candidate",
+        source_segment="masonry_arch_25",
+        total_steps=2000,
+        # One 30 fps evidence frame per eight 240 Hz substeps preserves the
+        # source diagnostic's 8.33 s presentation without making a 2x-slow clip.
+        frame_stride=8,
+        panel_steps=(0, 1200, 1600, 1945, 2000),
+        panel_labels=(
+            "initial source configuration",
+            "pre-release source frame 300 (t=5s)",
+            "pre-release source frame 400 (t=6.67s)",
+            "post-release probe (t=8.10s)",
+            "declared frame-500 endpoint (t=8.33s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("stones", "25 author-pinned tapered meshes"),
+            ("mobile_stones", "23; both springers fixed"),
+            ("cubes", "3; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("release_substep", "1600"),
+            ("total_substeps", "2000"),
+            ("capture_invocation", "declared 500-frame current-source diagnostic"),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This DART scene ports the public author geometry, initial state, and "
+            "500-frame release schedule; DART Native collision and float64 "
+            "dynamics are not the authors' Warp/Newton float32 backend.",
+            "The checked-in source default is 400 frames with drop_frame=400, so "
+            "it ends without releasing the cubes. This 500-frame invocation is a "
+            "declared current-source diagnostic, not a historical paper run.",
+            "The author repository supplies no historical paper camera, materials, "
+            "lighting, approved frame golden, or DART trajectory oracle.",
+        ),
+        known_gate_blockers=(
+            "No current DART exact-FBF run of this 2,000-substep release schedule "
+            "has yet passed the fail-fast solver and physical-outcome gates.",
+            "No paired exact/boxed media has yet been captured and independently "
+            "validated for this source-configuration port.",
+        ),
+        actions=(
+            ScheduledAction(1600, "p", "release the three existing source cubes"),
+        ),
+        time_step_seconds=1.0 / 240.0,
         collision_detector="native",
         collision_detector_override=False,
         long_run=True,
@@ -1638,6 +1694,12 @@ def _is_literal_masonry_arch_schedule(schedule: CaptureSchedule) -> bool:
     ) == "masonry_arch_25_literal_standing"
 
 
+def _is_author_masonry_arch_impact_schedule(schedule: CaptureSchedule) -> bool:
+    return (
+        schedule.source_schedule_id or schedule.id
+    ) == "masonry_arch_25_author_crown_impact_current_source"
+
+
 def _is_finite_number(value: Any) -> bool:
     return (
         not isinstance(value, bool)
@@ -2069,6 +2131,242 @@ def _validate_literal_masonry_arch_contract(
     }
 
 
+def _expected_author_masonry_arch_solver_contract(solver_lane: str) -> dict[str, Any]:
+    if solver_lane not in SOLVER_LANES:
+        raise ValueError(f"unsupported author arch solver lane {solver_lane!r}")
+    exact = solver_lane == "exact"
+    return {
+        "lane": "exact_fbf" if exact else "boxed_lcp",
+        "split_impulse_enabled": True,
+        "colored_block_gauss_seidel_enabled": exact,
+        "participant_affinity_enabled": exact,
+        "exact_options": (
+            {
+                "fallback_to_boxed_lcp_enabled": False,
+                "constraint_regularization_enabled": False,
+                "matrix_free_operator_enabled": False,
+                "contact_row_operator_enabled": True,
+                "dense_contact_row_snapshot_enabled": False,
+                "warm_start_enabled": True,
+                "step_size_persistence_enabled": False,
+                "step_size_recovery_growth_factor": 1.05,
+                "warm_start_match_distance": 0.025,
+                "diagonal_seed_enabled": False,
+                "matrix_free_seed_enabled": False,
+                "projected_gradient_retry_enabled": False,
+                "dense_residual_polish_enabled": False,
+                "max_outer_iterations": 5000,
+                "accept_outer_max_iterations": True,
+                "tolerance": 1e-6,
+                "initial_step_size": None,
+                "cap_initial_step_size_at_safe_bound": True,
+                "step_size_scale": 35.0,
+                "outer_relaxation": 1.1,
+                "coupling_variation_tolerance": 0.9,
+                "shrink_factor": 0.7,
+                "max_step_shrink_iterations": 20,
+                "adaptive_step_size_enabled": True,
+                "spectral_iterations": 10,
+                "inner_max_sweeps": 30,
+                "inner_local_solver": "exact_metric_projection",
+                "run_fixed_inner_sweeps": True,
+                "accept_inner_max_iterations": True,
+                "inner_local_iterations": 1,
+                "inner_tolerance": 1e-10,
+                "inner_local_tolerance": 1e-12,
+                "inner_diagonal_regularization": 0.0,
+                "projected_gradient_max_iterations": 400,
+                "projected_gradient_tolerance": 1e-12,
+                "dense_residual_polish_iterations": 8,
+                "dense_residual_polish_line_search_iterations": 8,
+                "dense_residual_polish_regularization": 1e-9,
+                "max_residual_history_samples": 0,
+                "max_residual_history_records": 0,
+            }
+            if exact
+            else None
+        ),
+        "cross_step_options": (
+            {
+                "warm_start_match_mode": "either_body_local_feature",
+                "warm_start_normal_cosine": 0.9,
+                "strict_warm_start_match_distance": False,
+                "warm_start_max_age": -1,
+                "persistent_step_size_safe_bound_scale": 1.0,
+                "minimum_step_size": None,
+                "maximum_step_size": None,
+                "warm_start_residual_threshold": None,
+                "warm_start_step_size_cap": None,
+                "persist_uncapped_step_size_on_warm_start_cap": False,
+                "require_residual_improvement_for_unconverged_cache_save": False,
+            }
+            if exact
+            else None
+        ),
+    }
+
+
+def _validate_author_masonry_arch_adapter_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_author_masonry_arch_impact_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(f"{sidecar_path}: author arch adapter contract is missing")
+    if (
+        contract.get("schema_version")
+        != ("dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1")
+        or contract.get("kind") != "source_configuration_dynamics_adapter"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected author arch adapter schema")
+
+    source_binding = contract.get("source_binding")
+    expected_binding = {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "run_py_sha256": (
+            "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73"
+        ),
+        "mesh_tree_sha256": (
+            "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
+        ),
+        "configuration_spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+        ),
+        "dart_adapter_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp"
+        ),
+        "demo_implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+    }
+    if source_binding != expected_binding:
+        raise ValueError(f"{sidecar_path}: author arch adapter source hashes changed")
+
+    expected_source_configuration = {
+        "coordinate_scale": 1.0,
+        "coordinate_units": "author_raw_numeric_values",
+        "stones": 25,
+        "fixed_springers": 2,
+        "cubes": 3,
+        "cube_edge": 3.0,
+        "cube_mass": 54000.0,
+        "friction": 0.8,
+        "contact_gap": 0.005,
+        "shape_stiffness": 10000.0,
+        "shape_damping": 1000.0,
+        "display_time_step_seconds": 1.0 / 60.0,
+        "substeps_per_frame": 4,
+        "runtime_time_step_seconds": 1.0 / 240.0,
+        "release_frame": 400,
+        "release_substep": 1600,
+        "evidence_frames": 500,
+        "evidence_substeps": 2000,
+    }
+    if contract.get("source_configuration") != expected_source_configuration:
+        raise ValueError(f"{sidecar_path}: author arch source configuration changed")
+
+    adapter = contract.get("dart_adapter")
+    if not isinstance(adapter, dict) or adapter.get("scene_id") != schedule.scene:
+        raise ValueError(f"{sidecar_path}: author arch adapter identity changed")
+    world = adapter.get("world")
+    if not isinstance(world, dict):
+        raise ValueError(f"{sidecar_path}: author arch adapter world is missing")
+    time_step = world.get("time_step_seconds")
+    if not _is_finite_number(time_step) or not math.isclose(
+        time_step, 1.0 / 240.0, rel_tol=0.0, abs_tol=1e-15
+    ):
+        raise ValueError(f"{sidecar_path}: author arch adapter time step changed")
+    if (
+        world.get("gravity_coordinate_units_per_s2") != [0.0, 0.0, -9.81]
+        or world.get("simulation_threads") != schedule.threads
+        or world.get("deactivation_enabled") is not False
+    ):
+        raise ValueError(f"{sidecar_path}: author arch adapter world policy changed")
+
+    if adapter.get("collision") != {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "observed_four_point_planar": True,
+        "max_contacts": 4096,
+        "max_contacts_per_pair": 8,
+    }:
+        raise ValueError(f"{sidecar_path}: author arch collision contract changed")
+
+    solver = adapter.get("solver")
+    expected_lane = "exact_fbf" if schedule.solver_lane == "exact" else "boxed_lcp"
+    if solver != _expected_author_masonry_arch_solver_contract(schedule.solver_lane):
+        raise ValueError(f"{sidecar_path}: author arch solver contract changed")
+    if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
+        raise ValueError(f"{sidecar_path}: author arch scoped ERP is not zero")
+    if adapter.get("inventory") != {
+        "stones": 25,
+        "mobile_stones": 23,
+        "cubes": 3,
+        "cubes_released": False,
+    }:
+        raise ValueError(f"{sidecar_path}: author arch initial inventory changed")
+    if adapter.get("schedule") != {
+        "evidence_runner_action_completed_step": 1600,
+        "release_action_key": "p",
+        "interactive_action_semantics": "immediate_on_invocation",
+    }:
+        raise ValueError(f"{sidecar_path}: author arch release schedule changed")
+
+    expected_claim_boundary = {
+        "source_numeric_geometry_mass_friction_and_initial_state_ported_to_dart": True,
+        "source_release_action_ported_to_dart": True,
+        "source_release_schedule_declared_for_evidence_runner": True,
+        "interactive_demo_auto_releases_at_source_step": False,
+        "source_collision_semantics_equivalent": False,
+        "source_contact_gap_semantics_equivalent": False,
+        "source_solver_backend_equivalent": False,
+        "source_float32_semantics_equivalent": False,
+        "trajectory_equivalent": False,
+        "physical_outcome_equivalent": False,
+        "fig07_parity": False,
+        "video07_parity": False,
+        "timing_comparable": False,
+        "paper_parity": False,
+    }
+    if contract.get("claim_boundary") != expected_claim_boundary:
+        raise ValueError(f"{sidecar_path}: author arch claim boundary changed")
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "solver_lane": expected_lane,
+        "stone_count": adapter["inventory"]["stones"],
+        "cube_count": adapter["inventory"]["cubes"],
+        "release_action_completed_step": adapter["schedule"][
+            "evidence_runner_action_completed_step"
+        ],
+        "scoped_erp": adapter["process_state"]["observed_contact_erp"],
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+
+
+def _validate_schedule_physics_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    report = _validate_literal_masonry_arch_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    if report is not None:
+        return report
+    return _validate_author_masonry_arch_adapter_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+
+
 def _validate_fail_fast_state(
     data: dict[str, Any],
     *,
@@ -2177,7 +2475,7 @@ def _validate_failed_exact_fbf_sidecar(
     expected_runtime_argv = build_demo_command(schedule, expected_demo, output_dir)
     if runtime_argv != expected_runtime_argv:
         raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
-    physics_contract_report = _validate_literal_masonry_arch_contract(
+    physics_contract_report = _validate_schedule_physics_contract(
         schedule, data, sidecar_path=sidecar_path
     )
 
@@ -2445,7 +2743,7 @@ def validate_sidecar(
     )
     if runtime_argv != command_contract:
         raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
-    physics_contract_report = _validate_literal_masonry_arch_contract(
+    physics_contract_report = _validate_schedule_physics_contract(
         schedule, data, sidecar_path=sidecar_path
     )
     if schedule.exact_fbf_required:

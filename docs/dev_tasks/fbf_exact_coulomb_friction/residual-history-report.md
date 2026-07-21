@@ -15,7 +15,7 @@ seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
-and the visual workflow declares 19 schedules.
+and the visual workflow declares 20 schedules.
 
 ## Prior-Source Strict Full-Card Evidence
 
@@ -320,6 +320,20 @@ but is explicitly configuration-only. It implements no source
 collision/contact-gap/backend/float32 dynamics semantics and executes no DART
 dynamics. The bundle establishes no DART or cross-solver dynamics, trajectory,
 physical-outcome, Fig. 7/video.07, timing, repeatability, or media parity.
+
+A separately named DART dynamics adapter now binds the raw-scale initial state
+and exact/boxed solver contracts. Its current strict exact smoke fails at
+completed step 68, where contacts rise from 16 to 24: 58/60 exact attempts
+solve, two return `inner_solver_failed`, terminal residual is
+`2.5749187816086726e-4`, worst residual is `3.1701669939914346e-4`, and caps
+and fallbacks remain zero. A boxed smoke reaches step 100. This is a local
+fail-closed diagnostic, not a 2,000-step residual history or impact result.
+Read-only GDB probes attribute the two failures to finite exact-metric local
+solves that exhaust the 4,096-step polish and narrowly miss only the existing
+boundary-complementarity certificate (1.1757x and 1.4630x its tolerance). The
+3x3 Hessians are SPD with condition number about 2.67. Enabling the existing
+projected-gradient retry only advances the strict run to a new failure at step
+69, so it is not promotable evidence or a robust fix.
 
 ## Pinned-Author Incline Sweep Scientific Negative
 

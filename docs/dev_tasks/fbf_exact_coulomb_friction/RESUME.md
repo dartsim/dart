@@ -488,6 +488,13 @@ dynamics; source collision/contact-gap/backend/float32 semantics are not
 implemented. Do not infer DART or cross-solver dynamics, trajectory, outcome,
 Fig. 7/video.07, timing, repeatability, contact-pair, or media parity.
 
+The separately named current-source DART adapter has an automated 2,000-step
+exact/boxed capture schedule, but current exact evidence fails closed before
+release: completed step 68 reports `inner_solver_failed` at 24 contacts with
+terminal residual `2.5749187816086726e-4`, 58/60 solves, and zero
+caps/fallbacks. A boxed smoke reaches step 100. Treat both as local bounded
+diagnostics; no full run, impact oracle, or media is promotable.
+
 The separate frozen crown-impact v1 contract and result are in
 [LITERAL_CROWN_IMPACT_V1.md](LITERAL_CROWN_IMPACT_V1.md) and
 [`assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/`](assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/).
@@ -633,7 +640,7 @@ fail-closed negative, repository-archived at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six finalized bundles, and the
-  visual workflow declares 19 schedules. Its validator fail-closed hashes
+  visual workflow declares 20 schedules. Its validator fail-closed hashes
   repository artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and

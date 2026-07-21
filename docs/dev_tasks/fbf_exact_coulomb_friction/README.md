@@ -42,7 +42,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
 | Paper-media parity | The passing literal video has no projectile; paper impact media and 101-stone coverage remain incomplete, while the public author repository contains no renderer camera/material bundle or approved frame goldens | No paper impact, GUI, or golden-frame parity claim |
-| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 19 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
+| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 20 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
 ## Current Small CPU Matrix
 
@@ -516,6 +516,16 @@ only: it records the author geometry and solver constants but explicitly does
 not implement the source collision/contact-gap/backend/float32 semantics or
 execute DART dynamics. No DART or cross-solver dynamics, trajectory, physical
 outcome, Fig. 7/video.07, timing, repeatability, or media parity is established.
+
+The separately named current-source DART adapter now executes that raw-scale
+configuration through exact-FBF or boxed LCP and declares the runner's
+2,000-step schedule without changing the frozen source or reconstructed-impact
+contracts. A fresh strict exact smoke fails at completed step 68 when contacts
+rise from 16 to 24: 58/60 exact attempts solve, two fail with
+`inner_solver_failed`, the terminal residual is `2.5749187816086726e-4`, and
+there are zero accepted caps or boxed fallbacks. The boxed lane reaches step
+100 in a bounded smoke. These local runs are diagnostic only: no full schedule,
+cube release, impact oracle, promotable media, or Fig. 7 parity follows.
 
 ## Preregistered Crown-Impact v1 Negative
 

@@ -483,6 +483,97 @@ def _literal_arch_physics_contract(module, *, solver_lane="exact"):
     return contract
 
 
+def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
+    return {
+        "schema_version": ("dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1"),
+        "kind": "source_configuration_dynamics_adapter",
+        "source_binding": {
+            "repository": "https://github.com/matthcsong/fbf-sca-2026",
+            "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "run_py_sha256": (
+                "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73"
+            ),
+            "mesh_tree_sha256": (
+                "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
+            ),
+            "configuration_spec_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+            ),
+            "dart_adapter_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp"
+            ),
+            "demo_implementation_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+            ),
+        },
+        "source_configuration": {
+            "coordinate_scale": 1.0,
+            "coordinate_units": "author_raw_numeric_values",
+            "stones": 25,
+            "fixed_springers": 2,
+            "cubes": 3,
+            "cube_edge": 3.0,
+            "cube_mass": 54000.0,
+            "friction": 0.8,
+            "contact_gap": 0.005,
+            "shape_stiffness": 10000.0,
+            "shape_damping": 1000.0,
+            "display_time_step_seconds": 1.0 / 60.0,
+            "substeps_per_frame": 4,
+            "runtime_time_step_seconds": 1.0 / 240.0,
+            "release_frame": 400,
+            "release_substep": 1600,
+            "evidence_frames": 500,
+            "evidence_substeps": 2000,
+        },
+        "dart_adapter": {
+            "scene_id": "fbf_author_masonry_arch_25_crown_impact_current_source",
+            "world": {
+                "time_step_seconds": 1.0 / 240.0,
+                "gravity_coordinate_units_per_s2": [0.0, 0.0, -9.81],
+                "simulation_threads": 1,
+                "deactivation_enabled": False,
+            },
+            "collision": {
+                "detector": "native",
+                "contact_manifold": "four_point_planar",
+                "observed_four_point_planar": True,
+                "max_contacts": 4096,
+                "max_contacts_per_pair": 8,
+            },
+            "solver": module._expected_author_masonry_arch_solver_contract(solver_lane),
+            "process_state": {"observed_contact_erp": 0.0},
+            "inventory": {
+                "stones": 25,
+                "mobile_stones": 23,
+                "cubes": 3,
+                "cubes_released": False,
+            },
+            "schedule": {
+                "evidence_runner_action_completed_step": 1600,
+                "release_action_key": "p",
+                "interactive_action_semantics": "immediate_on_invocation",
+            },
+        },
+        "claim_boundary": {
+            "source_numeric_geometry_mass_friction_and_initial_state_ported_to_dart": True,
+            "source_release_action_ported_to_dart": True,
+            "source_release_schedule_declared_for_evidence_runner": True,
+            "interactive_demo_auto_releases_at_source_step": False,
+            "source_collision_semantics_equivalent": False,
+            "source_contact_gap_semantics_equivalent": False,
+            "source_solver_backend_equivalent": False,
+            "source_float32_semantics_equivalent": False,
+            "trajectory_equivalent": False,
+            "physical_outcome_equivalent": False,
+            "fig07_parity": False,
+            "video07_parity": False,
+            "timing_comparable": False,
+            "paper_parity": False,
+        },
+    }
+
+
 def test_schedule_matrix_covers_every_requested_visual_case():
     module = _load_module()
 
@@ -501,6 +592,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "painleve_mu055",
         "card_house_26",
         "masonry_arch_25_literal_standing",
+        "masonry_arch_25_author_crown_impact_current_source",
         "masonry_arch_25",
         "masonry_arch_101",
         "card_house_10_construction",
@@ -936,13 +1028,20 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
     source = (ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp").read_text(
         encoding="utf-8"
     )
-    shared_spec = (ROOT / "examples/demos/scenes/FbfAuthorTurntableSpec.hpp").read_text(
-        encoding="utf-8"
+    shared_specs = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (
+            ROOT / "examples/demos/scenes/FbfAuthorTurntableSpec.hpp",
+            ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
+            ROOT / "examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp",
+        )
     )
     declarations = (ROOT / "examples/demos/scenes/Scenes.hpp").read_text(
         encoding="utf-8"
     )
     registry = (ROOT / "examples/demos/Registry.cpp").read_text(encoding="utf-8")
+    normalized_source = " ".join(source.split())
+    normalized_declarations = " ".join(declarations.split())
     factories = {
         "makeFbfPaperTurntableMu02Omega2Scene": ("fbf_paper_turntable_mu_0_2_omega_2"),
         "makeFbfPaperTurntableMu02Omega5Scene": ("fbf_paper_turntable_mu_0_2_omega_5"),
@@ -964,17 +1063,34 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         "makeFbfPaperMasonryArch25LiteralStandingScene": (
             "fbf_paper_masonry_arch_25_literal_standing"
         ),
+        "makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene": (
+            "fbf_author_masonry_arch_25_crown_impact_current_source"
+        ),
     }
 
     for factory, scene_id in factories.items():
-        assert f"DemoScene {factory}()" in source
-        assert scene_id in source or scene_id in shared_spec
-        assert f"DemoScene {factory}();" in declarations
+        assert f"DemoScene {factory}()" in normalized_source
+        assert scene_id in source or scene_id in shared_specs
+        assert f"DemoScene {factory}();" in normalized_declarations
         assert registry.count(f"scenes.push_back({factory}());") == 1
 
     assert "makeFbfPaperCardHouse10Scene" in registry
     assert "makeFbfPaperCardHouse10DynamicScene" in registry
     assert "known to saturate and is not the natural manifold" in source
+
+
+def test_fbf_scene_docs_verifier_includes_author_and_paper_scenes():
+    source = (ROOT / "examples/demos/DemoHost.cpp").read_text(encoding="utf-8")
+    start = source.index("int DemoHost::verifyFbfSceneDocs() const")
+    end = source.index(
+        "//==============================================================================",
+        start,
+    )
+    verifier = source[start:end]
+
+    assert 'startsWith(scene.id, "fbf_")' in verifier
+    assert 'startsWith(scene.id, "fbf_paper_")' not in verifier
+    assert "FBF research scene(s)" in verifier
 
 
 def test_backspin_checker_texture_is_visual_only_and_renderer_bound():
@@ -1109,6 +1225,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "card_house_author_5_construction",
             "card_house_10_dynamics",
             "masonry_arch_25_literal_standing",
+            "masonry_arch_25_author_crown_impact_current_source",
         )
     } == {
         "turntable_mu02_omega2": "fbf_paper_turntable_mu_0_2_omega_2",
@@ -1126,6 +1243,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "card_house_10_dynamics": "fbf_paper_card_house_10_dynamic",
         "masonry_arch_25_literal_standing": (
             "fbf_paper_masonry_arch_25_literal_standing"
+        ),
+        "masonry_arch_25_author_crown_impact_current_source": (
+            "fbf_author_masonry_arch_25_crown_impact_current_source"
         ),
     }
     command = module.build_demo_command(
@@ -1145,6 +1265,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
     native_members = set(module.AUTHOR_TURN_TABLE_MEMBERS) | {
         "card_house_author_5_construction",
         "masonry_arch_25_literal_standing",
+        "masonry_arch_25_author_crown_impact_current_source",
     }
     legacy_members = set(module.SCHEDULES) - native_members
     assert {
@@ -1203,6 +1324,93 @@ def test_literal_arch_contract_binds_exact_and_boxed_physics(tmp_path, monkeypat
     assert boxed_report["solver_lane"] == "boxed_lcp"
     assert exact_report["stone_count"] == boxed_report["stone_count"] == 25
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
+
+
+def test_author_arch_adapter_contract_binds_exact_and_boxed_initial_state(tmp_path):
+    module = _load_module()
+    exact = module.SCHEDULES["masonry_arch_25_author_crown_impact_current_source"]
+    boxed = module._derive_boxed_schedule(exact)
+    exact_report = module._validate_author_masonry_arch_adapter_contract(
+        exact,
+        {"physics_contract": _author_masonry_arch_adapter_contract(module)},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_masonry_arch_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_masonry_arch_adapter_contract(
+                module, solver_lane="boxed"
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["stone_count"] == boxed_report["stone_count"] == 25
+    assert exact_report["cube_count"] == boxed_report["cube_count"] == 3
+    assert exact_report["release_action_completed_step"] == 1600
+    assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
+    assert exact_report["physical_outcome_validated"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (("source_binding", "configuration_spec_sha256"), "0" * 64, "hashes"),
+        (("source_configuration", "coordinate_scale"), 0.01, "configuration"),
+        (("source_configuration", "cube_edge"), 0.03, "configuration"),
+        (("dart_adapter", "collision", "contact_manifold"), "compact", "collision"),
+        (("dart_adapter", "solver", "lane"), "boxed_lcp", "solver"),
+        (
+            ("dart_adapter", "solver", "exact_options", "step_size_scale"),
+            10.0,
+            "solver",
+        ),
+        (
+            ("dart_adapter", "solver", "exact_options", "inner_max_sweeps"),
+            120,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "cross_step_options",
+                "warm_start_match_mode",
+            ),
+            "ordered_body_b_local_feature",
+            "solver",
+        ),
+        (("dart_adapter", "process_state", "observed_contact_erp"), 0.01, "ERP"),
+        (("dart_adapter", "inventory", "cubes"), 4, "inventory"),
+        (
+            (
+                "dart_adapter",
+                "schedule",
+                "evidence_runner_action_completed_step",
+            ),
+            1601,
+            "release schedule",
+        ),
+        (("claim_boundary", "fig07_parity"), True, "claim boundary"),
+    ],
+)
+def test_author_arch_adapter_contract_rejects_mutation(tmp_path, field, value, message):
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_25_author_crown_impact_current_source"]
+    contract = _author_masonry_arch_adapter_contract(module)
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_masonry_arch_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
 
 
 @pytest.mark.parametrize(
@@ -1265,6 +1473,51 @@ def test_published_panel_instants_and_completed_step_actions_are_fixed():
     assert literal_arch.frame_stride == 10
     assert literal_arch.panel_steps == (0, 120, 300, 600)
     assert literal_arch.actions == ()
+
+    author_impact = module.SCHEDULES[
+        "masonry_arch_25_author_crown_impact_current_source"
+    ]
+    assert author_impact.total_steps == 2000
+    assert author_impact.time_step_seconds == pytest.approx(1.0 / 240.0)
+    assert author_impact.frame_stride == 8
+    assert len(author_impact.video_steps) == 251
+    assert author_impact.panel_steps == (0, 1200, 1600, 1945, 2000)
+    assert author_impact.actions == (
+        module.ScheduledAction(1600, "p", "release the three existing source cubes"),
+    )
+    assert "pre-release" in author_impact.panel_labels[2]
+
+
+def test_author_masonry_impact_schedule_is_fail_closed_and_source_pinned():
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_25_author_crown_impact_current_source"]
+    plan = module.schedule_plan(schedule, Path("dart-demos"), Path("/tmp/out"))
+    command = module.build_demo_command(schedule, Path("dart-demos"), Path("/tmp/out"))
+    configuration = schedule.configuration_dict()
+
+    assert schedule.scene == "fbf_author_masonry_arch_25_crown_impact_current_source"
+    assert schedule.source_segment == "masonry_arch_25"
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert configuration["author_commit"] == (
+        "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
+    )
+    assert configuration["release_substep"] == "1600"
+    assert configuration["total_substeps"] == "2000"
+    assert schedule.known_gate_blockers
+    assert plan["evidence_ready"] is False
+    assert "--collision-detector" not in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert command[command.index("--steps") + 1] == "2000"
+    shot_value = f"1600:{module._frame_path(Path('/tmp/out'), 1600)}"
+    assert command.index(shot_value) < command.index("1600:p")
+
+    boxed = module._derive_boxed_schedule(schedule)
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.exact_fbf_required is False
 
 
 def test_demo_command_requests_shots_before_same_step_actions():
@@ -3091,7 +3344,12 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
     assert report["video_segments"]["video.04_turntable"] == (35, 50)
     assert "card_house_26" in report["known_gate_blocked_schedules"]
     assert "masonry_arch_25" in report["known_gate_blocked_schedules"]
+    assert (
+        "masonry_arch_25_author_crown_impact_current_source"
+        in report["known_gate_blocked_schedules"]
+    )
     assert "masonry_arch_101" in report["known_gate_blocked_schedules"]
+    assert report["required_schedule_count"] == 13
 
 
 def test_audited_local_source_hashes_are_pinned():

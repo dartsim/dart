@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+#include "../../examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp"
 
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
@@ -269,6 +269,148 @@ TEST(FbfAuthorMasonryArchSpec, ContractIsConstructionOnly)
   EXPECT_FALSE(kVideo07Arch25Parity);
   EXPECT_FALSE(kTimingComparability);
   EXPECT_FALSE(kPaperParity);
+}
+
+TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsInitialWorldAndReleaseAction)
+{
+  namespace adapter = fbf_author_masonry_arch_adapter;
+  using namespace fbf_author_masonry_arch;
+
+  EXPECT_STREQ(
+      adapter::kDemoSceneId,
+      "fbf_author_masonry_arch_25_crown_impact_current_source");
+  EXPECT_STREQ(
+      adapter::kContractSchema,
+      "dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1");
+  EXPECT_EQ(adapter::kEvidenceFrameCount, 500u);
+  EXPECT_EQ(adapter::kEvidenceTotalSubsteps, 2000u);
+  EXPECT_EQ(adapter::kReleaseActionCompletedStep, kReleaseSubstep);
+  EXPECT_EQ(adapter::kReleaseActionKey, 'p');
+
+  const auto exactWorld = adapter::createWorld(adapter::SolverLane::ExactFbf);
+  const auto boxedWorld = adapter::createWorld(adapter::SolverLane::BoxedLcp);
+  const auto exact = adapter::inspectAdapterContract(exactWorld);
+  const auto boxed = adapter::inspectAdapterContract(boxedWorld);
+
+  EXPECT_EQ(exact.solverLane, adapter::SolverLane::ExactFbf);
+  EXPECT_EQ(boxed.solverLane, adapter::SolverLane::BoxedLcp);
+  ASSERT_TRUE(exact.exactOptions.has_value());
+  ASSERT_TRUE(exact.exactCrossStepOptions.has_value());
+  EXPECT_TRUE(exact.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_TRUE(exact.exactParticipantAffinityEnabled);
+  EXPECT_FALSE(boxed.exactOptions.has_value());
+  EXPECT_FALSE(boxed.exactCrossStepOptions.has_value());
+  EXPECT_FALSE(boxed.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_FALSE(boxed.exactParticipantAffinityEnabled);
+  for (const auto* contract : {&exact, &boxed}) {
+    EXPECT_DOUBLE_EQ(contract->timeStep, kRuntimeTimeStep);
+    EXPECT_TRUE(contract->gravity.isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+    EXPECT_EQ(contract->simulationThreads, 1u);
+    EXPECT_FALSE(contract->deactivationEnabled);
+    EXPECT_EQ(contract->maxContacts, kSourceMaxContacts);
+    EXPECT_EQ(contract->maxContactsPerPair, adapter::kDartMaxContactsPerPair);
+    EXPECT_TRUE(contract->nativeFourPointPlanar);
+    EXPECT_TRUE(contract->splitImpulseEnabled);
+    EXPECT_FALSE(contract->cubesAreReleased);
+    EXPECT_EQ(contract->stoneCount, kStoneCount);
+    EXPECT_EQ(contract->mobileStoneCount, kStoneCount - kFixedSpringerCount);
+    EXPECT_EQ(contract->cubeCount, kCubeCount);
+  }
+
+  auto* exactSolver
+      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          exactWorld->getConstraintSolver());
+  ASSERT_NE(exactSolver, nullptr);
+  const auto options = exactSolver->getExactCoulombOptions();
+  EXPECT_FALSE(options.fallbackToBoxedLcp);
+  EXPECT_EQ(options.maxOuterIterations, adapter::kDartMaxOuterIterations);
+  EXPECT_TRUE(options.acceptOuterMaxIterations);
+  EXPECT_DOUBLE_EQ(options.tolerance, adapter::kDartResidualTolerance);
+  EXPECT_DOUBLE_EQ(options.stepSizeScale, adapter::kDartStepSizeScale);
+  EXPECT_DOUBLE_EQ(options.outerRelaxation, adapter::kDartOuterRelaxation);
+  EXPECT_EQ(options.innerMaxSweeps, adapter::kDartInnerMaxSweeps);
+  EXPECT_TRUE(options.runFixedInnerSweeps);
+  EXPECT_TRUE(options.acceptInnerMaxIterations);
+  EXPECT_EQ(options.innerLocalIterations, adapter::kDartInnerLocalIterations);
+  const auto crossStep = exactSolver->getExactCoulombCrossStepPolicyOptions();
+  EXPECT_EQ(
+      crossStep.warmStartMatchMode,
+      dart::constraint::ExactCoulombFbfWarmStartMatchMode::
+          EitherBodyLocalFeature);
+  EXPECT_DOUBLE_EQ(crossStep.warmStartNormalCosine, 0.9);
+  EXPECT_FALSE(crossStep.useStrictWarmStartMatchDistance);
+  EXPECT_EQ(crossStep.warmStartMaxAge, -1);
+
+  std::array<Eigen::VectorXd, kCubeCount> positions;
+  std::array<Eigen::VectorXd, kCubeCount> velocities;
+  for (const auto& cubeSpec : makeCubeSpecs()) {
+    const auto cube = exactWorld->getSkeleton(cubeSpec.name);
+    ASSERT_NE(cube, nullptr);
+    EXPECT_FALSE(cube->isMobile());
+    positions[cubeSpec.index] = cube->getPositions();
+    velocities[cubeSpec.index] = cube->getVelocities();
+  }
+
+  adapter::releaseCubes(exactWorld);
+  EXPECT_TRUE(adapter::cubesReleased(exactWorld));
+  EXPECT_TRUE(adapter::inspectAdapterContract(exactWorld).cubesAreReleased);
+  for (const auto& cubeSpec : makeCubeSpecs()) {
+    const auto cube = exactWorld->getSkeleton(cubeSpec.name);
+    ASSERT_NE(cube, nullptr);
+    EXPECT_TRUE(cube->isMobile());
+    EXPECT_TRUE(cube->getPositions().isApprox(positions[cubeSpec.index], 0.0));
+    EXPECT_TRUE(
+        cube->getVelocities().isApprox(velocities[cubeSpec.index], 0.0));
+  }
+
+  // The completed-step action is intentionally idempotent: it never respawns,
+  // teleports, or injects velocity into an already released cube.
+  adapter::releaseCubes(exactWorld);
+  EXPECT_EQ(exactWorld->getNumSkeletons(), 1u + kStoneCount + kCubeCount);
+
+  const std::string json = adapter::adapterContractJson(
+      exact, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  EXPECT_NE(json.find(adapter::kContractSchema), std::string::npos);
+  EXPECT_NE(json.find(kAuthorCommit), std::string::npos);
+  EXPECT_NE(
+      json.find("\"coordinate_units\":\"author_raw_numeric_values\""),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"evidence_runner_action_completed_step\":1600"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"interactive_action_semantics\":\"immediate_on_invocation\""),
+      std::string::npos);
+  EXPECT_NE(json.find("\"step_size_scale\":35"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"inner_local_solver\":\"exact_metric_projection\""),
+      std::string::npos);
+  const std::string boxedJson = adapter::adapterContractJson(
+      boxed, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  EXPECT_NE(boxedJson.find("\"exact_options\":null"), std::string::npos);
+  EXPECT_NE(boxedJson.find("\"cross_step_options\":null"), std::string::npos);
+  EXPECT_EQ(boxedJson.find("\"max_outer_iterations\""), std::string::npos);
+  EXPECT_NE(
+      json.find("\"interactive_demo_auto_releases_at_source_step\":false"),
+      std::string::npos);
+  EXPECT_NE(json.find("\"fig07_parity\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"paper_parity\":false"), std::string::npos);
+}
+
+TEST(FbfAuthorMasonryArchSpec, DartAdapterScopesContactErp)
+{
+  namespace adapter = fbf_author_masonry_arch_adapter;
+  const double previous
+      = dart::constraint::ContactConstraint::getErrorReductionParameter();
+  {
+    adapter::ScopedContactErrorReductionParameter scoped;
+    EXPECT_DOUBLE_EQ(
+        dart::constraint::ContactConstraint::getErrorReductionParameter(),
+        adapter::kDartContactErrorReductionParameter);
+  }
+  EXPECT_DOUBLE_EQ(
+      dart::constraint::ContactConstraint::getErrorReductionParameter(),
+      previous);
 }
 
 } // namespace

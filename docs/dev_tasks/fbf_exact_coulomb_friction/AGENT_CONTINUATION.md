@@ -47,7 +47,7 @@ historical renderer, Apple hardware, or paper timer boundary.
 | Reconstructed crown impact | Frozen three-cube v1 reaches the arch before the ground and stays finite, but fails cap, residual, whole-arch, and far-field gates | Durable scientific negative; `impact_claim_passed=false`, no tuning |
 | Card-house manifold sensitivity | Current-source v2 emits 600 rows for Compact and FourPointPlanar; both are non-strict, while FourPointPlanar raises mean contacts by `93.7983` and mean multiplicity by `1.95485` | Valid one-factor diagnostic only; physical, timing, real-time, and paper verdicts remain null |
 | Paper-media parity | The passing literal bundle contains no projectile; source-matched impact media and 101-stone coverage remain missing, and the public author repository ships no historical camera/material/golden render bundle | No paper impact, GUI, or golden-frame parity claim |
-| Manifest | Current audit: 29 rows, 24 partial, 5 blocked, 0 complete; six durable local visual bundles are finalized and the visual workflow declares 19 schedules | Validator passes; overall status honestly remains partial |
+| Manifest | Current audit: 29 rows, 24 partial, 5 blocked, 0 complete; six durable local visual bundles are finalized and the visual workflow declares 20 schedules | Validator passes; overall status honestly remains partial |
 
 ## External And Comparison Boundary
 
@@ -532,6 +532,14 @@ collision/contact-gap/backend/float32 semantics remain unimplemented. Do not
 claim all-substep solver success, cube-arch pair contact, DART or cross-solver
 dynamics/trajectory/outcome equivalence, Fig. 7/video.07 parity, timing,
 repeatability, or visual/golden evidence.
+
+The separately named current-source DART adapter executes the same raw numeric
+configuration without changing the frozen source or crown-impact-v1 contracts.
+Its latest strict exact smoke fails closed at completed step 68 as contacts rise
+from 16 to 24: 58/60 attempts solve, two report `inner_solver_failed`, terminal
+residual is `2.5749187816086726e-4`, and caps/fallbacks remain zero. A boxed
+smoke reaches step 100. Both are local diagnostics only; the 2,000-step
+schedule, release/impact oracle, valid media, and Fig. 7 parity remain blocked.
 
 ## Preregistered Crown-Impact v1 Negative
 
