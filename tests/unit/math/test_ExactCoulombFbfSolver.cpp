@@ -1809,6 +1809,8 @@ TEST(ExactCoulombFbfSolver, ConvergesAfterOneAcceptedOuterIteration)
       result.residualHistory[1].safeStepSize, result.safeStepSize, 1e-12);
   EXPECT_NEAR(result.stepSize, 1.0, 1e-12);
   EXPECT_NEAR(result.residual.value, 0.0, 1e-12);
+  EXPECT_TRUE(std::isnan(result.plateauReferenceNaturalMapResidual));
+  EXPECT_TRUE(std::isnan(result.plateauRelativeImprovement));
   expectVectorNear(result.reaction, Eigen::Vector3d(1.0, 0.0, 0.0));
 }
 
@@ -2153,6 +2155,392 @@ TEST(ExactCoulombFbfSolver, DoesNotShrinkPastFinalPermittedTrial)
   EXPECT_NEAR(attemptedStepSizes[1], 0.7, 1e-12);
   EXPECT_NEAR(attemptedStepSizes[2], 0.49, 1e-12);
   EXPECT_NEAR(result.stepSize, attemptedStepSizes.back(), 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, AppendsStatusesWithoutRenumberingLegacyValues)
+{
+  using Status = dart::math::detail::ExactCoulombFbfStatus;
+  EXPECT_EQ(static_cast<int>(Status::Success), 0);
+  EXPECT_EQ(static_cast<int>(Status::MaxIterations), 1);
+  EXPECT_EQ(static_cast<int>(Status::InvalidInput), 2);
+  EXPECT_EQ(static_cast<int>(Status::InnerSolverFailed), 3);
+  EXPECT_EQ(static_cast<int>(Status::StepSizeUnderflow), 4);
+  EXPECT_EQ(static_cast<int>(Status::Plateau), 5);
+  EXPECT_EQ(static_cast<int>(Status::NonFiniteValue), 6);
+}
+
+TEST(
+    ExactCoulombFbfSolver,
+    DefaultZeroReactionChangeKeepsNonzeroCouplingRejectionPath)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  bool perturbCoupling = false;
+  const auto applyDelassus = [&perturbCoupling](
+                                 const Eigen::Ref<const Eigen::VectorXd>& input,
+                                 Eigen::Ref<Eigen::VectorXd> output) {
+    output = input;
+    if (perturbCoupling)
+      output[1] += 1.0;
+  };
+  int innerCalls = 0;
+  const auto innerSolver
+      = [&perturbCoupling, &innerCalls](
+            const auto&,
+            const Eigen::Ref<const Eigen::VectorXd>& outerReaction,
+            const Eigen::Ref<const Eigen::VectorXd>&,
+            double,
+            Eigen::Ref<Eigen::VectorXd> output) {
+          ++innerCalls;
+          output = outerReaction;
+          perturbCoupling = true;
+          return true;
+        };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 1;
+  options.maxStepShrinkIterations = 2;
+  options.tolerance = 0.0;
+  ASSERT_EQ(options.couplingVariationSkipThreshold, 0.0);
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem, Eigen::Vector3d::Zero(), applyDelassus, innerSolver, options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFbfStatus::StepSizeUnderflow);
+  EXPECT_EQ(innerCalls, 3);
+  EXPECT_TRUE(std::isinf(result.couplingVariationRatio));
+  EXPECT_FALSE(result.lineSearchShrinkCapReached);
+}
+
+TEST(ExactCoulombFbfSolver, SourceReportsTrueNumericalStepUnderflow)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  bool perturbCoupling = false;
+  const auto applyDelassus = [&perturbCoupling](
+                                 const Eigen::Ref<const Eigen::VectorXd>& input,
+                                 Eigen::Ref<Eigen::VectorXd> output) {
+    output = input;
+    if (perturbCoupling)
+      output[1] += 1.0;
+  };
+  int innerCalls = 0;
+  const auto innerSolver
+      = [&perturbCoupling, &innerCalls](
+            const auto&,
+            const Eigen::Ref<const Eigen::VectorXd>& reaction,
+            const Eigen::Ref<const Eigen::VectorXd>&,
+            double,
+            Eigen::Ref<Eigen::VectorXd> output) {
+          ++innerCalls;
+          output = reaction;
+          perturbCoupling = true;
+          return true;
+        };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = std::numeric_limits<double>::denorm_min();
+  options.capInitialStepSizeAtSafeBound = false;
+  options.shrinkFactor = 0.5;
+  options.maxStepShrinkIterations = 1;
+  options.acceptStepSizeAfterFinalShrink = true;
+  options.reportNonFiniteValuesSeparately = true;
+  options.maxOuterIterations = 1;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem, Eigen::Vector3d::Zero(), applyDelassus, innerSolver, options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFbfStatus::StepSizeUnderflow);
+  EXPECT_EQ(innerCalls, 1);
+  EXPECT_FALSE(result.lineSearchShrinkCapReached);
+  EXPECT_EQ(result.lineSearchShrinkCapCount, 0);
+}
+
+TEST(ExactCoulombFbfSolver, SourceShrinkCapUsesGammaEightAfterGammaSevenSolve)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  std::vector<double> attemptedStepSizes;
+  const auto innerSolver = [&attemptedStepSizes](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double stepSize,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    attemptedStepSizes.push_back(stepSize);
+    output << 2.0, 1.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.couplingVariationTolerance = std::numeric_limits<double>::min();
+  options.maxStepShrinkIterations = 8;
+  options.acceptStepSizeAfterFinalShrink = true;
+  options.maxOuterIterations = 1;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  ASSERT_EQ(attemptedStepSizes.size(), 8u);
+  EXPECT_EQ(result.shrinkIterations, 8);
+  EXPECT_TRUE(result.lineSearchShrinkCapReached);
+  EXPECT_EQ(result.lineSearchShrinkCapCount, 1);
+  EXPECT_NEAR(result.lastInnerSolveStepSize, std::pow(0.7, 7), 1e-12);
+  EXPECT_NEAR(attemptedStepSizes.back(), std::pow(0.7, 7), 1e-12);
+  EXPECT_NEAR(result.stepSize, std::pow(0.7, 8), 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, SourceMinimumGammaClampCountsAsShrinkCap)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  std::vector<double> attemptedStepSizes;
+  const auto innerSolver = [&attemptedStepSizes](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double stepSize,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    attemptedStepSizes.push_back(stepSize);
+    output << 2.0, 1.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.minimumStepSize = 0.7;
+  options.couplingVariationTolerance = std::numeric_limits<double>::min();
+  options.maxStepShrinkIterations = 8;
+  options.acceptStepSizeAfterFinalShrink = true;
+  options.maxOuterIterations = 1;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(Eigen::Matrix3d::Identity()),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  ASSERT_EQ(attemptedStepSizes.size(), 2u);
+  EXPECT_NEAR(attemptedStepSizes[0], 1.0, 1e-12);
+  EXPECT_NEAR(attemptedStepSizes[1], options.minimumStepSize, 1e-12);
+  EXPECT_EQ(result.shrinkIterations, 2);
+  EXPECT_TRUE(result.lineSearchShrinkCapReached);
+  EXPECT_EQ(result.lineSearchShrinkCapCount, 1);
+  EXPECT_NEAR(result.lastInnerSolveStepSize, options.minimumStepSize, 1e-12);
+  EXPECT_NEAR(result.stepSize, options.minimumStepSize, 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, SourcePlateauUsesOnlySampledNaturalResiduals)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  int innerCalls = 0;
+  const auto innerSolver
+      = [&innerCalls](
+            const auto&,
+            const Eigen::Ref<const Eigen::VectorXd>& reaction,
+            const Eigen::Ref<const Eigen::VectorXd>&,
+            double,
+            Eigen::Ref<Eigen::VectorXd> output) {
+          ++innerCalls;
+          output = reaction;
+          return true;
+        };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 40;
+  options.tolerance = 0.0;
+  options.residualCheckInterval = 5;
+  options.plateauPatience = 5;
+  options.plateauRelativeTolerance = 0.01;
+  options.useStrictToleranceComparison = true;
+  options.useNaturalMapResidualForInitialConvergence = true;
+  options.couplingVariationSkipThreshold = 1e-10;
+  options.maxResidualHistorySamples = 20;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(result.status, dart::math::detail::ExactCoulombFbfStatus::Plateau);
+  EXPECT_EQ(result.iterations, 30);
+  EXPECT_EQ(innerCalls, 30);
+  ASSERT_EQ(result.residualHistory.size(), 7u);
+  EXPECT_EQ(result.residualHistory[0].iteration, 0);
+  for (std::size_t sample = 1u; sample < result.residualHistory.size();
+       ++sample)
+    EXPECT_EQ(result.residualHistory[sample].iteration, 5 * sample);
+  EXPECT_EQ(result.naturalMapResidual, result.initialNaturalMapResidual);
+  EXPECT_EQ(
+      result.plateauReferenceNaturalMapResidual, result.naturalMapResidual);
+  EXPECT_EQ(result.plateauRelativeImprovement, 0.0);
+  EXPECT_LT(
+      result.plateauRelativeImprovement, options.plateauRelativeTolerance);
+  expectVectorNear(result.reaction, Eigen::Vector3d::Zero());
+}
+
+TEST(ExactCoulombFbfSolver, SourceWithoutPlateauSamplesFinalNaturalResidual)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  int innerCalls = 0;
+  const auto innerSolver = [&innerCalls](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    ++innerCalls;
+    output << 1.0, 0.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 1;
+  options.tolerance = 0.0;
+  options.useStrictToleranceComparison = true;
+  options.useNaturalMapResidualForInitialConvergence = true;
+  options.reportNonFiniteValuesSeparately = true;
+  options.plateauPatience = 0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(Eigen::Matrix3d::Identity()),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_EQ(result.iterations, 1);
+  EXPECT_EQ(innerCalls, 1);
+  EXPECT_GT(result.initialNaturalMapResidual, 0.0);
+  EXPECT_NEAR(result.naturalMapResidual, 0.0, 1e-12);
+  EXPECT_TRUE(std::isnan(result.plateauReferenceNaturalMapResidual));
+  EXPECT_TRUE(std::isnan(result.plateauRelativeImprovement));
+}
+
+TEST(ExactCoulombFbfSolver, ReportsNonFiniteInnerOutputSeparately)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const auto innerSolver = [](const auto&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              double,
+                              Eigen::Ref<Eigen::VectorXd> output) {
+    output.setConstant(std::numeric_limits<double>::quiet_NaN());
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.reportNonFiniteValuesSeparately = true;
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(Eigen::Matrix3d::Identity()),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::NonFiniteValue);
+  EXPECT_EQ(result.iterations, 0);
+}
+
+TEST(ExactCoulombFbfSolver, DefaultNonFiniteInnerOutputKeepsLegacyStatus)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const auto innerSolver = [](const auto&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              double,
+                              Eigen::Ref<Eigen::VectorXd> output) {
+    output.setConstant(std::numeric_limits<double>::quiet_NaN());
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  ASSERT_FALSE(options.reportNonFiniteValuesSeparately);
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(Eigen::Matrix3d::Identity()),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFbfStatus::InnerSolverFailed);
+  EXPECT_EQ(result.iterations, 0);
+}
+
+TEST(ExactCoulombFbfSolver, FailureRefreshesResidualAfterUnsampledIteration)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  int innerCalls = 0;
+  const auto innerSolver = [&innerCalls](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    ++innerCalls;
+    if (innerCalls > 1)
+      return false;
+    output << 1.0, 0.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 10;
+  options.residualCheckInterval = 5;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(Eigen::Matrix3d::Identity()),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFbfStatus::InnerSolverFailed);
+  EXPECT_EQ(result.iterations, 1);
+  EXPECT_EQ(innerCalls, 2);
+  EXPECT_GT(result.initialResidual.value, 0.0);
+  EXPECT_NEAR(result.residual.value, 0.0, 1e-12);
+  expectVectorNear(result.reaction, Eigen::Vector3d(1.0, 0.0, 0.0));
 }
 
 TEST(ExactCoulombFbfSolver, KeepsShrunkStepForRemainderOfSolve)

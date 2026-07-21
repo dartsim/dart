@@ -376,9 +376,10 @@ struct ExactCoulombColoredBlockGaussSeidelState
   std::vector<int> maxPhaseLogicalCpuIds;
 };
 
-struct ExactCoulombCrossStepPolicyState
+struct ExactCoulombPolicyState
 {
-  ExactCoulombFbfCrossStepPolicyOptions options;
+  ExactCoulombFbfCrossStepPolicyOptions crossStepOptions;
+  ExactCoulombFbfSourceContinuationOptions sourceContinuationOptions;
   double lastInitialResidual = std::numeric_limits<double>::quiet_NaN();
   double lastInitialNaturalMapResidual
       = std::numeric_limits<double>::quiet_NaN();
@@ -387,6 +388,12 @@ struct ExactCoulombCrossStepPolicyState
   bool lastWarmStartStepSizeCapApplied = false;
   std::size_t warmStartStepSizeCaps = 0u;
   std::size_t unconvergedCacheSkips = 0u;
+  bool lastSourceContinuationActive = false;
+  bool lastLineSearchShrinkCapReached = false;
+  int lastLineSearchShrinkCapCount = 0;
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  std::size_t plateausAccepted = 0u;
+  std::size_t lineSearchShrinkCaps = 0u;
 };
 
 struct ExactCoulombLastFailureState
@@ -890,7 +897,7 @@ void eraseExactCoulombLastFailureState(
   exactCoulombLastFailureStateBySolver().erase(solver);
 }
 
-std::mutex& exactCoulombCrossStepPolicyStateMutex()
+std::mutex& exactCoulombPolicyStateMutex()
 {
   static auto* mutex = new std::mutex;
   return *mutex;
@@ -898,79 +905,125 @@ std::mutex& exactCoulombCrossStepPolicyStateMutex()
 
 std::unordered_map<
     const ExactCoulombFbfConstraintSolver*,
-    ExactCoulombCrossStepPolicyState>&
-exactCoulombCrossStepPolicyStateBySolver()
+    ExactCoulombPolicyState>&
+exactCoulombPolicyStateBySolver()
 {
   static auto* states = new std::unordered_map<
       const ExactCoulombFbfConstraintSolver*,
-      ExactCoulombCrossStepPolicyState>;
+      ExactCoulombPolicyState>;
   return *states;
 }
 
-ExactCoulombCrossStepPolicyState getExactCoulombCrossStepPolicyState(
+ExactCoulombPolicyState getExactCoulombPolicyState(
     const ExactCoulombFbfConstraintSolver* solver)
 {
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  const auto& states = exactCoulombCrossStepPolicyStateBySolver();
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  const auto& states = exactCoulombPolicyStateBySolver();
   const auto state = states.find(solver);
-  return state == states.end() ? ExactCoulombCrossStepPolicyState{}
-                               : state->second;
+  return state == states.end() ? ExactCoulombPolicyState{} : state->second;
 }
 
-void resetExactCoulombCrossStepPolicyState(
-    const ExactCoulombFbfConstraintSolver* solver)
+void resetExactCoulombPolicyState(const ExactCoulombFbfConstraintSolver* solver)
 {
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  exactCoulombCrossStepPolicyStateBySolver()[solver]
-      = ExactCoulombCrossStepPolicyState{};
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  exactCoulombPolicyStateBySolver()[solver] = ExactCoulombPolicyState{};
 }
 
 void setExactCoulombCrossStepPolicyStateOptions(
     const ExactCoulombFbfConstraintSolver* solver,
     const ExactCoulombFbfCrossStepPolicyOptions& options)
 {
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
-  state = ExactCoulombCrossStepPolicyState{};
-  state.options = options;
-}
-
-void resetLastExactCoulombCrossStepPolicyState(
-    const ExactCoulombFbfConstraintSolver* solver)
-{
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  auto& state = exactCoulombPolicyStateBySolver()[solver];
+  state.crossStepOptions = options;
   state.lastInitialResidual = std::numeric_limits<double>::quiet_NaN();
   state.lastInitialNaturalMapResidual
       = std::numeric_limits<double>::quiet_NaN();
   state.lastNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
   state.lastUncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
   state.lastWarmStartStepSizeCapApplied = false;
+  state.warmStartStepSizeCaps = 0u;
+  state.unconvergedCacheSkips = 0u;
 }
 
-void recordExactCoulombCrossStepPolicyAttempt(
+void setExactCoulombSourceContinuationStateOptions(
+    const ExactCoulombFbfConstraintSolver* solver,
+    const ExactCoulombFbfSourceContinuationOptions& options)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  auto& state = exactCoulombPolicyStateBySolver()[solver];
+  state.sourceContinuationOptions = options;
+  state.lastSourceContinuationActive = false;
+  state.lastLineSearchShrinkCapReached = false;
+  state.lastLineSearchShrinkCapCount = 0;
+  state.lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  state.plateausAccepted = 0u;
+  state.lineSearchShrinkCaps = 0u;
+}
+
+ExactCoulombPolicyState beginExactCoulombPolicyAttempt(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  auto& state = exactCoulombPolicyStateBySolver()[solver];
+  state.lastInitialResidual = std::numeric_limits<double>::quiet_NaN();
+  state.lastInitialNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  state.lastNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  state.lastUncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
+  state.lastWarmStartStepSizeCapApplied = false;
+  state.lastSourceContinuationActive = false;
+  state.lastLineSearchShrinkCapReached = false;
+  state.lastLineSearchShrinkCapCount = 0;
+  state.lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  return state;
+}
+
+void recordExactCoulombPolicyAttempt(
     const ExactCoulombFbfConstraintSolver* solver,
     const math::detail::ExactCoulombFbfResult& result,
-    bool unconvergedCacheSkipped)
+    bool unconvergedCacheSkipped,
+    bool sourceContinuationActive,
+    bool plateauAccepted)
 {
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  auto& state = exactCoulombPolicyStateBySolver()[solver];
   state.lastInitialResidual = result.initialResidual.value;
   state.lastInitialNaturalMapResidual = result.initialNaturalMapResidual;
   state.lastNaturalMapResidual = result.naturalMapResidual;
   state.lastUncappedInitialStepSize = result.uncappedInitialStepSize;
   state.lastWarmStartStepSizeCapApplied = result.initialStepSizeCapApplied;
+  state.lastSourceContinuationActive = sourceContinuationActive;
+  state.lastLineSearchShrinkCapReached = result.lineSearchShrinkCapReached;
+  state.lastLineSearchShrinkCapCount = result.lineSearchShrinkCapCount;
+  state.lastInnerSolveStepSize = result.lastInnerSolveStepSize;
   if (result.initialStepSizeCapApplied)
     ++state.warmStartStepSizeCaps;
   if (unconvergedCacheSkipped)
     ++state.unconvergedCacheSkips;
+  if (result.lineSearchShrinkCapCount > 0) {
+    state.lineSearchShrinkCaps
+        += static_cast<std::size_t>(result.lineSearchShrinkCapCount);
+  }
+  if (plateauAccepted)
+    ++state.plateausAccepted;
 }
 
-void eraseExactCoulombCrossStepPolicyState(
-    const ExactCoulombFbfConstraintSolver* solver)
+void eraseExactCoulombPolicyState(const ExactCoulombFbfConstraintSolver* solver)
 {
-  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
-  exactCoulombCrossStepPolicyStateBySolver().erase(solver);
+  std::lock_guard<std::mutex> lock(exactCoulombPolicyStateMutex());
+  exactCoulombPolicyStateBySolver().erase(solver);
+}
+
+bool isValidExactCoulombSourceContinuationOptions(
+    const ExactCoulombFbfSourceContinuationOptions& options)
+{
+  return options.residualCheckInterval > 0 && options.plateauPatience >= 0
+         && std::isfinite(options.plateauRelativeTolerance)
+         && options.plateauRelativeTolerance >= 0.0
+         && options.stepSizeBacktrackLimit > 0
+         && std::isfinite(options.couplingVariationSkipThreshold)
+         && options.couplingVariationSkipThreshold >= 0.0;
 }
 
 bool isValidExactCoulombCrossStepPolicyOptions(
@@ -1144,6 +1197,25 @@ void applyExactCoulombCrossStepPolicy(
   options.useNaturalMapResidualForInitialStepSizeCap
       = std::isfinite(policy.warmStartResidualThreshold)
         || policy.requireResidualImprovementForUnconvergedCacheSave;
+}
+
+void applyExactCoulombSourceContinuationPolicy(
+    const ExactCoulombFbfSourceContinuationOptions& policy,
+    math::detail::ExactCoulombFbfOptions& options)
+{
+  if (!policy.enabled)
+    return;
+
+  options.residualCheckInterval = policy.residualCheckInterval;
+  options.plateauPatience = policy.plateauPatience;
+  options.plateauRelativeTolerance = policy.plateauRelativeTolerance;
+  options.useStrictToleranceComparison = true;
+  options.useNaturalMapResidualForInitialConvergence = true;
+  options.reportNonFiniteValuesSeparately = true;
+  options.couplingVariationSkipThreshold
+      = policy.couplingVariationSkipThreshold;
+  options.maxStepShrinkIterations = policy.stepSizeBacktrackLimit;
+  options.acceptStepSizeAfterFinalShrink = true;
 }
 
 math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions
@@ -1708,7 +1780,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver()
   resetExactCoulombPostCorrectionProjectionState(this);
   resetExactCoulombSourceInnerInitializationState(this);
   resetExactCoulombLastFailureState(this);
-  resetExactCoulombCrossStepPolicyState(this);
+  resetExactCoulombPolicyState(this);
 }
 
 //==============================================================================
@@ -1721,7 +1793,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver(
   resetExactCoulombPostCorrectionProjectionState(this);
   resetExactCoulombSourceInnerInitializationState(this);
   resetExactCoulombLastFailureState(this);
-  resetExactCoulombCrossStepPolicyState(this);
+  resetExactCoulombPolicyState(this);
 }
 
 //==============================================================================
@@ -1732,7 +1804,7 @@ ExactCoulombFbfConstraintSolver::~ExactCoulombFbfConstraintSolver()
   eraseExactCoulombPostCorrectionProjectionState(this);
   eraseExactCoulombSourceInnerInitializationState(this);
   eraseExactCoulombLastFailureState(this);
-  eraseExactCoulombCrossStepPolicyState(this);
+  eraseExactCoulombPolicyState(this);
 }
 
 //==============================================================================
@@ -1782,7 +1854,38 @@ void ExactCoulombFbfConstraintSolver::setExactCoulombCrossStepPolicyOptions(
 ExactCoulombFbfCrossStepPolicyOptions
 ExactCoulombFbfConstraintSolver::getExactCoulombCrossStepPolicyOptions() const
 {
-  return getExactCoulombCrossStepPolicyState(this).options;
+  return getExactCoulombPolicyState(this).crossStepOptions;
+}
+
+//==============================================================================
+void ExactCoulombFbfConstraintSolver::setExactCoulombSourceContinuationOptions(
+    const ExactCoulombFbfSourceContinuationOptions& options)
+{
+  if (!isValidExactCoulombSourceContinuationOptions(options)) {
+    dtwarn << "[ExactCoulombFbfConstraintSolver] Ignoring invalid exact "
+           << "Coulomb source-continuation options.\n";
+    return;
+  }
+
+  setExactCoulombSourceContinuationStateOptions(this, options);
+  // The policy changes accepted solver outcomes, residual sampling, and gamma
+  // evolution. Never reinterpret cross-step state created under another loop.
+  clearExactCoulombWarmStart();
+}
+
+//==============================================================================
+ExactCoulombFbfSourceContinuationOptions
+ExactCoulombFbfConstraintSolver::getExactCoulombSourceContinuationOptions()
+    const
+{
+  return getExactCoulombPolicyState(this).sourceContinuationOptions;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastExactCoulombSourceContinuationActive() const
+{
+  return getExactCoulombPolicyState(this).lastSourceContinuationActive;
 }
 
 //==============================================================================
@@ -1834,6 +1937,8 @@ void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
     setExactCoulombOptions(exact->getExactCoulombOptions());
     setExactCoulombCrossStepPolicyOptions(
         exact->getExactCoulombCrossStepPolicyOptions());
+    setExactCoulombSourceContinuationOptions(
+        exact->getExactCoulombSourceContinuationOptions());
     setExactCoulombPostCorrectionProjectionEnabled(
         exact->getExactCoulombPostCorrectionProjectionEnabled());
     setExactCoulombSourceInnerInitializationEnabled(
@@ -1846,6 +1951,8 @@ void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
   } else {
     setExactCoulombCrossStepPolicyOptions(
         ExactCoulombFbfCrossStepPolicyOptions{});
+    setExactCoulombSourceContinuationOptions(
+        ExactCoulombFbfSourceContinuationOptions{});
     setExactCoulombPostCorrectionProjectionEnabled(true);
     setExactCoulombSourceInnerInitializationEnabled(false);
     setExactCoulombColoredBlockGaussSeidelEnabled(false);
@@ -2090,6 +2197,13 @@ double ExactCoulombFbfConstraintSolver::getLastExactCoulombStepSize() const
 }
 
 //==============================================================================
+double ExactCoulombFbfConstraintSolver::getLastExactCoulombInnerSolveStepSize()
+    const
+{
+  return getExactCoulombPolicyState(this).lastInnerSolveStepSize;
+}
+
+//==============================================================================
 double ExactCoulombFbfConstraintSolver::getLastExactCoulombSafeStepSize() const
 {
   return mLastExactCoulombSafeStepSize;
@@ -2107,6 +2221,20 @@ ExactCoulombFbfConstraintSolver::getLastExactCoulombCouplingVariationRatio()
 int ExactCoulombFbfConstraintSolver::getLastExactCoulombShrinkIterations() const
 {
   return mLastExactCoulombShrinkIterations;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastExactCoulombLineSearchShrinkCapReached() const
+{
+  return getExactCoulombPolicyState(this).lastLineSearchShrinkCapReached;
+}
+
+//==============================================================================
+int ExactCoulombFbfConstraintSolver::
+    getLastExactCoulombLineSearchShrinkCapCount() const
+{
+  return getExactCoulombPolicyState(this).lastLineSearchShrinkCapCount;
 }
 
 //==============================================================================
@@ -2300,7 +2428,7 @@ ExactCoulombFbfConstraintSolver::getLastExactCoulombWarmStartMatchedContacts()
 double ExactCoulombFbfConstraintSolver::getLastExactCoulombInitialResidual()
     const
 {
-  return getExactCoulombCrossStepPolicyState(this).lastInitialResidual;
+  return getExactCoulombPolicyState(this).lastInitialResidual;
 }
 
 //==============================================================================
@@ -2308,15 +2436,14 @@ double
 ExactCoulombFbfConstraintSolver::getLastExactCoulombInitialNaturalMapResidual()
     const
 {
-  return getExactCoulombCrossStepPolicyState(this)
-      .lastInitialNaturalMapResidual;
+  return getExactCoulombPolicyState(this).lastInitialNaturalMapResidual;
 }
 
 //==============================================================================
 double ExactCoulombFbfConstraintSolver::getLastExactCoulombNaturalMapResidual()
     const
 {
-  return getExactCoulombCrossStepPolicyState(this).lastNaturalMapResidual;
+  return getExactCoulombPolicyState(this).lastNaturalMapResidual;
 }
 
 //==============================================================================
@@ -2324,29 +2451,28 @@ double
 ExactCoulombFbfConstraintSolver::getLastExactCoulombUncappedInitialStepSize()
     const
 {
-  return getExactCoulombCrossStepPolicyState(this).lastUncappedInitialStepSize;
+  return getExactCoulombPolicyState(this).lastUncappedInitialStepSize;
 }
 
 //==============================================================================
 bool ExactCoulombFbfConstraintSolver::
     getLastExactCoulombWarmStartStepSizeCapApplied() const
 {
-  return getExactCoulombCrossStepPolicyState(this)
-      .lastWarmStartStepSizeCapApplied;
+  return getExactCoulombPolicyState(this).lastWarmStartStepSizeCapApplied;
 }
 
 //==============================================================================
 std::size_t
 ExactCoulombFbfConstraintSolver::getNumExactCoulombWarmStartStepSizeCaps() const
 {
-  return getExactCoulombCrossStepPolicyState(this).warmStartStepSizeCaps;
+  return getExactCoulombPolicyState(this).warmStartStepSizeCaps;
 }
 
 //==============================================================================
 std::size_t
 ExactCoulombFbfConstraintSolver::getNumExactCoulombUnconvergedCacheSkips() const
 {
-  return getExactCoulombCrossStepPolicyState(this).unconvergedCacheSkips;
+  return getExactCoulombPolicyState(this).unconvergedCacheSkips;
 }
 
 //==============================================================================
@@ -2366,6 +2492,20 @@ std::size_t
 ExactCoulombFbfConstraintSolver::getNumExactCoulombMaxIterationsAccepted() const
 {
   return mNumExactCoulombMaxIterationsAccepted;
+}
+
+//==============================================================================
+std::size_t
+ExactCoulombFbfConstraintSolver::getNumExactCoulombPlateausAccepted() const
+{
+  return getExactCoulombPolicyState(this).plateausAccepted;
+}
+
+//==============================================================================
+std::size_t
+ExactCoulombFbfConstraintSolver::getNumExactCoulombLineSearchShrinkCaps() const
+{
+  return getExactCoulombPolicyState(this).lineSearchShrinkCaps;
 }
 
 //==============================================================================
@@ -2443,11 +2583,14 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
   ExactCoulombCpuRecorder coloredBlockGaussSeidelCpuRecorder;
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
-  resetLastExactCoulombCrossStepPolicyState(this);
+  const ExactCoulombPolicyState policyState
+      = beginExactCoulombPolicyAttempt(this);
   ExactCoulombColoredBlockGaussSeidelState coloredBlockGaussSeidelState
       = getExactCoulombColoredBlockGaussSeidelState(this);
   const ExactCoulombFbfCrossStepPolicyOptions crossStepPolicy
-      = getExactCoulombCrossStepPolicyState(this).options;
+      = policyState.crossStepOptions;
+  const ExactCoulombFbfSourceContinuationOptions sourceContinuationPolicy
+      = policyState.sourceContinuationOptions;
   ++mNumExactCoulombAttempts;
   mLastExactCoulombStatus = ExactCoulombFbfConstraintSolverStatus::NotRun;
   mLastExactCoulombBuildStatus
@@ -2874,6 +3017,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
 
   auto fbfOptions = makeFbfOptions(mExactCoulombOptions);
   applyExactCoulombCrossStepPolicy(crossStepPolicy, fbfOptions);
+  applyExactCoulombSourceContinuationPolicy(
+      sourceContinuationPolicy, fbfOptions);
   fbfOptions.projectAfterCorrection
       = getExactCoulombPostCorrectionProjectionState(this);
   fbfOptions.restartInnerFromCurrentOuterReaction
@@ -2977,26 +3122,40 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         };
   accountFbfAttempt(solution);
 
-  const auto isAcceptableCappedResult =
-      [this, &problem](const math::detail::ExactCoulombFbfResult& candidate) {
-        return mExactCoulombOptions.acceptOuterMaxIterations
-               && candidate.status
-                      == math::detail::ExactCoulombFbfStatus::MaxIterations
+  const auto isAcceptableUnconvergedResult =
+      [this, &problem, &sourceContinuationPolicy](
+          const math::detail::ExactCoulombFbfResult& candidate) {
+        const bool sourceStatusAccepted
+            = sourceContinuationPolicy.enabled
+              && (candidate.status
+                      == math::detail::ExactCoulombFbfStatus::Plateau
+                  || candidate.status
+                         == math::detail::ExactCoulombFbfStatus::MaxIterations);
+        const bool legacyMaxIterationsAccepted
+            = !sourceContinuationPolicy.enabled
+              && mExactCoulombOptions.acceptOuterMaxIterations
+              && candidate.status
+                     == math::detail::ExactCoulombFbfStatus::MaxIterations;
+        return (sourceStatusAccepted || legacyMaxIterationsAccepted)
                && candidate.reaction.size()
                       == problem.contactProblem.getDimension()
                && candidate.reaction.allFinite()
-               && math::detail::isFiniteCoulombConeResidual(candidate.residual);
+               && math::detail::isFiniteCoulombConeResidual(candidate.residual)
+               && (!sourceContinuationPolicy.enabled
+                   || std::isfinite(candidate.naturalMapResidual));
       };
   const auto candidateRank =
-      [&isAcceptableCappedResult](
+      [&isAcceptableUnconvergedResult](
           const math::detail::ExactCoulombFbfResult& candidate) {
         if (candidate.status == math::detail::ExactCoulombFbfStatus::Success) {
           return 3;
         }
-        if (isAcceptableCappedResult(candidate))
+        if (isAcceptableUnconvergedResult(candidate))
           return 2;
-        if (candidate.status
-                == math::detail::ExactCoulombFbfStatus::MaxIterations
+        if ((candidate.status
+                 == math::detail::ExactCoulombFbfStatus::MaxIterations
+             || candidate.status
+                    == math::detail::ExactCoulombFbfStatus::Plateau)
             && candidate.reaction.allFinite()
             && math::detail::isFiniteCoulombConeResidual(candidate.residual)) {
           return 1;
@@ -3019,7 +3178,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
 
   bool retriedWithoutPersistentStepSize = false;
   if (solution.status != math::detail::ExactCoulombFbfStatus::Success
-      && !isAcceptableCappedResult(solution)
+      && !isAcceptableUnconvergedResult(solution)
+      && !sourceContinuationPolicy.enabled
       && mLastExactCoulombPersistentStepSizeUsed) {
     // A persisted gamma is only an optimization hint. In particular, an
     // automatically scaled gamma from the prior step is capped at the fresh
@@ -3044,6 +3204,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
 
     auto automaticFbfOptions = makeFbfOptions(mExactCoulombOptions);
     applyExactCoulombCrossStepPolicy(crossStepPolicy, automaticFbfOptions);
+    applyExactCoulombSourceContinuationPolicy(
+        sourceContinuationPolicy, automaticFbfOptions);
     automaticFbfOptions.projectAfterCorrection
         = getExactCoulombPostCorrectionProjectionState(this);
     automaticFbfOptions.restartInnerFromCurrentOuterReaction
@@ -3065,7 +3227,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
   }
 
   if (solution.status != math::detail::ExactCoulombFbfStatus::Success
-      && !isAcceptableCappedResult(solution)
+      && !isAcceptableUnconvergedResult(solution)
+      && !sourceContinuationPolicy.enabled
       && mExactCoulombOptions.enableProjectedGradientRetry) {
     mLastExactCoulombProjectedGradientRetryUsed = true;
     ++mNumExactCoulombProjectedGradientRetries;
@@ -3144,9 +3307,17 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
     }
   }
 
-  const bool maxIterationsAccepted = isAcceptableCappedResult(solution);
+  const bool unconvergedResultAccepted
+      = isAcceptableUnconvergedResult(solution);
+  const bool maxIterationsAccepted
+      = unconvergedResultAccepted
+        && solution.status
+               == math::detail::ExactCoulombFbfStatus::MaxIterations;
+  const bool plateauAccepted
+      = unconvergedResultAccepted
+        && solution.status == math::detail::ExactCoulombFbfStatus::Plateau;
   if (solution.status != math::detail::ExactCoulombFbfStatus::Success
-      && !maxIterationsAccepted) {
+      && !unconvergedResultAccepted && !sourceContinuationPolicy.enabled) {
     bool densePolishAvailable = true;
     const Eigen::Index dimension = problem.contactProblem.getDimension();
     if (mExactCoulombOptions.enableDenseResidualPolish
@@ -3163,7 +3334,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
       tryPolishFailedExactCoulombSolution(problem, solution);
   }
 
-  if (fbfOptions.useNaturalMapResidualForInitialStepSizeCap
+  if ((fbfOptions.useNaturalMapResidualForInitialStepSizeCap
+       || sourceContinuationPolicy.enabled)
       && solution.reaction.size() == problem.contactProblem.getDimension()
       && solution.reaction.allFinite()) {
     solution.naturalMapResidual
@@ -3200,12 +3372,15 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
     mWorstExactCoulombResidual = solution.residual.value;
   }
   if (solution.status != math::detail::ExactCoulombFbfStatus::Success
-      && !maxIterationsAccepted) {
+      && !unconvergedResultAccepted) {
     mLastExactCoulombStatus = ExactCoulombFbfConstraintSolverStatus::FbfFailed;
+    recordExactCoulombPolicyAttempt(
+        this, solution, false, sourceContinuationPolicy.enabled, false);
     recordExactCoulombResidualHistory(
         static_cast<std::size_t>(problem.contactProblem.getContactCount()),
         mLastExactCoulombStatus,
-        solution);
+        solution,
+        sourceContinuationPolicy.enabled);
     invalidateExactCoulombPersistentStepSizeForGroup(constraints);
     invalidateExactCoulombWarmStartPointerCache();
     recordLastFailedExactCoulombAttempt(
@@ -3223,7 +3398,6 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         mLastExactCoulombStatus,
         mLastExactCoulombBuildStatus,
         static_cast<std::size_t>(problem.contactProblem.getContactCount()));
-    recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -3231,10 +3405,13 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
   if (!detail::applyExactCoulombConstraintImpulses(
           problem, solution.reaction)) {
     mLastExactCoulombStatus = ExactCoulombFbfConstraintSolverStatus::FbfFailed;
+    recordExactCoulombPolicyAttempt(
+        this, solution, false, sourceContinuationPolicy.enabled, false);
     recordExactCoulombResidualHistory(
         static_cast<std::size_t>(problem.contactProblem.getContactCount()),
         mLastExactCoulombStatus,
-        solution);
+        solution,
+        sourceContinuationPolicy.enabled);
     invalidateExactCoulombPersistentStepSizeForGroup(constraints);
     invalidateExactCoulombWarmStartPointerCache();
     recordLastFailedExactCoulombAttempt(
@@ -3252,7 +3429,6 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         mLastExactCoulombStatus,
         mLastExactCoulombBuildStatus,
         static_cast<std::size_t>(problem.contactProblem.getContactCount()));
-    recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -3286,7 +3462,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
     }
   }
   const bool unconvergedCacheSkipped
-      = maxIterationsAccepted
+      = unconvergedResultAccepted
         && crossStepPolicy.requireResidualImprovementForUnconvergedCacheSave
         && !(
             std::isfinite(solution.initialNaturalMapResidual)
@@ -3299,19 +3475,29 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
       stepSizeToPersist,
       consecutiveNoRejectionSolves,
       !unconvergedCacheSkipped);
-  recordExactCoulombCrossStepPolicyAttempt(
-      this, solution, unconvergedCacheSkipped);
   ++mNumExactCoulombSolves;
   if (maxIterationsAccepted)
     ++mNumExactCoulombMaxIterationsAccepted;
-  mLastExactCoulombStatus
-      = maxIterationsAccepted
-            ? ExactCoulombFbfConstraintSolverStatus::MaxIterationsAccepted
-            : ExactCoulombFbfConstraintSolverStatus::Success;
+  if (plateauAccepted) {
+    mLastExactCoulombStatus
+        = ExactCoulombFbfConstraintSolverStatus::PlateauAccepted;
+  } else if (maxIterationsAccepted) {
+    mLastExactCoulombStatus
+        = ExactCoulombFbfConstraintSolverStatus::MaxIterationsAccepted;
+  } else {
+    mLastExactCoulombStatus = ExactCoulombFbfConstraintSolverStatus::Success;
+  }
+  recordExactCoulombPolicyAttempt(
+      this,
+      solution,
+      unconvergedCacheSkipped,
+      sourceContinuationPolicy.enabled,
+      plateauAccepted);
   recordExactCoulombResidualHistory(
       static_cast<std::size_t>(problem.contactProblem.getContactCount()),
       mLastExactCoulombStatus,
-      solution);
+      solution,
+      sourceContinuationPolicy.enabled);
   return true;
 }
 
@@ -3592,7 +3778,7 @@ bool ExactCoulombFbfConstraintSolver::tryApplyExactCoulombWarmStart(
   // Manifold path: contact constraints are recreated every `World` step, so
   // match cached contacts by body pair and stable body-local feature, then
   // re-project the cached reaction onto the current frames.
-  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
+  const auto policy = getExactCoulombPolicyState(this).crossStepOptions;
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
   if (mWarmStartContactRecords.empty() || !std::isfinite(matchDistance)
       || matchDistance <= 0.0) {
@@ -3717,7 +3903,7 @@ bool ExactCoulombFbfConstraintSolver::tryGetExactCoulombPersistentStepSize(
   // its body-pair/body-local-feature manifold, and require every record to
   // carry the same group token. Exact group matching avoids leaking one
   // island's gamma into another island that happens to share a nearby point.
-  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
+  const auto policy = getExactCoulombPolicyState(this).crossStepOptions;
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
   if (constraints.empty() || mWarmStartContactRecords.empty()
       || !std::isfinite(matchDistance) || matchDistance <= 0.0) {
@@ -3797,7 +3983,7 @@ void ExactCoulombFbfConstraintSolver::updateExactCoulombWarmStart(
     return;
   }
 
-  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
+  const auto policy = getExactCoulombPolicyState(this).crossStepOptions;
   if (updateReactionCache) {
     mWarmStartConstraints = constraints;
     mWarmStartReaction = reaction;
@@ -3982,7 +4168,7 @@ void ExactCoulombFbfConstraintSolver::
         const std::vector<ConstraintBase*>& constraints)
 {
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
-  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
+  const auto policy = getExactCoulombPolicyState(this).crossStepOptions;
   if (constraints.empty() || mWarmStartContactRecords.empty()
       || !std::isfinite(matchDistance) || matchDistance <= 0.0) {
     return;
@@ -4076,7 +4262,8 @@ void ExactCoulombFbfConstraintSolver::
 void ExactCoulombFbfConstraintSolver::recordExactCoulombResidualHistory(
     std::size_t contactCount,
     ExactCoulombFbfConstraintSolverStatus status,
-    const math::detail::ExactCoulombFbfResult& solution)
+    const math::detail::ExactCoulombFbfResult& solution,
+    bool sourceContinuationActive)
 {
   if (mExactCoulombOptions.maxResidualHistoryRecords <= 0
       || solution.residualHistory.empty()) {
@@ -4096,6 +4283,15 @@ void ExactCoulombFbfConstraintSolver::recordExactCoulombResidualHistory(
   record.status = status;
   record.fbfStatus = solution.status;
   record.iterations = solution.iterations;
+  record.finalResidual = solution.residual.value;
+  record.finalNaturalMapResidual = solution.naturalMapResidual;
+  record.plateauReferenceNaturalMapResidual
+      = solution.plateauReferenceNaturalMapResidual;
+  record.plateauRelativeImprovement = solution.plateauRelativeImprovement;
+  record.shrinkIterations = solution.shrinkIterations;
+  record.lineSearchShrinkCapCount = solution.lineSearchShrinkCapCount;
+  record.lastInnerSolveStepSize = solution.lastInnerSolveStepSize;
+  record.sourceContinuationActive = sourceContinuationActive;
   record.samples = solution.residualHistory;
   mExactCoulombResidualHistoryRecords.push_back(record);
 }

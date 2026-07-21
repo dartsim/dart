@@ -185,6 +185,8 @@ const char* exactStatusLabel(
       return "success";
     case Status::MaxIterationsAccepted:
       return "max_iterations_accepted";
+    case Status::PlateauAccepted:
+      return "plateau_accepted";
     case Status::InvalidOptions:
       return "invalid_options";
     case Status::UnsupportedProblem:
@@ -211,6 +213,10 @@ const char* fbfStatusLabel(dart::math::detail::ExactCoulombFbfStatus status)
       return "inner_solver_failed";
     case Status::StepSizeUnderflow:
       return "step_size_underflow";
+    case Status::Plateau:
+      return "plateau";
+    case Status::NonFiniteValue:
+      return "non_finite_value";
   }
   return "unknown";
 }

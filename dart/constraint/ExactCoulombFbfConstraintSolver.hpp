@@ -135,6 +135,35 @@ struct ExactCoulombFbfCrossStepPolicyOptions
   bool requireResidualImprovementForUnconvergedCacheSave = false;
 };
 
+/// Default-off continuation policy matching the pinned source solver loop.
+///
+/// This value type is retained outside the solver object so enabling the
+/// additive policy does not change the DART 6 public class layout.
+struct ExactCoulombFbfSourceContinuationOptions
+{
+  /// Request source-style plateau, max-budget, and shrink-cap continuation.
+  bool enabled = false;
+
+  /// Accepted-iteration interval for residual checks.
+  int residualCheckInterval = 5;
+
+  /// Sampled natural-map residuals separating a plateau comparison.
+  /// Zero disables plateau termination.
+  int plateauPatience = 5;
+
+  /// Plateau when relative natural-map improvement is below this value.
+  double plateauRelativeTolerance = 0.01;
+
+  /// Inner solves permitted before accepting the source shrink cap.
+  ///
+  /// Eight reproduces trials at gamma_0 through gamma_7 followed by a
+  /// correction using the newly shrunk gamma_8.
+  int stepSizeBacktrackLimit = 8;
+
+  /// Accept the Armijo trial when `||y - x||` is no larger than this value.
+  double couplingVariationSkipThreshold = 1e-10;
+};
+
 /// Options for the opt-in exact-Coulomb FBF constraint solver.
 struct ExactCoulombFbfConstraintSolverOptions
 {
@@ -359,6 +388,7 @@ enum class ExactCoulombFbfConstraintSolverStatus
   UnsupportedProblem,
   FbfFailed,
   BoxedLcpFallback,
+  PlateauAccepted,
 };
 
 /// Retained residual-history diagnostics for one exact-Coulomb solve attempt.
@@ -371,6 +401,15 @@ struct ExactCoulombFbfResidualHistoryRecord
   math::detail::ExactCoulombFbfStatus fbfStatus
       = math::detail::ExactCoulombFbfStatus::InvalidInput;
   int iterations = 0;
+  double finalResidual = std::numeric_limits<double>::quiet_NaN();
+  double finalNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  double plateauReferenceNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  double plateauRelativeImprovement = std::numeric_limits<double>::quiet_NaN();
+  int shrinkIterations = 0;
+  int lineSearchShrinkCapCount = 0;
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  bool sourceContinuationActive = false;
   std::vector<math::detail::ExactCoulombFbfResidualSample> samples;
 };
 
@@ -410,6 +449,20 @@ public:
   /// Get the additive cross-step warm-start and gamma policy.
   ExactCoulombFbfCrossStepPolicyOptions getExactCoulombCrossStepPolicyOptions()
       const;
+
+  /// Set the default-off pinned-source continuation policy.
+  void setExactCoulombSourceContinuationOptions(
+      const ExactCoulombFbfSourceContinuationOptions& options);
+
+  /// Get the requested pinned-source continuation policy.
+  ExactCoulombFbfSourceContinuationOptions
+  getExactCoulombSourceContinuationOptions() const;
+
+  /// Whether source continuation was active for the last group attempt.
+  ///
+  /// This remains false when the policy was requested but input validation or
+  /// constraint adaptation failed before the math FBF solve ran.
+  bool getLastExactCoulombSourceContinuationActive() const;
 
   /// Enable projection of each accepted FBF correction back onto the cone.
   ///
@@ -577,6 +630,12 @@ public:
   /// Final FBF step size from the last exact-Coulomb solve attempt.
   double getLastExactCoulombStepSize() const;
 
+  /// Gamma used by the final inner solve of the last exact attempt.
+  ///
+  /// At a source shrink cap this is gamma_7 while
+  /// getLastExactCoulombStepSize() reports correction/persistence gamma_8.
+  double getLastExactCoulombInnerSolveStepSize() const;
+
   /// Safe spectral FBF step size from the last exact-Coulomb solve attempt.
   double getLastExactCoulombSafeStepSize() const;
 
@@ -585,6 +644,12 @@ public:
 
   /// Total line-search shrink count from the last exact solve attempt.
   int getLastExactCoulombShrinkIterations() const;
+
+  /// Whether the last exact attempt accepted at a source line-search cap.
+  bool getLastExactCoulombLineSearchShrinkCapReached() const;
+
+  /// Source line-search shrink-cap events in the last exact attempt.
+  int getLastExactCoulombLineSearchShrinkCapCount() const;
 
   /// Final FBF step size from the most recent failed exact-Coulomb solve.
   double getLastFailedExactCoulombStepSize() const;
@@ -719,6 +784,12 @@ public:
   /// Number of exact groups whose finite iterate was accepted at the cap.
   std::size_t getNumExactCoulombMaxIterationsAccepted() const;
 
+  /// Number of exact groups whose finite plateau iterate was accepted.
+  std::size_t getNumExactCoulombPlateausAccepted() const;
+
+  /// Number of source line-search shrink-cap events observed so far.
+  std::size_t getNumExactCoulombLineSearchShrinkCaps() const;
+
   /// Worst finite final residual observed by any exact group attempt.
   ///
   /// Returns NaN until an attempt produces a finite final residual.
@@ -788,7 +859,8 @@ private:
   void recordExactCoulombResidualHistory(
       std::size_t contactCount,
       ExactCoulombFbfConstraintSolverStatus status,
-      const math::detail::ExactCoulombFbfResult& solution);
+      const math::detail::ExactCoulombFbfResult& solution,
+      bool sourceContinuationActive);
 
   ExactCoulombFbfConstraintSolverOptions mExactCoulombOptions;
   ExactCoulombFbfConstraintSolverStatus mLastExactCoulombStatus
