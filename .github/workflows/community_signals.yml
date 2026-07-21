@@ -51,7 +51,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          git fetch --depth=1 origin gh-pages:refs/remotes/origin/gh-pages
+          git fetch --depth=1 origin \
+            +refs/heads/gh-pages:refs/remotes/origin/gh-pages
           git worktree prune
 
           worktree_parent="$(mktemp -d "${RUNNER_TEMP:-/tmp}/community-signals-gh-pages.XXXXXX")"
