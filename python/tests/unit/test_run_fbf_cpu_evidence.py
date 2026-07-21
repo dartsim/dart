@@ -1207,7 +1207,7 @@ def test_static_trace_cli_guards_negative_unsigned_and_extra_arguments():
     assert parse_size is not None
     assert "value[0] == '-'" in parse_size.group(0)
     assert "parsed > std::numeric_limits<std::size_t>::max()" in parse_size.group(0)
-    assert "if (argc > 16)" in source
+    assert "if (argc > 17)" in source
     assert "solverMode != SolverMode::ExactFbf" in source
     assert "simulationThreads != 1u" in source
     assert "collisionFrontend != CollisionFrontend::Native" in source
