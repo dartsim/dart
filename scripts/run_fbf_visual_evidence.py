@@ -49,6 +49,15 @@ SOLVER_COMPARISON_LABELS = (
 EXACT_SOLVER_NAME = "ExactCoulombFbfConstraintSolver"
 BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
 BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
+HEADLESS_EXACT_FBF_FAIL_FAST_FLAG = "--headless-exact-fbf-fail-fast"
+EXACT_FBF_RESIDUAL_TOLERANCE = 1e-6
+EXACT_FBF_FAIL_FAST_REASONS = {
+    "boxed_fallback",
+    "exact_failure",
+    "iteration_cap",
+    "nonfinite_residual",
+    "residual_tolerance_exceeded",
+}
 COVERAGE_MATRIX_PATH = (
     ROOT
     / "docs"
@@ -1220,6 +1229,8 @@ def build_demo_command(
             "--collision-detector",
             schedule.collision_detector,
         ]
+    if schedule.exact_fbf_required:
+        command.append(HEADLESS_EXACT_FBF_FAIL_FAST_FLAG)
 
     for key in schedule.pre_run_actions:
         command.extend(("--headless-action", key))
@@ -1577,11 +1588,337 @@ def _validate_diagnostics(
         )
 
 
+def _legacy_demo_command(command: Sequence[str]) -> list[str]:
+    return [item for item in command if item != HEADLESS_EXACT_FBF_FAIL_FAST_FLAG]
+
+
+def _validate_fail_fast_state(
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+    triggered: bool,
+) -> dict[str, Any]:
+    state = data.get("headless_exact_fbf_fail_fast")
+    if not isinstance(state, dict):
+        raise ValueError(f"{sidecar_path}: exact-FBF fail-fast state is missing")
+    if state.get("enabled") is not True or state.get("triggered") is not triggered:
+        raise ValueError(f"{sidecar_path}: invalid exact-FBF fail-fast state")
+    tolerance = state.get("residual_tolerance")
+    if (
+        isinstance(tolerance, bool)
+        or not isinstance(tolerance, (int, float))
+        or not math.isfinite(tolerance)
+        or not math.isclose(
+            tolerance, EXACT_FBF_RESIDUAL_TOLERANCE, rel_tol=0.0, abs_tol=0.0
+        )
+    ):
+        raise ValueError(f"{sidecar_path}: invalid exact-FBF residual tolerance")
+    step = state.get("step")
+    reason = state.get("reason")
+    if triggered:
+        if isinstance(step, bool) or not isinstance(step, int) or step < 0:
+            raise ValueError(f"{sidecar_path}: invalid exact-FBF fail-fast step")
+        if reason not in EXACT_FBF_FAIL_FAST_REASONS:
+            raise ValueError(f"{sidecar_path}: invalid exact-FBF fail-fast reason")
+    elif step is not None or reason is not None:
+        raise ValueError(f"{sidecar_path}: successful fail-fast state is inconsistent")
+    return state
+
+
+def _expected_fail_fast_reason(diagnostics: dict[str, Any]) -> str | None:
+    counter_reasons = (
+        ("boxed_lcp_fallbacks", "boxed_fallback"),
+        ("exact_failures", "exact_failure"),
+        ("accepted_at_cap", "iteration_cap"),
+    )
+    for counter_name, reason in counter_reasons:
+        counter = diagnostics.get(counter_name)
+        if isinstance(counter, bool) or not isinstance(counter, int) or counter < 0:
+            raise ValueError(f"invalid {counter_name} fail-fast diagnostic")
+        if counter > 0:
+            return reason
+
+    attempts = diagnostics.get("exact_attempts")
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < 0:
+        raise ValueError("invalid exact_attempts fail-fast diagnostic")
+    residuals = []
+    for name in ("residual", "worst_residual"):
+        if name not in diagnostics:
+            raise ValueError(f"missing {name} fail-fast diagnostic")
+        value = diagnostics[name]
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, (int, float))
+        ):
+            raise ValueError(f"invalid {name} fail-fast diagnostic")
+        residuals.append(value)
+    if attempts == 0:
+        return None
+    if any(value is None or not math.isfinite(value) for value in residuals):
+        return "nonfinite_residual"
+    if any(
+        value is not None
+        and math.isfinite(value)
+        and value > EXACT_FBF_RESIDUAL_TOLERANCE
+        for value in residuals
+    ):
+        return "residual_tolerance_exceeded"
+    return None
+
+
+def _validate_failed_exact_fbf_sidecar(
+    schedule: CaptureSchedule,
+    output_dir: Path,
+    *,
+    expected_demo: Path,
+) -> dict[str, Any]:
+    sidecar_path = output_dir / "timeline.json"
+    data = _read_json(sidecar_path)
+    if data.get("schema_version") != SIDECAR_SCHEMA_VERSION:
+        raise ValueError(f"{sidecar_path}: unexpected schema")
+    if (
+        data.get("scene") != schedule.scene
+        or data.get("active_scene") != schedule.scene
+    ):
+        raise ValueError(f"{sidecar_path}: requested/active scene does not match")
+    if data.get("total_steps") != schedule.total_steps:
+        raise ValueError(f"{sidecar_path}: total step mismatch")
+    if data.get("event_order") != "captures_before_actions_at_each_completed_step":
+        raise ValueError(f"{sidecar_path}: unsupported event ordering")
+    if (data.get("width"), data.get("height")) != (
+        schedule.width,
+        schedule.height,
+    ):
+        raise ValueError(f"{sidecar_path}: capture dimensions do not match")
+    if data.get("collision_detector") != schedule.collision_detector:
+        raise ValueError(
+            f"{sidecar_path}: collision detector differs from the schedule"
+        )
+    try:
+        runtime_argv = shlex.split(data["runtime_command"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"{sidecar_path}: invalid runtime command") from error
+    expected_runtime_argv = build_demo_command(schedule, expected_demo, output_dir)
+    if runtime_argv != expected_runtime_argv:
+        raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
+
+    state = _validate_fail_fast_state(data, sidecar_path=sidecar_path, triggered=True)
+    trigger_step = state["step"]
+    completed_steps = data.get("completed_steps")
+    if (
+        isinstance(completed_steps, bool)
+        or not isinstance(completed_steps, int)
+        or completed_steps != trigger_step
+        or trigger_step > schedule.total_steps
+    ):
+        raise ValueError(
+            f"{sidecar_path}: fail-fast step and completed steps are inconsistent"
+        )
+    trajectory_steps = data.get("steps")
+    if not isinstance(trajectory_steps, list) or any(
+        not isinstance(item, dict) for item in trajectory_steps
+    ):
+        raise ValueError(f"{sidecar_path}: completed-step diagnostics are invalid")
+    if any(
+        isinstance(item.get("step"), bool) or not isinstance(item.get("step"), int)
+        for item in trajectory_steps
+    ) or [item.get("step") for item in trajectory_steps] != list(
+        range(trigger_step + 1)
+    ):
+        raise ValueError(
+            f"{sidecar_path}: partial completed-step diagnostics are missing or "
+            "out of order"
+        )
+    counter_names = (
+        "exact_attempts",
+        "exact_solves",
+        "accepted_at_cap",
+        "exact_failures",
+        "boxed_lcp_fallbacks",
+    )
+    prior_counters = {name: 0 for name in counter_names}
+    diagnostics_by_step: dict[int, dict[str, Any]] = {}
+    reason_by_step: dict[int, str | None] = {}
+    for item in trajectory_steps:
+        step = item["step"]
+        sim_time = item.get("sim_time")
+        if (
+            isinstance(sim_time, bool)
+            or not isinstance(sim_time, (int, float))
+            or not math.isclose(
+                sim_time, schedule.time_at_step(step), rel_tol=0.0, abs_tol=1e-9
+            )
+        ):
+            raise ValueError(
+                f"{sidecar_path}: completed-step time mismatch at step {step}"
+            )
+        diagnostics = item.get("solver_diagnostics")
+        if not isinstance(diagnostics, dict):
+            raise ValueError(
+                f"{sidecar_path}: fail-fast diagnostics at step {step} are invalid"
+            )
+        try:
+            reason = _expected_fail_fast_reason(diagnostics)
+        except ValueError as error:
+            raise ValueError(f"{sidecar_path}: step {step}: {error}") from error
+        if step < trigger_step and reason is not None:
+            raise ValueError(
+                f"{sidecar_path}: exact-FBF fail-fast should have triggered "
+                f"earlier at step {step}: {reason}"
+            )
+        current_counters: dict[str, int] = {}
+        for name in counter_names:
+            value = diagnostics.get(name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(
+                    f"{sidecar_path}: step {step}: invalid cumulative {name}"
+                )
+            if value < prior_counters[name]:
+                raise ValueError(
+                    f"{sidecar_path}: step {step}: cumulative {name} regressed"
+                )
+            current_counters[name] = value
+        prior_counters = current_counters
+        diagnostics_by_step[step] = diagnostics
+        reason_by_step[step] = reason
+
+    for collection_name in ("shots", "actions", "events"):
+        collection = data.get(collection_name)
+        if not isinstance(collection, list) or any(
+            not isinstance(item, dict) for item in collection
+        ):
+            raise ValueError(f"{sidecar_path}: partial {collection_name} are invalid")
+        if any(
+            isinstance(item.get("step"), bool)
+            or not isinstance(item.get("step"), int)
+            or item["step"] >= trigger_step
+            for item in collection
+        ):
+            raise ValueError(
+                f"{sidecar_path}: {collection_name} exist at or after the "
+                "fail-fast step"
+            )
+
+    expected_shots: list[dict[str, Any]] = []
+    expected_actions: list[dict[str, Any]] = []
+    expected_events: list[dict[str, Any]] = []
+    sequence = 0
+    for step in range(trigger_step):
+        if step in schedule.capture_steps:
+            shot = {
+                "sequence": sequence,
+                "step": step,
+                "path": str(_frame_path(output_dir, step)),
+            }
+            expected_shots.append(shot)
+            expected_events.append({**shot, "type": "shot"})
+            sequence += 1
+        for action in schedule.actions:
+            if action.step != step:
+                continue
+            scheduled_action = {
+                "sequence": sequence,
+                "step": step,
+                "key": action.key,
+            }
+            expected_actions.append(scheduled_action)
+            expected_events.append({**scheduled_action, "type": "action"})
+            sequence += 1
+
+    shots = data["shots"]
+    if len(shots) != len(expected_shots):
+        raise ValueError(
+            f"{sidecar_path}: shots do not match the required pre-trigger prefix"
+        )
+    for actual, expected in zip(shots, expected_shots):
+        actual_path = actual.get("path")
+        if (
+            isinstance(actual.get("sequence"), bool)
+            or not isinstance(actual.get("sequence"), int)
+            or actual.get("sequence") != expected["sequence"]
+            or isinstance(actual.get("step"), bool)
+            or not isinstance(actual.get("step"), int)
+            or actual.get("step") != expected["step"]
+            or not isinstance(actual_path, str)
+            or Path(actual_path) != Path(expected["path"])
+            or actual.get("success") is not True
+        ):
+            raise ValueError(f"{sidecar_path}: shot prefix differs from the schedule")
+        sim_time = actual.get("sim_time")
+        if (
+            isinstance(sim_time, bool)
+            or not isinstance(sim_time, (int, float))
+            or not math.isclose(
+                sim_time,
+                schedule.time_at_step(expected["step"]),
+                rel_tol=0.0,
+                abs_tol=1e-9,
+            )
+        ):
+            raise ValueError(f"{sidecar_path}: shot prefix time mismatch")
+        if actual.get("solver_diagnostics") != diagnostics_by_step[expected["step"]]:
+            raise ValueError(f"{sidecar_path}: shot prefix diagnostics are not bound")
+
+    actions = data["actions"]
+    if len(actions) != len(expected_actions):
+        raise ValueError(
+            f"{sidecar_path}: actions do not match the required pre-trigger prefix"
+        )
+    for actual, expected in zip(actions, expected_actions):
+        if (
+            isinstance(actual.get("sequence"), bool)
+            or not isinstance(actual.get("sequence"), int)
+            or actual.get("sequence") != expected["sequence"]
+            or isinstance(actual.get("step"), bool)
+            or not isinstance(actual.get("step"), int)
+            or actual.get("step") != expected["step"]
+            or actual.get("key") != expected["key"]
+            or actual.get("success") is not True
+        ):
+            raise ValueError(f"{sidecar_path}: action prefix differs from the schedule")
+
+    events = data["events"]
+    if len(events) != len(expected_events):
+        raise ValueError(
+            f"{sidecar_path}: events do not match the required pre-trigger prefix"
+        )
+    for actual, expected in zip(events, expected_events):
+        if actual.get("success") is not True or any(
+            isinstance(actual.get(name), bool)
+            or not isinstance(actual.get(name), int)
+            or actual.get(name) != expected[name]
+            for name in ("sequence", "step")
+        ):
+            raise ValueError(f"{sidecar_path}: event prefix differs from the schedule")
+        for name in ("type", "path" if expected["type"] == "shot" else "key"):
+            if actual.get(name) != expected[name]:
+                raise ValueError(
+                    f"{sidecar_path}: event prefix differs from the schedule"
+                )
+
+    offending_diagnostics = diagnostics_by_step[trigger_step]
+    if data.get("solver_diagnostics") != offending_diagnostics:
+        raise ValueError(
+            f"{sidecar_path}: final diagnostics differ from the fail-fast step"
+        )
+    expected_reason = reason_by_step[trigger_step]
+    if state["reason"] != expected_reason:
+        raise ValueError(
+            f"{sidecar_path}: fail-fast reason does not match diagnostics priority"
+        )
+    return {
+        "sidecar": str(sidecar_path),
+        "completed_steps": completed_steps,
+        "reason": state["reason"],
+        "headless_exact_fbf_fail_fast": state,
+    }
+
+
 def validate_sidecar(
     schedule: CaptureSchedule,
     output_dir: Path,
     *,
     expected_demo: Path | None = None,
+    allow_legacy_fail_fast: bool = False,
 ) -> dict[str, Any]:
     sidecar_path = output_dir / "timeline.json"
     data = json.loads(sidecar_path.read_text(encoding="utf-8"))
@@ -1613,8 +1950,31 @@ def validate_sidecar(
         raise ValueError(f"{sidecar_path}: invalid runtime command") from error
     runtime_demo = Path(runtime_argv[0]) if expected_demo is None else expected_demo
     expected_runtime_argv = build_demo_command(schedule, runtime_demo, output_dir)
-    if runtime_argv != expected_runtime_argv:
+    fail_fast_field_present = "headless_exact_fbf_fail_fast" in data
+    legacy_fail_fast = (
+        schedule.exact_fbf_required
+        and allow_legacy_fail_fast
+        and not fail_fast_field_present
+        and HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in runtime_argv
+    )
+    command_contract = (
+        _legacy_demo_command(expected_runtime_argv)
+        if legacy_fail_fast
+        else expected_runtime_argv
+    )
+    if runtime_argv != command_contract:
         raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
+    if schedule.exact_fbf_required:
+        if legacy_fail_fast:
+            fail_fast_state = None
+        else:
+            fail_fast_state = _validate_fail_fast_state(
+                data, sidecar_path=sidecar_path, triggered=False
+            )
+    else:
+        if fail_fast_field_present:
+            raise ValueError(f"{sidecar_path}: unexpected exact-FBF fail-fast state")
+        fail_fast_state = None
 
     trajectory_steps = data.get("steps", [])
     if [item.get("step") for item in trajectory_steps] != list(
@@ -1798,6 +2158,10 @@ def validate_sidecar(
             for step in expected_shots
         },
         "final_solver_diagnostics": final_diagnostics,
+        "headless_exact_fbf_fail_fast": {
+            "legacy_artifact": legacy_fail_fast,
+            "state": fail_fast_state,
+        },
         "pass": True,
     }
 
@@ -2147,6 +2511,7 @@ def run_schedule(
     output_dir = output_root / schedule.id
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "metadata.json").unlink(missing_ok=True)
+    (output_dir / "timeline.json").unlink(missing_ok=True)
     for executable in (demo, ffmpeg, ffprobe, python):
         if not executable.is_file():
             raise FileNotFoundError(executable)
@@ -2158,7 +2523,24 @@ def run_schedule(
     (output_dir / "frames").mkdir(exist_ok=True)
     command = build_demo_command(schedule, demo, output_dir)
     visual_resources_before = _visual_resource_snapshot(schedule)
-    _run(command, cwd=ROOT)
+    try:
+        _run(command, cwd=ROOT)
+    except subprocess.CalledProcessError as error:
+        if not schedule.exact_fbf_required:
+            raise
+        try:
+            failure = _validate_failed_exact_fbf_sidecar(
+                schedule, output_dir, expected_demo=demo
+            )
+        except (OSError, ValueError) as sidecar_error:
+            raise ValueError(
+                f"{schedule.id}: demo exited {error.returncode} without a valid "
+                f"exact-FBF fail-fast sidecar: {sidecar_error}"
+            ) from error
+        raise ValueError(
+            f"{schedule.id}: exact-FBF fail-fast triggered at completed step "
+            f"{failure['completed_steps']}: {failure['reason']}"
+        ) from error
     visual_resources_after = _visual_resource_snapshot(schedule)
     visual_resources = _bind_visual_resource_snapshots(
         visual_resources_before, visual_resources_after
@@ -3098,7 +3480,12 @@ def _verify_existing(
     if not demo.is_file():
         raise FileNotFoundError(demo)
     demo = demo.resolve()
-    timeline = validate_sidecar(schedule, output_dir, expected_demo=demo)
+    timeline = validate_sidecar(
+        schedule,
+        output_dir,
+        expected_demo=demo,
+        allow_legacy_fail_fast=True,
+    )
     panel_path = output_dir / "panel.png"
     panel_verdict = build_verdict(panel_path)
     if not panel_verdict["pass"]:
@@ -3116,6 +3503,8 @@ def _verify_existing(
     if metadata.get("kind") != "capture_result" or not metadata.get("pass"):
         raise ValueError(f"{metadata_path}: capture metadata is not successful")
     expected_command = build_demo_command(schedule, demo, output_dir)
+    if timeline.get("headless_exact_fbf_fail_fast", {}).get("legacy_artifact"):
+        expected_command = _legacy_demo_command(expected_command)
     plan = metadata.get("schedule", {})
     if plan.get("id") != schedule.id or plan.get("scene") != schedule.scene:
         raise ValueError(f"{metadata_path}: schedule identity mismatch")

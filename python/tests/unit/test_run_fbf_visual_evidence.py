@@ -180,6 +180,118 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
         "events": events,
         "solver_diagnostics": dict(step_records[-1]["solver_diagnostics"]),
     }
+    if schedule.exact_fbf_required:
+        sidecar["headless_exact_fbf_fail_fast"] = {
+            "enabled": True,
+            "residual_tolerance": module.EXACT_FBF_RESIDUAL_TOLERANCE,
+            "triggered": False,
+            "step": None,
+            "reason": None,
+        }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "timeline.json").write_text(json.dumps(sidecar), encoding="utf-8")
+
+
+def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
+    diagnostics = {
+        "boxed_lcp_fallbacks": 0,
+        "exact_failures": 1,
+        "accepted_at_cap": 0,
+        "exact_attempts": 1,
+        "exact_solves": 0,
+        "residual": None,
+        "worst_residual": None,
+    }
+    clean_diagnostics = {
+        "boxed_lcp_fallbacks": 0,
+        "exact_failures": 0,
+        "accepted_at_cap": 0,
+        "exact_attempts": 0,
+        "exact_solves": 0,
+        "residual": None,
+        "worst_residual": None,
+    }
+    steps = [
+        {
+            "step": item_step,
+            "sim_time": schedule.time_at_step(item_step),
+            "solver_diagnostics": dict(
+                diagnostics if item_step == step else clean_diagnostics
+            ),
+        }
+        for item_step in range(step + 1)
+    ]
+    shots = []
+    actions = []
+    events = []
+    sequence = 0
+    for item_step in range(step):
+        if item_step in schedule.capture_steps:
+            shot = {
+                "sequence": sequence,
+                "step": item_step,
+                "path": str(module._frame_path(output_dir, item_step)),
+                "sim_time": schedule.time_at_step(item_step),
+                "success": True,
+                "solver_diagnostics": dict(steps[item_step]["solver_diagnostics"]),
+            }
+            shots.append(shot)
+            events.append(
+                {
+                    "sequence": sequence,
+                    "type": "shot",
+                    "step": item_step,
+                    "path": shot["path"],
+                    "success": True,
+                }
+            )
+            sequence += 1
+        for scheduled_action in schedule.actions:
+            if scheduled_action.step != item_step:
+                continue
+            action = {
+                "sequence": sequence,
+                "step": item_step,
+                "key": scheduled_action.key,
+                "success": True,
+            }
+            actions.append(action)
+            events.append(
+                {
+                    "sequence": sequence,
+                    "type": "action",
+                    "step": item_step,
+                    "key": scheduled_action.key,
+                    "success": True,
+                }
+            )
+            sequence += 1
+    sidecar = {
+        "schema_version": module.SIDECAR_SCHEMA_VERSION,
+        "scene": schedule.scene,
+        "active_scene": schedule.scene,
+        "runtime_command": module._shell_command(
+            module.build_demo_command(schedule, demo, output_dir)
+        ),
+        "total_steps": schedule.total_steps,
+        "completed_steps": step,
+        "width": schedule.width,
+        "height": schedule.height,
+        "collision_detector": schedule.collision_detector,
+        "event_order": "captures_before_actions_at_each_completed_step",
+        "steps": steps,
+        "shots": shots,
+        "actions": actions,
+        "events": events,
+        "solver_diagnostics": dict(diagnostics),
+        "headless_exact_fbf_fail_fast": {
+            "enabled": True,
+            "residual_tolerance": module.EXACT_FBF_RESIDUAL_TOLERANCE,
+            "triggered": True,
+            "step": step,
+            "reason": "exact_failure",
+        },
+    }
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "timeline.json").write_text(json.dumps(sidecar), encoding="utf-8")
 
@@ -281,6 +393,235 @@ def test_boxed_schedule_command_and_plan_bind_pre_run_toggle(tmp_path):
     assert plan["comparison_capture"] is True
     assert plan["evidence_ready"] is False
     assert plan["output"]["directory"].endswith("backspin__boxed")
+
+
+def test_fail_fast_flag_is_routed_only_to_required_exact_schedules(tmp_path):
+    module = _load_module()
+    exact = _test_schedule(module, exact_required=True)
+    nonrequired = _test_schedule(module, exact_required=False)
+    boxed = module._derive_boxed_schedule(exact)
+
+    exact_command = module.build_demo_command(exact, Path("dart-demos"), tmp_path)
+    nonrequired_command = module.build_demo_command(
+        nonrequired, Path("dart-demos"), tmp_path
+    )
+    boxed_command = module.build_demo_command(boxed, Path("dart-demos"), tmp_path)
+
+    assert exact_command.count(module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG) == 1
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in nonrequired_command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in boxed_command
+
+
+def test_strict_exact_sidecar_requires_nontriggered_fail_fast_state(tmp_path):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_dir = tmp_path / schedule.id
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+    report = module.validate_sidecar(schedule, output_dir)
+    assert report["headless_exact_fbf_fail_fast"] == {
+        "legacy_artifact": False,
+        "state": {
+            "enabled": True,
+            "residual_tolerance": module.EXACT_FBF_RESIDUAL_TOLERANCE,
+            "triggered": False,
+            "step": None,
+            "reason": None,
+        },
+    }
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    del sidecar["headless_exact_fbf_fail_fast"]
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="fail-fast state is missing"):
+        module.validate_sidecar(schedule, output_dir)
+
+
+def test_failed_strict_capture_validates_partial_sidecar_and_skips_media(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_root = tmp_path / "captures"
+    output_dir = output_root / schedule.id
+    output_dir.mkdir(parents=True)
+    timeline = output_dir / "timeline.json"
+    timeline.write_text("stale", encoding="utf-8")
+    demo = tmp_path / "dart-demos"
+    ffmpeg = tmp_path / "ffmpeg"
+    ffprobe = tmp_path / "ffprobe"
+    python = tmp_path / "python"
+    for executable in (demo, ffmpeg, ffprobe, python):
+        executable.write_bytes(b"executable")
+
+    def fail_demo(argv, **_kwargs):
+        assert not timeline.exists()
+        _write_failed_sidecar(module, schedule, output_dir, Path(argv[0]))
+        raise module.subprocess.CalledProcessError(1, argv)
+
+    def reject_finalization(*_args, **_kwargs):
+        pytest.fail("fail-fast capture must not finalize panels or media")
+
+    monkeypatch.setattr(module, "_run", fail_demo)
+    monkeypatch.setattr(module, "_prepare_panel_frames", reject_finalization)
+    monkeypatch.setattr(module, "_compose_panel", reject_finalization)
+    monkeypatch.setattr(module, "_encode_media", reject_finalization)
+
+    with pytest.raises(
+        ValueError,
+        match="exact-FBF fail-fast triggered at completed step 1: exact_failure",
+    ):
+        module.run_schedule(
+            schedule,
+            demo=demo,
+            output_root=output_root,
+            ffmpeg=ffmpeg,
+            ffprobe=ffprobe,
+            python=python,
+            allow_long=False,
+        )
+
+    assert timeline.exists()
+    assert not (output_dir / "metadata.json").exists()
+
+
+def test_partial_fail_fast_sidecar_enforces_reason_priority(tmp_path):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["steps"][-1]["solver_diagnostics"]["boxed_lcp_fallbacks"] = 1
+    sidecar["solver_diagnostics"]["boxed_lcp_fallbacks"] = 1
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="does not match diagnostics priority"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+def test_partial_fail_fast_sidecar_rejects_an_earlier_trigger(tmp_path):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo, step=2)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    earlier = sidecar["steps"][1]["solver_diagnostics"]
+    earlier["exact_attempts"] = 1
+    earlier["exact_failures"] = 1
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="should have triggered earlier at step 1"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+def test_partial_fail_fast_sidecar_rejects_cumulative_counter_regression(tmp_path):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo, step=2)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    earlier = sidecar["steps"][1]["solver_diagnostics"]
+    earlier.update(
+        {
+            "exact_attempts": 2,
+            "exact_solves": 2,
+            "residual": 5e-7,
+            "worst_residual": 5e-7,
+        }
+    )
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="cumulative exact_attempts regressed"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+@pytest.mark.parametrize(
+    ("case", "message"),
+    [
+        ("missing_shot", "shots do not match"),
+        ("failed_shot", "shot prefix differs"),
+        ("failed_action", "action prefix differs"),
+        ("missing_event", "events do not match"),
+        ("failed_event", "event prefix differs"),
+    ],
+)
+def test_partial_fail_fast_sidecar_rejects_invalid_prior_event(tmp_path, case, message):
+    module = _load_module()
+    schedule = _test_schedule(
+        module, action=case == "failed_action", exact_required=True
+    )
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    if case == "missing_shot":
+        sidecar["shots"].pop(0)
+        sidecar["events"].pop(0)
+    elif case == "failed_shot":
+        sidecar["shots"][0]["success"] = False
+        sidecar["events"][0]["success"] = False
+    elif case == "failed_action":
+        sidecar["actions"][0]["success"] = False
+        sidecar["events"][1]["success"] = False
+    elif case == "missing_event":
+        sidecar["events"].pop(0)
+    else:
+        sidecar["events"][0]["success"] = False
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+def test_fail_fast_reason_allows_no_attempt_residual_placeholders():
+    module = _load_module()
+
+    assert (
+        module._expected_fail_fast_reason(
+            {
+                "boxed_lcp_fallbacks": 0,
+                "exact_failures": 0,
+                "accepted_at_cap": 0,
+                "exact_attempts": 0,
+                "residual": 2.0,
+                "worst_residual": None,
+            }
+        )
+        is None
+    )
+
+
+def test_partial_fail_fast_sidecar_rejects_trigger_step_event(tmp_path):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["events"].append({"sequence": 0, "type": "shot", "step": 1})
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="events exist at or after"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
 
 
 def test_boxed_sidecar_binds_solver_and_unavailable_exact_diagnostics(tmp_path):
@@ -1447,6 +1788,96 @@ def test_existing_verification_rejects_changed_requested_demo_hash(
             ffmpeg=Path("ffmpeg"),
             ffprobe=Path("ffprobe"),
         )
+
+
+def test_existing_verification_accepts_legacy_exact_artifact_without_flag(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    schedule = _test_schedule(module, exact_required=True)
+    output_root = tmp_path / "captures"
+    output_dir = output_root / schedule.id
+    demo = tmp_path / "dart-demos"
+    demo.write_bytes(b"demo")
+    demo = demo.resolve()
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+    legacy_command = module._legacy_demo_command(
+        module.build_demo_command(schedule, demo, output_dir)
+    )
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["runtime_command"] = module._shell_command(legacy_command)
+    del sidecar["headless_exact_fbf_fail_fast"]
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+    timeline = module.validate_sidecar(
+        schedule,
+        output_dir,
+        expected_demo=demo,
+        allow_legacy_fail_fast=True,
+    )
+    assert timeline["headless_exact_fbf_fail_fast"]["legacy_artifact"] is True
+
+    panel = output_dir / "panel.png"
+    panel.write_bytes(b"panel")
+    panel_sources = []
+    for step in schedule.panel_steps:
+        source = module._panel_frame_path(output_dir, step)
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(f"panel-source:{step}".encode())
+        panel_sources.append({"path": str(source), "sha256": module._sha256(source)})
+    compose_manifest_path = output_dir / "panel.compose.json"
+    compose_manifest_path.write_text("{}", encoding="utf-8")
+    plan = module.schedule_plan(schedule, demo, output_root)
+    plan["demo_argv"] = legacy_command
+    plan["demo_command"] = module._shell_command(legacy_command)
+    metadata = {
+        "schema_version": module.SCHEMA_VERSION,
+        "kind": "capture_result",
+        "schedule": plan,
+        "runtime": {
+            "demo_path": str(demo),
+            "demo_argv": legacy_command,
+            "demo_sha256": module._sha256(demo),
+        },
+        "timeline_validation": timeline,
+        "panel_validation": {
+            "path": str(panel),
+            "sha256": module._sha256(panel),
+            "source_frames": panel_sources,
+            "compose_manifest_path": str(compose_manifest_path),
+            "compose_manifest_sha256": module._sha256(compose_manifest_path),
+            "compose_manifest": {},
+        },
+        "media_validation": [],
+        "actual_simulator": True,
+        "generated_imagery": False,
+        "paper_comparable": False,
+        "automated_semantic_outcome_validated": False,
+        "semantic_outcome_gate": module.CAPTURE_SEMANTIC_OUTCOME_GATE,
+        "known_mismatches": list(schedule.mismatches),
+        "pass": True,
+    }
+    (output_dir / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+    build_verdict = module.build_verdict
+    monkeypatch.setattr(
+        module,
+        "build_verdict",
+        lambda path: (
+            {"pass": True, "reasons": []} if path == panel else build_verdict(path)
+        ),
+    )
+    monkeypatch.setattr(module, "_validate_media", lambda *_args, **_kwargs: [])
+
+    report = module._verify_existing(
+        schedule,
+        demo=demo,
+        output_root=output_root,
+        ffmpeg=Path("ffmpeg"),
+        ffprobe=Path("ffprobe"),
+    )
+
+    assert report["pass"] is True
 
 
 @pytest.mark.parametrize(
