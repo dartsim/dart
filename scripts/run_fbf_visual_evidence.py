@@ -1892,7 +1892,8 @@ def _probe_media(path: Path, ffprobe: Path) -> dict[str, Any]:
             "-v",
             "error",
             "-show_entries",
-            "format=duration:stream=codec_name,width,height,r_frame_rate,nb_frames",
+            "format=duration:stream=codec_name,pix_fmt,width,height,"
+            "r_frame_rate,nb_frames",
             "-of",
             "json",
             str(path),
@@ -1975,6 +1976,18 @@ def _validate_stream_contract(
         )
 
 
+def _validate_mp4_stream_contract(stream: dict[str, Any], *, label: str) -> None:
+    if stream.get("codec_name") != "h264":
+        raise ValueError(
+            f"{label}: codec {stream.get('codec_name')!r} does not match 'h264'"
+        )
+    if stream.get("pix_fmt") != "yuv420p":
+        raise ValueError(
+            f"{label}: pixel format {stream.get('pix_fmt')!r} does not match "
+            "'yuv420p'"
+        )
+
+
 def _validate_media(
     schedule: CaptureSchedule,
     media: Sequence[dict[str, Any]],
@@ -1990,6 +2003,8 @@ def _validate_media(
         stream = _media_stream(probe, label=str(path))
         expected_stream = _expected_media_stream(schedule, item["kind"])
         _validate_stream_contract(stream, expected_stream, label=str(path))
+        if item["kind"] == "mp4":
+            _validate_mp4_stream_contract(stream, label=str(path))
         duration = float(probe.get("format", {}).get("duration", 0.0))
         expected_duration = (
             expected_stream["frame_count"] / expected_stream["frame_rate"]
@@ -2273,6 +2288,7 @@ def _group_member_contract(
             _expected_media_stream(schedule, "mp4"),
             label=str(clip_path),
         )
+        _validate_mp4_stream_contract(stream, label=str(clip_path))
         duration = float(probe.get("format", {}).get("duration", 0.0))
         if not math.isfinite(duration) or duration <= 0.0:
             raise ValueError(f"{clip_path}: invalid duration")
@@ -2589,6 +2605,7 @@ def _encode_group_media(
         "frame_count": contract["frame_count"],
     }
     _validate_stream_contract(stream, group_stream_contract, label=str(destination))
+    _validate_mp4_stream_contract(stream, label=str(destination))
     duration = float(probe.get("format", {}).get("duration", 0.0))
     if (
         abs(duration - contract["duration_seconds"])
@@ -3255,6 +3272,7 @@ def _verify_existing_group(
         },
         label=str(clip_path),
     )
+    _validate_mp4_stream_contract(stream, label=str(clip_path))
     duration = float(probe.get("format", {}).get("duration", 0.0))
     if (
         abs(duration - contract["duration_seconds"])

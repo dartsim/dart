@@ -810,6 +810,7 @@ def _write_group_member_artifacts(module, group, output_root, durations):
             "streams": [
                 {
                     "codec_name": "h264",
+                    "pix_fmt": "yuv420p",
                     "width": schedule.crop[0],
                     "height": schedule.crop[1],
                     "r_frame_rate": "30/1",
@@ -1087,6 +1088,8 @@ def test_group_mp4_command_labels_every_member_and_is_fully_decoded(
             "format": {"duration": "4.0"},
             "streams": [
                 {
+                    "codec_name": "h264",
+                    "pix_fmt": "yuv420p",
                     "width": expected_dimensions[0],
                     "height": expected_dimensions[1],
                     "r_frame_rate": "30/1",
@@ -2030,9 +2033,11 @@ def test_expected_media_contract_uses_the_explicit_schedule_time_step():
         ("width", 22, "dimensions"),
         ("r_frame_rate", "25/1", "frame rate"),
         ("nb_frames", "3", "frame count"),
+        ("codec_name", "mpeg4", "codec"),
+        ("pix_fmt", "yuv444p", "pixel format"),
     ],
 )
-def test_media_validation_rejects_wrong_size_rate_or_stretched_frame(
+def test_media_validation_rejects_wrong_stream_contract(
     tmp_path, monkeypatch, field, value, message
 ):
     module = _load_module()
@@ -2041,6 +2046,8 @@ def test_media_validation_rejects_wrong_size_rate_or_stretched_frame(
     path.write_bytes(b"media")
     expected = module._expected_media_stream(schedule, "mp4")
     stream = {
+        "codec_name": "h264",
+        "pix_fmt": "yuv420p",
         "width": expected["width"],
         "height": expected["height"],
         "r_frame_rate": expected["frame_rate_rational"],
@@ -2052,7 +2059,7 @@ def test_media_validation_rejects_wrong_size_rate_or_stretched_frame(
         "_probe_media",
         lambda _path, _ffprobe: {
             "format": {
-                "duration": str(expected["frame_count"] / expected["frame_rate"])
+                "duration": str(float(expected["frame_count"] / expected["frame_rate"]))
             },
             "streams": [stream],
         },
@@ -2066,6 +2073,75 @@ def test_media_validation_rejects_wrong_size_rate_or_stretched_frame(
             Path("ffmpeg"),
             Path("ffprobe"),
         )
+
+
+def test_media_probe_requests_codec_and_pixel_format(monkeypatch):
+    module = _load_module()
+    calls = []
+
+    def fake_run(argv, **_kwargs):
+        calls.append([str(value) for value in argv])
+        return module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout='{"format": {}, "streams": []}', stderr=""
+        )
+
+    monkeypatch.setattr(module, "_run", fake_run)
+
+    assert module._probe_media(Path("clip.mp4"), Path("ffprobe")) == {
+        "format": {},
+        "streams": [],
+    }
+    show_entries = calls[0][calls[0].index("-show_entries") + 1]
+    assert "codec_name" in show_entries
+    assert "pix_fmt" in show_entries
+
+
+def test_media_validation_records_h264_yuv420p_probe_without_schema_drift(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    path = tmp_path / "clip.mp4"
+    path.write_bytes(b"media")
+    expected = module._expected_media_stream(schedule, "mp4")
+    monkeypatch.setattr(
+        module,
+        "_probe_media",
+        lambda _path, _ffprobe: {
+            "format": {
+                "duration": str(float(expected["frame_count"] / expected["frame_rate"]))
+            },
+            "streams": [
+                {
+                    "codec_name": "h264",
+                    "pix_fmt": "yuv420p",
+                    "width": expected["width"],
+                    "height": expected["height"],
+                    "r_frame_rate": expected["frame_rate_rational"],
+                    "nb_frames": str(expected["frame_count"]),
+                }
+            ],
+        },
+    )
+    monkeypatch.setattr(module, "_run", lambda *_args, **_kwargs: None)
+
+    reports = module._validate_media(
+        schedule,
+        [{"kind": "mp4", "path": path, "command": []}],
+        Path("ffmpeg"),
+        Path("ffprobe"),
+    )
+
+    assert set(reports[0]["stream_contract"]) == {
+        "width",
+        "height",
+        "frame_rate",
+        "frame_rate_rational",
+        "frame_count",
+    }
+    assert reports[0]["probe"]["streams"][0]["codec_name"] == "h264"
+    assert reports[0]["probe"]["streams"][0]["pix_fmt"] == "yuv420p"
+    assert reports[0]["full_decode"] == "pass"
 
 
 def test_coverage_audit_checks_visual_schedules_and_source_segments():
