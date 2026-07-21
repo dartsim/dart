@@ -1510,8 +1510,7 @@ DemoScene makeFbfPaperTurntableParameterizedScene(
               4u,
               false,
               false,
-              dart::collision::NativeCollisionDetector::ContactManifoldMode::
-                  FourPointPlanar);
+              getConfiguredContactManifoldMode(world));
         }});
     return setup;
   };
