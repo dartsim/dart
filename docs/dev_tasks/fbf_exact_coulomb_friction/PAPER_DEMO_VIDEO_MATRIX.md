@@ -36,7 +36,7 @@ A row is complete only when all of the following are true:
 | --- | --- | --- | --- | --- |
 | Figs. 1-2 / incline segment | `fbf_paper_incline`; `incline` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | The current member and comparison artifacts pass timeline, solver-identity, stream, and decode gates. Both lanes visibly reproduce the DART threshold pair, with no material solver difference. Separate exact traces corroborate slide/stick behavior, but the combined render has eight contacts versus six across the traces and four per cell in the paper timing row. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | Current-head exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
-| Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which must accompany the source-pinned group. | Source geometry/control schedule is pinned, but DART remains a float64/Native reconstruction rather than Warp/Newton trace parity. Capture both the author-pinned exact group and the paired proxy comparison. | Pending |
+| Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The author group passes solver, timeline, stream, decode, and independent replay gates; manual inspection shows ejected/ejected/retained-through-6-s/ejected in source order. All four paired proxies pass with the DART collision frontend fixed across lanes, and both solvers visibly produce ejected/ejected/captured/ejected over 4 s. These remain DART reconstructions rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | `fbf_paper_painleve`, `fbf_paper_painleve_mu_0_55`; `painleve_mu05`, `painleve_mu055`, and `painleve` group | Paired exact/boxed captures, a neutral boxed lane-separated group, and solver-labeled synchronized comparisons are automated | The current media gates pass. The exact lane visibly rocks and returns upright for `mu=.5`, then tumbles and remains horizontal for `mu=.55`; the boxed lane stays upright in both proxies. These are DART proxies only: the paper does not publish the dimensions, mass, launch state, or timestamps, and the separate tracked fixtures are not trace-equivalent. | Local exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 6 / 26-card segment | `fbf_paper_card_house_26`; `card_house_26` with projectile action | Paired exact/boxed capture is automated | Blocked: the strict paper-tolerance trajectory is not yet complete. Current known runs either fail `1e-6` or are shorter than the 10 s settle/impact sequence. | Pending |
 | Fig. 7 / 25-stone arch segment | `fbf_paper_masonry_arch_25`; `masonry_arch_25` with crown-projectile action | Paired exact/boxed capture is automated | Blocked for parity: the GUI uses reduced-contact oriented boxes and reconstructed projectile parameters, not the literal-wedge 100-contact paper contract. A full-duration exact outcome is still required. | Pending |
@@ -114,6 +114,79 @@ The members are 2.2-second, 66-frame, 1300x506 clips; the direct comparison is
 2600x530 with the same duration and frame count. They remain ignored local
 evidence until a maintainer uploads the comparison through the pull-request
 editor and records the resulting GitHub-hosted URL in the Figure 3 row.
+
+### Figure 4: turntable parameter matrix
+
+The source-configuration-pinned group was captured from committed head
+`2255067e6fa` with demo binary SHA-256
+`7bcc39725b4488b5796cd23d86a09cbedbaf4befa7bbcb0a840852441a2438b9`
+and runner SHA-256
+`2433def190621e8f07d35c01af0e9a246cac90a199cd02f3d6a8340d74ee6e28`.
+Each cell has 181 distinct frames. In source order, the exact solver reports
+139, 120, 348, and 86 successful attempts; every cell has zero accepted caps,
+failures, or boxed fallbacks, and the largest trajectory residual is
+`9.999742483197972e-7`. Independent replay verification passes.
+
+Manual inspection at the six-second horizon shows the expected source-order
+classification: `mu=.2, omega=2` ejected; `mu=.2, omega=5` ejected;
+`mu=.5, omega=2` retained on the support; and `mu=.5, omega=5` ejected.
+Retention through six seconds does not establish zero slip, perfect
+co-rotation, or longer-horizon stability.
+
+- Author-pinned exact 2x2 candidate:
+  `assets/pr_media/current_head/groups/turntable_author/clip.mp4`, SHA-256
+  `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d`.
+- Author member SHA-256 values in source order:
+  `ea3d8d01c843bfcf0451b2a0aec8a523f80a6bdd5e8327bdafc7729c7cd8a0ee`,
+  `7fe6dee15ac32b41b3807fd06752393fe29a2fe08a3a34f2702be0675593e7a0`,
+  `fb816fda0e43503d27eb9cd88ea0596907a90878bc006d3e298850ad0e8c5440`,
+  and
+  `7128bdb42de60ac2e7fa0e8c99439cbf0204783e76c8cef3192cbf3a10ec7aa8`.
+
+The author group is 1320x1060 for 181 frames (6.033333 s). Its geometry,
+mass, placement, friction, and speed ramp are pinned to the public source, but
+it is still a DART float64/Native implementation with DART's solver,
+frontend, camera, materials, and renderer. It is not Warp/Newton trace,
+approved-golden, timing, or paper-parity evidence.
+
+The separate paired proxy capture uses rebuilt demo binary SHA-256
+`a6fac1c2d2d6ca809f723b46ead080ab22065b0bb41830ea3dc495237c8f83f7`
+and the same runner SHA above. A focused source fix makes the turntable solver
+toggle preserve the runner-selected DART collision frontend; all eight
+sidecars report `dart`, with exact and boxed solver identities in paired
+order. The four exact cells report 145, 100, 240, and 89 successful attempts,
+zero accepted caps, failures, or boxed fallbacks, and worst residuals no
+larger than `9.99641629919505e-7`. The boxed cells correctly declare exact
+diagnostics unavailable. Independent replay verification passes all eight
+members and all six group/comparison artifacts.
+
+Manual inspection shows the same four-second proxy classification in both
+solver lanes: ejected/ejected/captured/ejected. No visible solver difference
+or general solver-superiority claim is made.
+
+- `mu=.2, omega=2` direct comparison:
+  `assets/pr_media/turntable_toggle_fix_v1/groups/turntable_mu02_omega2__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `56f2a7ee598dffd6716cdf4a7b6b8560e7587ec9bc871f74d0d6e28c4d00daf3`.
+- `mu=.2, omega=5` direct comparison:
+  `assets/pr_media/turntable_toggle_fix_v1/groups/turntable_mu02_omega5__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `2cab4896f79a116949e360871ac319b6193849fd04ad7bf1bfd43cdec16814e3`.
+- `mu=.5, omega=2` direct comparison:
+  `assets/pr_media/turntable_toggle_fix_v1/groups/turntable_mu05_omega2__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `5d16450c622dd21ae1144ce66df3c04419f0bf88448fe3ccd32f90f170fc6b62`.
+- `mu=.5, omega=5` direct comparison:
+  `assets/pr_media/turntable_toggle_fix_v1/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8`.
+
+Each direct comparison is 1320x530, H.264/yuv420p at 30 fps, and passes a
+full decode. The 61 distinct captured images are timeline-preserving encoded
+as 121 frames over 4.033333 s, so the four-second physics horizon is shown at
+approximately real time rather than as a two-times time lapse. These proxy
+scenes use a square support and reconstructed ramp, body, camera, and horizon;
+they do not replace the source-pinned group or establish paper parity.
 
 ### Figure 5: Painleve-style proxies
 
