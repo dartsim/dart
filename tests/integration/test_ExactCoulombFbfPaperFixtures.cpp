@@ -301,6 +301,8 @@ struct CardHouseRunResult
   double failedDualResidual = std::numeric_limits<double>::quiet_NaN();
   double failedComplementarityResidual
       = std::numeric_limits<double>::quiet_NaN();
+  // Diagnostic only. CTest supplies the platform-independent hang timeout;
+  // correctness fixtures do not impose a machine-speed ceiling.
   double elapsedMs = std::numeric_limits<double>::quiet_NaN();
   ExactResidualTrace residualTrace;
   std::size_t lastContacts = 0u;
@@ -2968,7 +2970,6 @@ TEST(ExactCoulombFbfPaperFixtures, CardHouseFourLevelOneStepReducedContactProbe)
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  EXPECT_LT(exact.elapsedMs, 60000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
@@ -3026,7 +3027,6 @@ TEST(
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  EXPECT_LT(exact.elapsedMs, 60000.0);
   EXPECT_GT(exact.maxProjectileSpeed, 0.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
@@ -3129,7 +3129,6 @@ TEST(
   EXPECT_LE(maxResidual, 1e-6);
   // The full natural manifold must actually engage while settling.
   EXPECT_GT(maxContactsSeen, 100u);
-  EXPECT_LT(elapsedMs, 120000.0);
 
   for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i) {
     const auto skeleton = world->getSkeleton(i);
@@ -3196,7 +3195,6 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25OneStepReducedContactProbe)
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  EXPECT_LT(exact.elapsedMs, 60000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
@@ -3243,7 +3241,6 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25ProjectileScaffoldRuns)
   EXPECT_GT(exact.maxProjectileSpeed, 0.0);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  EXPECT_LT(exact.elapsedMs, 60000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
@@ -3321,7 +3318,6 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch101OneStepReducedContactProbe)
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  EXPECT_LT(exact.elapsedMs, 60000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
@@ -3373,10 +3369,6 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25FullManifoldOneStepProbe)
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  // The full natural manifold (96 contacts) takes materially longer than the
-  // reduced-cap rung (measured ~63-74 s across machines), so this probe uses
-  // a wider bound than the reduced one-step probes' 60 s sanity check.
-  EXPECT_LT(exact.elapsedMs, 120000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
@@ -3433,10 +3425,6 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch101FullManifoldOneStepProbe)
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.lastContacts, 0u);
   EXPECT_TRUE(std::isfinite(exact.elapsedMs));
-  // The full 512-contact manifold takes materially longer than the reduced
-  // rung (measured ~37-53 s across machines), so this probe uses a wider
-  // bound than the reduced one-step probes' 60 s sanity check.
-  EXPECT_LT(exact.elapsedMs, 120000.0);
   EXPECT_TRUE(exact.exactSuccess)
       << "elapsedMs=" << exact.elapsedMs << " contacts=" << exact.lastContacts
       << " residual=" << exact.residual << " primal=" << exact.primalResidual
