@@ -5,11 +5,18 @@
 Residual-history infrastructure exists, but paper-matched Figure 9 evidence is
 partial. The prior-source 600-step strict full-card attempt remains the
 authoritative paper-profile contact-rich result and fails closed at step 89. A
-current-source, one-factor card-manifold comparison now completes 600 emitted
-rows in both modes, but neither trajectory is strict and its physical, timing,
-and paper verdicts remain null. A separate durable bundle establishes a
-positive 600-step exact result for a non-paper literal-wedge arch; neither
-current bundle provides the paper's Figure 9 per-outer residual history.
+separate current-source Figure 6 adapter now fails its strict exact lane at
+completed step 35 on a 56-contact island. Additive `last_failure` diagnostics
+identify outer dual/complementarity convergence as the terminal condition, but
+the tested option matrix supplies no strict correction. A source-style
+accept-cap preview reaches all 2,400 steps only by accepting 1,106 capped
+solves, so it is finite-runtime diagnostic evidence rather than a valid exact
+trajectory. The current-source, one-factor card-manifold comparison also
+completes 600 emitted rows in both modes, but neither trajectory is strict and
+its physical, timing, and paper verdicts remain null. A separate locally sealed bundle
+establishes a positive 600-step exact result for a non-paper literal-wedge
+arch; none of these current bundles provides the paper's Figure 9 per-outer
+residual history.
 The separate pinned-author incline packet preserves the current Figure 1
 seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
@@ -19,7 +26,7 @@ and the visual workflow declares 21 schedules.
 
 ## Prior-Source Strict Full-Card Evidence
 
-The byte-identical repository archive is
+The byte-identical ignored local cache is
 `assets/dart_cpu_evidence/2026-07-12_prior_source_paper_cpu_card600_negative/`;
 its metadata retains the original
 `/tmp/fbf_cpu_paper_postreview_20260712_card600` output path. It requests:
@@ -72,10 +79,95 @@ the leading code-path inference, but the trace does not serialize the failed
 internal FBF enum, so `InnerSolverFailed` is not a confirmed artifact fact.
 This statement applies to the retained prior-source artifact; the current
 opt-in sensitivity schema serializes last-group internal status and
-best-iterate diagnostics.
+best-iterate diagnostics, while the current demo sidecar separately retains a
+typed failed-group record across later successful groups.
 
 With fallback disabled, the failed group is left unsolved and the evidence
 caller stops. Later states are not generated from an invalid impulse.
+
+## Current-Source Figure 6 Strict Failure And Ablations
+
+The source-selected `fbf_author_card_house_4_impact_current_source` adapter
+uses 26 cards, four initially kinematic cubes, 2,400 substeps at `dt=1/240 s`,
+and a runner action that releases the cubes after completed substep 1,600. Its
+checked-in exact contract remains fail closed: outer cap 200, tolerance
+`1e-6`, ten fixed inner sweeps, no accepted outer cap, no regularization, and
+no boxed fallback. The focused full record is
+[`FIGURE6_CONVERGENCE_BLOCKER.md`](FIGURE6_CONVERGENCE_BLOCKER.md).
+
+A fresh 100-step request again stops at completed step 35. Collision contacts
+rise from 44 at step 34 to 68 at step 35. The failed 56-contact group is attempt
+101; attempts 102 and 103 subsequently solve groups with 8 and 4 contacts.
+Those later successes leave the ordinary last-group fields at `success` and
+residual zero, but cumulative accounting correctly records 103 attempts, 102
+solves, one exact failure, zero accepted caps, and zero boxed fallbacks.
+
+The additive `solver_diagnostics.last_failure` object now retains the failed
+group instead of allowing the later successes to mask its subtype:
+
+| Field | Retained value |
+| --- | ---: |
+| Adapter / build / FBF status | `fbf_failed` / `success` / `max_iterations` |
+| Failed-group contacts | 56 |
+| Iterations / best iteration | 200 / 200 |
+| Final and best residual | `4.1039190451256334e-4` |
+| Primal feasibility | `0` |
+| Dual feasibility | `4.1039190451256334e-4` |
+| Complementarity | `2.4220067503580449e-4` |
+| Worst dual / complementarity contact | 11 / 11 |
+| Final / safe gamma | `2.7728679142517763` / `0.27728679142517765` |
+| Coupling-variation ratio / shrink count | `0.0053281581128910033` / 0 |
+
+The fresh local sidecar is
+`/tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json`,
+SHA-256
+`2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`.
+It is reproducible diagnostic output, not a repository artifact. The new
+object changes observability only; the cumulative failure remains the strict
+gate and no failed state is promoted to convergence.
+
+A bounded process-local option matrix found no existing strict option that
+completed 100 steps:
+
+| Strict change | Completed step | Result / worst residual |
+| --- | ---: | --- |
+| Frozen `max_outer=200` | 35 | failed, `4.103919e-4` |
+| `max_outer=400` | 35 | failed, `3.922832e-4` |
+| `max_outer=1,000` | 35 | failed, `1.033468e-4` |
+| `max_outer=5,000` | 35 | failed, `9.234912e-6` |
+| `max_outer=10,000` | 35 | failed, `9.234378e-6` |
+| `max_outer=20,000` | 37 | failed, `1.928336e-6` |
+| `max_outer=50,000` | 48 | failed, `2.242023e-6` |
+| DART constraint regularization | 29 | eight failures, `5.811062e-6` |
+
+Warm start off, persistence off, the fuller author-inspired cross-step policy,
+30 inner sweeps, 20 shrink attempts, projected-gradient retry or local solves,
+dense polish or snapshot, matrix-free and seed variants, step scales 1 and 5,
+and outer relaxation 0.8 all failed at or before step 35. Increasing only the
+outer budget moves the first failure but does not supply a strict solution.
+This localizes the observed blocker to slow outer dual/complementarity
+convergence on a contact-rich island; it does not prove one underlying causal
+defect.
+
+The pinned source recovers and advances a finite iterate even when its
+configured convergence flag is false. One process-local GDB preview tested only
+that advancement semantic by setting `accept_outer_max_iterations=true` and
+disabling fail-fast. It completed 2,400 steps and executed the release action at
+step 1,600, but accepted 1,106 of 3,231 exact attempts at the cap (379 before
+release and 727 after), accumulated 284,435 outer iterations, and reached worst
+residual `0.61608914241359314`. Its final group happened to succeed in 26
+iterations at residual `7.9979707788026939e-7`; that last-group value does not
+erase the cumulative caps or worst residual.
+
+The preview timeline is
+`/tmp/fbf_author_card_house_4_exact_accept_caps_2400_20260721/timeline.json`,
+SHA-256
+`034fa50433620a0050839fa26408700a86ad486e2e022edd3dbd29d19a0ad2ec`.
+Its sidecar contract records the changed option, but its `runtime_command`
+cannot reproduce the debugger mutation. The accompanying 64x64 image is not
+legible enough for an outcome verdict. This is an unsealed finite-runtime
+continuation diagnostic, not strict trajectory, physical-outcome, media,
+solver-equivalence, superiority, Figure 6, or paper-parity evidence.
 
 ## Current-Source Card Manifold Sensitivity v2
 
@@ -137,9 +229,9 @@ v2_r3 invocation and whole-tree hashes are
 and `953d8efd4d43ee2a74cede6b5e3a0a766ecd1fd8914485b50b340f515b7ecb77`;
 diagnostic semantics are unchanged.
 
-## Durable Non-Paper Literal-Wedge Evidence
+## Locally Validated Non-Paper Literal-Wedge Evidence
 
-The durable schema-v8 bundle is
+The locally sealed schema-v8 bundle is
 `assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore`.
 Its explicit contract is a reconstructed exact-inertia 25-wedge arch with
 `1 um` closure, pinned springers, Native `FourPointPlanar`, and deterministic
@@ -183,7 +275,7 @@ literal Native/`FourPointPlanar` colored-FBF contract. Its equivalence audit
 compares all 600 capture and reference-trace rows with zero numeric or integer
 differences, including the five zero-iteration warm-start rows. The visual
 bundle is current-source, manually inspected, and has 19 indexed artifacts in
-a 21-file physical directory plus five durable stills; its metadata
+a 21-file physical directory plus five selected local stills; its metadata
 SHA-256 is
 `b217b0a43200ca558f09776e464d50f0f9dc5c5a175bcfa66ae1b656076871d1`
 and artifact-index SHA-256 is
@@ -192,9 +284,9 @@ This corroborates the per-step standing trajectory but still does not supply a
 paper-matched per-outer Figure 9 curve. Its 10 simulated seconds are played in
 6.1 seconds at 10 fps (`1.639344x` time-lapse), so it is not timing evidence.
 
-The 70-file raw capture staging directory was pruned after sealing;
-clean-checkout verify-only uses the durable stills, clip, timeline, trace, and
-provenance without ignored files. The capture source, binary, numeric
+The 70-file raw capture staging directory was pruned after local sealing. With
+the compact local bundle present, verify-only uses the selected stills, clip,
+timeline, trace, and provenance without that raw staging directory. The capture source, binary, numeric
 trajectory, and decoded media remained unchanged through later additive
 scenario work.
 Fresh revalidation against the final current trace and Native source binds the
@@ -209,7 +301,7 @@ zero differences.
 
 ## Preregistered Crown-Impact v1 Negative
 
-The durable numeric artifact is
+The locally retained numeric artifact is
 `assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/`,
 generated by `scripts/run_fbf_literal_crown_impact_negative.py`. The first
 frozen run completed 720 steps and retained a projectile-free 600-step standing
@@ -406,7 +498,7 @@ deficiency is the only cause, and it does not weaken the convergence gate.
 
 ## Small-Scenario Residual Matrix
 
-The current-source strict small artifact is repository-archived at
+The current-source strict small artifact is retained in the ignored local evidence cache at
 `assets/dart_cpu_evidence/2026-07-19_current_source_paper_cpu_small_r7/`.
 Its exact 60-file index binds three repetitions per row plus source, executable,
 runtime, affinity, and post-run identity evidence:
@@ -442,17 +534,17 @@ current-source evidence.
 ## Finalized Incline Lane-Separated Residual Result
 
 The current-source `dart_best` visual/trace bundle is
-`assets/paper_evidence/fig01_02_incline_current_v1/`. Finalization and a
-clean-checkout verify-only pass with status
+`assets/paper_evidence/fig01_02_incline_current_v1/`. With the compact local
+bundle present, finalization and verify-only pass with status
 `valid_current_source_nonpaper_incline`. The directory contains 23 physical
 files and its exact-membership index binds 21 artifacts.
 
 The combined capture records 240 exact attempts/solves with zero accepted
 caps, exact failures, or boxed-LCP fallbacks and maximum residual
-`9.999836962261359e-7`. Five durable stills and a 61-frame decoded 660x506
-H.264 schedule retain the visual evidence at 30 fps. The 70-file raw capture
-staging directory is pruned after sealing, so verify-only needs no ignored
-staging. The capture reports eight contacts per post-initial step.
+`9.999836962261359e-7`. Five selected local stills and a 61-frame decoded
+660x506 H.264 schedule retain the visual evidence at 30 fps. The 70-file raw
+capture staging directory is pruned after local sealing, so verify-only does
+not require that raw staging. The capture reports eight contacts per post-initial step.
 
 The two independent tracked traces each contain 121 rows, 120 exact solves,
 119 warm starts, zero fallbacks, three contacts per post-initial step, and
@@ -534,8 +626,9 @@ stability.
 
 Bundle status is `valid_author_source_pinned_nonpaper_turntable_matrix`.
 The bundle has 58 indexed artifacts in a 60-file physical directory, including
-four durable timeline-selected outcome stills. Capture staging is pruned after
-sealing, and clean-checkout verify-only needs no ignored files. Core hashes are
+four selected local, timeline-bound outcome stills. With the compact local
+bundle present, verify-only does not require the pruned raw capture staging.
+Core hashes are
 report
 `930cc12b95ab78c6e61d084064b584f5872633f2432e434c68d071818cec7fb1`,
 artifact index
@@ -586,6 +679,16 @@ safe_step_size,coupling_variation_ratio,shrink_iterations,contacts,
 exact_solves,warm_starts,fallbacks,status
 ```
 
+The demo-host timeline is a separate additive diagnostic surface. For exact
+FBF, `solver_diagnostics.last_failure` is `null` when no exact failure has been
+recorded. When cumulative `exact_failures` is nonzero, it retains the failed
+group's adapter/build/FBF statuses, contact count, residual components and
+worst-contact indices, iteration/best-iterate data, gamma diagnostics, coupling
+ratio, and shrink count even if a later constrained group succeeds. Cumulative
+attempt/solve/failure/cap/fallback counters remain the acceptance authority;
+the retained object must never be read as permission to advance a failed
+strict trajectory.
+
 Schema-v8 performance rows also disclose and validate outer cap, tolerance,
 cap acceptance, local iterations, adaptive step, warm start, retry, dense
 polish, fallback, seeds, scale, relaxation, initial-gamma contract, split
@@ -627,7 +730,7 @@ literal-wedge collision probe remains collision-only and yields 24 nominal
 adjacent pairs or 26 with its closure/ground audit. It proves no dynamic
 residual or paper-100-contact result.
 
-The durable literal-wedge dynamic trace is a distinct Native
+The locally retained literal-wedge dynamic trace is a distinct Native
 `FourPointPlanar`, `1 um`-closure reconstruction. Its 96 contacts, 24 pairs,
 successful 600-step outcomes, and residual bound establish local DART dynamics
 for that named contract only. They do not retroactively turn the collision
@@ -645,8 +748,8 @@ reconstruction collapsed by step 24/360 (0.4 s) and the 101-stone
 reconstruction collapsed by step 120/600 (2 s). No valid long sidecars/media
 were produced for those contracts. The separate finalized literal-wedge bundle
 validates only its no-projectile standing reconstruction and does not override
-the oriented-box failures. The preregistered impact v1 bundle adds durable
-negative crown-impact evidence, not a passing outcome. The separate literal
+the oriented-box failures. The preregistered impact v1 bundle adds locally
+sealed negative crown-impact evidence, not a passing outcome. The separate literal
 101-stone v7 artifact provides an identity-resolved step-1 exact-dynamics
 blocker, not a standing trajectory or media claim.
 
@@ -742,6 +845,9 @@ evidence, not a reason to omit the run or substitute a reduced scenario.
 
 - Make the strict full-card trajectory finish within the paper cap and
   tolerance without fallback.
+- Preserve the source-selected Figure 6 step-35 record as a strict negative;
+  do not promote its accept-cap 2,400-step preview into trajectory, outcome,
+  media, or Figure 9 evidence.
 - Preserve the completed v2 sensitivity result as diagnostic-only evidence;
   do not promote either non-strict trajectory or its raw wall times.
 - Preserve the pinned-author run as scientific-negative source evidence;

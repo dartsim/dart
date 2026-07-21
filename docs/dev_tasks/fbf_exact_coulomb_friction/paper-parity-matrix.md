@@ -3,7 +3,7 @@
 This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
-complete across 29 requirements. The local visual inventory has six finalized
+complete across 29 requirements. The local visual inventory has six locally finalized
 bundles, and the visual workflow declares 21 schedules.
 
 ## Source And Comparability Boundary
@@ -101,7 +101,7 @@ The existing boxed-LCP solver remains DART's default. Exact FBF is opt-in.
 
 ## Current CPU Matrices
 
-The durable non-paper literal-wedge artifact is
+The locally sealed non-paper literal-wedge artifact is
 `assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore`.
 It uses Native `FourPointPlanar`, `1 um` closure, exact-inertia wedges, float64
 x86-64 Linux, scale 35, 5,000 outer iterations, 30 fixed inner sweeps,
@@ -133,7 +133,8 @@ SHA-256
 the opt-in colored trace has 95 columns and newline-terminated header SHA-256
 `424195336cb42753179130c9f6fcba3a8ddea9bf669cfa70c0f77fcb4c6335a5`.
 
-The current-source strict small artifact is repository-archived at
+The current-source strict small artifact is retained in the ignored local
+evidence cache at
 `assets/dart_cpu_evidence/2026-07-19_current_source_paper_cpu_small_r7/`.
 It binds 60 indexed artifacts and three repetitions per row, including the
 runner, trace source, executable, resolved runtime closure, and a post-run
@@ -161,7 +162,8 @@ All nine reconstructed physical classifiers pass. Seven of nine trajectories
 satisfy the strict solver and local real-time contracts. This is not 7/9 paper
 parity; every paper timing verdict remains null.
 
-The retained prior-source strict full-card artifact is repository-archived at
+The retained prior-source strict full-card artifact is retained in the ignored
+local evidence cache at
 `assets/dart_cpu_evidence/2026-07-12_prior_source_paper_cpu_card600_negative/`.
 Its metadata retains the original `/tmp/fbf_cpu_paper_postreview_20260712_card600`
 path. It stops at step 89/600. The
@@ -225,11 +227,11 @@ colored-inner-BGS contract validated above.
 
 | ID | Paper fixture/result | Current evidence | Current status and missing proof |
 | --- | --- | --- | --- |
-| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Finalized 21-indexed/23-physical DART visual/trace bundle plus numeric author-pinned FBF/MuJoCo/Kamino runs over `mu=.3,.4,.45,.5,.55,.6,.8` | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; author FBF has 839/840 configured convergence flags, the separate strict DART `mu=.5` row has three accepted caps, and matched DART/full-state external/golden/paper-contact/history/timing/real-time proof remains missing |
-| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
-| Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Finalized author-pinned 58-indexed/60-physical four-cell repository bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
-| Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
-| Fig. 6 | 26-card house settles, then receives four projectiles | New source-selected `fbf_author_card_house_4_impact_current_source` adapter and 2,400-step schedule, plus the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked: adapter/contract tests pass, but strict exact fails closed at completed step 35 as contacts jump 44 to 68; boxed reaches step 100, neither reaches release at step 1,600, and no physical-outcome or media verdict exists |
+| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Locally finalized 21-indexed/23-physical DART visual/trace bundle plus numeric author-pinned FBF/MuJoCo/Kamino runs over `mu=.3,.4,.45,.5,.55,.6,.8` | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; author FBF has 839/840 configured convergence flags, the separate strict DART `mu=.5` row has three accepted caps, and matched DART/full-state external/golden/paper-contact/history/timing/real-time proof remains missing |
+| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Locally finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
+| Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
+| Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Locally finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
+| Fig. 6 | 26-card house settles, then receives four projectiles | New source-selected `fbf_author_card_house_4_impact_current_source` adapter and 2,400-step schedule, plus the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked: strict exact fails closed at completed step 35 on the retained 56-contact failed group as collision contacts jump 44 to 68. Bounded option tuning did not solve it, and no strict run reaches release. An unsealed accept-cap preview reaches release and step 2,400 but has 1,106/3,231 caps and worst residual `0.616089`, so no physical-outcome or media verdict exists |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, sealed pinned-author 500-frame scientific negative, and a newly registered 2,000-substep source-configuration DART capture schedule | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags. The new DART exact lane clears the former step-68 local failure and completes 100 strict steps, then fails closed on a distinct outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks); neither lane has completed the 2,000-step physical/media gates, the 500-frame invocation is not the source default, and no source-matched DART impact or paper-timing row is established |
 | Fig. 8 | 101-stone arch remains balanced | Oriented-box bounded visual attempt plus provenance-bound exact-inertia literal v7 numeric run with failed-step-1 pair identities | Blocked: oriented-box attempt collapses by step 120/600; literal v7 identity-resolves the failed graph as the 100-edge adjacent chain but still fails closed on step 1 at residual `0.7815364614`, so neither supplies source-equivalent standing/physical outcome, timing, long-run behavior, or valid media |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
@@ -243,30 +245,44 @@ releases them immediately when used interactively; the evidence runner invokes
 `p` after completed substep 1,600. The horizon is 2,400 substeps at
 `dt=1/240 s`. Exact and boxed use the same Native
 `FourPointPlanar` frontend with contact capacity 4,096 and manifold subdivision
-4. The demo build, eight focused C++ tests, 190 runner Python tests, and both
+4. The demo build, eight focused C++ tests, 205 runner Python tests, and both
 contract-smoke validators pass.
 
 The strict exact 100-step prefix records 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
 `4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
-`9.826274595482653e-7`. Its timeline SHA-256 is
-`be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+`9.826274595482653e-7`. At step 35 the constrained groups are 56, 8, and 4
+contacts. Attempt 101 reaches its 200-iteration cap on the 56-contact group;
+attempts 102 and 103 then succeed. The additive `last_failure` object retains
+the failed group's `fbf_failed` / `success` / `max_iterations` status, contact
+count, residual terms, worst-contact indices, iterations, and gamma diagnostics
+after those later successes. Its timeline SHA-256 is
+`2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`.
 The boxed 100-step timeline SHA-256 is
 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
-No full run, release, trajectory or outcome, source-backend or timing
-equivalence, final media or PR upload, Fig. 6/historical/paper parity, or
-solver-superiority claim follows. This remains an adapter-only lane. The older
-`fbf_paper_card_house_26` scene is a separate reconstruction and must not be
-merged into this claim.
+Bounded existing-option tuning did not produce a strict solution: even a
+50,000-iteration budget only moved the first failure to step 48, and the tested
+policy, seed, retry, regularization, and warm-start ablations failed at or
+before the same prefix. A process-local GDB override accepting capped iterates
+completed all 2,400 steps and invoked `p` at step 1,600, but its runtime command
+cannot reproduce the mutation. It accepted 1,106 of 3,231 solves at cap and
+recorded worst residual `0.61608914241359314`. This unsealed preview establishes
+finite continuation only. No strict full run or release, valid trajectory or
+outcome, source-backend or timing equivalence, final media or PR upload,
+Fig. 6/historical/paper parity, or solver-superiority claim follows. See
+[`FIGURE6_CONVERGENCE_BLOCKER.md`](FIGURE6_CONVERGENCE_BLOCKER.md). This remains
+an adapter-only lane. The older `fbf_paper_card_house_26` scene is a separate
+reconstruction and must not be merged into this claim.
 
-The finalized Fig. 1/2 and video.03 bundle is
-`assets/paper_evidence/fig01_02_incline_current_v1/`. Finalization and
-clean-checkout verify-only pass with status
+The locally finalized Fig. 1/2 and video.03 bundle is
+`assets/paper_evidence/fig01_02_incline_current_v1/`. With the compact local
+bundle present, finalization and verify-only pass with status
 `valid_current_source_nonpaper_incline`; the directory contains 23 physical
 files and the exact-membership index binds 21 artifacts. The combined 660x506
-capture retains five durable stills and a 61-frame decoded 30 fps schedule.
-Its 70-file raw capture staging directory is pruned after sealing, so
-verify-only needs no ignored staging. It records 240 exact attempts/solves,
+capture retains five selected local stills and a 61-frame decoded 30 fps
+schedule. Its 70-file raw capture staging directory is pruned after local
+sealing, so verify-only does not require that raw staging directory. It records
+240 exact attempts/solves,
 zero accepted caps, exact failures,
 or fallbacks, maximum residual `9.999836962261359e-7`, and eight contacts per
 post-initial step.
@@ -329,10 +345,11 @@ remain `partial` pending the full friction sweep/plot, matched external rows,
 approved source golden/diff, paper contact-count match, full 11 s semantic
 edit, paper timing, and real-time parity.
 
-The finalized Fig. 3/video.02 bundle binds 18 indexed artifacts in a 20-file
-physical directory. The MP4/GIF preserve the motion schedule, three durable
-stills retain steps 0, 1, and 2, and the 140-file raw capture staging directory
-is pruned after sealing; clean-checkout verify-only needs no ignored staging.
+The locally finalized Fig. 3/video.02 bundle binds 18 indexed artifacts in a
+20-file physical directory. The MP4/GIF preserve the motion schedule, three
+selected local stills retain steps 0, 1, and 2, and the 140-file raw capture
+staging directory is pruned after local sealing. With the compact local bundle
+present, verify-only does not require that raw staging directory.
 The bundle records 129 exact attempts/solves with zero accepted caps, failures,
 or fallbacks. Trace/capture maximum residuals are
 `9.964971544991853e-7`/`9.96497154974839e-7`. The trace reaches maximum
@@ -363,7 +380,7 @@ is proven. Separate demo and CSV scenes are not full-state trace-equivalent.
 External-solver, paper, approved-golden, timing, and real-time parity remain
 unproven. Both `fig.03` and `video.02_backspin` remain `partial`.
 
-The finalized Fig. 4 bundle is
+The locally finalized Fig. 4 bundle is
 `assets/paper_evidence/fig04_turntable_author_current_v1/`. It pins author
 commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, binds 58 indexed artifacts
 in a 60-file physical directory, and preserves source order
@@ -381,9 +398,9 @@ for all four cells over six solver/contact fields, not full state. The separate
 strict `paper_cpu_native` lane has no capture comparison: `mu=.5, omega=2`
 fails at step 40 with residual `7.407835021099202e-6`, while its other three
 rows pass. The lanes must not be substituted for one another.
-Four durable timeline-selected outcome stills bind steps 136, 120, 360, and
-90 in source order. Capture staging is pruned after sealing;
-clean-checkout verify-only needs no ignored files.
+Four selected local, timeline-bound outcome stills cover steps 136, 120, 360,
+and 90 in source order. With the compact local bundle present, verify-only does
+not require the pruned raw capture staging.
 
 Bundle status is `valid_author_source_pinned_nonpaper_turntable_matrix`, with
 the current visual artifact, solver, physical, manual-inspection, and pass
@@ -408,15 +425,17 @@ The source audit validates the pinned video, teaser, and paper and all nine
 contiguous segments across 82 s. This proves source identity and coverage, not
 local parity.
 
-The repository bundle at `assets/paper_evidence/fig07_arch25_literal/` is valid
-current-source evidence for the non-paper, no-projectile literal-wedge standing
-reconstruction. Its five durable 1280x720 stills and 61-frame H.264 schedule
+The locally finalized bundle at
+`assets/paper_evidence/fig07_arch25_literal/` is valid current-source evidence
+for the non-paper, no-projectile literal-wedge standing reconstruction. Its
+five selected local 1280x720 stills and 61-frame H.264 schedule
 fully decode; 600 independently generated capture/trace rows have zero
-differences. Manual inspection covers the durable stills, timeline, and a
+differences. Manual inspection covers the selected stills, timeline, and a
 separately decoded midpoint. The retained pending hash DAG passed before final
 writes, and the final artifact index validates 19 artifacts in a 21-file
 physical directory. The 70-file raw capture staging directory is pruned after
-sealing, and clean-checkout verify-only needs no ignored files. Ten simulated
+local sealing. With the compact local bundle present, verify-only does not
+require that raw staging directory. Ten simulated
 seconds play in 6.1 seconds at 10 fps (`1.639344x` time-lapse), so the clip is
 not a real-time playback result. Core hashes are metadata
 `b217b0a43200ca558f09776e464d50f0f9dc5c5a175bcfa66ae1b656076871d1`,
@@ -427,7 +446,7 @@ and timeline
 This closes standing-media integrity only, not the paper crown impact or parity
 gate.
 
-The capture source, capture binary, trajectory, durable stills, and media remained
+The capture source, capture binary, trajectory, selected local stills, and media remained
 immutable through later additive scenario work. Fresh revalidation against the
 final current trace and Native source regenerated reference trace
 `0e41af230fb4c27143966c3f8522702280e6746b31e84155a9a047326e46dbb3`
@@ -437,7 +456,7 @@ source/binary hashes are
 and
 `0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`.
 
-The durable impact bundle is
+The locally sealed impact bundle is
 `assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/`. Its
 600-step projectile-free prefix has zero mismatches across 88 eligible fields. In the
 720-step frozen run, projectile-arch contact begins at step 607 before ground
@@ -505,7 +524,7 @@ They were captured after the final review fixes and manually inspected. The
 turntable output and the historical Painleve hash remain external reconstructed
 evidence rather than repository-published or paper-golden media.
 
-The Painleve subset now also has a distinct finalized repository bundle at
+The Painleve subset now also has a distinct locally finalized bundle at
 `assets/paper_evidence/fig05_painleve_proxy_current_v1`. Its synchronized
 1320x530, 30 fps, 76-frame clip has SHA-256
 `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b`.
@@ -553,14 +572,15 @@ No local row may be labeled as meeting or beating these targets.
 
 ## Validation And PR State
 
-The last recorded focused gates report 47/47 exact-math tests, 25/25 exact
+The last recorded focused gates report 47/47 exact-math tests, 29/29 exact
 constraint-solver tests, 64/64 `ConstraintSolver` tests, 42/42 Native-collision
-tests, 3/3 masonry-geometry tests, 19 passing paper fixtures with 3 skipped,
+tests, 3/3 masonry-geometry tests, 31 passing paper fixtures with 3 skipped,
 9/9 focused CTests in both Release and Debug, 64/64 author-incline finalizer
 tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
-no-cache dartpy Python tests. A clean-checkout finalized-incline verify-only pass also
-succeeds with 21 indexed artifacts and no ignored staging dependency, its
+no-cache dartpy Python tests. With the compact local incline bundle present,
+verify-only also succeeds with 21 indexed artifacts and no raw
+capture-staging dependency, its
 focused finalizer suite passes 62/62, and 1,000
 consecutive successful colored dispatch/barrier
 stress runs. The prior-source strict full-card failure and current-source v2
@@ -572,13 +592,14 @@ development symlink is restored to `libdart.so.6.19.4`; `.3` and `.4` are
 byte-identical, but the validator intentionally treats the resolved path as
 identity and therefore reports five live path mismatches until that historical
 closure is explicitly recreated. Archive mode remains the clean validation
-path for the sealed repository evidence.
+path for the sealed local evidence.
 
 PR #3374 is merged at final head `1f816` and merge commit `fa17fad` (abbreviated
-hashes). The #3377 topic contains `origin/release-6.20` through `75306efe770`.
-Its topic head, divergence, merge state, checks, and reviews are intentionally
-not frozen into this matrix; fetch and query them live before reporting or
-publishing. PR #3377 remains work in progress and is not completion evidence.
+hashes). PR #3377 was verified open and draft on 2026-07-21. Its target
+ancestry, topic head, divergence, merge state, checks, and reviews are
+intentionally not frozen into this matrix; fetch and query them live before
+reporting or publishing. PR #3377 remains work in progress and is not
+completion evidence.
 `PR_REPORT.md` records the live-verification policy and historical
 branch-regression versus base/workflow CI classification.
 

@@ -6,12 +6,12 @@ Visual evidence is partial. The small-scene capture system now produces
 auditable, solver-gated media, and a complete post-review small matrix exists.
 The source-selected card, reconstructed card, 101-stone arch, and crown-impact
 examples do not have valid current long-run media. The current-source nine-row
-numeric small matrix is now a
-repository-finalized evidence bundle. Five visual bundles are
-repository-finalized: literal-wedge standing, the two-cell incline threshold,
-the two-cell Painleve proxy, backspin, and the author-pinned four-cell
-turntable matrix. They remain bounded
-DART evidence, not paper-golden or paper-timing evidence. The current visual
+numeric small matrix is now a locally finalized evidence bundle. Five dynamic
+visual bundles are locally finalized: literal-wedge standing, the two-cell
+incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
+four-cell turntable matrix. A sixth locally finalized visual bundle records the
+author five-level construction at step zero; it remains construction-only
+evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
 workflow inventory declares 21 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
@@ -38,7 +38,7 @@ a failed quantitative outcome.
 
 ## Literal-Wedge Numeric And Visual Evidence
 
-The durable bundle
+The locally sealed bundle
 `assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore`
 records one warmup and three measured 600-step trajectories at each of one and
 four threads for an explicit non-paper exact-inertia literal-wedge
@@ -57,20 +57,21 @@ Those facts authorize a numeric standing/outcome/scaling claim for the named
 Native `FourPointPlanar`, `1 um`-closure reconstruction.
 
 The matching standing bundle under
-`assets/paper_evidence/fig07_arch25_literal/` is finalized with
+`assets/paper_evidence/fig07_arch25_literal/` is locally finalized with
 `claim_valid=true` for that current-source, no-projectile, non-paper scope. It
-contains five durable 1280x720 stills, a fully decoded 61-frame H.264 schedule,
+contains five selected local 1280x720 stills, a fully decoded 61-frame H.264 schedule,
 a five-panel timeline, the full trajectory, and an independently generated
 reference trace. All 600 rows have zero differences in the nine mapped integer
 and five mapped floating-point fields, with fixed reference/scene-contract
 checks. The five zero-iteration warm-start rows retain the required
 24-manifold/3-color/width-8 schedule and zero colored work.
 
-The five durable stills, timeline, and a separately decoded 3.0-second video
+The five selected local stills, timeline, and a separately decoded 3.0-second video
 midpoint were manually inspected. The retained pending hash DAG passed before
 final metadata/index writes, and the final index covers 19 artifacts in a
 21-file physical directory. The 70-file raw capture staging directory is
-pruned after sealing, and clean-checkout verify-only needs no ignored files. The
+pruned after local sealing. With the compact local bundle present, verify-only
+does not require that raw staging directory. The
 10-second simulation is sampled into 61 frames and played for 6.1 seconds at
 10 fps, or `1.639344x` time-lapse. This is not a real-time playback claim.
 
@@ -94,7 +95,7 @@ while the capture source
 `c3efeac52d02a0c373f733598db81e545d062195ba6e96c2a65bcb607cd0207f`,
 capture binary
 `8b3cad15220c8fdb69c3ebdf7fa3923fda6fd812a49d0e54c8aeb07e62f0a7e9`,
-and durable media remain unchanged. Finalizer driver
+and selected local media remain unchanged. Finalizer driver
 `0f4e27b0c58e9dd3774c6be48ad4c70a857e2956fd81f11710837561f08f7243`
 regenerated reference trace
 `0e41af230fb4c27143966c3f8522702280e6746b31e84155a9a047326e46dbb3`
@@ -180,22 +181,22 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 
 | Surface | Automated artifact/solver result | Manual observation | Claim boundary |
 | --- | --- | --- | --- |
-| Combined incline | Finalized 21-indexed/23-physical current-source bundle; five durable stills, a 61-frame decoded schedule, and 240/240 exact attempts/solves with zero caps/failures/fallbacks | Reconstructed `mu=.4` slide and `mu=.5` stick-threshold separation visible | Partial: independent traces corroborate the threshold, but capture contacts 8 differ from aggregate trace contacts 6; strict `paper_cpu` `mu=.5` still fails at residual `1.439e-6`, and external/paper/golden/timing/real-time proof is missing |
-| Backspin | Finalized 18-indexed/20-physical current-source bundle; three durable stills, MP4/GIF media, and 129/129 exact attempts/solves | Translational reversal, checker-cell changes, and the coral registration tile are visible | Partial: trace owns reversal; no signed angular direction, continuous contact, rest, landing, full-state equivalence, or external/paper/golden/timing/real-time parity |
+| Combined incline | Locally finalized 21-indexed/23-physical current-source bundle; five selected local stills, a 61-frame decoded schedule, and 240/240 exact attempts/solves with zero caps/failures/fallbacks | Reconstructed `mu=.4` slide and `mu=.5` stick-threshold separation visible | Partial: independent traces corroborate the threshold, but capture contacts 8 differ from aggregate trace contacts 6; strict `paper_cpu` `mu=.5` still fails at residual `1.439e-6`, and external/paper/golden/timing/real-time proof is missing |
+| Backspin | Locally finalized 18-indexed/20-physical current-source bundle; three selected local stills, MP4/GIF media, and 129/129 exact attempts/solves | Translational reversal, checker-cell changes, and the coral registration tile are visible | Partial: trace owns reversal; no signed angular direction, continuous contact, rest, landing, full-state equivalence, or external/paper/golden/timing/real-time parity |
 | Turntable 2x2 | Finalized 58-indexed/60-physical author-pinned bundle with four outcome stills; all four 360-step current visual cells are solver-valid | Segmented disc/coral wedge are legible; three cells eject and `mu=.5, omega=2` remains on support through 6 s | Partial: finite-horizon result only; no zero-slip/co-rotation, full-state, approved-golden, paper-timing, real-time, or paper-parity claim, and the separate strict lane fails the retained cell at step 40 |
-| Painleve pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded as the durable source by the finalized repository proxy bundle below; no author parity |
+| Painleve pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; no author parity |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Source-selected four-level Figure 6 adapter | Scene/schedule contract, exact/boxed smoke, and bounded 100-step numeric prefixes only | No valid captured media | Exact fails closed at completed step 35; boxed reaches step 100; neither reaches release at step 1,600, so outcome/media/parity remain blocked |
+| Source-selected four-level Figure 6 adapter | Scene/schedule contract, exact/boxed smoke, and bounded numeric diagnostics only | No valid captured media | Strict exact fails closed at completed step 35 on a retained 56-contact failed group; bounded option tuning did not solve it, and no strict run reaches release. An unsealed accept-cap preview reached release and step 2,400 with 1,106/3,231 caps and worst residual `0.616089`, so outcome/media/parity remain blocked |
 
-The finalized current-source incline bundle is
-[`assets/paper_evidence/fig01_02_incline_current_v1/`](assets/paper_evidence/fig01_02_incline_current_v1/).
-Finalization and clean-checkout verify-only pass with status
+The locally finalized current-source incline bundle is
+`assets/paper_evidence/fig01_02_incline_current_v1/`.
+With the compact local bundle present, finalization and verify-only pass with status
 `valid_current_source_nonpaper_incline`. The directory contains 23 physical
 files, of which the exact-membership index binds 21. The capture retains five
-durable 660x506 stills and a 61-frame decoded 30 fps H.264 schedule. Its
-70-file raw capture staging directory is pruned after sealing, so verify-only
-needs no ignored staging. It records 240 exact attempts/solves,
+selected local 660x506 stills and a 61-frame decoded 30 fps H.264 schedule. Its
+70-file raw capture staging directory is pruned after local sealing, so
+verify-only does not require that raw staging directory. It records 240 exact attempts/solves,
 zero accepted caps, exact failures, or boxed-LCP fallbacks, maximum residual
 `9.999836962261359e-7`, and eight contacts per post-initial step.
 
@@ -257,12 +258,13 @@ failed. Fig. 1, Fig. 2, and video.03 remain `partial` without the full friction
 sweep/plot, matched external rows, approved source golden/diff, paper contact
 count, full 11 s semantic edit, paper timing, and real-time parity.
 
-The finalized current-source backspin bundle is
-[`assets/paper_evidence/fig03_backspin_current_v3/`](assets/paper_evidence/fig03_backspin_current_v3/).
+The locally finalized current-source backspin bundle is
+`assets/paper_evidence/fig03_backspin_current_v3/`.
 Its index binds 18 artifacts in a 20-file physical directory. The MP4/GIF
-preserve the full motion schedule, three durable stills retain steps 0, 1, and
-2, and the 140-file raw capture staging directory is pruned after sealing.
-Clean-checkout verify-only needs no ignored staging. The capture has 129 exact
+preserve the full motion schedule, three selected local stills retain steps 0,
+1, and 2, and the 140-file raw capture staging directory is pruned after local
+sealing. With the compact local bundle present, verify-only does not require
+that raw staging directory. The capture has 129 exact
 attempts/solves, with zero accepted caps, exact failures, or boxed-LCP
 fallbacks and maximum residual `9.96497154974839e-7`. The separate trace
 maximum is `9.964971544991853e-7`; maximum forward travel is
@@ -298,8 +300,8 @@ are separate scenes and are not full-state trace-equivalent. External-solver,
 paper, approved-golden, timing, and real-time parity remain unproven. Both
 `fig.03` and `video.02_backspin` remain `partial`.
 
-The finalized author-pinned turntable bundle is
-[`assets/paper_evidence/fig04_turntable_author_current_v1/`](assets/paper_evidence/fig04_turntable_author_current_v1/).
+The locally finalized author-pinned turntable bundle is
+`assets/paper_evidence/fig04_turntable_author_current_v1/`.
 It pins author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, binds 58
 indexed artifacts in a 60-file physical directory, and preserves the source
 order `mu=.2/omega=2`,
@@ -313,9 +315,9 @@ Retention does not prove zero slip, perfect sticking, co-rotation, or behavior
 beyond 6 s. Manual inspection passes the segmented visual disc, one coral
 registration wedge, labels, and order. The physical cylinder remains the sole
 collision and dynamics geometry.
-Four durable timeline-selected outcome stills bind steps 136, 120, 360, and
-90 in source order. Capture staging is pruned after sealing;
-clean-checkout verify-only needs no ignored files.
+Four selected local, timeline-bound outcome stills cover steps 136, 120, 360,
+and 90 in source order. With the compact local bundle present, verify-only does
+not require the pruned raw capture staging.
 
 All four capture/trace projections are byte-identical over `step`, `contacts`,
 `exact_solves`, `warm_starts`, `boxed_lcp_fallbacks`, and `status`; this is not
@@ -343,7 +345,7 @@ and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
 This is not paper-comparable, approved-golden, timing, or real-time evidence.
 
 The finalized author card-house construction bundle is
-[`assets/paper_evidence/card_house_author_5_construction_current_v1/`](assets/paper_evidence/card_house_author_5_construction_current_v1/).
+`assets/paper_evidence/card_house_author_5_construction_current_v1/`.
 It has 12 indexed artifacts / 14 physical files and shows the public-author
 default five-level, 40-card construction with four suspended cubes at step
 zero. Its index, metadata, and manual-inspection hashes are
@@ -370,21 +372,36 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 `dt=1/240 s`. Exact and boxed share Native `FourPointPlanar`, capacity 4,096,
 and subdivision 4.
 
-The demo build, eight focused C++ tests, 190 runner Python tests, and exact/boxed
+The demo build, eight focused C++ tests, 205 runner Python tests, and exact/boxed
 contract smoke pass. The strict exact request fails closed at completed step
-35 when contacts jump from 44 to 68. Its 100-step request records 103 attempts,
-102 solves, one failure, zero fallbacks, zero accepted caps, and worst residual
-`4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
-`9.826274595482653e-7`. Timeline:
-`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
-SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+35 when collision contacts jump from 44 to 68. The constrained groups are 56,
+8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact
+group, then attempts 102 and 103 succeed. Its 100-step request records 103
+attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
+worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
+worst residual `9.826274595482653e-7`. The additive `last_failure` object
+retains the failed group's `fbf_failed` / `success` / `max_iterations` status,
+56-contact count, residual terms, worst-contact indices, iterations, and gamma
+diagnostics after the later groups succeed. Timeline:
+`/tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json`,
+SHA-256 `2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`.
 The boxed 100-step control completes; timeline
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
 SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
-Neither reaches release, so there is no full-run trajectory or outcome,
+Bounded existing-option tuning did not clear strict convergence: raising the
+outer budget as high as 50,000 only moved the first failure to step 48, and the
+tested policy, seed, retry, regularization, and warm-start ablations failed at
+or before the same prefix. A process-local GDB override accepting capped
+iterates completed 2,400 steps and invoked `p` at step 1,600, but its runtime
+command cannot reproduce the mutation. It accepted 1,106 of 3,231 solves at
+cap and recorded worst residual `0.61608914241359314`. This unsealed preview is
+finite-continuation evidence only, not a valid physical-outcome or visual
+artifact. No strict run reaches release, and there is no valid outcome,
 source-backend or timing equivalence, Fig. 6/paper parity, final media or PR
-video, or solver-superiority claim. This remains an adapter-only lane. Keep
-`fbf_paper_card_house_26` distinct as the older reconstruction.
+video, or solver-superiority claim. See
+[`FIGURE6_CONVERGENCE_BLOCKER.md`](FIGURE6_CONVERGENCE_BLOCKER.md). This remains
+an adapter-only lane. Keep `fbf_paper_card_house_26` distinct as the older
+reconstruction.
 
 The quantitative CPU evidence is authoritative for
 `physical_outcome_valid`. The visual observations above are recorded under
@@ -400,24 +417,24 @@ rate, and frame count:
 | Turntable | 2x2 | 1320x1060, 30 fps, 121 frames | `e5bf08986d6e70bdf25797e66c958c9ac947f9b2dc863b30d37afe1efd29f11e` |
 | Turntable, finalized author-pinned v1 | 2x2 | 1320x1060, 30 fps, 181 decoded frames | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
 | Painleve, historical `/tmp` matrix | Side by side | 1320x530, 30 fps, 76 frames | `d25a93abf964df707e3c10c30202bf75d76e0b216b9f2301b393dca63322afd0` |
-| Painleve, finalized repository v1 | Side by side | 1320x530, 30 fps, 76 frames | `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b` |
-| Incline, finalized repository v1 | Combined view | 660x506, 30 fps, 61 frames | `ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9` |
-| Backspin, finalized repository v3 | Single view | 1300x506, 30 fps, 66 decoded frames | `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928` |
+| Painleve, locally finalized v1 | Side by side | 1320x530, 30 fps, 76 frames | `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b` |
+| Incline, locally finalized v1 | Combined view | 660x506, 30 fps, 61 frames | `ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9` |
+| Backspin, locally finalized v3 | Single view | 1300x506, 30 fps, 66 decoded frames | `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928` |
 
 The member order, labels, synchronized duration, source-frame hashes, and
 composite hashes are recorded in the group metadata. These integrity checks
 support `artifact_valid`; they do not establish author-scene or paper parity.
 
 The historical matrix was captured from the post-review binary, then fully
-decoded and manually inspected. Its incline row is superseded by the finalized
-repository v1 bundle, which binds the current-source combined clip/panel,
+decoded and manually inspected. Its incline row is superseded by the locally
+finalized v1 bundle, which binds the current-source combined clip/panel,
 manual inspection, and two independent tracked traces while explicitly
 excluding mismatched contact counts from equivalence. The finalized Painleve
 v1 bundle separately binds both current-source member clips, hardened per-step
 sidecars, the paired clip and panel, manual inspection, and separate tracked
 physical traces in a 27-artifact exact-membership index within 29 physical
 files. The finalized backspin v3 bundle similarly binds its current-source
-trace, three durable stills, panel, MP4/GIF, manual inspection, and 18-artifact
+trace, three selected local stills, panel, MP4/GIF, manual inspection, and 18-artifact
 index within 20 physical files. The author-pinned turntable
 bundle separately binds its four source-ordered cells, synchronized media,
 manual inspection, and separated visual/strict lanes. In the Painleve and
@@ -438,7 +455,7 @@ completed sidecar/media bundle:
 
 | Schedule | Requested duration | Furthest observation | Result predicates |
 | --- | ---: | --- | --- |
-| Source-selected four-level/26-card settle/projectile | 2,400 steps | Exact fails closed at completed step 35; boxed control completes 100/2,400 | `artifact_valid=false`; no release, outcome, or media |
+| Source-selected four-level/26-card settle/projectile | 2,400 steps | Strict exact fails closed at completed step 35 on a 56-contact group; boxed control completes 100/2,400. An unsealed accept-cap preview completes 2,400 and executes `p` at step 1,600, but records 1,106/3,231 caps and worst residual `0.616089` | `artifact_valid=false`; no strict release, valid outcome, or media |
 | 26-card settle/projectile | 600 steps | Step 6/600 | `artifact_valid=false`; incomplete |
 | 25-stone oriented-box reconstructed arch | 360 steps | Step 24/360; visibly collapsed at 0.4 s | `artifact_valid=false`; `physical_outcome_valid=false` |
 | 101-stone reconstructed arch | 600 steps | Step 120/600; visibly collapsed at 2 s | `artifact_valid=false`; `physical_outcome_valid=false` |
@@ -453,7 +470,8 @@ The positive literal-wedge result is a separate scene contract and does not
 relabel or invalidate the oriented-box visual failure. Its standing capture
 also cannot be substituted for missing crown-impact media.
 
-The retained prior-source strict CPU card trajectory, repository-archived at
+The retained prior-source strict CPU card trajectory, retained in the ignored
+local evidence cache at
 `assets/dart_cpu_evidence/2026-07-12_prior_source_paper_cpu_card600_negative/`,
 independently fails at step 89/600 with terminal residual `1.8612e-2`, one
 exact failure, and zero fallbacks. The current-source card-v2 diagnostic emits
@@ -564,7 +582,8 @@ shown by `--help` and rejects hash or segment-boundary drift.
 
 - Preserve the finalized incline, Painleve, backspin, and turntable bundles
   within their declared lane-specific boundaries; promote only the remaining
-  small-matrix rows through validated immutable publication bundles.
+  small-matrix rows through validated local bundles, then publish required
+  review media through recorded GitHub attachment URLs.
 - Keep manual observations separate from quantitative physical-outcome status.
 - Preserve the current 9/9 physical-classifier versus 7/9 strict-solver
   distinction. The finalized incline visual/trace lane does not promote the
@@ -572,10 +591,11 @@ shown by `--help` and rejects hash or segment-boundary drift.
   does not erase its separate strict failure.
 - Produce valid full-duration card/arch media only after every requested step
   satisfies the strict exact-solver and physical-outcome contracts.
-- For the source-selected four-level card scene, first resolve or precisely
-  characterize the completed-step-35 exact failure, then complete all 2,400
-  exact/boxed steps through release. Do not promote the boxed 100-step prefix
-  or relabel the older reconstructed card evidence.
+- For the source-selected four-level card scene, resolve the now-characterized
+  completed-step-35 failure on the retained 56-contact group, then complete all
+  2,400 strict exact/boxed steps through release. Bounded existing-option tuning
+  did not solve it. Do not promote the unsealed accept-cap preview, the boxed
+  100-step prefix, or the older reconstructed card evidence.
 - The raw-scale 25-stone author adapter now clears the former step-68 local-QP
   failure and completes a strict 100-step exact smoke with zero accepted
   caps/failures/fallbacks. Its next clean fail-fast blocker is the outer

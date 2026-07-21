@@ -5,7 +5,7 @@ small FBF fixtures whose local reconstruction is sufficiently specified:
 backspin, the two published incline cells, and the four published turntable
 cells. It is benchmark/evidence code only and is not a DART dependency.
 
-> **Committed-bundle status:** the `2026-07-11_mark26_cpu4` bundle is a
+> **Local-bundle status:** the `2026-07-11_mark26_cpu4` bundle is a
 > historical pre-hardening snapshot. Its recorded provenance does not bind to
 > the current source runner, so it is not current validated evidence. Do not
 > regenerate it in place; a new validation run must use a new output directory.

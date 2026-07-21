@@ -25,8 +25,14 @@ AGENT_CONTINUATION.md as the authoritative truth ledger.
 Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  target synchronization verified through 75306efe770
+  target synchronization must be verified live before the next push
   topic HEAD/divergence/PR/CI/review state must be verified live
+
+The topic tip tracks zero files under
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/, but topic history still has
+492 task-asset blobs totaling 96,573,227 bytes. PR #3377 must be true-squash-
+merged so those blobs do not enter release-6.20, unless the topic history is
+explicitly rewritten first. Do not use a merge commit or rebase merge.
 
 Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
 Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
@@ -63,13 +69,11 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- The #3377 topic contains origin/release-6.20 through 75306efe770. Its topic
-  head, divergence, merge state, checks, and reviews are mutable and must be
-  queried live rather than copied from this handoff.
-- PR #3377 is work in progress and its body overclaims the task's completion
-  and paper coverage. It is not completion evidence.
-- Use PR_REPORT.md as the source for a truthful replacement body only after
-  explicit approval to mutate GitHub.
+- PR #3377 was verified open and draft on 2026-07-21. Its topic head, target
+  ancestry, merge state, checks, and reviews are mutable and must be queried
+  live rather than copied from this handoff. It is not completion evidence.
+- Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
+  until the documented completion gates are actually met.
 
 Exact-math truth:
 
@@ -148,8 +152,8 @@ Current literal-arch visual truth:
   Its `all-runnable` check fails closed at the absent
   `card_house_26/timeline.json`; keep that matrix partial and outside
   repository deliverables. Its incline, Painleve, and backspin cells are
-  superseded for durable use by the finalized repository bundles below; do
-  not treat those `/tmp` media as the current artifacts.
+  superseded for local use by the locally finalized bundles below; do not
+  treat those `/tmp` media as the current artifacts.
 - It completes 600 exact steps with zero exact failures, zero boxed-LCP
   fallbacks, and worst residual 9.9998071454109575e-7.
 - Its independently rendered capture and current fbf_paper_trace reference
@@ -158,8 +162,8 @@ Current literal-arch visual truth:
 - Maximum all-stone displacement from constructed t0 is
   5.431169776791696e-6 m; minimum orientation alignment is
   0.9999999999111284.
-- It has 19 indexed artifacts / 21 physical files, including five durable
-  1280x720 stills. The five-panel timeline, the durable stills, and the
+- It has 19 indexed artifacts / 21 physical files, including five selected
+  local 1280x720 stills. The five-panel timeline, those stills, and the
   separately decoded video midpoint passed manual inspection; the H.264 clip
   retains a 61-frame decoded schedule.
 - The H.264 clip compresses 10 simulation seconds into 6.1 playback seconds at
@@ -167,9 +171,9 @@ Current literal-arch visual truth:
 - Finalization retained immutable pending metadata and verified its hash DAG
   before writing final provenance, artifact index, and metadata.
 - Capture source, binary, numeric trajectory, and decoded media are unchanged.
-  The 70-file raw capture staging directory was pruned after sealing;
-  provenance binds its schedule and hashes, and clean-checkout verify-only
-  needs no ignored staging. The current trace changed additively for the
+  The 70-file raw capture staging directory was pruned after local sealing.
+  With the compact local bundle present, verify-only does not require that raw
+  staging directory. The current trace changed additively for the
   card-manifold sensitivity lane, so finalization regenerated the standing
   reference with the current executable and freshly proved all 600 standing
   rows zero-difference. Original trace hashes remain separate capture
@@ -222,13 +226,14 @@ Current literal-arch visual truth:
 Finalized Fig. 01/02 and video.03 incline truth:
 
 - Use assets/paper_evidence/fig01_02_incline_current_v1/.
-- Finalization and clean-checkout verify-only pass with status
+- With the compact local bundle present, finalization and verify-only pass with status
   valid_current_source_nonpaper_incline. The directory contains 23 physical
   files; its exact-membership index binds 21 and excludes only
   artifact-index.json and metadata.json.
-- The combined capture retains five durable 660x506 stills and a 61-frame
+- The combined capture retains five selected local 660x506 stills and a 61-frame
   decoded H.264 schedule at 30 fps. Its 70-file raw capture staging directory
-  is pruned after sealing, so verify-only needs no ignored staging. It records
+  is pruned after local sealing, so verify-only does not require that raw
+  staging directory. It records
   240 exact attempts/solves, zero caps, failures,
   or fallbacks, maximum residual 9.999836962261359e-7, and eight contacts per
   post-initial step.
@@ -309,10 +314,10 @@ Pinned-author incline sweep truth:
 Finalized Painleve proxy visual truth:
 
 - Use assets/paper_evidence/fig05_painleve_proxy_current_v1/.
-- Finalization and clean-checkout verify-only both pass with status
+- With the compact local bundle present, finalization and verify-only both pass with status
   `valid_current_source_nonpaper_proxy`, 27 indexed artifacts, and 29 physical
-  files; ignored capture staging is not required.
-- The fail-closed index binds 27 artifacts. Each durable member clip fully
+  files; pruned raw capture staging is not required.
+- The fail-closed index binds 27 artifacts. Each selected local member clip fully
   decodes to 76 frames; the paired clip is 1320x530 at 30 fps with 76 frames.
   Raw capture frames are pruned after sealing.
 - Each separate tracked fixture completes 150 steps and writes 151 rows with
@@ -358,9 +363,10 @@ Finalized Fig. 03 and video.02 backspin truth:
   one coral registration tile through a visual-only UV MeshShape under
   VisualAspect. The physical SphereShape remains the unchanged source of
   collision, dynamics, inertia, and friction.
-- The MP4/GIF preserve the motion schedule, and three durable stills retain
+- The MP4/GIF preserve the motion schedule, and three selected local stills retain
   steps 0, 1, and 2. The 140-file raw capture staging directory is pruned after
-  sealing, so clean-checkout verify-only needs no ignored staging. The capture
+  local sealing. With the compact local bundle present, verify-only does not
+  require that raw staging directory. The capture
   has 129 exact attempts/solves, with zero accepted caps, exact failures, or
   boxed-LCP fallbacks. Capture maximum
   residual is 9.96497154974839e-7; separate trace maximum residual is
@@ -410,9 +416,9 @@ Author-pinned Fig. 4 turntable truth:
 - Manual inspection passes the segmented disc, one coral registration wedge,
   labels, and source order. The disc and wedge are visual-only; the physical
   cylinder remains the sole collision/dynamics geometry.
-- Four durable timeline-selected outcome stills bind steps 136, 120, 360, and
-  90 in source order. Capture staging is pruned after sealing;
-  clean-checkout verify-only needs no ignored files.
+- Four selected local, timeline-bound outcome stills cover steps 136, 120, 360,
+  and 90 in source order. With the compact local bundle present, verify-only
+  does not require the pruned raw capture staging.
 - All four capture/trace projections are byte-identical over step, contacts,
   exact_solves, warm_starts, boxed_lcp_fallbacks, and status. This is not
   full-state equivalence.
@@ -486,22 +492,36 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 8 author-card C++ tests, 190 visual-runner Python tests, and
+- The demo build, 8 author-card C++ tests, 205 visual-runner Python tests, and
   exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
   9.826274595482653e-7; the failed prefix records 103 attempts, 102 solves,
   one failure, zero fallbacks, zero accepted caps, and worst residual
   4.1039190451256334e-4. Timeline:
-  /tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json;
-  SHA-256 be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335.
+  /tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json;
+  SHA-256 2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d.
 - The boxed control completes 100 steps. Timeline:
   /tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json;
   SHA-256 fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc.
-- Neither lane reaches release. This remains adapter-only evidence: there is no
-  2400-step trajectory or outcome, source-backend or timing equivalence, final
-  media or PR video upload, Fig. 6/paper parity, or exact-versus-boxed
-  superiority claim.
+- The failure is now precisely characterized as the 56-contact island at
+  attempt 101: `fbf_failed` / build `success` / `max_iterations`, 200 outer
+  iterations, residual and dual feasibility 4.1039190451256334e-4,
+  complementarity 2.4220067503580449e-4, and worst dual/complementarity local
+  contact 11. The additive sidecar `last_failure` object retains that truth
+  after the later 8- and 4-contact groups succeed. See
+  FIGURE6_CONVERGENCE_BLOCKER.md.
+- A bounded option matrix did not produce a strict 100-step completion.
+  Raising the outer budget as high as 50,000 only moved the first failure to
+  step 48; regularization failed earlier.
+- An unsealed GDB-mutated accepted-cap preview reached release and all 2,400
+  steps, but accepted 1,106/3,231 solves at the cap and reached worst residual
+  0.61608914241359314. It is finite runtime continuation only, not exact
+  trajectory, physical-outcome, media, or parity evidence.
+- The strict exact lane still does not reach release, and the boxed control is
+  bounded to 100 steps. There is no valid strict 2,400-step outcome,
+  source-backend or timing equivalence, final media or PR video upload,
+  Fig. 6/paper parity, or exact-versus-boxed superiority claim.
 
 Pinned-author masonry-arch truth:
 
@@ -655,7 +675,7 @@ Current card-manifold sensitivity truth:
 - Both physical and timing verdicts are null, raw wall time is diagnostic-only,
   and there is no real-time or paper-parity claim.
 - The prior-source strict paper-profile artifact remains a separate step-89
-  fail-closed negative, repository-archived at
+  fail-closed negative, retained in the ignored local evidence cache at
   assets/dart_cpu_evidence/2026-07-12_prior_source_paper_cpu_card600_negative/;
   v2 does not replace or relabel it.
 - Protocol/runner/trace-source/trace-executable hashes:
@@ -693,14 +713,15 @@ Historical negative diagnostics to preserve:
 Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
-  local visual inventory has six finalized bundles, and the visual workflow
-  declares 21 schedules; validator passes and fail-closed hashes repository artifacts, materializes
+  local visual inventory has six locally finalized bundles, and the visual
+  workflow declares 21 schedules; validator passes and fail-closed hashes local
+  bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   enforces current-truth promotion boundaries.
 - The P-core mark26 bundle is the authoritative performance/scaling evidence
   for the reconstructed literal arch.
-- The repository-finalized current-source small paper_cpu/Native matrix is
+- The locally finalized current-source small paper_cpu/Native matrix is
   assets/dart_cpu_evidence/2026-07-19_current_source_paper_cpu_small_r7/. It
   binds 60 artifacts, 27 complete CPU-4 invocations, and 5,220 rows: 9/9
   physical classifiers pass and 7/9 strict-solver/local-real-time contracts
@@ -721,11 +742,11 @@ Evidence truth:
 - The pinned-author incline sweep preserves the current seven-cell FBF,
   MuJoCo, and Kamino source-run projection within its numeric
   scientific-negative boundary. It is not another visual bundle.
-- The Painleve `current_v1` bundle is repository-finalized and verified
+- The Painleve `current_v1` bundle is locally finalized and verified
   current-source within its DART-side proxy boundary. Its separate visual and
   trace contracts must not be conflated with the current small paper_cpu
   matrix.
-- The finalized backspin `current_v3` repository bundle passes within its
+- The locally finalized backspin `current_v3` bundle passes within its
   translational-trace and checker-texture-legibility boundary; both
   requirement rows remain partial.
 - Impact v1 is complete only as a preregistered numeric negative. A passing
@@ -739,19 +760,19 @@ Evidence truth:
 Latest recorded focused gates:
 
 - exact math 47/47 Release;
-- exact constraint solver 25/25;
+- exact constraint solver 29/29;
 - ConstraintSolver 64/64;
 - Native collision 42/42;
 - masonry wedge dynamics 3/3;
-- default paper fixtures 19 pass / 3 explicit stress skip;
+- default paper fixtures 31 pass / 3 explicit stress skip;
 - focused Release and Debug CTest matrices 9/9 in each configuration;
 - schema-v8 CPU runner tests 230/230;
 - literal-wedge visual finalization tests 16/16;
 - crown-impact trace and negative-runner tests 25/25;
 - literal 101-stone trace/probe/runner tests 41/41;
-- finalized incline finalizer unit tests passed 62/62; clean-checkout
-  verify-only passed with 21 indexed artifacts and no ignored staging
-  dependency;
+- finalized incline finalizer unit tests passed 62/62; with the compact local
+  bundle present, verify-only passed with 21 indexed artifacts and no raw
+  capture-staging dependency;
 - author-incline reference finalizer unit tests passed 64/64; verify-only
   reports 37 indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
@@ -759,10 +780,13 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level author-card C++ fixtures passed 8/8;
-- visual runner with the new source-selected schedule passed 190/190;
+- visual runner with the new source-selected schedule passed 205/205;
 - four-level exact and boxed adapter contract smoke passed;
+- the shared current-head Clang/FreeBSD polymorphic-`typeid` compile failure is
+  fixed locally; a Clang 22 warning-as-error syntax check passes, with remote
+  confirmation pending the next push;
 - author masonry-arch focused CTest: 1/1 passed;
-- all four current sealed bundles pass verify-only; under the sealed producer
+- all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
   intentional status `partial`, 118 live file-identity rechecks, and zero
   skipped, while explicit archive mode reports zero live rechecks and 118
@@ -782,9 +806,10 @@ Immediate order:
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
    numeric incline sweep, verified current-source Painleve-proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the
-   arch101-v7 and card-v2 blockers. Address the source-selected four-level
-   card adapter's completed-step-35 exact failure, then continue its strict
-   full-duration card/media work, remaining smaller-figure, and
+   arch101-v7 and card-v2 blockers. The source-selected four-level card
+   adapter's completed-step-35 exact failure is precisely characterized but
+   not corrected; next pursue a targeted solver correction, then continue its
+   strict full-duration card/media work, remaining smaller-figure, and
    separately declared source-equivalent impact work; inspect decoded media
    and do not promote v2 raw timings.
 3. Keep all 29 manifest rows, sidecars, hashes, semantic verdicts, and report
@@ -794,7 +819,7 @@ Immediate order:
 5. Preserve the final integrated gate results and obtain two clean independent
    reviews.
 6. With explicit approval only, merge the latest target base, commit/push,
-   replace the overclaiming PR body, and obtain current-head CI.
+   synchronize the truthful draft PR body, and obtain current-head CI.
 
 Mark26 reproduction shape, using a fresh output directory:
 
@@ -812,7 +837,7 @@ Mark26 reproduction shape, using a fresh output directory:
     --contract dart_best_colored_bgs \
     --collision-frontend native
 
-Finalized incline clean-checkout verify-only:
+Finalized incline local-bundle verify-only:
 
   .pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py \
     --bundle \

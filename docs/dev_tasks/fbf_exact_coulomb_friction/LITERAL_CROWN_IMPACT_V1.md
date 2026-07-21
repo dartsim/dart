@@ -127,7 +127,7 @@ The final acceptance gate failed for three independent preregistered reasons:
 
 No parameter or threshold was changed after observing this result.
 
-The final lint-clean current-source durable bundle is stored under
+The final lint-clean current-source locally sealed bundle is stored under
 `assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/` and can
 be reproduced with:
 

@@ -5,7 +5,7 @@ same small, procedural fixtures reconstructed for DART's FBF paper tests. It is
 benchmark/example-only and remains isolated in Pixi's optional
 `fbf-baselines` environment.
 
-> **Committed-bundle status:** the
+> **Local-bundle status:** the
 > `20260711_rtx5000ada_newton1.3.0` bundle is a historical pre-hardening
 > snapshot. Its recorded provenance does not bind to the current source runner,
 > so it is not current validated evidence. Do not regenerate it in place; a
@@ -61,7 +61,7 @@ are neither a solver residual certificate nor a paper-parity verdict.
 ## Historical pre-hardening local run (2026-07-11)
 
 The raw run is preserved under
-[`assets/kamino_cuda_evidence/20260711_rtx5000ada_newton1.3.0/`](assets/kamino_cuda_evidence/20260711_rtx5000ada_newton1.3.0/).
+`assets/kamino_cuda_evidence/20260711_rtx5000ada_newton1.3.0/`.
 It used Newton 1.3.0, Warp 1.15.0, CUDA toolkit 12.9, NVIDIA driver
 595.71.05, and an RTX 5000 Ada Generation Laptop GPU. All three complete
 trajectories passed their DART physical fixture checks:

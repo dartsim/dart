@@ -38,7 +38,7 @@ A row is complete only when all of the following are true:
 | Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | Current-head exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The author group passes solver, timeline, stream, decode, and independent replay gates; manual inspection shows ejected/ejected/retained-through-6-s/ejected in source order. All four paired proxies pass with the DART collision frontend fixed across lanes, and both solvers visibly produce ejected/ejected/captured/ejected over 4 s. These remain DART reconstructions rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | `fbf_paper_painleve`, `fbf_paper_painleve_mu_0_55`; `painleve_mu05`, `painleve_mu055`, and `painleve` group | Paired exact/boxed captures, a neutral boxed lane-separated group, and solver-labeled synchronized comparisons are automated | The current media gates pass. The exact lane visibly rocks and returns upright for `mu=.5`, then tumbles and remains horizontal for `mu=.55`; the boxed lane stays upright in both proxies. These are DART proxies only: the paper does not publish the dimensions, mass, launch state, or timestamps, and the separate tracked fixtures are not trace-equivalent. | Local exact-vs-boxed clips ready below; GitHub URLs pending |
-| Fig. 6 / 26-card segment | `fbf_author_card_house_4_impact_current_source`; `card_house_author_4_impact_current_source` is the source-selected lane. `fbf_paper_card_house_26`; `card_house_26` remains a distinct reconstruction | Paired exact/boxed capture is automated with Native `FourPointPlanar`, contact capacity 4,096, and subdivision 4 fixed across lanes | Blocked: strict exact fails closed at completed step 35 when contacts jump 44 to 68; boxed completes 100 steps, but neither reaches the cube release at step 1,600 of 2,400. No full-run outcome or valid media exists. | Pending; no PR upload |
+| Fig. 6 / 26-card segment | `fbf_author_card_house_4_impact_current_source`; `card_house_author_4_impact_current_source` is the source-selected lane. `fbf_paper_card_house_26`; `card_house_26` remains a distinct reconstruction | Paired exact/boxed capture is automated with Native `FourPointPlanar`, contact capacity 4,096, and subdivision 4 fixed across lanes | Blocked: strict exact fails closed at completed step 35 on the 56-contact group when collision contacts jump 44 to 68; retained `last_failure` diagnostics preserve the masked group. Bounded option tuning did not solve it, and no strict run reaches the step-1,600 release. An unsealed GDB-mutated accept-cap preview completed 2,400 steps and executed the release action, but accepted 1,106/3,231 solves at cap with worst residual `0.616089`; it is not valid outcome or media evidence. | Pending; no PR upload |
 | Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Paired exact/boxed capture is automated for all three schedules | The current literal standing capture passes 600 exact solves with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; both lanes visibly remain standing through 10 s. A clean source-configuration exact smoke now clears the former step-68 local failure and completes 100 strict steps, then fails closed on an outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither lane has completed the 2,000-step schedule or a physical-outcome/media gate. Its 500-frame invocation is not the 400-frame source default, and the oriented-box proxy remains nonliteral. Impact and paper parity remain blocked. | Local literal-standing exact-vs-boxed clip ready; source-configuration exact media blocked at step 142; GitHub URL pending |
 | Fig. 8 / 101-stone arch segment | `fbf_paper_masonry_arch_101`; `masonry_arch_101` | Paired exact/boxed capture is automated | Blocked for parity: this is a reduced 38-contact oriented-box approximation; full-manifold long-run standing behavior and a matched Kamino comparison are unproven. | Pending |
 | Tables 6-7 / ten-level card house | `fbf_paper_card_house_10_dynamic`; `card_house_10_dynamics` (construction inspection is separate) | Paired exact/boxed capture is automated | Blocked: the 512-contact budget is known to saturate, and no completed zero-failure, zero-fallback 155-card trajectory exists. The source video has no corresponding segment. | Pending |
@@ -55,19 +55,33 @@ and four initially kinematic `0.8 m`, `256 kg` cubes. Interactive `p` releases
 them immediately; the evidence runner invokes `p` after completed substep
 1,600. The 2,400-step schedule uses `dt=1/240 s`.
 
-The demo build, eight focused author-card C++ tests, 190 runner Python tests, and
+The demo build, eight focused author-card C++ tests, 205 runner Python tests, and
 exact/boxed contract-smoke validators pass. The exact 100-step prefix records
 103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
 worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
-worst residual `9.826274595482653e-7`. Its timeline is
-`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
-SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+worst residual `9.826274595482653e-7`. At step 35, attempt 101 is the failed
+56-contact group; it reaches the 200-iteration cap before the later 8- and
+4-contact groups succeed. The additive `last_failure` object retains
+`fbf_failed` / `success` / `max_iterations`, the 56-contact count, and the
+failed residual after those later successes. Its timeline is
+`/tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json`,
+SHA-256 `2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`.
 The boxed control timeline is
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
 SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
-No release, full-run trajectory or outcome, source-backend or timing
-equivalence, final media or PR video, Fig. 6/paper parity, or
-exact-versus-boxed superiority follows. This is an adapter-only lane.
+The bounded existing-option matrix did not produce a strict solution: even a
+50,000-iteration budget only moved the first failure to step 48, while the
+other tested policy, seed, retry, regularization, and warm-start ablations
+failed at or before the same prefix. A process-local GDB override accepting
+capped iterates completed 2,400 steps and executed `p` at step 1,600, but its
+runtime command cannot reproduce the mutation. It accepted 1,106 of 3,231
+solves at cap and recorded worst residual `0.61608914241359314`. That unsealed
+preview establishes finite continuation only. No strict release or full-run
+trajectory, valid physical outcome, source-backend or timing equivalence,
+final media or PR video, Fig. 6/paper parity, or exact-versus-boxed superiority
+follows. See
+[`FIGURE6_CONVERGENCE_BLOCKER.md`](FIGURE6_CONVERGENCE_BLOCKER.md). This is an
+adapter-only lane.
 
 The two-card A-frame and five-level author-card construction remain useful
 inspection/diagnostic scenes. The older reconstructed 26-card lane remains

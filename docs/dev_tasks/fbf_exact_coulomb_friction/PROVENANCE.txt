@@ -71,7 +71,20 @@ The imported tooling supplies debug overlays, deterministic capture helpers,
 image verdict/golden/compose tools, and evidence selection/publication
 helpers. FBF-specific timed captures use the DART demo host; generated
 sidecars must record the exact scene, completed steps, actions, solver
-diagnostics, and fallback counts.
+diagnostics, and fallback counts. The exact-FBF diagnostics surface is
+additive: `last_failure` is null when no exact failure has been recorded and is
+a typed object when cumulative `exact_failures` is nonzero. That object retains
+the failed group's adapter/build/FBF statuses, contact count, residual
+components and worst-contact indices, iteration/best-iterate values, gamma
+diagnostics, coupling ratio, and shrink count even if a later constrained group
+succeeds. Cumulative attempt, solve, accepted-cap, failure, and fallback counts
+remain the fail-closed acceptance authority.
+
+Process-local debugger option interception and `/tmp` continuation previews are
+diagnostic only. They are not repository provenance, sealed evidence, or
+reproducible from a sidecar `runtime_command` unless the option mutation itself
+is represented by a checked-in runner contract. In particular, the Figure 6
+accept-cap preview is not promoted by this provenance record.
 
 3a. PR #3377 exact-Coulomb implementation snapshot
 ---------------------------------------------------
@@ -240,7 +253,7 @@ Reproduce the audit without stepping dynamics:
 
   ./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe 10
 
-7a. Durable literal-wedge exact dynamics and scaling
+7a. Locally sealed literal-wedge exact dynamics and scaling
 -----------------------------------------------------
 
 Bundle:
@@ -318,18 +331,18 @@ fig07_arch25_literal/
 
 The bundle status is valid_current_source_nonpaper_reconstruction, with
 claim_valid=true only for the current-source no-projectile standing claim. It
-contains five durable 1280 x 720 stills, a fully decoded 61-frame H.264
+contains five selected local 1280 x 720 stills, a fully decoded 61-frame H.264
 schedule, a five-panel timeline, a 600-row trajectory, and an independently generated
 reference trace. All 600 rows compare with zero differences in the nine mapped
 integer and five mapped floating-point fields, with fixed reference and scene
 contract checks.
 
-The five durable stills, timeline, and a separately decoded 3.0-second video
+The five selected local stills, timeline, and a separately decoded 3.0-second video
 midpoint were manually inspected. The full retained pending hash DAG passed
 before final metadata/index writes. The final artifact index validates 19
 artifacts in a 21-file physical directory. The 70-file raw capture staging
-directory was pruned after sealing; clean-checkout verify-only needs no
-ignored staging files.
+directory was pruned after local sealing. With the compact local bundle present,
+verify-only does not require those raw staging files.
 
 Ten simulated seconds are sampled into 61 frames and played in 6.1 seconds at
 10 fps. The playback acceleration is 1.639344262295082x, so the video is a
@@ -358,7 +371,7 @@ The trace-equivalence record SHA-256 is
 537f6e497b6fb6810240f006db47c91304581741370e319787635e6bcbfdd2e3.
 
 The separately named crown-impact trace was an additive source change. The
-standing capture's durable media and numeric trajectory remain bound to the
+standing capture's selected local media and numeric trajectory remain bound to the
 unchanged capture source and binary:
 
 c3efeac52d02a0c373f733598db81e545d062195ba6e96c2a65bcb607cd0207f
@@ -420,7 +433,7 @@ maximum arch displacement is 0.07093964431215687 m versus 0.07 m, and final
 far-field displacement is 0.060523747030465196 m versus 0.007 m. No parameter
 or threshold was changed after the result.
 
-The valid claim is only that this is a durable scientific negative. It is not
+The valid claim is only that this is a locally sealed scientific negative. It is not
 a passing impact example, visual artifact, or paper-parity result.
 
 The current runner recomputes every emitted gate from finite numeric/counter fields, requires
@@ -583,10 +596,11 @@ inspection validates translational advance and reversal only; it does not
 promote signed angular direction, uninterrupted contact, rest, landing-phase,
 paper, external-solver, golden, timing, or real-time claims.
 
-The bundle has 18 indexed artifacts in a 20-file physical directory and
-passes clean-checkout verify-only without ignored staging. The MP4/GIF retain
-the motion schedule, three durable stills retain steps 0, 1, and 2, and the
-140-file raw capture staging directory is pruned after sealing. Key SHA-256
+The bundle has 18 indexed artifacts in a 20-file physical directory. With the
+compact local bundle present, verify-only passes without the pruned raw staging.
+The MP4/GIF retain the motion schedule, three selected local stills retain
+steps 0, 1, and 2, and the 140-file raw capture staging directory is pruned
+after local sealing. Key SHA-256
 values are:
 
 429a0888fa7a002cbc0c93e708569e4bf8e18195421c9663d5ce3b3a1968ab7f
@@ -635,10 +649,10 @@ lane is not all strict; it is not substituted for the renderer lane. No
 Warp/Newton full-state equivalence, paper parity, approved golden, external
 solver, timing, or real-time claim follows.
 
-The bundle has 58 indexed artifacts in a 60-file physical directory and
-passes clean-checkout verify-only without ignored staging. Four durable
-timeline-selected outcome stills bind steps 136, 120, 360, and 90 in source
-order; raw capture staging is pruned after sealing. Key SHA-256 values are:
+The bundle has 58 indexed artifacts in a 60-file physical directory. With the
+compact local bundle present, verify-only passes without the pruned raw staging.
+Four selected local, timeline-bound outcome stills cover steps 136, 120, 360,
+and 90 in source order. Key SHA-256 values are:
 
 209b677ce35e2b9c11248ab414727016394831084881a5e9c2866f68b51f6cdf
   artifact-index.json
@@ -695,9 +709,10 @@ implementations are not trace-equivalent. The scene remains a DART proxy, not
 the author scene, and paper/external/golden/timing/real-time claims remain
 false or null.
 
-The bundle has 27 indexed artifacts in a 29-file physical directory. Durable
-clips/panels/timelines replace raw capture frames, which are pruned after
-sealing; clean-checkout verify-only needs no ignored staging. Key SHA-256
+The bundle has 27 indexed artifacts in a 29-file physical directory. Selected
+local clips, panels, and timelines replace raw capture frames, which are pruned
+after local sealing. With the compact local bundle present, verify-only does
+not require those raw staging frames. Key SHA-256
 values are:
 
 7880c62d39c3f47109b50394cd84e20919565b70af19c1473c618841f682ff43
@@ -723,14 +738,14 @@ The current-source two-cell DART incline bundle is:
 docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
 fig01_02_incline_current_v1/
 
-Finalization and clean-checkout verify-only pass with status
+With the compact local bundle present, finalization and verify-only pass with status
 valid_current_source_nonpaper_incline. The directory contains 23 physical
 files. Its exact-membership artifact index binds 21 files and declares only
 artifact-index.json and metadata.json as exclusions.
 
-The combined renderer retains five durable 660x506 stills and a 61-frame
+The combined renderer retains five selected local 660x506 stills and a 61-frame
 decoded 30 fps H.264 schedule. The 70-file raw capture staging directory is
-pruned after sealing, so verify-only needs no ignored staging. Capture
+pruned after local sealing, so verify-only does not require that raw staging. Capture
 diagnostics record 240 exact attempts/solves, zero
 accepted caps, exact failures, or boxed-LCP fallbacks, maximum residual
 9.999836962261359e-7, and eight contacts per post-initial step.
@@ -886,7 +901,7 @@ JIT, always-on history collection, ineffective warmup exclusion, and
 lane-dependent timer boundaries make every timing value diagnostic-only.
 The packet is numeric scientific-negative/reference evidence, not a
 historical paper run, DART/source trajectory match, approved golden, media,
-timing, performance, or parity result. It does not add to the six finalized
+timing, performance, or parity result. It does not add to the six locally finalized
 visual bundles; Fig. 1, Fig. 2, and video.03 remain partial.
 
 Verify the packet without rewriting it:

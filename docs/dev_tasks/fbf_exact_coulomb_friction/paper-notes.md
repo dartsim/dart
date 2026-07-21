@@ -107,6 +107,27 @@ DART's persisted-gamma recovery (currently a local `1.05` growth factor capped
 by the freshly computed safe bound) is an implementation policy, not a paper
 fact. Paper-comparison metadata must retain that difference.
 
+## Pinned Source Runtime Semantics
+
+The following statements are observations of the public reference source at
+commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; they are not claims about what
+the paper text specifies or about historical paper runs.
+
+The source `GammaController` initializes from the current safe gamma, carries
+and grows gamma across steps, and permits the final bounded backtrack result to
+be used. More importantly for interpreting convergence histories,
+`solver_fbf.py` calls state recovery after the outer loop even when the
+configured convergence flag is false. A finite improved unconverged iterate can
+be retained in the cache and advanced into the simulation while convergence is
+reported separately.
+
+Consequently, a source process reaching its requested horizon does not imply
+that every outer solve met the configured `coulomb_rel < 1e-6` gate. DART's
+strict evidence contract deliberately rejects accepted iteration caps. A local
+DART preview that enables cap acceptance tests only this advancement semantic;
+it does not establish solver, trajectory, collision-backend, precision,
+physical-outcome, or paper equivalence.
+
 ## Residual
 
 The paper avoids a unit-mismatched natural-map residual by scaling the primal

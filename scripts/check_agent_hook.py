@@ -180,8 +180,66 @@ def staged_snapshot(root: Path) -> Iterator[Path]:
         yield snapshot
 
 
-def run_checked(command: list[str], root: Path) -> int:
-    result = subprocess.run(command, cwd=root)
+def staged_repository_environment(root: Path, snapshot: Path) -> dict[str, str]:
+    """Bind Git index queries to ``root`` while reading files from ``snapshot``."""
+    discovery_env = dict(os.environ)
+    for name in ("GIT_COMMON_DIR", "GIT_DIR", "GIT_PREFIX", "GIT_WORK_TREE"):
+        discovery_env.pop(name, None)
+    top_level = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=root,
+        capture_output=True,
+        env=discovery_env,
+        text=True,
+    )
+    git_directory = subprocess.run(
+        ["git", "rev-parse", "--absolute-git-dir"],
+        cwd=root,
+        capture_output=True,
+        env=discovery_env,
+        text=True,
+    )
+    if top_level.returncode != 0 or git_directory.returncode != 0:
+        raise RuntimeError("unable to resolve the staged snapshot source repository")
+
+    try:
+        expected_root = root.resolve(strict=True)
+        resolved_root = Path(top_level.stdout.strip()).resolve(strict=True)
+        resolved_git_directory = Path(git_directory.stdout.strip()).resolve(strict=True)
+        resolved_snapshot = snapshot.resolve(strict=True)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise RuntimeError("invalid staged snapshot repository path") from error
+    if (
+        resolved_root != expected_root
+        or not resolved_git_directory.is_dir()
+        or not resolved_snapshot.is_dir()
+    ):
+        raise RuntimeError("staged snapshot source is not a Git worktree root")
+
+    validation = subprocess.run(
+        ["git", f"--git-dir={resolved_git_directory}", "rev-parse", "--git-dir"],
+        capture_output=True,
+        env=discovery_env,
+        text=True,
+    )
+    if validation.returncode != 0:
+        raise RuntimeError("staged snapshot source has an invalid Git directory")
+
+    env = dict(os.environ)
+    env["GIT_DIR"] = str(resolved_git_directory)
+    env["GIT_WORK_TREE"] = str(resolved_snapshot)
+    env.pop("GIT_COMMON_DIR", None)
+    env.pop("GIT_PREFIX", None)
+    index_file = env.get("GIT_INDEX_FILE")
+    if index_file and not Path(index_file).is_absolute():
+        env["GIT_INDEX_FILE"] = str((expected_root / index_file).resolve())
+    return env
+
+
+def run_checked(
+    command: list[str], root: Path, env: dict[str, str] | None = None
+) -> int:
+    result = subprocess.run(command, cwd=root, env=env)
     return result.returncode
 
 
@@ -219,12 +277,16 @@ def run_staged(root: Path) -> int:
 
     try:
         with staged_snapshot(root) as snapshot:
+            staged_env = staged_repository_environment(root, snapshot)
             checks = (
-                [sys.executable, "scripts/sync_ai_commands.py", "--check"],
-                [sys.executable, "scripts/check_ai_infrastructure.py", "--check"],
+                ([sys.executable, "scripts/sync_ai_commands.py", "--check"], None),
+                (
+                    [sys.executable, "scripts/check_ai_infrastructure.py", "--check"],
+                    staged_env,
+                ),
             )
-            for command in checks:
-                returncode = run_checked(command, snapshot)
+            for command, env in checks:
+                returncode = run_checked(command, snapshot, env)
                 if returncode:
                     return returncode
     except RuntimeError as error:
