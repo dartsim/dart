@@ -35,7 +35,7 @@ A row is complete only when all of the following are true:
 | Paper/video example | Primary demo scene(s) and capture schedule(s) | Existing-solver comparison | Current gate | PR video |
 | --- | --- | --- | --- | --- |
 | Figs. 1-2 / incline segment | `fbf_paper_incline`; `incline` | Paired exact/boxed capture is automated | Exact capture is runnable, but the DART reconstruction has three contacts per cell rather than the paper timing row's four. Recapture and inspect both lanes. | Pending |
-| Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture is automated | Checker-textured renderer-only sphere is implemented. Recapture the current head and verify the visible reversal plus the analytical rolling-state trace. | Pending |
+| Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture is automated | Current-head exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact/boxed clips ready below; GitHub URLs pending |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which must accompany the source-pinned group. | Source geometry/control schedule is pinned, but DART remains a float64/Native reconstruction rather than Warp/Newton trace parity. Capture both the author-pinned exact group and the paired proxy comparison. | Pending |
 | Fig. 5 / Painleve segment | `fbf_paper_painleve`, `fbf_paper_painleve_mu_0_55`; `painleve_mu05`, `painleve_mu055`, and `painleve` group | Paired exact/boxed captures and lane-separated groups are automated | Runnable DART proxies only: the paper does not publish the dimensions, mass, launch state, or timestamps. Do not label these as source-scene parity. | Pending |
 | Fig. 6 / 26-card segment | `fbf_paper_card_house_26`; `card_house_26` with projectile action | Paired exact/boxed capture is automated | Blocked: the strict paper-tolerance trajectory is not yet complete. Current known runs either fail `1e-6` or are shorter than the 10 s settle/impact sequence. | Pending |
@@ -45,6 +45,36 @@ A row is complete only when all of the following are true:
 
 The two-card A-frame and the five-level author-card construction remain useful
 inspection/diagnostic scenes, but they do not replace any row above.
+
+## Current Local Attachment Candidates
+
+Figure 3 was captured from committed head `fe14820f795` with 131 distinct
+frames per lane. The exact-FBF sidecar reports 129/129 exact solves, zero
+accepted caps, failures, or boxed fallbacks, and a worst residual of
+`9.96497154974839e-7`. The boxed sidecar reports
+`BoxedLcpConstraintSolver` with the expected exact-diagnostics-unavailable
+gap. Manual panel inspection confirms that the ivory/charcoal checker cells
+and coral registration tile visibly change orientation.
+
+The paired 130-step traces reach their forward maxima at step 48, first report
+negative translational velocity at step 49, and finish behind the initial
+position at about `x=-2.936 m`. Independent 240-step traces pass the full DART
+rolling-state gate for both solvers: exact finishes at `vx=-11.5671 m/s` and
+boxed at `vx=-11.5658 m/s`, against the `-11.4286 m/s` analytical target with
+a `0.5 m/s` tolerance. This demonstrates the reconstructed translational
+reversal; it does not prove signed angular-velocity or paper-renderer parity.
+
+- Exact attachment candidate:
+  `assets/pr_media/current_head/backspin/clip.mp4`, SHA-256
+  `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928`.
+- Boxed attachment candidate:
+  `assets/pr_media/current_head/backspin__boxed/clip.mp4`, SHA-256
+  `c9855a7a0bdcd5b5540baf5fba5fa40779ee2908be7a09149ddb1bc7e06851d0`.
+
+Both are 2.2-second, 66-frame, 1300x506, 30 fps H.264/yuv420p clips and pass a
+full decode. They remain ignored local evidence until a maintainer uploads
+them through the pull-request editor and records the resulting GitHub-hosted
+URLs in the Figure 3 row.
 
 ## Reproducible Capture Entry Points
 
