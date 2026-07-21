@@ -167,6 +167,7 @@ struct HeadlessTimeline
   std::string sidecarPath;
   std::string runtimeCommand;
   bool exactFbfFailFast = false;
+  bool exactFbfSourceContinuation = false;
 };
 
 //==============================================================================

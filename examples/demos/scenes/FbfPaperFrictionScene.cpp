@@ -219,6 +219,10 @@ const char* fbfStatusLabel(dart::math::detail::ExactCoulombFbfStatus status)
       return "inner_failed";
     case ExactCoulombFbfStatus::StepSizeUnderflow:
       return "step_underflow";
+    case ExactCoulombFbfStatus::Plateau:
+      return "plateau";
+    case ExactCoulombFbfStatus::NonFiniteValue:
+      return "non_finite_value";
   }
   return "unknown";
 }
@@ -775,7 +779,8 @@ void installAuthorCardHouseSolver(
     const WorldPtr& world,
     SolverMode mode,
     bool postCorrectionProjectionEnabled = true,
-    bool sourceInnerInitializationEnabled = false)
+    bool sourceInnerInitializationEnabled = false,
+    bool sourceContinuationEnabled = false)
 {
   configureSolver(
       world,
@@ -795,13 +800,22 @@ void installAuthorCardHouseSolver(
     if (exactSolver == nullptr)
       throw std::runtime_error("author card house requires exact FBF");
     exactSolver->setExactCoulombOptions(
-        fbf_author_card_house::dartConstructionSolverOptions());
+        sourceContinuationEnabled
+            ? fbf_author_card_house::dartSourceContinuationSolverOptions()
+            : fbf_author_card_house::dartConstructionSolverOptions());
     exactSolver->setExactCoulombCrossStepPolicyOptions(
-        fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+        sourceContinuationEnabled
+            ? fbf_author_card_house::
+                dartSourceContinuationCrossStepPolicyOptions()
+            : fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
     exactSolver->setExactCoulombPostCorrectionProjectionEnabled(
         postCorrectionProjectionEnabled);
     exactSolver->setExactCoulombSourceInnerInitializationEnabled(
         sourceInnerInitializationEnabled);
+    if (sourceContinuationEnabled) {
+      exactSolver->setExactCoulombSourceContinuationOptions(
+          fbf_author_card_house::dartSourceContinuationOptions());
+    }
     exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     exactSolver
         ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
@@ -818,7 +832,8 @@ WorldPtr createAuthorCardHouseWorld(
     std::size_t levelCount,
     SolverMode mode,
     bool postCorrectionProjectionEnabled = true,
-    bool sourceInnerInitializationEnabled = false)
+    bool sourceInnerInitializationEnabled = false,
+    bool sourceContinuationEnabled = false)
 {
   auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
@@ -827,7 +842,8 @@ WorldPtr createAuthorCardHouseWorld(
       world,
       mode,
       postCorrectionProjectionEnabled,
-      sourceInnerInitializationEnabled);
+      sourceInnerInitializationEnabled,
+      sourceContinuationEnabled);
 
   world->addSkeleton(createAuthorCardHouseGround());
   for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
@@ -1833,6 +1849,92 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
 }
 
 //==============================================================================
+DemoScene
+makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kSourceContinuationDynamicsDemoSceneId,
+      "FBF Author Card House 4: Source Continuation",
+      "The four-level current-source card-house adapter in a separate exact "
+      "lane that requests the pinned source continuation policy. The boxed "
+      "comparison keeps the same bodies, contacts, clock, and release action.",
+      CameraHome{
+          ::osg::Vec3d(22.0, -30.0, 16.0),
+          ::osg::Vec3d(0.0, 0.0, 4.7),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kSourceContinuationDynamicsDemoSceneId,
+            kFigureLevelCount,
+            state->solverMode,
+            false,
+            true,
+            true);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "This lane preserves the current-source four-level geometry and "
+      "1/240 s DART schedule. Exact FBF additionally requests source-style "
+      "natural-residual plateau, finite max-budget, and line-search shrink-cap "
+      "continuation. The action `p` still releases the four cubes after "
+      "completed step 1,600 in the evidence schedule.",
+      "Headless capture may advance only when every exact contact group is "
+      "reported as a finite success, plateau acceptance, or max-iteration "
+      "acceptance. Solver failures, boxed fallback in the exact lane, "
+      "nonfinite state, and missing per-group telemetry stop the run.",
+      "This is a DART continuation experiment on a source-supported "
+      "parameterization. It does not establish the historical paper "
+      "invocation, source collision/backend equivalence, trajectory parity, "
+      "physical-outcome parity, or timing comparability.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state) {
+        renderFbfAuthorCardHouseDynamicsControls(world);
+        ImGui::TextDisabled("Exact lane policy: source_continuation");
+        ImGui::Text(
+            "Requested: %s",
+            state->solverMode == SolverMode::ExactFbf ? "yes"
+                                                      : "not applicable");
+        ImGui::Text(
+            "Natural plateau: interval %d, patience %d, rtol %.3g",
+            kSourceResidualCheckInterval,
+            kSourcePlateauPatience,
+            kSourcePlateauRelativeTolerance);
+        ImGui::Text(
+            "Armijo: %d inner trials; small-change threshold %.1e",
+            kSourceArmijoMaxBacktracks,
+            kSourceCouplingVariationSkipThreshold);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kFigureLevelCount,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf,
+              true));
+        };
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, "Release 4 source-configured cubes", [world] {
+              releaseCubes(world, kFigureLevelCount);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(world, mode, false, true, true);
+      });
+}
+
+//==============================================================================
 void renderFbfAuthorMasonryArchControls(const WorldPtr& world)
 {
   ImGui::Separator();
@@ -2171,6 +2273,12 @@ DemoScene makeFbfAuthorCardHouseScene()
 DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene()
 {
   return makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene();
 }
 
 //==============================================================================

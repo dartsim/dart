@@ -50,6 +50,7 @@ EXACT_SOLVER_NAME = "ExactCoulombFbfConstraintSolver"
 BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
 BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
 HEADLESS_EXACT_FBF_FAIL_FAST_FLAG = "--headless-exact-fbf-fail-fast"
+HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG = "--headless-exact-fbf-source-continuation"
 EXACT_FBF_RESIDUAL_TOLERANCE = 1e-6
 LITERAL_MASONRY_ARCH_GEOMETRY_FINGERPRINT = "1ff65f2a99ec96d1"
 EXACT_FBF_FAIL_FAST_REASONS = {
@@ -58,6 +59,26 @@ EXACT_FBF_FAIL_FAST_REASONS = {
     "iteration_cap",
     "nonfinite_residual",
     "residual_tolerance_exceeded",
+}
+SOURCE_CONTINUATION_GATE_REASONS = {
+    "source_continuation_not_requested",
+    "boxed_fallback",
+    "exact_failure",
+    "cumulative_accounting_mismatch",
+    "nonfinite_world_state",
+    "group_history_truncated",
+    "group_accounting_mismatch",
+    "invalid_group_telemetry",
+    "source_continuation_inactive",
+    "nonfinite_group_residual",
+    "nonfinite_group_step_size",
+    "group_step_size_relation_mismatch",
+    "termination_timing_mismatch",
+    "plateau_telemetry_mismatch",
+    "success_tolerance_not_strict",
+    "unaccepted_group_outcome",
+    "group_counter_mismatch",
+    "last_group_telemetry_mismatch",
 }
 COVERAGE_MATRIX_PATH = (
     ROOT
@@ -164,6 +185,7 @@ REQUIRED_VIDEO_SCHEDULES = {
     "painleve": ("painleve_mu05", "painleve_mu055"),
     "card_house_26": (
         "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
         "card_house_26",
     ),
     "masonry_arch_25": (
@@ -201,6 +223,8 @@ class CaptureSchedule:
     configuration: tuple[tuple[str, str], ...]
     mismatches: tuple[str, ...]
     known_gate_blockers: tuple[str, ...] = ()
+    boxed_comparison_mismatches: tuple[str, ...] | None = None
+    boxed_comparison_gate_blockers: tuple[str, ...] | None = None
     actions: tuple[ScheduledAction, ...] = ()
     time_step_seconds: float = 1.0 / 60.0
     width: int = 1280
@@ -212,6 +236,7 @@ class CaptureSchedule:
     encode_mp4: bool = True
     encode_gif: bool = False
     exact_fbf_required: bool = True
+    source_continuation_required: bool = False
     expect_motion: bool = True
     long_run: bool = False
     runnable: bool = True
@@ -268,6 +293,10 @@ class CaptureSchedule:
             )
         if self.solver_lane == "boxed" and self.exact_fbf_required:
             raise ValueError(f"{self.id}: boxed lane cannot require exact FBF")
+        if self.source_continuation_required and not self.exact_fbf_required:
+            raise ValueError(
+                f"{self.id}: source continuation requires the exact-FBF lane"
+            )
         if self.source_schedule_id == self.id:
             raise ValueError(f"{self.id}: derived source schedule cannot equal its id")
         if any(len(key) != 1 for key in self.pre_run_actions):
@@ -657,6 +686,77 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         time_step_seconds=1.0 / 240.0,
         collision_detector="native",
         collision_detector_override=False,
+        long_run=True,
+    ),
+    "card_house_author_4_impact_source_continuation_current_source": CaptureSchedule(
+        id="card_house_author_4_impact_source_continuation_current_source",
+        scene=("fbf_author_card_house_4_impact_source_continuation_current_source"),
+        title="Author-pinned four-level card-house source-continuation lane",
+        source_segment="card_house_26",
+        total_steps=2400,
+        frame_stride=8,
+        panel_steps=(0, 480, 1600, 1680, 2400),
+        panel_labels=(
+            "initial source configuration",
+            "standing probe t=2s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "selected frame-600 endpoint (t=10s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "4"),
+            ("cards", "26"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("release_substep", "1600"),
+            ("total_substeps", "2400"),
+            ("exact_policy", "source_continuation"),
+            ("residual_check_interval", "5"),
+            ("plateau_patience", "5"),
+            ("plateau_relative_tolerance", "0.01"),
+            ("step_size_backtrack_limit", "8"),
+            ("coupling_variation_skip_threshold", "1e-10"),
+            (
+                "capture_invocation",
+                "source-supported levels=4 frames=600 drop_frame=400 selection",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This separate exact lane ports source continuation decisions into "
+            "the DART adapter; it does not reproduce the authors' Warp/Newton "
+            "float32 collision or linear-algebra backend.",
+            "The public source defaults to five levels and 800 frames. The "
+            "four-level/600-frame invocation uses supported run.py arguments but "
+            "is not a recovered historical paper command.",
+            "The author repository supplies no historical paper camera, materials, "
+            "lighting, approved frame golden, or DART trajectory oracle.",
+            "The source's 5 mm collision-gap setting is recorded but DART Native "
+            "collision does not claim equivalent gap semantics.",
+        ),
+        boxed_comparison_mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This same-physics comparison selects DART's existing boxed-LCP "
+            "solver; it is comparison media, not exact-FBF evidence or a port of "
+            "the authors' Warp/Newton backend.",
+            "The public source defaults to five levels and 800 frames. The "
+            "four-level/600-frame invocation uses supported run.py arguments but "
+            "is not a recovered historical paper command.",
+            "The author repository supplies no historical paper camera, materials, "
+            "lighting, approved frame golden, or DART trajectory oracle.",
+            "The source's 5 mm collision-gap setting is recorded but DART Native "
+            "collision does not claim equivalent gap semantics.",
+        ),
+        boxed_comparison_gate_blockers=(),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        source_continuation_required=True,
         long_run=True,
     ),
     "card_house_26": CaptureSchedule(
@@ -1130,15 +1230,43 @@ def _derive_boxed_schedule(schedule: CaptureSchedule) -> CaptureSchedule:
         or "boxed" not in schedule.supported_solver_lanes
     ):
         raise ValueError(f"{schedule.id}: a boxed comparison cannot be derived")
+    configuration = schedule.configuration
+    if schedule.source_continuation_required:
+        exact_only_keys = {
+            "exact_policy",
+            "residual_check_interval",
+            "plateau_patience",
+            "plateau_relative_tolerance",
+            "step_size_backtrack_limit",
+            "coupling_variation_skip_threshold",
+        }
+        configuration = tuple(
+            item for item in configuration if item[0] not in exact_only_keys
+        ) + (
+            ("comparison_counterpart", "same_physics_boxed_lcp"),
+            ("source_exact_policy", "source_continuation"),
+            ("active_exact_policy", "not_applicable"),
+        )
+    mismatches = schedule.boxed_comparison_mismatches
+    if mismatches is None:
+        mismatches = (
+            *schedule.mismatches,
+            "The boxed-LCP lane is a comparison capture, not exact-FBF evidence.",
+        )
+    gate_blockers = schedule.boxed_comparison_gate_blockers
+    if gate_blockers is None:
+        gate_blockers = schedule.known_gate_blockers
     return dataclasses.replace(
         schedule,
         id=_boxed_schedule_id(schedule.id),
         title=f"{schedule.title} (boxed LCP comparison)",
-        mismatches=(
-            *schedule.mismatches,
-            "The boxed-LCP lane is a comparison capture, not exact-FBF evidence.",
-        ),
+        mismatches=mismatches,
+        known_gate_blockers=gate_blockers,
+        boxed_comparison_mismatches=None,
+        boxed_comparison_gate_blockers=None,
+        configuration=configuration,
         exact_fbf_required=False,
+        source_continuation_required=False,
         solver_lane="boxed",
         supported_solver_lanes=("boxed",),
         source_schedule_id=schedule.id,
@@ -1388,7 +1516,9 @@ def build_demo_command(
             "--collision-detector",
             schedule.collision_detector,
         ]
-    if schedule.exact_fbf_required:
+    if schedule.source_continuation_required:
+        command.append(HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG)
+    elif schedule.exact_fbf_required:
         command.append(HEADLESS_EXACT_FBF_FAIL_FAST_FLAG)
 
     for key in schedule.pre_run_actions:
@@ -1749,6 +1879,221 @@ def _validate_diagnostics(
         )
 
 
+def _validate_source_continuation_diagnostics(
+    diagnostics: dict[str, Any], *, label: str
+) -> dict[str, Any]:
+    _validate_diagnostics(
+        diagnostics, exact_required=False, solver_lane="exact", label=label
+    )
+    if diagnostics.get("available") is not True:
+        raise ValueError(f"{label}: exact-FBF diagnostics are unavailable")
+
+    try:
+        reason, continuation = _evaluate_source_continuation_gate(diagnostics)
+    except ValueError as error:
+        raise ValueError(f"{label}: {error}") from error
+    if reason is not None:
+        raise ValueError(f"{label}: source-continuation gate would trigger: {reason}")
+    if continuation is None:
+        raise ValueError(f"{label}: source-continuation telemetry is missing")
+
+    _validate_last_failure_diagnostics(diagnostics, label=label)
+    cumulative = continuation.get("cumulative")
+    if not isinstance(cumulative, dict):
+        raise ValueError(
+            f"{label}: source-continuation cumulative counters are missing"
+        )
+    for name in (
+        "plateaus_accepted",
+        "max_iterations_accepted",
+        "line_search_shrink_caps",
+    ):
+        value = cumulative.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(
+                f"{label}: source-continuation cumulative.{name} is invalid"
+            )
+    if cumulative["max_iterations_accepted"] != diagnostics.get("accepted_at_cap"):
+        raise ValueError(f"{label}: cumulative max-iteration counter differs")
+
+    last_attempt = continuation.get("last_attempt")
+    if not isinstance(last_attempt, dict):
+        raise ValueError(f"{label}: source-continuation last attempt is missing")
+    groups = continuation["group_outcomes"]
+    if groups:
+        last = groups[-1]
+        if diagnostics.get("status") != last.get("status") or diagnostics.get(
+            "fbf_status"
+        ) != last.get("fbf_status"):
+            raise ValueError(f"{label}: last-group status telemetry differs")
+    elif (
+        diagnostics.get("exact_attempts") == 0
+        and continuation.get("last_active") is not False
+    ):
+        raise ValueError(f"{label}: continuation active before the first attempt")
+    return continuation
+
+
+def _new_source_continuation_trajectory_state() -> dict[str, Any]:
+    return {
+        "aggregate": {
+            name: 0
+            for name in (
+                "exact_attempts",
+                "exact_solves",
+                "accepted_at_cap",
+                "exact_failures",
+                "boxed_lcp_fallbacks",
+            )
+        },
+        "continuation": {
+            name: 0
+            for name in (
+                "plateaus_accepted",
+                "max_iterations_accepted",
+                "line_search_shrink_caps",
+            )
+        },
+        "worst_residual": None,
+        "latest_group": None,
+        "next_solve_index": 0,
+    }
+
+
+def _validate_source_continuation_trajectory_step(
+    diagnostics: dict[str, Any],
+    continuation: dict[str, Any],
+    *,
+    step_index: int,
+    state: dict[str, Any],
+    label: str,
+    require_accepted_outcome: bool,
+) -> None:
+    prior_aggregate = state["aggregate"]
+    current_aggregate: dict[str, int] = {}
+    for name, previous in prior_aggregate.items():
+        value = diagnostics.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{label}: cumulative {name} is invalid")
+        if value < previous:
+            raise ValueError(f"{label}: cumulative {name} regressed")
+        current_aggregate[name] = value
+
+    contacts = diagnostics.get("contacts")
+    if isinstance(contacts, bool) or not isinstance(contacts, int) or contacts < 0:
+        raise ValueError(f"{label}: contact diagnostics are unavailable")
+    attempt_delta = (
+        current_aggregate["exact_attempts"] - prior_aggregate["exact_attempts"]
+    )
+    solve_delta = current_aggregate["exact_solves"] - prior_aggregate["exact_solves"]
+    if step_index == 0 and any(current_aggregate.values()):
+        raise ValueError(f"{label}: exact activity exists before simulation")
+    if require_accepted_outcome and step_index > 0 and contacts > 0:
+        if attempt_delta <= 0 or solve_delta <= 0:
+            raise ValueError(
+                f"{label}: contact step did not advance exact attempt/solve counters"
+            )
+
+    cumulative = continuation.get("cumulative")
+    per_step = continuation.get("step")
+    groups = continuation.get("group_outcomes")
+    if (
+        not isinstance(cumulative, dict)
+        or not isinstance(per_step, dict)
+        or not isinstance(groups, list)
+    ):
+        raise ValueError(f"{label}: continuation trajectory telemetry is missing")
+    prior_continuation = state["continuation"]
+    current_continuation: dict[str, int] = {}
+    for name, previous in prior_continuation.items():
+        value = cumulative.get(name)
+        step_value = per_step.get(name)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value < 0
+            or isinstance(step_value, bool)
+            or not isinstance(step_value, int)
+            or step_value < 0
+        ):
+            raise ValueError(f"{label}: continuation counter {name} is invalid")
+        if value < previous:
+            raise ValueError(f"{label}: cumulative {name} regressed")
+        if step_value != value - previous:
+            raise ValueError(
+                f"{label}: per-step {name} differs from its cumulative delta"
+            )
+        current_continuation[name] = value
+    if (
+        per_step.get("exact_attempts") != attempt_delta
+        or per_step.get("exact_solves") != solve_delta
+    ):
+        raise ValueError(f"{label}: continuation attempt/solve deltas differ")
+
+    skip_last_binding = bool(groups) and not require_accepted_outcome
+    latest_group = groups[-1] if groups else state["latest_group"]
+    next_solve_index = state["next_solve_index"]
+    for group in groups:
+        solve_index = group.get("solve_index")
+        if solve_index != next_solve_index:
+            raise ValueError(
+                f"{label}: group solve indices are not globally contiguous"
+            )
+        next_solve_index += 1
+    if skip_last_binding:
+        pass
+    elif latest_group is not None:
+        last_attempt = continuation.get("last_attempt")
+        if not isinstance(last_attempt, dict):
+            raise ValueError(f"{label}: continuation last attempt is missing")
+        cap_count = latest_group["line_search_shrink_cap_count"]
+        if (
+            continuation.get("last_active")
+            != latest_group.get("source_continuation_active")
+            or last_attempt.get("line_search_shrink_cap_count") != cap_count
+            or last_attempt.get("line_search_shrink_cap_reached") != (cap_count > 0)
+            or last_attempt.get("correction_step_size")
+            != latest_group.get("correction_step_size")
+            or last_attempt.get("last_inner_solve_step_size")
+            != latest_group.get("last_inner_solve_step_size")
+        ):
+            raise ValueError(f"{label}: last-attempt telemetry lost prior binding")
+        if require_accepted_outcome and (
+            diagnostics.get("status") != latest_group.get("status")
+            or diagnostics.get("fbf_status") != latest_group.get("fbf_status")
+        ):
+            raise ValueError(f"{label}: last status lost prior group binding")
+    else:
+        last_attempt = continuation.get("last_attempt")
+        if not isinstance(last_attempt, dict) or (
+            continuation.get("last_active") is not False
+            or last_attempt.get("line_search_shrink_cap_reached") is not False
+            or last_attempt.get("line_search_shrink_cap_count") != 0
+            or last_attempt.get("correction_step_size") is not None
+            or last_attempt.get("last_inner_solve_step_size") is not None
+        ):
+            raise ValueError(f"{label}: pre-solve last-attempt defaults differ")
+        if require_accepted_outcome and (
+            diagnostics.get("status") != "not_run"
+            or diagnostics.get("fbf_status") != "not_run"
+        ):
+            raise ValueError(f"{label}: pre-solve status defaults differ")
+
+    current_worst = diagnostics.get("worst_residual")
+    prior_worst = state["worst_residual"]
+    if current_worst is not None:
+        if not _is_finite_number(current_worst) or current_worst < 0.0:
+            raise ValueError(f"{label}: cumulative worst residual is invalid")
+        if prior_worst is not None and current_worst < prior_worst:
+            raise ValueError(f"{label}: cumulative worst residual regressed")
+        state["worst_residual"] = float(current_worst)
+    state["aggregate"] = current_aggregate
+    state["continuation"] = current_continuation
+    if groups:
+        state["latest_group"] = groups[-1]
+    state["next_solve_index"] = next_solve_index
+
+
 def _validate_last_failure_diagnostics(
     diagnostics: dict[str, Any], *, label: str
 ) -> None:
@@ -1791,6 +2136,7 @@ def _validate_last_failure_diagnostics(
         "invalid_input",
         "inner_solver_failed",
         "step_size_underflow",
+        "non_finite_value",
     }:
         raise ValueError(f"{label}: last_failure.fbf_status is unavailable/invalid")
     for name in (
@@ -1855,7 +2201,7 @@ def _validate_last_failure_diagnostics(
         value is None for value in residual_values
     ):
         raise ValueError(f"{label}: last_failure residual terms are inconsistent")
-    if fbf_status != "invalid_input" and any(
+    if fbf_status not in {"invalid_input", "non_finite_value"} and any(
         value is None for value in residual_values
     ):
         raise ValueError(f"{label}: last_failure residual terms are unavailable")
@@ -1903,9 +2249,18 @@ def _is_author_masonry_arch_impact_schedule(schedule: CaptureSchedule) -> bool:
 
 
 def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
+    return (schedule.source_schedule_id or schedule.id) in {
+        "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
+    }
+
+
+def _is_author_card_house_source_continuation_schedule(
+    schedule: CaptureSchedule,
+) -> bool:
     return (
         schedule.source_schedule_id or schedule.id
-    ) == "card_house_author_4_impact_current_source"
+    ) == "card_house_author_4_impact_source_continuation_current_source"
 
 
 def _is_finite_number(value: Any) -> bool:
@@ -2414,11 +2769,13 @@ def _expected_author_masonry_arch_solver_contract(solver_lane: str) -> dict[str,
     }
 
 
-def _expected_author_card_house_solver_contract(solver_lane: str) -> dict[str, Any]:
+def _expected_author_card_house_solver_contract(
+    solver_lane: str, *, source_continuation: bool = False
+) -> dict[str, Any]:
     if solver_lane not in SOLVER_LANES:
         raise ValueError(f"unsupported author card-house solver lane {solver_lane!r}")
     exact = solver_lane == "exact"
-    return {
+    contract = {
         "lane": "exact_fbf" if exact else "boxed_lcp",
         "split_impulse_enabled": False,
         "source_inner_initialization_requested": exact,
@@ -2509,6 +2866,47 @@ def _expected_author_card_house_solver_contract(solver_lane: str) -> dict[str, A
             }
         ),
     }
+    if not source_continuation:
+        return contract
+
+    contract["source_continuation"] = {
+        "policy": "source_continuation",
+        "options_available": exact,
+        "requested": exact,
+        "last_active": False,
+        "numeric_settings": {
+            "residual_check_interval": 5,
+            "plateau_patience": 5,
+            "plateau_relative_tolerance": 0.01,
+            "step_size_backtrack_limit": 8,
+            "coupling_variation_skip_threshold": 1e-10,
+        },
+        "fixed_semantics": {
+            "strict_convergence_comparison": "<",
+            "iteration_zero_residual": "natural_map_unscaled",
+            "sampled_termination_residual": "coulomb_rel_dimensionless",
+            "plateau_metric": "natural",
+            "small_change_armijo_action": "accept",
+            "line_search_cap_action": "shrink_cap",
+        },
+    }
+    if exact:
+        contract["exact_options"]["max_residual_history_samples"] = 64
+        contract["exact_options"]["max_residual_history_records"] = 4096
+        contract["cross_step_options"] = {
+            "warm_start_match_mode": "ordered_body_b_local_feature",
+            "warm_start_normal_cosine": 0.9,
+            "strict_warm_start_match_distance": True,
+            "warm_start_max_age": 3,
+            "persistent_step_size_safe_bound_scale": 10.0,
+            "minimum_step_size": 1e-6,
+            "maximum_step_size": 1e6,
+            "warm_start_residual_threshold": 1e-4,
+            "warm_start_step_size_cap": 1e4,
+            "persist_uncapped_step_size_on_warm_start_cap": True,
+            "require_residual_improvement_for_unconverged_cache_save": True,
+        }
+    return contract
 
 
 def _validate_author_card_house_adapter_contract(
@@ -2690,7 +3088,10 @@ def _validate_author_card_house_adapter_contract(
             f"{sidecar_path}: author card-house collision contract changed"
         )
     if adapter.get("solver") != _expected_author_card_house_solver_contract(
-        schedule.solver_lane
+        schedule.solver_lane,
+        source_continuation=_is_author_card_house_source_continuation_schedule(
+            schedule
+        ),
     ):
         raise ValueError(f"{sidecar_path}: author card-house solver contract changed")
     if adapter.get("contact_material") != {
@@ -2968,6 +3369,204 @@ def _validate_fail_fast_state(
     elif step is not None or reason is not None:
         raise ValueError(f"{sidecar_path}: successful fail-fast state is inconsistent")
     return state
+
+
+def _validate_source_continuation_state(
+    data: dict[str, Any], *, sidecar_path: Path, triggered: bool
+) -> dict[str, Any]:
+    state = data.get("headless_exact_fbf_source_continuation")
+    if not isinstance(state, dict):
+        raise ValueError(f"{sidecar_path}: source-continuation gate state is missing")
+    if (
+        state.get("enabled") is not True
+        or state.get("requested") != "source_continuation"
+        or state.get("allowed_outcomes")
+        != ["success", "plateau_accepted", "max_iterations_accepted"]
+        or state.get("line_search_cap_action") != "shrink_cap"
+        or state.get("triggered") is not triggered
+    ):
+        raise ValueError(f"{sidecar_path}: invalid source-continuation gate state")
+    step = state.get("step")
+    reason = state.get("reason")
+    if triggered:
+        if isinstance(step, bool) or not isinstance(step, int) or step < 0:
+            raise ValueError(f"{sidecar_path}: invalid source-continuation gate step")
+        if reason not in SOURCE_CONTINUATION_GATE_REASONS:
+            raise ValueError(f"{sidecar_path}: invalid source-continuation gate reason")
+    elif step is not None or reason is not None:
+        raise ValueError(
+            f"{sidecar_path}: successful source-continuation state is inconsistent"
+        )
+    return state
+
+
+def _evaluate_source_continuation_gate(
+    diagnostics: dict[str, Any],
+) -> tuple[str | None, dict[str, Any] | None]:
+    """Mirror the C++ source-continuation gate in stable priority order."""
+
+    continuation_value = diagnostics.get("source_continuation")
+    continuation = continuation_value if isinstance(continuation_value, dict) else None
+    if continuation is None or continuation.get("requested") is not True:
+        return "source_continuation_not_requested", continuation
+
+    def nonnegative_integer(mapping: dict[str, Any], name: str) -> int:
+        value = mapping.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"invalid source-continuation {name}")
+        return value
+
+    def integer(mapping: dict[str, Any], name: str) -> int:
+        value = mapping.get(name)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"invalid source-continuation {name}")
+        return value
+
+    fallbacks = nonnegative_integer(diagnostics, "boxed_lcp_fallbacks")
+    failures = nonnegative_integer(diagnostics, "exact_failures")
+    attempts = nonnegative_integer(diagnostics, "exact_attempts")
+    solves = nonnegative_integer(diagnostics, "exact_solves")
+    if fallbacks > 0:
+        return "boxed_fallback", continuation
+    if failures > 0:
+        return "exact_failure", continuation
+    if attempts != solves + failures:
+        return "cumulative_accounting_mismatch", continuation
+    if continuation.get("world_state_finite") is not True:
+        return "nonfinite_world_state", continuation
+    if continuation.get("group_history_truncated") is not False:
+        return "group_history_truncated", continuation
+
+    step = continuation.get("step")
+    groups = continuation.get("group_outcomes")
+    if not isinstance(step, dict) or not isinstance(groups, list):
+        raise ValueError("invalid source-continuation step/group telemetry")
+    step_attempts = nonnegative_integer(step, "exact_attempts")
+    step_solves = nonnegative_integer(step, "exact_solves")
+    if step_attempts != step_solves or len(groups) != step_attempts:
+        return "group_accounting_mismatch", continuation
+
+    plateaus = 0
+    max_iterations = 0
+    shrinks = 0
+    shrink_caps = 0
+    prior_solve_index: int | None = None
+    for group in groups:
+        if not isinstance(group, dict):
+            raise ValueError("invalid source-continuation group")
+        solve_index = nonnegative_integer(group, "solve_index")
+        contact_count = nonnegative_integer(group, "contact_count")
+        iterations = integer(group, "iterations")
+        group_shrinks = integer(group, "line_search_shrinks")
+        group_caps = integer(group, "line_search_shrink_cap_count")
+        if contact_count == 0 or (
+            prior_solve_index is not None and solve_index != prior_solve_index + 1
+        ):
+            return "invalid_group_telemetry", continuation
+        prior_solve_index = solve_index
+        if group.get("source_continuation_active") is not True:
+            return "source_continuation_inactive", continuation
+        if iterations < 0 or group_shrinks < 0 or group_caps < 0:
+            return "invalid_group_telemetry", continuation
+        if (
+            group_caps > group_shrinks
+            or (group_shrinks > 0 and iterations == 0)
+            or group_shrinks > 8 * iterations
+            or group_caps > iterations
+        ):
+            return "invalid_group_telemetry", continuation
+
+        residual = group.get("final_residual")
+        natural = group.get("final_natural_map_residual")
+        if (
+            not _is_finite_number(residual)
+            or residual < 0.0
+            or not _is_finite_number(natural)
+            or natural < 0.0
+        ):
+            return "nonfinite_group_residual", continuation
+        correction_gamma = group.get("correction_step_size")
+        inner_gamma = group.get("last_inner_solve_step_size")
+        if iterations > 0 and (
+            not _is_finite_number(correction_gamma)
+            or correction_gamma <= 0.0
+            or not _is_finite_number(inner_gamma)
+            or inner_gamma <= 0.0
+        ):
+            return "nonfinite_group_step_size", continuation
+        if iterations > 0 and (
+            (group_caps == 0 and correction_gamma != inner_gamma)
+            or (group_caps > 0 and correction_gamma > inner_gamma)
+        ):
+            return "group_step_size_relation_mismatch", continuation
+
+        status_pair = (group.get("status"), group.get("fbf_status"))
+        is_plateau = False
+        if status_pair == ("success", "success"):
+            if iterations > 200 or (iterations > 0 and iterations % 5 != 0):
+                return "termination_timing_mismatch", continuation
+            metric = natural if iterations == 0 else residual
+            if metric >= EXACT_FBF_RESIDUAL_TOLERANCE:
+                return "success_tolerance_not_strict", continuation
+        elif status_pair == ("plateau_accepted", "plateau"):
+            is_plateau = True
+            if iterations < 30 or iterations > 200 or iterations % 5 != 0:
+                return "termination_timing_mismatch", continuation
+            reference = group.get("plateau_reference_natural_map_residual")
+            improvement = group.get("plateau_relative_improvement")
+            if (
+                not _is_finite_number(reference)
+                or reference <= 0.0
+                or not _is_finite_number(improvement)
+            ):
+                return "plateau_telemetry_mismatch", continuation
+            expected_improvement = (reference - natural) / reference
+            scale = max(1.0, abs(expected_improvement))
+            if (
+                abs(improvement - expected_improvement)
+                > 8.0 * sys.float_info.epsilon * scale
+                or not improvement < 0.01
+            ):
+                return "plateau_telemetry_mismatch", continuation
+            plateaus += 1
+        elif status_pair == ("max_iterations_accepted", "max_iterations"):
+            if iterations != 200:
+                return "termination_timing_mismatch", continuation
+            max_iterations += 1
+        else:
+            return "unaccepted_group_outcome", continuation
+        if not is_plateau and (
+            group.get("plateau_reference_natural_map_residual") is not None
+            or group.get("plateau_relative_improvement") is not None
+        ):
+            return "plateau_telemetry_mismatch", continuation
+        shrinks += group_shrinks
+        shrink_caps += group_caps
+
+    if (
+        plateaus != nonnegative_integer(step, "plateaus_accepted")
+        or max_iterations != nonnegative_integer(step, "max_iterations_accepted")
+        or shrinks != nonnegative_integer(step, "line_search_shrinks")
+        or shrink_caps != nonnegative_integer(step, "line_search_shrink_caps")
+    ):
+        return "group_counter_mismatch", continuation
+    if groups:
+        last = groups[-1]
+        last_attempt = continuation.get("last_attempt")
+        if not isinstance(last_attempt, dict):
+            raise ValueError("invalid source-continuation last-attempt telemetry")
+        cap_count = last["line_search_shrink_cap_count"]
+        if (
+            continuation.get("last_active") != last.get("source_continuation_active")
+            or last_attempt.get("line_search_shrink_cap_count") != cap_count
+            or last_attempt.get("line_search_shrink_cap_reached") != (cap_count > 0)
+            or last_attempt.get("correction_step_size")
+            != last.get("correction_step_size")
+            or last_attempt.get("last_inner_solve_step_size")
+            != last.get("last_inner_solve_step_size")
+        ):
+            return "last_group_telemetry_mismatch", continuation
+    return None, continuation
 
 
 def _expected_fail_fast_reason(diagnostics: dict[str, Any]) -> str | None:
@@ -3265,6 +3864,261 @@ def _validate_failed_exact_fbf_sidecar(
     }
 
 
+def _validate_failed_source_continuation_sidecar(
+    schedule: CaptureSchedule,
+    output_dir: Path,
+    *,
+    expected_demo: Path,
+) -> dict[str, Any]:
+    sidecar_path = output_dir / "timeline.json"
+    data = _read_json(sidecar_path)
+    if data.get("schema_version") != SIDECAR_SCHEMA_VERSION:
+        raise ValueError(f"{sidecar_path}: unexpected schema")
+    if (
+        data.get("scene") != schedule.scene
+        or data.get("active_scene") != schedule.scene
+    ):
+        raise ValueError(f"{sidecar_path}: failed continuation identity differs")
+    if data.get("total_steps") != schedule.total_steps:
+        raise ValueError(f"{sidecar_path}: total step mismatch")
+    if data.get("event_order") != "captures_before_actions_at_each_completed_step":
+        raise ValueError(f"{sidecar_path}: unsupported event ordering")
+    if (data.get("width"), data.get("height")) != (
+        schedule.width,
+        schedule.height,
+    ):
+        raise ValueError(f"{sidecar_path}: capture dimensions do not match")
+    if data.get("collision_detector") != schedule.collision_detector:
+        raise ValueError(
+            f"{sidecar_path}: collision detector differs from the schedule"
+        )
+    if "headless_exact_fbf_fail_fast" in data:
+        raise ValueError(f"{sidecar_path}: strict fail-fast state is unexpected")
+    try:
+        runtime_argv = shlex.split(data["runtime_command"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"{sidecar_path}: invalid runtime command") from error
+    if runtime_argv != build_demo_command(schedule, expected_demo, output_dir):
+        raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
+    physics_contract_report = _validate_schedule_physics_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    state = _validate_source_continuation_state(
+        data, sidecar_path=sidecar_path, triggered=True
+    )
+    trigger_step = state["step"]
+    completed_steps = data.get("completed_steps")
+    if (
+        isinstance(completed_steps, bool)
+        or not isinstance(completed_steps, int)
+        or completed_steps != trigger_step
+        or trigger_step > schedule.total_steps
+    ):
+        raise ValueError(
+            f"{sidecar_path}: continuation gate step and completed steps differ"
+        )
+    trajectory_steps = data.get("steps")
+    if not isinstance(trajectory_steps, list) or any(
+        not isinstance(item, dict) for item in trajectory_steps
+    ):
+        raise ValueError(f"{sidecar_path}: failed trajectory records are invalid")
+    if any(
+        isinstance(item.get("step"), bool) or not isinstance(item.get("step"), int)
+        for item in trajectory_steps
+    ) or [item.get("step") for item in trajectory_steps] != list(
+        range(trigger_step + 1)
+    ):
+        raise ValueError(f"{sidecar_path}: failed trajectory prefix is invalid")
+
+    diagnostics_by_step: dict[int, dict[str, Any]] = {}
+    continuation_trajectory_state = _new_source_continuation_trajectory_state()
+    for item in trajectory_steps:
+        step = item["step"]
+        sim_time = item.get("sim_time")
+        if not _is_finite_number(sim_time) or not math.isclose(
+            sim_time, schedule.time_at_step(step), rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(f"{sidecar_path}: failed step time differs")
+        diagnostics = item.get("solver_diagnostics")
+        if not isinstance(diagnostics, dict):
+            raise ValueError(f"{sidecar_path}: failed diagnostics are missing")
+        diagnostics_by_step[step] = diagnostics
+        if step < trigger_step:
+            continuation = _validate_source_continuation_diagnostics(
+                diagnostics, label=f"trajectory step {step}"
+            )
+            _validate_source_continuation_trajectory_step(
+                diagnostics,
+                continuation,
+                step_index=step,
+                state=continuation_trajectory_state,
+                label=f"trajectory step {step}",
+                require_accepted_outcome=True,
+            )
+    offending = diagnostics_by_step[trigger_step]
+    _validate_diagnostics(
+        offending,
+        exact_required=False,
+        solver_lane="exact",
+        label=f"trajectory step {trigger_step}",
+    )
+    if offending.get("available") is not True:
+        raise ValueError(
+            f"{sidecar_path}: trigger exact-FBF diagnostics are unavailable"
+        )
+    _validate_last_failure_diagnostics(
+        offending, label=f"trajectory step {trigger_step}"
+    )
+    expected_reason, offending_continuation = _evaluate_source_continuation_gate(
+        offending
+    )
+    if expected_reason is None:
+        raise ValueError(
+            f"{sidecar_path}: continuation gate triggered on valid diagnostics"
+        )
+    if state["reason"] != expected_reason:
+        raise ValueError(
+            f"{sidecar_path}: source-continuation reason does not match "
+            "diagnostics priority"
+        )
+    if offending_continuation is not None and all(
+        isinstance(offending_continuation.get(name), expected_type)
+        for name, expected_type in (
+            ("cumulative", dict),
+            ("step", dict),
+            ("group_outcomes", list),
+        )
+    ):
+        _validate_source_continuation_trajectory_step(
+            offending,
+            offending_continuation,
+            step_index=trigger_step,
+            state=continuation_trajectory_state,
+            label=f"trajectory step {trigger_step}",
+            require_accepted_outcome=False,
+        )
+
+    for collection_name in ("shots", "actions", "events"):
+        collection = data.get(collection_name)
+        if not isinstance(collection, list) or any(
+            not isinstance(item, dict) for item in collection
+        ):
+            raise ValueError(f"{sidecar_path}: failed {collection_name} are invalid")
+        if any(
+            isinstance(item.get("step"), bool)
+            or not isinstance(item.get("step"), int)
+            or item["step"] >= trigger_step
+            for item in collection
+        ):
+            raise ValueError(
+                f"{sidecar_path}: {collection_name} exist at or after the "
+                "continuation gate step"
+            )
+
+    expected_events: list[dict[str, Any]] = []
+    expected_shots: list[dict[str, Any]] = []
+    expected_actions: list[dict[str, Any]] = []
+    sequence = 0
+    for step in range(trigger_step):
+        for shot_step in schedule.capture_steps:
+            if shot_step == step:
+                expected_shots.append(
+                    {
+                        "sequence": sequence,
+                        "step": step,
+                        "path": str(_frame_path(output_dir, step)),
+                    }
+                )
+                expected_events.append(
+                    {
+                        "sequence": sequence,
+                        "type": "shot",
+                        "step": step,
+                        "path": str(_frame_path(output_dir, step)),
+                    }
+                )
+                sequence += 1
+        for action in schedule.actions:
+            if action.step == step:
+                expected_actions.append(
+                    {
+                        "sequence": sequence,
+                        "step": step,
+                        "key": action.key,
+                    }
+                )
+                expected_events.append(
+                    {
+                        "sequence": sequence,
+                        "type": "action",
+                        "step": step,
+                        "key": action.key,
+                    }
+                )
+                sequence += 1
+
+    actual_shots = data["shots"]
+    if len(actual_shots) != len(expected_shots):
+        raise ValueError(f"{sidecar_path}: shot prefix differs from the schedule")
+    for actual, expected in zip(actual_shots, expected_shots):
+        actual_path = actual.get("path")
+        if (
+            actual.get("sequence") != expected["sequence"]
+            or actual.get("step") != expected["step"]
+            or not isinstance(actual_path, str)
+            or Path(actual_path) != Path(expected["path"])
+            or actual.get("success") is not True
+        ):
+            raise ValueError(f"{sidecar_path}: shot prefix differs from the schedule")
+        sim_time = actual.get("sim_time")
+        if not _is_finite_number(sim_time) or not math.isclose(
+            sim_time,
+            schedule.time_at_step(expected["step"]),
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"{sidecar_path}: shot prefix time mismatch")
+        if actual.get("solver_diagnostics") != diagnostics_by_step[expected["step"]]:
+            raise ValueError(f"{sidecar_path}: shot prefix diagnostics are not bound")
+
+    actual_actions = data["actions"]
+    if len(actual_actions) != len(expected_actions):
+        raise ValueError(f"{sidecar_path}: action prefix differs from the schedule")
+    for actual, expected in zip(actual_actions, expected_actions):
+        if (
+            any(actual.get(key) != value for key, value in expected.items())
+            or actual.get("success") is not True
+            or ("key_code" in actual and actual["key_code"] != ord(expected["key"]))
+        ):
+            raise ValueError(f"{sidecar_path}: action prefix differs from the schedule")
+
+    events = data["events"]
+    if len(events) != len(expected_events):
+        raise ValueError(f"{sidecar_path}: events exceed the pre-trigger prefix")
+    for actual, expected in zip(events, expected_events):
+        if actual.get("success") is not True:
+            raise ValueError(f"{sidecar_path}: pre-trigger event failed")
+        if any(
+            actual.get(key) != value for key, value in expected.items() if key != "path"
+        ) or (
+            "path" in expected
+            and (
+                not isinstance(actual.get("path"), str)
+                or Path(actual["path"]) != Path(expected["path"])
+            )
+        ):
+            raise ValueError(f"{sidecar_path}: pre-trigger event prefix differs")
+    if data.get("solver_diagnostics") != offending:
+        raise ValueError(f"{sidecar_path}: final diagnostics differ from trigger")
+    return {
+        "sidecar": str(sidecar_path),
+        "completed_steps": completed_steps,
+        "reason": state["reason"],
+        "headless_exact_fbf_source_continuation": state,
+        "physics_contract": physics_contract_report,
+    }
+
+
 def validate_sidecar(
     schedule: CaptureSchedule,
     output_dir: Path,
@@ -3303,8 +4157,10 @@ def validate_sidecar(
     runtime_demo = Path(runtime_argv[0]) if expected_demo is None else expected_demo
     expected_runtime_argv = build_demo_command(schedule, runtime_demo, output_dir)
     fail_fast_field_present = "headless_exact_fbf_fail_fast" in data
+    continuation_field_present = "headless_exact_fbf_source_continuation" in data
     legacy_fail_fast = (
         schedule.exact_fbf_required
+        and not schedule.source_continuation_required
         and allow_legacy_fail_fast
         and not fail_fast_field_present
         and HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in runtime_argv
@@ -3319,17 +4175,30 @@ def validate_sidecar(
     physics_contract_report = _validate_schedule_physics_contract(
         schedule, data, sidecar_path=sidecar_path
     )
-    if schedule.exact_fbf_required:
+    if schedule.source_continuation_required:
+        if fail_fast_field_present:
+            raise ValueError(f"{sidecar_path}: unexpected strict fail-fast state")
+        continuation_state = _validate_source_continuation_state(
+            data, sidecar_path=sidecar_path, triggered=False
+        )
+        fail_fast_state = None
+    elif schedule.exact_fbf_required:
+        if continuation_field_present:
+            raise ValueError(
+                f"{sidecar_path}: unexpected source-continuation gate state"
+            )
         if legacy_fail_fast:
             fail_fast_state = None
         else:
             fail_fast_state = _validate_fail_fast_state(
                 data, sidecar_path=sidecar_path, triggered=False
             )
+        continuation_state = None
     else:
-        if fail_fast_field_present:
-            raise ValueError(f"{sidecar_path}: unexpected exact-FBF fail-fast state")
+        if fail_fast_field_present or continuation_field_present:
+            raise ValueError(f"{sidecar_path}: unexpected exact-FBF gate state")
         fail_fast_state = None
+        continuation_state = None
 
     trajectory_steps = data.get("steps", [])
     if [item.get("step") for item in trajectory_steps] != list(
@@ -3347,68 +4216,86 @@ def validate_sidecar(
     )
     prior_counters = {name: 0 for name in aggregate_counter_names}
     prior_worst: float | None = None
+    continuation_trajectory_state = _new_source_continuation_trajectory_state()
     diagnostics_by_step: dict[int, dict[str, Any]] = {}
     for item in trajectory_steps:
         step = int(item["step"])
         sim_time = item.get("sim_time")
-        if not isinstance(sim_time, (int, float)) or not math.isclose(
+        if not _is_finite_number(sim_time) or not math.isclose(
             sim_time, schedule.time_at_step(step), rel_tol=0.0, abs_tol=1e-9
         ):
             raise ValueError(
                 f"{sidecar_path}: completed-step time mismatch at step {step}"
             )
-        diagnostics = item.get("solver_diagnostics", {})
-        _validate_diagnostics(
-            diagnostics,
-            exact_required=schedule.exact_fbf_required,
-            solver_lane=schedule.solver_lane,
-            label=f"trajectory step {step}",
-        )
+        diagnostics = item.get("solver_diagnostics")
+        if not isinstance(diagnostics, dict):
+            raise ValueError(f"{sidecar_path}: completed-step diagnostics are invalid")
+        if schedule.source_continuation_required:
+            continuation = _validate_source_continuation_diagnostics(
+                diagnostics, label=f"trajectory step {step}"
+            )
+            _validate_source_continuation_trajectory_step(
+                diagnostics,
+                continuation,
+                step_index=step,
+                state=continuation_trajectory_state,
+                label=f"trajectory step {step}",
+                require_accepted_outcome=True,
+            )
+        else:
+            _validate_diagnostics(
+                diagnostics,
+                exact_required=schedule.exact_fbf_required,
+                solver_lane=schedule.solver_lane,
+                label=f"trajectory step {step}",
+            )
+            if schedule.exact_fbf_required:
+                current_counters = {
+                    name: diagnostics[name] for name in aggregate_counter_names
+                }
+                for name in aggregate_counter_names:
+                    current = current_counters[name]
+                    if current < prior_counters[name]:
+                        raise ValueError(
+                            f"trajectory step {step}: cumulative {name} regressed"
+                        )
+                contacts = diagnostics.get("contacts")
+                if (
+                    isinstance(contacts, bool)
+                    or not isinstance(contacts, int)
+                    or contacts < 0
+                ):
+                    raise ValueError(
+                        f"trajectory step {step}: contact diagnostics are unavailable"
+                    )
+                if step == 0 and current_counters["exact_attempts"] != 0:
+                    raise ValueError(
+                        "trajectory step 0: exact attempts exist before simulation"
+                    )
+                if step > 0 and contacts > 0:
+                    attempt_delta = (
+                        current_counters["exact_attempts"]
+                        - prior_counters["exact_attempts"]
+                    )
+                    solve_delta = (
+                        current_counters["exact_solves"]
+                        - prior_counters["exact_solves"]
+                    )
+                    if attempt_delta <= 0 or solve_delta <= 0:
+                        raise ValueError(
+                            f"trajectory step {step}: contact step did not advance "
+                            "exact attempt/solve counters"
+                        )
+                prior_counters = current_counters
+                current_worst = diagnostics.get("worst_residual")
+                if current_worst is not None:
+                    if prior_worst is not None and current_worst < prior_worst:
+                        raise ValueError(
+                            f"trajectory step {step}: cumulative worst residual "
+                            "regressed"
+                        )
+                    prior_worst = float(current_worst)
         diagnostics_by_step[step] = diagnostics
-        if schedule.exact_fbf_required:
-            current_counters = {
-                name: diagnostics[name] for name in aggregate_counter_names
-            }
-            for name in aggregate_counter_names:
-                current = current_counters[name]
-                if current < prior_counters[name]:
-                    raise ValueError(
-                        f"trajectory step {step}: cumulative {name} regressed"
-                    )
-            contacts = diagnostics.get("contacts")
-            if (
-                isinstance(contacts, bool)
-                or not isinstance(contacts, int)
-                or contacts < 0
-            ):
-                raise ValueError(
-                    f"trajectory step {step}: contact diagnostics are unavailable"
-                )
-            if step == 0 and current_counters["exact_attempts"] != 0:
-                raise ValueError(
-                    "trajectory step 0: exact attempts exist before simulation"
-                )
-            if step > 0 and contacts > 0:
-                attempt_delta = (
-                    current_counters["exact_attempts"]
-                    - prior_counters["exact_attempts"]
-                )
-                solve_delta = (
-                    current_counters["exact_solves"] - prior_counters["exact_solves"]
-                )
-                if attempt_delta <= 0 or solve_delta <= 0:
-                    raise ValueError(
-                        f"trajectory step {step}: contact step did not advance "
-                        "exact attempt/solve counters"
-                    )
-            prior_counters = current_counters
-            current_worst = diagnostics.get("worst_residual")
-            if current_worst is not None:
-                if prior_worst is not None and current_worst < prior_worst:
-                    raise ValueError(
-                        f"trajectory step {step}: cumulative worst residual regressed"
-                    )
-                prior_worst = float(current_worst)
 
     shots = data.get("shots", [])
     expected_shots = list(schedule.capture_steps)
@@ -3464,12 +4351,15 @@ def validate_sidecar(
             raise ValueError(
                 f"step {step}: shot diagnostics differ from completed-step record"
             )
-        _validate_diagnostics(
-            diagnostics,
-            exact_required=schedule.exact_fbf_required,
-            solver_lane=schedule.solver_lane,
-            label=f"step {step}",
-        )
+        if schedule.source_continuation_required:
+            _validate_source_continuation_diagnostics(diagnostics, label=f"step {step}")
+        else:
+            _validate_diagnostics(
+                diagnostics,
+                exact_required=schedule.exact_fbf_required,
+                solver_lane=schedule.solver_lane,
+                label=f"step {step}",
+            )
 
     if schedule.expect_motion and len(set(frame_hashes.values())) < 2:
         raise ValueError(f"{sidecar_path}: every dynamic capture is byte-identical")
@@ -3478,12 +4368,17 @@ def validate_sidecar(
         raise ValueError(
             f"{sidecar_path}: final diagnostics differ from the final step"
         )
-    _validate_diagnostics(
-        final_diagnostics,
-        exact_required=schedule.exact_fbf_required,
-        solver_lane=schedule.solver_lane,
-        label="final diagnostics",
-    )
+    if schedule.source_continuation_required:
+        _validate_source_continuation_diagnostics(
+            final_diagnostics, label="final diagnostics"
+        )
+    else:
+        _validate_diagnostics(
+            final_diagnostics,
+            exact_required=schedule.exact_fbf_required,
+            solver_lane=schedule.solver_lane,
+            label="final diagnostics",
+        )
     if (
         schedule.exact_fbf_required
         and schedule.total_steps > 0
@@ -3517,6 +4412,15 @@ def validate_sidecar(
             "legacy_artifact": legacy_fail_fast,
             "state": fail_fast_state,
         },
+        **(
+            {
+                "headless_exact_fbf_source_continuation": {
+                    "state": continuation_state,
+                }
+            }
+            if schedule.source_continuation_required
+            else {}
+        ),
         "physics_contract": physics_contract_report,
         "pass": True,
     }
@@ -3888,17 +4792,27 @@ def run_schedule(
     except subprocess.CalledProcessError as error:
         if not schedule.exact_fbf_required:
             raise
+        gate_label = (
+            "exact-FBF source-continuation gate"
+            if schedule.source_continuation_required
+            else "exact-FBF fail-fast"
+        )
         try:
-            failure = _validate_failed_exact_fbf_sidecar(
-                schedule, output_dir, expected_demo=demo
-            )
+            if schedule.source_continuation_required:
+                failure = _validate_failed_source_continuation_sidecar(
+                    schedule, output_dir, expected_demo=demo
+                )
+            else:
+                failure = _validate_failed_exact_fbf_sidecar(
+                    schedule, output_dir, expected_demo=demo
+                )
         except (OSError, ValueError) as sidecar_error:
             raise ValueError(
                 f"{schedule.id}: demo exited {error.returncode} without a valid "
-                f"exact-FBF fail-fast sidecar: {sidecar_error}"
+                f"{gate_label} sidecar: {sidecar_error}"
             ) from error
         raise ValueError(
-            f"{schedule.id}: exact-FBF fail-fast triggered at completed step "
+            f"{schedule.id}: {gate_label} triggered at completed step "
             f"{failure['completed_steps']}: {failure['reason']}"
         ) from error
     visual_resources_after = _visual_resource_snapshot(schedule)

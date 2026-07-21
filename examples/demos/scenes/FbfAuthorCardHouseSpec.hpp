@@ -80,6 +80,8 @@ inline constexpr const char* kDemoSceneId
     = "fbf_author_card_house_5_construction";
 inline constexpr const char* kDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_current_source";
+inline constexpr const char* kSourceContinuationDynamicsDemoSceneId
+    = "fbf_author_card_house_4_impact_source_continuation_current_source";
 inline constexpr const char* kAuthorRepository
     = "https://github.com/matthcsong/fbf-sca-2026";
 inline constexpr const char* kAuthorCommit
@@ -159,10 +161,27 @@ inline constexpr double kSourceArmijoShrink = 0.7;
 inline constexpr int kSourceArmijoMaxBacktracks = 8;
 inline constexpr int kSourcePlateauPatience = 5;
 inline constexpr double kSourcePlateauRelativeTolerance = 0.01;
+inline constexpr double kSourceCouplingVariationSkipThreshold = 1e-10;
+inline constexpr int kSourceContinuationResidualHistorySamples = 64;
+inline constexpr int kSourceContinuationResidualHistoryRecords
+    = static_cast<int>(kSourceMaxContacts);
+inline constexpr const char* kSourceContinuationPolicy = "source_continuation";
+inline constexpr const char* kSourcePlateauMetric = "natural";
+inline constexpr const char* kSourceInitialConvergenceResidual
+    = "natural_map_unscaled";
+inline constexpr const char* kSourceSampledTerminationResidual
+    = "coulomb_rel_dimensionless";
+inline constexpr const char* kSourceStrictConvergenceComparison = "<";
+inline constexpr const char* kSourceSmallChangeArmijoAction = "accept";
+inline constexpr const char* kSourceShrinkCapAction = "shrink_cap";
 inline constexpr double kSourceWarmStartMatchRadius = 0.02;
 inline constexpr double kSourceWarmStartNormalCosine = 0.9;
 inline constexpr int kSourceWarmStartMaxAge = 3;
 inline constexpr double kSourceWarmStartGammaCap = 1e4;
+inline constexpr double kSourcePersistentStepSizeSafeBoundScale = 10.0;
+inline constexpr double kSourceMinimumStepSize = 1e-6;
+inline constexpr double kSourceMaximumStepSize = 1e6;
+inline constexpr double kSourceWarmStartResidualThreshold = 1e-4;
 inline constexpr double kSourceBaumgarteErp = 0.0;
 inline constexpr const char* kSourceTerminationResidual = "coulomb_rel";
 inline constexpr double kSourceTerminationTolerance = 1e-6;
@@ -412,6 +431,31 @@ dartConstructionSolverOptions()
 }
 
 //==============================================================================
+inline dart::constraint::ExactCoulombFbfConstraintSolverOptions
+dartSourceContinuationSolverOptions()
+{
+  auto options = dartConstructionSolverOptions();
+  options.maxResidualHistorySamples = kSourceContinuationResidualHistorySamples;
+  options.maxResidualHistoryRecords = kSourceContinuationResidualHistoryRecords;
+  return options;
+}
+
+//==============================================================================
+inline dart::constraint::ExactCoulombFbfSourceContinuationOptions
+dartSourceContinuationOptions()
+{
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions options;
+  options.enabled = true;
+  options.residualCheckInterval = kSourceResidualCheckInterval;
+  options.plateauPatience = kSourcePlateauPatience;
+  options.plateauRelativeTolerance = kSourcePlateauRelativeTolerance;
+  options.stepSizeBacktrackLimit = kSourceArmijoMaxBacktracks;
+  options.couplingVariationSkipThreshold
+      = kSourceCouplingVariationSkipThreshold;
+  return options;
+}
+
+//==============================================================================
 inline dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
 dartConstructionCrossStepPolicyOptions()
 {
@@ -428,6 +472,27 @@ dartConstructionCrossStepPolicyOptions()
   options.warmStartStepSizeCap = std::numeric_limits<double>::quiet_NaN();
   options.persistUncappedStepSizeOnWarmStartCap = false;
   options.requireResidualImprovementForUnconvergedCacheSave = false;
+  return options;
+}
+
+//==============================================================================
+inline dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
+dartSourceContinuationCrossStepPolicyOptions()
+{
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions options;
+  options.warmStartMatchMode = dart::constraint::
+      ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature;
+  options.warmStartNormalCosine = kSourceWarmStartNormalCosine;
+  options.useStrictWarmStartMatchDistance = true;
+  options.warmStartMaxAge = kSourceWarmStartMaxAge;
+  options.persistentStepSizeSafeBoundScale
+      = kSourcePersistentStepSizeSafeBoundScale;
+  options.minimumStepSize = kSourceMinimumStepSize;
+  options.maximumStepSize = kSourceMaximumStepSize;
+  options.warmStartResidualThreshold = kSourceWarmStartResidualThreshold;
+  options.warmStartStepSizeCap = kSourceWarmStartGammaCap;
+  options.persistUncappedStepSizeOnWarmStartCap = true;
+  options.requireResidualImprovementForUnconvergedCacheSave = true;
   return options;
 }
 
@@ -554,6 +619,7 @@ struct ConfigurationContract
 
 struct DynamicsAdapterContract
 {
+  bool sourceContinuationScene = false;
   std::size_t levelCount = 0u;
   double timeStep = 0.0;
   double worldTime = 0.0;
@@ -573,6 +639,9 @@ struct DynamicsAdapterContract
   bool exactOptionsAvailable = false;
   dart::constraint::ExactCoulombFbfConstraintSolverOptions exactOptions;
   dart::constraint::ExactCoulombFbfCrossStepPolicyOptions exactCrossStepOptions;
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions
+      exactSourceContinuationOptions;
+  bool exactSourceContinuationActive = false;
   bool exactPostCorrectionProjectionEnabled = true;
   bool exactSourceInnerInitializationRequested = false;
   bool exactSourceInnerInitializationActive = false;
@@ -792,7 +861,8 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     const std::shared_ptr<dart::simulation::World>& world,
     std::size_t levelCount,
     const std::string& binarySourceSha256,
-    bool sourceInnerInitializationRequested = false)
+    bool sourceInnerInitializationRequested = false,
+    bool sourceContinuationScene = false)
 {
   if (!world)
     throw std::runtime_error(
@@ -973,6 +1043,7 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     inspectFiniteState(world->getSkeleton(spec.name));
 
   DynamicsAdapterContract contract;
+  contract.sourceContinuationScene = sourceContinuationScene;
   contract.levelCount = levelCount;
   contract.timeStep = world->getTimeStep();
   contract.worldTime = world->getTime();
@@ -1018,6 +1089,10 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     contract.exactOptions = exact->getExactCoulombOptions();
     contract.exactCrossStepOptions
         = exact->getExactCoulombCrossStepPolicyOptions();
+    contract.exactSourceContinuationOptions
+        = exact->getExactCoulombSourceContinuationOptions();
+    contract.exactSourceContinuationActive
+        = exact->getLastExactCoulombSourceContinuationActive();
     contract.exactPostCorrectionProjectionEnabled
         = exact->getExactCoulombPostCorrectionProjectionEnabled();
     contract.exactSourceInnerInitializationActive
@@ -1375,6 +1450,17 @@ inline std::string dynamicsAdapterContractJson(
     throw std::invalid_argument(
         "author card-house dynamics baseline contract is inconsistent");
   }
+  if (contract.exactOptionsAvailable
+      && contract.exactSourceContinuationOptions.enabled
+             != contract.sourceContinuationScene) {
+    throw std::invalid_argument(
+        "author card-house source-continuation request is inconsistent");
+  }
+  if (!contract.sourceContinuationScene
+      && contract.exactSourceContinuationActive) {
+    throw std::invalid_argument(
+        "author card-house source continuation is unexpectedly active");
+  }
 
   std::ostringstream out;
   out << std::setprecision(std::numeric_limits<double>::max_digits10);
@@ -1470,7 +1556,10 @@ inline std::string dynamicsAdapterContractJson(
   writeJsonString(out, kSourceTerminationResidual);
   out << ",\"termination_tol\":" << kSourceTerminationTolerance
       << "}},\"dart_adapter\":{\"scene_id\":";
-  writeJsonString(out, kDynamicsDemoSceneId);
+  writeJsonString(
+      out,
+      contract.sourceContinuationScene ? kSourceContinuationDynamicsDemoSceneId
+                                       : kDynamicsDemoSceneId);
   out << ",\"world\":{\"time_step_seconds\":" << contract.timeStep
       << ",\"current_time_seconds\":" << contract.worldTime
       << ",\"gravity_m_s2\":";
@@ -1513,8 +1602,49 @@ inline std::string dynamicsAdapterContractJson(
       << ",\"colored_block_gauss_seidel_enabled\":"
       << (contract.exactColoredBlockGaussSeidelEnabled ? "true" : "false")
       << ",\"participant_affinity_enabled\":"
-      << (contract.exactParticipantAffinityEnabled ? "true" : "false")
-      << ",\"exact_options\":";
+      << (contract.exactParticipantAffinityEnabled ? "true" : "false");
+  if (contract.sourceContinuationScene) {
+    const auto& options = contract.exactSourceContinuationOptions;
+    out << ",\"source_continuation\":{\"policy\":";
+    writeJsonString(out, kSourceContinuationPolicy);
+    out << ",\"options_available\":"
+        << (contract.exactOptionsAvailable ? "true" : "false")
+        << ",\"requested\":"
+        << (contract.exactOptionsAvailable && options.enabled ? "true"
+                                                              : "false")
+        << ",\"last_active\":"
+        << (contract.exactSourceContinuationActive ? "true" : "false")
+        << ",\"numeric_settings\":{\"residual_check_interval\":"
+        << (contract.exactOptionsAvailable ? options.residualCheckInterval
+                                           : kSourceResidualCheckInterval)
+        << ",\"plateau_patience\":"
+        << (contract.exactOptionsAvailable ? options.plateauPatience
+                                           : kSourcePlateauPatience)
+        << ",\"plateau_relative_tolerance\":"
+        << (contract.exactOptionsAvailable ? options.plateauRelativeTolerance
+                                           : kSourcePlateauRelativeTolerance)
+        << ",\"step_size_backtrack_limit\":"
+        << (contract.exactOptionsAvailable ? options.stepSizeBacktrackLimit
+                                           : kSourceArmijoMaxBacktracks)
+        << ",\"coupling_variation_skip_threshold\":"
+        << (contract.exactOptionsAvailable
+                ? options.couplingVariationSkipThreshold
+                : kSourceCouplingVariationSkipThreshold)
+        << "},\"fixed_semantics\":{\"strict_convergence_comparison\":";
+    writeJsonString(out, kSourceStrictConvergenceComparison);
+    out << ",\"iteration_zero_residual\":";
+    writeJsonString(out, kSourceInitialConvergenceResidual);
+    out << ",\"sampled_termination_residual\":";
+    writeJsonString(out, kSourceSampledTerminationResidual);
+    out << ",\"plateau_metric\":";
+    writeJsonString(out, kSourcePlateauMetric);
+    out << ",\"small_change_armijo_action\":";
+    writeJsonString(out, kSourceSmallChangeArmijoAction);
+    out << ",\"line_search_cap_action\":";
+    writeJsonString(out, kSourceShrinkCapAction);
+    out << "}}";
+  }
+  out << ",\"exact_options\":";
   if (!contract.exactOptionsAvailable) {
     out << "null";
   } else {

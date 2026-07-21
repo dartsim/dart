@@ -139,6 +139,10 @@ void printUsage(const char* prog)
       << "  --headless-exact-fbf-fail-fast\n"
          "                  Stop before same-step events when strict exact-FBF "
          "diagnostics fail; requires --headless and --headless-sidecar.\n"
+      << "  --headless-exact-fbf-source-continuation\n"
+         "                  Stop unless every exact group has a finite, "
+         "source-continuation-accepted outcome; requires --headless and "
+         "--headless-sidecar.\n"
       << "  --shot <path>   Output PNG path for --headless (default "
          "dart-demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
@@ -333,6 +337,9 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       }
     } else if (std::strcmp(a, "--headless-exact-fbf-fail-fast") == 0) {
       opt.headlessTimeline.exactFbfFailFast = true;
+    } else if (
+        std::strcmp(a, "--headless-exact-fbf-source-continuation") == 0) {
+      opt.headlessTimeline.exactFbfSourceContinuation = true;
     } else if (std::strcmp(a, "--shot") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -380,10 +387,19 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     }
   }
 
-  const bool timelineRequested = !opt.headlessTimeline.shots.empty()
-                                 || !opt.headlessTimeline.actions.empty()
-                                 || !opt.headlessTimeline.sidecarPath.empty()
-                                 || opt.headlessTimeline.exactFbfFailFast;
+  const bool timelineRequested
+      = !opt.headlessTimeline.shots.empty()
+        || !opt.headlessTimeline.actions.empty()
+        || !opt.headlessTimeline.sidecarPath.empty()
+        || opt.headlessTimeline.exactFbfFailFast
+        || opt.headlessTimeline.exactFbfSourceContinuation;
+  if (opt.headlessTimeline.exactFbfFailFast
+      && opt.headlessTimeline.exactFbfSourceContinuation) {
+    std::cerr << "--headless-exact-fbf-fail-fast and "
+                 "--headless-exact-fbf-source-continuation are mutually "
+                 "exclusive.\n";
+    return ParseResult::Error;
+  }
   if (opt.headlessTimeline.exactFbfFailFast && !opt.headless) {
     std::cerr << "--headless-exact-fbf-fail-fast requires --headless.\n";
     return ParseResult::Error;
@@ -392,6 +408,17 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       && opt.headlessTimeline.sidecarPath.empty()) {
     std::cerr
         << "--headless-exact-fbf-fail-fast requires --headless-sidecar.\n";
+    return ParseResult::Error;
+  }
+  if (opt.headlessTimeline.exactFbfSourceContinuation && !opt.headless) {
+    std::cerr
+        << "--headless-exact-fbf-source-continuation requires --headless.\n";
+    return ParseResult::Error;
+  }
+  if (opt.headlessTimeline.exactFbfSourceContinuation
+      && opt.headlessTimeline.sidecarPath.empty()) {
+    std::cerr << "--headless-exact-fbf-source-continuation requires "
+                 "--headless-sidecar.\n";
     return ParseResult::Error;
   }
   if (timelineRequested && !opt.headless) {

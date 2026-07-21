@@ -1,3 +1,4 @@
+import dataclasses
 import importlib.util
 import json
 import sys
@@ -216,6 +217,263 @@ def _last_failure_diagnostics():
     }
 
 
+def _source_continuation_diagnostics():
+    success = {
+        "solve_index": 4,
+        "contact_count": 8,
+        "status": "success",
+        "fbf_status": "success",
+        "iterations": 5,
+        "line_search_shrinks": 0,
+        "final_residual": 5e-7,
+        "final_natural_map_residual": 6e-7,
+        "plateau_reference_natural_map_residual": None,
+        "plateau_relative_improvement": None,
+        "line_search_shrink_cap_count": 0,
+        "correction_step_size": 1.0,
+        "last_inner_solve_step_size": 1.0,
+        "source_continuation_active": True,
+    }
+    plateau_reference = 5.04e-4
+    plateau_natural = 5e-4
+    plateau = {
+        "solve_index": 5,
+        "contact_count": 12,
+        "status": "plateau_accepted",
+        "fbf_status": "plateau",
+        "iterations": 30,
+        "line_search_shrinks": 8,
+        "final_residual": 4e-4,
+        "final_natural_map_residual": plateau_natural,
+        "plateau_reference_natural_map_residual": plateau_reference,
+        "plateau_relative_improvement": (plateau_reference - plateau_natural)
+        / plateau_reference,
+        "line_search_shrink_cap_count": 1,
+        "correction_step_size": 0.7,
+        "last_inner_solve_step_size": 1.0,
+        "source_continuation_active": True,
+    }
+    capped = {
+        "solve_index": 6,
+        "contact_count": 4,
+        "status": "max_iterations_accepted",
+        "fbf_status": "max_iterations",
+        "iterations": 200,
+        "line_search_shrinks": 0,
+        "final_residual": 7e-4,
+        "final_natural_map_residual": 8e-4,
+        "plateau_reference_natural_map_residual": None,
+        "plateau_relative_improvement": None,
+        "line_search_shrink_cap_count": 0,
+        "correction_step_size": 0.5,
+        "last_inner_solve_step_size": 0.5,
+        "source_continuation_active": True,
+    }
+    groups = [success, plateau, capped]
+    return {
+        "solver": "ExactCoulombFbfConstraintSolver",
+        "available": True,
+        "status": capped["status"],
+        "fbf_status": capped["fbf_status"],
+        "residual": capped["final_residual"],
+        "best_residual": 5e-7,
+        "iterations": capped["iterations"],
+        "total_iterations": 235,
+        "exact_solves": 3,
+        "exact_attempts": 3,
+        "accepted_at_cap": 1,
+        "worst_residual": capped["final_residual"],
+        "exact_failures": 0,
+        "boxed_lcp_fallbacks": 0,
+        "warm_starts": 2,
+        "contacts": 4,
+        "source_continuation": {
+            "requested": True,
+            "last_active": True,
+            "world_state_finite": True,
+            "group_history_truncated": False,
+            "cumulative": {
+                "plateaus_accepted": 1,
+                "max_iterations_accepted": 1,
+                "line_search_shrink_caps": 1,
+            },
+            "step": {
+                "exact_attempts": 3,
+                "exact_solves": 3,
+                "plateaus_accepted": 1,
+                "max_iterations_accepted": 1,
+                "line_search_shrinks": 8,
+                "line_search_shrink_caps": 1,
+            },
+            "last_attempt": {
+                "line_search_shrink_cap_reached": False,
+                "line_search_shrink_cap_count": 0,
+                "correction_step_size": 0.5,
+                "last_inner_solve_step_size": 0.5,
+            },
+            "group_outcomes": groups,
+        },
+        "last_failure": None,
+    }
+
+
+def _empty_source_continuation_diagnostics():
+    return {
+        "solver": "ExactCoulombFbfConstraintSolver",
+        "available": True,
+        "status": "not_run",
+        "fbf_status": "not_run",
+        "residual": None,
+        "best_residual": None,
+        "iterations": 0,
+        "total_iterations": 0,
+        "exact_solves": 0,
+        "exact_attempts": 0,
+        "accepted_at_cap": 0,
+        "worst_residual": None,
+        "exact_failures": 0,
+        "boxed_lcp_fallbacks": 0,
+        "warm_starts": 0,
+        "contacts": 0,
+        "source_continuation": {
+            "requested": True,
+            "last_active": False,
+            "world_state_finite": True,
+            "group_history_truncated": False,
+            "cumulative": {
+                "plateaus_accepted": 0,
+                "max_iterations_accepted": 0,
+                "line_search_shrink_caps": 0,
+            },
+            "step": {
+                "exact_attempts": 0,
+                "exact_solves": 0,
+                "plateaus_accepted": 0,
+                "max_iterations_accepted": 0,
+                "line_search_shrinks": 0,
+                "line_search_shrink_caps": 0,
+            },
+            "last_attempt": {
+                "line_search_shrink_cap_reached": False,
+                "line_search_shrink_cap_count": 0,
+                "correction_step_size": None,
+                "last_inner_solve_step_size": None,
+            },
+            "group_outcomes": [],
+        },
+        "last_failure": None,
+    }
+
+
+def _single_source_continuation_success_diagnostics():
+    diagnostics = _source_continuation_diagnostics()
+    continuation = diagnostics["source_continuation"]
+    group = continuation["group_outcomes"][0]
+    group["solve_index"] = 0
+    diagnostics.update(
+        {
+            "status": group["status"],
+            "fbf_status": group["fbf_status"],
+            "residual": group["final_residual"],
+            "best_residual": group["final_residual"],
+            "iterations": group["iterations"],
+            "total_iterations": group["iterations"],
+            "exact_solves": 1,
+            "exact_attempts": 1,
+            "accepted_at_cap": 0,
+            "worst_residual": group["final_residual"],
+            "warm_starts": 0,
+            "contacts": group["contact_count"],
+        }
+    )
+    continuation["cumulative"] = {
+        "plateaus_accepted": 0,
+        "max_iterations_accepted": 0,
+        "line_search_shrink_caps": 0,
+    }
+    continuation["step"] = {
+        "exact_attempts": 1,
+        "exact_solves": 1,
+        "plateaus_accepted": 0,
+        "max_iterations_accepted": 0,
+        "line_search_shrinks": 0,
+        "line_search_shrink_caps": 0,
+    }
+    continuation["last_attempt"] = {
+        "line_search_shrink_cap_reached": False,
+        "line_search_shrink_cap_count": 0,
+        "correction_step_size": group["correction_step_size"],
+        "last_inner_solve_step_size": group["last_inner_solve_step_size"],
+    }
+    continuation["group_outcomes"] = [group]
+    return diagnostics
+
+
+_SOURCE_CONTINUATION_GATE_REASON_MUTATIONS = (
+    ("source_continuation_not_requested", "not_requested"),
+    ("boxed_fallback", "boxed_fallback"),
+    ("exact_failure", "exact_failure"),
+    ("cumulative_accounting_mismatch", "cumulative_accounting"),
+    ("nonfinite_world_state", "nonfinite_world"),
+    ("group_history_truncated", "history_truncated"),
+    ("group_accounting_mismatch", "group_accounting"),
+    ("invalid_group_telemetry", "invalid_group"),
+    ("source_continuation_inactive", "inactive"),
+    ("nonfinite_group_residual", "nonfinite_residual"),
+    ("nonfinite_group_step_size", "nonfinite_gamma"),
+    ("group_step_size_relation_mismatch", "gamma_relation"),
+    ("termination_timing_mismatch", "termination_timing"),
+    ("plateau_telemetry_mismatch", "plateau_telemetry"),
+    ("success_tolerance_not_strict", "success_tolerance"),
+    ("unaccepted_group_outcome", "unaccepted_outcome"),
+    ("group_counter_mismatch", "group_counter"),
+    ("last_group_telemetry_mismatch", "last_group"),
+)
+
+
+def _mutate_source_continuation_gate_fixture(diagnostics, mutation):
+    continuation = diagnostics["source_continuation"]
+    groups = continuation["group_outcomes"]
+    if mutation == "not_requested":
+        continuation["requested"] = False
+    elif mutation == "boxed_fallback":
+        diagnostics["boxed_lcp_fallbacks"] = 1
+    elif mutation == "exact_failure":
+        diagnostics["exact_failures"] = 1
+    elif mutation == "cumulative_accounting":
+        diagnostics["exact_attempts"] += 1
+    elif mutation == "nonfinite_world":
+        continuation["world_state_finite"] = False
+    elif mutation == "history_truncated":
+        continuation["group_history_truncated"] = True
+    elif mutation == "group_accounting":
+        continuation["step"]["exact_attempts"] += 1
+    elif mutation == "invalid_group":
+        groups[0]["contact_count"] = 0
+    elif mutation == "inactive":
+        groups[0]["source_continuation_active"] = False
+    elif mutation == "nonfinite_residual":
+        groups[0]["final_residual"] = float("nan")
+    elif mutation == "nonfinite_gamma":
+        groups[0]["correction_step_size"] = None
+    elif mutation == "gamma_relation":
+        groups[0]["correction_step_size"] = 0.5
+    elif mutation == "termination_timing":
+        groups[0]["iterations"] = 6
+    elif mutation == "plateau_telemetry":
+        groups[1]["plateau_relative_improvement"] = 0.02
+    elif mutation == "success_tolerance":
+        groups[0]["final_residual"] = 1e-6
+    elif mutation == "unaccepted_outcome":
+        groups[0]["status"] = "invalid"
+    elif mutation == "group_counter":
+        continuation["step"]["line_search_shrinks"] += 1
+    elif mutation == "last_group":
+        continuation["last_attempt"]["correction_step_size"] = 0.25
+    else:
+        raise AssertionError(mutation)
+
+
 def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
     diagnostics = {
         "boxed_lcp_fallbacks": 0,
@@ -313,6 +571,125 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "headless_exact_fbf_fail_fast": {
             "enabled": True,
             "residual_tolerance": module.EXACT_FBF_RESIDUAL_TOLERANCE,
+            "triggered": True,
+            "step": step,
+            "reason": "exact_failure",
+        },
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "timeline.json").write_text(json.dumps(sidecar), encoding="utf-8")
+
+
+def _write_failed_source_continuation_sidecar(
+    module, schedule, output_dir, demo, *, step=1
+):
+    clean = _empty_source_continuation_diagnostics()
+    failed = json.loads(json.dumps(clean))
+    failed.update(
+        {
+            "status": "fbf_failed",
+            "fbf_status": "non_finite_value",
+            "exact_attempts": 1,
+            "exact_failures": 1,
+            "last_failure": _last_failure_diagnostics(),
+        }
+    )
+    failed["last_failure"].update(
+        {
+            "fbf_status": "non_finite_value",
+            "residual": None,
+            "primal_feasibility": None,
+            "dual_feasibility": None,
+            "complementarity": None,
+            "best_residual": None,
+            "step_size": None,
+            "safe_step_size": None,
+            "coupling_variation_ratio": None,
+        }
+    )
+    failed["source_continuation"]["step"]["exact_attempts"] = 1
+    steps = [
+        {
+            "step": item_step,
+            "sim_time": schedule.time_at_step(item_step),
+            "solver_diagnostics": (
+                failed if item_step == step else json.loads(json.dumps(clean))
+            ),
+        }
+        for item_step in range(step + 1)
+    ]
+    shots = []
+    actions = []
+    events = []
+    sequence = 0
+    for item_step in range(step):
+        if item_step in schedule.capture_steps:
+            shot = {
+                "sequence": sequence,
+                "step": item_step,
+                "path": str(module._frame_path(output_dir, item_step)),
+                "sim_time": schedule.time_at_step(item_step),
+                "success": True,
+                "solver_diagnostics": steps[item_step]["solver_diagnostics"],
+            }
+            shots.append(shot)
+            events.append(
+                {
+                    "sequence": sequence,
+                    "type": "shot",
+                    "step": item_step,
+                    "path": shot["path"],
+                    "success": True,
+                }
+            )
+            sequence += 1
+        for scheduled_action in schedule.actions:
+            if scheduled_action.step != item_step:
+                continue
+            action = {
+                "sequence": sequence,
+                "step": item_step,
+                "key": scheduled_action.key,
+                "success": True,
+            }
+            actions.append(action)
+            events.append(
+                {
+                    "sequence": sequence,
+                    "type": "action",
+                    "step": item_step,
+                    "key": scheduled_action.key,
+                    "success": True,
+                }
+            )
+            sequence += 1
+    sidecar = {
+        "schema_version": module.SIDECAR_SCHEMA_VERSION,
+        "scene": schedule.scene,
+        "active_scene": schedule.scene,
+        "runtime_command": module._shell_command(
+            module.build_demo_command(schedule, demo, output_dir)
+        ),
+        "total_steps": schedule.total_steps,
+        "completed_steps": step,
+        "width": schedule.width,
+        "height": schedule.height,
+        "collision_detector": schedule.collision_detector,
+        "event_order": "captures_before_actions_at_each_completed_step",
+        "steps": steps,
+        "shots": shots,
+        "actions": actions,
+        "events": events,
+        "solver_diagnostics": failed,
+        "headless_exact_fbf_source_continuation": {
+            "enabled": True,
+            "requested": "source_continuation",
+            "allowed_outcomes": [
+                "success",
+                "plateau_accepted",
+                "max_iterations_accepted",
+            ],
+            "line_search_cap_action": "shrink_cap",
             "triggered": True,
             "step": step,
             "reason": "exact_failure",
@@ -600,7 +977,9 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
     }
 
 
-def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
+def _author_card_house_adapter_contract(
+    module, *, solver_lane="exact", source_continuation=False
+):
     return {
         "schema_version": "dart.fbf_author_card_house_dynamics_adapter/v1",
         "kind": "source_configuration_dynamics_adapter",
@@ -718,7 +1097,11 @@ def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
             },
         },
         "dart_adapter": {
-            "scene_id": "fbf_author_card_house_4_impact_current_source",
+            "scene_id": (
+                "fbf_author_card_house_4_impact_source_continuation_current_source"
+                if source_continuation
+                else "fbf_author_card_house_4_impact_current_source"
+            ),
             "world": {
                 "time_step_seconds": 1.0 / 240.0,
                 "current_time_seconds": 0.0,
@@ -745,7 +1128,9 @@ def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
                 "uses_default_friction_direction_frame": True,
             },
             "process_state": {"observed_contact_erp": 0.0},
-            "solver": module._expected_author_card_house_solver_contract(solver_lane),
+            "solver": module._expected_author_card_house_solver_contract(
+                solver_lane, source_continuation=source_continuation
+            ),
             "inventory": {
                 "cards": 26,
                 "cubes": 4,
@@ -805,6 +1190,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "painleve_mu05",
         "painleve_mu055",
         "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
         "card_house_26",
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
@@ -907,6 +1293,252 @@ def test_fail_fast_flag_is_routed_only_to_required_exact_schedules(tmp_path):
     assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in boxed_command
 
 
+def test_source_continuation_flag_is_separate_and_boxed_lane_disables_it(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_4_impact_source_continuation_current_source"
+    ]
+    boxed = module._derive_boxed_schedule(schedule)
+
+    exact_command = module.build_demo_command(schedule, Path("dart-demos"), tmp_path)
+    boxed_command = module.build_demo_command(boxed, Path("dart-demos"), tmp_path)
+
+    assert exact_command.count(module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG) == 1
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in exact_command
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG not in boxed_command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in boxed_command
+    assert boxed.scene == schedule.scene
+    assert boxed.actions == schedule.actions
+    assert boxed.time_step_seconds == schedule.time_step_seconds
+    assert boxed.pre_run_actions == ("e",)
+    boxed_configuration = boxed.configuration_dict()
+    assert boxed_configuration["comparison_counterpart"] == ("same_physics_boxed_lcp")
+    assert boxed_configuration["source_exact_policy"] == "source_continuation"
+    assert boxed_configuration["active_exact_policy"] == "not_applicable"
+    assert "exact_policy" not in boxed_configuration
+    assert "plateau_patience" not in boxed_configuration
+
+
+def test_source_continuation_diagnostics_accept_mixed_group_outcomes():
+    module = _load_module()
+    diagnostics = _source_continuation_diagnostics()
+
+    reason, continuation = module._evaluate_source_continuation_gate(diagnostics)
+    report = module._validate_source_continuation_diagnostics(
+        diagnostics, label="fixture"
+    )
+
+    assert reason is None
+    assert continuation is diagnostics["source_continuation"]
+    assert report == diagnostics["source_continuation"]
+
+
+def test_source_continuation_gate_reason_fixtures_match_declared_reason_set():
+    module = _load_module()
+
+    assert {
+        reason for reason, _ in _SOURCE_CONTINUATION_GATE_REASON_MUTATIONS
+    } == module.SOURCE_CONTINUATION_GATE_REASONS
+
+
+@pytest.mark.parametrize(
+    ("expected_reason", "mutation"),
+    _SOURCE_CONTINUATION_GATE_REASON_MUTATIONS,
+)
+def test_source_continuation_gate_evaluator_covers_every_reason(
+    expected_reason, mutation
+):
+    module = _load_module()
+    diagnostics = _source_continuation_diagnostics()
+    _mutate_source_continuation_gate_fixture(diagnostics, mutation)
+
+    reason, continuation = module._evaluate_source_continuation_gate(diagnostics)
+
+    assert reason == expected_reason
+    assert continuation is diagnostics["source_continuation"]
+
+
+def test_source_continuation_trajectory_rejects_counter_regression():
+    module = _load_module()
+    state = module._new_source_continuation_trajectory_state()
+    empty = _empty_source_continuation_diagnostics()
+    success = _single_source_continuation_success_diagnostics()
+    module._validate_source_continuation_trajectory_step(
+        empty,
+        empty["source_continuation"],
+        step_index=0,
+        state=state,
+        label="step 0",
+        require_accepted_outcome=True,
+    )
+    module._validate_source_continuation_trajectory_step(
+        success,
+        success["source_continuation"],
+        step_index=1,
+        state=state,
+        label="step 1",
+        require_accepted_outcome=True,
+    )
+
+    with pytest.raises(ValueError, match="cumulative exact_attempts regressed"):
+        module._validate_source_continuation_trajectory_step(
+            empty,
+            empty["source_continuation"],
+            step_index=2,
+            state=state,
+            label="step 2",
+            require_accepted_outcome=True,
+        )
+
+
+def test_source_continuation_trajectory_rejects_trigger_activity_at_step_zero():
+    module = _load_module()
+    diagnostics = _empty_source_continuation_diagnostics()
+    diagnostics["exact_attempts"] = 1
+    diagnostics["exact_failures"] = 1
+    diagnostics["source_continuation"]["step"]["exact_attempts"] = 1
+
+    with pytest.raises(ValueError, match="activity exists before simulation"):
+        module._validate_source_continuation_trajectory_step(
+            diagnostics,
+            diagnostics["source_continuation"],
+            step_index=0,
+            state=module._new_source_continuation_trajectory_state(),
+            label="step 0",
+            require_accepted_outcome=False,
+        )
+
+
+def test_source_continuation_trajectory_binds_global_index_and_idle_last_attempt():
+    module = _load_module()
+    empty = _empty_source_continuation_diagnostics()
+    success = _single_source_continuation_success_diagnostics()
+
+    gap_state = module._new_source_continuation_trajectory_state()
+    module._validate_source_continuation_trajectory_step(
+        empty,
+        empty["source_continuation"],
+        step_index=0,
+        state=gap_state,
+        label="step 0",
+        require_accepted_outcome=True,
+    )
+    success["source_continuation"]["group_outcomes"][0]["solve_index"] = 100
+    with pytest.raises(ValueError, match="globally contiguous"):
+        module._validate_source_continuation_trajectory_step(
+            success,
+            success["source_continuation"],
+            step_index=1,
+            state=gap_state,
+            label="step 1",
+            require_accepted_outcome=True,
+        )
+
+    state = module._new_source_continuation_trajectory_state()
+    empty = _empty_source_continuation_diagnostics()
+    success = _single_source_continuation_success_diagnostics()
+    module._validate_source_continuation_trajectory_step(
+        empty,
+        empty["source_continuation"],
+        step_index=0,
+        state=state,
+        label="step 0",
+        require_accepted_outcome=True,
+    )
+    module._validate_source_continuation_trajectory_step(
+        success,
+        success["source_continuation"],
+        step_index=1,
+        state=state,
+        label="step 1",
+        require_accepted_outcome=True,
+    )
+    idle = json.loads(json.dumps(success))
+    idle["contacts"] = 0
+    idle["source_continuation"]["step"] = {
+        "exact_attempts": 0,
+        "exact_solves": 0,
+        "plateaus_accepted": 0,
+        "max_iterations_accepted": 0,
+        "line_search_shrinks": 0,
+        "line_search_shrink_caps": 0,
+    }
+    idle["source_continuation"]["group_outcomes"] = []
+    module._validate_source_continuation_trajectory_step(
+        idle,
+        idle["source_continuation"],
+        step_index=2,
+        state=state,
+        label="step 2",
+        require_accepted_outcome=True,
+    )
+    idle["source_continuation"]["last_attempt"]["correction_step_size"] = 0.5
+    with pytest.raises(ValueError, match="lost prior binding"):
+        module._validate_source_continuation_trajectory_step(
+            idle,
+            idle["source_continuation"],
+            step_index=3,
+            state=state,
+            label="step 3",
+            require_accepted_outcome=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "inactive_nonlast",
+        "bad_status_pair",
+        "nan_natural_residual",
+        "missing_group",
+        "duplicate_solve_index",
+        "zero_iteration_shrinks",
+        "excessive_shrinks",
+        "shrink_counter_mismatch",
+        "gamma_relation_mismatch",
+        "success_tolerance_equality",
+        "plateau_improvement_mismatch",
+    ),
+)
+def test_source_continuation_diagnostics_reject_corrupt_group_telemetry(mutation):
+    module = _load_module()
+    diagnostics = _source_continuation_diagnostics()
+    continuation = diagnostics["source_continuation"]
+    groups = continuation["group_outcomes"]
+
+    if mutation == "inactive_nonlast":
+        groups[0]["source_continuation_active"] = False
+    elif mutation == "bad_status_pair":
+        groups[1]["fbf_status"] = "success"
+    elif mutation == "nan_natural_residual":
+        groups[1]["final_natural_map_residual"] = float("nan")
+    elif mutation == "missing_group":
+        groups.pop(1)
+    elif mutation == "duplicate_solve_index":
+        groups[1]["solve_index"] = groups[0]["solve_index"]
+    elif mutation == "zero_iteration_shrinks":
+        groups[0]["iterations"] = 0
+        groups[0]["line_search_shrinks"] = 1
+        continuation["step"]["line_search_shrinks"] += 1
+    elif mutation == "excessive_shrinks":
+        groups[0]["iterations"] = 1
+        groups[0]["line_search_shrinks"] = 9
+        continuation["step"]["line_search_shrinks"] += 9
+    elif mutation == "shrink_counter_mismatch":
+        continuation["step"]["line_search_shrinks"] += 1
+    elif mutation == "gamma_relation_mismatch":
+        groups[0]["correction_step_size"] = 0.5
+    elif mutation == "success_tolerance_equality":
+        groups[0]["final_residual"] = module.EXACT_FBF_RESIDUAL_TOLERANCE
+    elif mutation == "plateau_improvement_mismatch":
+        groups[1]["plateau_relative_improvement"] = 0.02
+    else:
+        raise AssertionError(mutation)
+
+    with pytest.raises(ValueError):
+        module._validate_source_continuation_diagnostics(diagnostics, label="fixture")
+
+
 def test_strict_exact_sidecar_requires_nontriggered_fail_fast_state(tmp_path):
     module = _load_module()
     schedule = _test_schedule(module, exact_required=True)
@@ -999,6 +1631,168 @@ def test_partial_fail_fast_sidecar_enforces_reason_priority(tmp_path):
         )
 
 
+def test_failed_source_continuation_capture_stops_before_media(tmp_path, monkeypatch):
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module, action=True, exact_required=True),
+        source_continuation_required=True,
+    )
+    output_root = tmp_path / "captures"
+    output_dir = output_root / schedule.id
+    demo = tmp_path / "dart-demos"
+    ffmpeg = tmp_path / "ffmpeg"
+    ffprobe = tmp_path / "ffprobe"
+    python = tmp_path / "python"
+    for executable in (demo, ffmpeg, ffprobe, python):
+        executable.write_bytes(b"executable")
+
+    def fail_demo(argv, **_kwargs):
+        _write_failed_source_continuation_sidecar(
+            module, schedule, output_dir, Path(argv[0])
+        )
+        raise module.subprocess.CalledProcessError(1, argv)
+
+    def reject_finalization(*_args, **_kwargs):
+        pytest.fail("source-continuation failure must not finalize media")
+
+    monkeypatch.setattr(module, "_run", fail_demo)
+    monkeypatch.setattr(module, "_prepare_panel_frames", reject_finalization)
+    monkeypatch.setattr(module, "_compose_panel", reject_finalization)
+    monkeypatch.setattr(module, "_encode_media", reject_finalization)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "exact-FBF source-continuation gate triggered at completed step 1: "
+            "exact_failure"
+        ),
+    ):
+        module.run_schedule(
+            schedule,
+            demo=demo,
+            output_root=output_root,
+            ffmpeg=ffmpeg,
+            ffprobe=ffprobe,
+            python=python,
+            allow_long=False,
+        )
+
+    assert not (output_dir / "metadata.json").exists()
+
+
+def test_partial_source_continuation_sidecar_enforces_reason_priority(tmp_path):
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module, action=True, exact_required=True),
+        source_continuation_required=True,
+    )
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_source_continuation_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["headless_exact_fbf_source_continuation"][
+        "reason"
+    ] = "nonfinite_world_state"
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="does not match diagnostics priority"):
+        module._validate_failed_source_continuation_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        ("solver", "active solver"),
+        ("available", "diagnostics are unavailable"),
+        ("last_failure", "last_failure"),
+    ),
+)
+def test_partial_source_continuation_sidecar_validates_trigger_provenance(
+    tmp_path, mutation, message
+):
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module, action=True, exact_required=True),
+        source_continuation_required=True,
+    )
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_source_continuation_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    trigger = sidecar["steps"][-1]["solver_diagnostics"]
+    if mutation == "solver":
+        trigger["solver"] = module.BOXED_SOLVER_NAME
+    elif mutation == "available":
+        trigger["available"] = False
+    elif mutation == "last_failure":
+        trigger["last_failure"] = None
+    else:
+        raise AssertionError(mutation)
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_failed_source_continuation_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+def test_partial_source_continuation_sidecar_rejects_counter_regression(tmp_path):
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module, action=True, exact_required=True),
+        source_continuation_required=True,
+    )
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_source_continuation_sidecar(
+        module, schedule, output_dir, demo, step=2
+    )
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    success = _single_source_continuation_success_diagnostics()
+    sidecar["steps"][1]["solver_diagnostics"] = success
+    for shot in sidecar["shots"]:
+        if shot["step"] == 1:
+            shot["solver_diagnostics"] = success
+    trigger = sidecar["steps"][2]["solver_diagnostics"]
+    trigger["exact_attempts"] = 0
+    sidecar["solver_diagnostics"] = trigger
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="cumulative exact_attempts regressed"):
+        module._validate_failed_source_continuation_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
+@pytest.mark.parametrize("prefix_kind", ("shot_diagnostics", "action"))
+def test_partial_source_continuation_sidecar_binds_event_prefix(tmp_path, prefix_kind):
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module, action=True, exact_required=True),
+        source_continuation_required=True,
+    )
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_source_continuation_sidecar(module, schedule, output_dir, demo)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    if prefix_kind == "shot_diagnostics":
+        sidecar["shots"][0]["solver_diagnostics"]["exact_attempts"] = 99
+    else:
+        sidecar["actions"].clear()
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=f"{prefix_kind.split('_')[0]} prefix"):
+        module._validate_failed_source_continuation_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
@@ -1057,6 +1851,29 @@ def test_last_failure_diagnostics_accepts_step_size_underflow(
             "iterations": 0,
             "step_size": step_size,
             "shrink_iterations": shrink_iterations,
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_last_failure_diagnostics_accepts_nonfinite_fbf_status():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"].update(
+        {
+            "fbf_status": "non_finite_value",
+            "residual": None,
+            "primal_feasibility": None,
+            "dual_feasibility": None,
+            "complementarity": None,
+            "best_residual": None,
+            "step_size": None,
+            "safe_step_size": None,
+            "coupling_variation_ratio": None,
         }
     )
 
@@ -1397,6 +2214,9 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         "makeFbfAuthorCardHouse4ImpactCurrentSourceScene": (
             "fbf_author_card_house_4_impact_current_source"
         ),
+        "makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene": (
+            "fbf_author_card_house_4_impact_source_continuation_current_source"
+        ),
         "makeFbfPaperMasonryArch25LiteralStandingScene": (
             "fbf_paper_masonry_arch_25_literal_standing"
         ),
@@ -1409,7 +2229,7 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         assert f"DemoScene {factory}()" in normalized_source
         assert scene_id in source or scene_id in shared_specs
         assert f"DemoScene {factory}();" in normalized_declarations
-        assert registry.count(f"scenes.push_back({factory}());") == 1
+        assert registry.count(f"{factory}()") == 1
 
     assert "makeFbfPaperCardHouse10Scene" in registry
     assert "makeFbfPaperCardHouse10DynamicScene" in registry
@@ -1561,6 +2381,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "card_house_10_construction",
             "card_house_author_5_construction",
             "card_house_author_4_impact_current_source",
+            "card_house_author_4_impact_source_continuation_current_source",
             "card_house_10_dynamics",
             "masonry_arch_25_literal_standing",
             "masonry_arch_25_author_crown_impact_current_source",
@@ -1580,6 +2401,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
         "card_house_author_4_impact_current_source": (
             "fbf_author_card_house_4_impact_current_source"
+        ),
+        "card_house_author_4_impact_source_continuation_current_source": (
+            "fbf_author_card_house_4_impact_source_continuation_current_source"
         ),
         "card_house_10_dynamics": "fbf_paper_card_house_10_dynamic",
         "masonry_arch_25_literal_standing": (
@@ -1606,6 +2430,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
     native_members = set(module.AUTHOR_TURN_TABLE_MEMBERS) | {
         "card_house_author_5_construction",
         "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
     }
@@ -1724,6 +2549,62 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
     assert exact_report["release_action_completed_step"] == 1600
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
     assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_card_house_source_continuation_contract_is_exact_lane_additive(
+    tmp_path,
+):
+    module = _load_module()
+    exact = module.SCHEDULES[
+        "card_house_author_4_impact_source_continuation_current_source"
+    ]
+    boxed = module._derive_boxed_schedule(exact)
+
+    exact_report = module._validate_author_card_house_adapter_contract(
+        exact,
+        {
+            "physics_contract": _author_card_house_adapter_contract(
+                module, source_continuation=True
+            )
+        },
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_card_house_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_card_house_adapter_contract(
+                module, solver_lane="boxed", source_continuation=True
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    exact_solver = _author_card_house_adapter_contract(
+        module, source_continuation=True
+    )["dart_adapter"]["solver"]
+    boxed_solver = _author_card_house_adapter_contract(
+        module, solver_lane="boxed", source_continuation=True
+    )["dart_adapter"]["solver"]
+    assert exact_solver["source_continuation"]["requested"] is True
+    assert boxed_solver["source_continuation"]["requested"] is False
+    assert exact_solver["source_continuation"]["last_active"] is False
+    assert exact_solver["exact_options"]["max_residual_history_samples"] == 64
+    assert exact_solver["exact_options"]["max_residual_history_records"] == 4096
+    assert exact_solver["cross_step_options"] == {
+        "warm_start_match_mode": "ordered_body_b_local_feature",
+        "warm_start_normal_cosine": 0.9,
+        "strict_warm_start_match_distance": True,
+        "warm_start_max_age": 3,
+        "persistent_step_size_safe_bound_scale": 10.0,
+        "minimum_step_size": 1e-6,
+        "maximum_step_size": 1e6,
+        "warm_start_residual_threshold": 1e-4,
+        "warm_start_step_size_cap": 1e4,
+        "persist_uncapped_step_size_on_warm_start_cap": True,
+        "require_residual_improvement_for_unconverged_cache_save": True,
+    }
 
 
 @pytest.mark.parametrize(
@@ -2327,6 +3208,70 @@ def test_author_card_house_impact_schedule_is_source_selected_and_fail_closed():
     assert len(comparison_groups) == 1
     assert comparison_groups[0].members == (schedule.id, boxed.id)
     assert comparison_groups[0].solver_lane == "both"
+
+
+def test_author_card_house_source_continuation_schedule_is_additive_and_pinned():
+    module = _load_module()
+    strict = module.SCHEDULES["card_house_author_4_impact_current_source"]
+    schedule = module.SCHEDULES[
+        "card_house_author_4_impact_source_continuation_current_source"
+    ]
+    command = module.build_demo_command(
+        schedule, Path("dart-demos"), Path("/tmp/source-continuation")
+    )
+    exact_plan = module.schedule_plan(
+        schedule, Path("dart-demos"), Path("/tmp/source-continuation")
+    )
+
+    assert schedule.scene == (
+        "fbf_author_card_house_4_impact_source_continuation_current_source"
+    )
+    assert schedule.source_segment == strict.source_segment
+    assert schedule.total_steps == strict.total_steps == 2400
+    assert schedule.frame_stride == strict.frame_stride == 8
+    assert schedule.panel_steps == strict.panel_steps
+    assert schedule.actions == strict.actions
+    assert schedule.time_step_seconds == strict.time_step_seconds
+    assert schedule.source_continuation_required is True
+    assert schedule.exact_fbf_required is True
+    assert schedule.long_run is True
+    assert schedule.configuration_dict()["exact_policy"] == "source_continuation"
+    assert exact_plan["known_gate_blockers"] == []
+    assert exact_plan["evidence_ready"] is True
+    assert schedule.id in module.REQUIRED_VIDEO_SCHEDULES["card_house_26"]
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in command
+    assert command[command.index("--steps") + 1] == "2400"
+
+    boxed = module._derive_boxed_schedule(schedule)
+    boxed_plan = module.schedule_plan(
+        boxed, Path("dart-demos"), Path("/tmp/source-continuation-boxed")
+    )
+    assert boxed.scene == schedule.scene
+    assert boxed.actions == schedule.actions
+    assert boxed.source_continuation_required is False
+    assert boxed.exact_fbf_required is False
+    assert boxed.pre_run_actions == ("e",)
+    boxed_configuration = boxed.configuration_dict()
+    assert boxed_configuration["comparison_counterpart"] == ("same_physics_boxed_lcp")
+    assert boxed_configuration["source_exact_policy"] == "source_continuation"
+    assert boxed_configuration["active_exact_policy"] == "not_applicable"
+    assert "exact_policy" not in boxed_configuration
+    assert "residual_check_interval" not in boxed_configuration
+    assert boxed_plan["known_mismatches"] == list(schedule.boxed_comparison_mismatches)
+    assert boxed_plan["known_gate_blockers"] == list(
+        schedule.boxed_comparison_gate_blockers
+    )
+    assert all(
+        "separate exact lane" not in mismatch
+        for mismatch in boxed_plan["known_mismatches"]
+    )
+    assert all(
+        "36-step" not in blocker and "100-step" not in blocker
+        for blocker in boxed_plan["known_gate_blockers"]
+    )
+    assert boxed_plan["known_gate_blockers"] == []
+    assert boxed_plan["evidence_ready"] is False
 
 
 def test_group_output_spec_rejects_ambiguous_or_misaligned_panel_steps():
@@ -4022,6 +4967,10 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         "card_house_author_4_impact_current_source"
         in report["known_gate_blocked_schedules"]
     )
+    assert (
+        "card_house_author_4_impact_source_continuation_current_source"
+        not in report["known_gate_blocked_schedules"]
+    )
     assert "card_house_26" in report["known_gate_blocked_schedules"]
     assert "masonry_arch_25" in report["known_gate_blocked_schedules"]
     assert (
@@ -4029,7 +4978,7 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         in report["known_gate_blocked_schedules"]
     )
     assert "masonry_arch_101" in report["known_gate_blocked_schedules"]
-    assert report["required_schedule_count"] == 14
+    assert report["required_schedule_count"] == 15
 
 
 def test_audited_local_source_hashes_are_pinned():

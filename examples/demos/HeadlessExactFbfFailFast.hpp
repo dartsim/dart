@@ -33,7 +33,9 @@
 #ifndef DART_EXAMPLES_DEMOS_HEADLESSEXACTFBFFAILFAST_HPP_
 #define DART_EXAMPLES_DEMOS_HEADLESSEXACTFBFFAILFAST_HPP_
 
+#include <algorithm>
 #include <limits>
+#include <vector>
 
 #include <cmath>
 #include <cstddef>
@@ -88,6 +90,208 @@ inline HeadlessExactFbfFailFastDecision evaluateHeadlessExactFbfFailFast(
   if (diagnostics.residual > residualTolerance
       || diagnostics.worstResidual > residualTolerance) {
     return {true, "residual_tolerance_exceeded"};
+  }
+  return {};
+}
+
+//==============================================================================
+enum class HeadlessExactFbfSourceContinuationOutcome
+{
+  Success,
+  PlateauAccepted,
+  MaxIterationsAccepted,
+  Invalid,
+};
+
+//==============================================================================
+struct HeadlessExactFbfSourceContinuationGroupDiagnostics
+{
+  std::size_t solveIndex = 0u;
+  std::size_t contactCount = 0u;
+  HeadlessExactFbfSourceContinuationOutcome outcome
+      = HeadlessExactFbfSourceContinuationOutcome::Invalid;
+  bool sourceContinuationActive = false;
+  int iterations = 0;
+  int shrinkIterations = -1;
+  int lineSearchShrinkCapCount = -1;
+  double finalResidual = std::numeric_limits<double>::quiet_NaN();
+  double finalNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  double plateauReferenceNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  double plateauRelativeImprovement = std::numeric_limits<double>::quiet_NaN();
+  double correctionStepSize = std::numeric_limits<double>::quiet_NaN();
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+};
+
+//==============================================================================
+/// Completed-step accounting for the separate source-continuation capture gate.
+struct HeadlessExactFbfSourceContinuationDiagnostics
+{
+  bool requested = false;
+  bool lastActive = false;
+  bool worldStateFinite = false;
+  bool groupHistoryTruncated = false;
+  bool lastLineSearchShrinkCapReached = false;
+  int lastLineSearchShrinkCapCount = 0;
+  double lastCorrectionStepSize = std::numeric_limits<double>::quiet_NaN();
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  std::size_t exactAttempts = 0u;
+  std::size_t exactSolves = 0u;
+  std::size_t exactFailures = 0u;
+  std::size_t boxedFallbacks = 0u;
+  std::size_t stepExactAttempts = 0u;
+  std::size_t stepExactSolves = 0u;
+  std::size_t stepPlateausAccepted = 0u;
+  std::size_t stepMaxIterationsAccepted = 0u;
+  std::size_t stepLineSearchShrinks = 0u;
+  std::size_t stepLineSearchShrinkCaps = 0u;
+  std::vector<HeadlessExactFbfSourceContinuationGroupDiagnostics> groups;
+};
+
+//==============================================================================
+/// Allows only complete, finite, solver-accepted source-continuation outcomes.
+inline HeadlessExactFbfFailFastDecision
+evaluateHeadlessExactFbfSourceContinuation(
+    const HeadlessExactFbfSourceContinuationDiagnostics& diagnostics)
+{
+  if (!diagnostics.requested)
+    return {true, "source_continuation_not_requested"};
+  if (diagnostics.boxedFallbacks > 0u)
+    return {true, "boxed_fallback"};
+  if (diagnostics.exactFailures > 0u)
+    return {true, "exact_failure"};
+  if (diagnostics.exactAttempts
+      != diagnostics.exactSolves + diagnostics.exactFailures) {
+    return {true, "cumulative_accounting_mismatch"};
+  }
+  if (!diagnostics.worldStateFinite)
+    return {true, "nonfinite_world_state"};
+  if (diagnostics.groupHistoryTruncated)
+    return {true, "group_history_truncated"};
+  if (diagnostics.stepExactAttempts != diagnostics.stepExactSolves
+      || diagnostics.groups.size() != diagnostics.stepExactAttempts) {
+    return {true, "group_accounting_mismatch"};
+  }
+
+  std::size_t plateaus = 0u;
+  std::size_t maxIterations = 0u;
+  std::size_t shrinks = 0u;
+  std::size_t shrinkCaps = 0u;
+  for (std::size_t index = 0u; index < diagnostics.groups.size(); ++index) {
+    const auto& group = diagnostics.groups[index];
+    if (group.contactCount == 0u
+        || (index > 0u
+            && group.solveIndex
+                   != diagnostics.groups[index - 1u].solveIndex + 1u)) {
+      return {true, "invalid_group_telemetry"};
+    }
+    if (!group.sourceContinuationActive)
+      return {true, "source_continuation_inactive"};
+    if (group.iterations < 0 || group.shrinkIterations < 0
+        || group.lineSearchShrinkCapCount < 0)
+      return {true, "invalid_group_telemetry"};
+    if (group.lineSearchShrinkCapCount > group.shrinkIterations
+        || (group.shrinkIterations > 0 && group.iterations == 0)
+        || static_cast<long long>(group.shrinkIterations)
+               > 8LL * static_cast<long long>(group.iterations)
+        || group.lineSearchShrinkCapCount > group.iterations) {
+      return {true, "invalid_group_telemetry"};
+    }
+    if (!std::isfinite(group.finalResidual) || group.finalResidual < 0.0
+        || !std::isfinite(group.finalNaturalMapResidual)
+        || group.finalNaturalMapResidual < 0.0) {
+      return {true, "nonfinite_group_residual"};
+    }
+    if (group.iterations > 0
+        && (!std::isfinite(group.correctionStepSize)
+            || group.correctionStepSize <= 0.0
+            || !std::isfinite(group.lastInnerSolveStepSize)
+            || group.lastInnerSolveStepSize <= 0.0)) {
+      return {true, "nonfinite_group_step_size"};
+    }
+    if (group.iterations > 0
+        && ((group.lineSearchShrinkCapCount == 0
+             && group.correctionStepSize != group.lastInnerSolveStepSize)
+            || (group.lineSearchShrinkCapCount > 0
+                && group.correctionStepSize > group.lastInnerSolveStepSize))) {
+      return {true, "group_step_size_relation_mismatch"};
+    }
+
+    switch (group.outcome) {
+      case HeadlessExactFbfSourceContinuationOutcome::Success:
+        if (group.iterations > 200
+            || (group.iterations > 0 && group.iterations % 5 != 0)) {
+          return {true, "termination_timing_mismatch"};
+        }
+        if ((group.iterations == 0 && group.finalNaturalMapResidual >= 1e-6)
+            || (group.iterations > 0 && group.finalResidual >= 1e-6)) {
+          return {true, "success_tolerance_not_strict"};
+        }
+        break;
+      case HeadlessExactFbfSourceContinuationOutcome::PlateauAccepted:
+        if (group.iterations < 30 || group.iterations > 200
+            || group.iterations % 5 != 0) {
+          return {true, "termination_timing_mismatch"};
+        }
+        if (!std::isfinite(group.plateauReferenceNaturalMapResidual)
+            || group.plateauReferenceNaturalMapResidual <= 0.0
+            || !std::isfinite(group.plateauRelativeImprovement)) {
+          return {true, "plateau_telemetry_mismatch"};
+        }
+        {
+          const double expectedImprovement
+              = (group.plateauReferenceNaturalMapResidual
+                 - group.finalNaturalMapResidual)
+                / group.plateauReferenceNaturalMapResidual;
+          const double scale = std::max(1.0, std::abs(expectedImprovement));
+          if (std::abs(group.plateauRelativeImprovement - expectedImprovement)
+                  > 8.0 * std::numeric_limits<double>::epsilon() * scale
+              || !(group.plateauRelativeImprovement < 0.01)) {
+            return {true, "plateau_telemetry_mismatch"};
+          }
+        }
+        ++plateaus;
+        break;
+      case HeadlessExactFbfSourceContinuationOutcome::MaxIterationsAccepted:
+        if (group.iterations != 200)
+          return {true, "termination_timing_mismatch"};
+        ++maxIterations;
+        break;
+      case HeadlessExactFbfSourceContinuationOutcome::Invalid:
+        return {true, "unaccepted_group_outcome"};
+    }
+    if (group.outcome
+            != HeadlessExactFbfSourceContinuationOutcome::PlateauAccepted
+        && (std::isfinite(group.plateauReferenceNaturalMapResidual)
+            || std::isfinite(group.plateauRelativeImprovement))) {
+      return {true, "plateau_telemetry_mismatch"};
+    }
+    shrinks += static_cast<std::size_t>(group.shrinkIterations);
+    shrinkCaps += static_cast<std::size_t>(group.lineSearchShrinkCapCount);
+  }
+
+  if (plateaus != diagnostics.stepPlateausAccepted
+      || maxIterations != diagnostics.stepMaxIterationsAccepted
+      || shrinks != diagnostics.stepLineSearchShrinks
+      || shrinkCaps != diagnostics.stepLineSearchShrinkCaps) {
+    return {true, "group_counter_mismatch"};
+  }
+  if (!diagnostics.groups.empty()) {
+    const auto& last = diagnostics.groups.back();
+    const auto sameNumber = [](double lhs, double rhs) {
+      return lhs == rhs || (std::isnan(lhs) && std::isnan(rhs));
+    };
+    if (diagnostics.lastActive != last.sourceContinuationActive
+        || diagnostics.lastLineSearchShrinkCapCount
+               != last.lineSearchShrinkCapCount
+        || diagnostics.lastLineSearchShrinkCapReached
+               != (last.lineSearchShrinkCapCount > 0)
+        || !sameNumber(
+            diagnostics.lastCorrectionStepSize, last.correctionStepSize)
+        || !sameNumber(
+            diagnostics.lastInnerSolveStepSize, last.lastInnerSolveStepSize)) {
+      return {true, "last_group_telemetry_mismatch"};
+    }
   }
   return {};
 }
