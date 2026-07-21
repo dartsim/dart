@@ -21,11 +21,15 @@ The newest Figure 6 implementation addition is a separately named,
 source-selected four-level/26-card dynamics adapter. Its build and contract
 tests pass, but the strict exact lane fails closed at completed step 35 before
 the scheduled cube release; the failed 56-contact island is now retained in
-the additive sidecar `last_failure` record. Disabling only the source's
-post-correction projection improves the failed residual by 0.47% but does not
-move the blocker. The boxed control completes 100 steps. The pinned author
-control itself continues 945/2,400 unconverged substeps, so strict zero-cap and
-source-continuation evidence are now explicitly separate. An unsealed
+the additive sidecar `last_failure` record. The exact adapter now opts into the
+source's no-post-correction-projection and raw current-outer inner-initialization
+policies while leaving DART defaults unchanged elsewhere. Strict 36- and
+100-step v3 replays still fail the same group at step 35 with residual
+`4.0844850280896461e-4`, primal `3.9375947649884479e-6`, complementarity
+`2.3815426453852184e-4`, and zero accepted caps, fallbacks, or shrinks. The
+boxed control completes 100 steps. The pinned author control itself continues
+945/2,400 unconverged substeps, so strict zero-cap and source-continuation
+evidence are explicitly separate. An unsealed
 accepted-cap preview reached 2,400 steps but had 1,106
 capped solves and worst residual 0.616089, so it is not outcome or media
 evidence. The pinned-author incline sweep and sealed
@@ -489,7 +493,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 of
 the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
 `FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
 
-The demo build, eight focused C++ tests, 207 runner Python tests, and exact/boxed
+The demo build, eight focused C++ tests, 213 runner Python tests, and exact/boxed
 contract smoke pass. A strict exact 100-step request fails closed at completed
 step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
@@ -509,6 +513,25 @@ completed step 35 with identical solver diagnostics: residual/best/dual
   SHA-256 `686be7170e3c217bfa917698a449e7ecde40e500a2c87d073ed58ba2ac833bfb`;
 - `/tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json`,
   SHA-256 `1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77`.
+
+The exact adapter also matches the pinned source's inner initialization: every
+inner solve and rejected step-size trial starts from the current outer reaction
+without projecting that seed. The ABI-neutral source-inner option defaults off,
+so DART's carried, projected inner seed remains unchanged elsewhere. Strict
+36- and 100-step v3 replays with both source policies active still stop at
+completed step 35 with byte-identical solver diagnostics: 56 contacts, 200
+iterations, final/best residual and dual `4.0844850280896461e-4`, primal
+`3.9375947649884479e-6`, complementarity `2.3815426453852184e-4`, zero
+accepted caps, zero boxed fallbacks, and zero line-search shrinks. Evidence:
+
+- `/tmp/fbf_author_card_house_4_source_inner_exact36_v3_20260721/timeline.json`,
+  SHA-256 `8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e`;
+- `/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json`,
+  SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`.
+
+The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
+colored source parity remains a separate unproven lane. Source shrink-cap,
+plateau, and continuation semantics also remain separate and unchanged.
 
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
@@ -769,8 +792,8 @@ explicit DART reconstruction choices, not author parameters.
 
 ## Current Recorded Gates
 
-- exact-Coulomb math: 54/54 in Release;
-- exact constraint solver: 30/30;
+- exact-Coulomb math: 56/56 in Release;
+- exact constraint solver: 32/32;
 - `ConstraintSolver` integration: 64/64;
 - Native collision: 42/42;
 - masonry wedge dynamics: 3/3;
@@ -790,9 +813,11 @@ explicit DART reconstruction choices, not author parameters.
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level author-card C++ fixtures: 8/8 passed;
-- visual runner with the source-selected correction contract: 207/207 passed;
+- visual runner with the source-selected correction and inner-initialization
+  contract: 213/213 passed;
 - shared-library symbol inspection retained the existing nine-argument
-  failure-record method and found both additive correction-policy methods;
+  failure-record method and correction-policy methods, and found the additive
+  source-inner setter/getter without a public class-layout change;
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
@@ -812,11 +837,10 @@ only for an explicit live-closure recheck.
    ownership.
 2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
    finalized incline and backspin, pinned-author numeric incline sweep, and
-   frozen impact-v1 negative bundles
-   alongside the arch101-v7 and card-v2 blockers. First isolate the source's
-   per-outer frozen-cone inner initialization (current outer reaction versus
-   DART's previous inner trial) without changing tolerance, caps, fallback, or
-   fail-fast. Separately design the telemetry-rich source-continuation lane
+   frozen impact-v1 negative bundles alongside the arch101-v7 and card-v2
+   blockers. Continue one-factor-at-a-time strict work without changing
+   tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
+   Separately design the telemetry-rich source shrink-cap/continuation lane
    without calling unconverged steps exact success. Then continue strict full-duration
    card/media work, remaining
    smaller-figure, and

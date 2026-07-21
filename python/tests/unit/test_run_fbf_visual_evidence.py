@@ -710,6 +710,8 @@ def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
                 "armijo_max_backtracks": 8,
                 "warm_start": True,
                 "project_after_correction": False,
+                "restart_inner_from_current_outer_reaction": True,
+                "project_inner_initial_reaction": False,
                 "baumgarte_erp": 0.0,
                 "termination_residual": "coulomb_rel",
                 "termination_tol": 1e-6,
@@ -1759,6 +1761,24 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
             True,
             "source configuration",
         ),
+        (
+            (
+                "source_configuration",
+                "solver",
+                "restart_inner_from_current_outer_reaction",
+            ),
+            False,
+            "source configuration",
+        ),
+        (
+            (
+                "source_configuration",
+                "solver",
+                "project_inner_initial_reaction",
+            ),
+            True,
+            "source configuration",
+        ),
         (("dart_adapter", "world", "time_step_seconds"), 1.0 / 60.0, "world"),
         (
             ("dart_adapter", "collision", "contact_manifold"),
@@ -1796,6 +1816,16 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
             "solver",
         ),
         (
+            ("dart_adapter", "solver", "source_inner_initialization_requested"),
+            False,
+            "solver",
+        ),
+        (
+            ("dart_adapter", "solver", "source_inner_initialization_active"),
+            False,
+            "solver",
+        ),
+        (
             (
                 "dart_adapter",
                 "solver",
@@ -1808,6 +1838,26 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
         (
             ("dart_adapter", "solver", "exact_options", "inner_max_sweeps"),
             30,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "restart_inner_from_current_outer_reaction",
+            ),
+            False,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "project_inner_initial_reaction",
+            ),
+            True,
             "solver",
         ),
         (

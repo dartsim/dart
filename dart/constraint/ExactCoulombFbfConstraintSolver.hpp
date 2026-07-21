@@ -421,6 +421,17 @@ public:
   /// Whether accepted FBF corrections are projected back onto the cone.
   bool getExactCoulombPostCorrectionProjectionEnabled() const;
 
+  /// Enable the pinned author's block-Gauss-Seidel initialization policy.
+  ///
+  /// When enabled, every inner solve and backtrack starts from the current
+  /// outer FBF reaction without pre-projecting that seed. Disabled by default
+  /// to preserve the established DART behavior. The opt-in is retained in
+  /// implementation-side state and does not change the public class layout.
+  void setExactCoulombSourceInnerInitializationEnabled(bool enabled);
+
+  /// Whether the pinned author's inner initialization policy is enabled.
+  bool getExactCoulombSourceInnerInitializationEnabled() const;
+
   // Documentation inherited.
   void setFromOtherConstraintSolver(const ConstraintSolver& other) override;
 

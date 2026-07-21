@@ -135,6 +135,14 @@ struct ExactCoulombFbfOptions
   /// correction before evaluating the next outer iteration.
   bool projectAfterCorrection = true;
 
+  /// Start every frozen-cone solve from the current outer FBF reaction.
+  ///
+  /// Disabled by default to preserve DART's existing reuse of the previous
+  /// accepted cone-QP iterate. Enable only when reproducing a source solver
+  /// whose inner solver resets from the current outer reaction on every
+  /// outer iteration and every rejected step-size trial.
+  bool restartInnerFromCurrentOuterReaction = false;
+
   /// Accept a trial when gamma * ||B(y) - B(x)|| / ||y - x|| <= this value.
   double couplingVariationTolerance = 0.9;
 
@@ -243,11 +251,17 @@ struct ExactCoulombFrozenConeBlockGaussSeidelOptions
   /// Optional initial iterate for the cone-QP solve.
   ///
   /// The proximal center remains the `referenceReaction` argument. This only
-  /// selects the block Gauss-Seidel starting point, allowing consecutive FBF
-  /// outer iterations to reuse the previous cone-QP solution as described in
-  /// the paper. When null, the proximal center is also the initial iterate.
-  /// The pointee must outlive the call and match the problem dimension.
+  /// selects the block Gauss-Seidel starting point. When null, the proximal
+  /// center is also the initial iterate. The pointee must outlive the call and
+  /// match the problem dimension.
   const Eigen::VectorXd* initialReaction = nullptr;
+
+  /// Project the selected initial iterate onto the product Coulomb cone.
+  ///
+  /// Enabled by default to preserve DART's established frozen-cone behavior.
+  /// Disable only when reproducing a source block Gauss-Seidel solver that
+  /// copies the current outer reaction verbatim before its first sweep.
+  bool projectInitialReaction = true;
 
   /// Optional reusable workspace for consecutive solves of the same local
   /// systems.
@@ -1691,15 +1705,23 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
     return result;
   }
-  const bool projected
-      = hasInitialReaction
-            ? projectExactCoulombReactionNormalFirst(
-                *options.initialReaction, problem.coefficients, result.reaction)
-            : projectExactCoulombReactionNormalFirst(
-                referenceReaction, problem.coefficients, result.reaction);
-  if (!projected) {
-    result.status = ExactCoulombFrozenConeStatus::InvalidInput;
-    return result;
+  if (options.projectInitialReaction) {
+    const bool projected
+        = hasInitialReaction ? projectExactCoulombReactionNormalFirst(
+              *options.initialReaction, problem.coefficients, result.reaction)
+                             : projectExactCoulombReactionNormalFirst(
+                                 referenceReaction,
+                                 problem.coefficients,
+                                 result.reaction);
+    if (!projected) {
+      result.status = ExactCoulombFrozenConeStatus::InvalidInput;
+      return result;
+    }
+  } else {
+    if (hasInitialReaction)
+      result.reaction = *options.initialReaction;
+    else
+      result.reaction = referenceReaction;
   }
 
   const Eigen::Index dimension = problem.getDimension();
@@ -1934,9 +1956,11 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
 ///
 /// `solveFrozenConeProblem(problem, reaction, coupling, gamma, initial,
 /// output)` must solve the strongly convex cone subproblem with frozen coupling
-/// and write the intermediate reaction into `output`. `initial` is the previous
-/// accepted cone-QP solution and remains fixed across rejected step-size
-/// trials. A legacy five-argument callback without `initial` is also accepted.
+/// and write the intermediate reaction into `output`. By default, `initial` is
+/// the previous accepted cone-QP solution and remains fixed across rejected
+/// step-size trials. The source-reproduction option instead supplies the
+/// current outer reaction on every trial. A legacy five-argument callback
+/// without `initial` is also accepted.
 template <typename DelassusOperator, typename FrozenConeSolver>
 ExactCoulombFbfResult solveExactCoulombFbf(
     const ExactCoulombContactProblem& problem,
@@ -2089,12 +2113,16 @@ ExactCoulombFbfResult solveExactCoulombFbf(
                         double,
                         const Eigen::VectorXd&,
                         Eigen::VectorXd&>) {
+        const Eigen::VectorXd& innerInitialReaction
+            = options.restartInnerFromCurrentOuterReaction
+                  ? result.reaction
+                  : previousInnerReaction;
         innerSolved = solveFrozenConeProblem(
             problem,
             result.reaction,
             coupling,
             stepSize,
-            previousInnerReaction,
+            innerInitialReaction,
             trialReaction);
       } else {
         innerSolved = solveFrozenConeProblem(

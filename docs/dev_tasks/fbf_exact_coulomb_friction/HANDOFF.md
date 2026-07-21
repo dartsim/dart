@@ -492,7 +492,7 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 8 author-card C++ tests, 207 visual-runner Python tests, and
+- The demo build, 8 author-card C++ tests, 213 visual-runner Python tests, and
   exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
@@ -514,6 +514,23 @@ Current-source four-level Figure 6 adapter truth:
   1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77.
   The residual improvement is only 0.471590382%, and the new small primal
   violation means the strict claim boundary is unchanged.
+- The exact adapter also opts into the pinned source's inner initialization:
+  every inner solve and rejected step-size trial starts from the current outer
+  reaction without projecting the seed. The ABI-neutral option defaults off,
+  so DART's carried, projected seed remains unchanged elsewhere. Strict 36-
+  and 100-step v3 replays with both source policies active still fail at
+  completed step 35 with byte-identical diagnostics: 56 contacts, 200
+  iterations, residual/best/dual 4.0844850280896461e-4, primal
+  3.9375947649884479e-6, complementarity 2.3815426453852184e-4, zero accepted
+  caps, zero boxed fallbacks, and zero line-search shrinks. Timelines and
+  SHA-256:
+  /tmp/fbf_author_card_house_4_source_inner_exact36_v3_20260721/timeline.json,
+  8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e;
+  /tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json,
+  3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73.
+  The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
+  colored source parity remains separate and unproven. Source shrink-cap,
+  plateau, and continuation semantics also remain separate and unchanged.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -783,8 +800,8 @@ Evidence truth:
 
 Latest recorded focused gates:
 
-- exact math 54/54 Release;
-- exact constraint solver 30/30;
+- exact math 56/56 Release;
+- exact constraint solver 32/32;
 - ConstraintSolver 64/64;
 - Native collision 42/42;
 - masonry wedge dynamics 3/3;
@@ -804,9 +821,11 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level author-card C++ fixtures passed 8/8;
-- visual runner with the source-selected correction contract passed 207/207;
+- visual runner with the source-selected correction and inner-initialization
+  contract passed 213/213;
 - shared-library symbol inspection retained the existing nine-argument
-  failure-record method and found both additive correction-policy methods;
+  failure-record method and correction-policy methods, and found the additive
+  source-inner setter/getter without a public class-layout change;
 - four-level exact and boxed adapter contract smoke passed;
 - the shared current-head Clang/FreeBSD polymorphic-`typeid` compile failure is
   fixed locally; a Clang 22 warning-as-error syntax check passes, with remote

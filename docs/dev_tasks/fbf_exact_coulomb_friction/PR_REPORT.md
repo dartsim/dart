@@ -244,8 +244,8 @@ callers must stop rather than advance and interpret the state as valid.
 
 Current focused gates are:
 
-- exact math: 54/54;
-- exact constraint-solver tests: 30/30;
+- exact math: 56/56;
+- exact constraint-solver tests: 32/32;
 - `ConstraintSolver` integration: 64/64;
 - Native collision: 42/42;
 - masonry-arch geometry: 3/3;
@@ -582,7 +582,30 @@ identical diagnostics: 56 contacts, 200 iterations, residual/best/dual
   SHA-256 `1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77`.
 
 The residual improves only `0.471590382%`, and the small primal violation is
-new. This closes one source mismatch but does not clear or move the blocker.
+new. This closes the post-correction mismatch but does not clear or move the
+blocker.
+
+The pinned author's block-GS solve also copies the current outer reaction into
+every inner solve and rejected step-size trial without projecting that seed.
+The current checkpoint adds an ABI-neutral, default-off source-inner policy and
+enables it only for this adapter's exact lane; DART's carried, projected seed
+remains the default elsewhere. With both source-selected policies active,
+strict 36- and 100-step v3 replays again fail closed at completed step 35 with
+byte-identical diagnostics: 56 contacts, 200 iterations, final/best residual
+and dual `4.0844850280896461e-4`, primal `3.9375947649884479e-6`,
+complementarity `2.3815426453852184e-4`, zero accepted caps, zero boxed
+fallbacks, and zero line-search shrinks. Evidence:
+
+- `/tmp/fbf_author_card_house_4_source_inner_exact36_v3_20260721/timeline.json`,
+  SHA-256 `8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e`;
+- `/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json`,
+  SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`.
+
+The Figure 6 adapter and strict replay are serial because colored block
+Gauss-Seidel is disabled. The colored implementation accepts the same source
+seed for consistency, but colored source parity remains a separate, unproven
+lane. Source shrink-cap, plateau, and continuation semantics likewise remain
+separate and unchanged by this A/B. The strict blocker does not move.
 
 The pinned author control completes all 2,400 substeps but reports 1,455
 converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
@@ -614,9 +637,10 @@ steps, but 1,106/3,231 solves cap and worst residual reaches
 does not reach release and boxed remains bounded to 100 steps. This does not
 establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
-superiority. It remains an adapter-only lane. The next isolated mismatch is
-per-outer frozen-cone inner initialization; it is not part of this checkpoint.
-The older reconstructed `fbf_paper_card_house_26` lane remains distinct.
+superiority. It remains an adapter-only lane. Any next strict A/B must isolate
+one remaining source mismatch; colored source parity and source shrink-cap or
+continuation semantics remain separate work. The older reconstructed
+`fbf_paper_card_house_26` lane remains distinct.
 
 ### Pinned-Author Masonry-Arch Scientific Negative
 
@@ -864,15 +888,16 @@ publishes no multicore CPU reference.
 ## Current Verification
 
 - Current-source four-level author-card demo build: passed.
-- Exact-Coulomb math: 54/54 passed.
-- Exact constraint solver: 30/30 passed.
+- Exact-Coulomb math: 56/56 passed.
+- Exact constraint solver: 32/32 passed.
 - Current-source four-level author-card C++ fixtures: 8/8 passed; the full
   paper fixture binary reports 31 passed and 3 explicit stress skips.
-- Visual runner with the source-selected correction contract: 207/207
-  passed.
+- Visual runner with the source-selected correction and inner-initialization
+  contract: 213/213 passed.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
-  `recordLastFailedExactCoulombAttempt` symbol and adds only the two public
-  post-correction policy methods.
+  `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
+  methods, and exports the additive source-inner setter/getter without changing
+  the public class layout.
 - Exact and boxed adapter-contract smoke validators: passed.
 - The four current-head Clang/FreeBSD compile failures share one polymorphic
   `typeid` warning-as-error in the new card-house contract. The local
@@ -942,15 +967,14 @@ cross-platform CI.
 
 ## Remaining Completion Gates
 
-- Test the next isolated pinned-source mismatch: initialize each frozen-cone
-  inner solve from the current outer reaction rather than DART's previous
-  inner trial. Do not combine that A/B with tolerance, iteration-cap, fallback,
-  fail-fast, or accepted-cap changes. Then correct the source-selected
-  four-level adapter's completed-step-35 exact failure and complete its strict
-  2,400-step exact and boxed trajectories through the step-1,600 release. In
-  parallel, define the separately labeled telemetry-rich source-continuation
+- Correct the source-selected four-level adapter's completed-step-35 exact
+  failure and complete its strict 2,400-step exact and boxed trajectories
+  through the step-1,600 release. Keep any next strict A/B isolated from
+  tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
+  Colored source parity remains a separate proof obligation. In parallel,
+  define the separately labeled telemetry-rich source shrink-cap/continuation
   physical/video lane without presenting unconverged steps as exact success.
-  Keep both distinct from the reconstructed
+  Keep those lanes distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.

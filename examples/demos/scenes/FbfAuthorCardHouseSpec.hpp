@@ -574,6 +574,8 @@ struct DynamicsAdapterContract
   dart::constraint::ExactCoulombFbfConstraintSolverOptions exactOptions;
   dart::constraint::ExactCoulombFbfCrossStepPolicyOptions exactCrossStepOptions;
   bool exactPostCorrectionProjectionEnabled = true;
+  bool exactSourceInnerInitializationRequested = false;
+  bool exactSourceInnerInitializationActive = false;
   bool exactColoredBlockGaussSeidelEnabled = false;
   bool exactParticipantAffinityEnabled = false;
   bool boxedOptionsAvailable = false;
@@ -789,7 +791,8 @@ inline void releaseCubes(
 inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     const std::shared_ptr<dart::simulation::World>& world,
     std::size_t levelCount,
-    const std::string& binarySourceSha256)
+    const std::string& binarySourceSha256,
+    bool sourceInnerInitializationRequested = false)
 {
   if (!world)
     throw std::runtime_error(
@@ -1009,12 +1012,16 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
   contract.observedContactErrorReductionParameter
       = dart::constraint::ContactConstraint::getErrorReductionParameter();
   contract.exactOptionsAvailable = exact != nullptr;
+  contract.exactSourceInnerInitializationRequested
+      = sourceInnerInitializationRequested;
   if (exact != nullptr) {
     contract.exactOptions = exact->getExactCoulombOptions();
     contract.exactCrossStepOptions
         = exact->getExactCoulombCrossStepPolicyOptions();
     contract.exactPostCorrectionProjectionEnabled
         = exact->getExactCoulombPostCorrectionProjectionEnabled();
+    contract.exactSourceInnerInitializationActive
+        = exact->getExactCoulombSourceInnerInitializationEnabled();
     contract.exactColoredBlockGaussSeidelEnabled
         = exact->getExactCoulombColoredBlockGaussSeidelEnabled();
     contract.exactParticipantAffinityEnabled
@@ -1456,6 +1463,8 @@ inline std::string dynamicsAdapterContractJson(
       << ",\"armijo_shrink\":" << kSourceArmijoShrink
       << ",\"armijo_max_backtracks\":" << kSourceArmijoMaxBacktracks
       << ",\"warm_start\":true,\"project_after_correction\":false"
+      << ",\"restart_inner_from_current_outer_reaction\":true"
+         ",\"project_inner_initial_reaction\":false"
       << ",\"baumgarte_erp\":" << kSourceBaumgarteErp
       << ",\"termination_residual\":";
   writeJsonString(out, kSourceTerminationResidual);
@@ -1497,6 +1506,10 @@ inline std::string dynamicsAdapterContractJson(
   writeJsonString(out, contract.solverLane);
   out << ",\"split_impulse_enabled\":"
       << (contract.splitImpulseEnabled ? "true" : "false")
+      << ",\"source_inner_initialization_requested\":"
+      << (contract.exactSourceInnerInitializationRequested ? "true" : "false")
+      << ",\"source_inner_initialization_active\":"
+      << (contract.exactSourceInnerInitializationActive ? "true" : "false")
       << ",\"colored_block_gauss_seidel_enabled\":"
       << (contract.exactColoredBlockGaussSeidelEnabled ? "true" : "false")
       << ",\"participant_affinity_enabled\":"
@@ -1542,6 +1555,10 @@ inline std::string dynamicsAdapterContractJson(
         << ",\"outer_relaxation\":" << options.outerRelaxation
         << ",\"project_after_correction\":"
         << (contract.exactPostCorrectionProjectionEnabled ? "true" : "false")
+        << ",\"restart_inner_from_current_outer_reaction\":"
+        << (contract.exactSourceInnerInitializationActive ? "true" : "false")
+        << ",\"project_inner_initial_reaction\":"
+        << (contract.exactSourceInnerInitializationActive ? "false" : "true")
         << ",\"coupling_variation_tolerance\":"
         << options.couplingVariationTolerance
         << ",\"shrink_factor\":" << options.shrinkFactor

@@ -1158,6 +1158,52 @@ TEST(
 
 TEST(
     ExactCoulombFrozenConeBlockGaussSeidelSolver,
+    SourceInitializationCanCopyRawOuterReaction)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d referenceReaction = Eigen::Vector3d::Zero();
+  Eigen::VectorXd initialReaction(3);
+  initialReaction << 1.0, 2.0, 0.0;
+  const Eigen::Vector3d frozenCoupling = Eigen::Vector3d::Zero();
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = 0;
+  options.initialReaction = &initialReaction;
+
+  const auto projected
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+  EXPECT_EQ(
+      projected.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  EXPECT_FALSE(projected.reaction.isApprox(initialReaction, 0.0));
+  EXPECT_LE(projected.reaction.tail<2>().norm(), 0.5 * projected.reaction[0]);
+
+  options.projectInitialReaction = false;
+  const auto raw
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+  EXPECT_EQ(
+      raw.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  expectVectorNear(raw.reaction, initialReaction);
+  EXPECT_GT(raw.reaction.tail<2>().norm(), 0.5 * raw.reaction[0]);
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver,
     ProjectsTangentialImpulseOntoCone)
 {
   const auto problem
@@ -1925,6 +1971,57 @@ TEST(ExactCoulombFbfSolver, RetainsBestIterateOnMaxIterations)
       result.bestResidual.value, result.residualHistory.back().residual.value);
   expectVectorNear(result.reaction, Eigen::Vector3d(2.0, 0.0, 0.0));
   expectVectorNear(result.bestReaction, Eigen::Vector3d(0.25, 0.0, 0.0));
+}
+
+TEST(
+    ExactCoulombFbfSolver,
+    SourceInitializationRestartsFromCurrentOuterReactionForEveryTrial)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d initialReaction = Eigen::Vector3d::Zero();
+
+  std::vector<Eigen::VectorXd> outerReactions;
+  std::vector<Eigen::VectorXd> innerInitialReactions;
+  const auto innerSolver
+      = [&outerReactions, &innerInitialReactions](
+            const auto&,
+            const Eigen::Ref<const Eigen::VectorXd>& outerReaction,
+            const Eigen::Ref<const Eigen::VectorXd>&,
+            double,
+            const Eigen::VectorXd& innerInitialReaction,
+            Eigen::Ref<Eigen::VectorXd> output) {
+          outerReactions.push_back(outerReaction);
+          innerInitialReactions.push_back(innerInitialReaction);
+          output << 2.0, 1.0, 0.0;
+          return true;
+        };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.couplingVariationTolerance = 0.1;
+  options.maxStepShrinkIterations = 5;
+  options.maxOuterIterations = 2;
+  options.tolerance = 0.0;
+  options.projectAfterCorrection = false;
+  options.restartInnerFromCurrentOuterReaction = true;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      initialReaction,
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  ASSERT_EQ(innerInitialReactions.size(), outerReactions.size());
+  ASSERT_GT(innerInitialReactions.size(), 2u);
+  for (std::size_t index = 0u; index < innerInitialReactions.size(); ++index)
+    expectVectorNear(innerInitialReactions[index], outerReactions[index]);
+  EXPECT_TRUE(outerReactions.front().isZero(0.0));
+  EXPECT_FALSE(outerReactions.back().isZero(0.0));
 }
 
 TEST(ExactCoulombFbfSolver, ShrinksStepUntilCouplingVariationIsAccepted)

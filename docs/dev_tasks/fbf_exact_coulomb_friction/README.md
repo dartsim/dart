@@ -47,7 +47,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Current-source four-level card-house adapter | `fbf_author_card_house_4_impact_current_source` and schedule `card_house_author_4_impact_current_source` bind the pinned author geometry and a source-supported four-level, 600-frame CLI selection to 2,400 DART substeps; exact/boxed adapter contracts and focused tests pass. A source-only `project_after_correction=false` policy now closes one pinned-solver mismatch while preserving the projected DART default elsewhere | The isolated no-projection A/B still fails the same 56-contact group at step 35: residual improves only from `4.103919e-4` to `4.084565e-4` and a `3.938016e-6` primal violation appears. Boxed completes 100 steps, while an unsealed accepted-cap preview reaches release/2,400 with 1,106 caps and worst residual 0.616089. No valid strict outcome, media, superiority, or Fig. 6/paper-parity claim follows |
+| Current-source four-level card-house adapter | `fbf_author_card_house_4_impact_current_source` and schedule `card_house_author_4_impact_current_source` bind the pinned author geometry and a source-supported four-level, 600-frame CLI selection to 2,400 DART substeps; exact/boxed adapter contracts and focused tests pass. Source-only post-correction and inner-initialization policies now close two pinned-solver mismatches while preserving DART defaults elsewhere | Strict source-inner 36- and 100-step replays still fail the same 56-contact group at step 35: residual `4.084485e-4`, primal `3.937595e-6`, complementarity `2.381543e-4`, and zero accepted caps, fallbacks, or shrinks. Boxed completes 100 steps, while an unsealed accepted-cap preview reaches release/2,400 with 1,106 caps and worst residual 0.616089. No valid strict outcome, media, superiority, or Fig. 6/paper-parity claim follows |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
@@ -520,7 +520,7 @@ runner invokes `p` after completed substep 1,600. The declared horizon is
 `FourPointPlanar` collision frontend with contact capacity 4,096 and manifold
 subdivision 4.
 
-The demo build, eight focused author-card C++ tests, 207 visual-runner Python
+The demo build, eight focused author-card C++ tests, 213 visual-runner Python
 tests, and exact/boxed contract-smoke validators pass. The first live strict
 exact request for 100 steps fails closed at completed step 35 when contacts
 jump from 44 to 68. Steps through 34 are clean, with prior worst residual
@@ -542,7 +542,28 @@ solver diagnostics: 56 contacts, 200 iterations, final/best residual and dual
 and
 `/tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json`
 (SHA-256 `1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77`).
-This closes the source mismatch but does not clear or move the strict blocker.
+This closes the source post-correction mismatch but does not clear or move the
+strict blocker.
+
+The pinned author inner solver also copies the current outer reaction into
+every inner solve and rejected step-size trial without projecting that seed.
+An ABI-neutral, default-off source-inner policy now reproduces that behavior
+only for this adapter's exact lane; DART's carried, projected inner seed remains
+the default elsewhere. With both source-selected policies active, strict 36-
+and 100-step v3 replays remain byte-identical in solver diagnostics and stop on
+the same 56-contact group at completed step 35 after 200 iterations. Final and
+best residual and dual are `4.0844850280896461e-4`, primal is
+`3.9375947649884479e-6`, complementarity is
+`2.3815426453852184e-4`, and accepted caps, boxed fallbacks, and line-search
+shrinks are all zero. The timelines are
+`/tmp/fbf_author_card_house_4_source_inner_exact36_v3_20260721/timeline.json`
+(SHA-256 `8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e`)
+and
+`/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json`
+(SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`).
+The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
+colored source parity remains unproven and separate. Source shrink-cap,
+plateau, and continuation semantics also remain separate and unchanged.
 
 The pinned author control completes 2,400 substeps while reporting only 1,455
 converged and 945 unconverged steps: 632 caps and 313 plateau stops. Before
@@ -787,8 +808,8 @@ performance artifact.
 
 The latest recorded focused results on the current source are:
 
-- exact-Coulomb math: 54/54 in Release;
-- exact constraint solver: 30/30;
+- exact-Coulomb math: 56/56 in Release;
+- exact constraint solver: 32/32;
 - `ConstraintSolver` integration: 64/64;
 - Native collision: 42/42;
 - masonry wedge dynamics: 3/3;
@@ -810,8 +831,8 @@ The latest recorded focused results on the current source are:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level author-card C++ fixture tests: 8/8;
-- visual-runner Python tests with the source-selected correction contract:
-  207/207;
+- visual-runner Python tests with the source-selected correction and
+  inner-initialization contract: 213/213;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
