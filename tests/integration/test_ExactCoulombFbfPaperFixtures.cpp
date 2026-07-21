@@ -1007,6 +1007,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
         world->getConstraintSolver());
     installed->setExactCoulombCrossStepPolicyOptions(
         fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+    installed->setExactCoulombPostCorrectionProjectionEnabled(
+        levelCount != fbf_author_card_house::kFigureLevelCount);
     installed->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         false);
@@ -2538,6 +2540,11 @@ TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseContractIsConstructionOnly)
   using namespace fbf_author_card_house;
   const auto world = createAuthorCardHouseConstructionWorld();
   EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+  const auto* exactSolver
+      = dynamic_cast<const constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  ASSERT_NE(exactSolver, nullptr);
+  EXPECT_TRUE(exactSolver->getExactCoulombPostCorrectionProjectionEnabled());
 
   const auto contract = inspectConfigurationContract(
       world, kDefaultLevelCount, "integration_fixture", "not_applicable");
@@ -2777,6 +2784,7 @@ TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseDynamicsLanesShareFrontend)
   EXPECT_DOUBLE_EQ(exact.exactOptions.tolerance, kSourceOuterTolerance);
   EXPECT_EQ(exact.exactOptions.innerMaxSweeps, kSourceInnerGaussSeidelSweeps);
   EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_FALSE(exact.exactPostCorrectionProjectionEnabled);
   EXPECT_EQ(
       exact.exactCrossStepOptions.warmStartMatchMode,
       constraint::ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature);
@@ -2857,6 +2865,8 @@ TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseDynamicsLanesShareFrontend)
       exactJson.find("\"physical_outcome_valid\":false"), std::string::npos);
   EXPECT_NE(exactJson.find("\"fig06_parity\":false"), std::string::npos);
   EXPECT_NE(exactJson.find("\"boxed_baseline\":null"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"project_after_correction\":false"), std::string::npos);
   const std::string boxedJson = dynamicsAdapterContractJson(boxed);
   EXPECT_NE(
       boxedJson.find("\"primary_solver\":\"DantzigBoxedLcpSolver\""),

@@ -21,8 +21,12 @@ The newest Figure 6 implementation addition is a separately named,
 source-selected four-level/26-card dynamics adapter. Its build and contract
 tests pass, but the strict exact lane fails closed at completed step 35 before
 the scheduled cube release; the failed 56-contact island is now retained in
-the additive sidecar `last_failure` record. The boxed control completes 100
-steps. An unsealed accepted-cap preview reached 2,400 steps but had 1,106
+the additive sidecar `last_failure` record. Disabling only the source's
+post-correction projection improves the failed residual by 0.47% but does not
+move the blocker. The boxed control completes 100 steps. The pinned author
+control itself continues 945/2,400 unconverged substeps, so strict zero-cap and
+source-continuation evidence are now explicitly separate. An unsealed
+accepted-cap preview reached 2,400 steps but had 1,106
 capped solves and worst residual 0.616089, so it is not outcome or media
 evidence. The pinned-author incline sweep and sealed
 author masonry-arch negative also remain current. The overall 29-row audit is
@@ -485,7 +489,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 of
 the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
 `FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
 
-The demo build, eight focused C++ tests, 205 runner Python tests, and exact/boxed
+The demo build, eight focused C++ tests, 207 runner Python tests, and exact/boxed
 contract smoke pass. A strict exact 100-step request fails closed at completed
 step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
@@ -493,6 +497,29 @@ zero fallbacks, zero accepted caps, and worst residual
 `9.826274595482653e-7`. Timeline:
 `/tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json`,
 SHA-256 `2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`.
+
+The current exact adapter now matches source
+`project_after_correction=false` through an ABI-neutral option that stays
+enabled by default elsewhere. Strict 36- and 100-step replays still stop at
+completed step 35 with identical solver diagnostics: residual/best/dual
+`4.0845653576327421e-4`, primal `3.9380158679450451e-6`, complementarity
+`2.3818176330330057e-4`, 200 iterations, zero caps, and zero fallback. Evidence:
+
+- `/tmp/fbf_author_card_house_4_source_correction_exact36_20260721/timeline.json`,
+  SHA-256 `686be7170e3c217bfa917698a449e7ecde40e500a2c87d073ed58ba2ac833bfb`;
+- `/tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json`,
+  SHA-256 `1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77`.
+
+The pinned author run completes 2,400 steps with 1,455 converged and 945
+unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
+123/677 from release onward. First false/cap indices are 33/35; worst natural
+`final_residual` is `2.59804445965485` and worst per-step final checked
+`r_coulomb` is `7.597910320688573`. History:
+`/tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json`,
+SHA-256 `b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd`.
+Strict zero-cap completion remains a scientific gate, not source-equivalent
+continuation semantics. A future telemetry-rich source-continuation
+physical/video lane must remain separately labeled and is not implemented.
 The boxed 100-step control completes:
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
 SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
@@ -742,8 +769,8 @@ explicit DART reconstruction choices, not author parameters.
 
 ## Current Recorded Gates
 
-- exact-Coulomb math: 47/47 in Release;
-- exact constraint solver: 29/29;
+- exact-Coulomb math: 54/54 in Release;
+- exact constraint solver: 30/30;
 - `ConstraintSolver` integration: 64/64;
 - Native collision: 42/42;
 - masonry wedge dynamics: 3/3;
@@ -763,7 +790,9 @@ explicit DART reconstruction choices, not author parameters.
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level author-card C++ fixtures: 8/8 passed;
-- visual runner after the source-selected schedule addition: 205/205 passed;
+- visual runner with the source-selected correction contract: 207/207 passed;
+- shared-library symbol inspection retained the existing nine-argument
+  failure-record method and found both additive correction-policy methods;
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
@@ -784,9 +813,11 @@ only for an explicit live-closure recheck.
 2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
    finalized incline and backspin, pinned-author numeric incline sweep, and
    frozen impact-v1 negative bundles
-   alongside the arch101-v7 and card-v2 blockers. Pursue a targeted correction
-   for the source-selected four-level adapter's precisely characterized
-   completed-step-35 exact failure, then continue its strict full-duration
+   alongside the arch101-v7 and card-v2 blockers. First isolate the source's
+   per-outer frozen-cone inner initialization (current outer reaction versus
+   DART's previous inner trial) without changing tolerance, caps, fallback, or
+   fail-fast. Separately design the telemetry-rich source-continuation lane
+   without calling unconverged steps exact success. Then continue strict full-duration
    card/media work, remaining
    smaller-figure, and
    separately declared source-equivalent impact work; manually inspect decoded

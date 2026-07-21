@@ -744,6 +744,52 @@ void eraseExactCoulombColoredBlockGaussSeidelState(
   exactCoulombColoredBlockGaussSeidelStateBySolver().erase(solver);
 }
 
+std::mutex& exactCoulombPostCorrectionProjectionStateMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<const ExactCoulombFbfConstraintSolver*, bool>&
+exactCoulombPostCorrectionProjectionStateBySolver()
+{
+  static auto* states
+      = new std::unordered_map<const ExactCoulombFbfConstraintSolver*, bool>;
+  return *states;
+}
+
+bool getExactCoulombPostCorrectionProjectionState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(
+      exactCoulombPostCorrectionProjectionStateMutex());
+  const auto& states = exactCoulombPostCorrectionProjectionStateBySolver();
+  const auto state = states.find(solver);
+  return state == states.end() ? true : state->second;
+}
+
+void setExactCoulombPostCorrectionProjectionState(
+    const ExactCoulombFbfConstraintSolver* solver, bool enabled)
+{
+  std::lock_guard<std::mutex> lock(
+      exactCoulombPostCorrectionProjectionStateMutex());
+  exactCoulombPostCorrectionProjectionStateBySolver()[solver] = enabled;
+}
+
+void resetExactCoulombPostCorrectionProjectionState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  setExactCoulombPostCorrectionProjectionState(solver, true);
+}
+
+void eraseExactCoulombPostCorrectionProjectionState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(
+      exactCoulombPostCorrectionProjectionStateMutex());
+  exactCoulombPostCorrectionProjectionStateBySolver().erase(solver);
+}
+
 std::mutex& exactCoulombLastFailureStateMutex()
 {
   static auto* mutex = new std::mutex;
@@ -1604,6 +1650,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver()
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombPostCorrectionProjectionState(this);
   resetExactCoulombLastFailureState(this);
   resetExactCoulombCrossStepPolicyState(this);
 }
@@ -1615,6 +1662,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver(
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombPostCorrectionProjectionState(this);
   resetExactCoulombLastFailureState(this);
   resetExactCoulombCrossStepPolicyState(this);
 }
@@ -1624,6 +1672,7 @@ ExactCoulombFbfConstraintSolver::~ExactCoulombFbfConstraintSolver()
 {
   eraseContactRowParallelEvidence(this);
   eraseExactCoulombColoredBlockGaussSeidelState(this);
+  eraseExactCoulombPostCorrectionProjectionState(this);
   eraseExactCoulombLastFailureState(this);
   eraseExactCoulombCrossStepPolicyState(this);
 }
@@ -1679,6 +1728,25 @@ ExactCoulombFbfConstraintSolver::getExactCoulombCrossStepPolicyOptions() const
 }
 
 //==============================================================================
+void ExactCoulombFbfConstraintSolver::
+    setExactCoulombPostCorrectionProjectionEnabled(bool enabled)
+{
+  if (getExactCoulombPostCorrectionProjectionState(this) == enabled)
+    return;
+
+  setExactCoulombPostCorrectionProjectionState(this, enabled);
+  clearExactCoulombPersistentStepSize();
+  clearExactCoulombWarmStart();
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getExactCoulombPostCorrectionProjectionEnabled() const
+{
+  return getExactCoulombPostCorrectionProjectionState(this);
+}
+
+//==============================================================================
 void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
     const ConstraintSolver& other)
 {
@@ -1689,6 +1757,8 @@ void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
     setExactCoulombOptions(exact->getExactCoulombOptions());
     setExactCoulombCrossStepPolicyOptions(
         exact->getExactCoulombCrossStepPolicyOptions());
+    setExactCoulombPostCorrectionProjectionEnabled(
+        exact->getExactCoulombPostCorrectionProjectionEnabled());
     setExactCoulombColoredBlockGaussSeidelEnabled(
         exact->getExactCoulombColoredBlockGaussSeidelEnabled());
     setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
@@ -1697,6 +1767,7 @@ void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
   } else {
     setExactCoulombCrossStepPolicyOptions(
         ExactCoulombFbfCrossStepPolicyOptions{});
+    setExactCoulombPostCorrectionProjectionEnabled(true);
     setExactCoulombColoredBlockGaussSeidelEnabled(false);
     setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(false);
   }
@@ -2720,6 +2791,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
 
   auto fbfOptions = makeFbfOptions(mExactCoulombOptions);
   applyExactCoulombCrossStepPolicy(crossStepPolicy, fbfOptions);
+  fbfOptions.projectAfterCorrection
+      = getExactCoulombPostCorrectionProjectionState(this);
   double persistedStepSize = std::numeric_limits<double>::quiet_NaN();
   std::size_t persistedNoRejectionSolves = 0u;
   const bool persistentStepSizeMatched
@@ -2886,6 +2959,8 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
 
     auto automaticFbfOptions = makeFbfOptions(mExactCoulombOptions);
     applyExactCoulombCrossStepPolicy(crossStepPolicy, automaticFbfOptions);
+    automaticFbfOptions.projectAfterCorrection
+        = getExactCoulombPostCorrectionProjectionState(this);
     automaticFbfOptions.useAutomaticResidualScales = false;
     automaticFbfOptions.residualScales = solution.residualScales;
     const auto automaticSolution

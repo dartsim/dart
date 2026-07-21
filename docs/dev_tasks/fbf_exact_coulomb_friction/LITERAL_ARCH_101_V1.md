@@ -93,7 +93,7 @@ hashes, environment/affinity record, independently recomputed gates, and an
 explicit `artifact_valid=false` / `standing_claim_passed=false` verdict. The
 failed prefix must not be used for timing or physical-outcome claims.
 
-## Required locally retained outputs
+## Required durable outputs
 
 - immutable raw trace and stderr
 - invocation, affinity, build, source, binary, and runner provenance

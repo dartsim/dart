@@ -244,8 +244,8 @@ callers must stop rather than advance and interpret the state as valid.
 
 Current focused gates are:
 
-- exact math: 47/47;
-- exact constraint-solver tests: 29/29;
+- exact math: 54/54;
+- exact constraint-solver tests: 30/30;
 - `ConstraintSolver` integration: 64/64;
 - Native collision: 42/42;
 - masonry-arch geometry: 3/3;
@@ -556,7 +556,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 in
 the declared 2,400-step, `dt=1/240 s` run. Exact and boxed lanes share the same
 Native `FourPointPlanar` frontend, 4,096-contact capacity, and manifold
 subdivision 4.
-The demo build, eight focused C++ fixtures, 205 runner Python tests, and both
+The demo build, eight focused C++ fixtures, 207 runner Python tests, and both
 adapter-contract smoke validators pass.
 
 The strict exact 100-step request fails closed at completed step 35 when the
@@ -567,6 +567,36 @@ residual `4.1039190451256334e-4`. Timeline SHA-256
 `2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d`
 belongs to
 `/tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json`.
+
+The pinned source defaults `project_after_correction=false`, unlike the
+projected DART baseline. The current checkpoint adds an ABI-neutral,
+default-on DART policy and disables it only for this source-selected exact
+adapter. Strict 36- and 100-step replays still fail at completed step 35 with
+identical diagnostics: 56 contacts, 200 iterations, residual/best/dual
+`4.0845653576327421e-4`, primal `3.9380158679450451e-6`, complementarity
+`2.3818176330330057e-4`, zero accepted caps, and zero fallback. Evidence:
+
+- `/tmp/fbf_author_card_house_4_source_correction_exact36_20260721/timeline.json`,
+  SHA-256 `686be7170e3c217bfa917698a449e7ecde40e500a2c87d073ed58ba2ac833bfb`;
+- `/tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json`,
+  SHA-256 `1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77`.
+
+The residual improves only `0.471590382%`, and the small primal violation is
+new. This closes one source mismatch but does not clear or move the blocker.
+
+The pinned author control completes all 2,400 substeps but reports 1,455
+converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
+split is 1,332/268 and the release-and-after split is 123/677; first false and
+first cap indices are 33 and 35. Worst natural `final_residual` is
+`2.59804445965485`, and worst per-step final checked `r_coulomb` is
+`7.597910320688573`. History:
+`/tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json`,
+SHA-256 `b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd`.
+Zero-cap completion is therefore a strict scientific gate, not
+source-equivalent continuation semantics. A future physical/video lane that
+continues finite unconverged iterates must be separately labeled and retain
+per-step convergence/cap/plateau and residual telemetry; it is not implemented
+in this checkpoint.
 
 The boxed control completes 100 steps. Its timeline is
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
@@ -584,7 +614,8 @@ steps, but 1,106/3,231 solves cap and worst residual reaches
 does not reach release and boxed remains bounded to 100 steps. This does not
 establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
-superiority. It remains an adapter-only lane.
+superiority. It remains an adapter-only lane. The next isolated mismatch is
+per-outer frozen-cone inner initialization; it is not part of this checkpoint.
 The older reconstructed `fbf_paper_card_house_26` lane remains distinct.
 
 ### Pinned-Author Masonry-Arch Scientific Negative
@@ -833,9 +864,15 @@ publishes no multicore CPU reference.
 ## Current Verification
 
 - Current-source four-level author-card demo build: passed.
-- Current-source four-level author-card C++ fixtures: 8/8 passed.
-- Visual runner after registering the source-selected schedule: 205/205
+- Exact-Coulomb math: 54/54 passed.
+- Exact constraint solver: 30/30 passed.
+- Current-source four-level author-card C++ fixtures: 8/8 passed; the full
+  paper fixture binary reports 31 passed and 3 explicit stress skips.
+- Visual runner with the source-selected correction contract: 207/207
   passed.
+- Shared-library ABI symbol inspection retains the pre-existing nine-argument
+  `recordLastFailedExactCoulombAttempt` symbol and adds only the two public
+  post-correction policy methods.
 - Exact and boxed adapter-contract smoke validators: passed.
 - The four current-head Clang/FreeBSD compile failures share one polymorphic
   `typeid` warning-as-error in the new card-house contract. The local
@@ -905,10 +942,15 @@ cross-platform CI.
 
 ## Remaining Completion Gates
 
-- Correct the source-selected four-level adapter's precisely characterized
-  completed-step-35 exact failure, then complete its 2,400-step exact and boxed
-  trajectories through the step-1,600 release with quantitative outcome and
-  current-build media gates. Keep it distinct from the reconstructed
+- Test the next isolated pinned-source mismatch: initialize each frozen-cone
+  inner solve from the current outer reaction rather than DART's previous
+  inner trial. Do not combine that A/B with tolerance, iteration-cap, fallback,
+  fail-fast, or accepted-cap changes. Then correct the source-selected
+  four-level adapter's completed-step-35 exact failure and complete its strict
+  2,400-step exact and boxed trajectories through the step-1,600 release. In
+  parallel, define the separately labeled telemetry-rich source-continuation
+  physical/video lane without presenting unconverged steps as exact success.
+  Keep both distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.

@@ -128,6 +128,13 @@ struct ExactCoulombFbfOptions
   /// Relaxation applied to the accepted FBF correction.
   double outerRelaxation = 1.0;
 
+  /// Project the forward-backward-forward correction back onto the cone.
+  ///
+  /// Enabled by default to preserve DART's existing exact-Coulomb behavior.
+  /// Disable only when reproducing a source solver that accepts the raw FBF
+  /// correction before evaluating the next outer iteration.
+  bool projectAfterCorrection = true;
+
   /// Accept a trial when gamma * ||B(y) - B(x)|| / ||y - x|| <= this value.
   double couplingVariationTolerance = 0.9;
 
@@ -2149,22 +2156,29 @@ ExactCoulombFbfResult solveExactCoulombFbf(
     previousInnerReaction = trialReaction;
 
     correctedReaction = trialReaction - stepSize * (trialCoupling - coupling);
-    if (!projectExactCoulombReactionNormalFirst(
-            correctedReaction, problem.coefficients, projectedCorrection)) {
-      result.status = ExactCoulombFbfStatus::InvalidInput;
-      return result;
-    }
-    if (options.outerRelaxation == 1.0) {
-      result.reaction = projectedCorrection;
-    } else {
-      relaxedReaction
-          = result.reaction
-            + options.outerRelaxation * (projectedCorrection - result.reaction);
+    if (options.projectAfterCorrection) {
       if (!projectExactCoulombReactionNormalFirst(
-              relaxedReaction, problem.coefficients, result.reaction)) {
+              correctedReaction, problem.coefficients, projectedCorrection)) {
         result.status = ExactCoulombFbfStatus::InvalidInput;
         return result;
       }
+      if (options.outerRelaxation == 1.0) {
+        result.reaction = projectedCorrection;
+      } else {
+        relaxedReaction = result.reaction
+                          + options.outerRelaxation
+                                * (projectedCorrection - result.reaction);
+        if (!projectExactCoulombReactionNormalFirst(
+                relaxedReaction, problem.coefficients, result.reaction)) {
+          result.status = ExactCoulombFbfStatus::InvalidInput;
+          return result;
+        }
+      }
+    } else if (options.outerRelaxation == 1.0) {
+      result.reaction = correctedReaction;
+    } else {
+      result.reaction
+          += options.outerRelaxation * (correctedReaction - result.reaction);
     }
 
     result.stepSize = stepSize;

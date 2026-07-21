@@ -411,6 +411,16 @@ public:
   ExactCoulombFbfCrossStepPolicyOptions getExactCoulombCrossStepPolicyOptions()
       const;
 
+  /// Enable projection of each accepted FBF correction back onto the cone.
+  ///
+  /// Enabled by default to preserve the established DART exact-Coulomb path.
+  /// The opt-out is retained in implementation-side state so this additive
+  /// source-reproduction policy does not change the public class layout.
+  void setExactCoulombPostCorrectionProjectionEnabled(bool enabled);
+
+  /// Whether accepted FBF corrections are projected back onto the cone.
+  bool getExactCoulombPostCorrectionProjectionEnabled() const;
+
   // Documentation inherited.
   void setFromOtherConstraintSolver(const ConstraintSolver& other) override;
 

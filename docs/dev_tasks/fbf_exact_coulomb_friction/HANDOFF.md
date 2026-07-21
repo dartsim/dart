@@ -492,7 +492,7 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 8 author-card C++ tests, 205 visual-runner Python tests, and
+- The demo build, 8 author-card C++ tests, 207 visual-runner Python tests, and
   exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
@@ -501,6 +501,30 @@ Current-source four-level Figure 6 adapter truth:
   4.1039190451256334e-4. Timeline:
   /tmp/fbf_author_card_house_4_exact100_last_failure_current_source_20260721/timeline.json;
   SHA-256 2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d.
+- The pinned source defaults `project_after_correction=false`. The current
+  checkpoint adds an ABI-neutral default-on DART policy and disables it only
+  for this source-selected exact adapter. Strict 36- and 100-step replays still
+  fail at completed step 35 with identical diagnostics: 56 contacts, 200
+  iterations, residual/best/dual 4.0845653576327421e-4, primal
+  3.9380158679450451e-6, complementarity 2.3818176330330057e-4, zero accepted
+  caps, and zero fallbacks. Timelines and SHA-256:
+  /tmp/fbf_author_card_house_4_source_correction_exact36_20260721/timeline.json,
+  686be7170e3c217bfa917698a449e7ecde40e500a2c87d073ed58ba2ac833bfb;
+  /tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json,
+  1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77.
+  The residual improvement is only 0.471590382%, and the new small primal
+  violation means the strict claim boundary is unchanged.
+- The pinned author control completes all 2,400 substeps but marks only 1,455
+  converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
+  1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
+  worst natural `final_residual` is 2.59804445965485 and worst per-step final
+  checked `r_coulomb` is 7.597910320688573. History:
+  /tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json;
+  SHA-256 b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd.
+  Zero-cap completion is a strict scientific DART gate, not source-equivalent
+  continuation semantics. A future source-continuation physical/video lane
+  must be separate and preserve per-step convergence/cap/plateau/residual
+  telemetry; do not implement or claim it in this checkpoint.
 - The boxed control completes 100 steps. Timeline:
   /tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json;
   SHA-256 fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc.
@@ -759,8 +783,8 @@ Evidence truth:
 
 Latest recorded focused gates:
 
-- exact math 47/47 Release;
-- exact constraint solver 29/29;
+- exact math 54/54 Release;
+- exact constraint solver 30/30;
 - ConstraintSolver 64/64;
 - Native collision 42/42;
 - masonry wedge dynamics 3/3;
@@ -780,7 +804,9 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level author-card C++ fixtures passed 8/8;
-- visual runner with the new source-selected schedule passed 205/205;
+- visual runner with the source-selected correction contract passed 207/207;
+- shared-library symbol inspection retained the existing nine-argument
+  failure-record method and found both additive correction-policy methods;
 - four-level exact and boxed adapter contract smoke passed;
 - the shared current-head Clang/FreeBSD polymorphic-`typeid` compile failure is
   fixed locally; a Clang 22 warning-as-error syntax check passes, with remote
@@ -808,7 +834,12 @@ Immediate order:
    backspin, and frozen impact-v1 negative bundles alongside the
    arch101-v7 and card-v2 blockers. The source-selected four-level card
    adapter's completed-step-35 exact failure is precisely characterized but
-   not corrected; next pursue a targeted solver correction, then continue its
+   not corrected. Next isolate the pinned source's per-outer frozen-cone inner
+   initialization (current outer reaction versus DART's previous inner trial)
+   without changing tolerance, caps, fallback, fail-fast, or accepted-cap
+   policy. Separately design the telemetry-rich source-continuation
+   physical/video lane without calling unconverged steps exact success; then
+   continue its
    strict full-duration card/media work, remaining smaller-figure, and
    separately declared source-equivalent impact work; inspect decoded media
    and do not promote v2 raw timings.
