@@ -538,11 +538,13 @@ shown by `--help` and rejects hash or segment-boundary drift.
   does not erase its separate strict failure.
 - Produce valid full-duration card/arch media only after every requested step
   satisfies the strict exact-solver and physical-outcome contracts.
-- The new raw-scale 25-stone author adapter currently fails strict exact-FBF at
-  completed step 68 (`inner_solver_failed`, 24 contacts, residual
-  `2.5749e-4`) before the runner's step-1,600 release. Do not promote its
-  bounded boxed step-100 smoke or create an exact comparison clip from this
-  failed trajectory.
+- The raw-scale 25-stone author adapter now clears the former step-68 local-QP
+  failure and completes a strict 100-step exact smoke with zero accepted
+  caps/failures/fallbacks. Its next clean fail-fast blocker is the outer
+  iteration cap at step 142 (`max_iterations`, 96 contacts, residual
+  `8.6992952e-4`, zero local exact failures), still before the runner's
+  step-1,600 release. Do not promote this bounded trajectory or create an exact
+  comparison clip from it.
 - Preserve card-manifold v2 as diagnostic-only sensitivity evidence; its two
   non-strict trajectories and raw wall times cannot promote media.
 - Keep the frozen crown-impact v1 negative unchanged. Any revised impact

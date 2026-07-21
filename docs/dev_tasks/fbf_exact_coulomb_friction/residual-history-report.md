@@ -322,18 +322,49 @@ dynamics. The bundle establishes no DART or cross-solver dynamics, trajectory,
 physical-outcome, Fig. 7/video.07, timing, repeatability, or media parity.
 
 A separately named DART dynamics adapter now binds the raw-scale initial state
-and exact/boxed solver contracts. Its current strict exact smoke fails at
-completed step 68, where contacts rise from 16 to 24: 58/60 exact attempts
-solve, two return `inner_solver_failed`, terminal residual is
-`2.5749187816086726e-4`, worst residual is `3.1701669939914346e-4`, and caps
-and fallbacks remain zero. A boxed smoke reaches step 100. This is a local
-fail-closed diagnostic, not a 2,000-step residual history or impact result.
-Read-only GDB probes attribute the two failures to finite exact-metric local
-solves that exhaust the 4,096-step polish and narrowly miss only the existing
-boundary-complementarity certificate (1.1757x and 1.4630x its tolerance). The
-3x3 Hessians are SPD with condition number about 2.67. Enabling the existing
-projected-gradient retry only advances the strict run to a new failure at step
-69, so it is not promotable evidence or a robust fix.
+and exact/boxed solver contracts. Read-only probes isolated the former step-68
+failure to finite, well-conditioned 3x3 boundary systems whose large reactions
+made the scalar complementarity dot product cancellation-sensitive. The
+current local-QP change preserves the ordinary KKT fast path and its
+primal/dual tolerances, then checks a rejected positive-friction boundary
+candidate through fused long-double normal-cone stationarity. This is an
+independent approximate KKT certificate: exact KKT is equivalent, while its
+floating-point tolerance decision deliberately avoids multiplying
+component-level gradient error by the large reaction. The ordinary scalar-gap
+predicate is unchanged, and the current path does not perturb the candidate.
+
+The clean no-compiler-cache 100-step run at
+`/tmp/fbf_author_arch_exact100_normal_cone_clean_v3/` completes every requested
+step. At step 68 it reports residual `9.8373696597135509e-7`, 60/60 exact
+attempts, zero accepted caps/failures/fallbacks, 58 warm starts, and 24
+contacts. At step 100 it reports residual `9.9838678932416298e-7`, 124/124
+exact attempts, zero accepted caps/failures/fallbacks, 122 warm starts, 48
+contacts, and trajectory worst residual `9.9936331058309156e-7`. The timeline
+SHA-256 is `6ba8978194286532bb3d253b87154c2454941bc00ee90c536a522adbcc7efb21`.
+
+The clean no-compiler-cache 200-step fail-fast run at
+`/tmp/fbf_author_arch_exact200_normal_cone_clean_v3/` reaches a distinct outer
+convergence failure. Step 141 succeeds at residual
+`9.9900048932672015e-7` after 839 iterations, with 210/210 local solves, zero
+caps/failures/fallbacks, and 88 contacts. Step 142 raises contacts to 96; all
+211 local attempts have solved, but the outer solve exhausts 5,000 iterations,
+is accepted at the cap, and ends at residual `8.6992951837150444e-4`. The
+fail-fast reason is `iteration_cap`; the timeline SHA-256 is
+`be8819eabe57127edcb234bf03250c9e4875452710f6eeb8d7310b45dbceace8`.
+Both commands are preserved in the timeline `runtime_command` fields and use
+the named scene, `--threads 1`, `--headless-exact-fbf-fail-fast`, and
+respectively `--steps 100` and `--steps 200`. This is a local diagnostic, not a
+2,000-step residual history, release, or impact result.
+
+Rejected experiments remain non-evidence. FMA-only and long-double
+scalar-gap-only variants still failed step 68 after a clean rebuild. Global
+gamma/tolerance widening changed the acceptance boundary and was rejected.
+The existing projected-gradient retry only moved the failure to step 69.
+Radial/cubic ULP-neighbor searches produced later cascades and were removed.
+Earlier apparent long-run successes were contaminated by a stale rejected
+gamma-bound build and must not be cited. A long-double boundary-multiplier
+Newton prototype was also removed after review because the rejected candidates
+already satisfied the normal-cone certificate and no Newton update was needed.
 
 ## Pinned-Author Incline Sweep Scientific Negative
 
