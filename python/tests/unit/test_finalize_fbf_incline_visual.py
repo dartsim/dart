@@ -1494,6 +1494,40 @@ def test_timeout_cleanup_propagates_force_kill_permission_error(monkeypatch):
     assert signals.count(module.signal.SIGKILL) >= 1
 
 
+def test_forceful_cleanup_kills_group_before_darwin_orphan_eperm(monkeypatch):
+    module = _load_module()
+    leader_reaped = False
+    descendant_alive = True
+    events = []
+
+    class Process:
+        pid = 12345
+
+        def communicate(self):
+            nonlocal leader_reaped
+            events.append("reap leader")
+            leader_reaped = True
+            return "stdout", "stderr"
+
+    def signal_group(process_group_id, signal_number):
+        nonlocal descendant_alive
+        assert process_group_id == 12345
+        if leader_reaped and descendant_alive:
+            raise PermissionError("Darwin orphaned process group")
+        events.append(signal_number)
+        if signal_number == module.signal.SIGKILL:
+            descendant_alive = False
+
+    monkeypatch.setattr(module.os, "killpg", signal_group)
+
+    assert module._terminate_process_group(Process(), graceful=False) == (
+        "stdout",
+        "stderr",
+    )
+    assert events == [module.signal.SIGKILL, "reap leader"]
+    assert descendant_alive is False
+
+
 def test_run_command_timeout_terminates_the_descendant_process_group(tmp_path):
     module = _load_module()
     child_pid_path = tmp_path / "child.pid"
@@ -1615,6 +1649,10 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
         "time.sleep(60)"
     )
     real_popen = subprocess.Popen
+    real_killpg = module.os.killpg
+    leader_reaped = False
+    force_kill_sent = False
+    signals = []
 
     class InterruptingPopen:
         def __init__(self, *args, **kwargs):
@@ -1630,6 +1668,7 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
             return self._process.returncode
 
         def communicate(self, *args, **kwargs):
+            nonlocal leader_reaped
             if not self._interrupted:
                 self._interrupted = True
                 deadline = time.monotonic() + 2.0
@@ -1637,14 +1676,27 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
                     time.sleep(0.01)
                 assert child_pid_path.is_file()
                 raise KeyboardInterrupt
-            return self._process.communicate(*args, **kwargs)
+            result = self._process.communicate(*args, **kwargs)
+            leader_reaped = True
+            return result
+
+    def signal_group(process_group_id, signal_number):
+        nonlocal force_kill_sent
+        if leader_reaped and not force_kill_sent:
+            raise PermissionError("Darwin orphaned process group")
+        real_killpg(process_group_id, signal_number)
+        signals.append(signal_number)
+        if signal_number == module.signal.SIGKILL:
+            force_kill_sent = True
 
     monkeypatch.setattr(module.subprocess, "Popen", InterruptingPopen)
+    monkeypatch.setattr(module.os, "killpg", signal_group)
     with pytest.raises(KeyboardInterrupt):
         module._run_command([sys.executable, "-c", parent_code], timeout=30.0)
 
+    assert signals == [module.signal.SIGKILL]
     child_pid = int(child_pid_path.read_text(encoding="utf-8"))
-    time.sleep(0.6)
+    time.sleep(1.7)
     assert not late_write_path.exists()
     stat_path = Path(f"/proc/{child_pid}/stat")
     if stat_path.is_file():
