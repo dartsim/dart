@@ -112,7 +112,7 @@
 
   * Disable MSVC whole-program optimization (`/GL` plus link-time `/LTCG`) in the
     Windows CI C++/dartpy test build so the MSVC Release build stays under the
-    job timeout. `/GL` cannot be cached by `sccache`, so it forced a multi-hour
+    job timeout. `/GL`'s link-time `/LTCG` codegen pass forced a multi-hour
     rebuild every run and intermittently overran the 300-minute limit; the
     published wheels keep whole-program optimization and are still tested. Add
     the `DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION` CMake option (also honored

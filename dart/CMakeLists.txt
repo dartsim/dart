@@ -225,7 +225,7 @@ endif()
 
 if(MSVC AND NOT DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION)
   # /LTCG pairs with the /GL whole-program objects; skip it when whole-program
-  # optimization is disabled so no uncached link-time codegen remains.
+  # optimization is disabled so no link-time codegen pass remains.
   set_target_properties(dart PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
 endif()
 
