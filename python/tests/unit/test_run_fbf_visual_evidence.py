@@ -1,6 +1,7 @@
 import dataclasses
 import importlib.util
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -1173,6 +1174,259 @@ def _author_card_house_adapter_contract(
     }
 
 
+def _author_painleve_adapter_contract(module, *, solver_lane="exact", mu=0.5):
+    exact = solver_lane == "exact"
+    scene = "fbf_author_painleve_mu_0_5" if mu == 0.5 else "fbf_author_painleve_mu_0_55"
+    identity = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ]
+    return {
+        "schema_version": "dart.fbf_author_painleve_dynamics_adapter/v1",
+        "kind": "source_configuration_dynamics_adapter",
+        "source_binding": {
+            "repository": "https://github.com/matthcsong/fbf-sca-2026",
+            "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+            "painleve_run_blob": "afaa03613b0ad0a30290168d2fd64221fc3523b7",
+            "painleve_run_py_sha256": (
+                "818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3"
+            ),
+            "configuration_spec_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfAuthorPainleveSpec.hpp"
+            ),
+            "exact_solver_options_sha256": module._sha256(
+                ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+            ),
+            "demo_implementation_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+            ),
+        },
+        "source_configuration": {
+            "gravity_m_s2": 9.81,
+            "box_width_m": 0.3,
+            "box_height_m": 0.6,
+            "box_depth_m": 1.2,
+            "density_kg_m3": 200.0,
+            "mass_kg": 43.2,
+            "initial_velocity_m_s": 4.0,
+            "critical_friction": 0.5,
+            "time_step_seconds": 1.0 / 60.0,
+            "duration_seconds": 2.0,
+            "total_steps": 120,
+            "source_default_mu_values": [0.55],
+            "selected_source_supported_mu_sweep": [0.5, 0.55],
+            "ground_half_extents_m": [5.0, 1.5, 0.05],
+            "box_initial_pose": {
+                "translation_m": [0.0, 0.0, 0.3],
+                "rotation": identity,
+            },
+            "contact": {
+                "friction": mu,
+                "gap_m": 0.005,
+                "shape_stiffness": 10000.0,
+                "shape_damping": 1000.0,
+            },
+        },
+        "dart_adapter": {
+            "scene_id": scene,
+            "world": {
+                "time_step_seconds": 1.0 / 60.0,
+                "gravity_m_s2": [0.0, 0.0, -9.81],
+                "simulation_threads": 1,
+                "deactivation_enabled": False,
+            },
+            "collision": {
+                "detector": "native",
+                "contact_manifold": "four_point_planar",
+                "max_contacts": 4,
+                "max_contacts_per_pair": 4,
+            },
+            "solver": {
+                "lane": "exact_fbf" if exact else "boxed_lcp",
+                "configuration_policy": "source_gamma_c_5_strict_dart_adapter",
+                "split_impulse_enabled": False,
+                "exact_options": (
+                    {
+                        "max_outer_iterations": 1000,
+                        "tolerance": 1e-6,
+                        "inner_max_sweeps": 120,
+                        "inner_local_iterations": 32,
+                        "step_size_scale": 10.0,
+                        "step_size_persistence_enabled": True,
+                        "persistent_step_size_safe_bound_scale": 10.0,
+                        "post_correction_projection_enabled": True,
+                        "fallback_to_boxed_lcp_enabled": True,
+                    }
+                    if exact
+                    else None
+                ),
+            },
+            "ground": {
+                "mobile": False,
+                "size_m": [10.0, 3.0, 0.1],
+                "initial_pose": {
+                    "translation": [0.0, 0.0, -0.05],
+                    "rotation": identity,
+                },
+                "friction": mu,
+            },
+            "box": {
+                "mobile": True,
+                "size_m": [0.3, 1.2, 0.6],
+                "initial_pose": {
+                    "translation": [0.0, 0.0, 0.3],
+                    "rotation": identity,
+                },
+                "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+                "initial_angular_velocity_rad_s": [0.0, 0.0, 0.0],
+                "friction": mu,
+                "mass_kg": 43.2,
+                "moment_kg_m2": [
+                    [6.48, 0.0, 0.0],
+                    [0.0, 1.62, 0.0],
+                    [0.0, 0.0, 5.508],
+                ],
+            },
+        },
+        "adapter_boundaries": {
+            "source_contact_gap_recorded_m": 0.005,
+            "source_contact_gap_semantics_implemented": False,
+            "source_shape_stiffness_semantics_implemented": False,
+            "source_shape_damping_semantics_implemented": False,
+            "source_collision_backend_implemented": False,
+            "source_solver_backend_semantics_implemented": False,
+            "source_float32_semantics_implemented": False,
+            "dart_native_four_point_planar_is_adapter_choice": True,
+        },
+        "claim_boundary": {
+            "current_source_parameterized_configuration_port": True,
+            "historical_paper_invocation_known": False,
+            "trajectory_valid": False,
+            "physical_outcome_valid": False,
+            "trajectory_equivalence": False,
+            "solver_equivalence": False,
+            "physical_outcome_equivalence": False,
+            "fig05_parity": False,
+            "video05_parity": False,
+            "timing_comparability": False,
+            "paper_parity": False,
+        },
+    }
+
+
+def _author_painleve_scene_state(step, *, time_step=1.0 / 60.0):
+    pitch = 0.1 * step
+    sine = math.sin(pitch)
+    cosine = math.cos(pitch)
+    rotation = [
+        [cosine, 0.0, sine],
+        [0.0, 1.0, 0.0],
+        [-sine, 0.0, cosine],
+    ]
+    state = {
+        "world_time_seconds": step * time_step,
+        "position_x_m": 0.4 * step,
+        "position_y_m": 0.05 * step,
+        "position_z_m": 0.3,
+        "body_up_x": sine,
+        "body_up_y": 0.0,
+        "body_up_z": cosine,
+        "uprightness_cosine": cosine,
+        "pitch_rad": pitch,
+        "linear_velocity_x_m_s": 4.0 - 0.25 * step,
+        "linear_velocity_y_m_s": 0.0,
+        "linear_velocity_z_m_s": 0.0,
+        "angular_velocity_x_rad_s": 0.0,
+        "angular_velocity_y_rad_s": 0.2 * step,
+        "angular_velocity_z_rad_s": 0.0,
+    }
+    for row in range(3):
+        for column in range(3):
+            state[f"rotation_{row}{column}"] = rotation[row][column]
+    return state
+
+
+def _author_painleve_scene_state_trace(schedule, last_step):
+    return [
+        {
+            "step": step,
+            "sim_time": schedule.time_at_step(step),
+            "scene_state": _author_painleve_scene_state(
+                step, time_step=schedule.time_step_seconds
+            ),
+        }
+        for step in range(last_step + 1)
+    ]
+
+
+def _author_painleve_outcome_trace(
+    schedule,
+    outcome_class,
+    *,
+    horizontal_travel_m=1.6,
+    terminal_linear_speed_m_s=0.001,
+    terminal_angular_speed_rad_s=0.003,
+):
+    if outcome_class == "upright_near_rest":
+        target_pitch = 0.0
+        target_height = 0.3
+    elif outcome_class == "tumbled_near_rest":
+        target_pitch = math.acos(-0.05)
+        target_height = 0.136
+    else:
+        raise ValueError(outcome_class)
+
+    trajectory = []
+    settle_step = 105
+    for step in range(schedule.total_steps + 1):
+        fraction = min(step / settle_step, 1.0)
+        pitch = target_pitch * fraction
+        sine = math.sin(pitch)
+        cosine = math.cos(pitch)
+        rotation = [
+            [cosine, 0.0, sine],
+            [0.0, 1.0, 0.0],
+            [-sine, 0.0, cosine],
+        ]
+        terminal = step >= settle_step
+        state = {
+            "world_time_seconds": schedule.time_at_step(step),
+            "position_x_m": horizontal_travel_m * fraction,
+            "position_y_m": 0.0,
+            "position_z_m": 0.3 + (target_height - 0.3) * fraction,
+            "body_up_x": sine,
+            "body_up_y": 0.0,
+            "body_up_z": cosine,
+            "uprightness_cosine": cosine,
+            "pitch_rad": pitch,
+            "linear_velocity_x_m_s": (
+                terminal_linear_speed_m_s if terminal else (4.0 if step == 0 else 0.5)
+            ),
+            "linear_velocity_y_m_s": 0.0,
+            "linear_velocity_z_m_s": 0.0,
+            "angular_velocity_x_rad_s": 0.0,
+            "angular_velocity_y_rad_s": (
+                terminal_angular_speed_rad_s
+                if terminal
+                else (0.0 if step == 0 else 0.2)
+            ),
+            "angular_velocity_z_rad_s": 0.0,
+        }
+        for row in range(3):
+            for column in range(3):
+                state[f"rotation_{row}{column}"] = rotation[row][column]
+        trajectory.append(
+            {
+                "step": step,
+                "sim_time": schedule.time_at_step(step),
+                "scene_state": state,
+            }
+        )
+    return trajectory
+
+
 def test_schedule_matrix_covers_every_requested_visual_case():
     module = _load_module()
 
@@ -1189,6 +1443,8 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "turntable_author_mu05_omega5",
         "painleve_mu05",
         "painleve_mu055",
+        "painleve_author_mu05",
+        "painleve_author_mu055",
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
         "card_house_26",
@@ -1213,6 +1469,10 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "turntable_author_mu05_omega5",
     )
     assert module.PAINLEVE_MEMBERS == ("painleve_mu05", "painleve_mu055")
+    assert module.AUTHOR_PAINLEVE_MEMBERS == (
+        "painleve_author_mu05",
+        "painleve_author_mu055",
+    )
 
 
 def test_incline_mismatch_distinguishes_render_and_trace_contact_counts():
@@ -2182,6 +2442,7 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         path.read_text(encoding="utf-8")
         for path in (
             ROOT / "examples/demos/scenes/FbfAuthorTurntableSpec.hpp",
+            ROOT / "examples/demos/scenes/FbfAuthorPainleveSpec.hpp",
             ROOT / "examples/demos/scenes/FbfAuthorCardHouseSpec.hpp",
             ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
             ROOT / "examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp",
@@ -2210,6 +2471,8 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
             "fbf_author_turntable_mu_0_5_omega_5"
         ),
         "makeFbfPaperPainleveMu055Scene": "fbf_paper_painleve_mu_0_55",
+        "makeFbfAuthorPainleveMu05Scene": "fbf_author_painleve_mu_0_5",
+        "makeFbfAuthorPainleveMu055Scene": "fbf_author_painleve_mu_0_55",
         "makeFbfPaperCardHouse10DynamicScene": ("fbf_paper_card_house_10_dynamic"),
         "makeFbfAuthorCardHouse4ImpactCurrentSourceScene": (
             "fbf_author_card_house_4_impact_current_source"
@@ -2378,6 +2641,8 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "turntable_author_mu05_omega5",
             "painleve_mu05",
             "painleve_mu055",
+            "painleve_author_mu05",
+            "painleve_author_mu055",
             "card_house_10_construction",
             "card_house_author_5_construction",
             "card_house_author_4_impact_current_source",
@@ -2397,6 +2662,8 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "turntable_author_mu05_omega5": "fbf_author_turntable_mu_0_5_omega_5",
         "painleve_mu05": "fbf_paper_painleve",
         "painleve_mu055": "fbf_paper_painleve_mu_0_55",
+        "painleve_author_mu05": "fbf_author_painleve_mu_0_5",
+        "painleve_author_mu055": "fbf_author_painleve_mu_0_55",
         "card_house_10_construction": "fbf_paper_card_house_10",
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
         "card_house_author_4_impact_current_source": (
@@ -2427,13 +2694,17 @@ def test_capture_schedules_select_the_required_collision_frontend():
     module = _load_module()
     output_root = Path("/tmp/out")
 
-    native_members = set(module.AUTHOR_TURN_TABLE_MEMBERS) | {
-        "card_house_author_5_construction",
-        "card_house_author_4_impact_current_source",
-        "card_house_author_4_impact_source_continuation_current_source",
-        "masonry_arch_25_literal_standing",
-        "masonry_arch_25_author_crown_impact_current_source",
-    }
+    native_members = (
+        set(module.AUTHOR_TURN_TABLE_MEMBERS)
+        | set(module.AUTHOR_PAINLEVE_MEMBERS)
+        | {
+            "card_house_author_5_construction",
+            "card_house_author_4_impact_current_source",
+            "card_house_author_4_impact_source_continuation_current_source",
+            "masonry_arch_25_literal_standing",
+            "masonry_arch_25_author_crown_impact_current_source",
+        }
+    )
     legacy_members = set(module.SCHEDULES) - native_members
     assert {
         module.SCHEDULES[member].collision_detector for member in legacy_members
@@ -2549,6 +2820,472 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
     assert exact_report["release_action_completed_step"] == 1600
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
     assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_painleve_adapter_contract_binds_source_mass_and_lanes(tmp_path):
+    module = _load_module()
+    exact = module.SCHEDULES["painleve_author_mu05"]
+    boxed = module._derive_boxed_schedule(exact)
+    exact_report = module._validate_author_painleve_adapter_contract(
+        exact,
+        {"physics_contract": _author_painleve_adapter_contract(module)},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_painleve_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_painleve_adapter_contract(
+                module, solver_lane="boxed"
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["friction"] == boxed_report["friction"] == 0.5
+    assert exact_report["mass_kg"] == boxed_report["mass_kg"] == 43.2
+    assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_painleve_adapter_contract_rejects_mass_or_lane_drift(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu055"]
+    contract = _author_painleve_adapter_contract(module, mu=0.55)
+    contract["dart_adapter"]["box"]["mass_kg"] = 216.0
+    with pytest.raises(ValueError, match="author Painleve box changed"):
+        module._validate_author_painleve_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "mass-drift.json",
+        )
+
+    contract = _author_painleve_adapter_contract(module, mu=0.55)
+    contract["dart_adapter"]["solver"]["lane"] = "boxed_lcp"
+    with pytest.raises(ValueError, match="author Painleve solver contract changed"):
+        module._validate_author_painleve_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "lane-drift.json",
+        )
+
+    contract = _author_painleve_adapter_contract(module, mu=0.55)
+    contract["source_binding"]["painleve_run_py_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="author Painleve source hashes changed"):
+        module._validate_author_painleve_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "source-hash-drift.json",
+        )
+
+    contract = _author_painleve_adapter_contract(module, mu=0.55)
+    contract["source_binding"]["exact_solver_options_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="author Painleve source hashes changed"):
+        module._validate_author_painleve_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "solver-options-hash-drift.json",
+        )
+
+    contract = _author_painleve_adapter_contract(module, mu=0.55)
+    contract["source_configuration"]["box_width_m"] = 0.6
+    with pytest.raises(
+        ValueError, match="author Painleve source configuration changed"
+    ):
+        module._validate_author_painleve_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "physics-drift.json",
+        )
+
+
+def test_author_painleve_scene_state_trace_reports_threshold_free_metrics(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu05"]
+    trajectory = _author_painleve_scene_state_trace(schedule, 2)
+
+    report = module._validate_author_painleve_scene_state_trace(
+        schedule,
+        trajectory,
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=2,
+    )
+
+    assert report["scene_id"] == schedule.scene
+    assert report["body_name"] == "painleve_author_box"
+    assert report["sample_count"] == 3
+    assert report["initial"]["step"] == 0
+    assert report["final"]["step"] == 2
+    assert report["displacement_m"] == pytest.approx([0.8, 0.1, 0.0])
+    assert report["horizontal_displacement_m"] == pytest.approx(math.hypot(0.8, 0.1))
+    assert report["maximum_absolute_pitch_rad"] == pytest.approx(0.2)
+    assert report["minimum_uprightness_cosine"] == pytest.approx(math.cos(0.2))
+    assert report["maximum_angular_speed_rad_s"] == pytest.approx(0.4)
+    assert "outcome" not in json.dumps(report).lower()
+    assert "classification" not in json.dumps(report).lower()
+
+
+def test_author_painleve_sidecar_returns_scene_state_metrics(tmp_path):
+    module = _load_module()
+    schedule = module.dataclasses.replace(
+        module.SCHEDULES["painleve_author_mu05"],
+        total_steps=2,
+        frame_stride=1,
+        panel_steps=(0, 2),
+        panel_labels=("initial", "final"),
+        width=640,
+        height=480,
+    )
+    output_dir = tmp_path / schedule.id
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["physics_contract"] = _author_painleve_adapter_contract(module)
+    for item in sidecar["steps"]:
+        item["scene_state"] = _author_painleve_scene_state(
+            item["step"], time_step=schedule.time_step_seconds
+        )
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    report = module.validate_sidecar(schedule, output_dir)
+
+    assert report["pass"] is True
+    assert report["scene_state_metrics"]["sample_count"] == 3
+    assert report["scene_state_metrics"]["scene_id"] == schedule.scene
+    assert report["steps"]["0"]["scene_state"]["position_x_m"] == 0.0
+    assert report["steps"]["2"]["scene_state"]["position_x_m"] == 0.8
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("length", "trace length"),
+        ("step", "steps are out of order"),
+        ("time", "time mismatch"),
+        ("missing_state", "is missing"),
+        ("field_set", "fields changed or are non-finite"),
+        ("nonfinite", "fields changed or are non-finite"),
+        ("rotation", "rotation is not orthonormal"),
+        ("body_up", "body-up vector disagrees"),
+        ("uprightness", "uprightness disagrees"),
+        ("pitch", "pitch disagrees"),
+    ],
+)
+def test_author_painleve_scene_state_trace_rejects_drift(tmp_path, mutation, message):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu055"]
+    trajectory = _author_painleve_scene_state_trace(schedule, 2)
+    expected_last_step = 2
+    if mutation == "length":
+        trajectory.pop()
+    elif mutation == "step":
+        trajectory[1]["step"] = 2
+    elif mutation == "time":
+        trajectory[1]["sim_time"] += 0.01
+    elif mutation == "missing_state":
+        del trajectory[1]["scene_state"]
+    elif mutation == "field_set":
+        del trajectory[1]["scene_state"]["position_x_m"]
+    elif mutation == "nonfinite":
+        trajectory[1]["scene_state"]["position_x_m"] = math.inf
+    elif mutation == "rotation":
+        trajectory[1]["scene_state"]["rotation_00"] = 2.0
+    elif mutation == "body_up":
+        trajectory[1]["scene_state"]["body_up_x"] += 0.1
+    elif mutation == "uprightness":
+        trajectory[1]["scene_state"]["uprightness_cosine"] -= 0.1
+    elif mutation == "pitch":
+        trajectory[1]["scene_state"]["pitch_rad"] += 0.1
+    else:
+        raise AssertionError(mutation)
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_painleve_scene_state_trace(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=expected_last_step,
+        )
+
+
+def test_author_painleve_outcome_classifier_accepts_preregistered_four_cell_matrix(
+    tmp_path,
+):
+    module = _load_module()
+    cells = (
+        ("painleve_author_mu05", "exact", "upright_near_rest", 1.5987),
+        ("painleve_author_mu05", "boxed", "upright_near_rest", 1.5977),
+        ("painleve_author_mu055", "exact", "tumbled_near_rest", 1.5399),
+        ("painleve_author_mu055", "boxed", "upright_near_rest", 1.6622),
+    )
+
+    for schedule_id, lane, expected_class, travel in cells:
+        source = module.SCHEDULES[schedule_id]
+        schedule = source if lane == "exact" else module._derive_boxed_schedule(source)
+        trajectory = _author_painleve_outcome_trace(
+            schedule, expected_class, horizontal_travel_m=travel
+        )
+
+        report = module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / f"{schedule.id}.json",
+            expected_last_step=120,
+        )
+
+        assert report["expected_class"] == expected_class
+        assert report["observed_class"] == expected_class
+        assert report["terminal_window"]["start_step"] == 105
+        assert report["terminal_window"]["end_step"] == 120
+        assert report["terminal_window"]["sample_count"] == 16
+        assert report["horizontal_travel_m"] == pytest.approx(travel)
+        assert report["pass"] is True
+
+
+def test_author_painleve_outcome_classifier_uses_complete_terminal_window(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu05"]
+    trajectory = _author_painleve_outcome_trace(schedule, "upright_near_rest")
+    trajectory[105]["scene_state"]["linear_velocity_x_m_s"] = 0.020001
+
+    with pytest.raises(ValueError, match="terminal window is not near rest"):
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=120,
+        )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("initial_position", "initial state changed"),
+        ("initial_linear_velocity", "initial state changed"),
+        ("initial_angular_velocity", "initial state changed"),
+        ("zero_travel", "horizontal travel is below"),
+    ],
+)
+def test_author_painleve_outcome_classifier_binds_source_motion(
+    tmp_path, mutation, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu05"]
+    travel = 0.0 if mutation == "zero_travel" else 1.6
+    trajectory = _author_painleve_outcome_trace(
+        schedule,
+        "upright_near_rest",
+        horizontal_travel_m=travel,
+    )
+    if mutation == "initial_position":
+        trajectory[0]["scene_state"]["position_x_m"] = 0.01
+    elif mutation == "initial_linear_velocity":
+        trajectory[0]["scene_state"]["linear_velocity_x_m_s"] = 0.5
+    elif mutation == "initial_angular_velocity":
+        trajectory[0]["scene_state"]["angular_velocity_y_rad_s"] = 0.01
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=120,
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("linear_speed", "angular_speed", "upright_height", "tumbled_height"),
+)
+def test_author_painleve_outcome_classifier_rejects_pose_or_motion_boundary_violation(
+    tmp_path, mutation
+):
+    module = _load_module()
+    tumbled = mutation == "tumbled_height"
+    schedule = module.SCHEDULES[
+        "painleve_author_mu055" if tumbled else "painleve_author_mu05"
+    ]
+    trajectory = _author_painleve_outcome_trace(
+        schedule, "tumbled_near_rest" if tumbled else "upright_near_rest"
+    )
+    state = trajectory[110]["scene_state"]
+    if mutation == "linear_speed":
+        state["linear_velocity_x_m_s"] = 0.020001
+        message = "not near rest"
+    elif mutation == "angular_speed":
+        state["angular_velocity_y_rad_s"] = 0.100001
+        message = "not near rest"
+    elif mutation == "upright_height":
+        state["position_z_m"] = 0.249999
+        message = "pose is unclassified"
+    else:
+        state["position_z_m"] = 0.220001
+        message = "pose is unclassified"
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=120,
+        )
+
+
+def test_author_painleve_outcome_classifier_rejects_expected_class_mismatch(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu055"]
+    trajectory = _author_painleve_outcome_trace(schedule, "upright_near_rest")
+
+    with pytest.raises(ValueError, match="does not match expected"):
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=120,
+        )
+
+
+def test_author_painleve_outcome_classifier_rejects_partial_trace(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu05"]
+    trajectory = _author_painleve_outcome_trace(schedule, "upright_near_rest")[:-1]
+
+    with pytest.raises(ValueError, match="requires the complete 121-sample trace"):
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=119,
+        )
+
+
+def test_author_painleve_outcome_report_preserves_narrow_claim_boundary(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["painleve_author_mu05"]
+    report = module._validate_author_painleve_dart_adapter_outcome(
+        schedule,
+        _author_painleve_outcome_trace(schedule, "upright_near_rest"),
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=120,
+    )
+
+    assert report["schema_version"] == (
+        "dart.fbf_author_painleve_dart_adapter_outcome/v1"
+    )
+    assert report["claim_scope"] == "current_dart_adapter_only"
+    assert report["automated_current_dart_adapter_outcome_validated"] is True
+    assert report["source_backend_equivalent"] is False
+    assert report["trajectory_equivalent"] is False
+    assert report["paper_figure_parity"] is False
+    assert report["solver_superiority"] is False
+
+
+@pytest.mark.parametrize(
+    ("schedule_id", "expected_relation"),
+    [
+        ("painleve_author_mu05", "same_upright_near_rest"),
+        ("painleve_author_mu055", "exact_tumbled_boxed_upright"),
+    ],
+)
+def test_author_painleve_mu055_solver_comparison_requires_cross_lane_divergence(
+    tmp_path, schedule_id, expected_relation
+):
+    module = _load_module()
+    exact = module.SCHEDULES[schedule_id]
+    boxed = module._derive_boxed_schedule(exact)
+    group = module._derive_solver_comparison_group(exact)
+    expected = {
+        lane: module.AUTHOR_PAINLEVE_EXPECTED_OUTCOMES[(schedule_id, lane)]
+        for lane in module.SOLVER_LANES
+    }
+    outcomes = [
+        module._validate_author_painleve_dart_adapter_outcome(
+            schedule,
+            _author_painleve_outcome_trace(
+                schedule,
+                expected[schedule.solver_lane],
+                horizontal_travel_m=travel,
+            ),
+            sidecar_path=tmp_path / f"{schedule.id}.json",
+            expected_last_step=120,
+        )
+        for schedule, travel in ((exact, 1.54), (boxed, 1.66))
+    ]
+
+    report = module._validate_author_painleve_solver_comparison(
+        group,
+        [exact, boxed],
+        outcomes,
+        label=group.id,
+    )
+
+    assert report["expected_relation"] == expected_relation
+    assert report["observed_relation"] == expected_relation
+    assert report["boxed_minus_exact_horizontal_travel_m"] == pytest.approx(0.12)
+    assert report["solver_superiority"] is False
+    assert report["paper_figure_parity"] is False
+    if schedule_id.endswith("mu055"):
+        classes = [member["outcome_class"] for member in report["members"]]
+        assert classes == ["tumbled_near_rest", "upright_near_rest"]
+
+
+@pytest.mark.parametrize("mutation", ("collapsed", "swapped"))
+def test_author_painleve_solver_comparison_rejects_collapsed_or_swapped_lanes(
+    tmp_path, mutation
+):
+    module = _load_module()
+    exact = module.SCHEDULES["painleve_author_mu055"]
+    boxed = module._derive_boxed_schedule(exact)
+    group = module._derive_solver_comparison_group(exact)
+    exact_outcome = module._validate_author_painleve_dart_adapter_outcome(
+        exact,
+        _author_painleve_outcome_trace(exact, "tumbled_near_rest"),
+        sidecar_path=tmp_path / "exact.json",
+        expected_last_step=120,
+    )
+    boxed_outcome = module._validate_author_painleve_dart_adapter_outcome(
+        boxed,
+        _author_painleve_outcome_trace(boxed, "upright_near_rest"),
+        sidecar_path=tmp_path / "boxed.json",
+        expected_last_step=120,
+    )
+    if mutation == "collapsed":
+        boxed_outcome = dict(boxed_outcome)
+        boxed_outcome["observed_class"] = "tumbled_near_rest"
+        outcomes = [exact_outcome, boxed_outcome]
+    else:
+        outcomes = [boxed_outcome, exact_outcome]
+
+    with pytest.raises(ValueError, match="comparison outcome claim changed"):
+        module._validate_author_painleve_solver_comparison(
+            group,
+            [exact, boxed],
+            outcomes,
+            label=group.id,
+        )
+
+
+def test_demo_scene_state_provider_is_typed_and_fail_closed():
+    setup = (ROOT / "examples/demos/DemoScene.hpp").read_text(encoding="utf-8")
+    host = (ROOT / "examples/demos/DemoHost.cpp").read_text(encoding="utf-8")
+    painleve = (ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    assert "std::function<SceneStateFields()> sceneStateProvider" in setup
+    assert "JsonObjectValidator" not in host
+    assert "stepResult.sceneState = mCurrentSceneStateProvider()" in host
+    assert "stepResult.sceneState->empty()" in host
+    assert "!keys.insert(field.first).second" in host
+    assert "!std::isfinite(field.second)" in host
+    assert 'out << ", \\"scene_state\\": {"' in host
+    provider_capture = host.index(
+        "stepResult.sceneState = mCurrentSceneStateProvider()"
+    )
+    fail_fast_gate = host.index("if (timeline.exactFbfFailFast)", provider_capture)
+    assert provider_capture < fail_fast_gate
+    assert "setup.sceneStateProvider = [world, scenario]" in painleve
 
 
 def test_author_card_house_source_continuation_contract_is_exact_lane_additive(
@@ -3082,6 +3819,90 @@ def test_plan_reports_all_parameter_adapters_as_runnable():
         "MU .5 SLIDE REST",
         "MU .55 SHORT TRAVEL TUMBLE",
     ]
+    assert plan["group_outputs"]["painleve_author"]["labels"] == [
+        "MU .5",
+        "MU .55",
+    ]
+
+
+def test_author_painleve_schedule_is_source_pinned_and_outcome_gated():
+    module = _load_module()
+
+    assert module.REQUIRED_VIDEO_SCHEDULES["painleve"] == (
+        "painleve_author_mu05",
+        "painleve_author_mu055",
+    )
+    expected_exact_outcomes = {
+        "painleve_author_mu05": "upright_near_rest",
+        "painleve_author_mu055": "tumbled_near_rest",
+    }
+    for member, expected_mu in zip(module.AUTHOR_PAINLEVE_MEMBERS, ("0.5", "0.55")):
+        schedule = module.SCHEDULES[member]
+        configuration = schedule.configuration_dict()
+        assert schedule.total_steps == 120
+        assert schedule.time_step_seconds == pytest.approx(1.0 / 60.0)
+        assert schedule.panel_steps == (0, 30, 60, 90, 120)
+        assert len(schedule.video_steps) == 61
+        assert schedule.collision_detector == "native"
+        assert schedule.collision_detector_override is False
+        assert schedule.pre_run_actions == ("e", "e")
+        assert configuration["author_run_blob"] == (
+            "afaa03613b0ad0a30290168d2fd64221fc3523b7"
+        )
+        assert configuration["mu"] == expected_mu
+        assert configuration["mass_kg"] == "43.2"
+        assert configuration["outcome"] == (
+            f"{expected_exact_outcomes[member]} under the current exact DART adapter"
+        )
+        assert schedule.known_gate_blockers == ()
+        plan = module.schedule_plan(schedule, Path("dart-demos"), Path("/tmp/out"))
+        assert plan["evidence_ready"] is True
+        command = module.build_demo_command(
+            schedule, Path("dart-demos"), Path("/tmp/out")
+        )
+        assert [
+            command[index + 1]
+            for index, value in enumerate(command)
+            if value == "--headless-action"
+        ] == ["e", "e"]
+        boxed = module._derive_boxed_schedule(schedule)
+        boxed_plan = module.schedule_plan(boxed, Path("dart-demos"), Path("/tmp/out"))
+        assert boxed_plan["evidence_ready"] is False
+        assert boxed_plan["known_gate_blockers"] == []
+        assert boxed.pre_run_actions == ("e",)
+        assert boxed.configuration_dict()["outcome"] == (
+            "upright_near_rest under the current boxed DART adapter"
+        )
+
+    group = module.GROUP_OUTPUTS["painleve_author"]
+    assert group.members == module.AUTHOR_PAINLEVE_MEMBERS
+    assert group.labels == ("MU .5", "MU .55")
+    assert group.resolved_panel_steps == (120, 120)
+    assert all(
+        outcome not in " ".join(group.labels).lower()
+        for outcome in ("rest", "travel", "tumble")
+    )
+
+    exact_groups, _ = module._group_outputs_for_solver_lane("exact")
+    boxed_groups, _ = module._group_outputs_for_solver_lane("boxed")
+    exact_group = next(item for item in exact_groups if item.id == "painleve_author")
+    boxed_group = next(
+        item for item in boxed_groups if item.id == "painleve_author__boxed"
+    )
+    assert exact_group.solver_lane == "exact"
+    assert boxed_group.solver_lane == "boxed"
+    assert boxed_group.source_group_id == "painleve_author"
+    assert boxed_group.members == tuple(
+        f"{member}__boxed" for member in module.AUTHOR_PAINLEVE_MEMBERS
+    )
+
+    comparisons = module._solver_comparison_groups(
+        [module.SCHEDULES[member] for member in module.AUTHOR_PAINLEVE_MEMBERS],
+        "both",
+    )
+    assert [item.members for item in comparisons] == [
+        (member, f"{member}__boxed") for member in module.AUTHOR_PAINLEVE_MEMBERS
+    ]
 
 
 def test_author_turntable_schedule_is_source_pinned_and_real_time_sampled():
@@ -3608,7 +4429,9 @@ def test_group_member_contract_rejects_mixed_schedule_time_steps(tmp_path):
         )
 
 
-@pytest.mark.parametrize("group_id", ["turntable", "turntable_author", "painleve"])
+@pytest.mark.parametrize(
+    "group_id", ["turntable", "turntable_author", "painleve", "painleve_author"]
+)
 def test_group_panel_uses_labeled_source_order_and_full_decode(
     tmp_path, monkeypatch, group_id
 ):
@@ -3931,6 +4754,78 @@ def test_existing_verification_rejects_changed_requested_demo_hash(
     )
 
     with pytest.raises(ValueError, match="requested demo hash changed"):
+        module._verify_existing(
+            schedule,
+            demo=demo,
+            output_root=output_root,
+            ffmpeg=Path("ffmpeg"),
+            ffprobe=Path("ffprobe"),
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("steps", "physics_contract", "scene_state_metrics"),
+)
+def test_existing_verification_binds_complete_timeline_report(
+    tmp_path, monkeypatch, mutation
+):
+    module = _load_module()
+    schedule = dataclasses.replace(_test_schedule(module), encode_mp4=False)
+    output_root = tmp_path / "captures"
+    output_dir = output_root / schedule.id
+    output_dir.mkdir(parents=True)
+    demo = (tmp_path / "dart-demos").resolve()
+    demo.write_bytes(b"current-demo")
+    panel = output_dir / "panel.png"
+    panel.write_bytes(b"panel")
+    expected_command = module.build_demo_command(schedule, demo, output_dir)
+    fresh_timeline = {
+        "sidecar": str(output_dir / "timeline.json"),
+        "frames": {},
+        "steps": {"0": {"sim_time": 0.0, "scene_state": {"position_x_m": 0.0}}},
+        "physics_contract": {"source_binding": {"sha256": "fresh"}},
+        "scene_state_metrics": {"sample_count": 3},
+    }
+    stored_timeline = json.loads(json.dumps(fresh_timeline))
+    if mutation == "steps":
+        stored_timeline["steps"]["0"]["sim_time"] = 1.0
+    elif mutation == "physics_contract":
+        stored_timeline["physics_contract"]["source_binding"]["sha256"] = "stale"
+    else:
+        stored_timeline["scene_state_metrics"]["sample_count"] = 2
+    metadata = {
+        "schema_version": module.SCHEMA_VERSION,
+        "kind": "capture_result",
+        "schedule": module.schedule_plan(schedule, demo, output_root),
+        "runtime": {
+            "demo_path": str(demo),
+            "demo_argv": expected_command,
+            "demo_sha256": module._sha256(demo),
+        },
+        "timeline_validation": stored_timeline,
+        "actual_simulator": True,
+        "generated_imagery": False,
+        "paper_comparable": False,
+        "automated_semantic_outcome_validated": False,
+        "semantic_outcome_gate": module.CAPTURE_SEMANTIC_OUTCOME_GATE,
+        "known_mismatches": list(schedule.mismatches),
+        "pass": True,
+    }
+    (output_dir / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+    monkeypatch.setattr(
+        module,
+        "validate_sidecar",
+        lambda *_args, **_kwargs: fresh_timeline,
+    )
+    monkeypatch.setattr(
+        module,
+        "build_verdict",
+        lambda _path: {"pass": True, "reasons": []},
+    )
+    monkeypatch.setattr(module, "_validate_media", lambda *_args, **_kwargs: [])
+
+    with pytest.raises(ValueError, match="timeline validation binding changed"):
         module._verify_existing(
             schedule,
             demo=demo,

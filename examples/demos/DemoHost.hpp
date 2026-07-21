@@ -364,6 +364,7 @@ private:
   std::optional<CameraHome> mCurrentCameraHome;
   ScenePanelDocumentation mCurrentSceneDocumentation;
   std::function<std::string()> mCurrentPhysicsContractProvider;
+  std::function<SceneStateFields()> mCurrentSceneStateProvider;
   std::vector<std::function<void()>> mExtraTeardowns;
 
   std::string mCurrentSceneId;

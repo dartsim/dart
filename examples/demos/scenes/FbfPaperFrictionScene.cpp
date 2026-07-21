@@ -38,6 +38,7 @@
 
 #include "FbfAuthorCardHouseSpec.hpp"
 #include "FbfAuthorMasonryArchDartAdapter.hpp"
+#include "FbfAuthorPainleveSpec.hpp"
 #include "FbfAuthorTurntableSpec.hpp"
 #include "FbfLiteralMasonryArchSpec.hpp"
 #include "Scenes.hpp"
@@ -900,6 +901,84 @@ WorldPtr createPainleveWorld(
       friction,
       Eigen::Vector4d(0.90, 0.58, 0.12, 1.0),
       Eigen::Vector3d(kPainleveInitialVelocity, 0.0, 0.0)));
+  return world;
+}
+
+//==============================================================================
+SkeletonPtr createAuthorPainleveBox(double friction)
+{
+  using namespace fbf_author_painleve;
+  auto skeleton = Skeleton::create("painleve_author_box");
+  auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).first;
+  auto* body = skeleton->getBodyNode(0u);
+  auto shape = std::make_shared<BoxShape>(boxSize());
+  auto* node = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  node->getVisualAspect()->setRGBA(Eigen::Vector4d(0.90, 0.58, 0.12, 1.0));
+  node->getDynamicsAspect()->setFrictionCoeff(friction);
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(boxMass());
+  inertia.setMoment(shape->computeInertia(boxMass()));
+  body->setInertia(inertia);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = 0.5 * kBoxHeight;
+  joint->setPositions(FreeJoint::convertToPositions(transform));
+  joint->setLinearVelocity(Eigen::Vector3d(kInitialVelocity, 0.0, 0.0));
+  return skeleton;
+}
+
+//==============================================================================
+void configureAuthorPainleveSolver(const WorldPtr& world, SolverMode mode)
+{
+  using namespace fbf_author_painleve;
+  const auto manifoldMode = dart::collision::NativeCollisionDetector::
+      ContactManifoldMode::FourPointPlanar;
+  if (mode == SolverMode::ExactFbf) {
+    auto solver
+        = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
+            makeExactSolverOptions());
+    auto* exactSolver = solver.get();
+    solver->setCollisionDetector(createFbfPaperCollisionDetector(manifoldMode));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+    exactSolver->setExactCoulombCrossStepPolicyOptions(
+        makeExactCrossStepPolicyOptions());
+  } else {
+    auto solver
+        = std::make_unique<dart::constraint::BoxedLcpConstraintSolver>();
+    solver->setCollisionDetector(createFbfPaperCollisionDetector(manifoldMode));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+  }
+
+  auto& option = world->getConstraintSolver()->getCollisionOption();
+  option.maxNumContacts = kMaxContacts;
+  option.maxNumContactsPerPair = kMaxContactsPerPair;
+}
+
+//==============================================================================
+WorldPtr createAuthorPainleveWorld(
+    const std::string& name, SolverMode mode, double friction)
+{
+  using namespace fbf_author_painleve;
+  auto world = dart::simulation::World::create(name);
+  configureWorldBase(world);
+  world->setTimeStep(kTimeStep);
+  configureAuthorPainleveSolver(world, mode);
+
+  Eigen::Isometry3d groundTransform = Eigen::Isometry3d::Identity();
+  groundTransform.translation().z() = -kGroundHalfExtentZ;
+  world->addSkeleton(createStaticBox(
+      "painleve_author_ground",
+      groundSize(),
+      groundTransform,
+      friction,
+      Eigen::Vector4d(0.45, 0.47, 0.50, 1.0)));
+  world->addSkeleton(createAuthorPainleveBox(friction));
   return world;
 }
 
@@ -2061,6 +2140,70 @@ DemoScene makeFbfPaperPainleveParameterizedScene(
       });
 }
 
+//==============================================================================
+DemoScene makeFbfAuthorPainleveParameterizedScene(
+    const fbf_author_painleve::ScenarioSpec& scenario, const std::string& title)
+{
+  using namespace fbf_author_painleve;
+  return makeFbfPaperScene(
+      scenario.demoScene,
+      title,
+      "Source-pinned public-author Painleve configuration executed through "
+      "DART exact/boxed dynamics adapters.",
+      CameraHome{
+          ::osg::Vec3d(5.0, -5.5, 2.8),
+          ::osg::Vec3d(1.2, 0.0, 0.3),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [scenario](const auto& state) {
+        return createAuthorPainleveWorld(
+            scenario.demoScene, state->solverMode, scenario.friction);
+      },
+      kMaxContacts,
+      kMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c: a "
+      "0.3 x 1.2 x 0.6 m box at density 200 kg/m^3 (mass 43.2 kg), "
+      "upright at z=.3 m with vx=4 m/s, on a finite 10 x 3 x .1 m "
+      "ground. The fixed step is 1/60 s and the evidence horizon is 2 s.",
+      "The evidence runner classifies only complete 120-step traces over the "
+      "final 0.25 s. Under this DART adapter, both mu=.5 lanes are expected to "
+      "finish upright and near rest; at mu=.55, exact is expected to finish "
+      "tumbled and near rest while boxed remains upright. Partial and "
+      "interactive runs are not classified.",
+      "This ports the public source's dimensions, density, mass/inertia, pose, "
+      "velocity, gravity, time step, duration, and selected source-supported "
+      "mu sweep. Native FourPointPlanar contact, DART solver numerics, float64 "
+      "arithmetic, camera, materials, and rendering are adapter choices. The "
+      "source gap=.005, ke=1e4, and kd=1e3 values are recorded provenance, not "
+      "equivalent DART contact semantics; no trajectory, outcome, Fig. 5, "
+      "video, timing, or paper parity is claimed.",
+      true,
+      SolverMode::ExactFbf,
+      [scenario](const WorldPtr&, const std::shared_ptr<FbfPaperState>&) {
+        ImGui::Separator();
+        ImGui::TextDisabled("Pinned author parameters");
+        ImGui::Text("Friction coefficient: %.2f (fixed)", scenario.friction);
+        ImGui::TextUnformatted("Box: .3 x 1.2 x .6 m; mass 43.2 kg");
+        ImGui::TextUnformatted("vx=4 m/s; dt=1/60 s; horizon=2 s");
+      },
+      [scenario](
+          DemoSceneSetup& setup,
+          const WorldPtr& world,
+          const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world, scenario] {
+          return physicsContractJson(inspectPhysicsContract(
+              world, scenario, DART_FBF_AUTHOR_PAINLEVE_IMPLEMENTATION_SHA256));
+        };
+        setup.sceneStateProvider = [world, scenario] {
+          return sceneStateFields(world, scenario);
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        configureAuthorPainleveSolver(world, mode);
+      });
+}
+
 } // namespace
 
 //==============================================================================
@@ -2335,6 +2478,22 @@ DemoScene makeFbfPaperPainleveMu055Scene()
       "numerical parameters are unavailable.",
       "At mu=.55, the exact-FBF proxy should travel less than the mu=.5 cell "
       "and then tumble within the 2.5-second headless observation window.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorPainleveMu05Scene()
+{
+  return makeFbfAuthorPainleveParameterizedScene(
+      fbf_author_painleve::kScenarios[0u],
+      "FBF Author Painleve: mu=.5 (Current Source)");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorPainleveMu055Scene()
+{
+  return makeFbfAuthorPainleveParameterizedScene(
+      fbf_author_painleve::kScenarios[1u],
+      "FBF Author Painleve: mu=.55 (Current Source)");
 }
 
 //==============================================================================

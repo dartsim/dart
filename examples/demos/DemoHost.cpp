@@ -56,6 +56,7 @@
 #include <iostream>
 #include <limits>
 #include <thread>
+#include <unordered_set>
 
 #include <cctype>
 #include <cerrno>
@@ -681,6 +682,7 @@ struct HeadlessStepResult
 {
   std::size_t step = 0u;
   double simTime = 0.0;
+  std::optional<SceneStateFields> sceneState;
   SolverDiagnosticsSnapshot diagnostics;
 };
 
@@ -866,6 +868,19 @@ bool writeHeadlessSidecar(
     out << (i == 0u ? "\n" : ",\n") << "    {\"step\": " << step.step
         << ", \"sim_time\": ";
     writeJsonNumber(out, step.simTime);
+    if (step.sceneState.has_value()) {
+      out << ", \"scene_state\": {";
+      for (std::size_t fieldIndex = 0u; fieldIndex < step.sceneState->size();
+           ++fieldIndex) {
+        const auto& field = (*step.sceneState)[fieldIndex];
+        if (fieldIndex != 0u)
+          out << ',';
+        writeJsonString(out, field.first);
+        out << ':';
+        writeJsonNumber(out, field.second);
+      }
+      out << '}';
+    }
     out << ", \"solver_diagnostics\": ";
     writeSolverDiagnosticsJson(out, step.diagnostics);
     out << '}';
@@ -1677,6 +1692,7 @@ void DemoHost::teardownCurrentScene()
   mCurrentCameraHome.reset();
   mCurrentSceneDocumentation = ScenePanelDocumentation{};
   mCurrentPhysicsContractProvider = nullptr;
+  mCurrentSceneStateProvider = nullptr;
   mCurrentSceneId.clear();
   mCurrentSceneTitle.clear();
 }
@@ -1746,6 +1762,7 @@ void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
   mCurrentCameraHome = setup.cameraHome;
   mCurrentSceneDocumentation = scene.scenePanelDocumentation;
   mCurrentPhysicsContractProvider = std::move(setup.physicsContractProvider);
+  mCurrentSceneStateProvider = std::move(setup.sceneStateProvider);
 
   for (const auto& frame : setup.dragFrames) {
     if (!frame)
@@ -2169,6 +2186,38 @@ int DemoHost::runHeadlessTimeline(
     stepResult.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
     stepResult.diagnostics
         = captureSolverDiagnostics(mCurrentWorld, &diagnosticsCursor);
+    if (mCurrentSceneStateProvider) {
+      try {
+        stepResult.sceneState = mCurrentSceneStateProvider();
+      } catch (const std::exception& e) {
+        std::cerr << "[headless] scene-state provider failed for demo '"
+                  << requestedScene << "' at completed step " << step << ": "
+                  << e.what() << "\n";
+        return 1;
+      } catch (...) {
+        std::cerr << "[headless] scene-state provider failed for demo '"
+                  << requestedScene << "' at completed step " << step
+                  << ": unknown error\n";
+        return 1;
+      }
+      if (stepResult.sceneState->empty()) {
+        std::cerr << "[headless] scene-state provider for demo '"
+                  << requestedScene << "' returned no fields at completed step "
+                  << step << ".\n";
+        return 1;
+      }
+      std::unordered_set<std::string> keys;
+      for (const auto& field : *stepResult.sceneState) {
+        if (field.first.empty() || !keys.insert(field.first).second
+            || !std::isfinite(field.second)) {
+          std::cerr << "[headless] scene-state provider for demo '"
+                    << requestedScene
+                    << "' returned an empty/duplicate key or non-finite value "
+                    << "at completed step " << step << ".\n";
+          return 1;
+        }
+      }
+    }
     stepResults.push_back(stepResult);
 
     if (timeline.exactFbfFailFast) {

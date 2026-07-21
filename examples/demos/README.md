@@ -33,6 +33,8 @@ pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_cur
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
+pixi run demos -- --scene fbf_author_painleve_mu_0_5
+pixi run demos -- --scene fbf_author_painleve_mu_0_55
 pixi run demos -- --scene fbf_paper_card_aframe
 pixi run demos -- --scene fbf_paper_card_house_26
 pixi run demos -- --scene fbf_paper_card_house_10
@@ -47,6 +49,21 @@ interactive angular-speed slider. The three parameter-suffixed turntable scenes
 are fixed capture targets; together with the generic default they cover the
 paper's four parameter cells. Likewise, the generic Painleve proxy is the
 `mu=.5` cell and the suffixed scene fixes `mu=.55`.
+
+The separate `fbf_author_painleve_mu_0_5` and
+`fbf_author_painleve_mu_0_55` scenes preserve the current public author's
+0.3 x 1.2 x 0.6 m box, 200 kg/m^3 density (43.2 kg mass), upright pose,
+4 m/s launch speed, finite 10 x 3 x .1 m ground, 1/60 s step, and two-second
+horizon. The `.55` value is the source default; the `.5/.55` pair is a
+source-supported CLI sweep selected for the paper-video cells, not a recovered
+historical invocation. The exact scene maps the public CLI's `gamma_c=5` onto
+DART's adaptive safe-step convention (scale ten), retains strict `1e-6`
+convergence, and allows up to 1,000 DART outer iterations; this is an adapter
+policy, not solver-backend equivalence. Both lanes use Native FourPointPlanar
+contact. Source `gap=.005`, `ke=1e4`, and `kd=1e3` are recorded but not claimed
+as equivalent DART contact semantics. The older `fbf_paper_painleve*` scenes
+remain historical proxy diagnostics with different geometry, density, pose,
+velocity, and duration.
 
 The unsuffixed ten-level card scene remains a static construction inspector.
 `fbf_paper_card_house_10_dynamic` is a separate 155-mobile-card exact-FBF
