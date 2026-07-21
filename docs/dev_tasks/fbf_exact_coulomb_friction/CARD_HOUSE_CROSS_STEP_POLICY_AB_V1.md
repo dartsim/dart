@@ -237,8 +237,31 @@ the finalized manifold-sensitivity v2 bundle.
 
 ## Frozen v1 result
 
-Not executed yet. Fill this section only after the committed protocol and
-runner produce a provenance-complete bundle.
+Executed once on 2026-07-21 UTC from merged commit `2d1e98cceda` into the
+ignored local directory
+`assets/card_house_cross_step_policy_ab_v1_20260720/`. Both children ran in
+the frozen order with stable executable and dependency identities. The packet
+is structurally invalid and authorizes no promotion.
+
+The `dart_current` arm is a valid 90-step scientific negative: all 90 exact
+attempts were accepted at the 200-iteration cap, the whole-run worst scaled
+residual was `30.0279709536632`, and the terminal residual was
+`0.002833607911319349`. It had zero exact failures and zero boxed fallbacks,
+but it did not pass the strict gate.
+
+The author-inspired child also emitted 90 rows, but the v1 runner rejected it
+at step 81 with `exact diagnostics contract drifted`. That step had two exact
+groups. The executable correctly labeled both the legacy
+`exact_diagnostics_contract` field and the additive
+`last_exact_diagnostics_contract` field as
+`last_exact_group_only_multi_group_noncomparable`; the v1 validator
+incorrectly required the legacy single-group contact-row label on every row.
+This is a validator-contract defect, not an admissible scientific result.
+
+Per the no-retuning rule, v1 is not repaired or rerun. Any corrected parser
+must be preregistered as v2, retain the frozen simulation commands and policy
+parameters unchanged, use a new output directory, and bind the multi-group
+label to `step_exact_attempts > 1`.
 
 The frozen protocol-contract SHA-256 is
 `a2babf6d28f802fce85d49abf4231c5ac94f3db62747f73a093cbba5ee3db4b5`.
