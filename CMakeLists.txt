@@ -215,10 +215,11 @@ if(MSVC)
     "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON
     CATEGORY msvc
   )
-  # Whole-program optimization (/GL + link-time /LTCG) roughly triples the MSVC
-  # Release build time and cannot be cached by sccache. Keep it ON by default so
-  # shipped wheels stay optimized, but let the CI C++ test build disable it to
-  # keep the Windows job fast (the wheel jobs still exercise an optimized build).
+  # Whole-program optimization (/GL) defers code generation to a link-time /LTCG
+  # pass that optimizes across every translation unit at once, which roughly
+  # triples the MSVC Release build time. Keep it ON by default so shipped wheels
+  # stay optimized, but let the CI C++ test build disable it to keep the Windows
+  # job fast (the wheel jobs still exercise an optimized build).
   #
   # Seed the cache from the environment BEFORE dart_option() so CI can toggle it
   # for every cmake configure in the job without editing each pixi config task.

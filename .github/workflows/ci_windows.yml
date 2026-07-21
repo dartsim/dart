@@ -69,10 +69,10 @@ jobs:
       # Parallelize the ctest phase; the serial suite (incl. the ~350s long
       # pole) dominated the Windows job's ~90min wall-clock.
       CTEST_PARALLEL_LEVEL: 4
-      # Whole-program optimization (/GL + link-time /LTCG) cannot be cached by
-      # sccache and dominates the MSVC Release build time. Disable it for the CI
-      # C++/dartpy test build; the published wheels (publish_dartpy.yml) keep it
-      # on and are still tested there.
+      # Whole-program optimization (/GL) runs an expensive link-time /LTCG
+      # codegen pass that dominates the MSVC Release build time. Disable it for
+      # the CI C++/dartpy test build; the published wheels (publish_dartpy.yml)
+      # keep it on and are still tested there.
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
     # Fail fast on a regression instead of waiting for the ~6h default kill.
     # Sized generously for a first cold-sccache Ninja build.
