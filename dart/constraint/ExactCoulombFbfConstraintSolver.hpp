@@ -516,6 +516,13 @@ public:
   /// Clear retained multi-solve residual-history records.
   void clearExactCoulombResidualHistoryRecords();
 
+  /// Solver-route status from the most recent failed exact-Coulomb attempt.
+  ExactCoulombFbfConstraintSolverStatus getLastFailedExactCoulombStatus() const;
+
+  /// Build status from the most recent failed exact-Coulomb attempt.
+  detail::ExactCoulombConstraintBuildStatus
+  getLastFailedExactCoulombBuildStatus() const;
+
   /// FBF status from the most recent failed exact-Coulomb solve attempt.
   math::detail::ExactCoulombFbfStatus getLastFailedExactCoulombFbfStatus()
       const;
@@ -532,6 +539,13 @@ public:
   /// Full residual terms from the most recent failed exact-Coulomb solve.
   const math::detail::CoulombConeResidual&
   getLastFailedExactCoulombResidualDetails() const;
+
+  /// Contact count from the most recent failed exact-Coulomb solve attempt.
+  ///
+  /// This remains available when a later constrained group succeeds, so
+  /// trajectory diagnostics can identify the failed island rather than the
+  /// final group solved in the same World step.
+  std::size_t getLastFailedExactCoulombContactCount() const;
 
   /// Outer FBF iterations from the most recent failed exact-Coulomb solve.
   int getLastFailedExactCoulombIterations() const;

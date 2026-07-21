@@ -74,6 +74,7 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
                 "contacts": 0 if step == 0 else 1,
                 "exact_failures": 0,
                 "boxed_lcp_fallbacks": 0,
+                "last_failure": None,
             }
             if schedule.exact_fbf_required
             else (
@@ -192,6 +193,29 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
     (output_dir / "timeline.json").write_text(json.dumps(sidecar), encoding="utf-8")
 
 
+def _last_failure_diagnostics():
+    return {
+        "contact_count": 56,
+        "status": "fbf_failed",
+        "build_status": "success",
+        "fbf_status": "max_iterations",
+        "residual": 4.1e-4,
+        "primal_feasibility": 0.0,
+        "dual_feasibility": 4.1e-4,
+        "complementarity": 2.4e-4,
+        "worst_primal_contact": 0,
+        "worst_dual_contact": 11,
+        "worst_complementarity_contact": 11,
+        "best_residual": 4.1e-4,
+        "best_iteration": 200,
+        "iterations": 200,
+        "step_size": 2.77,
+        "safe_step_size": 0.277,
+        "coupling_variation_ratio": 0.0053,
+        "shrink_iterations": 0,
+    }
+
+
 def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
     diagnostics = {
         "boxed_lcp_fallbacks": 0,
@@ -201,6 +225,7 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "exact_solves": 0,
         "residual": None,
         "worst_residual": None,
+        "last_failure": _last_failure_diagnostics(),
     }
     clean_diagnostics = {
         "boxed_lcp_fallbacks": 0,
@@ -210,6 +235,7 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "exact_solves": 0,
         "residual": None,
         "worst_residual": None,
+        "last_failure": None,
     }
     steps = [
         {
@@ -968,6 +994,124 @@ def test_partial_fail_fast_sidecar_enforces_reason_priority(tmp_path):
         module._validate_failed_exact_fbf_sidecar(
             schedule, output_dir, expected_demo=demo
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("status", "success", "status"),
+        ("build_status", "garbage", "build_status"),
+        ("fbf_status", "garbage", "fbf_status"),
+        ("contact_count", 0, "FBF failure is inconsistent"),
+        ("residual", -1.0, "residual is invalid"),
+        ("worst_dual_contact", 56, "worst_dual_contact is out of range"),
+        ("best_iteration", 201, "best iteration exceeds iterations"),
+        ("residual", None, "residual terms are inconsistent"),
+        ("residual", 4.2e-4, "residual aggregate is inconsistent"),
+        ("step_size", 0.0, "step_size is invalid"),
+    ],
+)
+def test_last_failure_diagnostics_reject_incoherent_fields(field, value, message):
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"][field] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_last_failure_diagnostics_accepts_zero_iteration_cap():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"]["best_iteration"] = 0
+    diagnostics["last_failure"]["iterations"] = 0
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+@pytest.mark.parametrize(
+    ("step_size", "shrink_iterations"),
+    [(0.0, 1), (0.49, 2)],
+)
+def test_last_failure_diagnostics_accepts_step_size_underflow(
+    step_size, shrink_iterations
+):
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"].update(
+        {
+            "fbf_status": "step_size_underflow",
+            "best_iteration": 0,
+            "iterations": 0,
+            "step_size": step_size,
+            "shrink_iterations": shrink_iterations,
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_last_failure_diagnostics_rejects_solver_data_for_adapter_failure():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"].update(
+        {
+            "contact_count": 0,
+            "status": "invalid_options",
+            "build_status": "empty_input",
+            "fbf_status": "invalid_input",
+            "worst_primal_contact": -1,
+            "worst_dual_contact": -1,
+            "worst_complementarity_contact": -1,
+        }
+    )
+
+    with pytest.raises(ValueError, match="adapter failure is inconsistent"):
+        module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_last_failure_diagnostics_accepts_empty_adapter_failure_state():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"].update(
+        {
+            "contact_count": 0,
+            "status": "invalid_options",
+            "build_status": "empty_input",
+            "fbf_status": "invalid_input",
+            "residual": None,
+            "primal_feasibility": None,
+            "dual_feasibility": None,
+            "complementarity": None,
+            "worst_primal_contact": -1,
+            "worst_dual_contact": -1,
+            "worst_complementarity_contact": -1,
+            "best_residual": None,
+            "best_iteration": 0,
+            "iterations": 0,
+            "step_size": None,
+            "safe_step_size": None,
+            "coupling_variation_ratio": None,
+            "shrink_iterations": 0,
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
 
 
 def test_partial_fail_fast_sidecar_rejects_an_earlier_trigger(tmp_path):
