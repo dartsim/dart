@@ -1,8 +1,8 @@
 {
   "citations": {
     "crossref": 190,
-    "google_scholar": 396,
-    "google_scholar_checked": "2026-07-20",
+    "google_scholar": 397,
+    "google_scholar_checked": "2026-07-21",
     "google_scholar_manual_fallback": false,
     "indexed_max": 306,
     "indexed_min": 190,
@@ -17,7 +17,7 @@
       "label": "Gazebo gz-sim",
       "pushed_at": "2026-07-18T02:47:28Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1417
+      "stars": 1418
     },
     {
       "age": "within 1 year",
@@ -94,29 +94,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-20T07:33:24.010048Z",
+  "generated_at": "2026-07-21T05:40:23.818265Z",
   "packages": {
     "conda": {
-      "combined_gross": 1047815,
-      "dartpy": 255881,
-      "dartsim": 662194,
-      "dartsim-cpp": 129740
+      "combined_gross": 1050229,
+      "dartpy": 256775,
+      "dartsim": 663346,
+      "dartsim-cpp": 130108
     },
-    "homebrew_installs_365d": 18245,
-    "homebrew_on_request_365d": 1442,
+    "homebrew_installs_365d": 18250,
+    "homebrew_on_request_365d": 1446,
     "pepy_dartpy_all_time": 260838
   },
-  "since": "2025-07-20",
+  "since": "2025-07-21",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-20",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-21",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-20",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-21",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -134,16 +134,16 @@
     "contributors_login": 54,
     "contributors_with_anon": 78,
     "created_issues_12m": 29,
-    "created_prs_12m": 1374,
-    "forks": 300,
-    "latest_push": "2026-07-19",
+    "created_prs_12m": 1376,
+    "forks": 301,
+    "latest_push": "2026-07-21",
     "latest_release": "v6.19.4",
     "latest_release_date": "2026-07-19",
-    "merged_prs_12m": 1284,
+    "merged_prs_12m": 1288,
     "open_issues": 1,
-    "open_prs": 7,
+    "open_prs": 5,
     "releases_12m": 20,
-    "stars": 1160,
+    "stars": 1161,
     "watchers": 50
   },
   "traffic": {
