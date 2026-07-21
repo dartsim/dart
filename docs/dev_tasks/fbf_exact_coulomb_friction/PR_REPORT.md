@@ -25,10 +25,13 @@ natural-residual shortcut, 117 use the configured outer `coulomb_rel` gate,
 and the other 1,843 outer solves are nonconverged.
 
 A separately named source-configuration DART demo and 2,000-step capture
-schedule are now registered. Current strict exact execution fails closed at
-completed step 68 (`inner_solver_failed`, 24 contacts, residual `2.5749e-4`,
-zero fallback), while a boxed smoke reaches step 100. This is a diagnostic
-solver blocker, not completed impact evidence or promotable media.
+schedule are now registered. A clean current-build exact run clears the former
+step-68 local-QP failure and completes 100 steps with 124/124 exact attempts,
+zero accepted caps/failures/fallbacks, and worst residual `9.9936331e-7`. A
+fail-fast run instead reaches an outer iteration cap at step 142: all 211 local
+exact attempts solve, but the 5,000-iteration outer solve ends at residual
+`8.6992952e-4` with 96 contacts. This is a diagnostic solver blocker, not
+completed impact evidence or promotable media.
 
 The separate pinned-author incline sweep is also numeric current-source
 scientific-negative/reference evidence. It covers all seven Figure 1 friction

@@ -520,12 +520,15 @@ outcome, Fig. 7/video.07, timing, repeatability, or media parity is established.
 The separately named current-source DART adapter now executes that raw-scale
 configuration through exact-FBF or boxed LCP and declares the runner's
 2,000-step schedule without changing the frozen source or reconstructed-impact
-contracts. A fresh strict exact smoke fails at completed step 68 when contacts
-rise from 16 to 24: 58/60 exact attempts solve, two fail with
-`inner_solver_failed`, the terminal residual is `2.5749187816086726e-4`, and
-there are zero accepted caps or boxed fallbacks. The boxed lane reaches step
-100 in a bounded smoke. These local runs are diagnostic only: no full schedule,
-cube release, impact oracle, promotable media, or Fig. 7 parity follows.
+contracts. A clean current-build exact run clears the former step-68 local-QP
+failure and completes 100/100 steps: 124/124 exact attempts solve, with zero
+accepted caps, exact failures, or boxed fallbacks and worst residual
+`9.9936331058309156e-7`. A 200-step fail-fast run reaches a distinct outer
+convergence blocker at completed step 142, when contacts rise from 88 to 96:
+all 211 local exact attempts solve, but the outer loop exhausts 5,000
+iterations with residual `8.6992951837150444e-4` and one accepted cap. These
+local runs are diagnostic only: no full schedule, cube release, impact oracle,
+promotable media, or Fig. 7 parity follows.
 
 ## Preregistered Crown-Impact v1 Negative
 

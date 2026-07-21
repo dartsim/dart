@@ -535,10 +535,14 @@ repeatability, or visual/golden evidence.
 
 The separately named current-source DART adapter executes the same raw numeric
 configuration without changing the frozen source or crown-impact-v1 contracts.
-Its latest strict exact smoke fails closed at completed step 68 as contacts rise
-from 16 to 24: 58/60 attempts solve, two report `inner_solver_failed`, terminal
-residual is `2.5749187816086726e-4`, and caps/fallbacks remain zero. A boxed
-smoke reaches step 100. Both are local diagnostics only; the 2,000-step
+The clean current-build exact lane clears the former step-68 local-QP failure
+and completes 100/100 steps with 124/124 exact attempts, zero accepted
+caps/failures/fallbacks, and worst residual `9.9936331058309156e-7`. A
+200-step fail-fast run reaches a distinct outer iteration cap at step 142:
+211/211 local solves succeed, but the 5,000-iteration outer solve ends at
+residual `8.6992951837150444e-4` when contacts rise from 88 to 96. The current
+change uses a boundary normal-cone stationarity certificate after the unchanged
+ordinary KKT fast path. This remains a local diagnostic only; the 2,000-step
 schedule, release/impact oracle, valid media, and Fig. 7 parity remain blocked.
 
 ## Preregistered Crown-Impact v1 Negative

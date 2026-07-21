@@ -496,18 +496,23 @@ Pinned-author masonry-arch truth:
   the source collision/contact-gap/backend/float32 semantics. Claim no DART or
   cross-solver dynamics/trajectory/outcome equivalence, Fig. 7/video.07
   parity, timing, repeatability, pair-contact, or visual/golden evidence.
-- A separate current-source DART adapter now exposes exact/boxed lanes and the
-  runner's 2,000-step release schedule. Strict exact fails closed at completed
-  step 68 (`inner_solver_failed`, 24 contacts, residual
-  `2.5749187816086726e-4`, 58/60 solves, zero caps/fallbacks); boxed reaches
-  step 100. These are local bounded diagnostics, not release/impact/media
-  evidence. GDB isolates two finite exact-metric local solves that exhaust the
-  4,096-step polish and miss only the unchanged boundary-complementarity
-  certificate by 1.1757x and 1.4630x; their 3x3 Hessians are SPD with condition
-  number about 2.67. The existing projected-gradient retry clears step 68 but
-  fails at step 69, so preserve the failure and pursue a bounded
-  high-precision/ULP candidate polish that must still pass the existing KKT
-  predicate. Do not loosen tolerances, rescale the scene, or enable fallback.
+- A separate current-source DART adapter exposes exact/boxed lanes and the
+  runner's 2,000-step release schedule. The current local-QP change keeps the
+  ordinary KKT fast path and primal/dual tolerances, then certifies rejected
+  positive-friction boundary candidates with fused long-double normal-cone
+  stationarity. A clean exact run completes 100/100 steps with 124/124 local
+  solves, zero accepted caps/failures/fallbacks, and worst residual
+  `9.9936331058309156e-7`. The next fail-closed blocker is outer convergence at
+  step 142: 211/211 local solves succeed, but 5,000 outer iterations end at
+  residual `8.6992951837150444e-4` as contacts rise from 88 to 96. This is
+  local bounded evidence, not release/impact/media evidence.
+- Do not retry global tolerance/gamma widening, ULP-neighbor searches, or the
+  existing projected-gradient retry: they broadened acceptance or merely moved
+  the failure. FMA-only and long-double scalar-gap-only experiments still
+  failed after clean rebuild. Earlier apparent successes came from a stale
+  rejected gamma-bound build and are non-evidence. A boundary-multiplier Newton
+  prototype was unnecessary and removed; the current path does not mutate the
+  candidate or loosen the ordinary scalar-gap predicate.
 
 Current reconstructed crown-impact truth:
 
