@@ -3,11 +3,11 @@
 ## Status And Claim Boundary
 
 This record covers the source-selected four-level/26-card adapter at commit
-`a099ca0b29d38f2df13438da13b4d22599bdedb2` plus the additive diagnostics
-change that followed it. The scene and capture contract are implemented, but
-the strict exact lane does not yet reach the projectile release. This is a
-solver blocker, not Figure 6 outcome, media, paper-parity, or superiority
-evidence.
+`a099ca0b29d38f2df13438da13b4d22599bdedb2` plus the additive diagnostics and
+source-style correction policy in the current local checkpoint. The scene and
+capture contract are implemented, but the strict exact lane does not yet reach
+the projectile release. This is a solver blocker, not Figure 6 outcome, media,
+paper-parity, or superiority evidence.
 
 The adapter pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and the source-supported
@@ -19,6 +19,8 @@ matrices. The DART schedule contains 2,400 substeps at `dt=1/240 s` and invokes
 - ten fixed inner block-Gauss-Seidel sweeps;
 - adaptive gamma with the source-selected `gamma_c=5` mapping;
 - exact-metric local cone projection and warm start/gamma persistence;
+- source `project_after_correction=false`, opt-in only for this adapter while
+  the existing DART post-correction projection remains enabled by default;
 - no DART constraint regularization, boxed fallback, dense polish, or
   projected-gradient retry; and
 - `accept_outer_max_iterations=false` under the strict fail-fast gate.
@@ -68,6 +70,77 @@ SHA-256 2d04d31134426ac2c4fc87b1774d5285b77740acaeb3ec3a005557b85944bb9d
 ```
 
 This `/tmp` file is reproducible diagnostic output, not a repository artifact.
+
+## Source Post-Correction Projection A/B
+
+The pinned author solver defaults `project_after_correction=false`, while the
+initial DART reconstruction always projected the accepted FBF correction back
+onto the cone. The current checkpoint adds an ABI-neutral, default-on DART
+policy and disables it only for the source-selected four-level/26-card exact
+adapter. The five-level construction and every other exact-FBF caller retain
+the prior projected default. The adapter sidecar binds both the source and
+DART fields as `project_after_correction=false`.
+
+Strict replays isolate that single difference; no tolerance, iteration cap,
+fail-fast rule, fallback, or accepted-cap behavior changed:
+
+| Policy | Requested steps | First failure | Residual / primal / dual / complementarity |
+| --- | ---: | ---: | --- |
+| Projected DART baseline | 100 | 35 | `4.1039190451256334e-4` / `0` / `4.1039190451256334e-4` / `2.4220067503580449e-4` |
+| Source no-projection | 36 and 100 | 35 | `4.0845653576327421e-4` / `3.9380158679450451e-6` / `4.0845653576327421e-4` / `2.3818176330330057e-4` |
+
+Both no-projection requests stop on the same 56-contact group after 200 outer
+iterations. They record 103 attempts, 102 solves, one exact failure, zero
+accepted caps, and zero boxed fallbacks. The final/best residual improves only
+`0.471590382%`; the raw correction also introduces the recorded small primal
+violation. Gamma remains `2.7728679142488124` against safe gamma
+`0.27728679142488122`, the coupling-variation ratio is
+`0.015034809428848014`, and there are zero line-search shrinks.
+
+```text
+/tmp/fbf_author_card_house_4_source_correction_exact36_20260721/timeline.json
+SHA-256 686be7170e3c217bfa917698a449e7ecde40e500a2c87d073ed58ba2ac833bfb
+
+/tmp/fbf_author_card_house_4_source_correction_exact100_20260721/timeline.json
+SHA-256 1a76b71fc4558c7cb978eab410a95948ae50e66522e45dbded07dd36aeb11a77
+```
+
+The two replays have byte-identical `solver_diagnostics`; only the requested
+horizon and output path differ. This closes a real pinned-source semantic
+mismatch but does not clear or move the strict blocker.
+
+## Pinned Author Continuation Control
+
+The pinned author four-level/600-frame CPU run completes all 2,400 substeps,
+but its configured `converged` flag is false on 945 of them. The source solver
+continues those finite iterates rather than treating every false flag as a
+process-stopping failure:
+
+| Segment | Converged | Unconverged |
+| --- | ---: | ---: |
+| All 2,400 substeps | 1,455 | 945 |
+| Before release, indices 0-1,599 | 1,332 | 268 |
+| Release and after, indices 1,600-2,399 | 123 | 677 |
+
+Of the 945 false flags, 632 reach `max_outer=200` and 313 stop on the source
+plateau rule. The first false flag is step index 33 and the first cap is index
+35. Across the run, the worst natural `final_residual` is
+`2.59804445965485`; the worst per-step final checked `r_coulomb` is
+`7.597910320688573`.
+
+```text
+/tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json
+SHA-256 b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd
+```
+
+This source control is current-source evidence, not a historical paper run,
+golden trajectory, or solver-success oracle. It changes the wording of the
+DART gate: zero caps/failures remains the strict scientific convergence bar,
+but it is stricter than and must not be called source-equivalent execution
+semantics. A future source-continuation physical/video lane must be separately
+labeled, must retain per-step convergence/cap/plateau and residual telemetry,
+and must not turn an unconverged step into an exact-solver success or
+superiority claim. That lane is not implemented in this checkpoint.
 
 ## Bounded Option Matrix
 
@@ -131,11 +204,18 @@ SHA-256 0ade57d83cff8ed96ac19a253de79d51bbec84eaae60f55ae0237190e90e52ce
 
 ## Decision And Next Work
 
-Keep the checked-in lane strict and keep PR #3377 in draft. Do not change the
-default to accept capped iterates, relabel the preview as a solver success, or
-publish Figure 6 media from it. The next useful work is a targeted correction
-or a demonstrated model/algorithm mismatch for the 56-contact island, followed
-by the unchanged 2,400-step strict exact/boxed capture and visual gates. The
-row remains blocked until the strict lane completes with zero accepted caps,
-failures, and fallbacks and the resulting full-resolution media passes manual
-inspection.
+Keep the checked-in lane strict and keep PR #3377 in draft. Retain the
+source-style no-projection option because it closes the pinned-source mismatch,
+not because it establishes convergence. Do not change the default to accept
+capped iterates, relabel the preview as a solver success, or publish Figure 6
+media from it.
+
+The next isolated source mismatch is frozen-cone inner initialization: the
+author block-GS solve starts each outer iteration from the current outer
+reaction, while DART currently carries the previous outer iteration's inner
+trial. Test that as a separate A/B; do not combine it with tolerance, budget,
+fallback, fail-fast, or accepted-cap changes. The row remains blocked until the
+strict scientific lane completes all 2,400 steps with zero accepted caps,
+failures, and fallbacks. In parallel, design the separately labeled,
+telemetry-rich source-continuation lane before producing physical-outcome or
+video evidence. Neither lane currently has promotable full-resolution media.

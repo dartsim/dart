@@ -573,6 +573,7 @@ struct DynamicsAdapterContract
   bool exactOptionsAvailable = false;
   dart::constraint::ExactCoulombFbfConstraintSolverOptions exactOptions;
   dart::constraint::ExactCoulombFbfCrossStepPolicyOptions exactCrossStepOptions;
+  bool exactPostCorrectionProjectionEnabled = true;
   bool exactColoredBlockGaussSeidelEnabled = false;
   bool exactParticipantAffinityEnabled = false;
   bool boxedOptionsAvailable = false;
@@ -1012,6 +1013,8 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     contract.exactOptions = exact->getExactCoulombOptions();
     contract.exactCrossStepOptions
         = exact->getExactCoulombCrossStepPolicyOptions();
+    contract.exactPostCorrectionProjectionEnabled
+        = exact->getExactCoulombPostCorrectionProjectionEnabled();
     contract.exactColoredBlockGaussSeidelEnabled
         = exact->getExactCoulombColoredBlockGaussSeidelEnabled();
     contract.exactParticipantAffinityEnabled
@@ -1452,7 +1455,8 @@ inline std::string dynamicsAdapterContractJson(
       << ",\"armijo_rho_high\":" << kSourceArmijoRhoHigh
       << ",\"armijo_shrink\":" << kSourceArmijoShrink
       << ",\"armijo_max_backtracks\":" << kSourceArmijoMaxBacktracks
-      << ",\"warm_start\":true,\"baumgarte_erp\":" << kSourceBaumgarteErp
+      << ",\"warm_start\":true,\"project_after_correction\":false"
+      << ",\"baumgarte_erp\":" << kSourceBaumgarteErp
       << ",\"termination_residual\":";
   writeJsonString(out, kSourceTerminationResidual);
   out << ",\"termination_tol\":" << kSourceTerminationTolerance
@@ -1536,6 +1540,8 @@ inline std::string dynamicsAdapterContractJson(
         << (options.capInitialStepSizeAtSafeBound ? "true" : "false")
         << ",\"step_size_scale\":" << options.stepSizeScale
         << ",\"outer_relaxation\":" << options.outerRelaxation
+        << ",\"project_after_correction\":"
+        << (contract.exactPostCorrectionProjectionEnabled ? "true" : "false")
         << ",\"coupling_variation_tolerance\":"
         << options.couplingVariationTolerance
         << ",\"shrink_factor\":" << options.shrinkFactor

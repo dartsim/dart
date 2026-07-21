@@ -771,7 +771,10 @@ SkeletonPtr createAuthorCardHouseBox(
 }
 
 //==============================================================================
-void installAuthorCardHouseSolver(const WorldPtr& world, SolverMode mode)
+void installAuthorCardHouseSolver(
+    const WorldPtr& world,
+    SolverMode mode,
+    bool postCorrectionProjectionEnabled = true)
 {
   configureSolver(
       world,
@@ -794,6 +797,8 @@ void installAuthorCardHouseSolver(const WorldPtr& world, SolverMode mode)
         fbf_author_card_house::dartConstructionSolverOptions());
     exactSolver->setExactCoulombCrossStepPolicyOptions(
         fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+    exactSolver->setExactCoulombPostCorrectionProjectionEnabled(
+        postCorrectionProjectionEnabled);
     exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     exactSolver
         ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
@@ -806,12 +811,15 @@ void installAuthorCardHouseSolver(const WorldPtr& world, SolverMode mode)
 
 //==============================================================================
 WorldPtr createAuthorCardHouseWorld(
-    const std::string& name, std::size_t levelCount, SolverMode mode)
+    const std::string& name,
+    std::size_t levelCount,
+    SolverMode mode,
+    bool postCorrectionProjectionEnabled = true)
 {
   auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
   world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
-  installAuthorCardHouseSolver(world, mode);
+  installAuthorCardHouseSolver(world, mode, postCorrectionProjectionEnabled);
 
   world->addSkeleton(createAuthorCardHouseGround());
   for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
@@ -1758,7 +1766,7 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
           ::osg::Vec3d(0.0, 0.0, 1.0)},
       [](const auto& state) {
         return createAuthorCardHouseWorld(
-            kDynamicsDemoSceneId, kFigureLevelCount, state->solverMode);
+            kDynamicsDemoSceneId, kFigureLevelCount, state->solverMode, false);
       },
       kSourceMaxContacts,
       kDartMaxContactsPerPair,
@@ -1807,7 +1815,7 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
         };
       },
       [](const WorldPtr& world, SolverMode mode) {
-        installAuthorCardHouseSolver(world, mode);
+        installAuthorCardHouseSolver(world, mode, false);
       });
 }
 

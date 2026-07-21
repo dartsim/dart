@@ -1803,6 +1803,44 @@ TEST(ExactCoulombFbfSolver, AppliesFbfCorrectionAndProjectsBackToCone)
   expectVectorNear(result.reaction, Eigen::Vector3d(1.6, 0.8, 0.0));
 }
 
+TEST(ExactCoulombFbfSolver, CanSkipProjectionAfterFbfCorrection)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d initialReaction = Eigen::Vector3d::Zero();
+
+  const auto innerSolver = [](const auto&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              const Eigen::Ref<const Eigen::VectorXd>&,
+                              double,
+                              Eigen::Ref<Eigen::VectorXd> output) {
+    output[0] = 2.0;
+    output[1] = 1.0;
+    output[2] = 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.projectAfterCorrection = false;
+  options.tolerance = 0.0;
+  options.maxOuterIterations = 1;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      initialReaction,
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_EQ(result.iterations, 1);
+  EXPECT_GT(result.reaction.tail<2>().norm(), 0.5 * result.reaction[0]);
+  expectVectorNear(result.reaction, Eigen::Vector3d(1.5, 1.0, 0.0));
+}
+
 TEST(ExactCoulombFbfSolver, AppliesOuterRelaxationToAcceptedCorrection)
 {
   const auto problem

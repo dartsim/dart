@@ -709,6 +709,7 @@ def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
                 "armijo_shrink": 0.7,
                 "armijo_max_backtracks": 8,
                 "warm_start": True,
+                "project_after_correction": False,
                 "baumgarte_erp": 0.0,
                 "termination_residual": "coulomb_rel",
                 "termination_tol": 1e-6,
@@ -1753,6 +1754,11 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
             2000.0,
             "source configuration",
         ),
+        (
+            ("source_configuration", "solver", "project_after_correction"),
+            True,
+            "source configuration",
+        ),
         (("dart_adapter", "world", "time_step_seconds"), 1.0 / 60.0, "world"),
         (
             ("dart_adapter", "collision", "contact_manifold"),
@@ -1786,6 +1792,16 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
         ),
         (
             ("dart_adapter", "solver", "participant_affinity_enabled"),
+            True,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "project_after_correction",
+            ),
             True,
             "solver",
         ),

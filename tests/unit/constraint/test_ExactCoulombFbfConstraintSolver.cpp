@@ -1575,6 +1575,24 @@ TEST(ExactCoulombFbfConstraintSolver, ValidatesAndCopiesCrossStepPolicy)
 
 TEST(
     ExactCoulombFbfConstraintSolver,
+    PostCorrectionProjectionDefaultsOnAndCopies)
+{
+  ExposedExactCoulombFbfConstraintSolver source;
+  EXPECT_TRUE(source.getExactCoulombPostCorrectionProjectionEnabled());
+
+  source.setExactCoulombPostCorrectionProjectionEnabled(false);
+  EXPECT_FALSE(source.getExactCoulombPostCorrectionProjectionEnabled());
+
+  ExposedExactCoulombFbfConstraintSolver copy;
+  copy.setFromOtherConstraintSolver(source);
+  EXPECT_FALSE(copy.getExactCoulombPostCorrectionProjectionEnabled());
+
+  copy.setExactCoulombPostCorrectionProjectionEnabled(true);
+  EXPECT_TRUE(copy.getExactCoulombPostCorrectionProjectionEnabled());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
     PersistentStepSizeHoldsAfterAnyRejectedTrial)
 {
   const auto activeRow = std::make_shared<Eigen::Index>(-1);
