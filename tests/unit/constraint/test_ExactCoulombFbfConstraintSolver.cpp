@@ -918,6 +918,46 @@ TEST(
   EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 1u);
 }
 
+TEST(
+    ExactCoulombFbfConstraintSolver, OrderedBodyBPolicyRejectsReversedBodyOrder)
+{
+  FakeCollisionDetector detector;
+  auto dynamicBody = createFreeContactBody("dynamic", true);
+  auto fixedBody = createFreeContactBody("fixed", false);
+  FakeCollisionObject dynamicObject(&detector, dynamicBody.shape);
+  FakeCollisionObject fixedObject(&detector, fixedBody.shape);
+
+  const Eigen::Vector3d point(0.2, 0.0, 0.0);
+  auto firstContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, point, Eigen::Vector3d::UnitX());
+  auto firstGroup = makeGroup(makePhysicalConstraint(firstContact));
+
+  const auto options = makeZeroBudgetWarmStartOptions();
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions policy;
+  policy.warmStartMatchMode = dart::constraint::
+      ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature;
+  policy.useStrictWarmStartMatchDistance = true;
+  solver.setExactCoulombCrossStepPolicyOptions(policy);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(firstGroup);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  auto reversedContact = makePhysicalContact(
+      &fixedObject, &dynamicObject, point, -Eigen::Vector3d::UnitX());
+  auto reversedGroup = makeGroup(makePhysicalConstraint(reversedContact));
+  solver.solveConstrainedGroup(reversedGroup);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 0u);
+}
+
 TEST(ExactCoulombFbfConstraintSolver, BodyLocalWarmStartRejectsNormalMismatch)
 {
   FakeCollisionDetector detector;
@@ -1304,6 +1344,154 @@ TEST(
       1.25 * automaticStepSize,
       1e-12);
   EXPECT_NEAR(solver.getLastExactCoulombStepSize(), safeStepSize, 1e-12);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    CrossStepPolicyUsesScaledSafeBoundAndNaturalResidualWarmCap)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.stepSizeScale = 10.0;
+  options.stepSizeRecoveryGrowthFactor = 1.0 / 0.7;
+  options.seedNormalImpulseFromDiagonal = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions policy;
+  policy.persistentStepSizeSafeBoundScale = 10.0;
+  policy.minimumStepSize = 1e-6;
+  policy.maximumStepSize = 1e6;
+  policy.warmStartResidualThreshold = 1e-4;
+  policy.warmStartStepSizeCap = 0.1;
+  policy.persistUncappedStepSizeOnWarmStartCap = true;
+  solver.setExactCoulombCrossStepPolicyOptions(policy);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  const double firstStepSize = solver.getLastExactCoulombStepSize();
+  const double safeStepSize = solver.getLastExactCoulombSafeStepSize();
+  EXPECT_NEAR(firstStepSize, 10.0 * safeStepSize, 1e-12);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartStepSizeCapApplied());
+  EXPECT_GT(solver.getLastExactCoulombInitialNaturalMapResidual(), 1e-4);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_GT(
+      solver.getLastExactCoulombPersistentStepSizeRequest(), firstStepSize);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartStepSizeCapApplied());
+  EXPECT_NEAR(
+      solver.getLastExactCoulombUncappedInitialStepSize(),
+      firstStepSize,
+      1e-12);
+  EXPECT_NEAR(
+      solver.getLastExactCoulombStepSize(), policy.warmStartStepSizeCap, 1e-12);
+  EXPECT_LT(
+      solver.getLastExactCoulombInitialNaturalMapResidual(),
+      policy.warmStartResidualThreshold);
+  EXPECT_EQ(
+      solver.getLastExactCoulombNaturalMapResidual(),
+      solver.getLastExactCoulombInitialNaturalMapResidual());
+  EXPECT_EQ(solver.getNumExactCoulombWarmStartStepSizeCaps(), 1u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    CrossStepPolicySkipsUnimprovedUnconvergedReactionCache)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions policy;
+  policy.requireResidualImprovementForUnconvergedCacheSave = true;
+  solver.setExactCoulombCrossStepPolicyOptions(policy);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  contact->setRhs(Eigen::Vector3d(0.2, 1.0, 0.0));
+  options.maxOuterIterations = 0;
+  options.acceptOuterMaxIterations = true;
+  options.tolerance = 0.0;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  solver.setExactCoulombOptions(options);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_EQ(
+      solver.getLastExactCoulombNaturalMapResidual(),
+      solver.getLastExactCoulombInitialNaturalMapResidual());
+  EXPECT_EQ(solver.getNumExactCoulombUnconvergedCacheSkips(), 1u);
+}
+
+TEST(ExactCoulombFbfConstraintSolver, ValidatesAndCopiesCrossStepPolicy)
+{
+  using MatchMode = dart::constraint::ExactCoulombFbfWarmStartMatchMode;
+  ExposedExactCoulombFbfConstraintSolver source;
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions policy;
+  policy.warmStartMatchMode = MatchMode::OrderedBodyBLocalFeature;
+  policy.warmStartNormalCosine = 0.95;
+  policy.useStrictWarmStartMatchDistance = true;
+  policy.warmStartMaxAge = 3;
+  policy.persistentStepSizeSafeBoundScale = 10.0;
+  policy.minimumStepSize = 1e-6;
+  policy.maximumStepSize = 1e6;
+  policy.warmStartResidualThreshold = 1e-4;
+  policy.warmStartStepSizeCap = 1e4;
+  policy.persistUncappedStepSizeOnWarmStartCap = true;
+  policy.requireResidualImprovementForUnconvergedCacheSave = true;
+  source.setExactCoulombCrossStepPolicyOptions(policy);
+
+  const auto actual = source.getExactCoulombCrossStepPolicyOptions();
+  EXPECT_EQ(actual.warmStartMatchMode, policy.warmStartMatchMode);
+  EXPECT_EQ(actual.warmStartNormalCosine, policy.warmStartNormalCosine);
+  EXPECT_EQ(actual.warmStartMaxAge, policy.warmStartMaxAge);
+  EXPECT_EQ(actual.warmStartStepSizeCap, policy.warmStartStepSizeCap);
+
+  ExposedExactCoulombFbfConstraintSolver copy;
+  copy.setFromOtherConstraintSolver(source);
+  const auto copied = copy.getExactCoulombCrossStepPolicyOptions();
+  EXPECT_EQ(copied.warmStartMatchMode, policy.warmStartMatchMode);
+  EXPECT_EQ(copied.persistentStepSizeSafeBoundScale, 10.0);
+  EXPECT_TRUE(copied.persistUncappedStepSizeOnWarmStartCap);
+  EXPECT_EQ(copy.getNumExactCoulombWarmStartStepSizeCaps(), 0u);
+
+  auto invalid = policy;
+  invalid.warmStartNormalCosine = 2.0;
+  copy.setExactCoulombCrossStepPolicyOptions(invalid);
+  EXPECT_EQ(
+      copy.getExactCoulombCrossStepPolicyOptions().warmStartNormalCosine,
+      policy.warmStartNormalCosine);
 }
 
 TEST(

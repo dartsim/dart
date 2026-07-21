@@ -184,6 +184,143 @@ TEST(ExactCoulombFbfSolver, ExplicitGammaCapsAtUnscaledSafeStep)
   EXPECT_NEAR(result.stepSize, result.safeStepSize, 1e-12);
 }
 
+TEST(ExactCoulombFbfSolver, CapsGammaForGoodInitialWarmStart)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.stepSizeScale = 8.0;
+  options.initialResidualStepSizeCapThreshold = 2.0;
+  options.initialResidualStepSizeCap = 0.1;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_TRUE(result.initialStepSizeCapApplied);
+  EXPECT_NEAR(result.safeStepSize, 0.25, 1e-12);
+  EXPECT_NEAR(result.uncappedInitialStepSize, 2.0, 1e-12);
+  EXPECT_NEAR(result.stepSize, options.initialResidualStepSizeCap, 1e-12);
+  EXPECT_TRUE(
+      dart::math::detail::isFiniteCoulombConeResidual(result.initialResidual));
+}
+
+TEST(ExactCoulombFbfSolver, CanUseNaturalMapResidualForWarmStartGammaCap)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.stepSizeScale = 8.0;
+  options.initialResidualStepSizeCapThreshold = 2.0;
+  options.initialResidualStepSizeCap = 0.1;
+  options.useNaturalMapResidualForInitialStepSizeCap = true;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_TRUE(result.initialStepSizeCapApplied);
+  EXPECT_NEAR(result.initialNaturalMapResidual, 1.0, 1e-12);
+  EXPECT_NEAR(
+      result.naturalMapResidual, result.initialNaturalMapResidual, 1e-12);
+  EXPECT_NEAR(result.stepSize, options.initialResidualStepSizeCap, 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, LeavesGammaUncappedForLargeInitialResidual)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.stepSizeScale = 8.0;
+  options.initialResidualStepSizeCapThreshold = 0.0;
+  options.initialResidualStepSizeCap = 0.1;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_FALSE(result.initialStepSizeCapApplied);
+  EXPECT_NEAR(result.uncappedInitialStepSize, 2.0, 1e-12);
+  EXPECT_NEAR(result.stepSize, result.uncappedInitialStepSize, 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, ScalesExplicitSafeBoundAndClampsGammaRange)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 100.0;
+  options.explicitStepSizeSafeBoundScale = 10.0;
+  options.minimumStepSize = 1e-6;
+  options.maximumStepSize = 1.0;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_NEAR(result.safeStepSize, 0.25, 1e-12);
+  EXPECT_NEAR(result.uncappedInitialStepSize, options.maximumStepSize, 1e-12);
+  EXPECT_NEAR(result.stepSize, options.maximumStepSize, 1e-12);
+}
+
 TEST(ExactCoulombFbfSolver, ComputesPaperResidualScales)
 {
   const auto problem

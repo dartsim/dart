@@ -184,6 +184,44 @@ CoulombConeResidual computeExactCoulombContactResidualNormalFirst(
       reaction, augmentedVelocity, problem.coefficients, scales);
 }
 
+/// Compute the unscaled natural-map residual used by the pinned author code.
+///
+/// This returns
+/// `||lambda - project_K(lambda - v_tilde(lambda))||_2` over the product of
+/// normal-first Coulomb cones. It is distinct from DART's dimensionless
+/// primal/dual/complementarity convergence residual above.
+template <typename DelassusOperator>
+double computeExactCoulombNaturalMapResidualNormalFirst(
+    const ExactCoulombContactProblem& problem,
+    const Eigen::Ref<const Eigen::VectorXd>& reaction,
+    const DelassusOperator& applyDelassus)
+{
+  Eigen::VectorXd velocity(problem.getDimension());
+  if (!computeExactCoulombContactVelocityNormalFirst(
+          problem, reaction, applyDelassus, velocity)) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  Eigen::VectorXd augmentedVelocity(problem.getDimension());
+  if (!computeExactCoulombAugmentedVelocityNormalFirst(
+          velocity, problem.coefficients, augmentedVelocity)) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  double residualSquared = 0.0;
+  for (Eigen::Index contact = 0; contact < problem.getContactCount();
+       ++contact) {
+    const Eigen::Index offset = 3 * contact;
+    const Eigen::Vector3d localReaction = reaction.segment<3>(offset);
+    const Eigen::Vector3d projected = projectCoulombConeNormalFirst(
+        localReaction - augmentedVelocity.segment<3>(offset),
+        problem.coefficients[contact]);
+    residualSquared += (localReaction - projected).squaredNorm();
+  }
+
+  return std::sqrt(residualSquared);
+}
+
 /// Estimate the largest Delassus eigenvalue with deterministic power iteration.
 ///
 /// The FBF paper uses this value to choose a safe base step size. The operator

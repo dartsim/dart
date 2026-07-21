@@ -216,6 +216,137 @@ ExactCoulombContactIdentityMatch matchExactCoulombContactIdentity(
   return match;
 }
 
+bool hasConsistentWarmStartNormal(
+    const Eigen::Vector3d& first,
+    const Eigen::Vector3d& second,
+    double minimumCosine)
+{
+  if (!first.allFinite() || !second.allFinite()
+      || !std::isfinite(minimumCosine)) {
+    return false;
+  }
+
+  const double firstNorm = first.norm();
+  const double secondNorm = second.norm();
+  if (!std::isfinite(firstNorm) || !std::isfinite(secondNorm)
+      || firstNorm <= std::numeric_limits<double>::epsilon()
+      || secondNorm <= std::numeric_limits<double>::epsilon()) {
+    return false;
+  }
+
+  return first.dot(second) >= minimumCosine * firstNorm * secondNorm;
+}
+
+template <typename ContactRecord>
+ExactCoulombContactIdentityMatch matchExactCoulombContactIdentity(
+    const ContactRecord& record,
+    const detail::ExactCoulombContactRowOperator::ContactFrame& frame,
+    const ExactCoulombBodyLocalContactFeatures& currentFeatures,
+    double matchDistance,
+    const ExactCoulombFbfCrossStepPolicyOptions& policy)
+{
+  if (policy.warmStartMatchMode
+          == ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature
+      && policy.warmStartNormalCosine == kWarmStartMinNormalDot
+      && !policy.useStrictWarmStartMatchDistance) {
+    return matchExactCoulombContactIdentity(
+        record, frame, currentFeatures, matchDistance);
+  }
+
+  ExactCoulombContactIdentityMatch match;
+  const bool sameOrder
+      = record.bodyA == frame.bodyA && record.bodyB == frame.bodyB;
+  const bool flippedOrder
+      = record.bodyA == frame.bodyB && record.bodyB == frame.bodyA;
+  if (!sameOrder
+      && (policy.warmStartMatchMode
+              == ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature
+          || !flippedOrder)) {
+    return match;
+  }
+
+  match.flipped = !sameOrder;
+  const auto isWithinMatchDistance = [&policy, matchDistance](double distance) {
+    return policy.useStrictWarmStartMatchDistance ? distance < matchDistance
+                                                  : distance <= matchDistance;
+  };
+
+  if (policy.warmStartMatchMode
+      == ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature) {
+    if (!currentFeatures.sideB.available || !record.hasLocalFeatureB)
+      return match;
+
+    const double distance
+        = (record.localPointB - currentFeatures.sideB.point).norm();
+    if (std::isfinite(distance) && isWithinMatchDistance(distance)
+        && hasConsistentWarmStartNormal(
+            record.localNormalB,
+            currentFeatures.sideB.normal,
+            policy.warmStartNormalCosine)) {
+      match.matched = true;
+      match.distance = distance;
+    }
+    return match;
+  }
+
+  bool hasComparableLocalFeature = false;
+  const auto considerLocalFeature = [&](const auto& current,
+                                        bool recordAvailable,
+                                        const Eigen::Vector3d& recordPoint,
+                                        const Eigen::Vector3d& recordNormal) {
+    if (!current.available || !recordAvailable)
+      return;
+
+    hasComparableLocalFeature = true;
+    const double distance = (recordPoint - current.point).norm();
+    if (!std::isfinite(distance) || !isWithinMatchDistance(distance)
+        || !hasConsistentWarmStartNormal(
+            recordNormal, current.normal, policy.warmStartNormalCosine)) {
+      return;
+    }
+
+    match.matched = true;
+    match.distance = std::min(match.distance, distance);
+  };
+
+  if (sameOrder) {
+    considerLocalFeature(
+        currentFeatures.sideA,
+        record.hasLocalFeatureA,
+        record.localPointA,
+        record.localNormalA);
+    considerLocalFeature(
+        currentFeatures.sideB,
+        record.hasLocalFeatureB,
+        record.localPointB,
+        record.localNormalB);
+  } else {
+    considerLocalFeature(
+        currentFeatures.sideA,
+        record.hasLocalFeatureB,
+        record.localPointB,
+        record.localNormalB);
+    considerLocalFeature(
+        currentFeatures.sideB,
+        record.hasLocalFeatureA,
+        record.localPointA,
+        record.localNormalA);
+  }
+  if (hasComparableLocalFeature)
+    return match;
+
+  const Eigen::Vector3d expectedWorldNormal
+      = sameOrder ? record.worldNormal : -record.worldNormal;
+  const double worldDistance = (record.point - frame.point).norm();
+  if (std::isfinite(worldDistance) && isWithinMatchDistance(worldDistance)
+      && hasConsistentWarmStartNormal(
+          expectedWorldNormal, frame.normal, policy.warmStartNormalCosine)) {
+    match.matched = true;
+    match.distance = worldDistance;
+  }
+  return match;
+}
+
 struct ExactCoulombContactRowParallelEvidence
 {
   std::size_t products = 0u;
@@ -243,6 +374,19 @@ struct ExactCoulombColoredBlockGaussSeidelState
   std::size_t maxManifoldsPerColor = 0u;
   std::vector<int> logicalCpuIds;
   std::vector<int> maxPhaseLogicalCpuIds;
+};
+
+struct ExactCoulombCrossStepPolicyState
+{
+  ExactCoulombFbfCrossStepPolicyOptions options;
+  double lastInitialResidual = std::numeric_limits<double>::quiet_NaN();
+  double lastInitialNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  double lastNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  double lastUncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
+  bool lastWarmStartStepSizeCapApplied = false;
+  std::size_t warmStartStepSizeCaps = 0u;
+  std::size_t unconvergedCacheSkips = 0u;
 };
 
 bool isPreferredExactCoulombCpuPhaseSet(
@@ -591,6 +735,125 @@ void eraseExactCoulombColoredBlockGaussSeidelState(
   exactCoulombColoredBlockGaussSeidelStateBySolver().erase(solver);
 }
 
+std::mutex& exactCoulombCrossStepPolicyStateMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<
+    const ExactCoulombFbfConstraintSolver*,
+    ExactCoulombCrossStepPolicyState>&
+exactCoulombCrossStepPolicyStateBySolver()
+{
+  static auto* states = new std::unordered_map<
+      const ExactCoulombFbfConstraintSolver*,
+      ExactCoulombCrossStepPolicyState>;
+  return *states;
+}
+
+ExactCoulombCrossStepPolicyState getExactCoulombCrossStepPolicyState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  const auto& states = exactCoulombCrossStepPolicyStateBySolver();
+  const auto state = states.find(solver);
+  return state == states.end() ? ExactCoulombCrossStepPolicyState{}
+                               : state->second;
+}
+
+void resetExactCoulombCrossStepPolicyState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  exactCoulombCrossStepPolicyStateBySolver()[solver]
+      = ExactCoulombCrossStepPolicyState{};
+}
+
+void setExactCoulombCrossStepPolicyStateOptions(
+    const ExactCoulombFbfConstraintSolver* solver,
+    const ExactCoulombFbfCrossStepPolicyOptions& options)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
+  state = ExactCoulombCrossStepPolicyState{};
+  state.options = options;
+}
+
+void resetLastExactCoulombCrossStepPolicyState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
+  state.lastInitialResidual = std::numeric_limits<double>::quiet_NaN();
+  state.lastInitialNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  state.lastNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  state.lastUncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
+  state.lastWarmStartStepSizeCapApplied = false;
+}
+
+void recordExactCoulombCrossStepPolicyAttempt(
+    const ExactCoulombFbfConstraintSolver* solver,
+    const math::detail::ExactCoulombFbfResult& result,
+    bool unconvergedCacheSkipped)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  auto& state = exactCoulombCrossStepPolicyStateBySolver()[solver];
+  state.lastInitialResidual = result.initialResidual.value;
+  state.lastInitialNaturalMapResidual = result.initialNaturalMapResidual;
+  state.lastNaturalMapResidual = result.naturalMapResidual;
+  state.lastUncappedInitialStepSize = result.uncappedInitialStepSize;
+  state.lastWarmStartStepSizeCapApplied = result.initialStepSizeCapApplied;
+  if (result.initialStepSizeCapApplied)
+    ++state.warmStartStepSizeCaps;
+  if (unconvergedCacheSkipped)
+    ++state.unconvergedCacheSkips;
+}
+
+void eraseExactCoulombCrossStepPolicyState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombCrossStepPolicyStateMutex());
+  exactCoulombCrossStepPolicyStateBySolver().erase(solver);
+}
+
+bool isValidExactCoulombCrossStepPolicyOptions(
+    const ExactCoulombFbfCrossStepPolicyOptions& options)
+{
+  const bool validMatchMode
+      = options.warmStartMatchMode
+            == ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature
+        || options.warmStartMatchMode
+               == ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature;
+  const bool hasWarmStartStepSizeCap
+      = std::isfinite(options.warmStartResidualThreshold)
+        && std::isfinite(options.warmStartStepSizeCap);
+  const bool validWarmStartStepSizeCap
+      = (std::isnan(options.warmStartResidualThreshold)
+         && std::isnan(options.warmStartStepSizeCap))
+        || (hasWarmStartStepSizeCap && options.warmStartResidualThreshold >= 0.0
+            && options.warmStartStepSizeCap > 0.0);
+  const bool validMinimumStepSize = std::isnan(options.minimumStepSize)
+                                    || (std::isfinite(options.minimumStepSize)
+                                        && options.minimumStepSize > 0.0);
+  const bool validMaximumStepSize = std::isnan(options.maximumStepSize)
+                                    || (std::isfinite(options.maximumStepSize)
+                                        && options.maximumStepSize > 0.0);
+
+  return validMatchMode && std::isfinite(options.warmStartNormalCosine)
+         && options.warmStartNormalCosine >= -1.0
+         && options.warmStartNormalCosine <= 1.0
+         && options.warmStartMaxAge >= -1
+         && std::isfinite(options.persistentStepSizeSafeBoundScale)
+         && options.persistentStepSizeSafeBoundScale > 0.0
+         && validMinimumStepSize && validMaximumStepSize
+         && (std::isnan(options.minimumStepSize)
+             || std::isnan(options.maximumStepSize)
+             || options.minimumStepSize <= options.maximumStepSize)
+         && validWarmStartStepSizeCap;
+}
+
 bool isValidExactCoulombOptions(
     const ExactCoulombFbfConstraintSolverOptions& options)
 {
@@ -710,6 +973,22 @@ math::detail::ExactCoulombFbfOptions makeFbfOptions(
   fbfOptions.spectralIterations = options.spectralIterations;
   fbfOptions.maxResidualHistorySamples = options.maxResidualHistorySamples;
   return fbfOptions;
+}
+
+void applyExactCoulombCrossStepPolicy(
+    const ExactCoulombFbfCrossStepPolicyOptions& policy,
+    math::detail::ExactCoulombFbfOptions& options)
+{
+  options.explicitStepSizeSafeBoundScale
+      = policy.persistentStepSizeSafeBoundScale;
+  options.minimumStepSize = policy.minimumStepSize;
+  options.maximumStepSize = policy.maximumStepSize;
+  options.initialResidualStepSizeCapThreshold
+      = policy.warmStartResidualThreshold;
+  options.initialResidualStepSizeCap = policy.warmStartStepSizeCap;
+  options.useNaturalMapResidualForInitialStepSizeCap
+      = std::isfinite(policy.warmStartResidualThreshold)
+        || policy.requireResidualImprovementForUnconvergedCacheSave;
 }
 
 math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions
@@ -1262,6 +1541,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver()
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombCrossStepPolicyState(this);
 }
 
 //==============================================================================
@@ -1271,6 +1551,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver(
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombCrossStepPolicyState(this);
 }
 
 //==============================================================================
@@ -1278,6 +1559,7 @@ ExactCoulombFbfConstraintSolver::~ExactCoulombFbfConstraintSolver()
 {
   eraseContactRowParallelEvidence(this);
   eraseExactCoulombColoredBlockGaussSeidelState(this);
+  eraseExactCoulombCrossStepPolicyState(this);
 }
 
 //==============================================================================
@@ -1308,6 +1590,29 @@ ExactCoulombFbfConstraintSolver::getExactCoulombOptions() const
 }
 
 //==============================================================================
+void ExactCoulombFbfConstraintSolver::setExactCoulombCrossStepPolicyOptions(
+    const ExactCoulombFbfCrossStepPolicyOptions& options)
+{
+  if (!isValidExactCoulombCrossStepPolicyOptions(options)) {
+    dtwarn << "[ExactCoulombFbfConstraintSolver] Ignoring invalid exact "
+           << "Coulomb cross-step policy options.\n";
+    return;
+  }
+
+  setExactCoulombCrossStepPolicyStateOptions(this, options);
+  // Contact identity and cache-retention rules can change across this boundary.
+  // Do not reinterpret reactions or gamma tokens created by another policy.
+  clearExactCoulombWarmStart();
+}
+
+//==============================================================================
+ExactCoulombFbfCrossStepPolicyOptions
+ExactCoulombFbfConstraintSolver::getExactCoulombCrossStepPolicyOptions() const
+{
+  return getExactCoulombCrossStepPolicyState(this).options;
+}
+
+//==============================================================================
 void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
     const ConstraintSolver& other)
 {
@@ -1316,12 +1621,16 @@ void ExactCoulombFbfConstraintSolver::setFromOtherConstraintSolver(
   if (const auto* exact
       = dynamic_cast<const ExactCoulombFbfConstraintSolver*>(&other)) {
     setExactCoulombOptions(exact->getExactCoulombOptions());
+    setExactCoulombCrossStepPolicyOptions(
+        exact->getExactCoulombCrossStepPolicyOptions());
     setExactCoulombColoredBlockGaussSeidelEnabled(
         exact->getExactCoulombColoredBlockGaussSeidelEnabled());
     setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         exact
             ->getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
   } else {
+    setExactCoulombCrossStepPolicyOptions(
+        ExactCoulombFbfCrossStepPolicyOptions{});
     setExactCoulombColoredBlockGaussSeidelEnabled(false);
     setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(false);
   }
@@ -1750,6 +2059,59 @@ ExactCoulombFbfConstraintSolver::getLastExactCoulombWarmStartMatchedContacts()
 }
 
 //==============================================================================
+double ExactCoulombFbfConstraintSolver::getLastExactCoulombInitialResidual()
+    const
+{
+  return getExactCoulombCrossStepPolicyState(this).lastInitialResidual;
+}
+
+//==============================================================================
+double
+ExactCoulombFbfConstraintSolver::getLastExactCoulombInitialNaturalMapResidual()
+    const
+{
+  return getExactCoulombCrossStepPolicyState(this)
+      .lastInitialNaturalMapResidual;
+}
+
+//==============================================================================
+double ExactCoulombFbfConstraintSolver::getLastExactCoulombNaturalMapResidual()
+    const
+{
+  return getExactCoulombCrossStepPolicyState(this).lastNaturalMapResidual;
+}
+
+//==============================================================================
+double
+ExactCoulombFbfConstraintSolver::getLastExactCoulombUncappedInitialStepSize()
+    const
+{
+  return getExactCoulombCrossStepPolicyState(this).lastUncappedInitialStepSize;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastExactCoulombWarmStartStepSizeCapApplied() const
+{
+  return getExactCoulombCrossStepPolicyState(this)
+      .lastWarmStartStepSizeCapApplied;
+}
+
+//==============================================================================
+std::size_t
+ExactCoulombFbfConstraintSolver::getNumExactCoulombWarmStartStepSizeCaps() const
+{
+  return getExactCoulombCrossStepPolicyState(this).warmStartStepSizeCaps;
+}
+
+//==============================================================================
+std::size_t
+ExactCoulombFbfConstraintSolver::getNumExactCoulombUnconvergedCacheSkips() const
+{
+  return getExactCoulombCrossStepPolicyState(this).unconvergedCacheSkips;
+}
+
+//==============================================================================
 std::size_t ExactCoulombFbfConstraintSolver::getNumExactCoulombSolves() const
 {
   return mNumExactCoulombSolves;
@@ -1843,8 +2205,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
   ExactCoulombCpuRecorder coloredBlockGaussSeidelCpuRecorder;
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetLastExactCoulombCrossStepPolicyState(this);
   ExactCoulombColoredBlockGaussSeidelState coloredBlockGaussSeidelState
       = getExactCoulombColoredBlockGaussSeidelState(this);
+  const ExactCoulombFbfCrossStepPolicyOptions crossStepPolicy
+      = getExactCoulombCrossStepPolicyState(this).options;
   ++mNumExactCoulombAttempts;
   mLastExactCoulombStatus = ExactCoulombFbfConstraintSolverStatus::NotRun;
   mLastExactCoulombBuildStatus
@@ -2267,6 +2632,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         };
 
   auto fbfOptions = makeFbfOptions(mExactCoulombOptions);
+  applyExactCoulombCrossStepPolicy(crossStepPolicy, fbfOptions);
   double persistedStepSize = std::numeric_limits<double>::quiet_NaN();
   std::size_t persistedNoRejectionSolves = 0u;
   const bool persistentStepSizeMatched
@@ -2432,6 +2798,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
                      : problem.initialGuess);
 
     auto automaticFbfOptions = makeFbfOptions(mExactCoulombOptions);
+    applyExactCoulombCrossStepPolicy(crossStepPolicy, automaticFbfOptions);
     automaticFbfOptions.useAutomaticResidualScales = false;
     automaticFbfOptions.residualScales = solution.residualScales;
     const auto automaticSolution
@@ -2547,6 +2914,14 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
       tryPolishFailedExactCoulombSolution(problem, solution);
   }
 
+  if (fbfOptions.useNaturalMapResidualForInitialStepSizeCap
+      && solution.reaction.size() == problem.contactProblem.getDimension()
+      && solution.reaction.allFinite()) {
+    solution.naturalMapResidual
+        = math::detail::computeExactCoulombNaturalMapResidualNormalFirst(
+            problem.contactProblem, solution.reaction, applyDelassus);
+  }
+
   contactRowParallelEvidence.logicalCpuIds
       = contactRowCpuRecorder.getLogicalCpuIds();
   contactRowParallelEvidence.maxPhaseLogicalCpuIds
@@ -2594,6 +2969,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         solution.shrinkIterations,
         solution.bestResidual.value,
         solution.bestIteration);
+    recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2617,6 +2993,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         solution.shrinkIterations,
         solution.bestResidual.value,
         solution.bestIteration);
+    recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2631,7 +3008,14 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         && !retriedWithoutPersistentStepSize;
   if (persistentStepSizeEnabled && std::isfinite(solution.stepSize)
       && solution.stepSize > 0.0) {
-    stepSizeToPersist = solution.stepSize;
+    const bool persistUncappedStepSize
+        = crossStepPolicy.persistUncappedStepSizeOnWarmStartCap
+          && solution.initialStepSizeCapApplied
+          && std::isfinite(solution.uncappedInitialStepSize)
+          && solution.uncappedInitialStepSize > 0.0;
+    stepSizeToPersist = persistUncappedStepSize
+                            ? solution.uncappedInitialStepSize
+                            : solution.stepSize;
     if (!hadAnyStepSizeRejection) {
       const std::size_t priorNoRejectionSolves
           = persistentStepSizeMatched ? persistedNoRejectionSolves : 0u;
@@ -2642,11 +3026,22 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
       }
     }
   }
+  const bool unconvergedCacheSkipped
+      = maxIterationsAccepted
+        && crossStepPolicy.requireResidualImprovementForUnconvergedCacheSave
+        && !(
+            std::isfinite(solution.initialNaturalMapResidual)
+            && std::isfinite(solution.naturalMapResidual)
+            && solution.naturalMapResidual
+                   < solution.initialNaturalMapResidual);
   updateExactCoulombWarmStart(
       constraints,
       solution.reaction,
       stepSizeToPersist,
-      consecutiveNoRejectionSolves);
+      consecutiveNoRejectionSolves,
+      !unconvergedCacheSkipped);
+  recordExactCoulombCrossStepPolicyAttempt(
+      this, solution, unconvergedCacheSkipped);
   ++mNumExactCoulombSolves;
   if (maxIterationsAccepted)
     ++mNumExactCoulombMaxIterationsAccepted;
@@ -2935,7 +3330,8 @@ bool ExactCoulombFbfConstraintSolver::tryApplyExactCoulombWarmStart(
 
   // Manifold path: contact constraints are recreated every `World` step, so
   // match cached contacts by body pair and stable body-local feature, then
-  // re-project the cached world-space reaction onto the current frames.
+  // re-project the cached reaction onto the current frames.
+  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
   if (mWarmStartContactRecords.empty() || !std::isfinite(matchDistance)
       || matchDistance <= 0.0) {
@@ -2960,8 +3356,14 @@ bool ExactCoulombFbfConstraintSolver::tryApplyExactCoulombWarmStart(
         continue;
       }
 
+      const auto& candidate = mWarmStartContactRecords[r];
+      if (!candidate.reactionValid
+          || (policy.warmStartMaxAge >= 0
+              && candidate.age > policy.warmStartMaxAge)) {
+        continue;
+      }
       const auto identity = matchExactCoulombContactIdentity(
-          mWarmStartContactRecords[r], frame, currentFeatures, matchDistance);
+          candidate, frame, currentFeatures, matchDistance, policy);
       if (!identity.matched || identity.distance >= bestDistance) {
         continue;
       }
@@ -2978,9 +3380,16 @@ bool ExactCoulombFbfConstraintSolver::tryApplyExactCoulombWarmStart(
     recordUsed[static_cast<std::size_t>(bestRecord)] = true;
     const auto& record
         = mWarmStartContactRecords[static_cast<std::size_t>(bestRecord)];
-    const Eigen::Vector3d worldImpulse
-        = bestFlipped ? Eigen::Vector3d(-record.worldImpulse)
-                      : record.worldImpulse;
+    Eigen::Vector3d worldImpulse;
+    if (policy.warmStartMatchMode
+            == ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature
+        && record.hasLocalImpulseB && frame.bodyB != nullptr) {
+      worldImpulse
+          = frame.bodyB->getWorldTransform().linear() * record.localImpulseB;
+    } else {
+      worldImpulse = bestFlipped ? Eigen::Vector3d(-record.worldImpulse)
+                                 : record.worldImpulse;
+    }
     const Eigen::Index offset = static_cast<Eigen::Index>(3u * i);
     Eigen::Vector3d localReaction(
         worldImpulse.dot(frame.normal),
@@ -3047,6 +3456,7 @@ bool ExactCoulombFbfConstraintSolver::tryGetExactCoulombPersistentStepSize(
   // its body-pair/body-local-feature manifold, and require every record to
   // carry the same group token. Exact group matching avoids leaking one
   // island's gamma into another island that happens to share a nearby point.
+  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
   if (constraints.empty() || mWarmStartContactRecords.empty()
       || !std::isfinite(matchDistance) || matchDistance <= 0.0) {
@@ -3077,7 +3487,7 @@ bool ExactCoulombFbfConstraintSolver::tryGetExactCoulombPersistentStepSize(
       }
 
       const auto identity = matchExactCoulombContactIdentity(
-          record, frame, currentFeatures, matchDistance);
+          record, frame, currentFeatures, matchDistance, policy);
       if (!identity.matched || identity.distance >= bestDistance)
         continue;
 
@@ -3118,18 +3528,83 @@ void ExactCoulombFbfConstraintSolver::updateExactCoulombWarmStart(
     const std::vector<ConstraintBase*>& constraints,
     const Eigen::Ref<const Eigen::VectorXd>& reaction,
     double stepSize,
-    std::size_t consecutiveNoRejectionSolves)
+    std::size_t consecutiveNoRejectionSolves,
+    bool updateReactionCache)
 {
   if (!mExactCoulombOptions.enableWarmStart || !reaction.allFinite()) {
     clearExactCoulombWarmStart();
     return;
   }
 
-  mWarmStartConstraints = constraints;
-  mWarmStartReaction = reaction;
-  mHasExactCoulombWarmStart = true;
+  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
+  if (updateReactionCache) {
+    mWarmStartConstraints = constraints;
+    mWarmStartReaction = reaction;
+    mHasExactCoulombWarmStart = true;
+  }
   mWarmStartStepSize = stepSize;
   mWarmStartConsecutiveNoRejectionSolves = consecutiveNoRejectionSolves;
+
+  if (!updateReactionCache) {
+    const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
+    if (constraints.empty() || mWarmStartContactRecords.empty()
+        || !std::isfinite(matchDistance) || matchDistance <= 0.0) {
+      return;
+    }
+
+    std::vector<bool> recordUsed(mWarmStartContactRecords.size(), false);
+    std::vector<std::size_t> matchedRecords;
+    matchedRecords.reserve(constraints.size());
+    for (const ConstraintBase* constraint : constraints) {
+      detail::ExactCoulombContactRowOperator::ContactFrame frame;
+      if (!detail::ExactCoulombContactRowOperator::extractContactFrame(
+              constraint, frame)) {
+        return;
+      }
+      const auto currentFeatures = makeBodyLocalContactFeatures(frame);
+
+      int bestRecord = -1;
+      double bestDistance = std::numeric_limits<double>::infinity();
+      for (std::size_t r = 0u; r < mWarmStartContactRecords.size(); ++r) {
+        if (recordUsed[r])
+          continue;
+
+        const auto identity = matchExactCoulombContactIdentity(
+            mWarmStartContactRecords[r],
+            frame,
+            currentFeatures,
+            matchDistance,
+            policy);
+        if (!identity.matched || identity.distance >= bestDistance)
+          continue;
+
+        bestDistance = identity.distance;
+        bestRecord = static_cast<int>(r);
+      }
+      if (bestRecord < 0)
+        return;
+
+      const std::size_t recordIndex = static_cast<std::size_t>(bestRecord);
+      recordUsed[recordIndex] = true;
+      matchedRecords.push_back(recordIndex);
+    }
+
+    const std::size_t stepSizeGroupId = mNextExactCoulombStepSizeGroupId++;
+    if (mNextExactCoulombStepSizeGroupId == 0u)
+      mNextExactCoulombStepSizeGroupId = 1u;
+    for (const std::size_t recordIndex : matchedRecords) {
+      auto& record = mWarmStartContactRecords[recordIndex];
+      record.stepSizeGroupId = stepSizeGroupId;
+      record.stepSize = stepSize;
+      record.consecutiveNoRejectionSolves = consecutiveNoRejectionSolves;
+      if (record.age < std::numeric_limits<int>::max())
+        ++record.age;
+      if (policy.warmStartMaxAge >= 0 && record.age > policy.warmStartMaxAge) {
+        record.reactionValid = false;
+      }
+    }
+    return;
+  }
 
   // Store body-local contact features and world-space reactions for
   // cross-step manifold matching. One `World` step can solve several groups
@@ -3168,25 +3643,36 @@ void ExactCoulombFbfConstraintSolver::updateExactCoulombWarmStart(
     record.worldImpulse = reaction[offset] * frame.normal
                           + reaction[offset + 1] * frame.tangent1
                           + reaction[offset + 2] * frame.tangent2;
+    if (frame.bodyB != nullptr
+        && frame.bodyB->getWorldTransform().matrix().allFinite()) {
+      record.localImpulseB
+          = frame.bodyB->getWorldTransform().linear().transpose()
+            * record.worldImpulse;
+      record.hasLocalImpulseB = record.localImpulseB.allFinite();
+    }
     record.stepSizeGroupId = stepSizeGroupId;
     record.stepSize = stepSize;
     record.consecutiveNoRejectionSolves = consecutiveNoRejectionSolves;
     groupRecords.push_back(record);
   }
 
-  const auto groupOwnsPair
-      = [&groupRecords](const ExactCoulombWarmStartContactRecord& record) {
-          for (const auto& groupRecord : groupRecords) {
-            const bool sameOrder = groupRecord.bodyA == record.bodyA
-                                   && groupRecord.bodyB == record.bodyB;
-            const bool flippedOrder = groupRecord.bodyA == record.bodyB
-                                      && groupRecord.bodyB == record.bodyA;
-            if (sameOrder || flippedOrder) {
-              return true;
-            }
-          }
-          return false;
-        };
+  const auto groupOwnsPair = [&groupRecords,
+                              &policy](const ExactCoulombWarmStartContactRecord&
+                                           record) {
+    for (const auto& groupRecord : groupRecords) {
+      const bool sameOrder = groupRecord.bodyA == record.bodyA
+                             && groupRecord.bodyB == record.bodyB;
+      const bool flippedOrder = groupRecord.bodyA == record.bodyB
+                                && groupRecord.bodyB == record.bodyA;
+      if (sameOrder
+          || (policy.warmStartMatchMode
+                  == ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature
+              && flippedOrder)) {
+        return true;
+      }
+    }
+    return false;
+  };
   mWarmStartContactRecords.erase(
       std::remove_if(
           mWarmStartContactRecords.begin(),
@@ -3235,6 +3721,7 @@ void ExactCoulombFbfConstraintSolver::
         const std::vector<ConstraintBase*>& constraints)
 {
   const double matchDistance = mExactCoulombOptions.warmStartMatchDistance;
+  const auto policy = getExactCoulombCrossStepPolicyState(this).options;
   if (constraints.empty() || mWarmStartContactRecords.empty()
       || !std::isfinite(matchDistance) || matchDistance <= 0.0) {
     return;
@@ -3266,7 +3753,7 @@ void ExactCoulombFbfConstraintSolver::
         continue;
 
       const auto identity = matchExactCoulombContactIdentity(
-          record, frame, currentFeatures, matchDistance);
+          record, frame, currentFeatures, matchDistance, policy);
       if (!identity.matched || identity.distance >= bestDistance)
         continue;
 
