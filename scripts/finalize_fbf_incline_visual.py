@@ -1686,10 +1686,21 @@ def _kill_process_group(process_group_id: int, signal_number: int) -> None:
 
 def _terminate_process_group(
     process: subprocess.Popen[str],
+    *,
+    graceful: bool = True,
 ) -> tuple[str, str]:
-    termination_started = time.monotonic()
     force_kill_sent = False
     try:
+        if not graceful:
+            # Keep the session leader alive until the whole owned process group
+            # has received SIGKILL.  Darwin can reject signals to the orphaned
+            # group after the leader has been reaped, even while a descendant
+            # remains.
+            _kill_process_group(process.pid, signal.SIGKILL)
+            force_kill_sent = True
+            return process.communicate()
+
+        termination_started = time.monotonic()
         _kill_process_group(process.pid, signal.SIGTERM)
         try:
             stdout, stderr = process.communicate(
@@ -1732,7 +1743,7 @@ def _run_command(
             stderr=stderr,
         ) from error
     except BaseException:
-        _terminate_process_group(process)
+        _terminate_process_group(process, graceful=False)
         raise
     if _process_group_exists(process.pid):
         _kill_process_group(process.pid, signal.SIGKILL)
