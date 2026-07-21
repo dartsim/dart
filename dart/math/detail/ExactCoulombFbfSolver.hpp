@@ -932,6 +932,100 @@ inline bool isExactCoulombLocalConeQuadraticKktPoint(
   return dualFeasible && std::abs(reaction.dot(gradient)) <= gapTolerance;
 }
 
+/// Recheck a rejected boundary candidate with fused long-double normal-cone
+/// stationarity (higher precision where the platform provides it).
+///
+/// This is an independent approximate KKT certificate, not a relaxed
+/// recomputation of the scalar complementarity gap. In exact arithmetic the
+/// two boundary certificates are equivalent. In floating-point arithmetic,
+/// normal-cone stationarity avoids multiplying component-level gradient error
+/// by a potentially large reaction, so its tolerance decision need not match
+/// the scalar-gap decision. The ordinary primal and dual tolerances are kept.
+inline bool isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
+    const ExactCoulombLocalConeQuadraticFactorization& factorization,
+    const Eigen::Vector3d& linearTerm,
+    const Eigen::Vector3d& reaction)
+{
+  if (!factorization.valid || factorization.frictionless
+      || !linearTerm.allFinite() || !reaction.allFinite()) {
+    return false;
+  }
+
+  const double coefficient = factorization.coefficient;
+  const Eigen::Vector3d gradient
+      = factorization.hessian * reaction + linearTerm;
+  if (!gradient.allFinite()) {
+    return false;
+  }
+
+  const double reactionScale = (std::max)(1.0, reaction.norm());
+  const double gradientScale = (std::max)(1.0, gradient.norm());
+  const double coefficientScale = (std::max)(1.0, coefficient);
+  const double coneTolerance
+      = 4096.0 * std::numeric_limits<double>::epsilon() * coefficientScale;
+  const double reactionTolerance = coneTolerance * reactionScale;
+  const double gradientTolerance = coneTolerance * gradientScale;
+  const double tangentNorm = std::hypot(reaction[1], reaction[2]);
+  const double gradientTangentNorm = std::hypot(gradient[1], gradient[2]);
+  const bool primalFeasible
+      = coefficient == 0.0 ? reaction[0] >= -reactionTolerance
+                                 && tangentNorm <= reactionTolerance
+                           : reaction[0] >= -reactionTolerance
+                                 && tangentNorm <= coefficient * reaction[0]
+                                                       + reactionTolerance;
+  if (!primalFeasible) {
+    return false;
+  }
+
+  const bool strictlyInterior
+      = coefficient > 0.0 && reaction[0] > reactionTolerance
+        && tangentNorm + reactionTolerance < coefficient * reaction[0];
+  if (strictlyInterior) {
+    return false;
+  }
+  const bool dualFeasible
+      = gradient[0] >= coefficient * gradientTangentNorm - gradientTolerance;
+  if (!dualFeasible) {
+    return false;
+  }
+
+  using LongVector3 = Eigen::Matrix<long double, 3, 1>;
+  LongVector3 refinedGradient;
+  for (Eigen::Index row = 0; row < 3; ++row) {
+    long double value = static_cast<long double>(linearTerm[row]);
+    for (Eigen::Index column = 0; column < 3; ++column) {
+      value = std::fma(
+          static_cast<long double>(factorization.hessian(row, column)),
+          static_cast<long double>(reaction[column]),
+          value);
+    }
+    refinedGradient[row] = value;
+  }
+  const LongVector3 refinedReaction = reaction.cast<long double>();
+  LongVector3 signature;
+  const long double refinedCoefficient = static_cast<long double>(coefficient);
+  signature << -refinedCoefficient * refinedCoefficient, 1.0L, 1.0L;
+  const LongVector3 constraintGradient
+      = signature.cwiseProduct(refinedReaction);
+  const long double constraintGradientSquared
+      = constraintGradient.squaredNorm();
+  if (!refinedGradient.allFinite() || !constraintGradient.allFinite()
+      || !std::isfinite(constraintGradientSquared)
+      || constraintGradientSquared <= 0.0L) {
+    return false;
+  }
+  const long double multiplier
+      = -constraintGradient.dot(refinedGradient) / constraintGradientSquared;
+  if (!std::isfinite(multiplier) || multiplier < 0.0L) {
+    return false;
+  }
+  const LongVector3 stationarityResidual
+      = refinedGradient + multiplier * constraintGradient;
+  return stationarityResidual.allFinite()
+         && stationarityResidual.norm()
+                <= static_cast<long double>(gradientTolerance);
+}
+
 /// Try the closed-form spectral solve for one SPD quadratic contact block.
 inline bool trySolveExactCoulombLocalConeQuadraticAnalytically(
     const ExactCoulombLocalConeQuadraticFactorization& factorization,
@@ -1000,6 +1094,8 @@ inline bool trySolveExactCoulombLocalConeQuadraticAnalytically(
     const Eigen::Vector3d candidate
         = factorization.spectralToReaction * spectral;
     if (!isExactCoulombLocalConeQuadraticKktPoint(
+            factorization, linearTerm, candidate)
+        && !isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
             factorization, linearTerm, candidate)) {
       return false;
     }
@@ -1194,7 +1290,11 @@ inline bool solveExactCoulombLocalConeQuadraticProjectedGradientFallback(
     reaction = nextReaction;
   }
 
-  return isExactCoulombLocalConeQuadraticKktPoint(
+  if (isExactCoulombLocalConeQuadraticKktPoint(
+          factorization, linearTerm, reaction)) {
+    return true;
+  }
+  return isExactCoulombLocalConeQuadraticBoundaryNormalConeKktPoint(
       factorization, linearTerm, reaction);
 }
 
