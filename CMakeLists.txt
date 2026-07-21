@@ -125,6 +125,32 @@ if(MSVC)
     "Force /MD (Release DLL runtime) for all configurations to match pre-built packages"
     ON
   )
+  # Whole-program optimization (/GL) defers code generation to a link-time /LTCG
+  # pass that optimizes across every translation unit at once, which roughly
+  # triples the MSVC Release build time. Keep it ON by default so shipped wheels
+  # stay optimized, but let the CI C++ test build disable it to stay under the
+  # Windows job timeout (the wheel jobs still exercise an optimized build).
+  #
+  # Seed the cache from the environment BEFORE dart_option() so CI can toggle it
+  # for every cmake configure in the job without editing each pixi config task.
+  # dart_option() also sets a normal (non-cache) variable of the same name, which
+  # would shadow a cache value forced after it and leave the first configure on
+  # the default; seeding first makes dart_option() normalize the intended value.
+  # An explicit -D still applies when the environment variable is unset.
+  if(DEFINED ENV{DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION})
+    set(
+      DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION
+      "$ENV{DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION}"
+      CACHE BOOL
+      "Disable MSVC whole-program optimization (/GL, /LTCG) in Release builds"
+      FORCE
+    )
+  endif()
+  dart_option(
+    DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION
+    "Disable MSVC whole-program optimization (/GL, /LTCG) in Release builds"
+    OFF
+  )
   dart_configure_msvc_runtime_library()
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
