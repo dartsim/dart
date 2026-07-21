@@ -4,8 +4,11 @@
 
 Visual evidence is partial. The small-scene capture system now produces
 auditable, solver-gated media, and a complete post-review small matrix exists.
-The source-selected card, reconstructed card, 101-stone arch, and crown-impact
-examples do not have valid current long-run media. The current-source nine-row
+The source-selected strict card, reconstructed card, 101-stone arch, and
+crown-impact examples do not have valid current strict long-run media. A
+separate source-continuation card lane now has validated local exact/boxed media
+with explicit acceptance telemetry; it is not strict or paper-parity evidence.
+The current-source nine-row
 numeric small matrix is now a locally finalized evidence bundle. Five dynamic
 visual bundles are locally finalized: literal-wedge standing, the two-cell
 incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
@@ -187,7 +190,7 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Painleve pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; no author parity |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Source-selected four-level Figure 6 adapter | Scene/schedule contract, exact/boxed smoke, and bounded numeric diagnostics only | No valid captured media | Strict exact fails closed at completed step 35 on a retained 56-contact failed group; bounded option tuning did not solve it, and no strict run reaches release. An unsealed accept-cap preview reached release and step 2,400 with 1,106/3,231 caps and worst residual `0.616089`, so outcome/media/parity remain blocked |
+| Source-selected four-level Figure 6 adapter | Strict prefix remains a step-35 negative; separate source-continuation exact/boxed capture completes 2,400/2,400 through release with all acceptance telemetry, decoded 301-frame media, and manual inspection | Both stand through release; exact retains substantial multi-level endpoint structure while boxed is mostly collapsed | Continuation evidence only: exact has 3,351/3,351 solves, 113 plateau and 633 max-iteration accepts, 0 failures/fallbacks/shrink caps, and worst residual `0.917120`. No strict convergence, quantitative physical/trajectory/golden/backend/timing parity, superiority, or paper parity |
 
 The locally finalized current-source incline bundle is
 `assets/paper_evidence/fig01_02_incline_current_v1/`.
@@ -372,8 +375,8 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 `dt=1/240 s`. Exact and boxed share Native `FourPointPlanar`, capacity 4,096,
 and subdivision 4.
 
-The demo build, eight focused C++ tests, 205 runner Python tests, and exact/boxed
-contract smoke pass. The strict exact request fails closed at completed step
+The demo build, 13 focused headless/continuation C++ tests, 259 runner Python
+tests, and exact/boxed contract smoke pass. The strict exact request fails closed at completed step
 35 when collision contacts jump from 44 to 68. The constrained groups are 56,
 8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact
 group, then attempts 102 and 103 succeed. Its 100-step request records 103
@@ -395,13 +398,34 @@ or before the same prefix. A process-local GDB override accepting capped
 iterates completed 2,400 steps and invoked `p` at step 1,600, but its runtime
 command cannot reproduce the mutation. It accepted 1,106 of 3,231 solves at
 cap and recorded worst residual `0.61608914241359314`. This unsealed preview is
-finite-continuation evidence only, not a valid physical-outcome or visual
-artifact. No strict run reaches release, and there is no valid outcome,
-source-backend or timing equivalence, Fig. 6/paper parity, final media or PR
-video, or solver-superiority claim. See
+historical finite-continuation evidence only, not a valid physical-outcome or
+visual artifact.
+
+The separate reproducible source-continuation pair completes exact and boxed
+through 2,400 steps with a successful step-1,600 release. Exact records 3,351
+attempts/solves, zero failures/fallbacks, 2,605 ordinary successes, 113 plateau
+accepts, 633 max-iteration accepts, and zero shrink caps. The 746 accepts are
+22.262% of 3,351 solves and occur across 723 steps. Worst final residual is
+`0.91712002943322535`, first reached at step 2,101. Independent inspection finds
+both houses standing through release, but exact and boxed are identical only at
+step 0; viewport difference is 0.165% at step 1,600 and 11.985% at the endpoint.
+Exact visibly retains more upright card-house structure after impact. The
+official MuJoCo panel degrades during settling, whereas DART boxed remains
+upright until impact, so do not map DART lanes to paper lanes or infer a mechanism.
+This is not a quantitative outcome/trajectory comparison, approved golden,
+backend or timing equivalence, or solver-superiority result. No strict run
+reaches release, and there is no
+strict outcome or Fig. 6/paper-parity claim. See
 [`FIGURE6_CONVERGENCE_BLOCKER.md`](FIGURE6_CONVERGENCE_BLOCKER.md). This remains
-an adapter-only lane. Keep `fbf_paper_card_house_26` distinct as the older
-reconstruction.
+a strict-adapter blocker plus separately labeled continuation-evidence lane.
+Keep `fbf_paper_card_house_26` distinct as the older reconstruction. The ignored
+durable capture root is
+`assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`,
+resealed from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`.
+Summary and paired-clip SHA-256 values are
+`6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc` and
+`282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
+No GitHub attachment URL exists yet.
 
 The quantitative CPU evidence is authoritative for
 `physical_outcome_valid`. The visual observations above are recorded under
@@ -420,6 +444,7 @@ rate, and frame count:
 | Painleve, locally finalized v1 | Side by side | 1320x530, 30 fps, 76 frames | `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b` |
 | Incline, locally finalized v1 | Combined view | 660x506, 30 fps, 61 frames | `ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9` |
 | Backspin, locally finalized v3 | Single view | 1300x506, 30 fps, 66 decoded frames | `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928` |
+| Figure 6 source continuation, local candidate | Side by side | 1320x530, 30 fps, 301 decoded frames | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
 
 The member order, labels, synchronized duration, source-frame hashes, and
 composite hashes are recorded in the group metadata. These integrity checks
@@ -455,16 +480,17 @@ completed sidecar/media bundle:
 
 | Schedule | Requested duration | Furthest observation | Result predicates |
 | --- | ---: | --- | --- |
-| Source-selected four-level/26-card settle/projectile | 2,400 steps | Strict exact fails closed at completed step 35 on a 56-contact group; boxed control completes 100/2,400. An unsealed accept-cap preview completes 2,400 and executes `p` at step 1,600, but records 1,106/3,231 caps and worst residual `0.616089` | `artifact_valid=false`; no strict release, valid outcome, or media |
+| Strict source-selected four-level/26-card settle/projectile | 2,400 steps | Strict exact fails closed at completed step 35 on a 56-contact group; boxed control completes 100/2,400. An unsealed accept-cap preview completes 2,400 and executes `p` at step 1,600, but records 1,106/3,231 caps and worst residual `0.616089` | `artifact_valid=false`; no strict release, valid outcome, or media |
 | 26-card settle/projectile | 600 steps | Step 6/600 | `artifact_valid=false`; incomplete |
 | 25-stone oriented-box reconstructed arch | 360 steps | Step 24/360; visibly collapsed at 0.4 s | `artifact_valid=false`; `physical_outcome_valid=false` |
 | 101-stone reconstructed arch | 600 steps | Step 120/600; visibly collapsed at 2 s | `artifact_valid=false`; `physical_outcome_valid=false` |
 | Dynamic 10-level card house | Long schedule | No completed step 1 | `artifact_valid=false`; no outcome evidence |
 
-There are no valid long sidecars or media for these bounded schedules.
+There are no strict-valid long sidecars or media for these bounded schedules.
 The attempts are negative evidence and must not be replaced by one-step,
-reduced-scene, or boxed-LCP captures under the same label. The separate
-literal-wedge standing capture follows a different declared scene contract.
+reduced-scene, or boxed-LCP captures under the same label. The separately
+labeled source-continuation card-house pair below and literal-wedge standing
+capture follow different declared contracts.
 
 The positive literal-wedge result is a separate scene contract and does not
 relabel or invalidate the oriented-box visual failure. Its standing capture
@@ -517,6 +543,9 @@ The source workflow pins:
 | Combined 82 s paper video | `d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794` |
 | Project teaser | `99527da7a84f7b9ac0031f794d9b16adadfba846d2165e7da22fd51d986c8db0` |
 | Paper PDF | `af7cb8df58288f4323fa4340e1590b09643b8702116a6c47cefe7ffa9a51e2f4` |
+
+A fresh download to `/tmp/fbf_official_5THad4PAGmI_360p.mp4` reproduces the
+combined-video SHA-256 above exactly.
 
 It validates nine contiguous semantic segments across all 82 s:
 
@@ -589,13 +618,18 @@ shown by `--help` and rejects hash or segment-boundary drift.
   distinction. The finalized incline visual/trace lane does not promote the
   strict `paper_cpu` `mu=.5` residual failure, and the turntable visual lane
   does not erase its separate strict failure.
-- Produce valid full-duration card/arch media only after every requested step
-  satisfies the strict exact-solver and physical-outcome contracts.
+- Keep the source-continuation Figure 6 clip separately labeled, independently
+  reviewed, and outside Git; attach it only with its acceptance telemetry and
+  narrow qualitative claim, then record the GitHub user-attachment URL.
+- Produce strict full-duration card/arch outcome evidence only after every
+  requested step satisfies the strict exact-solver and quantitative
+  physical-outcome contracts.
 - For the source-selected four-level card scene, resolve the now-characterized
   completed-step-35 failure on the retained 56-contact group, then complete all
   2,400 strict exact/boxed steps through release. Bounded existing-option tuning
   did not solve it. Do not promote the unsealed accept-cap preview, the boxed
-  100-step prefix, or the older reconstructed card evidence.
+  100-step prefix, the continuation capture into strict evidence, or the older
+  reconstructed card evidence.
 - The raw-scale 25-stone author adapter now clears the former step-68 local-QP
   failure and completes a strict 100-step exact smoke with zero accepted
   caps/failures/fallbacks. Its next clean fail-fast blocker is the outer

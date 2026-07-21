@@ -16,10 +16,11 @@ paper parity, an every-step real-time guarantee, the paper's timing rows, or a
 claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
-The local visual inventory has six locally finalized bundles, and the visual workflow
-now includes a separately named source-selected four-level card-house schedule.
-That schedule has no finalized media and does not increase the six-bundle
-inventory.
+The local visual inventory has six locally finalized bundles. The visual
+workflow also includes separately named strict and source-continuation
+four-level card-house schedules. The continuation schedule now has validated
+local exact/boxed media but is not a finalized strict bundle and does not
+increase the six-bundle inventory.
 
 The current topic tip tracks zero files under
 `docs/dev_tasks/fbf_exact_coulomb_friction/assets/`, but the topic history still
@@ -556,8 +557,8 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 in
 the declared 2,400-step, `dt=1/240 s` run. Exact and boxed lanes share the same
 Native `FourPointPlanar` frontend, 4,096-contact capacity, and manifold
 subdivision 4.
-The demo build, eight focused C++ fixtures, 207 runner Python tests, and both
-adapter-contract smoke validators pass.
+The demo build, 13 focused headless/continuation C++ fixtures, 259 runner Python
+tests, and both adapter-contract smoke validators pass.
 
 The strict exact 100-step request fails closed at completed step 35 when the
 contact count jumps from 44 to 68. Steps through 34 are clean, with prior worst
@@ -616,10 +617,9 @@ first cap indices are 33 and 35. Worst natural `final_residual` is
 `/tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json`,
 SHA-256 `b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd`.
 Zero-cap completion is therefore a strict scientific gate, not
-source-equivalent continuation semantics. A future physical/video lane that
-continues finite unconverged iterates must be separately labeled and retain
-per-step convergence/cap/plateau and residual telemetry; it is not implemented
-in this checkpoint.
+source-equivalent continuation semantics. The separately labeled telemetry-rich
+continuation lane below now captures finite accepted iterates; it does not alter
+the strict blocker.
 
 The boxed control completes 100 steps. Its timeline is
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
@@ -641,6 +641,55 @@ superiority. It remains an adapter-only lane. Any next strict A/B must isolate
 one remaining source mismatch; colored source parity and source shrink-cap or
 continuation semantics remain separate work. The older reconstructed
 `fbf_paper_card_house_26` lane remains distinct.
+
+### Figure 6 Source-Continuation Attachment Candidate
+
+The separately named
+`fbf_author_card_house_4_impact_source_continuation_current_source` scene and
+`card_house_author_4_impact_source_continuation_current_source` schedule use the
+same 26-card/four-cube source-parameterized DART scene, Native
+`FourPointPlanar` frontend, 2,400-step clock, and step-1,600 `p` action for exact
+and boxed. Only exact requests the explicit continuation policy.
+
+Both lanes complete 2,400/2,400 steps and the action succeeds. Exact records
+3,351 attempts/solves, zero exact failures or boxed fallbacks, 2,605 ordinary
+successes, 113 plateau accepts, 633 max-iteration accepts, and zero shrink caps.
+The 746 accepted continuation outcomes are 22.262% of 3,351 solves and occur
+across 723 steps. Worst final residual is `0.91712002943322535`, first reached
+at step 2,101. This is source-continuation evidence, not strict convergence.
+
+Independent media audit finds exact and boxed pixel-identical only at step 0.
+Their viewports already differ by 0.165% at step 1,600, so this is not an
+identical-state-at-impact comparison; endpoint divergence is 11.985%. In this
+DART source-parameterized four-level scene, the exact source-continuation lane
+completes without exact-solver failures/fallbacks and visibly retains more
+upright card-house structure after impact than DART boxed LCP. Do not infer a
+mechanism or solver superiority: the official MuJoCo panel degrades while
+settling, whereas DART boxed remains upright until impact, so the DART lanes do
+not map to the paper's solver lanes. There is no quantitative trajectory or
+physical-outcome equivalence, approved golden, source-backend equivalence,
+timing comparison, or paper parity.
+
+The ignored durable root is
+`assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`,
+resealed from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`.
+Integrity anchors are:
+
+- summary:
+  `6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc`;
+- exact timeline:
+  `a9eb12711419b7801037d17059560559893be2898e07d14425a5f572175482ff`;
+- boxed timeline:
+  `1618e284f97ff7ed49e3288636269f5bea6131faa3bae45428e42e23de660bd8`;
+  and
+- paired H.264/yuv420p clip:
+  `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
+
+The fresh official-video download matches audited SHA-256
+`d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794`.
+The paired clip remains outside Git and has no
+`github.com/user-attachments/...` URL. It may be uploaded only as a narrowly
+captioned continuation comparison; PR #3377 must remain draft.
 
 ### Pinned-Author Masonry-Arch Scientific Negative
 
@@ -888,12 +937,13 @@ publishes no multicore CPU reference.
 ## Current Verification
 
 - Current-source four-level author-card demo build: passed.
-- Exact-Coulomb math: 56/56 passed.
-- Exact constraint solver: 32/32 passed.
-- Current-source four-level author-card C++ fixtures: 8/8 passed; the full
+- Exact-Coulomb math: 66/66 passed.
+- Exact constraint solver: 38/38 passed.
+- Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
+  the full
   paper fixture binary reports 31 passed and 3 explicit stress skips.
-- Visual runner with the source-selected correction and inner-initialization
-  contract: 213/213 passed.
+- Visual runner with the source-selected correction, inner-initialization, and
+  continuation contracts: 259/259 passed.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
   `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
   methods, and exports the additive source-inner setter/getter without changing
@@ -971,10 +1021,11 @@ cross-platform CI.
   failure and complete its strict 2,400-step exact and boxed trajectories
   through the step-1,600 release. Keep any next strict A/B isolated from
   tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
-  Colored source parity remains a separate proof obligation. In parallel,
-  define the separately labeled telemetry-rich source shrink-cap/continuation
-  physical/video lane without presenting unconverged steps as exact success.
-  Keep those lanes distinct from the reconstructed
+  Colored source parity remains a separate proof obligation. Preserve and
+  independently review the separately labeled telemetry-rich continuation
+  capture without presenting accepted finite iterates as strict exact success;
+  upload it only through the PR editor and record the URL. Keep those lanes
+  distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.

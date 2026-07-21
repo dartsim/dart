@@ -1,14 +1,14 @@
-# Figure 6 Source-Selected Convergence Blocker
+# Figure 6 Strict Convergence Blocker And Continuation Evidence
 
 ## Status And Claim Boundary
 
 This record covers the source-selected four-level/26-card adapter at commit
 `a099ca0b29d38f2df13438da13b4d22599bdedb2` plus the additive diagnostics,
 source-style correction policy, and source-style inner-initialization policy
-in the current local checkpoint. The scene and capture contract are
-implemented, but the strict exact lane does not yet reach the projectile
-release. This is a solver blocker, not Figure 6 outcome, media, paper-parity,
-or superiority evidence.
+in the current local checkpoint. The strict exact lane does not reach the
+projectile release. A separately named telemetry-rich source-continuation lane
+now completes and has local exact/boxed media, but it does not clear this strict
+solver blocker or establish paper parity or superiority.
 
 The adapter pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and the source-supported
@@ -185,10 +185,10 @@ This source control is current-source evidence, not a historical paper run,
 golden trajectory, or solver-success oracle. It changes the wording of the
 DART gate: zero caps/failures remains the strict scientific convergence bar,
 but it is stricter than and must not be called source-equivalent execution
-semantics. A future source-continuation physical/video lane must be separately
-labeled, must retain per-step convergence/cap/plateau and residual telemetry,
-and must not turn an unconverged step into an exact-solver success or
-superiority claim. That lane is not implemented in this checkpoint.
+semantics. The separately labeled source-continuation physical/video lane below
+retains per-step convergence/cap/plateau and residual telemetry. It must not
+turn an accepted finite iterate into strict exact-solver success or a
+superiority claim.
 
 ## Bounded Option Matrix
 
@@ -250,13 +250,78 @@ SHA-256 034fa50433620a0050839fa26408700a86ad486e2e022edd3dbd29d19a0ad2ec
 SHA-256 0ade57d83cff8ed96ac19a253de79d51bbec84eaae60f55ae0237190e90e52ce
 ```
 
+## Reproducible Source-Continuation Capture
+
+The separately named scene and schedule
+`fbf_author_card_house_4_impact_source_continuation_current_source` and
+`card_house_author_4_impact_source_continuation_current_source` replace the
+debugger mutation with an explicit, fail-closed continuation policy and full
+telemetry. They keep the same 26-card/four-cube geometry, Native
+`FourPointPlanar` frontend, 2,400-step clock, and step-1,600 release. Only the
+exact lane requests the continuation policy; boxed is the same physical scene
+and schedule without exact-only policy claims.
+
+The capture completes both lanes for 2,400/2,400 steps and records a successful
+`p` action at step 1,600. Exact records:
+
+| Metric | Source-continuation result |
+| --- | ---: |
+| Exact attempts / solves | 3,351 / 3,351 |
+| Ordinary successes | 2,605 |
+| Plateau accepts | 113 |
+| Max-iteration accepts | 633 |
+| Accepted continuation outcomes / share of solves | 746 / 22.262% |
+| Steps with at least one continuation accept | 723 |
+| Line-search shrink caps | 0 |
+| Exact failures / boxed fallbacks | 0 / 0 |
+| Worst final residual | `0.91712002943322535`, first reached at step 2,101 |
+
+Every accepted plateau or max-iteration result is serialized as such; none is
+relabeled `success`. The all-step run is therefore source-continuation evidence,
+not strict convergence.
+
+Independent inspection of the synchronized 301-frame, 10.033333-second clip
+finds both houses standing through release. Exact and boxed are pixel-identical
+only at step 0; viewport difference is 0.165% at step 1,600 and 11.985% at the
+endpoint. In this DART source-parameterized four-level scene, exact completes
+without exact-solver failures/fallbacks and visibly retains more upright
+card-house structure after impact than boxed. The official MuJoCo panel degrades
+while settling, whereas DART boxed remains upright until impact, so do not map
+DART lanes to paper lanes or infer a mechanism. This is not a quantitative
+physical-outcome or trajectory equivalence result, approved golden, source
+collision/solver-backend equivalence, timing result, or proof that exact is
+superior. The capture summary records
+`paper_comparable=false` and no automated semantic-outcome validation.
+
+The ignored durable evidence root is
+`assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`,
+resealed from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`.
+Integrity anchors are:
+
+- summary:
+  `6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc`;
+- exact timeline:
+  `a9eb12711419b7801037d17059560559893be2898e07d14425a5f572175482ff`;
+- boxed timeline:
+  `1618e284f97ff7ed49e3288636269f5bea6131faa3bae45428e42e23de660bd8`;
+  and
+- paired clip:
+  `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
+
+A fresh download of the official video has SHA-256
+`d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794`,
+exactly matching the prior source audit. Generated files remain outside Git.
+The paired MP4 is a local PR-attachment candidate only; publication requires a
+GitHub user-attachment URL.
+
 ## Decision And Next Work
 
-Keep the checked-in lane strict and keep PR #3377 in draft. Retain the
+Keep the strict lane fail closed and keep PR #3377 in draft. Retain the
 source-style no-projection and inner-initialization options because they close
 pinned-source mismatches, not because they establish convergence. Do not
 change the default to accept capped iterates, relabel the preview as a solver
-success, or publish Figure 6 media from it.
+success, or publish the debugger preview. The reproducible continuation clip
+may be attached only with its acceptance telemetry and narrow claim boundary.
 
 The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
@@ -264,5 +329,6 @@ must isolate one remaining source mismatch without combining tolerance,
 budget, fallback, fail-fast, or accepted-cap changes. Colored source parity is
 a separate unproven lane. Source shrink-cap, plateau, and continuation
 semantics likewise require a separately labeled, telemetry-rich physical/video
-lane before producing outcome or media evidence. Neither lane currently has
-promotable full-resolution media.
+lane before producing strict outcome evidence. The continuation lane now has a
+validated local full-resolution attachment candidate, but no GitHub URL and no
+strict, quantitative-parity, or superiority verdict.

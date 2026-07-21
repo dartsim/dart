@@ -8,10 +8,12 @@ authoritative paper-profile contact-rich result and fails closed at step 89. A
 separate current-source Figure 6 adapter now fails its strict exact lane at
 completed step 35 on a 56-contact island. Additive `last_failure` diagnostics
 identify outer dual/complementarity convergence as the terminal condition, but
-the tested option matrix supplies no strict correction. A source-style
-accept-cap preview reaches all 2,400 steps only by accepting 1,106 capped
-solves, so it is finite-runtime diagnostic evidence rather than a valid exact
-trajectory. The current-source, one-factor card-manifold comparison also
+the tested option matrix supplies no strict correction. A historical
+debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
+solves. A separate reproducible source-continuation lane now completes exact
+and boxed with explicit plateau/cap/shrink telemetry; it remains
+continuation-policy evidence rather than strict convergence or a Figure 9
+residual-history result. The current-source, one-factor card-manifold comparison also
 completes 600 emitted rows in both modes, but neither trajectory is strict and
 its physical, timing, and paper verdicts remain null. A separate locally sealed bundle
 establishes a positive 600-step exact result for a non-paper literal-wedge
@@ -168,6 +170,36 @@ cannot reproduce the debugger mutation. The accompanying 64x64 image is not
 legible enough for an outcome verdict. This is an unsealed finite-runtime
 continuation diagnostic, not strict trajectory, physical-outcome, media,
 solver-equivalence, superiority, Figure 6, or paper-parity evidence.
+
+### Reproducible Source-Continuation Full Run
+
+The separate
+`fbf_author_card_house_4_impact_source_continuation_current_source` lane
+completes all 2,400 steps with the same scene, clock, and successful step-1,600
+release as its paired boxed control. Exact records 3,351 attempts and solves,
+zero exact failures or boxed fallbacks, 2,605 ordinary successes, 113 plateau
+accepts, 633 max-iteration accepts, and zero line-search shrink caps. The 746
+accepts are 22.262% of 3,351 solves and occur across 723 steps. The cumulative
+worst final residual is `0.91712002943322535`, first reached at step 2,101.
+
+These are per-group/per-step continuation diagnostics, not the paper's
+per-outer Figure 9 curves. The accepted outcomes remain typed rather than being
+relabeled as `success`, so the run cannot promote the strict step-35 negative.
+Independent exact/boxed inspection is useful for the separate visual claim:
+the viewports are identical only at step 0, differ by 0.165% at step 1,600 and
+11.985% at the endpoint, where exact retains more upright structure. It does
+not make this a quantitative trajectory, outcome, backend, timing, mechanism,
+paper-lane mapping, or superiority result.
+
+The ignored durable root is
+`assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`,
+resealed from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`.
+The summary, exact timeline, boxed timeline, and paired clip SHA-256 values are
+`6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc`,
+`a9eb12711419b7801037d17059560559893be2898e07d14425a5f572175482ff`,
+`1618e284f97ff7ed49e3288636269f5bea6131faa3bae45428e42e23de660bd8`,
+and `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
+The artifacts remain outside Git and the clip has no PR attachment URL.
 
 ## Current-Source Card Manifold Sensitivity v2
 
@@ -845,9 +877,11 @@ evidence, not a reason to omit the run or substitute a reduced scenario.
 
 - Make the strict full-card trajectory finish within the paper cap and
   tolerance without fallback.
-- Preserve the source-selected Figure 6 step-35 record as a strict negative;
-  do not promote its accept-cap 2,400-step preview into trajectory, outcome,
-  media, or Figure 9 evidence.
+- Preserve the source-selected Figure 6 step-35 record as a strict negative.
+  Keep both the historical debugger preview and the reproducible
+  source-continuation full run outside strict trajectory/outcome and Figure 9
+  claims; only the latter is a validated, separately labeled visual attachment
+  candidate.
 - Preserve the completed v2 sensitivity result as diagnostic-only evidence;
   do not promote either non-strict trajectory or its raw wall times.
 - Preserve the pinned-author run as scientific-negative source evidence;

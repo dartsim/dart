@@ -47,7 +47,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Current-source four-level card-house adapter | `fbf_author_card_house_4_impact_current_source` and schedule `card_house_author_4_impact_current_source` bind the pinned author geometry and a source-supported four-level, 600-frame CLI selection to 2,400 DART substeps; exact/boxed adapter contracts and focused tests pass. Source-only post-correction and inner-initialization policies now close two pinned-solver mismatches while preserving DART defaults elsewhere | Strict source-inner 36- and 100-step replays still fail the same 56-contact group at step 35: residual `4.084485e-4`, primal `3.937595e-6`, complementarity `2.381543e-4`, and zero accepted caps, fallbacks, or shrinks. Boxed completes 100 steps, while an unsealed accepted-cap preview reaches release/2,400 with 1,106 caps and worst residual 0.616089. No valid strict outcome, media, superiority, or Fig. 6/paper-parity claim follows |
+| Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
@@ -520,8 +520,8 @@ runner invokes `p` after completed substep 1,600. The declared horizon is
 `FourPointPlanar` collision frontend with contact capacity 4,096 and manifold
 subdivision 4.
 
-The demo build, eight focused author-card C++ tests, 213 visual-runner Python
-tests, and exact/boxed contract-smoke validators pass. The first live strict
+The demo build, 13 focused headless/continuation C++ tests, 259 visual-runner
+Python tests, and exact/boxed contract-smoke validators pass. The first live strict
 exact request for 100 steps fails closed at completed step 35 when contacts
 jump from 44 to 68. Steps through 34 are clean, with prior worst residual
 `9.826274595482653e-7`; the failing prefix records 103 exact attempts, 102
@@ -563,7 +563,8 @@ and
 (SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`).
 The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
 colored source parity remains unproven and separate. Source shrink-cap,
-plateau, and continuation semantics also remain separate and unchanged.
+plateau, and continuation semantics are unchanged by this strict A/B and are
+exercised only by the separately labeled lane below.
 
 The pinned author control completes 2,400 substeps while reporting only 1,455
 converged and 945 unconverged steps: 632 caps and 313 plateau stops. Before
@@ -574,9 +575,9 @@ false flag is source step index 33, the first cap is 35, worst natural
 `/tmp/fbf-sca-2026-author/paper_examples/card-house/results/20260721T175341Z/fbf/history.json`,
 SHA-256 `b67d3c86f106171008dfbb0aca0a2ca72a9d3747c1a7a6694f57f211d3f83afd`.
 Therefore zero-cap completion remains DART's strict scientific gate but is not
-source-equivalent continuation semantics. A separately labeled future
-source-continuation physical/video lane must preserve convergence, cap,
-plateau, and residual telemetry; it is not implemented here.
+source-equivalent continuation semantics. A separately labeled,
+telemetry-rich source-continuation physical/video lane is now implemented and
+captured below; it does not change the strict lane's failure verdict.
 
 The boxed control completes 100 steps; its timeline is
 `/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
@@ -596,6 +597,63 @@ physical-outcome verdict, source-backend or timing equivalence, captured media
 or PR video, paper trajectory, Fig. 6/video parity, or exact-versus-boxed
 superiority claim exists. Keep the older reconstructed
 `fbf_paper_card_house_26` scene and its evidence distinct.
+
+### Source-Continuation Figure 6 Capture (Not Strict Convergence)
+
+The separately named scene and schedule
+`fbf_author_card_house_4_impact_source_continuation_current_source` and
+`card_house_author_4_impact_source_continuation_current_source` preserve the
+same 26-card/four-cube geometry, Native `FourPointPlanar` frontend, 2,400-step
+clock, and step-1,600 `p` release. Only the exact lane requests the explicit
+source-continuation policy; the paired boxed lane uses the same scene, action,
+and capture schedule without exact-only policy metadata.
+
+The validated local capture root is
+`assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`;
+generated frames and media remain outside Git. The current-contract reseal was
+produced from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`. Both
+lanes complete 2,400/2,400 steps and the release
+action succeeds at step 1,600. The exact lane records 3,351 attempts and 3,351
+solves, zero exact failures or boxed fallbacks, 2,605 ordinary successes, 113
+`plateau_accepted` outcomes, 633 `max_iterations_accepted` outcomes, and zero
+line-search shrink caps. The 746 continuation accepts are 22.262% of 3,351
+solves and occur across 723 steps.
+The cumulative worst final residual is `0.91712002943322535`, first reached at
+step 2,101. These accepted finite iterates make the full run
+source-continuation evidence, not a strict-convergence trajectory.
+
+Independent inspection of the synchronized 301-frame, 10.033333-second clip
+finds that both houses stand through release. Exact and boxed are pixel-identical
+only at step 0; viewport difference is already 0.165% at step 1,600 and reaches
+11.985% at the endpoint. In this DART source-parameterized four-level scene,
+the exact source-continuation lane completes without exact-solver
+failures/fallbacks and visibly retains more upright card-house structure after
+impact than DART boxed LCP. The official MuJoCo panel degrades while settling,
+whereas DART boxed remains upright until impact, so do not map DART lanes to the
+paper lanes or infer a mechanism. This is not a quantitative trajectory or
+physical-outcome equivalence result, approved golden, source collision or
+solver-backend equivalence, timing result, or solver-superiority result. The
+capture summary records `paper_comparable=false` and no automated
+semantic-outcome validation.
+
+Integrity anchors are:
+
+- run summary:
+  `6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc`;
+- exact timeline:
+  `a9eb12711419b7801037d17059560559893be2898e07d14425a5f572175482ff`;
+- boxed timeline:
+  `1618e284f97ff7ed49e3288636269f5bea6131faa3bae45428e42e23de660bd8`;
+  and
+- paired clip:
+  `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
+
+The freshly downloaded official video at
+`/tmp/fbf_official_5THad4PAGmI_360p.mp4` has SHA-256
+`d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794`,
+exactly matching the audited source-video hash. The paired DART clip is only a
+local PR-attachment candidate until a `github.com/user-attachments/...` URL is
+recorded. The strict step-35 blocker remains open.
 
 ## Pinned-Author Masonry-Arch Scientific Negative
 
@@ -830,9 +888,9 @@ The latest recorded focused results on the current source are:
   suite: 859 passed post-merge in 163.95 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
-- current-source four-level author-card C++ fixture tests: 8/8;
-- visual-runner Python tests with the source-selected correction and
-  inner-initialization contract: 213/213;
+- current-source four-level headless/continuation C++ fixture tests: 13/13;
+- visual-runner Python tests with the source-selected correction,
+  inner-initialization, and continuation contracts: 259/259;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
@@ -856,13 +914,12 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    evidence. Preserve the finalized incline, the pinned-author numeric
    incline sweep, current-source Painleve proxy, and finalized backspin
    bundles, then continue with the other
-   smaller-figure recaptures,
-   strict card/media work, beginning with an isolated A/B of the next pinned
-   source mismatch: initialize each frozen-cone inner solve from the current
-   outer reaction instead of DART's previous inner trial. Do not combine that
-   experiment with tolerance, cap, fallback, or fail-fast changes. Continue
-   planning a distinct telemetry-rich source-continuation physical/video lane;
-   do not relabel it as strict convergence or solver superiority. Continue
+   smaller-figure recaptures and strict card work. Continue isolated
+   one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
+   fallback, or fail-fast changes. Preserve and independently review the
+   completed telemetry-rich source-continuation clip, do not relabel it as
+   strict convergence or solver superiority, and publish it only through the PR
+   editor after explicit approval. Continue
    source-equivalent impact work
    without tuning
    either frozen v1
