@@ -35,11 +35,17 @@
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
+#include <dart/constraint/ContactConstraint.hpp>
+#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
+#include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
+#include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 
@@ -51,6 +57,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 #include <cmath>
@@ -65,8 +72,14 @@ namespace fbf_author_card_house {
 inline constexpr const char* kContractSchema
     = "dart.fbf_author_card_house_configuration_contract/v1";
 inline constexpr const char* kContractKind = "configuration_only";
+inline constexpr const char* kDynamicsContractSchema
+    = "dart.fbf_author_card_house_dynamics_adapter/v1";
+inline constexpr const char* kDynamicsContractKind
+    = "source_configuration_dynamics_adapter";
 inline constexpr const char* kDemoSceneId
     = "fbf_author_card_house_5_construction";
+inline constexpr const char* kDynamicsDemoSceneId
+    = "fbf_author_card_house_4_impact_current_source";
 inline constexpr const char* kAuthorRepository
     = "https://github.com/matthcsong/fbf-sca-2026";
 inline constexpr const char* kAuthorCommit
@@ -88,7 +101,10 @@ inline constexpr double kPi = 3.141592653589793238462643383279502884;
 inline constexpr double kGravity = 9.81;
 inline constexpr double kFriction = 0.8;
 inline constexpr double kContactGap = 0.005;
+inline constexpr double kSourceShapeStiffness = 1.0e4;
+inline constexpr double kSourceShapeDamping = 1.0e3;
 inline constexpr std::size_t kDefaultLevelCount = 5u;
+inline constexpr std::size_t kFigureLevelCount = 4u;
 inline constexpr std::size_t kCubeCount = 4u;
 inline constexpr double kLeanFromHorizontalDegrees = 65.0;
 inline constexpr double kLeanFromVerticalDegrees = 25.0;
@@ -115,6 +131,18 @@ inline constexpr std::size_t kReleaseFrame = 400u;
 inline constexpr std::size_t kReleaseSubstep = 1600u;
 inline constexpr std::size_t kTotalFrames = 800u;
 inline constexpr std::size_t kTotalSubsteps = 3200u;
+// Source-supported CLI selection matching the published four-level/26-card
+// example and its 10-second video horizon. The public source defaults remain
+// five levels and 800 frames; this selected invocation changes only arguments
+// exposed by run.py.
+inline constexpr std::size_t kFigureEvidenceFrames = 600u;
+inline constexpr std::size_t kFigureEvidenceSubsteps
+    = kFigureEvidenceFrames * kSubstepsPerFrame;
+inline constexpr char kReleaseActionKey = 'p';
+inline constexpr std::size_t kDartMaxContactsPerPair = 4u;
+inline constexpr double kDartContactErrorReductionParameter = 0.0;
+inline constexpr double kDartRestitution = 0.0;
+inline constexpr double kDartSlipCompliance = -1.0;
 
 inline constexpr std::size_t kSourceMaxContacts = 4096u;
 inline constexpr int kSourceMaxOuterIterations = 200;
@@ -145,6 +173,35 @@ inline constexpr bool kPhysicalOutcomeEquivalence = false;
 inline constexpr bool kFig06Parity = false;
 inline constexpr bool kVideo06Parity = false;
 inline constexpr bool kTimingComparability = false;
+
+/// Process-global ERP override scoped to the active dynamics adapter scene.
+class ScopedContactErrorReductionParameter
+{
+public:
+  ScopedContactErrorReductionParameter()
+    : mPreviousValue(
+        dart::constraint::ContactConstraint::getErrorReductionParameter())
+  {
+    dart::constraint::ContactConstraint::setErrorReductionParameter(
+        kDartContactErrorReductionParameter);
+  }
+
+  ~ScopedContactErrorReductionParameter()
+  {
+    dart::constraint::ContactConstraint::setErrorReductionParameter(
+        mPreviousValue);
+  }
+
+  ScopedContactErrorReductionParameter(
+      const ScopedContactErrorReductionParameter&)
+      = delete;
+  ScopedContactErrorReductionParameter& operator=(
+      const ScopedContactErrorReductionParameter&)
+      = delete;
+
+private:
+  double mPreviousValue;
+};
 
 //==============================================================================
 constexpr std::size_t leaningCardCount(std::size_t levelCount)
@@ -309,29 +366,141 @@ dartConstructionSolverOptions()
 {
   dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
   options.fallbackToBoxedLcp = false;
+  options.includeConstraintRegularization = false;
+  options.useMatrixFreeDelassusOperator = false;
   options.useContactRowDelassusOperator = true;
   options.assembleDenseContactRowSnapshot = false;
   options.enableWarmStart = true;
   options.enableStepSizePersistence = true;
   options.stepSizeRecoveryGrowthFactor = 1.0 / kSourceArmijoShrink;
   options.warmStartMatchDistance = kSourceWarmStartMatchRadius;
+  options.seedNormalImpulseFromDiagonal = true;
   options.useMatrixFreeDelassusSeed = true;
   options.enableProjectedGradientRetry = false;
   options.enableDenseResidualPolish = false;
   options.maxOuterIterations = kSourceMaxOuterIterations;
+  options.acceptOuterMaxIterations = false;
   options.tolerance = kSourceOuterTolerance;
+  options.initialStepSize = std::numeric_limits<double>::quiet_NaN();
+  options.capInitialStepSizeAtSafeBound = true;
   // DART's conservative spectral factor is 0.5. A scale of ten represents
   // the author's gamma_c=5 configuration, subject to DART's own line search.
   options.stepSizeScale = 2.0 * kSourceGammaC;
+  options.outerRelaxation = 1.0;
   options.couplingVariationTolerance = kSourceArmijoRhoHigh;
   options.shrinkFactor = kSourceArmijoShrink;
   options.maxStepShrinkIterations = kSourceArmijoMaxBacktracks;
   options.enableAdaptiveStepSize = true;
+  options.spectralIterations = 10;
   options.innerMaxSweeps = kSourceInnerGaussSeidelSweeps;
+  options.innerLocalSolver = dart::constraint::ExactCoulombFbfLocalBlockSolver::
+      ExactMetricProjection;
   options.runFixedInnerSweeps = true;
   options.acceptInnerMaxIterations = true;
+  options.innerLocalIterations = 8;
   options.innerTolerance = kSourceInnerTolerance;
+  options.innerLocalTolerance = 1e-12;
+  options.innerDiagonalRegularization = 0.0;
+  options.projectedGradientMaxIterations = 400;
+  options.projectedGradientTolerance = 1e-12;
+  options.denseResidualPolishIterations = 8;
+  options.denseResidualPolishLineSearchIterations = 8;
+  options.denseResidualPolishRegularization = 1e-9;
+  options.maxResidualHistorySamples = 0;
+  options.maxResidualHistoryRecords = 0;
   return options;
+}
+
+//==============================================================================
+inline dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
+dartConstructionCrossStepPolicyOptions()
+{
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions options;
+  options.warmStartMatchMode = dart::constraint::
+      ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature;
+  options.warmStartNormalCosine = 0.9;
+  options.useStrictWarmStartMatchDistance = false;
+  options.warmStartMaxAge = -1;
+  options.persistentStepSizeSafeBoundScale = 1.0;
+  options.minimumStepSize = std::numeric_limits<double>::quiet_NaN();
+  options.maximumStepSize = std::numeric_limits<double>::quiet_NaN();
+  options.warmStartResidualThreshold = std::numeric_limits<double>::quiet_NaN();
+  options.warmStartStepSizeCap = std::numeric_limits<double>::quiet_NaN();
+  options.persistUncappedStepSizeOnWarmStartCap = false;
+  options.requireResidualImprovementForUnconvergedCacheSave = false;
+  return options;
+}
+
+//==============================================================================
+inline void configureDartContactMaterial(
+    dart::dynamics::DynamicsAspect* dynamics)
+{
+  if (dynamics == nullptr)
+    throw std::invalid_argument("author card-house contact material is null");
+
+  dynamics->setFrictionCoeff(kFriction);
+  dynamics->setRestitutionCoeff(kDartRestitution);
+  dynamics->setPrimarySlipCompliance(kDartSlipCompliance);
+  dynamics->setSecondarySlipCompliance(kDartSlipCompliance);
+  dynamics->setFirstFrictionDirection(Eigen::Vector3d::Zero());
+  dynamics->setFirstFrictionDirectionFrame(nullptr);
+}
+
+//==============================================================================
+inline void configureDartFreeJoint(dart::dynamics::FreeJoint* joint)
+{
+  if (joint == nullptr || joint->getNumDofs() != 6u)
+    throw std::invalid_argument("author card-house free joint is invalid");
+  for (std::size_t index = 0u; index < joint->getNumDofs(); ++index) {
+    joint->setDampingCoefficient(index, 0.0);
+    joint->setCoulombFriction(index, 0.0);
+  }
+}
+
+//==============================================================================
+inline dart::constraint::BoxedLcpConstraintSolver::
+    MatrixFreeContactSolverOptions
+    dartBoxedMatrixFreeContactSolverOptions()
+{
+  dart::constraint::BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions
+      options;
+  options.mEnabled = false;
+  options.mMinRows = 193u;
+  options.mMaxIterations = 30;
+  options.mSor = 0.9;
+  options.mDeltaTolerance = 1e-6;
+  options.mRelativeDeltaTolerance = 1e-3;
+  options.mEpsilonForDivision = 1e-9;
+  return options;
+}
+
+//==============================================================================
+inline void configureDartBoxedBaseline(
+    dart::constraint::BoxedLcpConstraintSolver* solver)
+{
+  if (solver == nullptr)
+    throw std::invalid_argument("author card-house boxed solver is null");
+
+  solver->setBoxedLcpSolver(
+      std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
+  solver->setSecondaryBoxedLcpSolver(
+      std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+  solver->setMatrixFreeContactSolverOptions(
+      dartBoxedMatrixFreeContactSolverOptions());
+}
+
+//==============================================================================
+inline void configureDartCollisionGeneration(
+    dart::constraint::ConstraintSolver* solver)
+{
+  if (solver == nullptr)
+    throw std::invalid_argument("author card-house constraint solver is null");
+
+  auto& options = solver->getCollisionOption();
+  options.enableContact = true;
+  options.allowNegativePenetrationDepthContacts = false;
+  options.collisionFilter
+      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
 }
 
 struct BodyContract
@@ -342,6 +511,20 @@ struct BodyContract
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   double friction = 0.0;
   double mass = 0.0;
+  Eigen::Vector3d localCenterOfMass = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d moment = Eigen::Matrix3d::Zero();
+  std::size_t collisionShapeCount = 0u;
+  Eigen::Isometry3d collisionShapeRelativeTransform
+      = Eigen::Isometry3d::Identity();
+  bool collidable = false;
+  double primaryFriction = 0.0;
+  double secondaryFriction = 0.0;
+  double restitution = 0.0;
+  double primarySlipCompliance = 0.0;
+  double secondarySlipCompliance = 0.0;
+  Eigen::Vector3d firstFrictionDirection = Eigen::Vector3d::Zero();
+  bool usesDefaultFrictionDirectionFrame = false;
+  bool gravityMode = true;
   bool mobile = true;
   Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
@@ -369,6 +552,48 @@ struct ConfigurationContract
   std::vector<BodyContract> cubes;
 };
 
+struct DynamicsAdapterContract
+{
+  std::size_t levelCount = 0u;
+  double timeStep = 0.0;
+  double worldTime = 0.0;
+  Eigen::Vector3d gravity = Eigen::Vector3d::Zero();
+  std::size_t simulationThreads = 0u;
+  bool deactivationEnabled = true;
+  std::string collisionDetector;
+  std::string contactManifold;
+  std::size_t maxContacts = 0u;
+  std::size_t maxContactsPerPair = 0u;
+  bool contactGenerationEnabled = false;
+  bool negativePenetrationDepthContactsAllowed = false;
+  bool defaultEmptyBodyNodeCollisionFilter = false;
+  std::string solverLane;
+  bool splitImpulseEnabled = false;
+  double observedContactErrorReductionParameter = 0.0;
+  bool exactOptionsAvailable = false;
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions exactOptions;
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions exactCrossStepOptions;
+  bool exactColoredBlockGaussSeidelEnabled = false;
+  bool exactParticipantAffinityEnabled = false;
+  bool boxedOptionsAvailable = false;
+  std::string boxedPrimarySolver;
+  std::string boxedSecondarySolver;
+  dart::constraint::BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions
+      boxedMatrixFreeOptions;
+  double primaryFriction = 0.0;
+  double secondaryFriction = 0.0;
+  double restitution = 0.0;
+  double primarySlipCompliance = 0.0;
+  double secondarySlipCompliance = 0.0;
+  Eigen::Vector3d firstFrictionDirection = Eigen::Vector3d::Zero();
+  bool usesDefaultFrictionDirectionFrame = false;
+  std::size_t cardCount = 0u;
+  std::size_t cubeCount = 0u;
+  std::size_t releasedCubeCount = 0u;
+  bool finiteState = false;
+  std::string binarySourceSha256;
+};
+
 //==============================================================================
 inline BodyContract inspectBox(
     const std::shared_ptr<dart::simulation::World>& world,
@@ -380,6 +605,22 @@ inline BodyContract inspectBox(
     throw std::runtime_error("author card-house body is missing: " + name);
 
   const auto* body = skeleton->getBodyNode(0u);
+  const auto* joint
+      = dynamic_cast<const dart::dynamics::FreeJoint*>(skeleton->getJoint(0u));
+  if (joint == nullptr || joint->getNumDofs() != 6u)
+    throw std::runtime_error("author card-house body is not free: " + name);
+  for (std::size_t index = 0u; index < joint->getNumDofs(); ++index) {
+    if (joint->getDampingCoefficient(index) != 0.0
+        || joint->getCoulombFriction(index) != 0.0) {
+      throw std::runtime_error(
+          "author card-house joint material changed: " + name);
+    }
+  }
+  const std::size_t collisionShapeCount
+      = body->getNumShapeNodesWith<dart::dynamics::CollisionAspect>();
+  if (collisionShapeCount != 1u)
+    throw std::runtime_error(
+        "author card-house collision shape count changed: " + name);
   const auto* node
       = body->getShapeNodeWith<dart::dynamics::CollisionAspect>(0u);
   if (node == nullptr || node->getDynamicsAspect() == nullptr)
@@ -398,6 +639,25 @@ inline BodyContract inspectBox(
   contract.pose = body->getWorldTransform();
   contract.friction = node->getDynamicsAspect()->getFrictionCoeff();
   contract.mass = body->getInertia().getMass();
+  contract.localCenterOfMass = body->getInertia().getLocalCOM();
+  contract.moment = body->getInertia().getMoment();
+  contract.collisionShapeCount = collisionShapeCount;
+  contract.collisionShapeRelativeTransform = node->getRelativeTransform();
+  contract.collidable = node->getCollisionAspect()->isCollidable();
+  contract.primaryFriction
+      = node->getDynamicsAspect()->getPrimaryFrictionCoeff();
+  contract.secondaryFriction
+      = node->getDynamicsAspect()->getSecondaryFrictionCoeff();
+  contract.restitution = node->getDynamicsAspect()->getRestitutionCoeff();
+  contract.primarySlipCompliance
+      = node->getDynamicsAspect()->getPrimarySlipCompliance();
+  contract.secondarySlipCompliance
+      = node->getDynamicsAspect()->getSecondarySlipCompliance();
+  contract.firstFrictionDirection
+      = node->getDynamicsAspect()->getFirstFrictionDirection();
+  contract.usesDefaultFrictionDirectionFrame
+      = node->getDynamicsAspect()->getFirstFrictionDirectionFrame() == nullptr;
+  contract.gravityMode = body->getGravityMode();
   contract.mobile = skeleton->isMobile();
   contract.linearVelocity = body->getLinearVelocity();
   contract.angularVelocity = body->getAngularVelocity();
@@ -420,9 +680,9 @@ inline ConfigurationContract inspectConfigurationContract(
   if (solver == nullptr)
     throw std::runtime_error("author card-house contract requires exact FBF");
 
-  const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
-          solver->getCollisionDetector());
+  const auto detector = std::dynamic_pointer_cast<
+      const dart::collision::NativeCollisionDetector>(
+      solver->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
         "author card-house contract requires Native collision");
@@ -480,6 +740,313 @@ inline ConfigurationContract inspectConfigurationContract(
 }
 
 //==============================================================================
+inline std::size_t releasedCubeCount(
+    const std::shared_ptr<dart::simulation::World>& world,
+    std::size_t levelCount)
+{
+  if (!world)
+    throw std::runtime_error("author card-house release has no world");
+
+  std::size_t released = 0u;
+  for (const auto& spec : makeCubeSpecs(levelCount)) {
+    const auto cube = world->getSkeleton(spec.name);
+    if (!cube || cube->getNumBodyNodes() != 1u)
+      throw std::runtime_error(
+          "author card-house release cube is missing: " + spec.name);
+    if (cube->isMobile())
+      ++released;
+  }
+  return released;
+}
+
+//==============================================================================
+inline bool cubesReleased(
+    const std::shared_ptr<dart::simulation::World>& world,
+    std::size_t levelCount)
+{
+  return releasedCubeCount(world, levelCount) == kCubeCount;
+}
+
+//==============================================================================
+inline void releaseCubes(
+    const std::shared_ptr<dart::simulation::World>& world,
+    std::size_t levelCount)
+{
+  if (!world)
+    throw std::runtime_error("author card-house release has no world");
+
+  for (const auto& spec : makeCubeSpecs(levelCount)) {
+    const auto cube = world->getSkeleton(spec.name);
+    if (!cube || cube->getNumBodyNodes() != 1u)
+      throw std::runtime_error(
+          "author card-house release cube is missing: " + spec.name);
+    cube->setMobile(true);
+  }
+}
+
+//==============================================================================
+inline DynamicsAdapterContract inspectDynamicsAdapterContract(
+    const std::shared_ptr<dart::simulation::World>& world,
+    std::size_t levelCount,
+    const std::string& binarySourceSha256)
+{
+  if (!world)
+    throw std::runtime_error(
+        "author card-house dynamics contract has no world");
+
+  const auto* solver = world->getConstraintSolver();
+  if (solver == nullptr)
+    throw std::runtime_error("author card-house dynamics solver is missing");
+  const auto* exact
+      = dynamic_cast<const dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          solver);
+  const auto* boxed
+      = dynamic_cast<const dart::constraint::BoxedLcpConstraintSolver*>(solver);
+  if (exact == nullptr && boxed == nullptr)
+    throw std::runtime_error(
+        "author card-house dynamics solver is unsupported");
+
+  const auto detector = std::dynamic_pointer_cast<
+      const dart::collision::NativeCollisionDetector>(
+      solver->getCollisionDetector());
+  if (!detector)
+    throw std::runtime_error(
+        "author card-house dynamics contract requires Native collision");
+
+  const auto cardSpecs = makeCardSpecs(levelCount);
+  const auto cubeSpecs = makeCubeSpecs(levelCount);
+  if (world->getNumSkeletons() != 1u + cardSpecs.size() + cubeSpecs.size()) {
+    throw std::runtime_error(
+        "author card-house dynamics contract has an unexpected skeleton "
+        "count");
+  }
+
+  const auto validateContactMaterial = [](const auto* dynamics,
+                                          const std::string& label) {
+    if (dynamics == nullptr
+        || std::abs(dynamics->getPrimaryFrictionCoeff() - kFriction) > 1e-12
+        || std::abs(dynamics->getSecondaryFrictionCoeff() - kFriction) > 1e-12
+        || std::abs(dynamics->getRestitutionCoeff() - kDartRestitution) > 1e-12
+        || std::abs(dynamics->getPrimarySlipCompliance() - kDartSlipCompliance)
+               > 1e-12
+        || std::abs(
+               dynamics->getSecondarySlipCompliance() - kDartSlipCompliance)
+               > 1e-12
+        || !dynamics->getFirstFrictionDirection().isZero(0.0)
+        || dynamics->getFirstFrictionDirectionFrame() != nullptr) {
+      throw std::runtime_error(
+          "author card-house contact material changed: " + label);
+    }
+  };
+
+  const auto ground = world->getSkeleton("ground_plane");
+  if (!ground || ground->isMobile() || ground->getNumBodyNodes() != 1u)
+    throw std::runtime_error("author card-house dynamics ground is invalid");
+  const auto* groundJoint
+      = dynamic_cast<const dart::dynamics::FreeJoint*>(ground->getJoint(0u));
+  const auto* groundBody = ground->getBodyNode(0u);
+  if (groundJoint == nullptr || groundJoint->getNumDofs() != 6u
+      || groundBody->getNumShapeNodesWith<dart::dynamics::CollisionAspect>()
+             != 1u
+      || !groundBody->getGravityMode()
+      || !groundBody->getWorldTransform().matrix().isApprox(
+          Eigen::Isometry3d::Identity().matrix(), 0.0)
+      || !groundBody->getLinearVelocity().isZero(0.0)
+      || !groundBody->getAngularVelocity().isZero(0.0)) {
+    throw std::runtime_error("author card-house dynamics ground body changed");
+  }
+  for (std::size_t index = 0u; index < groundJoint->getNumDofs(); ++index) {
+    if (groundJoint->getDampingCoefficient(index) != 0.0
+        || groundJoint->getCoulombFriction(index) != 0.0) {
+      throw std::runtime_error(
+          "author card-house dynamics ground joint changed");
+    }
+  }
+  const auto* groundNode
+      = groundBody->getShapeNodeWith<dart::dynamics::CollisionAspect>(0u);
+  const auto groundPlane
+      = groundNode == nullptr
+            ? nullptr
+            : std::dynamic_pointer_cast<const dart::dynamics::PlaneShape>(
+                groundNode->getShape());
+  if (groundNode == nullptr || groundNode->getDynamicsAspect() == nullptr
+      || groundNode->getCollisionAspect() == nullptr
+      || !groundNode->getCollisionAspect()->isCollidable() || !groundPlane
+      || !groundNode->getRelativeTransform().matrix().isApprox(
+          Eigen::Isometry3d::Identity().matrix(), 0.0)
+      || !groundPlane->getNormal().isApprox(Eigen::Vector3d::UnitZ(), 0.0)
+      || groundPlane->getOffset() != 0.0) {
+    throw std::runtime_error(
+        "author card-house dynamics ground contract changed");
+  }
+  validateContactMaterial(groundNode->getDynamicsAspect(), "ground_plane");
+
+  const bool initialState = std::abs(world->getTime()) <= 1e-15;
+  const auto validateBody = [initialState](
+                                const BodyContract& actual,
+                                const Eigen::Vector3d& expectedSize,
+                                const Eigen::Isometry3d& expectedPose,
+                                double expectedMass,
+                                bool expectedMobile,
+                                const std::string& label) {
+    if (!actual.size.isApprox(expectedSize, 1e-15)
+        || std::abs(actual.mass - expectedMass) > 1e-10
+        || !actual.localCenterOfMass.isZero(1e-15)
+        || !actual.moment.isApprox(
+            dart::dynamics::BoxShape::computeInertia(
+                expectedSize, expectedMass),
+            1e-12)
+        || actual.collisionShapeCount != 1u
+        || !actual.collisionShapeRelativeTransform.matrix().isApprox(
+            Eigen::Isometry3d::Identity().matrix(), 0.0)
+        || !actual.collidable
+        || std::abs(actual.primaryFriction - kFriction) > 1e-12
+        || std::abs(actual.secondaryFriction - kFriction) > 1e-12
+        || std::abs(actual.restitution - kDartRestitution) > 1e-12
+        || std::abs(actual.primarySlipCompliance - kDartSlipCompliance) > 1e-12
+        || std::abs(actual.secondarySlipCompliance - kDartSlipCompliance)
+               > 1e-12
+        || !actual.firstFrictionDirection.isZero(0.0)
+        || !actual.usesDefaultFrictionDirectionFrame || !actual.gravityMode
+        || actual.mobile != expectedMobile) {
+      throw std::runtime_error(
+          "author card-house dynamics physical contract changed: " + label);
+    }
+    if (initialState
+        && (!actual.pose.matrix().isApprox(expectedPose.matrix(), 1e-14)
+            || !actual.linearVelocity.isZero(0.0)
+            || !actual.angularVelocity.isZero(0.0))) {
+      throw std::runtime_error(
+          "author card-house dynamics initial state changed: " + label);
+    }
+  };
+
+  for (const auto& spec : cardSpecs) {
+    validateBody(
+        inspectBox(world, spec.name, cardKindLabel(spec.kind)),
+        spec.size,
+        spec.transform,
+        kCardMass,
+        true,
+        spec.name);
+  }
+  const std::size_t released = releasedCubeCount(world, levelCount);
+  if (released != 0u && released != kCubeCount) {
+    throw std::runtime_error(
+        "author card-house dynamics cube release is only partially applied");
+  }
+  if (initialState && released != 0u) {
+    throw std::runtime_error(
+        "author card-house dynamics cubes released before initial contract");
+  }
+  for (const auto& spec : cubeSpecs) {
+    validateBody(
+        inspectBox(world, spec.name, "cube"),
+        spec.size,
+        spec.transform,
+        kCubeMass,
+        released == kCubeCount,
+        spec.name);
+  }
+
+  bool finiteState = true;
+  const auto inspectFiniteState
+      = [&finiteState](
+            const std::shared_ptr<dart::dynamics::Skeleton>& skeleton) {
+          if (!skeleton || skeleton->getNumBodyNodes() != 1u) {
+            finiteState = false;
+            return;
+          }
+          const auto* body = skeleton->getBodyNode(0u);
+          finiteState = finiteState
+                        && body->getWorldTransform().matrix().allFinite()
+                        && body->getLinearVelocity().allFinite()
+                        && body->getAngularVelocity().allFinite();
+        };
+  for (const auto& spec : cardSpecs)
+    inspectFiniteState(world->getSkeleton(spec.name));
+  for (const auto& spec : cubeSpecs)
+    inspectFiniteState(world->getSkeleton(spec.name));
+
+  DynamicsAdapterContract contract;
+  contract.levelCount = levelCount;
+  contract.timeStep = world->getTimeStep();
+  contract.worldTime = world->getTime();
+  contract.gravity = world->getGravity();
+  contract.simulationThreads = world->getNumSimulationThreads();
+  contract.deactivationEnabled = world->getDeactivationOptions().mEnabled;
+  contract.collisionDetector = detector->getType();
+  contract.contactManifold
+      = detector->getContactManifoldMode()
+                == dart::collision::NativeCollisionDetector::
+                    ContactManifoldMode::FourPointPlanar
+            ? "four_point_planar"
+            : "compact";
+  const auto& collisionOption = solver->getCollisionOption();
+  const auto bodyNodeFilter = std::dynamic_pointer_cast<
+      const dart::collision::BodyNodeCollisionFilter>(
+      collisionOption.collisionFilter);
+  const dart::collision::BodyNodeCollisionFilter emptyBodyNodeFilter;
+  if (!collisionOption.enableContact
+      || collisionOption.allowNegativePenetrationDepthContacts
+      || !bodyNodeFilter
+      || typeid(*collisionOption.collisionFilter)
+             != typeid(dart::collision::BodyNodeCollisionFilter)
+      || bodyNodeFilter->getRevision() != emptyBodyNodeFilter.getRevision()) {
+    throw std::runtime_error(
+        "author card-house collision generation policy changed");
+  }
+  contract.maxContacts = collisionOption.maxNumContacts;
+  contract.maxContactsPerPair = collisionOption.maxNumContactsPerPair;
+  contract.contactGenerationEnabled = collisionOption.enableContact;
+  contract.negativePenetrationDepthContactsAllowed
+      = collisionOption.allowNegativePenetrationDepthContacts;
+  contract.defaultEmptyBodyNodeCollisionFilter = true;
+  contract.solverLane = exact != nullptr ? "exact_fbf" : "boxed_lcp";
+  contract.splitImpulseEnabled = solver->isSplitImpulseEnabled();
+  contract.observedContactErrorReductionParameter
+      = dart::constraint::ContactConstraint::getErrorReductionParameter();
+  contract.exactOptionsAvailable = exact != nullptr;
+  if (exact != nullptr) {
+    contract.exactOptions = exact->getExactCoulombOptions();
+    contract.exactCrossStepOptions
+        = exact->getExactCoulombCrossStepPolicyOptions();
+    contract.exactColoredBlockGaussSeidelEnabled
+        = exact->getExactCoulombColoredBlockGaussSeidelEnabled();
+    contract.exactParticipantAffinityEnabled
+        = exact
+              ->getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled();
+  } else {
+    contract.boxedOptionsAvailable = true;
+    const auto primary = boxed->getBoxedLcpSolver();
+    const auto secondary = boxed->getSecondaryBoxedLcpSolver();
+    if (!primary || !secondary)
+      throw std::runtime_error(
+          "author card-house boxed baseline is incomplete");
+    contract.boxedPrimarySolver = primary->getType();
+    contract.boxedSecondarySolver = secondary->getType();
+    contract.boxedMatrixFreeOptions
+        = boxed->getMatrixFreeContactSolverOptions();
+  }
+  const auto* groundDynamics = groundNode->getDynamicsAspect();
+  contract.primaryFriction = groundDynamics->getPrimaryFrictionCoeff();
+  contract.secondaryFriction = groundDynamics->getSecondaryFrictionCoeff();
+  contract.restitution = groundDynamics->getRestitutionCoeff();
+  contract.primarySlipCompliance = groundDynamics->getPrimarySlipCompliance();
+  contract.secondarySlipCompliance
+      = groundDynamics->getSecondarySlipCompliance();
+  contract.firstFrictionDirection = groundDynamics->getFirstFrictionDirection();
+  contract.usesDefaultFrictionDirectionFrame
+      = groundDynamics->getFirstFrictionDirectionFrame() == nullptr;
+  contract.cardCount = cardSpecs.size();
+  contract.cubeCount = cubeSpecs.size();
+  contract.releasedCubeCount = released;
+  contract.finiteState = finiteState;
+  contract.binarySourceSha256 = binarySourceSha256;
+  return contract;
+}
+
+//==============================================================================
 inline void writeJsonString(std::ostream& out, const std::string& value)
 {
   out << '"';
@@ -506,6 +1073,51 @@ inline void writeJsonString(std::ostream& out, const std::string& value)
     }
   }
   out << '"';
+}
+
+//==============================================================================
+inline void writeJsonFiniteOrNull(std::ostream& out, double value)
+{
+  if (std::isfinite(value)) {
+    out << value;
+  } else if (std::isnan(value)) {
+    out << "null";
+  } else {
+    throw std::invalid_argument(
+        "author card-house contract contains an infinite option");
+  }
+}
+
+//==============================================================================
+inline const char* localBlockSolverLabel(
+    dart::constraint::ExactCoulombFbfLocalBlockSolver solver)
+{
+  using Solver = dart::constraint::ExactCoulombFbfLocalBlockSolver;
+  switch (solver) {
+    case Solver::InverseEuclideanProjection:
+      return "inverse_euclidean_projection";
+    case Solver::ExactMetricProjection:
+      return "exact_metric_projection";
+    case Solver::ProjectedGradient:
+      return "projected_gradient";
+  }
+  throw std::invalid_argument(
+      "author card-house local block solver is invalid");
+}
+
+//==============================================================================
+inline const char* warmStartMatchModeLabel(
+    dart::constraint::ExactCoulombFbfWarmStartMatchMode mode)
+{
+  using Mode = dart::constraint::ExactCoulombFbfWarmStartMatchMode;
+  switch (mode) {
+    case Mode::EitherBodyLocalFeature:
+      return "either_body_local_feature";
+    case Mode::OrderedBodyBLocalFeature:
+      return "ordered_body_b_local_feature";
+  }
+  throw std::invalid_argument(
+      "author card-house warm-start match mode is invalid");
 }
 
 //==============================================================================
@@ -725,6 +1337,320 @@ inline std::string configurationContractJson(
       << ",\"visual_style\":{\"renderer_only\":true"
       << ",\"description\":\"restrained alternating paper colors for layer "
          "legibility\"}}";
+  return out.str();
+}
+
+//==============================================================================
+inline std::string dynamicsAdapterContractJson(
+    const DynamicsAdapterContract& contract)
+{
+  if (contract.binarySourceSha256.empty())
+    throw std::invalid_argument(
+        "author card-house dynamics binary source hash is empty");
+  if (contract.levelCount != kFigureLevelCount)
+    throw std::invalid_argument(
+        "author card-house dynamics contract requires four levels");
+  if ((contract.solverLane == "exact_fbf") != contract.exactOptionsAvailable) {
+    throw std::invalid_argument(
+        "author card-house dynamics solver contract is inconsistent");
+  }
+  if (contract.solverLane != "exact_fbf"
+      && contract.solverLane != "boxed_lcp") {
+    throw std::invalid_argument(
+        "author card-house dynamics solver lane is invalid");
+  }
+  if ((contract.solverLane == "boxed_lcp") != contract.boxedOptionsAvailable
+      || contract.exactOptionsAvailable == contract.boxedOptionsAvailable) {
+    throw std::invalid_argument(
+        "author card-house dynamics baseline contract is inconsistent");
+  }
+
+  std::ostringstream out;
+  out << std::setprecision(std::numeric_limits<double>::max_digits10);
+  out << "{\"schema_version\":";
+  writeJsonString(out, kDynamicsContractSchema);
+  out << ",\"kind\":";
+  writeJsonString(out, kDynamicsContractKind);
+  out << ",\"source_binding\":{\"repository\":";
+  writeJsonString(out, kAuthorRepository);
+  out << ",\"commit\":";
+  writeJsonString(out, kAuthorCommit);
+  out << ",\"tree\":";
+  writeJsonString(out, kAuthorTree);
+  out << ",\"card_house_run_blob\":";
+  writeJsonString(out, kAuthorCardHouseBlob);
+  out << ",\"card_house_run_py_sha256\":";
+  writeJsonString(out, kAuthorCardHouseRunSha256);
+  out << ",\"fbf_config_py_sha256\":";
+  writeJsonString(out, kAuthorConfigSha256);
+  out << ",\"solver_fbf_py_sha256\":";
+  writeJsonString(out, kAuthorSolverSha256);
+  out << ",\"configuration_spec_sha256\":";
+  writeJsonString(out, kSpecSourceSha256);
+  out << ",\"demo_implementation_sha256\":";
+  writeJsonString(out, contract.binarySourceSha256);
+  out << "},\"source_defaults\":{\"levels\":" << kDefaultLevelCount
+      << ",\"frames\":" << kTotalFrames << ",\"drop_frame\":" << kReleaseFrame
+      << ",\"num_cubes\":" << kCubeCount << ",\"mu\":" << kFriction
+      << ",\"cube_half_size_m\":" << kCubeHalfSize
+      << ",\"cube_density_kg_m3\":" << kCubeDensity
+      << ",\"drop_height_m\":" << kDropHeight
+      << "},\"selected_source_invocation\":{"
+         "\"provenance\":\"source_supported_cli_parameterization\""
+         ",\"historical_paper_invocation_known\":false"
+         ",\"arguments\":{\"solvers\":[\"fbf\"],\"levels\":"
+      << kFigureLevelCount << ",\"frames\":" << kFigureEvidenceFrames
+      << ",\"drop_frame\":" << kReleaseFrame << ",\"num_cubes\":" << kCubeCount
+      << ",\"mu\":" << kFriction << ",\"cube_half_size_m\":" << kCubeHalfSize
+      << ",\"cube_density_kg_m3\":" << kCubeDensity
+      << ",\"drop_height_m\":" << kDropHeight
+      << ",\"device\":\"cpu\",\"profile\":true,\"usd\":true}}"
+         ",\"source_configuration\":{\"cards\":{\"count\":"
+      << cardCount(contract.levelCount)
+      << ",\"leaning_count\":" << leaningCardCount(contract.levelCount)
+      << ",\"bridge_count\":" << bridgeCardCount(contract.levelCount)
+      << ",\"lean_size_m\":[" << 2.0 * kCardHalfThickness << ','
+      << 2.0 * kCardHalfDepth << ',' << 2.0 * kCardHalfLength
+      << "],\"bridge_size_m\":[" << 2.0 * kCardHalfLength << ','
+      << 2.0 * kCardHalfDepth << ',' << 2.0 * kCardHalfThickness
+      << "],\"density_kg_m3\":" << kCardDensity << ",\"mass_kg\":" << kCardMass
+      << ",\"lean_from_vertical_degrees\":" << kLeanFromVerticalDegrees
+      << ",\"bridge_angle_degrees\":" << kBridgeAngleDegrees
+      << ",\"tent_half_gap_m\":" << kTentHalfGap
+      << ",\"tent_width_m\":" << kTentWidth
+      << ",\"tent_height_m\":" << kTentHeight
+      << "},\"cubes\":{\"count\":" << kCubeCount
+      << ",\"edge_m\":" << 2.0 * kCubeHalfSize
+      << ",\"density_kg_m3\":" << kCubeDensity << ",\"mass_kg\":" << kCubeMass
+      << ",\"initial_height_m\":"
+      << contract.levelCount * kTentHeight + kDropHeight
+      << ",\"initially_kinematic\":true,\"initial_velocity_m_s\":[0,0,0]}"
+         ",\"contact\":{\"friction\":"
+      << kFriction << ",\"gap_m\":" << kContactGap
+      << ",\"shape_stiffness\":" << kSourceShapeStiffness
+      << ",\"shape_damping\":" << kSourceShapeDamping
+      << "},\"schedule\":{\"display_time_step_seconds\":" << kDisplayTimeStep
+      << ",\"substeps_per_frame\":" << kSubstepsPerFrame
+      << ",\"runtime_time_step_seconds\":" << kRuntimeTimeStep
+      << ",\"release_frame\":" << kReleaseFrame
+      << ",\"release_substep\":" << kReleaseSubstep
+      << ",\"total_frames\":" << kFigureEvidenceFrames
+      << ",\"total_substeps\":" << kFigureEvidenceSubsteps
+      << "},\"solver\":{\"type\":\"fbf_exact_coulomb\""
+         ",\"max_contacts\":"
+      << kSourceMaxContacts << ",\"max_outer\":" << kSourceMaxOuterIterations
+      << ",\"outer_tol\":" << kSourceOuterTolerance
+      << ",\"residual_check_interval\":" << kSourceResidualCheckInterval
+      << ",\"inner_solver\":";
+  writeJsonString(out, kSourceInnerSolver);
+  out << ",\"inner_gs_sweeps\":" << kSourceInnerGaussSeidelSweeps
+      << ",\"inner_max_iter\":" << kSourceInnerMaxIterations
+      << ",\"inner_tol\":" << kSourceInnerTolerance
+      << ",\"adaptive_gamma\":true,\"gamma_c\":" << kSourceGammaC
+      << ",\"gamma_max\":" << kSourceGammaMax
+      << ",\"armijo_rho_high\":" << kSourceArmijoRhoHigh
+      << ",\"armijo_shrink\":" << kSourceArmijoShrink
+      << ",\"armijo_max_backtracks\":" << kSourceArmijoMaxBacktracks
+      << ",\"warm_start\":true,\"baumgarte_erp\":" << kSourceBaumgarteErp
+      << ",\"termination_residual\":";
+  writeJsonString(out, kSourceTerminationResidual);
+  out << ",\"termination_tol\":" << kSourceTerminationTolerance
+      << "}},\"dart_adapter\":{\"scene_id\":";
+  writeJsonString(out, kDynamicsDemoSceneId);
+  out << ",\"world\":{\"time_step_seconds\":" << contract.timeStep
+      << ",\"current_time_seconds\":" << contract.worldTime
+      << ",\"gravity_m_s2\":";
+  writeJsonVector(out, contract.gravity);
+  out << ",\"simulation_threads\":" << contract.simulationThreads
+      << ",\"deactivation_enabled\":"
+      << (contract.deactivationEnabled ? "true" : "false")
+      << "},\"collision\":{\"detector\":";
+  writeJsonString(out, contract.collisionDetector);
+  out << ",\"contact_manifold\":";
+  writeJsonString(out, contract.contactManifold);
+  out << ",\"max_contacts\":" << contract.maxContacts
+      << ",\"max_contacts_per_pair\":" << contract.maxContactsPerPair
+      << ",\"enable_contact\":"
+      << (contract.contactGenerationEnabled ? "true" : "false")
+      << ",\"allow_negative_penetration_depth_contacts\":"
+      << (contract.negativePenetrationDepthContactsAllowed ? "true" : "false")
+      << ",\"default_empty_body_node_filter\":"
+      << (contract.defaultEmptyBodyNodeCollisionFilter ? "true" : "false")
+      << "},\"contact_material\":{\"primary_friction\":"
+      << contract.primaryFriction
+      << ",\"secondary_friction\":" << contract.secondaryFriction
+      << ",\"restitution\":" << contract.restitution
+      << ",\"primary_slip_compliance\":" << contract.primarySlipCompliance
+      << ",\"secondary_slip_compliance\":" << contract.secondarySlipCompliance
+      << ",\"first_friction_direction\":";
+  writeJsonVector(out, contract.firstFrictionDirection);
+  out << ",\"uses_default_friction_direction_frame\":"
+      << (contract.usesDefaultFrictionDirectionFrame ? "true" : "false")
+      << "},\"process_state\":{\"observed_contact_erp\":"
+      << contract.observedContactErrorReductionParameter
+      << "},\"solver\":{\"lane\":";
+  writeJsonString(out, contract.solverLane);
+  out << ",\"split_impulse_enabled\":"
+      << (contract.splitImpulseEnabled ? "true" : "false")
+      << ",\"colored_block_gauss_seidel_enabled\":"
+      << (contract.exactColoredBlockGaussSeidelEnabled ? "true" : "false")
+      << ",\"participant_affinity_enabled\":"
+      << (contract.exactParticipantAffinityEnabled ? "true" : "false")
+      << ",\"exact_options\":";
+  if (!contract.exactOptionsAvailable) {
+    out << "null";
+  } else {
+    const auto& options = contract.exactOptions;
+    out << "{\"fallback_to_boxed_lcp_enabled\":"
+        << (options.fallbackToBoxedLcp ? "true" : "false")
+        << ",\"constraint_regularization_enabled\":"
+        << (options.includeConstraintRegularization ? "true" : "false")
+        << ",\"matrix_free_operator_enabled\":"
+        << (options.useMatrixFreeDelassusOperator ? "true" : "false")
+        << ",\"contact_row_operator_enabled\":"
+        << (options.useContactRowDelassusOperator ? "true" : "false")
+        << ",\"dense_contact_row_snapshot_enabled\":"
+        << (options.assembleDenseContactRowSnapshot ? "true" : "false")
+        << ",\"warm_start_enabled\":"
+        << (options.enableWarmStart ? "true" : "false")
+        << ",\"step_size_persistence_enabled\":"
+        << (options.enableStepSizePersistence ? "true" : "false")
+        << ",\"step_size_recovery_growth_factor\":"
+        << options.stepSizeRecoveryGrowthFactor
+        << ",\"warm_start_match_distance\":" << options.warmStartMatchDistance
+        << ",\"diagonal_seed_enabled\":"
+        << (options.seedNormalImpulseFromDiagonal ? "true" : "false")
+        << ",\"matrix_free_seed_enabled\":"
+        << (options.useMatrixFreeDelassusSeed ? "true" : "false")
+        << ",\"projected_gradient_retry_enabled\":"
+        << (options.enableProjectedGradientRetry ? "true" : "false")
+        << ",\"dense_residual_polish_enabled\":"
+        << (options.enableDenseResidualPolish ? "true" : "false")
+        << ",\"max_outer_iterations\":" << options.maxOuterIterations
+        << ",\"accept_outer_max_iterations\":"
+        << (options.acceptOuterMaxIterations ? "true" : "false")
+        << ",\"tolerance\":" << options.tolerance << ",\"initial_step_size\":";
+    writeJsonFiniteOrNull(out, options.initialStepSize);
+    out << ",\"cap_initial_step_size_at_safe_bound\":"
+        << (options.capInitialStepSizeAtSafeBound ? "true" : "false")
+        << ",\"step_size_scale\":" << options.stepSizeScale
+        << ",\"outer_relaxation\":" << options.outerRelaxation
+        << ",\"coupling_variation_tolerance\":"
+        << options.couplingVariationTolerance
+        << ",\"shrink_factor\":" << options.shrinkFactor
+        << ",\"max_step_shrink_iterations\":" << options.maxStepShrinkIterations
+        << ",\"adaptive_step_size_enabled\":"
+        << (options.enableAdaptiveStepSize ? "true" : "false")
+        << ",\"spectral_iterations\":" << options.spectralIterations
+        << ",\"inner_max_sweeps\":" << options.innerMaxSweeps
+        << ",\"inner_local_solver\":";
+    writeJsonString(out, localBlockSolverLabel(options.innerLocalSolver));
+    out << ",\"run_fixed_inner_sweeps\":"
+        << (options.runFixedInnerSweeps ? "true" : "false")
+        << ",\"accept_inner_max_iterations\":"
+        << (options.acceptInnerMaxIterations ? "true" : "false")
+        << ",\"inner_local_iterations\":" << options.innerLocalIterations
+        << ",\"inner_tolerance\":" << options.innerTolerance
+        << ",\"inner_local_tolerance\":" << options.innerLocalTolerance
+        << ",\"inner_diagonal_regularization\":"
+        << options.innerDiagonalRegularization
+        << ",\"projected_gradient_max_iterations\":"
+        << options.projectedGradientMaxIterations
+        << ",\"projected_gradient_tolerance\":"
+        << options.projectedGradientTolerance
+        << ",\"dense_residual_polish_iterations\":"
+        << options.denseResidualPolishIterations
+        << ",\"dense_residual_polish_line_search_iterations\":"
+        << options.denseResidualPolishLineSearchIterations
+        << ",\"dense_residual_polish_regularization\":"
+        << options.denseResidualPolishRegularization
+        << ",\"max_residual_history_samples\":"
+        << options.maxResidualHistorySamples
+        << ",\"max_residual_history_records\":"
+        << options.maxResidualHistoryRecords << '}';
+  }
+  out << ",\"cross_step_options\":";
+  if (!contract.exactOptionsAvailable) {
+    out << "null";
+  } else {
+    const auto& options = contract.exactCrossStepOptions;
+    out << "{\"warm_start_match_mode\":";
+    writeJsonString(out, warmStartMatchModeLabel(options.warmStartMatchMode));
+    out << ",\"warm_start_normal_cosine\":" << options.warmStartNormalCosine
+        << ",\"strict_warm_start_match_distance\":"
+        << (options.useStrictWarmStartMatchDistance ? "true" : "false")
+        << ",\"warm_start_max_age\":" << options.warmStartMaxAge
+        << ",\"persistent_step_size_safe_bound_scale\":"
+        << options.persistentStepSizeSafeBoundScale
+        << ",\"minimum_step_size\":";
+    writeJsonFiniteOrNull(out, options.minimumStepSize);
+    out << ",\"maximum_step_size\":";
+    writeJsonFiniteOrNull(out, options.maximumStepSize);
+    out << ",\"warm_start_residual_threshold\":";
+    writeJsonFiniteOrNull(out, options.warmStartResidualThreshold);
+    out << ",\"warm_start_step_size_cap\":";
+    writeJsonFiniteOrNull(out, options.warmStartStepSizeCap);
+    out << ",\"persist_uncapped_step_size_on_warm_start_cap\":"
+        << (options.persistUncappedStepSizeOnWarmStartCap ? "true" : "false")
+        << ",\"require_residual_improvement_for_unconverged_cache_save\":"
+        << (options.requireResidualImprovementForUnconvergedCacheSave ? "true"
+                                                                      : "false")
+        << '}';
+  }
+  out << ",\"boxed_baseline\":";
+  if (!contract.boxedOptionsAvailable) {
+    out << "null";
+  } else {
+    const auto& options = contract.boxedMatrixFreeOptions;
+    out << "{\"primary_solver\":";
+    writeJsonString(out, contract.boxedPrimarySolver);
+    out << ",\"secondary_solver\":";
+    writeJsonString(out, contract.boxedSecondarySolver);
+    out << ",\"matrix_free_options\":{\"enabled\":"
+        << (options.mEnabled ? "true" : "false")
+        << ",\"min_rows\":" << options.mMinRows
+        << ",\"max_iterations\":" << options.mMaxIterations
+        << ",\"sor\":" << options.mSor
+        << ",\"delta_tolerance\":" << options.mDeltaTolerance
+        << ",\"relative_delta_tolerance\":" << options.mRelativeDeltaTolerance
+        << ",\"epsilon_for_division\":" << options.mEpsilonForDivision << "}}";
+  }
+  out << "},\"inventory\":{\"cards\":" << contract.cardCount
+      << ",\"cubes\":" << contract.cubeCount
+      << ",\"released_cubes\":" << contract.releasedCubeCount
+      << ",\"finite_state\":" << (contract.finiteState ? "true" : "false")
+      << "},\"schedule\":{\"evidence_total_substeps\":"
+      << kFigureEvidenceSubsteps
+      << ",\"evidence_runner_action_completed_step\":" << kReleaseSubstep
+      << ",\"release_action_key\":";
+  writeJsonString(out, std::string(1u, kReleaseActionKey));
+  out << ",\"interactive_action_semantics\":";
+  writeJsonString(out, "immediate_on_invocation");
+  out << "}},\"adapter_boundaries\":{"
+         "\"source_contact_gap_recorded_m\":"
+      << kContactGap
+      << ",\"source_contact_gap_semantics_implemented\":false"
+         ",\"source_shape_stiffness_semantics_implemented\":false"
+         ",\"source_shape_damping_semantics_implemented\":false"
+         ",\"source_collision_backend_implemented\":false"
+         ",\"source_solver_backend_semantics_implemented\":false"
+         ",\"source_float32_semantics_implemented\":false"
+         ",\"dart_native_four_point_planar_is_adapter_choice\":true}"
+         ",\"claim_boundary\":{"
+         "\"current_source_parameterized_configuration_port\":true"
+         ",\"source_release_action_ported_to_dart\":true"
+         ",\"source_release_schedule_declared_for_evidence_runner\":true"
+         ",\"interactive_demo_auto_releases_at_source_step\":false"
+         ",\"historical_paper_invocation_known\":false"
+         ",\"trajectory_valid\":false"
+         ",\"physical_outcome_valid\":false"
+         ",\"trajectory_equivalence\":false"
+         ",\"solver_equivalence\":false"
+         ",\"physical_outcome_equivalence\":false"
+         ",\"fig06_parity\":false"
+         ",\"video06_parity\":false"
+         ",\"timing_comparability\":false"
+         ",\"paper_parity\":false}}";
   return out.str();
 }
 

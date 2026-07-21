@@ -28,6 +28,7 @@ pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_5
 pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_2
 pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
 pixi run demos -- --scene fbf_author_card_house_5_construction
+pixi run demos -- --scene fbf_author_card_house_4_impact_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
@@ -58,6 +59,22 @@ contract using convex voussoir wedges, exact prism inertia, Native
 FourPointPlanar contacts, and scoped ERP restoration; the older
 `fbf_paper_masonry_arch_25` scene remains the reduced oriented-box projectile
 proxy.
+
+`fbf_author_card_house_4_impact_current_source` is the dynamic counterpart to
+the five-level construction still. It selects the public author's supported
+CLI arguments `--solvers fbf --levels 4 --frames 600 --drop-frame 400
+--num-cubes 4 --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0
+--device cpu --profile --usd`: 26 source-sized cards and four initially
+kinematic 0.8 m cubes. Interactive `p` releases those existing cubes
+immediately; the evidence runner invokes it after completed substep 1600 in a
+2400-substep, 10-second schedule. Source `ke=1e4`, `kd=1e3`, and `gap=.005`
+are recorded source semantics, not contact semantics implemented equivalently
+by the DART adapter. The older `fbf_paper_card_house_26` remains a distinct
+reconstructed diagnostic with different card and projectile parameters. The
+new adapter does not claim that its selected CLI arguments were the historical
+paper invocation, nor source-backend, trajectory, outcome, or timing
+equivalence, Fig. 6/video parity, or final media. It remains an adapter-only
+lane.
 
 `fbf_author_masonry_arch_25_crown_impact_current_source` preserves the public
 author repository's raw numeric 25-wedge geometry, mass/friction values, three

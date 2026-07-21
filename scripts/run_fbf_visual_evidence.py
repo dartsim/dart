@@ -162,7 +162,10 @@ REQUIRED_VIDEO_SCHEDULES = {
         "turntable_author_mu05_omega5",
     ),
     "painleve": ("painleve_mu05", "painleve_mu055"),
-    "card_house_26": ("card_house_26",),
+    "card_house_26": (
+        "card_house_author_4_impact_current_source",
+        "card_house_26",
+    ),
     "masonry_arch_25": (
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
@@ -595,6 +598,66 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "The source uses a three-solver semantic edit; this artifact would be "
             "the underlying DART proxy only.",
         ),
+    ),
+    "card_house_author_4_impact_current_source": CaptureSchedule(
+        id="card_house_author_4_impact_current_source",
+        scene="fbf_author_card_house_4_impact_current_source",
+        title="Author-pinned four-level card-house impact candidate",
+        source_segment="card_house_26",
+        total_steps=2400,
+        # One 30 fps evidence frame per eight 240 Hz substeps preserves the
+        # selected source invocation's ten-second presentation.
+        frame_stride=8,
+        panel_steps=(0, 480, 1600, 1680, 2400),
+        panel_labels=(
+            "initial source configuration",
+            "standing probe t=2s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "selected frame-600 endpoint (t=10s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "4"),
+            ("cards", "26"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("release_substep", "1600"),
+            ("total_substeps", "2400"),
+            (
+                "capture_invocation",
+                "source-supported levels=4 frames=600 drop_frame=400 selection",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This DART scene ports the public author geometry, initial state, and "
+            "source-supported four-level/600-frame argument selection; DART Native "
+            "collision and float64 dynamics are not the authors' Warp/Newton "
+            "float32 backend.",
+            "The public source defaults to five levels and 800 frames. The "
+            "four-level/600-frame invocation uses supported run.py arguments but "
+            "is not a recovered historical paper command.",
+            "The author repository supplies no historical paper camera, materials, "
+            "lighting, approved frame golden, or DART trajectory oracle.",
+            "The source's 5 mm collision-gap setting is recorded but DART Native "
+            "collision does not claim equivalent gap semantics.",
+        ),
+        known_gate_blockers=(
+            "No complete strict DART exact-FBF run of this 2,400-substep release "
+            "schedule has yet passed the fail-fast solver and physical-outcome "
+            "gates.",
+            "No paired exact/boxed media has yet been captured and independently "
+            "validated for this source-parameterized adapter.",
+        ),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        long_run=True,
     ),
     "card_house_26": CaptureSchedule(
         id="card_house_26",
@@ -1700,6 +1763,12 @@ def _is_author_masonry_arch_impact_schedule(schedule: CaptureSchedule) -> bool:
     ) == "masonry_arch_25_author_crown_impact_current_source"
 
 
+def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
+    return (
+        schedule.source_schedule_id or schedule.id
+    ) == "card_house_author_4_impact_current_source"
+
+
 def _is_finite_number(value: Any) -> bool:
     return (
         not isinstance(value, bool)
@@ -2206,6 +2275,355 @@ def _expected_author_masonry_arch_solver_contract(solver_lane: str) -> dict[str,
     }
 
 
+def _expected_author_card_house_solver_contract(solver_lane: str) -> dict[str, Any]:
+    if solver_lane not in SOLVER_LANES:
+        raise ValueError(f"unsupported author card-house solver lane {solver_lane!r}")
+    exact = solver_lane == "exact"
+    return {
+        "lane": "exact_fbf" if exact else "boxed_lcp",
+        "split_impulse_enabled": False,
+        "colored_block_gauss_seidel_enabled": False,
+        "participant_affinity_enabled": False,
+        "exact_options": (
+            {
+                "fallback_to_boxed_lcp_enabled": False,
+                "constraint_regularization_enabled": False,
+                "matrix_free_operator_enabled": False,
+                "contact_row_operator_enabled": True,
+                "dense_contact_row_snapshot_enabled": False,
+                "warm_start_enabled": True,
+                "step_size_persistence_enabled": True,
+                "step_size_recovery_growth_factor": 1.0 / 0.7,
+                "warm_start_match_distance": 0.02,
+                "diagonal_seed_enabled": True,
+                "matrix_free_seed_enabled": True,
+                "projected_gradient_retry_enabled": False,
+                "dense_residual_polish_enabled": False,
+                "max_outer_iterations": 200,
+                "accept_outer_max_iterations": False,
+                "tolerance": 1e-6,
+                "initial_step_size": None,
+                "cap_initial_step_size_at_safe_bound": True,
+                "step_size_scale": 10.0,
+                "outer_relaxation": 1.0,
+                "coupling_variation_tolerance": 0.9,
+                "shrink_factor": 0.7,
+                "max_step_shrink_iterations": 8,
+                "adaptive_step_size_enabled": True,
+                "spectral_iterations": 10,
+                "inner_max_sweeps": 10,
+                "inner_local_solver": "exact_metric_projection",
+                "run_fixed_inner_sweeps": True,
+                "accept_inner_max_iterations": True,
+                "inner_local_iterations": 8,
+                "inner_tolerance": 1e-6,
+                "inner_local_tolerance": 1e-12,
+                "inner_diagonal_regularization": 0.0,
+                "projected_gradient_max_iterations": 400,
+                "projected_gradient_tolerance": 1e-12,
+                "dense_residual_polish_iterations": 8,
+                "dense_residual_polish_line_search_iterations": 8,
+                "dense_residual_polish_regularization": 1e-9,
+                "max_residual_history_samples": 0,
+                "max_residual_history_records": 0,
+            }
+            if exact
+            else None
+        ),
+        "cross_step_options": (
+            {
+                "warm_start_match_mode": "either_body_local_feature",
+                "warm_start_normal_cosine": 0.9,
+                "strict_warm_start_match_distance": False,
+                "warm_start_max_age": -1,
+                "persistent_step_size_safe_bound_scale": 1.0,
+                "minimum_step_size": None,
+                "maximum_step_size": None,
+                "warm_start_residual_threshold": None,
+                "warm_start_step_size_cap": None,
+                "persist_uncapped_step_size_on_warm_start_cap": False,
+                "require_residual_improvement_for_unconverged_cache_save": False,
+            }
+            if exact
+            else None
+        ),
+        "boxed_baseline": (
+            None
+            if exact
+            else {
+                "primary_solver": "DantzigBoxedLcpSolver",
+                "secondary_solver": "PgsBoxedLcpSolver",
+                "matrix_free_options": {
+                    "enabled": False,
+                    "min_rows": 193,
+                    "max_iterations": 30,
+                    "sor": 0.9,
+                    "delta_tolerance": 1e-6,
+                    "relative_delta_tolerance": 1e-3,
+                    "epsilon_for_division": 1e-9,
+                },
+            }
+        ),
+    }
+
+
+def _validate_author_card_house_adapter_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_author_card_house_impact_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(
+            f"{sidecar_path}: author card-house adapter contract is missing"
+        )
+    if (
+        contract.get("schema_version")
+        != "dart.fbf_author_card_house_dynamics_adapter/v1"
+        or contract.get("kind") != "source_configuration_dynamics_adapter"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected author card-house schema")
+
+    source_binding = contract.get("source_binding")
+    expected_binding = {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+        "card_house_run_blob": "35f33651bc9674a259071ac723e47755504152db",
+        "card_house_run_py_sha256": (
+            "18c58c85eaad865aeef480b46e880a52088f266b79c90226f624637221ee36f8"
+        ),
+        "fbf_config_py_sha256": (
+            "88f3f9ffd758eccce8496f7897192587a05907109e313c7a86bcf8f9de8cc248"
+        ),
+        "solver_fbf_py_sha256": (
+            "8ec32aa20bf8d6c1173ed6c7f3735e2926fbb4b5059ee2236e26ad27eb22f941"
+        ),
+        "configuration_spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+        ),
+        "demo_implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+    }
+    if source_binding != expected_binding:
+        raise ValueError(f"{sidecar_path}: author card-house source hashes changed")
+
+    if contract.get("source_defaults") != {
+        "levels": 5,
+        "frames": 800,
+        "drop_frame": 400,
+        "num_cubes": 4,
+        "mu": 0.8,
+        "cube_half_size_m": 0.4,
+        "cube_density_kg_m3": 500.0,
+        "drop_height_m": 1.0,
+    }:
+        raise ValueError(f"{sidecar_path}: author card-house source defaults changed")
+
+    if contract.get("selected_source_invocation") != {
+        "provenance": "source_supported_cli_parameterization",
+        "historical_paper_invocation_known": False,
+        "arguments": {
+            "solvers": ["fbf"],
+            "levels": 4,
+            "frames": 600,
+            "drop_frame": 400,
+            "num_cubes": 4,
+            "mu": 0.8,
+            "cube_half_size_m": 0.4,
+            "cube_density_kg_m3": 500.0,
+            "drop_height_m": 1.0,
+            "device": "cpu",
+            "profile": True,
+            "usd": True,
+        },
+    }:
+        raise ValueError(
+            f"{sidecar_path}: author card-house selected source invocation changed"
+        )
+
+    expected_source_configuration = {
+        "cards": {
+            "count": 26,
+            "leaning_count": 20,
+            "bridge_count": 6,
+            "lean_size_m": [0.04, 1.25, 2.5],
+            "bridge_size_m": [2.5, 1.25, 0.04],
+            "density_kg_m3": 200.0,
+            "mass_kg": 25.0,
+            "lean_from_vertical_degrees": 25.0,
+            "bridge_angle_degrees": -1.0,
+            "tent_half_gap_m": 0.55,
+            "tent_width_m": 2.2,
+            "tent_height_m": 2.41660616977186,
+        },
+        "cubes": {
+            "count": 4,
+            "edge_m": 0.8,
+            "density_kg_m3": 500.0,
+            "mass_kg": 256.0,
+            "initial_height_m": 10.66642467908744,
+            "initially_kinematic": True,
+            "initial_velocity_m_s": [0, 0, 0],
+        },
+        "contact": {
+            "friction": 0.8,
+            "gap_m": 0.005,
+            "shape_stiffness": 10000.0,
+            "shape_damping": 1000.0,
+        },
+        "schedule": {
+            "display_time_step_seconds": 1.0 / 60.0,
+            "substeps_per_frame": 4,
+            "runtime_time_step_seconds": 1.0 / 240.0,
+            "release_frame": 400,
+            "release_substep": 1600,
+            "total_frames": 600,
+            "total_substeps": 2400,
+        },
+        "solver": {
+            "type": "fbf_exact_coulomb",
+            "max_contacts": 4096,
+            "max_outer": 200,
+            "outer_tol": 1e-6,
+            "residual_check_interval": 5,
+            "inner_solver": "block_gs",
+            "inner_gs_sweeps": 10,
+            "inner_max_iter": 200,
+            "inner_tol": 1e-6,
+            "adaptive_gamma": True,
+            "gamma_c": 5.0,
+            "gamma_max": 1e6,
+            "armijo_rho_high": 0.9,
+            "armijo_shrink": 0.7,
+            "armijo_max_backtracks": 8,
+            "warm_start": True,
+            "baumgarte_erp": 0.0,
+            "termination_residual": "coulomb_rel",
+            "termination_tol": 1e-6,
+        },
+    }
+    if contract.get("source_configuration") != expected_source_configuration:
+        raise ValueError(
+            f"{sidecar_path}: author card-house source configuration changed"
+        )
+
+    adapter = contract.get("dart_adapter")
+    if not isinstance(adapter, dict) or adapter.get("scene_id") != schedule.scene:
+        raise ValueError(f"{sidecar_path}: author card-house adapter identity changed")
+    world = adapter.get("world")
+    if not isinstance(world, dict):
+        raise ValueError(f"{sidecar_path}: author card-house adapter world is missing")
+    if (
+        not _is_finite_number(world.get("time_step_seconds"))
+        or not math.isclose(
+            world["time_step_seconds"], 1.0 / 240.0, rel_tol=0.0, abs_tol=1e-15
+        )
+        or world.get("current_time_seconds") != 0.0
+        or world.get("gravity_m_s2") != [0.0, 0.0, -9.81]
+        or world.get("simulation_threads") != schedule.threads
+        or world.get("deactivation_enabled") is not False
+    ):
+        raise ValueError(f"{sidecar_path}: author card-house world policy changed")
+    if adapter.get("collision") != {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "max_contacts": 4096,
+        "max_contacts_per_pair": 4,
+        "enable_contact": True,
+        "allow_negative_penetration_depth_contacts": False,
+        "default_empty_body_node_filter": True,
+    }:
+        raise ValueError(
+            f"{sidecar_path}: author card-house collision contract changed"
+        )
+    if adapter.get("solver") != _expected_author_card_house_solver_contract(
+        schedule.solver_lane
+    ):
+        raise ValueError(f"{sidecar_path}: author card-house solver contract changed")
+    if adapter.get("contact_material") != {
+        "primary_friction": 0.8,
+        "secondary_friction": 0.8,
+        "restitution": 0.0,
+        "primary_slip_compliance": -1.0,
+        "secondary_slip_compliance": -1.0,
+        "first_friction_direction": [0.0, 0.0, 0.0],
+        "uses_default_friction_direction_frame": True,
+    }:
+        raise ValueError(f"{sidecar_path}: author card-house contact material changed")
+    if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
+        raise ValueError(f"{sidecar_path}: author card-house scoped ERP is not zero")
+    if adapter.get("inventory") != {
+        "cards": 26,
+        "cubes": 4,
+        "released_cubes": 0,
+        "finite_state": True,
+    }:
+        raise ValueError(f"{sidecar_path}: author card-house inventory changed")
+    if adapter.get("schedule") != {
+        "evidence_total_substeps": 2400,
+        "evidence_runner_action_completed_step": 1600,
+        "release_action_key": "p",
+        "interactive_action_semantics": "immediate_on_invocation",
+    }:
+        raise ValueError(f"{sidecar_path}: author card-house release schedule changed")
+
+    expected_adapter_boundaries = {
+        "source_contact_gap_recorded_m": 0.005,
+        "source_contact_gap_semantics_implemented": False,
+        "source_shape_stiffness_semantics_implemented": False,
+        "source_shape_damping_semantics_implemented": False,
+        "source_collision_backend_implemented": False,
+        "source_solver_backend_semantics_implemented": False,
+        "source_float32_semantics_implemented": False,
+        "dart_native_four_point_planar_is_adapter_choice": True,
+    }
+    if contract.get("adapter_boundaries") != expected_adapter_boundaries:
+        raise ValueError(
+            f"{sidecar_path}: author card-house adapter boundaries changed"
+        )
+
+    expected_claim_boundary = {
+        "current_source_parameterized_configuration_port": True,
+        "source_release_action_ported_to_dart": True,
+        "source_release_schedule_declared_for_evidence_runner": True,
+        "interactive_demo_auto_releases_at_source_step": False,
+        "historical_paper_invocation_known": False,
+        "trajectory_valid": False,
+        "physical_outcome_valid": False,
+        "trajectory_equivalence": False,
+        "solver_equivalence": False,
+        "physical_outcome_equivalence": False,
+        "fig06_parity": False,
+        "video06_parity": False,
+        "timing_comparability": False,
+        "paper_parity": False,
+    }
+    if contract.get("claim_boundary") != expected_claim_boundary:
+        raise ValueError(f"{sidecar_path}: author card-house claim boundary changed")
+
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "solver_lane": (
+            "exact_fbf" if schedule.solver_lane == "exact" else "boxed_lcp"
+        ),
+        "card_count": adapter["inventory"]["cards"],
+        "cube_count": adapter["inventory"]["cubes"],
+        "release_action_completed_step": adapter["schedule"][
+            "evidence_runner_action_completed_step"
+        ],
+        "scoped_erp": adapter["process_state"]["observed_contact_erp"],
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+
+
 def _validate_author_masonry_arch_adapter_contract(
     schedule: CaptureSchedule,
     data: dict[str, Any],
@@ -2358,6 +2776,11 @@ def _validate_schedule_physics_contract(
     sidecar_path: Path,
 ) -> dict[str, Any] | None:
     report = _validate_literal_masonry_arch_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    if report is not None:
+        return report
+    report = _validate_author_card_house_adapter_contract(
         schedule, data, sidecar_path=sidecar_path
     )
     if report is not None:

@@ -38,13 +38,41 @@ A row is complete only when all of the following are true:
 | Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | Current-head exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The author group passes solver, timeline, stream, decode, and independent replay gates; manual inspection shows ejected/ejected/retained-through-6-s/ejected in source order. All four paired proxies pass with the DART collision frontend fixed across lanes, and both solvers visibly produce ejected/ejected/captured/ejected over 4 s. These remain DART reconstructions rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | `fbf_paper_painleve`, `fbf_paper_painleve_mu_0_55`; `painleve_mu05`, `painleve_mu055`, and `painleve` group | Paired exact/boxed captures, a neutral boxed lane-separated group, and solver-labeled synchronized comparisons are automated | The current media gates pass. The exact lane visibly rocks and returns upright for `mu=.5`, then tumbles and remains horizontal for `mu=.55`; the boxed lane stays upright in both proxies. These are DART proxies only: the paper does not publish the dimensions, mass, launch state, or timestamps, and the separate tracked fixtures are not trace-equivalent. | Local exact-vs-boxed clips ready below; GitHub URLs pending |
-| Fig. 6 / 26-card segment | `fbf_paper_card_house_26`; `card_house_26` with projectile action | Paired exact/boxed capture is automated | Blocked: the strict paper-tolerance trajectory is not yet complete. Current known runs either fail `1e-6` or are shorter than the 10 s settle/impact sequence. | Pending |
+| Fig. 6 / 26-card segment | `fbf_author_card_house_4_impact_current_source`; `card_house_author_4_impact_current_source` is the source-selected lane. `fbf_paper_card_house_26`; `card_house_26` remains a distinct reconstruction | Paired exact/boxed capture is automated with Native `FourPointPlanar`, contact capacity 4,096, and subdivision 4 fixed across lanes | Blocked: strict exact fails closed at completed step 35 when contacts jump 44 to 68; boxed completes 100 steps, but neither reaches the cube release at step 1,600 of 2,400. No full-run outcome or valid media exists. | Pending; no PR upload |
 | Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Paired exact/boxed capture is automated for all three schedules | The current literal standing capture passes 600 exact solves with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; both lanes visibly remain standing through 10 s. A clean source-configuration exact smoke now clears the former step-68 local failure and completes 100 strict steps, then fails closed on an outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither lane has completed the 2,000-step schedule or a physical-outcome/media gate. Its 500-frame invocation is not the 400-frame source default, and the oriented-box proxy remains nonliteral. Impact and paper parity remain blocked. | Local literal-standing exact-vs-boxed clip ready; source-configuration exact media blocked at step 142; GitHub URL pending |
 | Fig. 8 / 101-stone arch segment | `fbf_paper_masonry_arch_101`; `masonry_arch_101` | Paired exact/boxed capture is automated | Blocked for parity: this is a reduced 38-contact oriented-box approximation; full-manifold long-run standing behavior and a matched Kamino comparison are unproven. | Pending |
 | Tables 6-7 / ten-level card house | `fbf_paper_card_house_10_dynamic`; `card_house_10_dynamics` (construction inspection is separate) | Paired exact/boxed capture is automated | Blocked: the 512-contact budget is known to saturate, and no completed zero-failure, zero-fallback 155-card trajectory exists. The source video has no corresponding segment. | Pending |
 
-The two-card A-frame and the five-level author-card construction remain useful
-inspection/diagnostic scenes, but they do not replace any row above.
+The source-selected Figure 6 adapter pins author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and uses the supported selection
+`--solvers fbf --levels 4 --frames 600 --drop-frame 400 --num-cubes 4
+--mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0 --device cpu
+--profile --usd`. That is not the five-level/800-frame no-argument source
+default or a known historical paper command. Source `ke=1e4`, `kd=1e3`, and
+`gap=.005` are recorded source semantics, not contact semantics implemented
+equivalently by the DART adapter. It contains 20 leaning plus 6 bridge cards
+and four initially kinematic `0.8 m`, `256 kg` cubes. Interactive `p` releases
+them immediately; the evidence runner invokes `p` after completed substep
+1,600. The 2,400-step schedule uses `dt=1/240 s`.
+
+The demo build, eight focused author-card C++ tests, 190 runner Python tests, and
+exact/boxed contract-smoke validators pass. The exact 100-step prefix records
+103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
+worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
+worst residual `9.826274595482653e-7`. Its timeline is
+`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
+SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+The boxed control timeline is
+`/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
+SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+No release, full-run trajectory or outcome, source-backend or timing
+equivalence, final media or PR video, Fig. 6/paper parity, or
+exact-versus-boxed superiority follows. This is an adapter-only lane.
+
+The two-card A-frame and five-level author-card construction remain useful
+inspection/diagnostic scenes. The older reconstructed 26-card lane remains
+useful negative evidence. None replaces or can be relabeled as the new
+source-selected row.
 
 ## Current Local Attachment Candidates
 
