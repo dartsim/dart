@@ -47,7 +47,7 @@ historical renderer, Apple hardware, or paper timer boundary.
 | Reconstructed crown impact | Frozen three-cube v1 reaches the arch before the ground and stays finite, but fails cap, residual, whole-arch, and far-field gates | Durable scientific negative; `impact_claim_passed=false`, no tuning |
 | Card-house manifold sensitivity | Current-source v2 emits 600 rows for Compact and FourPointPlanar; both are non-strict, while FourPointPlanar raises mean contacts by `93.7983` and mean multiplicity by `1.95485` | Valid one-factor diagnostic only; physical, timing, real-time, and paper verdicts remain null |
 | Paper-media parity | The passing literal bundle contains no projectile; source-matched impact media and 101-stone coverage remain missing, and the public author repository ships no historical camera/material/golden render bundle | No paper impact, GUI, or golden-frame parity claim |
-| Manifest | Current audit: 29 rows, 24 partial, 5 blocked, 0 complete; six durable local visual bundles are finalized and the visual workflow declares 17 schedules | Validator passes; overall status honestly remains partial |
+| Manifest | Current audit: 29 rows, 24 partial, 5 blocked, 0 complete; six durable local visual bundles are finalized and the visual workflow declares 19 schedules | Validator passes; overall status honestly remains partial |
 
 ## External And Comparison Boundary
 

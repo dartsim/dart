@@ -640,7 +640,7 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six finalized bundles, and the visual workflow
-  declares 17 schedules; validator passes and fail-closed hashes repository artifacts, materializes
+  declares 19 schedules; validator passes and fail-closed hashes repository artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   enforces current-truth promotion boundaries.

@@ -38,22 +38,13 @@
 // solver options, pinned springers, and initial transforms follow the current
 // literal Native/FourPointPlanar contract.
 
+#include "../../../examples/demos/scenes/FbfLiteralMasonryArchSpec.hpp"
 #include "dart/collision/CollisionResult.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/ConvexMeshShape.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/osg/OffscreenViewer.hpp"
 #include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/WorldNode.hpp"
-#include "dart/math/detail/MasonryArchGeometry.hpp"
-#include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <Eigen/Geometry>
@@ -66,7 +57,6 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -78,16 +68,15 @@
 
 namespace {
 
-constexpr double kDt = 1.0 / 60.0;
-constexpr double kGravity = 9.81;
-constexpr double kFriction = 0.8;
-constexpr double kDensity = 1000.0;
-constexpr std::size_t kStoneCount = 25u;
-constexpr std::size_t kMaxContacts = kStoneCount * 16u;
-constexpr std::size_t kMaxContactsPerPair = 8u;
-constexpr double kEndFaceExpansion = 1e-6;
-constexpr double kDownwardShift = 0.001001;
-constexpr double kTolerance = 1e-6;
+namespace literalArch = fbf_literal_masonry_arch;
+
+constexpr double kDt = literalArch::kTimeStep;
+constexpr double kFriction = literalArch::kFriction;
+constexpr double kDensity = literalArch::kDensity;
+constexpr std::size_t kStoneCount = literalArch::kStoneCount;
+constexpr double kEndFaceExpansion = literalArch::kEndFaceExpansion;
+constexpr double kDownwardShift = literalArch::kDownwardShift;
+constexpr double kTolerance = literalArch::kResidualTolerance;
 constexpr std::size_t kDefaultSteps = 600u;
 constexpr std::size_t kDefaultFrameStride = 10u;
 constexpr std::size_t kDefaultThreads = 1u;
@@ -226,160 +215,14 @@ const char* fbfStatusLabel(dart::math::detail::ExactCoulombFbfStatus status)
   return "unknown";
 }
 
-std::shared_ptr<dart::dynamics::ConvexMeshShape> createLiteralShape(
-    const dart::math::detail::MasonryArchStoneWedgeGeometry& geometry)
+dart::simulation::WorldPtr createCaptureWorld(std::size_t simulationThreads)
 {
-  dart::dynamics::ConvexMeshShape::Vertices vertices;
-  vertices.reserve(geometry.vertices.size());
-  for (const auto& vertex : geometry.vertices)
-    vertices.push_back(vertex - geometry.centroid);
-
-  dart::dynamics::ConvexMeshShape::Triangles triangles;
-  const auto& sourceTriangles
-      = dart::math::detail::getMasonryArchStoneWedgeTriangles();
-  triangles.reserve(sourceTriangles.size());
-  for (const auto& triangle : sourceTriangles) {
-    triangles.emplace_back(
-        static_cast<Eigen::Index>(triangle[0]),
-        static_cast<Eigen::Index>(triangle[1]),
-        static_cast<Eigen::Index>(triangle[2]));
-  }
-  return std::make_shared<dart::dynamics::ConvexMeshShape>(vertices, triangles);
-}
-
-dart::dynamics::SkeletonPtr createGround()
-{
-  auto skeleton = dart::dynamics::Skeleton::create("ground_plane");
-  auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  auto* body = pair.second;
-  auto* shapeNode = body->createShapeNodeWith<
-      dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(
-      std::make_shared<dart::dynamics::PlaneShape>(
-          Eigen::Vector3d::UnitZ(), 0.0));
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(kFriction);
-  auto* floorVisual = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
-      std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(0.9, 0.35, 0.012)));
-  floorVisual->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.006));
-  floorVisual->getVisualAspect()->setRGBA(
-      Eigen::Vector4d(0.34, 0.37, 0.42, 1.0));
-  skeleton->setMobile(false);
-  return skeleton;
-}
-
-dart::dynamics::SkeletonPtr createStone(
-    std::size_t index,
-    const dart::math::detail::MasonryArchStoneWedgeGeometry& geometry)
-{
-  const std::string name = "masonry_arch_stone_" + std::to_string(index);
-  auto skeleton = dart::dynamics::Skeleton::create(name);
-  dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties
-      jointProperties(name + "_joint");
-  dart::dynamics::BodyNode::Properties bodyProperties(
-      dart::dynamics::BodyNode::AspectProperties(name + "_body"));
-  auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
-      nullptr, jointProperties, bodyProperties);
-  auto* joint = pair.first;
-  auto* body = pair.second;
-
-  auto* shapeNode = body->createShapeNodeWith<
-      dart::dynamics::VisualAspect,
-      dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(createLiteralShape(geometry));
-  shapeNode->setName(name + "_shape");
-  const bool springer = index == 0u || index + 1u == kStoneCount;
-  const Eigen::Vector4d color
-      = springer ? Eigen::Vector4d(0.38, 0.24, 0.16, 1.0)
-                 : (index % 2u == 0u ? Eigen::Vector4d(0.82, 0.54, 0.30, 1.0)
-                                     : Eigen::Vector4d(0.72, 0.40, 0.22, 1.0));
-  shapeNode->getVisualAspect()->setRGBA(color);
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(kFriction);
-
-  const double mass = kDensity * geometry.volume;
-  dart::dynamics::Inertia inertia;
-  inertia.setMass(mass);
-  inertia.setMoment(mass * geometry.momentPerUnitMass);
-  body->setInertia(inertia);
-
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.translation()
-      = geometry.centroid - kDownwardShift * Eigen::Vector3d::UnitZ();
-  joint->setPositions(dart::dynamics::FreeJoint::convertToPositions(transform));
-  if (springer)
-    skeleton->setMobile(false);
-  return skeleton;
-}
-
-dart::constraint::ExactCoulombFbfConstraintSolverOptions makeExactOptions()
-{
-  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
-  options.maxOuterIterations = 5000;
-  options.acceptOuterMaxIterations = true;
-  options.tolerance = kTolerance;
-  options.innerMaxSweeps = 30;
-  options.runFixedInnerSweeps = true;
-  options.innerLocalSolver = dart::constraint::ExactCoulombFbfLocalBlockSolver::
-      ExactMetricProjection;
-  options.innerLocalIterations = 1;
-  options.stepSizeScale = 35.0;
-  options.enableAdaptiveStepSize = true;
-  options.outerRelaxation = 1.1;
-  options.enableWarmStart = true;
-  options.enableProjectedGradientRetry = false;
-  options.enableDenseResidualPolish = false;
-  options.fallbackToBoxedLcp = false;
-  options.seedNormalImpulseFromDiagonal = false;
-  options.useMatrixFreeDelassusSeed = false;
-  options.assembleDenseContactRowSnapshot = false;
-  options.enableStepSizePersistence = false;
-  return options;
-}
-
-dart::simulation::WorldPtr createWorld(std::size_t simulationThreads)
-{
-  auto world
-      = dart::simulation::World::create("fbf_literal_wedge_visual_capture");
-  world->setTimeStep(kDt);
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));
-  world->setNumSimulationThreads(simulationThreads);
-
-  dart::simulation::DeactivationOptions deactivation;
-  deactivation.mEnabled = false;
-  world->setDeactivationOptions(deactivation);
-
-  auto solver
-      = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
-          makeExactOptions());
-  auto detector = dart::collision::NativeCollisionDetector::create();
-  detector->setContactManifoldMode(dart::collision::NativeCollisionDetector::
-                                       ContactManifoldMode::FourPointPlanar);
-  solver->setCollisionDetector(detector);
-  solver->setNumSimulationThreads(simulationThreads);
-  world->setConstraintSolver(std::move(solver));
-
-  auto* installed
-      = static_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
-          world->getConstraintSolver());
-  installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);
-  installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
-      true);
-  installed->setSplitImpulseEnabled(true);
-  dart::constraint::ContactConstraint::setErrorReductionParameter(0.0);
-  auto& collisionOption = installed->getCollisionOption();
-  collisionOption.maxNumContacts = kMaxContacts;
-  collisionOption.maxNumContactsPerPair = kMaxContactsPerPair;
-
-  world->addSkeleton(createGround());
-  const auto geometries = dart::math::detail::generateMasonryArchStoneWedges(
-      kStoneCount,
-      {},
-      dart::math::detail::MasonryArchBarrierGapPolicy::OmitSourceOffsets,
-      kEndFaceExpansion);
-  if (geometries.size() != kStoneCount)
-    return nullptr;
-  for (std::size_t i = 0u; i < geometries.size(); ++i)
-    world->addSkeleton(createStone(i, geometries[i]));
+  auto world = literalArch::createWorld(
+      literalArch::SolverLane::ExactFbf,
+      literalArch::VisualMode::DemoPalette,
+      simulationThreads);
+  if (world)
+    world->setName("fbf_literal_wedge_visual_capture");
   return world;
 }
 
@@ -470,14 +313,15 @@ void writeRuntimeJson(
     std::size_t totalAttempts,
     std::size_t totalSolves,
     std::size_t totalFailures,
-    std::size_t totalFallbacks)
+    std::size_t totalFallbacks,
+    const std::string& initialPhysicalGeometryFingerprint)
 {
   const auto runtimePath = config.outputDirectory / "capture-runtime.json";
   std::ofstream output(runtimePath);
   output << std::setprecision(17);
   output
       << "{\n"
-      << "  \"schema_version\": \"dart.fbf_literal_wedge_visual_runtime/v1\",\n"
+      << "  \"schema_version\": \"dart.fbf_literal_wedge_visual_runtime/v2\",\n"
       << "  \"claim_scope\": \"current-source reconstructed literal-wedge DART "
          "evidence; not paper parity\",\n"
       << "  \"scenario\": \"masonry_arch_25_literal_wedge\",\n"
@@ -507,7 +351,13 @@ void writeRuntimeJson(
       << "  \"pinned_springers\": [0, 24],\n"
       << "  \"end_face_expansion_m\": " << kEndFaceExpansion << ",\n"
       << "  \"downward_shift_m\": " << kDownwardShift << ",\n"
-      << "  \"exact_options\": {\n"
+      << "  \"initial_physical_geometry_fingerprint\": {\n"
+      << "    \"algorithm\": \"fnv1a64_q1e-10_le_v1\",\n"
+      << "    \"value\": \"" << initialPhysicalGeometryFingerprint << "\"\n"
+      << "  },\n"
+      << "  \"exact_options_summary\": {\n"
+      << "    \"scope\": \"selected evidence controls only; the shared "
+         "FbfLiteralMasonryArchSpec.hpp contract is authoritative\",\n"
       << "    \"max_outer_iterations\": 5000,\n"
       << "    \"tolerance\": " << kTolerance << ",\n"
       << "    \"inner_max_sweeps\": 30,\n"
@@ -570,11 +420,15 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  auto world = createWorld(config.simulationThreads);
+  literalArch::ScopedContactErrorReductionParameter scopedContactErp;
+  auto world = createCaptureWorld(config.simulationThreads);
   if (world == nullptr) {
     std::cerr << "Failed to build the literal 25-stone wedge world.\n";
     return 1;
   }
+  const std::string initialPhysicalGeometryFingerprint
+      = literalArch::physicalGeometryFingerprint(
+          literalArch::inspectPhysicsContract(world));
   const auto initialPoses = collectInitialPoses(world);
   if (initialPoses.size() != kStoneCount) {
     std::cerr << "Expected 25 literal arch bodies, found "
@@ -734,7 +588,8 @@ int main(int argc, char* argv[])
       exactSolver->getNumExactCoulombAttempts(),
       exactSolver->getNumExactCoulombSolves(),
       exactSolver->getNumExactCoulombFailures(),
-      exactSolver->getNumBoxedLcpFallbacks());
+      exactSolver->getNumBoxedLcpFallbacks(),
+      initialPhysicalGeometryFingerprint);
 
   std::cout << std::setprecision(17)
             << "capture_complete=true,steps=" << metrics.step

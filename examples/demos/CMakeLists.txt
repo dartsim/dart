@@ -149,6 +149,18 @@ set(
   fbf_author_card_house_spec_source
   "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorCardHouseSpec.hpp"
 )
+set(
+  fbf_literal_masonry_arch_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfLiteralMasonryArchSpec.hpp"
+)
+set(
+  fbf_literal_masonry_arch_geometry_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/math/detail/MasonryArchGeometry.hpp"
+)
+set(
+  fbf_exact_solver_options_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+)
 set_property(
   DIRECTORY
   APPEND
@@ -156,6 +168,9 @@ set_property(
     CMAKE_CONFIGURE_DEPENDS
       "${fbf_author_turntable_spec_source}"
       "${fbf_author_card_house_spec_source}"
+      "${fbf_literal_masonry_arch_spec_source}"
+      "${fbf_literal_masonry_arch_geometry_source}"
+      "${fbf_exact_solver_options_source}"
       "${fbf_paper_friction_demo_source}"
 )
 file(
@@ -167,6 +182,18 @@ file(
   SHA256 "${fbf_author_card_house_spec_source}"
   fbf_author_card_house_spec_sha256
 )
+file(
+  SHA256 "${fbf_literal_masonry_arch_spec_source}"
+  fbf_literal_masonry_arch_spec_sha256
+)
+file(
+  SHA256 "${fbf_literal_masonry_arch_geometry_source}"
+  fbf_literal_masonry_arch_geometry_sha256
+)
+file(
+  SHA256 "${fbf_exact_solver_options_source}"
+  fbf_exact_solver_options_sha256
+)
 set_property(
   SOURCE "${fbf_paper_friction_demo_source}"
   APPEND
@@ -176,6 +203,10 @@ set_property(
       DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
       DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_SPEC_SHA256="${fbf_literal_masonry_arch_spec_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_GEOMETRY_SHA256="${fbf_literal_masonry_arch_geometry_sha256}"
+      DART_FBF_EXACT_SOLVER_OPTIONS_SHA256="${fbf_exact_solver_options_sha256}"
 )
 
 # Globs every scene source, including one level of scene subdirectories (for

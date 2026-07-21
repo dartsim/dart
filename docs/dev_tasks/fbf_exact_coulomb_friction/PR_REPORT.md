@@ -17,7 +17,7 @@ claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six finalized bundles, and the visual workflow
-declares 17 schedules.
+declares 19 schedules.
 
 The sealed pinned-author masonry-arch run is scientific-negative source
 evidence, not a DART comparison: 40 true flags use the initial

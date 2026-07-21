@@ -42,7 +42,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
 | Paper-media parity | The passing literal video has no projectile; paper impact media and 101-stone coverage remain incomplete, while the public author repository contains no renderer camera/material bundle or approved frame goldens | No paper impact, GUI, or golden-frame parity claim |
-| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 17 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
+| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 19 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
 ## Current Small CPU Matrix
 

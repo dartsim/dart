@@ -15,7 +15,7 @@ seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
-and the visual workflow declares 17 schedules.
+and the visual workflow declares 19 schedules.
 
 ## Prior-Source Strict Full-Card Evidence
 

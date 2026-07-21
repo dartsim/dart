@@ -633,7 +633,7 @@ fail-closed negative, repository-archived at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six finalized bundles, and the
-  visual workflow declares 17 schedules. Its validator fail-closed hashes
+  visual workflow declares 19 schedules. Its validator fail-closed hashes
   repository artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and

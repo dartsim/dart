@@ -51,6 +51,7 @@ BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
 BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
 HEADLESS_EXACT_FBF_FAIL_FAST_FLAG = "--headless-exact-fbf-fail-fast"
 EXACT_FBF_RESIDUAL_TOLERANCE = 1e-6
+LITERAL_MASONRY_ARCH_GEOMETRY_FINGERPRINT = "1ff65f2a99ec96d1"
 EXACT_FBF_FAIL_FAST_REASONS = {
     "boxed_fallback",
     "exact_failure",
@@ -162,7 +163,10 @@ REQUIRED_VIDEO_SCHEDULES = {
     ),
     "painleve": ("painleve_mu05", "painleve_mu055"),
     "card_house_26": ("card_house_26",),
-    "masonry_arch_25": ("masonry_arch_25",),
+    "masonry_arch_25": (
+        "masonry_arch_25_literal_standing",
+        "masonry_arch_25",
+    ),
     "masonry_arch_101": ("masonry_arch_101",),
 }
 
@@ -626,6 +630,42 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "fallback, but its residual still fails the 1e-6 paper tolerance.",
         ),
         actions=(ScheduledAction(402, "p", "launch four reconstructed projectiles"),),
+        long_run=True,
+    ),
+    "masonry_arch_25_literal_standing": CaptureSchedule(
+        id="masonry_arch_25_literal_standing",
+        scene="fbf_paper_masonry_arch_25_literal_standing",
+        title="Literal 25-stone arch standing reconstruction",
+        source_segment="masonry_arch_25",
+        total_steps=600,
+        frame_stride=10,
+        panel_steps=(0, 120, 300, 600),
+        panel_labels=("initial", "t=2s", "t=5s", "local long run t=10s"),
+        configuration=(
+            ("stones", "25 literal convex wedges"),
+            ("mobile_stones", "23; both springers pinned"),
+            ("mu", "0.8"),
+            ("contact_frontend", "Native FourPointPlanar"),
+            ("contact_caps", "400 total, 8 per pair"),
+            ("projectile", "none"),
+            ("local_duration_seconds", "10"),
+        ),
+        mismatches=COMMON_DART_MISMATCH
+        + (
+            "This is the literal no-projectile standing phase only; it does not "
+            "reproduce the source video's crown impact or its unpublished "
+            "projectile parameters.",
+            "The paper timing row reports 100 contacts, while this source-derived "
+            "DART reconstruction has a different measured natural manifold.",
+            "Ten seconds is the preserved local text/capture-oracle horizon, not "
+            "a source-published duration.",
+        ),
+        known_gate_blockers=(
+            "Passing this standing run cannot close the separate Fig. 7 impact "
+            "parity gate.",
+        ),
+        collision_detector="native",
+        collision_detector_override=False,
         long_run=True,
     ),
     "masonry_arch_25": CaptureSchedule(
@@ -1592,6 +1632,443 @@ def _legacy_demo_command(command: Sequence[str]) -> list[str]:
     return [item for item in command if item != HEADLESS_EXACT_FBF_FAIL_FAST_FLAG]
 
 
+def _is_literal_masonry_arch_schedule(schedule: CaptureSchedule) -> bool:
+    return (
+        schedule.source_schedule_id or schedule.id
+    ) == "masonry_arch_25_literal_standing"
+
+
+def _is_finite_number(value: Any) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+    )
+
+
+def _validate_contract_vector(value: Any, size: int, *, label: str) -> None:
+    if (
+        not isinstance(value, list)
+        or len(value) != size
+        or not all(_is_finite_number(item) for item in value)
+    ):
+        raise ValueError(f"{label}: expected {size} finite numbers")
+
+
+def _validate_contract_matrix(value: Any, *, label: str) -> None:
+    if not isinstance(value, list) or len(value) != 3:
+        raise ValueError(f"{label}: expected a 3x3 matrix")
+    for row in value:
+        _validate_contract_vector(row, 3, label=label)
+
+
+def _validate_contract_pose(value: Any, *, label: str) -> None:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label}: expected a pose object")
+    _validate_contract_vector(value.get("translation"), 3, label=label)
+    _validate_contract_matrix(value.get("rotation"), label=label)
+
+
+def _identity_contract_pose() -> dict[str, list[Any]]:
+    return {
+        "translation": [0.0, 0.0, 0.0],
+        "rotation": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+    }
+
+
+def _literal_masonry_arch_geometry_fingerprint(contract: dict[str, Any]) -> str:
+    value = 14695981039346656037
+
+    def append_bytes(payload: bytes) -> None:
+        nonlocal value
+        for byte in payload:
+            value ^= byte
+            value = (value * 1099511628211) & 0xFFFFFFFFFFFFFFFF
+
+    def append_unsigned(item: int) -> None:
+        if isinstance(item, bool) or not isinstance(item, int) or item < 0:
+            raise ValueError("literal arch fingerprint expected an unsigned integer")
+        append_bytes(item.to_bytes(8, byteorder="little", signed=False))
+
+    def append_boolean(item: bool) -> None:
+        if not isinstance(item, bool):
+            raise ValueError("literal arch fingerprint expected a boolean")
+        append_bytes(b"\x01" if item else b"\x00")
+
+    def append_double(item: Any) -> None:
+        if not _is_finite_number(item):
+            raise ValueError("literal arch fingerprint expected a finite number")
+        scaled = float(item) * 1e10
+        quantized = (
+            math.floor(scaled + 0.5) if scaled >= 0.0 else math.ceil(scaled - 0.5)
+        )
+        if not -(1 << 63) <= quantized < (1 << 63):
+            raise ValueError("literal arch fingerprint number is out of range")
+        append_bytes(quantized.to_bytes(8, byteorder="little", signed=True))
+
+    def append_string(item: Any) -> None:
+        if not isinstance(item, str):
+            raise ValueError("literal arch fingerprint expected a string")
+        payload = item.encode("utf-8")
+        append_unsigned(len(payload))
+        append_bytes(payload)
+
+    def append_vector(item: Any) -> None:
+        _validate_contract_vector(item, 3, label="literal arch fingerprint vector")
+        for component in item:
+            append_double(component)
+
+    def append_matrix(item: Any) -> None:
+        _validate_contract_matrix(item, label="literal arch fingerprint matrix")
+        for row in item:
+            append_vector(row)
+
+    def append_pose(item: Any) -> None:
+        _validate_contract_pose(item, label="literal arch fingerprint pose")
+        append_vector(item["translation"])
+        append_matrix(item["rotation"])
+
+    append_string(
+        "dart.fbf_literal_masonry_arch_physical_geometry/" "fnv1a64_q1e-10_le_v1"
+    )
+    append_unsigned(contract["world"]["skeleton_count"])
+    ground = contract["ground"]
+    append_boolean(ground["mobile"])
+    append_boolean(ground["plane_shape_observed"])
+    append_double(ground["friction"])
+    append_double(ground["primary_friction"])
+    append_double(ground["secondary_friction"])
+    append_double(ground["restitution"])
+    append_double(ground["primary_slip_compliance"])
+    append_double(ground["secondary_slip_compliance"])
+    append_vector(ground["first_friction_direction"])
+    append_boolean(ground["default_friction_direction_frame"])
+    append_vector(ground["local_center_of_mass"])
+    append_pose(ground["body_pose"])
+    append_vector(ground["linear_velocity"])
+    append_vector(ground["angular_velocity"])
+    append_unsigned(ground["collision_shape_count"])
+    append_pose(ground["collision_shape_local_pose"])
+    append_vector(ground["plane_normal"])
+    append_double(ground["plane_offset"])
+    stones = contract["stones"]
+    append_unsigned(len(stones))
+    for stone in stones:
+        append_string(stone["name"])
+        append_boolean(stone["mobile"])
+        append_double(stone["friction"])
+        append_double(stone["primary_friction"])
+        append_double(stone["secondary_friction"])
+        append_double(stone["restitution"])
+        append_double(stone["primary_slip_compliance"])
+        append_double(stone["secondary_slip_compliance"])
+        append_vector(stone["first_friction_direction"])
+        append_boolean(stone["default_friction_direction_frame"])
+        append_double(stone["mass_kg"])
+        append_vector(stone["local_center_of_mass"])
+        append_matrix(stone["moment_kg_m2"])
+        append_pose(stone["body_pose"])
+        append_vector(stone["linear_velocity"])
+        append_vector(stone["angular_velocity"])
+        append_unsigned(stone["collision_shape_count"])
+        append_pose(stone["collision_shape_local_pose"])
+        vertices = stone["vertices"]
+        append_unsigned(len(vertices))
+        for vertex in vertices:
+            append_vector(vertex)
+        triangles = stone["triangles"]
+        append_unsigned(len(triangles))
+        for triangle in triangles:
+            for vertex in triangle:
+                append_unsigned(vertex)
+    return f"{value:016x}"
+
+
+def _validate_literal_masonry_arch_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_literal_masonry_arch_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(f"{sidecar_path}: literal arch physics contract is missing")
+    if (
+        contract.get("schema_version")
+        != ("dart.fbf_literal_masonry_arch_physics_contract/v1")
+        or contract.get("kind") != "physics_control"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected literal arch contract schema")
+
+    source_binding = contract.get("source_binding")
+    if not isinstance(source_binding, dict):
+        raise ValueError(f"{sidecar_path}: literal arch source binding is missing")
+    expected_hashes = {
+        "spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfLiteralMasonryArchSpec.hpp"
+        ),
+        "implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+        "geometry_sha256": _sha256(ROOT / "dart/math/detail/MasonryArchGeometry.hpp"),
+        "solver_options_sha256": _sha256(
+            ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+        ),
+    }
+    if source_binding != expected_hashes:
+        raise ValueError(f"{sidecar_path}: literal arch source hashes changed")
+
+    world = contract.get("world")
+    if not isinstance(world, dict) or world.get("name") != (
+        "fbf_literal_masonry_arch_25"
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch world identity changed")
+    if not _is_finite_number(world.get("time_step_seconds")) or not math.isclose(
+        world["time_step_seconds"], 1.0 / 60.0, rel_tol=0.0, abs_tol=1e-15
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch time step changed")
+    gravity = world.get("gravity_m_s2")
+    _validate_contract_vector(gravity, 3, label=f"{sidecar_path}: gravity")
+    if any(
+        not math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-15)
+        for actual, expected in zip(gravity, (0.0, 0.0, -9.81))
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch gravity changed")
+    if (
+        world.get("simulation_threads") != schedule.threads
+        or world.get("deactivation_enabled") is not False
+        or world.get("skeleton_count") != 26
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch world policy changed")
+
+    declared = contract.get("declared_spec")
+    expected_declared = {
+        "density_kg_m3": 1000.0,
+        "friction": 0.8,
+        "barrier_gap_policy": "omit_source_offsets",
+        "end_face_expansion_m": 1e-6,
+        "downward_shift_m": 0.001001,
+        "contact_erp": 0.0,
+    }
+    if declared != expected_declared:
+        raise ValueError(f"{sidecar_path}: literal arch declared spec changed")
+
+    collision = contract.get("collision")
+    if not isinstance(collision, dict) or collision != {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "native_detector_observed": True,
+        "max_contacts": 400,
+        "max_contacts_per_pair": 8,
+    }:
+        raise ValueError(f"{sidecar_path}: literal arch collision contract changed")
+
+    solver = contract.get("solver")
+    expected_lane = "exact_fbf" if schedule.solver_lane == "exact" else "boxed_lcp"
+    if not isinstance(solver, dict) or solver.get("lane") != expected_lane:
+        raise ValueError(f"{sidecar_path}: literal arch solver lane changed")
+    if solver.get("split_impulse_enabled") is not True:
+        raise ValueError(f"{sidecar_path}: literal arch split impulse changed")
+    exact_options = solver.get("exact_options")
+    if schedule.solver_lane == "boxed":
+        if (
+            solver.get("colored_block_gauss_seidel_enabled") is not False
+            or solver.get("participant_affinity_enabled") is not False
+            or exact_options is not None
+        ):
+            raise ValueError(f"{sidecar_path}: boxed literal arch solver changed")
+    else:
+        if (
+            solver.get("colored_block_gauss_seidel_enabled") is not True
+            or solver.get("participant_affinity_enabled") is not True
+        ):
+            raise ValueError(f"{sidecar_path}: exact literal arch schedule changed")
+        expected_options = {
+            "fallback_to_boxed_lcp_enabled": False,
+            "constraint_regularization_enabled": False,
+            "matrix_free_operator_enabled": False,
+            "contact_row_operator_enabled": True,
+            "dense_contact_row_snapshot_enabled": False,
+            "warm_start_enabled": True,
+            "step_size_persistence_enabled": False,
+            "step_size_recovery_growth_factor": 1.05,
+            "warm_start_match_distance": 0.025,
+            "diagonal_seed_enabled": False,
+            "matrix_free_seed_enabled": False,
+            "projected_gradient_retry_enabled": False,
+            "dense_residual_polish_enabled": False,
+            "max_outer_iterations": 5000,
+            "accept_outer_max_iterations": True,
+            "tolerance": 1e-6,
+            "initial_step_size": None,
+            "cap_initial_step_size_at_safe_bound": True,
+            "step_size_scale": 35.0,
+            "outer_relaxation": 1.1,
+            "coupling_variation_tolerance": 0.9,
+            "shrink_factor": 0.7,
+            "max_step_shrink_iterations": 20,
+            "adaptive_step_size_enabled": True,
+            "spectral_iterations": 10,
+            "inner_max_sweeps": 30,
+            "inner_local_solver": "exact_metric_projection",
+            "run_fixed_inner_sweeps": True,
+            "accept_inner_max_iterations": True,
+            "inner_local_iterations": 1,
+            "inner_tolerance": 1e-10,
+            "inner_local_tolerance": 1e-12,
+            "inner_diagonal_regularization": 0.0,
+            "projected_gradient_max_iterations": 400,
+            "projected_gradient_tolerance": 1e-12,
+            "dense_residual_polish_iterations": 8,
+            "dense_residual_polish_line_search_iterations": 8,
+            "dense_residual_polish_regularization": 1e-9,
+            "max_residual_history_samples": 0,
+            "max_residual_history_records": 0,
+        }
+        if exact_options != expected_options:
+            raise ValueError(f"{sidecar_path}: exact literal arch options changed")
+
+    cross_step_options = solver.get("cross_step_options")
+    if schedule.solver_lane == "boxed":
+        if cross_step_options is not None:
+            raise ValueError(f"{sidecar_path}: boxed literal arch policy changed")
+    elif cross_step_options != {
+        "warm_start_match_mode": "either_body_local_feature",
+        "warm_start_normal_cosine": 0.9,
+        "strict_warm_start_match_distance": False,
+        "warm_start_max_age": -1,
+        "persistent_step_size_safe_bound_scale": 1.0,
+        "minimum_step_size": None,
+        "maximum_step_size": None,
+        "warm_start_residual_threshold": None,
+        "warm_start_step_size_cap": None,
+        "persist_uncapped_step_size_on_warm_start_cap": False,
+        "require_residual_improvement_for_unconverged_cache_save": False,
+    }:
+        raise ValueError(
+            f"{sidecar_path}: exact literal arch cross-step policy changed"
+        )
+
+    process_state = contract.get("process_state")
+    if (
+        not isinstance(process_state, dict)
+        or not _is_finite_number(process_state.get("observed_contact_erp"))
+        or process_state["observed_contact_erp"] != 0.0
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch scoped ERP is not zero")
+
+    ground = contract.get("ground")
+    if not isinstance(ground, dict):
+        raise ValueError(f"{sidecar_path}: literal arch ground is missing")
+    if (
+        ground.get("mobile") is not False
+        or ground.get("plane_shape_observed") is not True
+        or ground.get("friction") != 0.8
+        or ground.get("primary_friction") != 0.8
+        or ground.get("secondary_friction") != 0.8
+        or ground.get("restitution") != 0.0
+        or ground.get("primary_slip_compliance") != -1.0
+        or ground.get("secondary_slip_compliance") != -1.0
+        or ground.get("first_friction_direction") != [0.0, 0.0, 0.0]
+        or ground.get("default_friction_direction_frame") is not True
+        or ground.get("local_center_of_mass") != [0.0, 0.0, 0.0]
+        or ground.get("linear_velocity") != [0.0, 0.0, 0.0]
+        or ground.get("angular_velocity") != [0.0, 0.0, 0.0]
+        or ground.get("collision_shape_count") != 1
+        or ground.get("plane_normal") != [0.0, 0.0, 1.0]
+        or ground.get("plane_offset") != 0.0
+    ):
+        raise ValueError(f"{sidecar_path}: literal arch ground changed")
+    _validate_contract_pose(
+        ground.get("collision_shape_local_pose"), label=f"{sidecar_path}: ground"
+    )
+    _validate_contract_pose(ground.get("body_pose"), label=f"{sidecar_path}: ground")
+    if ground["collision_shape_local_pose"] != _identity_contract_pose():
+        raise ValueError(f"{sidecar_path}: literal arch ground transform changed")
+    if ground["body_pose"] != _identity_contract_pose():
+        raise ValueError(f"{sidecar_path}: literal arch ground body pose changed")
+
+    stones = contract.get("stones")
+    if not isinstance(stones, list) or len(stones) != 25:
+        raise ValueError(f"{sidecar_path}: literal arch stone count changed")
+    for index, stone in enumerate(stones):
+        label = f"{sidecar_path}: stone {index}"
+        if not isinstance(stone, dict) or stone.get("name") != (
+            f"masonry_arch_stone_{index}"
+        ):
+            raise ValueError(f"{label}: identity changed")
+        expected_mobile = index not in (0, 24)
+        if (
+            stone.get("mobile") is not expected_mobile
+            or stone.get("friction") != 0.8
+            or stone.get("primary_friction") != 0.8
+            or stone.get("secondary_friction") != 0.8
+            or stone.get("restitution") != 0.0
+            or stone.get("primary_slip_compliance") != -1.0
+            or stone.get("secondary_slip_compliance") != -1.0
+            or stone.get("first_friction_direction") != [0.0, 0.0, 0.0]
+            or stone.get("default_friction_direction_frame") is not True
+            or not _is_finite_number(stone.get("mass_kg"))
+            or stone["mass_kg"] <= 0.0
+            or stone.get("local_center_of_mass") != [0.0, 0.0, 0.0]
+            or stone.get("linear_velocity") != [0.0, 0.0, 0.0]
+            or stone.get("angular_velocity") != [0.0, 0.0, 0.0]
+            or stone.get("collision_shape_count") != 1
+        ):
+            raise ValueError(f"{label}: physical properties changed")
+        _validate_contract_matrix(stone.get("moment_kg_m2"), label=label)
+        _validate_contract_pose(stone.get("body_pose"), label=label)
+        _validate_contract_pose(stone.get("collision_shape_local_pose"), label=label)
+        if stone["collision_shape_local_pose"] != _identity_contract_pose():
+            raise ValueError(f"{label}: collision transform changed")
+        vertices = stone.get("vertices")
+        if not isinstance(vertices, list) or len(vertices) != 8:
+            raise ValueError(f"{label}: wedge vertices changed")
+        for vertex in vertices:
+            _validate_contract_vector(vertex, 3, label=label)
+        triangles = stone.get("triangles")
+        if (
+            not isinstance(triangles, list)
+            or len(triangles) != 12
+            or any(
+                not isinstance(triangle, list)
+                or len(triangle) != 3
+                or any(
+                    isinstance(vertex, bool)
+                    or not isinstance(vertex, int)
+                    or vertex < 0
+                    or vertex >= 8
+                    for vertex in triangle
+                )
+                for triangle in triangles
+            )
+        ):
+            raise ValueError(f"{label}: wedge triangles changed")
+    reported_fingerprint = contract.get("physical_geometry_fingerprint")
+    computed_fingerprint = _literal_masonry_arch_geometry_fingerprint(contract)
+    if reported_fingerprint != {
+        "algorithm": "fnv1a64_q1e-10_le_v1",
+        "value": computed_fingerprint,
+    }:
+        raise ValueError(
+            f"{sidecar_path}: literal arch physical geometry fingerprint changed"
+        )
+    if computed_fingerprint != LITERAL_MASONRY_ARCH_GEOMETRY_FINGERPRINT:
+        raise ValueError(f"{sidecar_path}: literal arch physical geometry changed")
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "solver_lane": expected_lane,
+        "stone_count": len(stones),
+        "scoped_erp": process_state["observed_contact_erp"],
+        "physical_geometry_fingerprint": computed_fingerprint,
+        "pass": True,
+    }
+
+
 def _validate_fail_fast_state(
     data: dict[str, Any],
     *,
@@ -1700,6 +2177,9 @@ def _validate_failed_exact_fbf_sidecar(
     expected_runtime_argv = build_demo_command(schedule, expected_demo, output_dir)
     if runtime_argv != expected_runtime_argv:
         raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
+    physics_contract_report = _validate_literal_masonry_arch_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
 
     state = _validate_fail_fast_state(data, sidecar_path=sidecar_path, triggered=True)
     trigger_step = state["step"]
@@ -1910,6 +2390,7 @@ def _validate_failed_exact_fbf_sidecar(
         "completed_steps": completed_steps,
         "reason": state["reason"],
         "headless_exact_fbf_fail_fast": state,
+        "physics_contract": physics_contract_report,
     }
 
 
@@ -1964,6 +2445,9 @@ def validate_sidecar(
     )
     if runtime_argv != command_contract:
         raise ValueError(f"{sidecar_path}: runtime command differs from the schedule")
+    physics_contract_report = _validate_literal_masonry_arch_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
     if schedule.exact_fbf_required:
         if legacy_fail_fast:
             fail_fast_state = None
@@ -2162,6 +2646,7 @@ def validate_sidecar(
             "legacy_artifact": legacy_fail_fast,
             "state": fail_fast_state,
         },
+        "physics_contract": physics_contract_report,
         "pass": True,
     }
 
@@ -2292,6 +2777,8 @@ def _encode_media(
             "yuv420p",
             "-movflags",
             "+faststart",
+            "-frames:v",
+            str(_expected_media_stream(schedule, "mp4")["frame_count"]),
             str(destination),
         ]
         _run(command, cwd=output_dir)
@@ -2319,6 +2806,8 @@ def _encode_media(
             filter_graph,
             "-loop",
             "0",
+            "-frames:v",
+            str(_expected_media_stream(schedule, "gif")["frame_count"]),
             str(destination),
         ]
         _run(command, cwd=output_dir)

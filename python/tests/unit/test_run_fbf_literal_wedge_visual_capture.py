@@ -25,6 +25,33 @@ def _write_bytes(path, content=b"fixture\n"):
     path.write_bytes(content)
 
 
+def _source_contract_fixture(module, tmp_path, monkeypatch):
+    root = tmp_path / "repo"
+    capture_source = root / module.CAPTURE_SOURCE_RELATIVE
+    shared_header = root / module.LITERAL_ARCH_SPEC_SOURCE_RELATIVE
+    trace_source = root / module.TRACE_SOURCE_RELATIVE
+    _write_bytes(
+        capture_source,
+        (ROOT / module.CAPTURE_SOURCE_RELATIVE).read_bytes(),
+    )
+    _write_bytes(
+        shared_header,
+        (ROOT / module.LITERAL_ARCH_SPEC_SOURCE_RELATIVE).read_bytes(),
+    )
+    _write_bytes(
+        trace_source,
+        (ROOT / module.TRACE_SOURCE_RELATIVE).read_bytes(),
+    )
+    monkeypatch.setattr(module, "ROOT", root)
+    return capture_source, shared_header, trace_source
+
+
+def _replace_once(path, old, new):
+    source = path.read_text(encoding="utf-8")
+    assert source.count(old) == 1
+    path.write_text(source.replace(old, new, 1), encoding="utf-8")
+
+
 def _raw_frame_fixture(module, tmp_path):
     from _image_tools import write_png
 
@@ -66,6 +93,189 @@ def _raw_frame_fixture(module, tmp_path):
         "frames": validated_frames,
     }
     return output, runtime, frame_validation
+
+
+def test_capture_source_contract_binds_consumer_to_shared_physical_owner():
+    module = _load_module()
+
+    contract = module.validate_capture_source_contract()
+
+    assert contract["pass"] is True
+    assert contract["missing"] == []
+    assert contract["forbidden"] == []
+    assert contract["capture_consumer_binding"] == {
+        "pass": True,
+        "missing": [],
+        "forbidden": [],
+    }
+    assert contract["shared_header_contract"] == {
+        "pass": True,
+        "missing": [],
+        "forbidden": [],
+    }
+    assert contract["trace_consumer_binding"] == {
+        "pass": True,
+        "missing": [],
+        "forbidden": [],
+    }
+    assert contract["source_path"] == module.CAPTURE_SOURCE_RELATIVE
+    assert contract["source_sha256"] == module.sha256(
+        ROOT / module.CAPTURE_SOURCE_RELATIVE
+    )
+    assert contract["shared_header_path"] == module.LITERAL_ARCH_SPEC_SOURCE_RELATIVE
+    assert contract["shared_header_sha256"] == module.sha256(
+        ROOT / module.LITERAL_ARCH_SPEC_SOURCE_RELATIVE
+    )
+    assert contract["trace_path"] == module.TRACE_SOURCE_RELATIVE
+    assert contract["trace_sha256"] == module.sha256(
+        ROOT / module.TRACE_SOURCE_RELATIVE
+    )
+    assert module.LITERAL_ARCH_SPEC_SOURCE_RELATIVE in module.SOURCE_FILES
+
+    consumer = contract["required_fragments"]["capture_consumer"]
+    assert "SolverLane::ExactFbf" in consumer["exact_fbf_demo_palette_world"]
+    assert "VisualMode::DemoPalette" in consumer["exact_fbf_demo_palette_world"]
+    assert (
+        consumer["legacy_world_name"]
+        == 'world->setName("fbf_literal_wedge_visual_capture");'
+    )
+    assert "ScopedContactErrorReductionParameter" in consumer["scoped_erp_owns_run"]
+
+
+@pytest.mark.parametrize(
+    ("owner", "old", "new", "expected_missing"),
+    [
+        (
+            "capture",
+            "literalArch::SolverLane::ExactFbf,",
+            "literalArch::SolverLane::BoxedLcp,",
+            "capture_consumer:exact_fbf_demo_palette_world",
+        ),
+        (
+            "capture",
+            "literalArch::VisualMode::DemoPalette,",
+            "literalArch::VisualMode::None,",
+            "capture_consumer:exact_fbf_demo_palette_world",
+        ),
+        (
+            "capture",
+            'world->setName("fbf_literal_wedge_visual_capture");',
+            'world->setName("renamed_capture");',
+            "capture_consumer:legacy_world_name",
+        ),
+        (
+            "capture",
+            "literalArch::ScopedContactErrorReductionParameter scopedContactErp;",
+            "int scopedContactErp = 0;",
+            "capture_consumer:scoped_erp_owns_run",
+        ),
+        (
+            "header",
+            "options.fallbackToBoxedLcp = false;",
+            "options.fallbackToBoxedLcp = true;",
+            "shared_header:no_boxed_fallback",
+        ),
+        (
+            "header",
+            "~ScopedContactErrorReductionParameter()\n"
+            "  {\n"
+            "    dart::constraint::ContactConstraint::setErrorReductionParameter(\n"
+            "        mPreviousValue);\n"
+            "  }",
+            "~ScopedContactErrorReductionParameter()\n"
+            "  {\n"
+            "    dart::constraint::ContactConstraint::setErrorReductionParameter(\n"
+            "        0.0);\n"
+            "  }",
+            "shared_header:scoped_erp_restore",
+        ),
+        (
+            "trace",
+            "shared::SolverLane::ExactFbf,",
+            "shared::SolverLane::BoxedLcp,",
+            "trace_consumer:shared_physical_world",
+        ),
+    ],
+)
+def test_capture_source_contract_fails_closed_on_semantic_mutation(
+    tmp_path,
+    monkeypatch,
+    owner,
+    old,
+    new,
+    expected_missing,
+):
+    module = _load_module()
+    capture_source, shared_header, trace_source = _source_contract_fixture(
+        module, tmp_path, monkeypatch
+    )
+    target = {
+        "capture": capture_source,
+        "header": shared_header,
+        "trace": trace_source,
+    }[owner]
+    _replace_once(target, old, new)
+
+    contract = module.validate_capture_source_contract()
+
+    assert contract["pass"] is False
+    assert expected_missing in contract["missing"]
+    assert contract["source_sha256"] == module.sha256(capture_source)
+    assert contract["shared_header_sha256"] == module.sha256(shared_header)
+    assert contract["trace_sha256"] == module.sha256(trace_source)
+
+
+def test_capture_source_contract_rejects_duplicate_consumer_physics(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    capture_source, _, _ = _source_contract_fixture(module, tmp_path, monkeypatch)
+    capture_source.write_text(
+        capture_source.read_text(encoding="utf-8")
+        + "\ndart::constraint::ContactConstraint::"
+        "setErrorReductionParameter(0.0);\n",
+        encoding="utf-8",
+    )
+
+    contract = module.validate_capture_source_contract()
+
+    assert contract["pass"] is False
+    assert "capture_consumer:duplicate_contact_erp_mutation" in contract["forbidden"]
+
+
+def test_capture_source_contract_rejects_duplicate_trace_physics(tmp_path, monkeypatch):
+    module = _load_module()
+    _, _, trace_source = _source_contract_fixture(module, tmp_path, monkeypatch)
+    _replace_once(
+        trace_source,
+        "shared::kDesiredContactErrorReductionParameter);\n  return world;",
+        "shared::kDesiredContactErrorReductionParameter);\n  "
+        "generateMasonryArchStoneWedges(25u);\n  return world;",
+    )
+
+    contract = module.validate_capture_source_contract()
+
+    assert contract["pass"] is False
+    assert "trace_consumer:duplicate_wedge_generator" in contract["forbidden"]
+
+
+def test_capture_source_contract_rejects_process_erp_mutation_in_world_builder(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    _, shared_header, _ = _source_contract_fixture(module, tmp_path, monkeypatch)
+    _replace_once(
+        shared_header,
+        "{\n  auto world = dart::simulation::World::create(kWorldName);",
+        "{\n  dart::constraint::ContactConstraint::"
+        "setErrorReductionParameter(0.0);\n"
+        "  auto world = dart::simulation::World::create(kWorldName);",
+    )
+
+    contract = module.validate_capture_source_contract()
+
+    assert contract["pass"] is False
+    assert "shared_header:world_builder_mutates_process_erp" in contract["forbidden"]
 
 
 def _synthetic_pending_bundle(module, tmp_path, monkeypatch):
