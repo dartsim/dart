@@ -4,14 +4,15 @@
 
 Visual evidence is partial. The small-scene capture system now produces
 auditable, solver-gated media, and a complete post-review small matrix exists.
-The card, 101-stone arch, and crown-impact examples do not have valid current
-long-run media. The current-source nine-row numeric small matrix is now a
+The source-selected card, reconstructed card, 101-stone arch, and crown-impact
+examples do not have valid current long-run media. The current-source nine-row
+numeric small matrix is now a
 repository-finalized evidence bundle. Five visual bundles are
 repository-finalized: literal-wedge standing, the two-cell incline threshold,
 the two-cell Painleve proxy, backspin, and the author-pinned four-cell
 turntable matrix. They remain bounded
 DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 20 schedules. The task-wide manifest remains 29
+workflow inventory declares 21 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
@@ -185,6 +186,7 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Painleve pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded as the durable source by the finalized repository proxy bundle below; no author parity |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Source-selected four-level Figure 6 adapter | Scene/schedule contract, exact/boxed smoke, and bounded 100-step numeric prefixes only | No valid captured media | Exact fails closed at completed step 35; boxed reaches step 100; neither reaches release at step 1,600, so outcome/media/parity remain blocked |
 
 The finalized current-source incline bundle is
 [`assets/paper_evidence/fig01_02_incline_current_v1/`](assets/paper_evidence/fig01_02_incline_current_v1/).
@@ -353,6 +355,37 @@ standing, trajectory, solver, contact-dynamics, physical-outcome, historical
 four-level/26-card trajectory, Fig. 6/video, timing, performance, or parity
 claim.
 
+The separately named `fbf_author_card_house_4_impact_current_source` scene and
+`card_house_author_4_impact_current_source` schedule pin author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. They use the supported selection
+`--solvers fbf --levels 4 --frames 600 --drop-frame 400 --num-cubes 4
+--mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0 --device cpu
+--profile --usd`, rather than the no-argument five-level/800-frame source
+default; the selection is not a known historical paper command. Source
+`ke=1e4`, `kd=1e3`, and `gap=.005` are recorded source semantics, not contact
+semantics implemented equivalently by the DART adapter. The adapter has 20
+leaning plus 6 bridge cards and four initially kinematic `0.8 m`, `256 kg`
+cubes. Interactive `p` releases them immediately; the evidence runner invokes
+`p` after completed substep 1,600. The full schedule is 2,400 substeps at
+`dt=1/240 s`. Exact and boxed share Native `FourPointPlanar`, capacity 4,096,
+and subdivision 4.
+
+The demo build, eight focused C++ tests, 190 runner Python tests, and exact/boxed
+contract smoke pass. The strict exact request fails closed at completed step
+35 when contacts jump from 44 to 68. Its 100-step request records 103 attempts,
+102 solves, one failure, zero fallbacks, zero accepted caps, and worst residual
+`4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
+`9.826274595482653e-7`. Timeline:
+`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
+SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+The boxed 100-step control completes; timeline
+`/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
+SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+Neither reaches release, so there is no full-run trajectory or outcome,
+source-backend or timing equivalence, Fig. 6/paper parity, final media or PR
+video, or solver-superiority claim. This remains an adapter-only lane. Keep
+`fbf_paper_card_house_26` distinct as the older reconstruction.
+
 The quantitative CPU evidence is authoritative for
 `physical_outcome_valid`. The visual observations above are recorded under
 `manual_inspected`; they do not promote a failing row.
@@ -405,12 +438,13 @@ completed sidecar/media bundle:
 
 | Schedule | Requested duration | Furthest observation | Result predicates |
 | --- | ---: | --- | --- |
+| Source-selected four-level/26-card settle/projectile | 2,400 steps | Exact fails closed at completed step 35; boxed control completes 100/2,400 | `artifact_valid=false`; no release, outcome, or media |
 | 26-card settle/projectile | 600 steps | Step 6/600 | `artifact_valid=false`; incomplete |
 | 25-stone oriented-box reconstructed arch | 360 steps | Step 24/360; visibly collapsed at 0.4 s | `artifact_valid=false`; `physical_outcome_valid=false` |
 | 101-stone reconstructed arch | 600 steps | Step 120/600; visibly collapsed at 2 s | `artifact_valid=false`; `physical_outcome_valid=false` |
 | Dynamic 10-level card house | Long schedule | No completed step 1 | `artifact_valid=false`; no outcome evidence |
 
-There are no valid long sidecars or media for these four bounded schedules.
+There are no valid long sidecars or media for these bounded schedules.
 The attempts are negative evidence and must not be replaced by one-step,
 reduced-scene, or boxed-LCP captures under the same label. The separate
 literal-wedge standing capture follows a different declared scene contract.
@@ -538,6 +572,10 @@ shown by `--help` and rejects hash or segment-boundary drift.
   does not erase its separate strict failure.
 - Produce valid full-duration card/arch media only after every requested step
   satisfies the strict exact-solver and physical-outcome contracts.
+- For the source-selected four-level card scene, first resolve or precisely
+  characterize the completed-step-35 exact failure, then complete all 2,400
+  exact/boxed steps through release. Do not promote the boxed 100-step prefix
+  or relabel the older reconstructed card evidence.
 - The raw-scale 25-stone author adapter now clears the former step-68 local-QP
   failure and completes a strict 100-step exact smoke with zero accepted
   caps/failures/fallbacks. Its next clean fail-fast blocker is the outer

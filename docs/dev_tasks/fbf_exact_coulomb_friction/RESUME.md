@@ -2,7 +2,7 @@
 
 ## Current Checkpoint
 
-This task is active and incomplete as of 2026-07-19. Start with
+This task is active and incomplete as of 2026-07-21. Start with
 [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md); it is the authoritative truth
 ledger.
 
@@ -17,12 +17,14 @@ Do not retire the task folder. Do not commit, push, update a PR, rerun remote
 CI, or mutate GitHub without explicit user approval. Never add AI or tool
 attribution to a commit or PR.
 
-The newest numeric scientific addition is the pinned-author incline sweep.
-It preserves all three current public runner lanes over the Figure 1 friction
-grid, but proves neither DART/source parity nor historical paper parity. The
-separate sealed author masonry-arch negative also remains current. Neither
-packet changes the overall 29-row audit: 24 partial, 5 blocked, 0 complete,
-and the visual bundle count remains six.
+The newest Figure 6 implementation addition is a separately named,
+source-selected four-level/26-card dynamics adapter. Its build and contract
+tests pass, but the strict exact lane fails closed at completed step 35 before
+the scheduled cube release; the boxed control completes 100 steps. It is not
+yet outcome or media evidence. The pinned-author incline sweep and sealed
+author masonry-arch negative also remain current. The overall 29-row audit is
+still 24 partial, 5 blocked, 0 complete, and the finalized visual bundle count
+remains six.
 
 ## Read First
 
@@ -459,6 +461,40 @@ standing, trajectory, solver, contact-dynamics, physical-outcome, historical
 four-level/26-card trajectory, Fig. 6/video, timing, performance, or parity
 claim.
 
+### Current-Source Four-Level Figure 6 Adapter
+
+The new scene `fbf_author_card_house_4_impact_current_source` and schedule
+`card_house_author_4_impact_current_source` are distinct from the reconstructed
+`fbf_paper_card_house_26` lane. They pin author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and select the source-supported
+arguments `--solvers fbf --levels 4 --frames 600 --drop-frame 400
+--num-cubes 4 --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0
+--device cpu --profile --usd`. That selection is neither the
+five-level/800-frame no-argument source default nor a known historical paper
+command. Source `ke=1e4`, `kd=1e3`, and `gap=.005` are recorded source
+semantics, not contact semantics implemented equivalently by the DART adapter.
+
+The adapter contains 20 leaning and 6 bridge cards plus four initially
+kinematic `0.8 m`, `256 kg` cubes. Interactive `p` releases the cubes
+immediately; the evidence runner invokes `p` after completed substep 1,600 of
+the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
+`FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
+
+The demo build, eight focused C++ tests, 190 runner Python tests, and exact/boxed
+contract smoke pass. A strict exact 100-step request fails closed at completed
+step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
+zero fallbacks, zero accepted caps, and worst residual
+`4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
+`9.826274595482653e-7`. Timeline:
+`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
+SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+The boxed 100-step control completes:
+`/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
+SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+Neither reaches release. This remains adapter-only evidence: no full
+trajectory or outcome, source-backend or timing equivalence, final media or PR
+upload, Fig. 6/paper parity, or old-versus-new solver-superiority claim exists.
+
 ### Pinned-Author Masonry-Arch Scientific Negative
 
 Preserve
@@ -643,11 +679,15 @@ fail-closed negative, repository-archived at
   evidence. A strict full-card trajectory, physical outcome, valid long media,
   and paper parity remain missing; the prior-source step-89 strict negative is
   retained separately.
+- The source-selected four-level adapter is complete only as a tested scene,
+  schedule, and bounded prefix. Its exact step-35 failure must be fixed or
+  precisely characterized before a 2,400-step outcome or media attempt; the
+  passing boxed 100-step prefix cannot substitute for that gate.
 - No local timing is apples-to-apples with the paper; paper timing remains
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six finalized bundles, and the
-  visual workflow declares 20 schedules. Its validator fail-closed hashes
+  visual workflow declares 21 schedules. Its validator fail-closed hashes
   repository artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -702,6 +742,10 @@ explicit DART reconstruction choices, not author parameters.
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
   suite: 859 passed post-merge in 163.95 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
+- current-source four-level author-card demo build: passed;
+- current-source four-level author-card C++ fixtures: 8/8 passed;
+- visual runner after the source-selected schedule addition: 190/190 passed;
+- current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
@@ -721,8 +765,9 @@ only for an explicit live-closure recheck.
 2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
    finalized incline and backspin, pinned-author numeric incline sweep, and
    frozen impact-v1 negative bundles
-   alongside the arch101-v7 and card-v2 blockers. Continue strict card/media,
-   remaining
+   alongside the arch101-v7 and card-v2 blockers. Diagnose the source-selected
+   four-level adapter's completed-step-35 exact failure, then continue its
+   strict full-duration card/media work, remaining
    smaller-figure, and
    separately declared source-equivalent impact work; manually inspect decoded
    media and do not promote v2 raw timings.

@@ -574,6 +574,191 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
     }
 
 
+def _author_card_house_adapter_contract(module, *, solver_lane="exact"):
+    return {
+        "schema_version": "dart.fbf_author_card_house_dynamics_adapter/v1",
+        "kind": "source_configuration_dynamics_adapter",
+        "source_binding": {
+            "repository": "https://github.com/matthcsong/fbf-sca-2026",
+            "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+            "card_house_run_blob": "35f33651bc9674a259071ac723e47755504152db",
+            "card_house_run_py_sha256": (
+                "18c58c85eaad865aeef480b46e880a52088f266b79c90226f624637221ee36f8"
+            ),
+            "fbf_config_py_sha256": (
+                "88f3f9ffd758eccce8496f7897192587a05907109e313c7a86bcf8f9de8cc248"
+            ),
+            "solver_fbf_py_sha256": (
+                "8ec32aa20bf8d6c1173ed6c7f3735e2926fbb4b5059ee2236e26ad27eb22f941"
+            ),
+            "configuration_spec_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+            ),
+            "demo_implementation_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+            ),
+        },
+        "source_defaults": {
+            "levels": 5,
+            "frames": 800,
+            "drop_frame": 400,
+            "num_cubes": 4,
+            "mu": 0.8,
+            "cube_half_size_m": 0.4,
+            "cube_density_kg_m3": 500.0,
+            "drop_height_m": 1.0,
+        },
+        "selected_source_invocation": {
+            "provenance": "source_supported_cli_parameterization",
+            "historical_paper_invocation_known": False,
+            "arguments": {
+                "solvers": ["fbf"],
+                "levels": 4,
+                "frames": 600,
+                "drop_frame": 400,
+                "num_cubes": 4,
+                "mu": 0.8,
+                "cube_half_size_m": 0.4,
+                "cube_density_kg_m3": 500.0,
+                "drop_height_m": 1.0,
+                "device": "cpu",
+                "profile": True,
+                "usd": True,
+            },
+        },
+        "source_configuration": {
+            "cards": {
+                "count": 26,
+                "leaning_count": 20,
+                "bridge_count": 6,
+                "lean_size_m": [0.04, 1.25, 2.5],
+                "bridge_size_m": [2.5, 1.25, 0.04],
+                "density_kg_m3": 200.0,
+                "mass_kg": 25.0,
+                "lean_from_vertical_degrees": 25.0,
+                "bridge_angle_degrees": -1.0,
+                "tent_half_gap_m": 0.55,
+                "tent_width_m": 2.2,
+                "tent_height_m": 2.41660616977186,
+            },
+            "cubes": {
+                "count": 4,
+                "edge_m": 0.8,
+                "density_kg_m3": 500.0,
+                "mass_kg": 256.0,
+                "initial_height_m": 10.66642467908744,
+                "initially_kinematic": True,
+                "initial_velocity_m_s": [0, 0, 0],
+            },
+            "contact": {
+                "friction": 0.8,
+                "gap_m": 0.005,
+                "shape_stiffness": 10000.0,
+                "shape_damping": 1000.0,
+            },
+            "schedule": {
+                "display_time_step_seconds": 1.0 / 60.0,
+                "substeps_per_frame": 4,
+                "runtime_time_step_seconds": 1.0 / 240.0,
+                "release_frame": 400,
+                "release_substep": 1600,
+                "total_frames": 600,
+                "total_substeps": 2400,
+            },
+            "solver": {
+                "type": "fbf_exact_coulomb",
+                "max_contacts": 4096,
+                "max_outer": 200,
+                "outer_tol": 1e-6,
+                "residual_check_interval": 5,
+                "inner_solver": "block_gs",
+                "inner_gs_sweeps": 10,
+                "inner_max_iter": 200,
+                "inner_tol": 1e-6,
+                "adaptive_gamma": True,
+                "gamma_c": 5.0,
+                "gamma_max": 1e6,
+                "armijo_rho_high": 0.9,
+                "armijo_shrink": 0.7,
+                "armijo_max_backtracks": 8,
+                "warm_start": True,
+                "baumgarte_erp": 0.0,
+                "termination_residual": "coulomb_rel",
+                "termination_tol": 1e-6,
+            },
+        },
+        "dart_adapter": {
+            "scene_id": "fbf_author_card_house_4_impact_current_source",
+            "world": {
+                "time_step_seconds": 1.0 / 240.0,
+                "current_time_seconds": 0.0,
+                "gravity_m_s2": [0.0, 0.0, -9.81],
+                "simulation_threads": 1,
+                "deactivation_enabled": False,
+            },
+            "collision": {
+                "detector": "native",
+                "contact_manifold": "four_point_planar",
+                "max_contacts": 4096,
+                "max_contacts_per_pair": 4,
+                "enable_contact": True,
+                "allow_negative_penetration_depth_contacts": False,
+                "default_empty_body_node_filter": True,
+            },
+            "contact_material": {
+                "primary_friction": 0.8,
+                "secondary_friction": 0.8,
+                "restitution": 0.0,
+                "primary_slip_compliance": -1.0,
+                "secondary_slip_compliance": -1.0,
+                "first_friction_direction": [0.0, 0.0, 0.0],
+                "uses_default_friction_direction_frame": True,
+            },
+            "process_state": {"observed_contact_erp": 0.0},
+            "solver": module._expected_author_card_house_solver_contract(solver_lane),
+            "inventory": {
+                "cards": 26,
+                "cubes": 4,
+                "released_cubes": 0,
+                "finite_state": True,
+            },
+            "schedule": {
+                "evidence_total_substeps": 2400,
+                "evidence_runner_action_completed_step": 1600,
+                "release_action_key": "p",
+                "interactive_action_semantics": "immediate_on_invocation",
+            },
+        },
+        "adapter_boundaries": {
+            "source_contact_gap_recorded_m": 0.005,
+            "source_contact_gap_semantics_implemented": False,
+            "source_shape_stiffness_semantics_implemented": False,
+            "source_shape_damping_semantics_implemented": False,
+            "source_collision_backend_implemented": False,
+            "source_solver_backend_semantics_implemented": False,
+            "source_float32_semantics_implemented": False,
+            "dart_native_four_point_planar_is_adapter_choice": True,
+        },
+        "claim_boundary": {
+            "current_source_parameterized_configuration_port": True,
+            "source_release_action_ported_to_dart": True,
+            "source_release_schedule_declared_for_evidence_runner": True,
+            "interactive_demo_auto_releases_at_source_step": False,
+            "historical_paper_invocation_known": False,
+            "trajectory_valid": False,
+            "physical_outcome_valid": False,
+            "trajectory_equivalence": False,
+            "solver_equivalence": False,
+            "physical_outcome_equivalence": False,
+            "fig06_parity": False,
+            "video06_parity": False,
+            "timing_comparability": False,
+            "paper_parity": False,
+        },
+    }
+
+
 def test_schedule_matrix_covers_every_requested_visual_case():
     module = _load_module()
 
@@ -590,6 +775,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "turntable_author_mu05_omega5",
         "painleve_mu05",
         "painleve_mu055",
+        "card_house_author_4_impact_current_source",
         "card_house_26",
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
@@ -1032,6 +1218,7 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         path.read_text(encoding="utf-8")
         for path in (
             ROOT / "examples/demos/scenes/FbfAuthorTurntableSpec.hpp",
+            ROOT / "examples/demos/scenes/FbfAuthorCardHouseSpec.hpp",
             ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
             ROOT / "examples/demos/scenes/FbfAuthorMasonryArchDartAdapter.hpp",
         )
@@ -1060,6 +1247,9 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         ),
         "makeFbfPaperPainleveMu055Scene": "fbf_paper_painleve_mu_0_55",
         "makeFbfPaperCardHouse10DynamicScene": ("fbf_paper_card_house_10_dynamic"),
+        "makeFbfAuthorCardHouse4ImpactCurrentSourceScene": (
+            "fbf_author_card_house_4_impact_current_source"
+        ),
         "makeFbfPaperMasonryArch25LiteralStandingScene": (
             "fbf_paper_masonry_arch_25_literal_standing"
         ),
@@ -1223,6 +1413,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "painleve_mu055",
             "card_house_10_construction",
             "card_house_author_5_construction",
+            "card_house_author_4_impact_current_source",
             "card_house_10_dynamics",
             "masonry_arch_25_literal_standing",
             "masonry_arch_25_author_crown_impact_current_source",
@@ -1240,6 +1431,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "painleve_mu055": "fbf_paper_painleve_mu_0_55",
         "card_house_10_construction": "fbf_paper_card_house_10",
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
+        "card_house_author_4_impact_current_source": (
+            "fbf_author_card_house_4_impact_current_source"
+        ),
         "card_house_10_dynamics": "fbf_paper_card_house_10_dynamic",
         "masonry_arch_25_literal_standing": (
             "fbf_paper_masonry_arch_25_literal_standing"
@@ -1264,6 +1458,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
 
     native_members = set(module.AUTHOR_TURN_TABLE_MEMBERS) | {
         "card_house_author_5_construction",
+        "card_house_author_4_impact_current_source",
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
     }
@@ -1352,6 +1547,226 @@ def test_author_arch_adapter_contract_binds_exact_and_boxed_initial_state(tmp_pa
     assert exact_report["release_action_completed_step"] == 1600
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
     assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
+    tmp_path,
+):
+    module = _load_module()
+    exact = module.SCHEDULES["card_house_author_4_impact_current_source"]
+    boxed = module._derive_boxed_schedule(exact)
+    exact_report = module._validate_author_card_house_adapter_contract(
+        exact,
+        {"physics_contract": _author_card_house_adapter_contract(module)},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_card_house_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_card_house_adapter_contract(
+                module, solver_lane="boxed"
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["card_count"] == boxed_report["card_count"] == 26
+    assert exact_report["cube_count"] == boxed_report["cube_count"] == 4
+    assert exact_report["release_action_completed_step"] == 1600
+    assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
+    assert exact_report["physical_outcome_validated"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (("source_binding", "configuration_spec_sha256"), "0" * 64, "hashes"),
+        (("source_defaults", "levels"), 4, "defaults"),
+        (
+            ("selected_source_invocation", "arguments", "levels"),
+            5,
+            "selected source invocation",
+        ),
+        (
+            ("selected_source_invocation", "arguments", "frames"),
+            800,
+            "selected source invocation",
+        ),
+        (
+            ("source_configuration", "schedule", "total_substeps"),
+            3200,
+            "source configuration",
+        ),
+        (
+            ("source_configuration", "contact", "shape_stiffness"),
+            20000.0,
+            "source configuration",
+        ),
+        (
+            ("source_configuration", "contact", "shape_damping"),
+            2000.0,
+            "source configuration",
+        ),
+        (("dart_adapter", "world", "time_step_seconds"), 1.0 / 60.0, "world"),
+        (
+            ("dart_adapter", "collision", "contact_manifold"),
+            "compact",
+            "collision",
+        ),
+        (("dart_adapter", "collision", "enable_contact"), False, "collision"),
+        (
+            (
+                "dart_adapter",
+                "collision",
+                "allow_negative_penetration_depth_contacts",
+            ),
+            True,
+            "collision",
+        ),
+        (
+            ("dart_adapter", "collision", "default_empty_body_node_filter"),
+            False,
+            "collision",
+        ),
+        (("dart_adapter", "solver", "lane"), "boxed_lcp", "solver"),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "colored_block_gauss_seidel_enabled",
+            ),
+            True,
+            "solver",
+        ),
+        (
+            ("dart_adapter", "solver", "participant_affinity_enabled"),
+            True,
+            "solver",
+        ),
+        (
+            ("dart_adapter", "solver", "exact_options", "inner_max_sweeps"),
+            30,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "step_size_recovery_growth_factor",
+            ),
+            1.0,
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "cross_step_options",
+                "warm_start_match_mode",
+            ),
+            "ordered_body_b_local_feature",
+            "solver",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "cross_step_options",
+                "warm_start_max_age",
+            ),
+            3,
+            "solver",
+        ),
+        (
+            ("dart_adapter", "contact_material", "restitution"),
+            0.1,
+            "contact material",
+        ),
+        (
+            ("dart_adapter", "contact_material", "primary_slip_compliance"),
+            0.0,
+            "contact material",
+        ),
+        (
+            ("dart_adapter", "contact_material", "first_friction_direction"),
+            [1.0, 0.0, 0.0],
+            "contact material",
+        ),
+        (("dart_adapter", "process_state", "observed_contact_erp"), 0.01, "ERP"),
+        (("dart_adapter", "inventory", "cards"), 40, "inventory"),
+        (
+            ("dart_adapter", "schedule", "evidence_runner_action_completed_step"),
+            1601,
+            "release schedule",
+        ),
+        (
+            ("adapter_boundaries", "source_contact_gap_semantics_implemented"),
+            True,
+            "adapter boundaries",
+        ),
+        (
+            ("adapter_boundaries", "source_shape_stiffness_semantics_implemented"),
+            True,
+            "adapter boundaries",
+        ),
+        (
+            ("adapter_boundaries", "source_shape_damping_semantics_implemented"),
+            True,
+            "adapter boundaries",
+        ),
+        (("claim_boundary", "fig06_parity"), True, "claim boundary"),
+    ],
+)
+def test_author_card_house_adapter_contract_rejects_mutation(
+    tmp_path, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_4_impact_current_source"]
+    contract = _author_card_house_adapter_contract(module)
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_card_house_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        (("primary_solver",), "PgsBoxedLcpSolver"),
+        (("secondary_solver",), "DantzigBoxedLcpSolver"),
+        (("matrix_free_options", "enabled"), True),
+        (("matrix_free_options", "min_rows"), 192),
+        (("matrix_free_options", "delta_tolerance"), 1e-5),
+    ],
+)
+def test_author_card_house_boxed_adapter_contract_rejects_baseline_drift(
+    tmp_path, field, value
+):
+    module = _load_module()
+    exact = module.SCHEDULES["card_house_author_4_impact_current_source"]
+    schedule = module._derive_boxed_schedule(exact)
+    contract = _author_card_house_adapter_contract(module, solver_lane="boxed")
+    target = contract["dart_adapter"]["solver"]["boxed_baseline"]
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match="solver"):
+        module._validate_author_card_house_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
 
 
 @pytest.mark.parametrize(
@@ -1651,6 +2066,57 @@ def test_author_card_house_construction_schedule_has_explicit_clock_and_boundary
     assert command.count("--headless-shot-at") == 1
     assert any("configuration" in mismatch for mismatch in schedule.mismatches)
     assert any("not the authors'" in mismatch for mismatch in schedule.mismatches)
+
+
+def test_author_card_house_impact_schedule_is_source_selected_and_fail_closed():
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_4_impact_current_source"]
+    configuration = schedule.configuration_dict()
+    plan = module.schedule_plan(schedule, Path("dart-demos"), Path("/tmp/out"))
+    command = module.build_demo_command(schedule, Path("dart-demos"), Path("/tmp/out"))
+
+    assert schedule.scene == "fbf_author_card_house_4_impact_current_source"
+    assert schedule.source_segment == "card_house_26"
+    assert schedule.total_steps == 2400
+    assert schedule.time_step_seconds == pytest.approx(1.0 / 240.0)
+    assert schedule.frame_stride == 8
+    assert len(schedule.video_steps) == 301
+    assert schedule.panel_steps == (0, 480, 1600, 1680, 2400)
+    assert schedule.actions == (
+        module.ScheduledAction(1600, "p", "release the four existing source cubes"),
+    )
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert configuration["author_commit"] == (
+        "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
+    )
+    assert configuration["levels"] == "4"
+    assert configuration["cards"] == "26"
+    assert configuration["release_substep"] == "1600"
+    assert configuration["total_substeps"] == "2400"
+    assert "source-supported" in configuration["capture_invocation"]
+    assert schedule.known_gate_blockers
+    assert plan["evidence_ready"] is False
+    assert "--collision-detector" not in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert command[command.index("--steps") + 1] == "2400"
+    shot_value = f"1600:{module._frame_path(Path('/tmp/out'), 1600)}"
+    assert command.index(shot_value) < command.index("1600:p")
+
+    boxed = module._derive_boxed_schedule(schedule)
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.exact_fbf_required is False
+
+    resolved, skips = module._resolve_solver_lanes([schedule], "both")
+    assert [item.id for item in resolved] == [schedule.id, boxed.id]
+    assert skips == []
+    comparison_groups = module._solver_comparison_groups([schedule], "both")
+    assert len(comparison_groups) == 1
+    assert comparison_groups[0].members == (schedule.id, boxed.id)
+    assert comparison_groups[0].solver_lane == "both"
 
 
 def test_group_output_spec_rejects_ambiguous_or_misaligned_panel_steps():
@@ -3342,6 +3808,10 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
     assert report["capture_path_complete"] is True
     assert report["evidence_complete"] is False
     assert report["video_segments"]["video.04_turntable"] == (35, 50)
+    assert (
+        "card_house_author_4_impact_current_source"
+        in report["known_gate_blocked_schedules"]
+    )
     assert "card_house_26" in report["known_gate_blocked_schedules"]
     assert "masonry_arch_25" in report["known_gate_blocked_schedules"]
     assert (
@@ -3349,7 +3819,7 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         in report["known_gate_blocked_schedules"]
     )
     assert "masonry_arch_101" in report["known_gate_blocked_schedules"]
-    assert report["required_schedule_count"] == 13
+    assert report["required_schedule_count"] == 14
 
 
 def test_audited_local_source_hashes_are_pinned():

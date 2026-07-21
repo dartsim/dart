@@ -577,8 +577,10 @@ dynamics::SkeletonPtr createAuthorCardHouseBox(
   auto* shapeNode = body->createShapeNodeWith<
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(size));
-  shapeNode->getDynamicsAspect()->setFrictionCoeff(
-      fbf_author_card_house::kFriction);
+  body->setGravityMode(true);
+  fbf_author_card_house::configureDartFreeJoint(joint);
+  fbf_author_card_house::configureDartContactMaterial(
+      shapeNode->getDynamicsAspect());
   joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
   skeleton->setMobile(mobile);
   return skeleton;
@@ -976,9 +978,14 @@ std::shared_ptr<simulation::World> createAuthorTurntableWorld(
   return world;
 }
 
-std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld()
+std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
+    std::size_t levelCount = fbf_author_card_house::kDefaultLevelCount,
+    bool exactCoulomb = true)
 {
-  auto world = simulation::World::create(fbf_author_card_house::kDemoSceneId);
+  auto world = simulation::World::create(
+      levelCount == fbf_author_card_house::kFigureLevelCount
+          ? fbf_author_card_house::kDynamicsDemoSceneId
+          : fbf_author_card_house::kDemoSceneId);
   world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
   world->setGravity(
       Eigen::Vector3d(0.0, 0.0, -fbf_author_card_house::kGravity));
@@ -988,20 +995,47 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld()
   deactivation.mEnabled = false;
   world->setDeactivationOptions(deactivation);
 
-  auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
-      fbf_author_card_house::dartConstructionSolverOptions());
-  solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
-      collision::NativeCollisionDetector::ContactManifoldMode::
-          FourPointPlanar));
-  solver->setNumSimulationThreads(1u);
-  world->setConstraintSolver(std::move(solver));
-  auto& collisionOption = world->getConstraintSolver()->getCollisionOption();
+  if (exactCoulomb) {
+    auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+        fbf_author_card_house::dartConstructionSolverOptions());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+    auto* installed = static_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+        world->getConstraintSolver());
+    installed->setExactCoulombCrossStepPolicyOptions(
+        fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+    installed->setExactCoulombColoredBlockGaussSeidelEnabled(false);
+    installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
+        false);
+  } else {
+    auto* solver = world->getConstraintSolver();
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+    fbf_author_card_house::configureDartBoxedBaseline(
+        dynamic_cast<constraint::BoxedLcpConstraintSolver*>(solver));
+  }
+  auto* installedSolver = world->getConstraintSolver();
+  fbf_author_card_house::configureDartCollisionGeneration(installedSolver);
+  auto& collisionOption = installedSolver->getCollisionOption();
   collisionOption.maxNumContacts = fbf_author_card_house::kSourceMaxContacts;
   collisionOption.maxNumContactsPerPair = 4u;
 
-  world->addSkeleton(createHorizontalPlane(fbf_author_card_house::kFriction));
-  for (const auto& spec : fbf_author_card_house::makeCardSpecs(
-           fbf_author_card_house::kDefaultLevelCount)) {
+  auto ground = createHorizontalPlane(fbf_author_card_house::kFriction);
+  fbf_author_card_house::configureDartFreeJoint(
+      dynamic_cast<dynamics::FreeJoint*>(ground->getJoint(0u)));
+  ground->getBodyNode(0u)->setGravityMode(true);
+  auto* groundNode
+      = ground->getBodyNode(0u)->getShapeNodeWith<dynamics::CollisionAspect>(
+          0u);
+  fbf_author_card_house::configureDartContactMaterial(
+      groundNode->getDynamicsAspect());
+  world->addSkeleton(ground);
+  for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
     world->addSkeleton(createAuthorCardHouseBox(
         spec.name,
         spec.size,
@@ -1009,7 +1043,7 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld()
         fbf_author_card_house::kCardDensity,
         true));
   }
-  for (const auto& spec : fbf_author_card_house::makeCubeSpecs()) {
+  for (const auto& spec : fbf_author_card_house::makeCubeSpecs(levelCount)) {
     world->addSkeleton(createAuthorCardHouseBox(
         spec.name,
         spec.size,
@@ -2590,6 +2624,483 @@ TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseContractIsConstructionOnly)
       json.find("\"source_solver_backend_semantics_implemented\":false"),
       std::string::npos);
   EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseFourLevelDynamicsSelectionIsPinned)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kDynamicsDemoSceneId, "fbf_author_card_house_4_impact_current_source");
+  EXPECT_EQ(kFigureLevelCount, 4u);
+  EXPECT_EQ(leaningCardCount(kFigureLevelCount), 20u);
+  EXPECT_EQ(bridgeCardCount(kFigureLevelCount), 6u);
+  EXPECT_EQ(cardCount(kFigureLevelCount), 26u);
+  EXPECT_EQ(kFigureEvidenceFrames, 600u);
+  EXPECT_EQ(kFigureEvidenceSubsteps, 2400u);
+  EXPECT_EQ(kReleaseFrame, 400u);
+  EXPECT_EQ(kReleaseSubstep, 1600u);
+  EXPECT_LT(kReleaseSubstep, kFigureEvidenceSubsteps);
+  EXPECT_EQ(kReleaseActionKey, 'p');
+
+  const auto world
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto contract = inspectDynamicsAdapterContract(
+      world, kFigureLevelCount, "integration_fixture");
+  EXPECT_EQ(contract.levelCount, kFigureLevelCount);
+  EXPECT_EQ(contract.cardCount, 26u);
+  EXPECT_EQ(contract.cubeCount, kCubeCount);
+  EXPECT_EQ(contract.releasedCubeCount, 0u);
+  EXPECT_TRUE(contract.finiteState);
+
+  const auto expectedCards = makeCardSpecs(kFigureLevelCount);
+  ASSERT_EQ(expectedCards.size(), 26u);
+  for (const auto& expected : expectedCards) {
+    const auto actual
+        = inspectBox(world, expected.name, cardKindLabel(expected.kind));
+    EXPECT_TRUE(actual.size.isApprox(expected.size, 1e-15));
+    EXPECT_TRUE(
+        actual.pose.matrix().isApprox(expected.transform.matrix(), 1e-14));
+    EXPECT_DOUBLE_EQ(actual.mass, kCardMass);
+    EXPECT_DOUBLE_EQ(actual.friction, kFriction);
+    EXPECT_TRUE(actual.mobile);
+    EXPECT_TRUE(actual.linearVelocity.isZero(0.0));
+    EXPECT_TRUE(actual.angularVelocity.isZero(0.0));
+  }
+
+  const auto expectedCubes = makeCubeSpecs(kFigureLevelCount);
+  ASSERT_EQ(expectedCubes.size(), kCubeCount);
+  constexpr std::array<double, kCubeCount> expectedX{{-1.8, -0.6, 0.6, 1.8}};
+  const double expectedHeight = kFigureLevelCount * kTentHeight + kDropHeight;
+  EXPECT_NEAR(expectedHeight, 10.6664246790874, 1e-13);
+  for (std::size_t index = 0u; index < expectedCubes.size(); ++index) {
+    const auto& expected = expectedCubes[index];
+    EXPECT_NEAR(expected.transform.translation().x(), expectedX[index], 1e-14);
+    EXPECT_NEAR(expected.transform.translation().y(), 0.0, 1e-14);
+    EXPECT_NEAR(expected.transform.translation().z(), expectedHeight, 1e-14);
+
+    const auto actual = inspectBox(world, expected.name, "cube");
+    EXPECT_TRUE(actual.size.isApprox(expected.size, 1e-15));
+    EXPECT_TRUE(
+        actual.pose.matrix().isApprox(expected.transform.matrix(), 1e-14));
+    EXPECT_DOUBLE_EQ(actual.mass, kCubeMass);
+    EXPECT_DOUBLE_EQ(actual.friction, kFriction);
+    EXPECT_FALSE(actual.mobile);
+    EXPECT_TRUE(actual.linearVelocity.isZero(0.0));
+    EXPECT_TRUE(actual.angularVelocity.isZero(0.0));
+  }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseCubeReleaseIsIdempotent)
+{
+  using namespace fbf_author_card_house;
+
+  const auto world
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto cubeSpecs = makeCubeSpecs(kFigureLevelCount);
+  ASSERT_EQ(cubeSpecs.size(), kCubeCount);
+
+  std::array<Eigen::Isometry3d, kCubeCount> poses;
+  std::array<Eigen::Vector3d, kCubeCount> linearVelocities;
+  std::array<Eigen::Vector3d, kCubeCount> angularVelocities;
+  for (std::size_t index = 0u; index < cubeSpecs.size(); ++index) {
+    const auto cube = world->getSkeleton(cubeSpecs[index].name);
+    ASSERT_NE(cube, nullptr);
+    ASSERT_FALSE(cube->isMobile());
+    const auto* body = cube->getBodyNode(0u);
+    ASSERT_NE(body, nullptr);
+    poses[index] = body->getWorldTransform();
+    linearVelocities[index] = body->getLinearVelocity();
+    angularVelocities[index] = body->getAngularVelocity();
+  }
+
+  const auto countMobileSkeletons = [&world]() {
+    std::size_t count = 0u;
+    for (std::size_t index = 0u; index < world->getNumSkeletons(); ++index) {
+      const auto skeleton = world->getSkeleton(index);
+      if (skeleton && skeleton->isMobile())
+        ++count;
+    }
+    return count;
+  };
+  const std::size_t mobileBefore = countMobileSkeletons();
+  EXPECT_EQ(releasedCubeCount(world, kFigureLevelCount), 0u);
+  EXPECT_FALSE(cubesReleased(world, kFigureLevelCount));
+
+  releaseCubes(world, kFigureLevelCount);
+  EXPECT_EQ(releasedCubeCount(world, kFigureLevelCount), kCubeCount);
+  EXPECT_TRUE(cubesReleased(world, kFigureLevelCount));
+  EXPECT_EQ(countMobileSkeletons(), mobileBefore + kCubeCount);
+
+  releaseCubes(world, kFigureLevelCount);
+  EXPECT_EQ(releasedCubeCount(world, kFigureLevelCount), kCubeCount);
+  EXPECT_TRUE(cubesReleased(world, kFigureLevelCount));
+  EXPECT_EQ(countMobileSkeletons(), mobileBefore + kCubeCount);
+
+  for (std::size_t index = 0u; index < cubeSpecs.size(); ++index) {
+    const auto cube = world->getSkeleton(cubeSpecs[index].name);
+    ASSERT_NE(cube, nullptr);
+    ASSERT_TRUE(cube->isMobile());
+    const auto* body = cube->getBodyNode(0u);
+    ASSERT_NE(body, nullptr);
+    EXPECT_TRUE(body->getWorldTransform().matrix().isApprox(
+        poses[index].matrix(), 0.0));
+    EXPECT_TRUE(
+        body->getLinearVelocity().isApprox(linearVelocities[index], 0.0));
+    EXPECT_TRUE(
+        body->getAngularVelocity().isApprox(angularVelocities[index], 0.0));
+  }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseDynamicsLanesShareFrontend)
+{
+  using namespace fbf_author_card_house;
+
+  const auto exactWorld
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto boxedWorld
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, false);
+  const auto exact = inspectDynamicsAdapterContract(
+      exactWorld, kFigureLevelCount, "integration_fixture");
+  const auto boxed = inspectDynamicsAdapterContract(
+      boxedWorld, kFigureLevelCount, "integration_fixture");
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_TRUE(exact.exactOptionsAvailable);
+  EXPECT_FALSE(exact.boxedOptionsAvailable);
+  EXPECT_EQ(exact.exactOptions.maxOuterIterations, kSourceMaxOuterIterations);
+  EXPECT_DOUBLE_EQ(exact.exactOptions.tolerance, kSourceOuterTolerance);
+  EXPECT_EQ(exact.exactOptions.innerMaxSweeps, kSourceInnerGaussSeidelSweeps);
+  EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_EQ(
+      exact.exactCrossStepOptions.warmStartMatchMode,
+      constraint::ExactCoulombFbfWarmStartMatchMode::EitherBodyLocalFeature);
+  EXPECT_DOUBLE_EQ(exact.exactCrossStepOptions.warmStartNormalCosine, 0.9);
+  EXPECT_FALSE(exact.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_FALSE(exact.exactParticipantAffinityEnabled);
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_FALSE(boxed.exactOptionsAvailable);
+  EXPECT_TRUE(boxed.boxedOptionsAvailable);
+  EXPECT_EQ(boxed.boxedPrimarySolver, "DantzigBoxedLcpSolver");
+  EXPECT_EQ(boxed.boxedSecondarySolver, "PgsBoxedLcpSolver");
+  EXPECT_FALSE(boxed.boxedMatrixFreeOptions.mEnabled);
+  EXPECT_EQ(boxed.boxedMatrixFreeOptions.mMinRows, 193u);
+  EXPECT_EQ(boxed.boxedMatrixFreeOptions.mMaxIterations, 30);
+  EXPECT_DOUBLE_EQ(boxed.boxedMatrixFreeOptions.mSor, 0.9);
+  EXPECT_DOUBLE_EQ(boxed.boxedMatrixFreeOptions.mDeltaTolerance, 1e-6);
+  EXPECT_DOUBLE_EQ(boxed.boxedMatrixFreeOptions.mRelativeDeltaTolerance, 1e-3);
+  EXPECT_DOUBLE_EQ(boxed.boxedMatrixFreeOptions.mEpsilonForDivision, 1e-9);
+
+  EXPECT_DOUBLE_EQ(exact.timeStep, kRuntimeTimeStep);
+  EXPECT_DOUBLE_EQ(boxed.timeStep, exact.timeStep);
+  EXPECT_TRUE(boxed.gravity.isApprox(exact.gravity, 0.0));
+  EXPECT_EQ(boxed.simulationThreads, exact.simulationThreads);
+  EXPECT_EQ(boxed.deactivationEnabled, exact.deactivationEnabled);
+  EXPECT_EQ(boxed.collisionDetector, exact.collisionDetector);
+  EXPECT_EQ(exact.collisionDetector, "native");
+  EXPECT_EQ(boxed.contactManifold, exact.contactManifold);
+  EXPECT_EQ(exact.contactManifold, "four_point_planar");
+  EXPECT_EQ(boxed.maxContacts, exact.maxContacts);
+  EXPECT_EQ(exact.maxContacts, kSourceMaxContacts);
+  EXPECT_EQ(boxed.maxContactsPerPair, exact.maxContactsPerPair);
+  EXPECT_EQ(exact.maxContactsPerPair, 4u);
+  EXPECT_TRUE(exact.contactGenerationEnabled);
+  EXPECT_TRUE(boxed.contactGenerationEnabled);
+  EXPECT_FALSE(exact.negativePenetrationDepthContactsAllowed);
+  EXPECT_FALSE(boxed.negativePenetrationDepthContactsAllowed);
+  EXPECT_TRUE(exact.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_TRUE(boxed.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_EQ(boxed.splitImpulseEnabled, exact.splitImpulseEnabled);
+  EXPECT_FALSE(exact.splitImpulseEnabled);
+  EXPECT_DOUBLE_EQ(exact.primaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(boxed.primaryFriction, exact.primaryFriction);
+  EXPECT_DOUBLE_EQ(exact.secondaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(boxed.secondaryFriction, exact.secondaryFriction);
+  EXPECT_DOUBLE_EQ(exact.restitution, kDartRestitution);
+  EXPECT_DOUBLE_EQ(boxed.restitution, exact.restitution);
+  EXPECT_DOUBLE_EQ(exact.primarySlipCompliance, kDartSlipCompliance);
+  EXPECT_DOUBLE_EQ(boxed.primarySlipCompliance, exact.primarySlipCompliance);
+  EXPECT_DOUBLE_EQ(exact.secondarySlipCompliance, kDartSlipCompliance);
+  EXPECT_DOUBLE_EQ(
+      boxed.secondarySlipCompliance, exact.secondarySlipCompliance);
+  EXPECT_TRUE(exact.firstFrictionDirection.isZero(0.0));
+  EXPECT_TRUE(boxed.firstFrictionDirection.isZero(0.0));
+  EXPECT_TRUE(exact.usesDefaultFrictionDirectionFrame);
+  EXPECT_TRUE(boxed.usesDefaultFrictionDirectionFrame);
+  EXPECT_EQ(boxed.cardCount, exact.cardCount);
+  EXPECT_EQ(exact.cardCount, 26u);
+  EXPECT_EQ(boxed.cubeCount, exact.cubeCount);
+  EXPECT_EQ(exact.cubeCount, kCubeCount);
+  EXPECT_EQ(boxed.releasedCubeCount, exact.releasedCubeCount);
+  EXPECT_EQ(exact.releasedCubeCount, 0u);
+  EXPECT_TRUE(exact.finiteState);
+  EXPECT_TRUE(boxed.finiteState);
+
+  const std::string exactJson = dynamicsAdapterContractJson(exact);
+  EXPECT_NE(
+      exactJson.find("\"schema_version\":\"dart.fbf_author_card_house_dynamics_"
+                     "adapter/v1\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"current_source_parameterized_configuration_port\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"historical_paper_invocation_known\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"physical_outcome_valid\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"fig06_parity\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"boxed_baseline\":null"), std::string::npos);
+  const std::string boxedJson = dynamicsAdapterContractJson(boxed);
+  EXPECT_NE(
+      boxedJson.find("\"primary_solver\":\"DantzigBoxedLcpSolver\""),
+      std::string::npos);
+  EXPECT_NE(
+      boxedJson.find("\"secondary_solver\":\"PgsBoxedLcpSolver\""),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseDynamicsContractRejectsPhysicalDrift)
+{
+  using namespace fbf_author_card_house;
+
+  const auto massDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto card = massDrift->getSkeleton("tent_left_L0_T0");
+  ASSERT_NE(card, nullptr);
+  card->getBodyNode(0u)->setMass(kCardMass + 1.0);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          massDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto momentDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto momentCard = momentDrift->getSkeleton("tent_left_L0_T0");
+  ASSERT_NE(momentCard, nullptr);
+  auto inertia = momentCard->getBodyNode(0u)->getInertia();
+  inertia.setMoment(inertia.getMoment() + Eigen::Matrix3d::Identity());
+  momentCard->getBodyNode(0u)->setInertia(inertia);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          momentDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto partialRelease
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto firstCube = partialRelease->getSkeleton("cube_0");
+  ASSERT_NE(firstCube, nullptr);
+  firstCube->setMobile(true);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          partialRelease, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto groundDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto ground = groundDrift->getSkeleton("ground_plane");
+  ASSERT_NE(ground, nullptr);
+  auto* groundNode
+      = ground->getBodyNode(0u)->getShapeNodeWith<dynamics::CollisionAspect>(
+          0u);
+  ASSERT_NE(groundNode, nullptr);
+  groundNode->getDynamicsAspect()->setFrictionCoeff(kFriction - 0.1);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          groundDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto shapeCountDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* shapeCountBody
+      = shapeCountDrift->getSkeleton("tent_left_L0_T0")->getBodyNode(0u);
+  shapeCountBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.1)));
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          shapeCountDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto shapePoseDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* shapePoseNode = shapePoseDrift->getSkeleton("tent_left_L0_T0")
+                            ->getBodyNode(0u)
+                            ->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  shapePoseNode->setRelativeTranslation(Eigen::Vector3d(0.1, 0.0, 0.0));
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          shapePoseDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto collidableDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* collidableNode = collidableDrift->getSkeleton("tent_left_L0_T0")
+                             ->getBodyNode(0u)
+                             ->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  collidableNode->getCollisionAspect()->setCollidable(false);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          collidableDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto gravityDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  gravityDrift->getSkeleton("tent_left_L0_T0")
+      ->getBodyNode(0u)
+      ->setGravityMode(false);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          gravityDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto materialDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* materialNode = materialDrift->getSkeleton("tent_left_L0_T0")
+                           ->getBodyNode(0u)
+                           ->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  materialNode->getDynamicsAspect()->setRestitutionCoeff(0.1);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          materialDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto planeDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* planeNode = planeDrift->getSkeleton("ground_plane")
+                        ->getBodyNode(0u)
+                        ->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  auto plane
+      = std::dynamic_pointer_cast<dynamics::PlaneShape>(planeNode->getShape());
+  ASSERT_NE(plane, nullptr);
+  plane->setOffset(0.1);
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          planeDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto contactGenerationDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  contactGenerationDrift->getConstraintSolver()
+      ->getCollisionOption()
+      .enableContact
+      = false;
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          contactGenerationDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+
+  const auto filterDrift
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto filter = std::dynamic_pointer_cast<collision::BodyNodeCollisionFilter>(
+      filterDrift->getConstraintSolver()->getCollisionOption().collisionFilter);
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(
+      filterDrift->getSkeleton("ground_plane")->getBodyNode(0u),
+      filterDrift->getSkeleton("tent_left_L0_T0")->getBodyNode(0u));
+  EXPECT_THROW(
+      inspectDynamicsAdapterContract(
+          filterDrift, kFigureLevelCount, "integration_fixture"),
+      std::runtime_error);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseBoxedReleaseThenOneStepIsObservable)
+{
+  using namespace fbf_author_card_house;
+
+  const auto world
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, false);
+  const auto cubeSpecs = makeCubeSpecs(kFigureLevelCount);
+  std::array<double, kCubeCount> initialHeights;
+  for (std::size_t index = 0u; index < cubeSpecs.size(); ++index) {
+    initialHeights[index] = world->getSkeleton(cubeSpecs[index].name)
+                                ->getBodyNode(0u)
+                                ->getWorldTransform()
+                                .translation()
+                                .z();
+  }
+
+  releaseCubes(world, kFigureLevelCount);
+  {
+    ScopedContactErrorReductionParameter scopedErp;
+    ASSERT_NO_THROW(world->step());
+    const auto contract = inspectDynamicsAdapterContract(
+        world, kFigureLevelCount, "integration_fixture");
+    EXPECT_EQ(contract.releasedCubeCount, kCubeCount);
+    EXPECT_TRUE(contract.finiteState);
+    EXPECT_DOUBLE_EQ(
+        contract.observedContactErrorReductionParameter,
+        kDartContactErrorReductionParameter);
+  }
+
+  EXPECT_DOUBLE_EQ(world->getTime(), kRuntimeTimeStep);
+  for (std::size_t index = 0u; index < cubeSpecs.size(); ++index) {
+    const auto cube = world->getSkeleton(cubeSpecs[index].name);
+    ASSERT_NE(cube, nullptr);
+    EXPECT_TRUE(cube->isMobile());
+    const auto* body = cube->getBodyNode(0u);
+    ASSERT_NE(body, nullptr);
+    EXPECT_LT(
+        body->getWorldTransform().translation().z(), initialHeights[index]);
+    EXPECT_LT(body->getLinearVelocity().z(), 0.0);
+  }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseFourLevelExactOneStepSmoke)
+{
+  using namespace fbf_author_card_house;
+
+  const auto world
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  auto* solver = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+      world->getConstraintSolver());
+  ASSERT_NE(solver, nullptr);
+  const double previousErp
+      = constraint::ContactConstraint::getErrorReductionParameter();
+  {
+    ScopedContactErrorReductionParameter scopedErp;
+    EXPECT_DOUBLE_EQ(
+        constraint::ContactConstraint::getErrorReductionParameter(),
+        kDartContactErrorReductionParameter);
+    ASSERT_NO_THROW(world->step());
+
+    EXPECT_DOUBLE_EQ(world->getTime(), kRuntimeTimeStep);
+    EXPECT_EQ(
+        solver->getLastExactCoulombStatus(),
+        constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+    EXPECT_EQ(
+        solver->getLastExactCoulombFbfStatus(),
+        math::detail::ExactCoulombFbfStatus::Success);
+    EXPECT_GT(solver->getNumExactCoulombSolves(), 0u);
+    EXPECT_EQ(solver->getNumExactCoulombFailures(), 0u);
+    EXPECT_EQ(solver->getNumBoxedLcpFallbacks(), 0u);
+    EXPECT_TRUE(std::isfinite(solver->getLastExactCoulombResidual()));
+    EXPECT_LE(solver->getLastExactCoulombResidual(), kSourceOuterTolerance);
+
+    const auto contract = inspectDynamicsAdapterContract(
+        world, kFigureLevelCount, "integration_fixture");
+    EXPECT_TRUE(contract.finiteState);
+    EXPECT_EQ(contract.releasedCubeCount, 0u);
+    EXPECT_DOUBLE_EQ(
+        contract.observedContactErrorReductionParameter,
+        kDartContactErrorReductionParameter);
+  }
+  EXPECT_DOUBLE_EQ(
+      constraint::ContactConstraint::getErrorReductionParameter(), previousErp);
 }
 
 //==============================================================================

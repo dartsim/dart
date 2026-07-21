@@ -17,7 +17,9 @@ claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six finalized bundles, and the visual workflow
-declares 20 schedules.
+now includes a separately named source-selected four-level card-house schedule.
+That schedule has no finalized media and does not increase the six-bundle
+inventory.
 
 The sealed pinned-author masonry-arch run is scientific-negative source
 evidence, not a DART comparison: 40 true flags use the initial
@@ -526,6 +528,45 @@ does not prove release, standing, trajectory, solver behavior, contact
 dynamics, physical outcome, the historical four-level/26-card trajectory,
 Fig. 6 or video parity, timing, performance, or paper parity.
 
+### Current-Source Four-Level Figure 6 Adapter
+
+The separate `fbf_author_card_house_4_impact_current_source` demo scene and
+`card_house_author_4_impact_current_source` capture schedule pin author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. They use the source-supported
+selection `--solvers fbf --levels 4 --frames 600 --drop-frame 400
+--num-cubes 4 --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0
+--device cpu --profile --usd`, not the source's no-argument
+five-level/800-frame default or a known historical paper command. Source
+`ke=1e4`, `kd=1e3`, and `gap=.005` are recorded source semantics, not contact
+semantics implemented equivalently by the DART adapter.
+
+The adapter has 26 source-sized cards (20 leaning and 6 bridges) and four
+initially kinematic `0.8 m`, `256 kg` cubes. Interactive `p` releases the cubes
+immediately; the evidence runner invokes `p` after completed substep 1,600 in
+the declared 2,400-step, `dt=1/240 s` run. Exact and boxed lanes share the same
+Native `FourPointPlanar` frontend, 4,096-contact capacity, and manifold
+subdivision 4.
+The demo build, eight focused C++ fixtures, 190 runner Python tests, and both
+adapter-contract smoke validators pass.
+
+The strict exact 100-step request fails closed at completed step 35 when the
+contact count jumps from 44 to 68. Steps through 34 are clean, with prior worst
+residual `9.826274595482653e-7`; the failed prefix records 103 attempts, 102
+solves, one exact failure, zero fallbacks, zero accepted caps, and worst
+residual `4.1039190451256334e-4`. Timeline SHA-256
+`be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`
+belongs to
+`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`.
+
+The boxed control completes 100 steps. Its timeline is
+`/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
+SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+Neither lane reaches release. This does not establish a 2,400-step trajectory,
+physical outcome, source-backend or timing equivalence, final media or PR
+attachment, Fig. 6/paper parity, or solver superiority. It remains an
+adapter-only lane.
+The older reconstructed `fbf_paper_card_house_26` lane remains distinct.
+
 ### Pinned-Author Masonry-Arch Scientific Negative
 
 The sealed bundle is
@@ -771,6 +812,11 @@ publishes no multicore CPU reference.
 
 ## Current Verification
 
+- Current-source four-level author-card demo build: passed.
+- Current-source four-level author-card C++ fixtures: 8/8 passed.
+- Visual runner after registering the source-selected schedule: 190/190
+  passed.
+- Exact and boxed adapter-contract smoke validators: passed.
 - Author-incline reference finalizer unit tests: 64/64; verify-only reports 37
   indexed artifacts and 39 physical files.
 - Focused manifest/backspin/incline/author-masonry/author-incline evidence
@@ -833,10 +879,11 @@ cross-platform CI.
 
 ## Remaining Completion Gates
 
-- Make the strict full-card profile complete and reach `<=1e-6` within the
-  paper's 200 outer iterations without fallback. The completed manifold-v2
-  sensitivity narrows the contact representation question but does not close
-  this gate because both trajectories are non-strict.
+- Resolve or precisely characterize the source-selected four-level adapter's
+  completed-step-35 exact failure, then complete its 2,400-step exact and boxed
+  trajectories through the step-1,600 release with quantitative outcome and
+  current-build media gates. Keep it distinct from the reconstructed
+  manifold-v2 lane, whose two trajectories remain non-strict.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.
 - Keep multicore claims confined to the validated opt-in colored literal-arch

@@ -719,12 +719,16 @@ Eigen::Vector4d authorCardHouseColor(
 SkeletonPtr createAuthorCardHouseGround()
 {
   auto skeleton = Skeleton::create("ground_plane");
-  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+  const auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr);
+  auto* joint = pair.first;
+  auto* body = pair.second;
   auto* collisionNode
       = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
           std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-  collisionNode->getDynamicsAspect()->setFrictionCoeff(
-      fbf_author_card_house::kFriction);
+  body->setGravityMode(true);
+  fbf_author_card_house::configureDartFreeJoint(joint);
+  fbf_author_card_house::configureDartContactMaterial(
+      collisionNode->getDynamicsAspect());
 
   // Newton's infinite ground has no source renderer. This finite slab is a
   // VisualAspect-only DART presentation aid for the construction still.
@@ -749,38 +753,65 @@ SkeletonPtr createAuthorCardHouseBox(
   auto skeleton = createDynamicBox(
       name, size, transform, fbf_author_card_house::kFriction, color);
   auto* body = skeleton->getBodyNode(0u);
+  auto* joint = dynamic_cast<FreeJoint*>(skeleton->getJoint(0u));
   const double mass = density * size.x() * size.y() * size.z();
   dart::dynamics::Inertia inertia;
   inertia.setMass(mass);
   inertia.setMoment(BoxShape::computeInertia(size, mass));
   body->setInertia(inertia);
+  body->setGravityMode(true);
+  fbf_author_card_house::configureDartFreeJoint(joint);
+  auto* collisionNode = body->getShapeNodeWith<CollisionAspect>(0u);
+  if (collisionNode == nullptr)
+    throw std::runtime_error("author card house collision shape is missing");
+  fbf_author_card_house::configureDartContactMaterial(
+      collisionNode->getDynamicsAspect());
   skeleton->setMobile(mobile);
   return skeleton;
 }
 
 //==============================================================================
-WorldPtr createAuthorCardHouseWorld(
-    const std::string& name, std::size_t levelCount)
+void installAuthorCardHouseSolver(const WorldPtr& world, SolverMode mode)
 {
-  auto world = dart::simulation::World::create(name);
-  configureWorldBase(world);
-  world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
   configureSolver(
       world,
-      SolverMode::ExactFbf,
+      mode,
       fbf_author_card_house::kSourceMaxContacts,
-      4u,
+      fbf_author_card_house::kDartMaxContactsPerPair,
       false,
       false,
       dart::collision::NativeCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
-  auto* exactSolver
-      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
-          world->getConstraintSolver());
-  if (exactSolver == nullptr)
-    throw std::runtime_error("author card house requires exact FBF");
-  exactSolver->setExactCoulombOptions(
-      fbf_author_card_house::dartConstructionSolverOptions());
+  auto* solver = world->getConstraintSolver();
+  fbf_author_card_house::configureDartCollisionGeneration(solver);
+  if (mode == SolverMode::ExactFbf) {
+    auto* exactSolver
+        = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+            solver);
+    if (exactSolver == nullptr)
+      throw std::runtime_error("author card house requires exact FBF");
+    exactSolver->setExactCoulombOptions(
+        fbf_author_card_house::dartConstructionSolverOptions());
+    exactSolver->setExactCoulombCrossStepPolicyOptions(
+        fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+    exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(false);
+    exactSolver
+        ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
+            false);
+  } else {
+    fbf_author_card_house::configureDartBoxedBaseline(
+        dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(solver));
+  }
+}
+
+//==============================================================================
+WorldPtr createAuthorCardHouseWorld(
+    const std::string& name, std::size_t levelCount, SolverMode mode)
+{
+  auto world = dart::simulation::World::create(name);
+  configureWorldBase(world);
+  world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
+  installAuthorCardHouseSolver(world, mode);
 
   world->addSkeleton(createAuthorCardHouseGround());
   for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
@@ -1656,7 +1687,7 @@ DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
 
   scene.factory = [levelCount] {
     auto world = createAuthorCardHouseWorld(
-        fbf_author_card_house::kDemoSceneId, levelCount);
+        fbf_author_card_house::kDemoSceneId, levelCount, SolverMode::ExactFbf);
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -1690,6 +1721,94 @@ DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
     return setup;
   };
   return scene;
+}
+
+//==============================================================================
+void renderFbfAuthorCardHouseDynamicsControls(const WorldPtr& world)
+{
+  using namespace fbf_author_card_house;
+  ImGui::Separator();
+  ImGui::TextDisabled("Pinned current-source schedule (b3f3c5c)");
+  ImGui::Text("Four levels: 20 leaning + 6 bridge cards");
+  ImGui::Text("Suspended cubes: 4 x edge 0.8 m, mass 256 kg");
+  ImGui::Text("Runtime dt: 1/240 s; evidence horizon: 2,400 steps");
+  ImGui::Text("Runner: p after step 1,600; interactive p/button: immediate");
+  const bool released = cubesReleased(world, kFigureLevelCount);
+  ImGui::Text("Cube state: %s", released ? "released" : "kinematic");
+  if (!released && ImGui::Button("Release 4 source-configured cubes"))
+    releaseCubes(world, kFigureLevelCount);
+  ImGui::TextWrapped(
+      "This is a current-source-parameterized DART adapter. Historical paper "
+      "invocation, source collision/contact-gap/backend/float32 semantics, "
+      "trajectory, outcome, timing, and Fig. 6 parity remain unclaimed.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kDynamicsDemoSceneId,
+      "FBF Author Card House 4: Impact (Current Source)",
+      "Public-author four-level 26-card configuration and 600-frame cube "
+      "release schedule executed through DART exact/boxed dynamics adapters.",
+      CameraHome{
+          ::osg::Vec3d(22.0, -30.0, 16.0),
+          ::osg::Vec3d(0.0, 0.0, 4.7),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kDynamicsDemoSceneId, kFigureLevelCount, state->solverMode);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c and selected "
+      "through supported run.py arguments: four levels, 20 leaning cards, "
+      "six bridges, four initially kinematic 0.8 m cubes, mu=.8, and 600 "
+      "display frames. The evidence runner uses four DART substeps per frame "
+      "at dt=1/240 s and invokes immediate action `p` after completed step "
+      "1,600 to release the existing cubes from rest.",
+      "The expected evidence is a deterministic, finite DART exact/boxed "
+      "comparison spanning the pre-release construction and subsequent cube "
+      "impact. Exact media is promotable only if every constrained step passes "
+      "the strict residual, cap, failure, and fallback gates and the physical "
+      "outcome oracle is satisfied.",
+      "This is a DART dynamics adapter for a source-supported "
+      "parameterization, "
+      "not proof of the historical paper invocation. Native FourPointPlanar "
+      "collision, DART contact-gap behavior, float64 arithmetic, exact-FBF "
+      "options, boxed LCP, camera, materials, and rendering differ from the "
+      "author runtime. Trajectory/outcome equivalence, Fig. 6/video parity, "
+      "and timing comparability remain unproven.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorCardHouseDynamicsControls(world);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kFigureLevelCount,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256));
+        };
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, "Release 4 source-configured cubes", [world] {
+              releaseCubes(world, kFigureLevelCount);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(world, mode);
+      });
 }
 
 //==============================================================================
@@ -2028,6 +2147,12 @@ DemoScene makeFbfAuthorCardHouseScene()
 }
 
 //==============================================================================
+DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
 DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene()
 {
   return makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene();
@@ -2043,7 +2168,7 @@ std::string fbfAuthorCardHouseConfigurationContractJson(
   }
 
   const auto world = createAuthorCardHouseWorld(
-      sceneId, fbf_author_card_house::kDefaultLevelCount);
+      sceneId, fbf_author_card_house::kDefaultLevelCount, SolverMode::ExactFbf);
   return fbf_author_card_house::configurationContractJson(
       fbf_author_card_house::inspectConfigurationContract(
           world,

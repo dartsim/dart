@@ -4,7 +4,7 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six finalized
-bundles, and the visual workflow declares 20 schedules.
+bundles, and the visual workflow declares 21 schedules.
 
 ## Source And Comparability Boundary
 
@@ -18,6 +18,13 @@ bundles, and the visual workflow declares 20 schedules.
 - The author pipeline uses float32 state. Its exact 3x3 cone boundary solve
   promotes the local system to float64 and casts the result back to float32;
   the warm-start matcher and cross-step gamma controller are also public.
+- The current DART Figure 6 adapter selects the supported author CLI arguments
+  `--solvers fbf --levels 4 --frames 600 --drop-frame 400 --num-cubes 4
+  --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0 --device cpu
+  --profile --usd`. It is not the no-argument five-level/800-frame source
+  default and is not known to be the historical paper invocation. Source
+  `ke=1e4`, `kd=1e3`, and `gap=.005` are recorded source semantics, not contact
+  semantics implemented equivalently by the DART adapter.
 - The sealed 500-frame author masonry-arch run is a newly declared
   current-source diagnostic. Its 2,000 substeps contain 157 true flags: 40
   from the initial natural-residual shortcut and 117 from the configured outer
@@ -222,12 +229,35 @@ colored-inner-BGS contract validated above.
 | Fig. 3 | Backspin sphere reverses toward analytical terminal state | Finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Finalized author-pinned 58-indexed/60-physical four-cell repository bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
-| Fig. 6 | 26-card house settles, then receives four projectiles | Finalized 12-indexed/14-physical public-author default five-level/40-card construction-only bundle, prior-source strict step-89 negative, current-source 600-row manifold sensitivity v2, and bounded visual attempt | Blocked: the author bundle is step zero with zero simulation substeps; both current v2 trajectories are non-strict with null physical verdicts; prior strict trace fails at step 89, visual reaches only step 6, and no valid long media exist |
+| Fig. 6 | 26-card house settles, then receives four projectiles | New source-selected `fbf_author_card_house_4_impact_current_source` adapter and 2,400-step schedule, plus the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked: adapter/contract tests pass, but strict exact fails closed at completed step 35 as contacts jump 44 to 68; boxed reaches step 100, neither reaches release at step 1,600, and no physical-outcome or media verdict exists |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, sealed pinned-author 500-frame scientific negative, and a newly registered 2,000-substep source-configuration DART capture schedule | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags. The new DART exact lane clears the former step-68 local failure and completes 100 strict steps, then fails closed on a distinct outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks); neither lane has completed the 2,000-step physical/media gates, the 500-frame invocation is not the source default, and no source-matched DART impact or paper-timing row is established |
 | Fig. 8 | 101-stone arch remains balanced | Oriented-box bounded visual attempt plus provenance-bound exact-inertia literal v7 numeric run with failed-step-1 pair identities | Blocked: oriented-box attempt collapses by step 120/600; literal v7 identity-resolves the failed graph as the 100-edge adjacent chain but still fails closed on step 1 at residual `0.7815364614`, so neither supplies source-equivalent standing/physical outcome, timing, long-run behavior, or valid media |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
 | Fig. 10 | Gamma sweeps with physical-outcome interpretation | Sweep/trace infrastructure | Partial: the pinned recovery policy is inspectable, but DART equivalence and paper-profile contact-rich outcomes are not established |
 | GPU table | Card/arch outcomes and timing | Construction adapter and reconstructed Kamino runner | Non-comparable; dynamic 10-level capture does not complete step 1 |
+
+The Figure 6 adapter pins author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, uses 20 leaning plus 6 bridge
+cards, and starts four `0.8 m`, `256 kg` cubes kinematic. The `p` action
+releases them immediately when used interactively; the evidence runner invokes
+`p` after completed substep 1,600. The horizon is 2,400 substeps at
+`dt=1/240 s`. Exact and boxed use the same Native
+`FourPointPlanar` frontend with contact capacity 4,096 and manifold subdivision
+4. The demo build, eight focused C++ tests, 190 runner Python tests, and both
+contract-smoke validators pass.
+
+The strict exact 100-step prefix records 103 attempts, 102 solves, one failure,
+zero fallbacks, zero accepted caps, and worst residual
+`4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
+`9.826274595482653e-7`. Its timeline SHA-256 is
+`be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+The boxed 100-step timeline SHA-256 is
+`fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+No full run, release, trajectory or outcome, source-backend or timing
+equivalence, final media or PR upload, Fig. 6/historical/paper parity, or
+solver-superiority claim follows. This remains an adapter-only lane. The older
+`fbf_paper_card_house_26` scene is a separate reconstruction and must not be
+merged into this claim.
 
 The finalized Fig. 1/2 and video.03 bundle is
 `assets/paper_evidence/fig01_02_incline_current_v1/`. Finalization and

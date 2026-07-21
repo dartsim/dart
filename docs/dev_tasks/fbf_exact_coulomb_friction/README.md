@@ -38,11 +38,12 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Current-source four-level card-house adapter | `fbf_author_card_house_4_impact_current_source` and schedule `card_house_author_4_impact_current_source` bind the pinned author geometry and a source-supported four-level, 600-frame CLI selection to 2,400 DART substeps; exact/boxed adapter contracts and focused tests pass | The strict exact lane fails closed at completed step 35, before the step-1,600 cube release; boxed completes 100 steps, but no release, full run, physical outcome, media, superiority, or Fig. 6/paper-parity claim follows |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
 | Paper-media parity | The passing literal video has no projectile; paper impact media and 101-stone coverage remain incomplete, while the public author repository contains no renderer camera/material bundle or approved frame goldens | No paper impact, GUI, or golden-frame parity claim |
-| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 20 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
+| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 21 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
 ## Current Small CPU Matrix
 
@@ -487,6 +488,46 @@ behavior, contact dynamics, physical outcome, the historical four-level,
 26-card paper trajectory, Fig. 6 or video parity, source renderer colors,
 paper timing, or performance.
 
+## Current-Source Four-Level Figure 6 Adapter
+
+The separate `dart-demos` scene
+`fbf_author_card_house_4_impact_current_source` and capture schedule
+`card_house_author_4_impact_current_source` bind author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` to the source-supported CLI
+selection `--solvers fbf --levels 4 --frames 600 --drop-frame 400
+--num-cubes 4 --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0
+--device cpu --profile --usd`. This is not the source's no-argument
+five-level/800-frame default and is not a known historical paper invocation.
+Source `ke=1e4`, `kd=1e3`, and `gap=.005` are recorded source semantics, not
+contact semantics implemented equivalently by the DART adapter.
+
+The DART adapter has 26 source-sized cards (20 leaning and 6 bridges) and four
+initially kinematic cubes. Each cube is `0.8 m` on an edge and `256 kg`; the
+interactive `p` action releases the four cubes immediately, while the evidence
+runner invokes `p` after completed substep 1,600. The declared horizon is
+2,400 substeps at `dt=1/240 s`. Exact FBF and boxed LCP use the same Native
+`FourPointPlanar` collision frontend with contact capacity 4,096 and manifold
+subdivision 4.
+
+The demo build, eight focused author-card C++ tests, 190 visual-runner Python
+tests, and exact/boxed contract-smoke validators pass. The first live strict
+exact request for 100 steps fails closed at completed step 35 when contacts
+jump from 44 to 68. Steps through 34 are clean, with prior worst residual
+`9.826274595482653e-7`; the failing prefix records 103 exact attempts, 102
+solves, one exact failure, zero fallbacks, zero accepted caps, and worst
+residual `4.1039190451256334e-4`. Its timeline is
+`/tmp/fbf_author_card_house_4_exact100_20260721_contract_v2/timeline.json`,
+SHA-256 `be61b63c25bcb76dc3d94d17f59128f23c383b46175aab6356d305bd54c85335`.
+
+The boxed control completes 100 steps; its timeline is
+`/tmp/fbf_author_card_house_4_boxed100_20260721_contract_v2/timeline.json`,
+SHA-256 `fdd3d9e96058176faa51b148d1bcf5a4c0a7f1c4e7da64e15490dcae4ce6fafc`.
+Neither run reaches the release. No 2,400-step run, physical-outcome verdict,
+source-backend or timing equivalence, final captured media or PR video upload,
+paper trajectory, Fig. 6/video parity, or exact-versus-boxed superiority claim
+exists. This remains an adapter-only lane. Keep the older reconstructed
+`fbf_paper_card_house_26` scene and its evidence distinct.
+
 ## Pinned-Author Masonry-Arch Scientific Negative
 
 The sealed current-source bundle is
@@ -718,6 +759,12 @@ The latest recorded focused results on the current source are:
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
   suite: 859 passed post-merge in 163.95 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
+- current-source four-level author-card demo build: passed;
+- current-source four-level author-card C++ fixture tests: 8/8;
+- visual-runner Python tests after registering the source-selected schedule:
+  190/190;
+- current-source four-level exact/boxed adapter contract-smoke validators:
+  passed;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest validation: under the sealed producer closure, live mode performed
   118 file-identity rechecks with zero skipped; explicit archive mode reported
@@ -740,7 +787,9 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    incline sweep, current-source Painleve proxy, and finalized backspin
    bundles, then continue with the other
    smaller-figure recaptures,
-   strict card/media work, and source-equivalent impact work without tuning
+   strict card/media work, beginning with the source-selected four-level
+   adapter's completed-step-35 exact failure, and source-equivalent impact work
+   without tuning
    either frozen v1
    contract or promoting the v2 raw timings.
 2. Keep all 29 manifest rows synchronized with every new sidecar, hash,
