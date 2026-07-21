@@ -500,14 +500,9 @@ evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
 
 evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
 
-# Exact-Coulomb paper closeout gates. The CPU runner accepts its full CLI after
+# Exact-Coulomb paper evidence runner. It accepts its full CLI after
 # `pixi run fbf-cpu-evidence -- ...`; it intentionally does not choose cases,
 # durations, or output paths implicitly.
-fbf-paper-evidence-validate = { cmd = [
-  "python",
-  "scripts/validate_fbf_paper_evidence.py",
-] }
-
 fbf-cpu-evidence = { cmd = ["python", "scripts/run_fbf_cpu_evidence.py"] }
 
 # Deterministic headless capture with active camera control (view-quality

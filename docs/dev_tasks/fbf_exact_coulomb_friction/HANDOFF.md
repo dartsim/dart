@@ -19,7 +19,7 @@ covered is "No."
 
 Read AGENTS.md, then AGENT_CONTINUATION.md, README.md, RESUME.md,
 paper-parity-matrix.md, PR_REPORT.md, gui-capture-report.md,
-residual-history-report.md, and paper-evidence-manifest.json. Treat
+residual-history-report.md, and PAPER_DEMO_VIDEO_MATRIX.md. Treat
 AGENT_CONTINUATION.md as the authoritative truth ledger.
 
 Inspect and preserve any existing worktree changes. Durable branch state:

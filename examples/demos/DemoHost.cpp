@@ -36,6 +36,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
@@ -213,6 +214,7 @@ void writeJsonNumber(std::ostream& out, double value)
 //==============================================================================
 struct SolverDiagnosticsSnapshot
 {
+  std::string solver = "UnknownConstraintSolver";
   bool available = false;
   std::string gap;
   std::string status;
@@ -237,6 +239,7 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
 {
   SolverDiagnosticsSnapshot snapshot;
   if (!world || !world->getConstraintSolver()) {
+    snapshot.solver = "UnavailableConstraintSolver";
     snapshot.gap = "active world has no constraint solver";
     return snapshot;
   }
@@ -245,11 +248,16 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
       = dynamic_cast<const dart::constraint::ExactCoulombFbfConstraintSolver*>(
           world->getConstraintSolver());
   if (!solver) {
+    if (dynamic_cast<const dart::constraint::BoxedLcpConstraintSolver*>(
+            world->getConstraintSolver())) {
+      snapshot.solver = "BoxedLcpConstraintSolver";
+    }
     snapshot.gap
         = "active solver does not expose exact-Coulomb FBF diagnostics";
     return snapshot;
   }
 
+  snapshot.solver = "ExactCoulombFbfConstraintSolver";
   snapshot.available = true;
   snapshot.contacts
       = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
@@ -280,7 +288,9 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
 void writeSolverDiagnosticsJson(
     std::ostream& out, const SolverDiagnosticsSnapshot& snapshot)
 {
-  out << "{\n      \"available\": " << (snapshot.available ? "true" : "false");
+  out << "{\n      \"solver\": ";
+  writeJsonString(out, snapshot.solver);
+  out << ",\n      \"available\": " << (snapshot.available ? "true" : "false");
   if (!snapshot.available) {
     out << ",\n      \"gap\": ";
     writeJsonString(out, snapshot.gap);
@@ -288,8 +298,7 @@ void writeSolverDiagnosticsJson(
     return;
   }
 
-  out << ",\n      \"solver\": \"ExactCoulombFbfConstraintSolver\",\n"
-         "      \"status\": ";
+  out << ",\n      \"status\": ";
   writeJsonString(out, snapshot.status);
   out << ",\n      \"fbf_status\": ";
   writeJsonString(out, snapshot.fbfStatus);

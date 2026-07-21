@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Capture and validate real DART visual evidence for the FBF paper scenes.
 
-The schedule in this file is the reproducible visual counterpart of the FBF
-paper-evidence manifest.  It drives the real ``dart-demos`` executable through
+The schedules in this file are the machine-readable visual coverage contract.
+They drive the real ``dart-demos`` executable through
 DemoHost's deterministic completed-step timeline, validates every PNG and JSON
 sidecar, then uses the repository image compositor and ffmpeg to make panels
 and motion artifacts.  It never synthesizes or substitutes scene imagery.
@@ -25,7 +25,6 @@ import shlex
 import subprocess
 import sys
 import tempfile
-from collections import Counter
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -41,12 +40,16 @@ from image_verdict import analyze_non_blank, build_verdict  # noqa: E402
 SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
 SOURCE_AUDIT_SCHEMA_VERSION = "dart.fbf_visual_source_audit/v1"
 SIDECAR_SCHEMA_VERSION = "dart.demos_headless_timeline/v1"
-MANIFEST_PATH = (
+SOLVER_LANES = ("exact", "boxed")
+EXACT_SOLVER_NAME = "ExactCoulombFbfConstraintSolver"
+BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
+BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
+COVERAGE_MATRIX_PATH = (
     ROOT
     / "docs"
     / "dev_tasks"
     / "fbf_exact_coulomb_friction"
-    / "paper-evidence-manifest.json"
+    / "PAPER_DEMO_VIDEO_MATRIX.md"
 )
 DEFAULT_DEMO = ROOT / "build/default/cpp/Release/bin/dart-demos"
 DEFAULT_FFMPEG = ROOT / ".pixi/envs/gazebo/bin/ffmpeg"
@@ -130,6 +133,25 @@ VIDEO_SEGMENTS = (
     SourceSegment("closing", 80, 82, "Thank You", "closing card"),
 )
 
+# Title and closing cards contain no simulation. Every other source-video
+# segment must have an explicit capture schedule. The author-pinned turntable
+# matrix is the primary four-cell reconstruction; the earlier paper-proxy
+# matrix remains available as a separate diagnostic lane.
+REQUIRED_VIDEO_SCHEDULES = {
+    "backspin": ("backspin",),
+    "incline": ("incline",),
+    "turntable": (
+        "turntable_author_mu02_omega2",
+        "turntable_author_mu02_omega5",
+        "turntable_author_mu05_omega2",
+        "turntable_author_mu05_omega5",
+    ),
+    "painleve": ("painleve_mu05", "painleve_mu055"),
+    "card_house_26": ("card_house_26",),
+    "masonry_arch_25": ("masonry_arch_25",),
+    "masonry_arch_101": ("masonry_arch_101",),
+}
+
 
 @dataclasses.dataclass(frozen=True)
 class ScheduledAction:
@@ -172,6 +194,10 @@ class CaptureSchedule:
     long_run: bool = False
     runnable: bool = True
     adapter_gap: str | None = None
+    solver_lane: str = "exact"
+    supported_solver_lanes: tuple[str, ...] = SOLVER_LANES
+    source_schedule_id: str | None = None
+    pre_run_actions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.total_steps < 0:
@@ -206,6 +232,24 @@ class CaptureSchedule:
                 f"{self.id}: runnable schedules have no adapter gap and blocked "
                 "schedules must explain one"
             )
+        if self.solver_lane not in SOLVER_LANES:
+            raise ValueError(f"{self.id}: unsupported solver lane {self.solver_lane!r}")
+        if (
+            not self.supported_solver_lanes
+            or len(set(self.supported_solver_lanes)) != len(self.supported_solver_lanes)
+            or any(lane not in SOLVER_LANES for lane in self.supported_solver_lanes)
+        ):
+            raise ValueError(f"{self.id}: invalid supported solver lanes")
+        if self.solver_lane not in self.supported_solver_lanes:
+            raise ValueError(
+                f"{self.id}: active solver lane is not listed as supported"
+            )
+        if self.solver_lane == "boxed" and self.exact_fbf_required:
+            raise ValueError(f"{self.id}: boxed lane cannot require exact FBF")
+        if self.source_schedule_id == self.id:
+            raise ValueError(f"{self.id}: derived source schedule cannot equal its id")
+        if any(len(key) != 1 for key in self.pre_run_actions):
+            raise ValueError(f"{self.id}: pre-run actions require one key character")
         if not self.mismatches:
             raise ValueError(f"{self.id}: source/reconstruction gaps must be explicit")
 
@@ -245,8 +289,9 @@ COMMON_DART_MISMATCH = (
     "DART renders its own float64 scene reconstructions under DART collision/"
     "scene contracts, not outputs from the authors' public Warp/Newton "
     "reference implementation or historical paper rendering setup.",
-    "Only the DART exact-FBF row is captured; faithful synchronized external-"
-    "solver renderings and approved source goldens remain separate evidence.",
+    "Each artifact contains one declared DART solver lane; faithful synchronized "
+    "external-solver renderings and approved source goldens remain separate "
+    "evidence.",
 )
 
 
@@ -399,6 +444,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         ),
         collision_detector="native",
         collision_detector_override=False,
+        supported_solver_lanes=("exact",),
     ),
     "turntable_author_mu02_omega5": CaptureSchedule(
         id="turntable_author_mu02_omega5",
@@ -429,6 +475,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         ),
         collision_detector="native",
         collision_detector_override=False,
+        supported_solver_lanes=("exact",),
     ),
     "turntable_author_mu05_omega2": CaptureSchedule(
         id="turntable_author_mu05_omega2",
@@ -459,6 +506,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         ),
         collision_detector="native",
         collision_detector_override=False,
+        supported_solver_lanes=("exact",),
     ),
     "turntable_author_mu05_omega5": CaptureSchedule(
         id="turntable_author_mu05_omega5",
@@ -489,6 +537,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         ),
         collision_detector="native",
         collision_detector_override=False,
+        supported_solver_lanes=("exact",),
     ),
     "painleve_mu05": CaptureSchedule(
         id="painleve_mu05",
@@ -600,6 +649,12 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "The paper omits absolute simulation times and projectile parameters; "
             "4 s settle plus 2 s postimpact is a declared local protocol.",
         ),
+        known_gate_blockers=(
+            "No completed strict six-second settle-and-crown-impact trajectory "
+            "has yet passed the 1e-6 residual and zero-fallback gates.",
+            "The interactive scene is a reduced-contact oriented-box "
+            "reconstruction, not the literal-wedge 100-contact paper contract.",
+        ),
         actions=(ScheduledAction(240, "p", "drop reconstructed crown projectile row"),),
         long_run=True,
     ),
@@ -622,6 +677,12 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "literal tapered wedges with exact inertia from the collision-only "
             "audit.",
             "No faithful matched Kamino collapse clip is available.",
+        ),
+        known_gate_blockers=(
+            "No completed strict ten-second standing trajectory has yet passed "
+            "the 1e-6 residual and zero-fallback gates.",
+            "The current literal-wedge exact attempt fails closed on its first "
+            "dynamic step; this reduced-contact visual proxy cannot replace it.",
         ),
         long_run=True,
     ),
@@ -649,6 +710,8 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         encode_mp4=False,
         exact_fbf_required=False,
         expect_motion=False,
+        solver_lane="boxed",
+        supported_solver_lanes=("boxed",),
     ),
     "card_house_author_5_construction": CaptureSchedule(
         id="card_house_author_5_construction",
@@ -686,6 +749,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         encode_mp4=False,
         exact_fbf_required=False,
         expect_motion=False,
+        supported_solver_lanes=("exact",),
     ),
     "card_house_10_dynamics": CaptureSchedule(
         id="card_house_10_dynamics",
@@ -759,6 +823,8 @@ class GroupOutputSpec:
     panel_step: int | None = None
     panel_steps: tuple[int, ...] | None = None
     panel_labels: tuple[str, ...] | None = None
+    solver_lane: str = "exact"
+    source_group_id: str | None = None
 
     def __post_init__(self) -> None:
         if len(self.members) != len(self.labels):
@@ -791,6 +857,10 @@ class GroupOutputSpec:
             self.members
         ):
             raise ValueError(f"{self.id}: panel labels and members differ")
+        if self.solver_lane not in SOLVER_LANES:
+            raise ValueError(f"{self.id}: unsupported solver lane {self.solver_lane!r}")
+        if self.source_group_id == self.id:
+            raise ValueError(f"{self.id}: derived source group cannot equal its id")
 
     @property
     def resolved_panel_steps(self) -> tuple[int, ...]:
@@ -846,6 +916,128 @@ GROUP_OUTPUTS: dict[str, GroupOutputSpec] = {
         panel_step=150,
     ),
 }
+
+
+def _boxed_schedule_id(schedule_id: str) -> str:
+    return f"{schedule_id}__boxed"
+
+
+def _expected_solver(schedule: CaptureSchedule) -> str:
+    return EXACT_SOLVER_NAME if schedule.solver_lane == "exact" else BOXED_SOLVER_NAME
+
+
+def _derive_boxed_schedule(schedule: CaptureSchedule) -> CaptureSchedule:
+    if (
+        schedule.solver_lane != "exact"
+        or "boxed" not in schedule.supported_solver_lanes
+    ):
+        raise ValueError(f"{schedule.id}: a boxed comparison cannot be derived")
+    return dataclasses.replace(
+        schedule,
+        id=_boxed_schedule_id(schedule.id),
+        title=f"{schedule.title} (boxed LCP comparison)",
+        mismatches=(
+            *schedule.mismatches,
+            "The boxed-LCP lane is a comparison capture, not exact-FBF evidence.",
+        ),
+        exact_fbf_required=False,
+        solver_lane="boxed",
+        supported_solver_lanes=("boxed",),
+        source_schedule_id=schedule.id,
+        pre_run_actions=("e",),
+    )
+
+
+def _resolve_solver_lanes(
+    schedules: Sequence[CaptureSchedule], requested: str
+) -> tuple[list[CaptureSchedule], list[dict[str, str]]]:
+    if requested not in (*SOLVER_LANES, "both"):
+        raise ValueError(f"unsupported solver lane {requested!r}")
+    requested_lanes = SOLVER_LANES if requested == "both" else (requested,)
+    resolved: list[CaptureSchedule] = []
+    skips: list[dict[str, str]] = []
+    for lane in requested_lanes:
+        for schedule in schedules:
+            if lane not in schedule.supported_solver_lanes:
+                skips.append(
+                    {
+                        "kind": "schedule",
+                        "schedule_id": schedule.id,
+                        "requested_solver_lane": lane,
+                        "reason": (
+                            "scene is exact-only"
+                            if schedule.supported_solver_lanes == ("exact",)
+                            else "scene is boxed-only"
+                        ),
+                    }
+                )
+                continue
+            if schedule.solver_lane == lane:
+                resolved.append(schedule)
+            elif lane == "boxed":
+                resolved.append(_derive_boxed_schedule(schedule))
+            else:
+                raise ValueError(
+                    f"{schedule.id}: cannot derive {lane!r} from "
+                    f"{schedule.solver_lane!r}"
+                )
+    return resolved, skips
+
+
+def _capture_output_dir(output_root: Path, schedule: CaptureSchedule) -> Path:
+    return output_root / schedule.id
+
+
+def _derive_boxed_group(group: GroupOutputSpec) -> GroupOutputSpec:
+    if group.id == "turntable_author":
+        raise ValueError(f"{group.id}: author-pinned output is exact-only")
+    return dataclasses.replace(
+        group,
+        id=f"{group.id}__boxed",
+        members=tuple(_boxed_schedule_id(member) for member in group.members),
+        solver_lane="boxed",
+        source_group_id=group.id,
+    )
+
+
+def _group_outputs_for_solver_lane(
+    requested: str,
+) -> tuple[list[GroupOutputSpec], list[dict[str, str]]]:
+    if requested not in (*SOLVER_LANES, "both"):
+        raise ValueError(f"unsupported solver lane {requested!r}")
+    groups: list[GroupOutputSpec] = []
+    skips: list[dict[str, str]] = []
+    if requested in ("exact", "both"):
+        groups.extend(GROUP_OUTPUTS.values())
+    if requested in ("boxed", "both"):
+        groups.extend(
+            _derive_boxed_group(GROUP_OUTPUTS[group_id])
+            for group_id in ("turntable", "painleve")
+        )
+        skips.append(
+            {
+                "kind": "group",
+                "group_id": "turntable_author",
+                "requested_solver_lane": "boxed",
+                "reason": "author-pinned turntable output is exact-only",
+            }
+        )
+    return groups, skips
+
+
+def _group_output_dir(output_root: Path, group: GroupOutputSpec) -> Path:
+    return output_root / "groups" / group.id
+
+
+def _schedule_for_id(schedule_id: str) -> CaptureSchedule:
+    if schedule_id in SCHEDULES:
+        return SCHEDULES[schedule_id]
+    suffix = "__boxed"
+    if schedule_id.endswith(suffix):
+        source_id = schedule_id[: -len(suffix)]
+        if source_id in SCHEDULES:
+            return _derive_boxed_schedule(SCHEDULES[source_id])
+    raise KeyError(schedule_id)
 
 
 def _sha256(path: Path) -> str:
@@ -956,6 +1148,9 @@ def build_demo_command(
             schedule.collision_detector,
         ]
 
+    for key in schedule.pre_run_actions:
+        command.extend(("--headless-action", key))
+
     # DemoHost guarantees captures-before-actions at a completed step.  Keep
     # the CLI in the same readable order so a 6.7 s pre-impact frame cannot be
     # confused with the action that follows it.
@@ -975,7 +1170,7 @@ def _shell_command(argv: Sequence[str]) -> str:
 def schedule_plan(
     schedule: CaptureSchedule, demo: Path, output_root: Path
 ) -> dict[str, Any]:
-    output_dir = output_root / schedule.id
+    output_dir = _capture_output_dir(output_root, schedule)
     command = (
         build_demo_command(schedule, demo, output_dir) if schedule.runnable else None
     )
@@ -984,6 +1179,10 @@ def schedule_plan(
         "title": schedule.title,
         "scene": schedule.scene,
         "source_segment": schedule.source_segment,
+        "solver_lane": schedule.solver_lane,
+        "supported_solver_lanes": list(schedule.supported_solver_lanes),
+        "source_schedule_id": schedule.source_schedule_id,
+        "expected_solver": _expected_solver(schedule),
         "collision_detector": schedule.collision_detector,
         "collision_detector_override": schedule.collision_detector_override,
         "configuration": schedule.configuration_dict(),
@@ -993,6 +1192,7 @@ def schedule_plan(
         "panel_steps": list(schedule.panel_steps),
         "panel_labels": list(schedule.panel_labels),
         "actions": [dataclasses.asdict(action) for action in schedule.actions],
+        "pre_run_actions": list(schedule.pre_run_actions),
         "output": {
             "directory": str(output_dir),
             "timeline": str(output_dir / "timeline.json"),
@@ -1008,7 +1208,12 @@ def schedule_plan(
         "paper_comparable": False,
         "known_mismatches": list(schedule.mismatches),
         "known_gate_blockers": list(schedule.known_gate_blockers),
-        "evidence_ready": schedule.runnable and not schedule.known_gate_blockers,
+        "comparison_capture": schedule.solver_lane == "boxed",
+        "evidence_ready": (
+            schedule.solver_lane == "exact"
+            and schedule.runnable
+            and not schedule.known_gate_blockers
+        ),
         "demo_argv": command,
         "demo_command": _shell_command(command) if command else None,
     }
@@ -1029,12 +1234,17 @@ def _validate_capture_claim_boundary(
     plan = metadata.get("schedule", {})
     plan_claims = {
         "source_segment": schedule.source_segment,
+        "solver_lane": schedule.solver_lane,
+        "supported_solver_lanes": list(schedule.supported_solver_lanes),
+        "source_schedule_id": schedule.source_schedule_id,
+        "expected_solver": _expected_solver(schedule),
         "configuration": schedule.configuration_dict(),
         "total_steps": schedule.total_steps,
         "time_step_seconds": schedule.time_step_seconds,
         "capture_steps": list(schedule.capture_steps),
         "panel_steps": list(schedule.panel_steps),
         "panel_labels": list(schedule.panel_labels),
+        "pre_run_actions": list(schedule.pre_run_actions),
         "collision_detector": schedule.collision_detector,
         "collision_detector_override": schedule.collision_detector_override,
         "actual_simulator_required": True,
@@ -1042,7 +1252,12 @@ def _validate_capture_claim_boundary(
         "paper_comparable": False,
         "known_mismatches": list(schedule.mismatches),
         "known_gate_blockers": list(schedule.known_gate_blockers),
-        "evidence_ready": schedule.runnable and not schedule.known_gate_blockers,
+        "comparison_capture": schedule.solver_lane == "boxed",
+        "evidence_ready": (
+            schedule.solver_lane == "exact"
+            and schedule.runnable
+            and not schedule.known_gate_blockers
+        ),
     }
     for key, expected in plan_claims.items():
         if not _claim_value_matches(plan.get(key), expected):
@@ -1084,8 +1299,16 @@ def _validate_runtime_visual_resources(
 
 
 def build_plan(
-    schedules: Iterable[CaptureSchedule], demo: Path, output_root: Path
+    schedules: Iterable[CaptureSchedule],
+    demo: Path,
+    output_root: Path,
+    *,
+    solver_lane: str = "exact",
+    groups: Iterable[GroupOutputSpec] | None = None,
+    solver_lane_skips: Sequence[dict[str, str]] = (),
 ) -> dict[str, Any]:
+    schedules = list(schedules)
+    groups = list(GROUP_OUTPUTS.values() if groups is None else groups)
     plans = [schedule_plan(schedule, demo, output_root) for schedule in schedules]
     return {
         "schema_version": SCHEMA_VERSION,
@@ -1093,16 +1316,20 @@ def build_plan(
         "source_contract": {
             "paper_video": "https://youtu.be/5THad4PAGmI",
             "paper": "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf",
-            "manifest": str(MANIFEST_PATH),
+            "coverage_matrix": str(COVERAGE_MATRIX_PATH),
             "video_segments": [
                 dataclasses.asdict(segment) for segment in VIDEO_SEGMENTS
             ],
         },
         "output_root": str(output_root),
+        "requested_solver_lane": solver_lane,
+        "solver_lane_skips": list(solver_lane_skips),
         "schedules": plans,
         "group_outputs": {
             group.id: {
                 "members": list(group.members),
+                "solver_lane": group.solver_lane,
+                "source_group_id": group.source_group_id,
                 "labels": list(group.labels),
                 "layout": (
                     "2x2 in source order"
@@ -1117,7 +1344,9 @@ def build_plan(
                             {
                                 "member": member,
                                 "step": step,
-                                "time_seconds": SCHEDULES[member].time_at_step(step),
+                                "time_seconds": _schedule_for_id(member).time_at_step(
+                                    step
+                                ),
                             }
                             for member, step in zip(
                                 group.members, group.resolved_panel_steps
@@ -1126,10 +1355,10 @@ def build_plan(
                     }
                 ),
                 "panel_labels": list(group.resolved_panel_labels),
-                "output_directory": str(output_root / "groups" / group.id),
+                "output_directory": str(_group_output_dir(output_root, group)),
                 "created_when_all_members_selected_and_successful": True,
             }
-            for group in GROUP_OUTPUTS.values()
+            for group in groups
         },
         "pass": True,
         "all_schedules_runnable": all(plan["runnable"] for plan in plans),
@@ -1183,8 +1412,21 @@ def _validate_diagnostics(
     diagnostics: dict[str, Any],
     *,
     exact_required: bool,
+    solver_lane: str,
     label: str,
 ) -> None:
+    expected_solver = EXACT_SOLVER_NAME if solver_lane == "exact" else BOXED_SOLVER_NAME
+    if diagnostics.get("solver") != expected_solver:
+        raise ValueError(
+            f"{label}: active solver {diagnostics.get('solver')!r} differs from "
+            f"the {solver_lane} lane"
+        )
+    if solver_lane == "boxed":
+        if diagnostics.get("available") is not False:
+            raise ValueError(f"{label}: boxed lane exposes exact-FBF diagnostics")
+        if diagnostics.get("gap") != BOXED_DIAGNOSTICS_GAP:
+            raise ValueError(f"{label}: boxed diagnostic gap is unavailable or stale")
+        return
     if not exact_required:
         return
     if not diagnostics.get("available"):
@@ -1327,6 +1569,7 @@ def validate_sidecar(
         _validate_diagnostics(
             diagnostics,
             exact_required=schedule.exact_fbf_required,
+            solver_lane=schedule.solver_lane,
             label=f"trajectory step {step}",
         )
         diagnostics_by_step[step] = diagnostics
@@ -1432,6 +1675,7 @@ def validate_sidecar(
         _validate_diagnostics(
             diagnostics,
             exact_required=schedule.exact_fbf_required,
+            solver_lane=schedule.solver_lane,
             label=f"step {step}",
         )
 
@@ -1445,6 +1689,7 @@ def validate_sidecar(
     _validate_diagnostics(
         final_diagnostics,
         exact_required=schedule.exact_fbf_required,
+        solver_lane=schedule.solver_lane,
         label="final diagnostics",
     )
     if (
@@ -1898,6 +2143,8 @@ def _validate_group_claim_boundary(
 ) -> None:
     claims = {
         "source_segment": group.source_segment,
+        "solver_lane": group.solver_lane,
+        "source_group_id": group.source_group_id,
         "actual_simulator": True,
         "generated_imagery": False,
         "paper_comparable": False,
@@ -2410,6 +2657,8 @@ def run_group_output(
         "kind": "group_capture_result",
         "group_id": group.id,
         "source_segment": group.source_segment,
+        "solver_lane": group.solver_lane,
+        "source_group_id": group.source_group_id,
         "layout": group.layout,
         "member_order": list(group.members),
         "labels": list(group.labels),
@@ -2439,64 +2688,80 @@ def run_group_output(
     return report
 
 
-def audit_manifest(path: Path = MANIFEST_PATH) -> dict[str, Any]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    requirements = data.get("requirements", [])
-    requirement_ids = {requirement.get("id") for requirement in requirements}
-    expected_ids = {
-        "fig.02",
-        "fig.03",
-        "fig.04",
-        "fig.05",
-        "fig.06",
-        "fig.07",
-        "fig.08",
-        "large_scale.arch_101",
-        "large_scale.card_house_10",
-        "video.02_backspin",
-        "video.03_incline",
-        "video.04_turntable",
-        "video.05_painleve",
-        "video.06_card_house",
-        "video.07_arch_25",
-        "video.08_arch_101",
-    }
-    missing = sorted(expected_ids - requirement_ids)
-    if missing:
-        raise ValueError(f"{path}: missing visual requirements {missing}")
+def audit_coverage_contract() -> dict[str, Any]:
+    """Validate the in-code source-video-to-demo coverage contract."""
 
-    manifest_segments = {
-        requirement["id"]: (
-            requirement.get("source", {}).get("start_seconds"),
-            requirement.get("source", {}).get("end_seconds"),
-        )
-        for requirement in requirements
-        if requirement.get("id", "").startswith("video.")
-    }
-    expected_segments = {
-        "video.01_title": (0, 2),
-        "video.02_backspin": (2, 24),
-        "video.03_incline": (24, 35),
-        "video.04_turntable": (35, 50),
-        "video.05_painleve": (50, 60),
-        "video.06_card_house": (60, 67),
-        "video.07_arch_25": (67, 74),
-        "video.08_arch_101": (74, 80),
-        "video.09_closing": (80, 82),
-    }
-    if manifest_segments != expected_segments:
-        raise ValueError(f"{path}: video segment boundaries drifted")
-    statuses = Counter(
-        requirement.get("status", "missing") for requirement in requirements
+    segment_ids = [segment.id for segment in VIDEO_SEGMENTS]
+    if len(segment_ids) != len(set(segment_ids)):
+        raise ValueError("source video segment identifiers are not unique")
+    if VIDEO_SEGMENTS[0].start_seconds != 0 or VIDEO_SEGMENTS[-1].end_seconds != 82:
+        raise ValueError("source video segments must cover 0 through 82 seconds")
+    if any(
+        left.end_seconds != right.start_seconds
+        for left, right in zip(VIDEO_SEGMENTS, VIDEO_SEGMENTS[1:])
+    ):
+        raise ValueError("source video segments are not contiguous")
+
+    missing_schedules = sorted(
+        schedule_id
+        for schedule_ids in REQUIRED_VIDEO_SCHEDULES.values()
+        for schedule_id in schedule_ids
+        if schedule_id not in SCHEDULES
     )
+    if missing_schedules:
+        raise ValueError(f"missing required visual schedules {missing_schedules}")
+
+    wrong_segments = sorted(
+        schedule_id
+        for segment_id, schedule_ids in REQUIRED_VIDEO_SCHEDULES.items()
+        for schedule_id in schedule_ids
+        if SCHEDULES[schedule_id].source_segment != segment_id
+    )
+    if wrong_segments:
+        raise ValueError(
+            f"visual schedules mapped to the wrong segment {wrong_segments}"
+        )
+
+    required_ids = tuple(
+        schedule_id
+        for schedule_ids in REQUIRED_VIDEO_SCHEDULES.values()
+        for schedule_id in schedule_ids
+    )
+    non_runnable = [
+        schedule_id
+        for schedule_id in required_ids
+        if not SCHEDULES[schedule_id].runnable
+    ]
+    without_mp4 = [
+        schedule_id
+        for schedule_id in required_ids
+        if not SCHEDULES[schedule_id].encode_mp4
+    ]
+    gate_blocked = [
+        schedule_id
+        for schedule_id in required_ids
+        if SCHEDULES[schedule_id].known_gate_blockers
+    ]
     return {
-        "path": str(path),
-        "schema_version": data.get("schema_version"),
-        "overall_status": data.get("overall_status"),
-        "requirement_count": len(requirements),
-        "status_counts": dict(sorted(statuses.items())),
-        "video_segments": manifest_segments,
-        "visual_requirements_present": sorted(expected_ids),
+        "schema_version": SCHEMA_VERSION,
+        "coverage_matrix": str(COVERAGE_MATRIX_PATH),
+        "video_segments": {
+            f"video.{index:02d}_{segment.id}": (
+                segment.start_seconds,
+                segment.end_seconds,
+            )
+            for index, segment in enumerate(VIDEO_SEGMENTS, start=1)
+        },
+        "required_video_schedules": {
+            segment_id: list(schedule_ids)
+            for segment_id, schedule_ids in REQUIRED_VIDEO_SCHEDULES.items()
+        },
+        "required_schedule_count": len(required_ids),
+        "non_runnable_schedules": non_runnable,
+        "schedules_without_mp4": without_mp4,
+        "known_gate_blocked_schedules": gate_blocked,
+        "capture_path_complete": not non_runnable and not without_mp4,
+        "evidence_complete": not non_runnable and not without_mp4 and not gate_blocked,
         "pass": True,
     }
 
@@ -2506,11 +2771,10 @@ def audit_sources(
     video: Path,
     teaser: Path,
     paper: Path | None,
-    manifest: Path,
     ffmpeg: Path,
     ffprobe: Path,
 ) -> dict[str, Any]:
-    for path in (video, teaser, manifest, ffmpeg, ffprobe):
+    for path in (video, teaser, ffmpeg, ffprobe):
         if not path.is_file():
             raise FileNotFoundError(path)
     probe = _probe_media(video, ffprobe)
@@ -2617,7 +2881,7 @@ def audit_sources(
             ),
         },
         "paper": paper_report,
-        "manifest": audit_manifest(manifest),
+        "coverage_contract": audit_coverage_contract(),
         "segments": [dataclasses.asdict(segment) for segment in VIDEO_SEGMENTS],
         "semantic_observations": {
             "turntable": VIDEO_SEGMENTS[3].layout,
@@ -2655,6 +2919,15 @@ def _common_capture_arguments(parser: argparse.ArgumentParser) -> None:
         default=[],
         help="schedule id, all, or all-runnable; repeat to select several",
     )
+    parser.add_argument(
+        "--solver-lane",
+        choices=(*SOLVER_LANES, "both"),
+        default="exact",
+        help=(
+            "capture exact FBF, the existing boxed-LCP comparison, or both; "
+            "exact-only and boxed-only scenes are reported as explicit skips"
+        ),
+    )
     parser.add_argument("--demo", type=Path, default=DEFAULT_DEMO)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
 
@@ -2690,12 +2963,11 @@ def _build_parser() -> argparse.ArgumentParser:
     verify_parser.add_argument("--out", type=Path)
 
     audit_parser = subparsers.add_parser(
-        "audit-source", help="audit the official local video/teaser and manifest"
+        "audit-source", help="audit the official local video/teaser and coverage"
     )
     audit_parser.add_argument("--video", type=Path, required=True)
     audit_parser.add_argument("--teaser", type=Path, required=True)
     audit_parser.add_argument("--paper", type=Path)
-    audit_parser.add_argument("--manifest", type=Path, default=MANIFEST_PATH)
     audit_parser.add_argument("--ffmpeg", type=Path, default=DEFAULT_FFMPEG)
     audit_parser.add_argument("--ffprobe", type=Path, default=DEFAULT_FFPROBE)
     audit_parser.add_argument("--out", type=Path)
@@ -3021,14 +3293,44 @@ def main(argv: Sequence[str] | None = None) -> int:
                 video=args.video,
                 teaser=args.teaser,
                 paper=args.paper,
-                manifest=args.manifest,
                 ffmpeg=args.ffmpeg,
                 ffprobe=args.ffprobe,
             )
         else:
-            schedules = _select_schedules(args.scenario)
+            source_schedules = _select_schedules(args.scenario)
+            schedules, schedule_lane_skips = _resolve_solver_lanes(
+                source_schedules, args.solver_lane
+            )
+            candidate_groups, group_lane_skips = _group_outputs_for_solver_lane(
+                args.solver_lane
+            )
+            selected_ids = {schedule.id for schedule in schedules}
+            selected_source_ids = {schedule.id for schedule in source_schedules}
+            groups = [
+                group
+                for group in candidate_groups
+                if set(group.members).issubset(selected_ids)
+            ]
+            relevant_group_lane_skips = [
+                skip
+                for skip in group_lane_skips
+                if set(GROUP_OUTPUTS[skip["group_id"]].members).issubset(
+                    selected_source_ids
+                )
+            ]
+            solver_lane_skips = [
+                *schedule_lane_skips,
+                *relevant_group_lane_skips,
+            ]
             if args.command == "plan" or (args.command == "run" and args.dry_run):
-                payload = build_plan(schedules, args.demo, args.output_root)
+                payload = build_plan(
+                    schedules,
+                    args.demo,
+                    args.output_root,
+                    solver_lane=args.solver_lane,
+                    groups=groups,
+                    solver_lane_skips=solver_lane_skips,
+                )
             elif args.command == "run":
                 results = []
                 failures = []
@@ -3053,21 +3355,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                         failures.append({"schedule": schedule.id, "error": str(error)})
                         if not args.keep_going:
                             raise
-                selected_ids = {schedule.id for schedule in schedules}
                 successful_ids = {
                     result.get("schedule", {}).get("id") for result in results
                 }
                 group_results = []
                 group_skips = []
-                for group in GROUP_OUTPUTS.values():
-                    if not set(group.members).issubset(selected_ids):
-                        continue
+                for group in groups:
                     failed_members = sorted(set(group.members) - successful_ids)
                     if failed_members:
                         (
-                            args.output_root.resolve()
-                            / "groups"
-                            / group.id
+                            _group_output_dir(args.output_root.resolve(), group)
                             / "metadata.json"
                         ).unlink(missing_ok=True)
                         group_skips.append(
@@ -3082,7 +3379,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                         group_results.append(
                             run_group_output(
                                 group,
-                                [SCHEDULES[member] for member in group.members],
+                                [_schedule_for_id(member) for member in group.members],
                                 output_root=args.output_root,
                                 ffmpeg=args.ffmpeg,
                                 ffprobe=args.ffprobe,
@@ -3100,6 +3397,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 payload = {
                     "schema_version": SCHEMA_VERSION,
                     "kind": "capture_run",
+                    "requested_solver_lane": args.solver_lane,
+                    "solver_lane_skips": solver_lane_skips,
                     "results": results,
                     "group_outputs": group_results,
                     "group_skips": group_skips,
@@ -3117,21 +3416,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                     for schedule in schedules
                 ]
-                selected_ids = {schedule.id for schedule in schedules}
                 group_results = [
                     _verify_existing_group(
                         group,
-                        [SCHEDULES[member] for member in group.members],
+                        [_schedule_for_id(member) for member in group.members],
                         output_root=args.output_root,
                         ffmpeg=args.ffmpeg,
                         ffprobe=args.ffprobe,
                     )
-                    for group in GROUP_OUTPUTS.values()
-                    if set(group.members).issubset(selected_ids)
+                    for group in groups
                 ]
                 payload = {
                     "schema_version": SCHEMA_VERSION,
                     "kind": "verification",
+                    "requested_solver_lane": args.solver_lane,
+                    "solver_lane_skips": solver_lane_skips,
                     "results": results,
                     "group_outputs": group_results,
                     "pass": True,

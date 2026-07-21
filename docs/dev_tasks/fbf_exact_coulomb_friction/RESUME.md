@@ -33,7 +33,7 @@ and the visual bundle count remains six.
 5. `docs/dev_tasks/fbf_exact_coulomb_friction/PR_REPORT.md`
 6. `docs/dev_tasks/fbf_exact_coulomb_friction/gui-capture-report.md`
 7. `docs/dev_tasks/fbf_exact_coulomb_friction/residual-history-report.md`
-8. `docs/dev_tasks/fbf_exact_coulomb_friction/paper-evidence-manifest.json`
+8. `docs/dev_tasks/fbf_exact_coulomb_friction/PAPER_DEMO_VIDEO_MATRIX.md`
 
 Inspect and preserve any existing worktree changes. The durable branch state is:
 
