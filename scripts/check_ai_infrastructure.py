@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -576,33 +578,67 @@ def check_path_references(root: Path, errors: list[str]) -> None:
                     )
 
 
+def markdown_targets_from_text(content: str) -> list[tuple[int, str]]:
+    """Return inline/image and reference-definition targets from Markdown."""
+    inline_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]*)\)")
+    reference_pattern = re.compile(r"^\s{0,3}\[[^\]]+\]:[ \t]*(.*)$")
+    destination_pattern = re.compile(r"^(<[^>]+>|\S+)")
+    targets: list[tuple[int, str]] = []
+    pending_reference_line: int | None = None
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        raw_targets = inline_pattern.findall(line)
+        reference = reference_pattern.match(line)
+        if reference:
+            pending_reference_line = None
+            remainder = reference.group(1)
+            destination = destination_pattern.match(remainder)
+            if destination:
+                raw_targets.append(destination.group(1))
+            elif not remainder:
+                pending_reference_line = line_number
+        elif pending_reference_line is not None:
+            destination = destination_pattern.match(line.lstrip(" \t"))
+            if destination:
+                raw_targets.append(destination.group(1))
+            pending_reference_line = None
+        for raw_target in raw_targets:
+            value = raw_target.strip()
+            if value.startswith("<") and ">" in value:
+                target = value[1 : value.index(">")]
+            else:
+                target = value.split(maxsplit=1)[0] if value else ""
+            if target:
+                targets.append((line_number, target))
+    return targets
+
+
+def markdown_targets(path: Path) -> list[tuple[int, str]]:
+    """Return inline/image and reference-definition targets from a Markdown file."""
+    return markdown_targets_from_text(path.read_text(encoding="utf-8"))
+
+
 def markdown_link_errors(root: Path, path: Path) -> list[str]:
     """Return broken repository-relative Markdown links for one source file."""
     errors: list[str] = []
-    link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-    for line_number, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), start=1
-    ):
-        for raw_target in link_pattern.findall(line):
-            target = raw_target.strip().strip("<>").split(maxsplit=1)[0]
-            if not target or target.startswith(
-                ("#", "/", "http://", "https://", "mailto:")
-            ):
-                continue
-            relative = unquote(target.split("#", 1)[0])
-            resolved = (path.parent / relative).resolve()
-            try:
-                resolved.relative_to(root)
-            except ValueError:
-                errors.append(
-                    f"{path.relative_to(root)}:{line_number}: link escapes repository "
-                    f"`{target}`"
-                )
-                continue
-            if not resolved.exists():
-                errors.append(
-                    f"{path.relative_to(root)}:{line_number}: broken link `{target}`"
-                )
+    for line_number, target in markdown_targets(path):
+        if not target or target.startswith(
+            ("#", "/", "http://", "https://", "mailto:")
+        ):
+            continue
+        relative = unquote(target.split("#", 1)[0])
+        resolved = (path.parent / relative).resolve()
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            errors.append(
+                f"{path.relative_to(root)}:{line_number}: link escapes repository "
+                f"`{target}`"
+            )
+            continue
+        if not resolved.exists():
+            errors.append(
+                f"{path.relative_to(root)}:{line_number}: broken link `{target}`"
+            )
     return errors
 
 
@@ -610,6 +646,155 @@ def check_markdown_links(root: Path, errors: list[str]) -> None:
     for path in source_paths(root):
         if path.is_file() and path.suffix == ".md":
             errors.extend(markdown_link_errors(root, path))
+
+
+def staged_ignore_policy_errors(root: Path, tracked_paths: list[Path]) -> list[str]:
+    """Validate task evidence ignores using only the staged Git snapshot."""
+    errors: list[str] = []
+    policy_path = Path("docs/dev_tasks/.gitignore")
+    ignore_blobs: dict[Path, bytes] = {}
+    ignore_texts: dict[Path, str] = {}
+    for relative in tracked_paths:
+        if relative.name != ".gitignore":
+            continue
+        result = subprocess.run(
+            ["git", "show", f":{relative.as_posix()}"],
+            cwd=root,
+            capture_output=True,
+        )
+        if result.returncode != 0:
+            errors.append(f"{relative.as_posix()}: unable to read staged ignore policy")
+            continue
+        ignore_blobs[relative] = result.stdout
+        try:
+            ignore_texts[relative] = result.stdout.decode("utf-8")
+        except UnicodeDecodeError:
+            errors.append(f"{relative.as_posix()}: staged ignore policy is not UTF-8")
+
+    if policy_path not in tracked_paths:
+        errors.append("docs/dev_tasks/.gitignore: task evidence policy is not tracked")
+    elif policy_path not in ignore_blobs:
+        errors.append(
+            "docs/dev_tasks/.gitignore: staged task evidence policy is unreadable"
+        )
+    elif policy_path in ignore_texts:
+        rules = {
+            line.strip()
+            for line in ignore_texts[policy_path].splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+        if "**/assets/" not in rules:
+            errors.append(
+                "docs/dev_tasks/.gitignore: missing role-based `**/assets/` rule"
+            )
+
+    for relative, content in ignore_texts.items():
+        if relative.parts[:2] != ("docs", "dev_tasks"):
+            continue
+        for line_number, line in enumerate(content.splitlines(), start=1):
+            if line.startswith("!"):
+                errors.append(
+                    f"{relative.as_posix()}:{line_number}: staged negation rule "
+                    f"is not allowed under docs/dev_tasks `{line}`"
+                )
+
+    if len(ignore_texts) != len(ignore_blobs) or any(
+        "unable to read staged ignore policy" in error for error in errors
+    ):
+        return errors
+
+    with tempfile.TemporaryDirectory(prefix="dart-staged-ignore-") as temporary:
+        staged_worktree = Path(temporary)
+        for relative, content in ignore_blobs.items():
+            snapshot = staged_worktree / relative
+            snapshot.parent.mkdir(parents=True, exist_ok=True)
+            snapshot.write_bytes(content)
+
+        probe = "docs/dev_tasks/__policy_probe__/assets/"
+        result = subprocess.run(
+            [
+                "git",
+                f"--work-tree={staged_worktree}",
+                "check-ignore",
+                "--no-index",
+                "--quiet",
+                "--",
+                probe,
+            ],
+            cwd=root,
+        )
+        if result.returncode == 1:
+            errors.append(
+                "docs/dev_tasks/.gitignore: task assets are not effectively ignored"
+            )
+        elif result.returncode != 0:
+            errors.append("unable to evaluate staged task evidence policy")
+    return errors
+
+
+def dev_task_evidence_policy_errors(root: Path) -> list[str]:
+    """Reject tracked or repository-linked generated task evidence."""
+    errors: list[str] = []
+    dev_tasks_root = root / "docs" / "dev_tasks"
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--"],
+        cwd=root,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        errors.append("unable to enumerate tracked files for task evidence policy")
+        return errors
+
+    tracked_paths = [
+        Path(os.fsdecode(raw_path))
+        for raw_path in result.stdout.split(b"\0")
+        if raw_path
+    ]
+    errors.extend(staged_ignore_policy_errors(root, tracked_paths))
+
+    for relative in tracked_paths:
+        if (
+            relative.parts[:2] == ("docs", "dev_tasks")
+            and "assets" in relative.parts[2:]
+        ):
+            errors.append(f"{relative.as_posix()}: generated task evidence is tracked")
+            continue
+        path = root / relative
+        if path.suffix != ".md":
+            continue
+        result = subprocess.run(
+            ["git", "show", f":{relative.as_posix()}"],
+            cwd=root,
+            capture_output=True,
+        )
+        if result.returncode != 0:
+            errors.append(f"{relative.as_posix()}: unable to read staged Markdown")
+            continue
+        try:
+            content = result.stdout.decode("utf-8")
+        except UnicodeDecodeError:
+            errors.append(f"{relative.as_posix()}: staged Markdown is not UTF-8")
+            continue
+        for line_number, target in markdown_targets_from_text(content):
+            if not target or target.startswith(
+                ("#", "/", "http://", "https://", "mailto:")
+            ):
+                continue
+            resolved = (path.parent / unquote(target.split("#", 1)[0])).resolve()
+            try:
+                task_relative = resolved.relative_to(dev_tasks_root.resolve())
+            except ValueError:
+                continue
+            if "assets" in task_relative.parts:
+                errors.append(
+                    f"{relative.as_posix()}:{line_number}: link targets ignored "
+                    f"task evidence `{target}`"
+                )
+    return errors
+
+
+def check_dev_task_evidence_policy(root: Path, errors: list[str]) -> None:
+    errors.extend(dev_task_evidence_policy_errors(root))
 
 
 def tracked_agent_files(root: Path) -> list[Path]:
@@ -867,6 +1052,7 @@ def run_checks(root: Path) -> list[str]:
     check_pixi_references(root, errors)
     check_path_references(root, errors)
     check_markdown_links(root, errors)
+    check_dev_task_evidence_policy(root, errors)
     check_instruction_budget(root, errors)
     check_release_guidance(root, errors)
     check_ci_wiring(root, errors)

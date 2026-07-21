@@ -558,6 +558,152 @@ def test_broken_relative_markdown_link_is_rejected(tmp_path):
     assert any("broken link" in error for error in errors)
 
 
+def test_dev_task_evidence_policy_rejects_tracked_assets_and_links(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    task = tmp_path / "docs" / "dev_tasks" / "example"
+    asset = task / "assets" / "raw.csv"
+    asset.parent.mkdir(parents=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+    asset.write_text("raw\n", encoding="utf-8")
+    (task / "README.md").write_text("![](assets/raw.csv)\n", encoding="utf-8")
+    outside = tmp_path / "docs" / "guide.md"
+    outside.write_text(
+        "![raw][task-raw]\n" "[task-raw]:\n" "  dev_tasks/example/assets/raw.csv\n",
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "docs/dev_tasks/.gitignore"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "docs/guide.md"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "-f", "docs/dev_tasks/example"],
+        check=True,
+    )
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("generated task evidence is tracked" in error for error in errors)
+    assert sum("link targets ignored task evidence" in error for error in errors) == 2
+
+
+def test_dev_task_evidence_policy_accepts_inline_paths_and_docs_assets(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    task = tmp_path / "docs" / "dev_tasks" / "example"
+    published = tmp_path / "docs" / "assets" / "published.png"
+    task.mkdir(parents=True)
+    published.parent.mkdir(parents=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+    published.write_bytes(b"png")
+    (task / "README.md").write_text(
+        "Local `assets/raw.csv`; [published](../../assets/published.png).\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+
+    assert infra.dev_task_evidence_policy_errors(tmp_path) == []
+
+
+def test_dev_task_evidence_policy_requires_role_based_ignore_rule(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    ignore.parent.mkdir(parents=True)
+    ignore.write_text("# missing policy\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("missing role-based `**/assets/` rule" in error for error in errors)
+
+
+def test_dev_task_evidence_policy_rejects_untracked_policy_file(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    ignore.parent.mkdir(parents=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("task evidence policy is not tracked" in error for error in errors)
+
+
+def test_dev_task_evidence_policy_rejects_ineffective_negation(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    ignore.parent.mkdir(parents=True)
+    ignore.write_text("**/assets/\n!**/assets/\n!**/assets/**\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any(
+        "docs/dev_tasks/.gitignore:2: staged negation rule" in error for error in errors
+    )
+    assert any("task assets are not effectively ignored" in error for error in errors)
+
+
+def test_dev_task_evidence_policy_rejects_nested_task_unignore(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    root_ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    task = tmp_path / "docs" / "dev_tasks" / "example"
+    task.mkdir(parents=True)
+    root_ignore.write_text("**/assets/\n", encoding="utf-8")
+    (task / ".gitignore").write_text(
+        "!assets/\nassets/*\n!assets/*.csv\n", encoding="utf-8"
+    )
+    (task / "README.md").write_text("task\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any(
+        "docs/dev_tasks/example/.gitignore:3: staged negation rule" in error
+        and "!assets/*.csv" in error
+        for error in errors
+    )
+
+
+def test_dev_task_evidence_policy_validates_staged_policy_content(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    ignore.parent.mkdir(parents=True)
+    ignore.write_text("# staged policy is invalid\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("missing role-based `**/assets/` rule" in error for error in errors)
+
+
+def test_dev_task_evidence_policy_reads_staged_markdown_content(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    task = tmp_path / "docs" / "dev_tasks" / "example"
+    task.mkdir(parents=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+    readme = task / "README.md"
+    readme.write_text("[raw](assets/raw.csv)\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    readme.write_text("Local `assets/raw.csv`.\n", encoding="utf-8")
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("link targets ignored task evidence" in error for error in errors)
+
+
+def test_dev_task_evidence_policy_fails_closed_outside_git(tmp_path):
+    ignore = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    ignore.parent.mkdir(parents=True)
+    ignore.write_text("**/assets/\n", encoding="utf-8")
+
+    errors = infra.dev_task_evidence_policy_errors(tmp_path)
+
+    assert any("unable to enumerate tracked files" in error for error in errors)
+
+
 def test_expected_agent_set_is_small_and_release_specific():
     assert infra.EXPECTED_AGENTS == {
         "dart_release_auditor",
@@ -1289,7 +1435,7 @@ def test_staged_ai_deletion_runs_infrastructure_checks(tmp_path, monkeypatch):
     subprocess.run(["git", "-C", str(tmp_path), "add", "-u"], check=True)
     calls = []
 
-    def record(command, root):
+    def record(command, root, env=None):
         calls.append((command, root))
         return 0
 
@@ -1325,6 +1471,63 @@ def test_staged_ai_deletion_with_untracked_replacement_is_rejected(tmp_path):
     assert hook.run_staged(tmp_path) == 2
 
 
+def test_staged_hook_binds_source_repo_for_task_evidence_policy(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    policy = tmp_path / "docs" / "dev_tasks" / ".gitignore"
+    task = tmp_path / "docs" / "dev_tasks" / "example"
+    task.mkdir(parents=True)
+    policy.write_text("**/assets/\n", encoding="utf-8")
+    (task / "README.md").write_text("Local evidence only.\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    policy_results = []
+
+    def run_policy(command, snapshot, env=None):
+        if command[1].endswith("sync_ai_commands.py"):
+            assert env is None
+            return 0
+        assert command[1].endswith("check_ai_infrastructure.py")
+        assert env is not None
+        assert Path(env["GIT_DIR"]).is_dir()
+        assert Path(env["GIT_WORK_TREE"]).resolve() == snapshot.resolve()
+        with monkeypatch.context() as git_environment:
+            git_environment.setenv("GIT_DIR", env["GIT_DIR"])
+            git_environment.setenv("GIT_WORK_TREE", env["GIT_WORK_TREE"])
+            git_environment.delenv("GIT_PREFIX", raising=False)
+            if "GIT_INDEX_FILE" in env:
+                git_environment.setenv("GIT_INDEX_FILE", env["GIT_INDEX_FILE"])
+            errors = infra.dev_task_evidence_policy_errors(snapshot)
+        policy_results.append(errors)
+        return 2 if errors else 0
+
+    monkeypatch.setattr(hook, "run_checked", run_policy)
+
+    assert hook.run_staged(tmp_path) == 0
+    assert policy_results[-1] == []
+
+    asset = task / "assets" / "raw.csv"
+    asset.parent.mkdir(parents=True)
+    asset.write_text("raw\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "-f", "docs/dev_tasks/example/assets"],
+        check=True,
+    )
+
+    assert hook.run_staged(tmp_path) == 2
+    assert any(
+        "generated task evidence is tracked" in error for error in policy_results[-1]
+    )
+
+
+def test_staged_repository_environment_rejects_non_git_source(tmp_path):
+    source = tmp_path / "source"
+    snapshot = tmp_path / "snapshot"
+    source.mkdir()
+    snapshot.mkdir()
+
+    with pytest.raises(RuntimeError, match="source repository"):
+        hook.staged_repository_environment(source, snapshot)
+
+
 def test_staged_rename_out_of_ai_scope_still_runs_checks(tmp_path, monkeypatch):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     subprocess.run(
@@ -1356,7 +1559,7 @@ def test_staged_rename_out_of_ai_scope_still_runs_checks(tmp_path, monkeypatch):
     )
     calls = []
 
-    def record(command, root):
+    def record(command, root, env=None):
         calls.append((command, root))
         return 0
 
