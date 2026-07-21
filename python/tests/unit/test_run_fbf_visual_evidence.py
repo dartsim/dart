@@ -222,6 +222,22 @@ def test_schedule_matrix_covers_every_requested_visual_case():
     assert module.PAINLEVE_MEMBERS == ("painleve_mu05", "painleve_mu055")
 
 
+def test_incline_mismatch_distinguishes_render_and_trace_contact_counts():
+    module = _load_module()
+    mismatches = module.SCHEDULES["incline"].mismatches
+
+    assert any(
+        "eight contacts per post-initial step in aggregate" in mismatch
+        and "three contacts per post-initial step" in mismatch
+        and "four per cell in the paper timing row" in mismatch
+        for mismatch in mismatches
+    )
+    assert all(
+        "current collision frontend reports three contacts per cell" not in mismatch
+        for mismatch in mismatches
+    )
+
+
 def test_solver_lane_resolution_derives_boxed_and_records_static_skips():
     module = _load_module()
     source = [
@@ -337,8 +353,45 @@ def test_main_plan_both_emits_lane_separated_schedule_ids(tmp_path, capsys):
         "backspin",
         "backspin__boxed",
     ]
-    assert payload["group_outputs"] == {}
+    assert set(payload["group_outputs"]) == {"backspin__exact_vs_boxed"}
+    comparison = payload["group_outputs"]["backspin__exact_vs_boxed"]
+    assert comparison["members"] == ["backspin", "backspin__boxed"]
+    assert comparison["solver_lane"] == "both"
+    assert comparison["labels"] == list(module.SOLVER_COMPARISON_LABELS)
+    assert comparison["panel_labels"] == list(module.SOLVER_COMPARISON_LABELS)
+    assert comparison["layout"] == "two synchronized solver lanes"
+    assert comparison["panel_step"] == module.SCHEDULES["backspin"].panel_steps[-1]
     assert payload["solver_lane_skips"] == []
+
+
+@pytest.mark.parametrize(
+    ("solver_lane", "expected_schedule_id"),
+    [("exact", "backspin"), ("boxed", "backspin__boxed")],
+)
+def test_main_plan_single_lane_excludes_solver_comparison(
+    tmp_path, capsys, solver_lane, expected_schedule_id
+):
+    module = _load_module()
+
+    result = module.main(
+        [
+            "plan",
+            "--scenario",
+            "backspin",
+            "--solver-lane",
+            solver_lane,
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert payload["requested_solver_lane"] == solver_lane
+    assert [schedule["id"] for schedule in payload["schedules"]] == [
+        expected_schedule_id
+    ]
+    assert payload["group_outputs"] == {}
 
 
 def test_demo_sidecar_records_exact_and_boxed_solver_identity():
@@ -742,6 +795,108 @@ def test_group_output_spec_rejects_ambiguous_or_misaligned_panel_steps():
         module.dataclasses.replace(group, panel_steps=(136, 120, 360, -1))
     with pytest.raises(ValueError, match="panel labels and members differ"):
         module.dataclasses.replace(group, panel_labels=("one",))
+
+
+def test_solver_comparison_group_derivation_binds_exact_then_boxed():
+    module = _load_module()
+    schedule = module.SCHEDULES["backspin"]
+
+    group = module._derive_solver_comparison_group(schedule)
+
+    assert group.id == "backspin__exact_vs_boxed"
+    assert group.source_segment == schedule.source_segment
+    assert group.members == ("backspin", "backspin__boxed")
+    assert group.labels == module.SOLVER_COMPARISON_LABELS
+    assert group.resolved_panel_labels == module.SOLVER_COMPARISON_LABELS
+    assert group.layout == "side-by-side"
+    assert group.panel_step == schedule.panel_steps[-1]
+    assert group.solver_lane == "both"
+    assert group.source_group_id is None
+
+    assert module._solver_comparison_groups([schedule], "both") == [group]
+    assert module._solver_comparison_groups([schedule], "exact") == []
+    assert module._solver_comparison_groups([schedule], "boxed") == []
+
+
+def test_solver_comparison_group_rejects_unsupported_sources_and_contracts():
+    module = _load_module()
+    group = module._derive_solver_comparison_group(module.SCHEDULES["backspin"])
+
+    with pytest.raises(ValueError, match="cannot be derived"):
+        module._derive_solver_comparison_group(
+            module.SCHEDULES["turntable_author_mu02_omega2"]
+        )
+    with pytest.raises(ValueError, match="exact then boxed"):
+        module.dataclasses.replace(group, members=tuple(reversed(group.members)))
+    with pytest.raises(ValueError, match="identify only the solver lanes"):
+        module.dataclasses.replace(group, labels=("EXACT", "BOXED"))
+    with pytest.raises(ValueError, match="panel labels must identify"):
+        module.dataclasses.replace(group, panel_labels=("REST", "TUMBLE"))
+    with pytest.raises(ValueError, match="unsupported solver lane"):
+        module.dataclasses.replace(group, solver_lane="hybrid")
+
+
+def test_boxed_painleve_group_uses_solver_neutral_parameter_labels():
+    module = _load_module()
+    exact = module.GROUP_OUTPUTS["painleve"]
+
+    boxed = module._derive_boxed_group(exact)
+
+    assert exact.labels == (
+        "MU .5 SLIDE REST",
+        "MU .55 SHORT TRAVEL TUMBLE",
+    )
+    assert boxed.labels == (
+        "EXISTING BOXED LCP | PAINLEVE PROXY MU=.5",
+        "EXISTING BOXED LCP | PAINLEVE PROXY MU=.55",
+    )
+    assert boxed.resolved_panel_labels == boxed.labels
+    assert boxed.solver_lane == "boxed"
+    assert boxed.source_group_id == "painleve"
+    assert all(
+        outcome not in " ".join(boxed.labels).lower()
+        for outcome in ("rest", "travel", "tumble")
+    )
+
+
+@pytest.mark.parametrize("lane_order", ["mixed", "reversed"])
+def test_solver_comparison_group_rejects_mixed_or_reversed_lanes(tmp_path, lane_order):
+    module = _load_module()
+    exact = module.SCHEDULES["backspin"]
+    boxed = module._derive_boxed_schedule(exact)
+    group = module._derive_solver_comparison_group(exact)
+
+    if lane_order == "mixed":
+        schedules = [
+            exact,
+            module.dataclasses.replace(
+                boxed,
+                solver_lane="exact",
+                supported_solver_lanes=("exact",),
+            ),
+        ]
+    else:
+        schedules = [
+            module.dataclasses.replace(
+                exact,
+                solver_lane="boxed",
+                supported_solver_lanes=("boxed",),
+                exact_fbf_required=False,
+            ),
+            module.dataclasses.replace(
+                boxed,
+                solver_lane="exact",
+                supported_solver_lanes=("exact",),
+            ),
+        ]
+
+    with pytest.raises(ValueError, match="solver lanes are missing or out of order"):
+        module._group_member_contract(
+            group,
+            schedules,
+            output_root=tmp_path,
+            ffprobe=Path("ffprobe"),
+        )
 
 
 def _write_group_member_artifacts(module, group, output_root, durations):
@@ -1179,6 +1334,52 @@ def test_run_creates_group_only_after_all_members_succeed(
         module.TURN_TABLE_MEMBERS[-1]
     ]
     assert not stale_metadata.exists()
+
+
+def test_run_both_orchestrates_solver_comparison_after_both_members(
+    tmp_path, monkeypatch, capsys
+):
+    module = _load_module()
+    schedule_calls = []
+    group_calls = []
+
+    def fake_run_schedule(schedule, **_kwargs):
+        schedule_calls.append(schedule.id)
+        return {"schedule": {"id": schedule.id}, "pass": True}
+
+    def fake_run_group(group, schedules, **_kwargs):
+        member_ids = tuple(schedule.id for schedule in schedules)
+        group_calls.append((group.id, group.solver_lane, member_ids))
+        return {"group_id": group.id, "member_order": list(group.members), "pass": True}
+
+    monkeypatch.setattr(module, "run_schedule", fake_run_schedule)
+    monkeypatch.setattr(module, "run_group_output", fake_run_group)
+
+    assert (
+        module.main(
+            [
+                "run",
+                "--scenario",
+                "backspin",
+                "--solver-lane",
+                "both",
+                "--output-root",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert schedule_calls == ["backspin", "backspin__boxed"]
+    assert group_calls == [
+        (
+            "backspin__exact_vs_boxed",
+            "both",
+            ("backspin", "backspin__boxed"),
+        )
+    ]
+    assert payload["group_outputs"][0]["group_id"] == ("backspin__exact_vs_boxed")
 
 
 def test_existing_verification_rejects_changed_requested_demo_hash(
