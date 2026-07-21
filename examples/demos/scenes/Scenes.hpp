@@ -124,6 +124,10 @@ namespace dart_demos {
 /// Research > FBF author card house: source-parameterized four-level impact.
 [[nodiscard]] DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene();
 
+/// Research > FBF author card house: exact source-continuation impact lane.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene();
+
 /// Research > FBF author masonry arch: source-pinned 25-wedge crown impact.
 [[nodiscard]] DemoScene
 makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();

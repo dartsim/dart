@@ -132,6 +132,8 @@ const char* exactSolverStatusLabel(
       return "success";
     case ExactCoulombFbfConstraintSolverStatus::MaxIterationsAccepted:
       return "max_iterations_accepted";
+    case ExactCoulombFbfConstraintSolverStatus::PlateauAccepted:
+      return "plateau_accepted";
     case ExactCoulombFbfConstraintSolverStatus::InvalidOptions:
       return "invalid_options";
     case ExactCoulombFbfConstraintSolverStatus::UnsupportedProblem:
@@ -160,6 +162,10 @@ const char* exactFbfStatusLabel(
       return "inner_solver_failed";
     case ExactCoulombFbfStatus::StepSizeUnderflow:
       return "step_size_underflow";
+    case ExactCoulombFbfStatus::Plateau:
+      return "plateau";
+    case ExactCoulombFbfStatus::NonFiniteValue:
+      return "non_finite_value";
   }
   return "unknown";
 }
@@ -267,6 +273,26 @@ struct SolverDiagnosticsSnapshot
     int shrinkIterations = 0;
   };
 
+  struct GroupOutcome
+  {
+    std::size_t solveIndex = 0u;
+    std::size_t contacts = 0u;
+    std::string status;
+    std::string fbfStatus;
+    int iterations = 0;
+    int shrinkIterations = 0;
+    double finalResidual = std::numeric_limits<double>::quiet_NaN();
+    double finalNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+    double plateauReferenceNaturalMapResidual
+        = std::numeric_limits<double>::quiet_NaN();
+    double plateauRelativeImprovement
+        = std::numeric_limits<double>::quiet_NaN();
+    int lineSearchShrinkCapCount = 0;
+    double correctionStepSize = std::numeric_limits<double>::quiet_NaN();
+    double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+    bool sourceContinuationActive = false;
+  };
+
   std::string solver = "UnknownConstraintSolver";
   bool available = false;
   std::string gap;
@@ -284,12 +310,59 @@ struct SolverDiagnosticsSnapshot
   std::size_t boxedLcpFallbacks = 0u;
   std::size_t warmStarts = 0u;
   std::size_t contacts = 0u;
+  bool sourceContinuationRequested = false;
+  bool sourceContinuationLastActive = false;
+  bool worldStateFinite = false;
+  bool groupHistoryTruncated = false;
+  bool lastLineSearchShrinkCapReached = false;
+  int lastLineSearchShrinkCapCount = 0;
+  double lastCorrectionStepSize = std::numeric_limits<double>::quiet_NaN();
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  std::size_t plateausAccepted = 0u;
+  std::size_t lineSearchShrinkCaps = 0u;
+  std::size_t stepExactAttempts = 0u;
+  std::size_t stepExactSolves = 0u;
+  std::size_t stepPlateausAccepted = 0u;
+  std::size_t stepMaxIterationsAccepted = 0u;
+  std::size_t stepLineSearchShrinks = 0u;
+  std::size_t stepLineSearchShrinkCaps = 0u;
+  std::vector<GroupOutcome> groupOutcomes;
   LastFailure lastFailure;
 };
 
 //==============================================================================
+struct SolverDiagnosticsCursor
+{
+  std::size_t nextGroupSolveIndex = 0u;
+  std::size_t exactAttempts = 0u;
+  std::size_t exactSolves = 0u;
+  std::size_t plateausAccepted = 0u;
+  std::size_t maxIterationsAccepted = 0u;
+  std::size_t lineSearchShrinkCaps = 0u;
+};
+
+//==============================================================================
+bool isWorldStateFinite(const dart::simulation::WorldPtr& world)
+{
+  if (!world || !std::isfinite(world->getTime())
+      || !std::isfinite(world->getTimeStep())
+      || !world->getGravity().allFinite()) {
+    return false;
+  }
+  for (std::size_t index = 0u; index < world->getNumSkeletons(); ++index) {
+    const auto skeleton = world->getSkeleton(index);
+    if (!skeleton || !skeleton->getPositions().allFinite()
+        || !skeleton->getVelocities().allFinite()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
 SolverDiagnosticsSnapshot captureSolverDiagnostics(
-    const dart::simulation::WorldPtr& world)
+    const dart::simulation::WorldPtr& world,
+    SolverDiagnosticsCursor* cursor = nullptr)
 {
   SolverDiagnosticsSnapshot snapshot;
   if (!world || !world->getConstraintSolver()) {
@@ -335,6 +408,89 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
   snapshot.exactFailures = solver->getNumExactCoulombFailures();
   snapshot.boxedLcpFallbacks = solver->getNumBoxedLcpFallbacks();
   snapshot.warmStarts = solver->getNumExactCoulombWarmStarts();
+  const auto continuationOptions
+      = solver->getExactCoulombSourceContinuationOptions();
+  snapshot.sourceContinuationRequested = continuationOptions.enabled;
+  snapshot.sourceContinuationLastActive
+      = solver->getLastExactCoulombSourceContinuationActive();
+  snapshot.worldStateFinite = isWorldStateFinite(world);
+  snapshot.lastLineSearchShrinkCapReached
+      = solver->getLastExactCoulombLineSearchShrinkCapReached();
+  snapshot.lastLineSearchShrinkCapCount
+      = solver->getLastExactCoulombLineSearchShrinkCapCount();
+  snapshot.lastCorrectionStepSize = solver->getLastExactCoulombStepSize();
+  snapshot.lastInnerSolveStepSize
+      = solver->getLastExactCoulombInnerSolveStepSize();
+  snapshot.plateausAccepted = solver->getNumExactCoulombPlateausAccepted();
+  snapshot.lineSearchShrinkCaps
+      = solver->getNumExactCoulombLineSearchShrinkCaps();
+
+  if (cursor != nullptr) {
+    const auto delta =
+        [&snapshot](std::size_t current, std::size_t previous) -> std::size_t {
+      if (current < previous) {
+        snapshot.groupHistoryTruncated = true;
+        return 0u;
+      }
+      return current - previous;
+    };
+    snapshot.stepExactAttempts
+        = delta(snapshot.exactAttempts, cursor->exactAttempts);
+    snapshot.stepExactSolves = delta(snapshot.exactSolves, cursor->exactSolves);
+    snapshot.stepPlateausAccepted
+        = delta(snapshot.plateausAccepted, cursor->plateausAccepted);
+    snapshot.stepMaxIterationsAccepted
+        = delta(snapshot.maxIterationsAccepted, cursor->maxIterationsAccepted);
+    snapshot.stepLineSearchShrinkCaps
+        = delta(snapshot.lineSearchShrinkCaps, cursor->lineSearchShrinkCaps);
+
+    const std::size_t expectedFirstSolveIndex = cursor->nextGroupSolveIndex;
+    const auto& records = solver->getExactCoulombResidualHistoryRecords();
+    if (!records.empty()
+        && records.front().solveIndex > cursor->nextGroupSolveIndex) {
+      snapshot.groupHistoryTruncated = true;
+    }
+    for (const auto& record : records) {
+      if (record.solveIndex < cursor->nextGroupSolveIndex)
+        continue;
+      SolverDiagnosticsSnapshot::GroupOutcome outcome;
+      outcome.solveIndex = record.solveIndex;
+      outcome.contacts = record.contactCount;
+      outcome.status = exactSolverStatusLabel(record.status);
+      outcome.fbfStatus = exactFbfStatusLabel(record.fbfStatus);
+      outcome.iterations = record.iterations;
+      outcome.shrinkIterations = record.shrinkIterations;
+      outcome.finalResidual = record.finalResidual;
+      outcome.finalNaturalMapResidual = record.finalNaturalMapResidual;
+      outcome.plateauReferenceNaturalMapResidual
+          = record.plateauReferenceNaturalMapResidual;
+      outcome.plateauRelativeImprovement = record.plateauRelativeImprovement;
+      outcome.lineSearchShrinkCapCount = record.lineSearchShrinkCapCount;
+      outcome.lastInnerSolveStepSize = record.lastInnerSolveStepSize;
+      if (!record.samples.empty())
+        outcome.correctionStepSize = record.samples.back().stepSize;
+      outcome.sourceContinuationActive = record.sourceContinuationActive;
+      snapshot.groupOutcomes.push_back(std::move(outcome));
+    }
+    for (const auto& outcome : snapshot.groupOutcomes) {
+      if (outcome.shrinkIterations >= 0) {
+        snapshot.stepLineSearchShrinks
+            += static_cast<std::size_t>(outcome.shrinkIterations);
+      }
+    }
+    if (!snapshot.groupOutcomes.empty()
+        && snapshot.groupOutcomes.front().solveIndex
+               != expectedFirstSolveIndex) {
+      snapshot.groupHistoryTruncated = true;
+    }
+    if (!records.empty())
+      cursor->nextGroupSolveIndex = records.back().solveIndex + 1u;
+    cursor->exactAttempts = snapshot.exactAttempts;
+    cursor->exactSolves = snapshot.exactSolves;
+    cursor->plateausAccepted = snapshot.plateausAccepted;
+    cursor->maxIterationsAccepted = snapshot.maxIterationsAccepted;
+    cursor->lineSearchShrinkCaps = snapshot.lineSearchShrinkCaps;
+  }
   if (snapshot.exactFailures > 0u) {
     const auto& residual = solver->getLastFailedExactCoulombResidualDetails();
     snapshot.lastFailure.available = true;
@@ -403,8 +559,73 @@ void writeSolverDiagnosticsJson(
   out << ",\n      \"exact_failures\": " << snapshot.exactFailures
       << ",\n      \"boxed_lcp_fallbacks\": " << snapshot.boxedLcpFallbacks
       << ",\n      \"warm_starts\": " << snapshot.warmStarts
-      << ",\n      \"contacts\": " << snapshot.contacts
-      << ",\n      \"last_failure\": ";
+      << ",\n      \"contacts\": " << snapshot.contacts;
+  if (snapshot.sourceContinuationRequested) {
+    out << ",\n      \"source_continuation\": {"
+        << "\n        \"requested\": true"
+        << ",\n        \"last_active\": "
+        << (snapshot.sourceContinuationLastActive ? "true" : "false")
+        << ",\n        \"world_state_finite\": "
+        << (snapshot.worldStateFinite ? "true" : "false")
+        << ",\n        \"group_history_truncated\": "
+        << (snapshot.groupHistoryTruncated ? "true" : "false")
+        << ",\n        \"cumulative\": {\"plateaus_accepted\": "
+        << snapshot.plateausAccepted
+        << ", \"max_iterations_accepted\": " << snapshot.maxIterationsAccepted
+        << ", \"line_search_shrink_caps\": " << snapshot.lineSearchShrinkCaps
+        << "}"
+        << ",\n        \"step\": {\"exact_attempts\": "
+        << snapshot.stepExactAttempts
+        << ", \"exact_solves\": " << snapshot.stepExactSolves
+        << ", \"plateaus_accepted\": " << snapshot.stepPlateausAccepted
+        << ", \"max_iterations_accepted\": "
+        << snapshot.stepMaxIterationsAccepted
+        << ", \"line_search_shrinks\": " << snapshot.stepLineSearchShrinks
+        << ", \"line_search_shrink_caps\": "
+        << snapshot.stepLineSearchShrinkCaps << "}"
+        << ",\n        \"last_attempt\": {"
+           "\"line_search_shrink_cap_reached\": "
+        << (snapshot.lastLineSearchShrinkCapReached ? "true" : "false")
+        << ", \"line_search_shrink_cap_count\": "
+        << snapshot.lastLineSearchShrinkCapCount
+        << ", \"correction_step_size\": ";
+    writeJsonNumber(out, snapshot.lastCorrectionStepSize);
+    out << ", \"last_inner_solve_step_size\": ";
+    writeJsonNumber(out, snapshot.lastInnerSolveStepSize);
+    out << "}"
+        << ",\n        \"group_outcomes\": [";
+    for (std::size_t index = 0u; index < snapshot.groupOutcomes.size();
+         ++index) {
+      const auto& group = snapshot.groupOutcomes[index];
+      out << (index == 0u ? "\n" : ",\n")
+          << "          {\"solve_index\": " << group.solveIndex
+          << ", \"contact_count\": " << group.contacts << ", \"status\": ";
+      writeJsonString(out, group.status);
+      out << ", \"fbf_status\": ";
+      writeJsonString(out, group.fbfStatus);
+      out << ", \"iterations\": " << group.iterations
+          << ", \"line_search_shrinks\": " << group.shrinkIterations
+          << ", \"final_residual\": ";
+      writeJsonNumber(out, group.finalResidual);
+      out << ", \"final_natural_map_residual\": ";
+      writeJsonNumber(out, group.finalNaturalMapResidual);
+      out << ", \"plateau_reference_natural_map_residual\": ";
+      writeJsonNumber(out, group.plateauReferenceNaturalMapResidual);
+      out << ", \"plateau_relative_improvement\": ";
+      writeJsonNumber(out, group.plateauRelativeImprovement);
+      out << ", \"line_search_shrink_cap_count\": "
+          << group.lineSearchShrinkCapCount << ", \"correction_step_size\": ";
+      writeJsonNumber(out, group.correctionStepSize);
+      out << ", \"last_inner_solve_step_size\": ";
+      writeJsonNumber(out, group.lastInnerSolveStepSize);
+      out << ", \"source_continuation_active\": "
+          << (group.sourceContinuationActive ? "true" : "false") << '}';
+    }
+    if (!snapshot.groupOutcomes.empty())
+      out << '\n';
+    out << "        ]\n      }";
+  }
+  out << ",\n      \"last_failure\": ";
   if (!snapshot.lastFailure.available) {
     out << "null\n    }";
     return;
@@ -481,6 +702,64 @@ struct HeadlessExactFbfFailFastState
 };
 
 //==============================================================================
+detail::HeadlessExactFbfSourceContinuationDiagnostics
+makeSourceContinuationGateDiagnostics(const SolverDiagnosticsSnapshot& snapshot)
+{
+  detail::HeadlessExactFbfSourceContinuationDiagnostics diagnostics;
+  diagnostics.requested = snapshot.sourceContinuationRequested;
+  diagnostics.lastActive = snapshot.sourceContinuationLastActive;
+  diagnostics.worldStateFinite = snapshot.worldStateFinite;
+  diagnostics.groupHistoryTruncated = snapshot.groupHistoryTruncated;
+  diagnostics.lastLineSearchShrinkCapReached
+      = snapshot.lastLineSearchShrinkCapReached;
+  diagnostics.lastLineSearchShrinkCapCount
+      = snapshot.lastLineSearchShrinkCapCount;
+  diagnostics.lastCorrectionStepSize = snapshot.lastCorrectionStepSize;
+  diagnostics.lastInnerSolveStepSize = snapshot.lastInnerSolveStepSize;
+  diagnostics.exactAttempts = snapshot.exactAttempts;
+  diagnostics.exactSolves = snapshot.exactSolves;
+  diagnostics.exactFailures = snapshot.exactFailures;
+  diagnostics.boxedFallbacks = snapshot.boxedLcpFallbacks;
+  diagnostics.stepExactAttempts = snapshot.stepExactAttempts;
+  diagnostics.stepExactSolves = snapshot.stepExactSolves;
+  diagnostics.stepPlateausAccepted = snapshot.stepPlateausAccepted;
+  diagnostics.stepMaxIterationsAccepted = snapshot.stepMaxIterationsAccepted;
+  diagnostics.stepLineSearchShrinks = snapshot.stepLineSearchShrinks;
+  diagnostics.stepLineSearchShrinkCaps = snapshot.stepLineSearchShrinkCaps;
+  diagnostics.groups.reserve(snapshot.groupOutcomes.size());
+  for (const auto& group : snapshot.groupOutcomes) {
+    detail::HeadlessExactFbfSourceContinuationGroupDiagnostics item;
+    item.solveIndex = group.solveIndex;
+    item.contactCount = group.contacts;
+    item.sourceContinuationActive = group.sourceContinuationActive;
+    item.iterations = group.iterations;
+    item.shrinkIterations = group.shrinkIterations;
+    item.lineSearchShrinkCapCount = group.lineSearchShrinkCapCount;
+    item.finalResidual = group.finalResidual;
+    item.finalNaturalMapResidual = group.finalNaturalMapResidual;
+    item.plateauReferenceNaturalMapResidual
+        = group.plateauReferenceNaturalMapResidual;
+    item.plateauRelativeImprovement = group.plateauRelativeImprovement;
+    item.correctionStepSize = group.correctionStepSize;
+    item.lastInnerSolveStepSize = group.lastInnerSolveStepSize;
+    if (group.status == "success" && group.fbfStatus == "success") {
+      item.outcome = detail::HeadlessExactFbfSourceContinuationOutcome::Success;
+    } else if (
+        group.status == "plateau_accepted" && group.fbfStatus == "plateau") {
+      item.outcome
+          = detail::HeadlessExactFbfSourceContinuationOutcome::PlateauAccepted;
+    } else if (
+        group.status == "max_iterations_accepted"
+        && group.fbfStatus == "max_iterations") {
+      item.outcome = detail::HeadlessExactFbfSourceContinuationOutcome::
+          MaxIterationsAccepted;
+    }
+    diagnostics.groups.push_back(item);
+  }
+  return diagnostics;
+}
+
+//==============================================================================
 const char* buildModeLabel()
 {
 #if DART_BUILD_MODE_DEBUG
@@ -508,7 +787,8 @@ bool writeHeadlessSidecar(
     const std::vector<HeadlessShotResult>& shots,
     const std::vector<HeadlessActionResult>& actions,
     const SolverDiagnosticsSnapshot& finalDiagnostics,
-    const HeadlessExactFbfFailFastState* failFast)
+    const HeadlessExactFbfFailFastState* failFast,
+    const HeadlessExactFbfFailFastState* sourceContinuation)
 {
   std::ofstream out(path);
   if (!out) {
@@ -554,6 +834,27 @@ bool writeHeadlessSidecar(
     out << ",\n    \"reason\": ";
     if (failFast->triggered)
       writeJsonString(out, failFast->reason);
+    else
+      out << "null";
+    out << "\n  }";
+  }
+  if (sourceContinuation) {
+    out << ",\n  \"headless_exact_fbf_source_continuation\": {\n"
+        << "    \"enabled\": true,\n    \"requested\": ";
+    writeJsonString(out, "source_continuation");
+    out << ",\n    \"allowed_outcomes\": [\"success\", "
+           "\"plateau_accepted\", \"max_iterations_accepted\"]"
+        << ",\n    \"line_search_cap_action\": \"shrink_cap\""
+        << ",\n    \"triggered\": "
+        << (sourceContinuation->triggered ? "true" : "false")
+        << ",\n    \"step\": ";
+    if (sourceContinuation->triggered)
+      out << sourceContinuation->step;
+    else
+      out << "null";
+    out << ",\n    \"reason\": ";
+    if (sourceContinuation->triggered)
+      writeJsonString(out, sourceContinuation->reason);
     else
       out << "null";
     out << "\n  }";
@@ -1853,7 +2154,9 @@ int DemoHost::runHeadlessTimeline(
   std::vector<HeadlessShotResult> shotResults;
   std::vector<HeadlessStepResult> stepResults;
   std::vector<HeadlessActionResult> actionResults;
+  SolverDiagnosticsCursor diagnosticsCursor;
   HeadlessExactFbfFailFastState failFast;
+  HeadlessExactFbfFailFastState sourceContinuation;
   shotResults.reserve(timeline.shots.size());
   stepResults.reserve(requestedSteps + 1u);
   actionResults.reserve(timeline.actions.size());
@@ -1864,7 +2167,8 @@ int DemoHost::runHeadlessTimeline(
     HeadlessStepResult stepResult;
     stepResult.step = step;
     stepResult.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
-    stepResult.diagnostics = captureSolverDiagnostics(mCurrentWorld);
+    stepResult.diagnostics
+        = captureSolverDiagnostics(mCurrentWorld, &diagnosticsCursor);
     stepResults.push_back(stepResult);
 
     if (timeline.exactFbfFailFast) {
@@ -1885,6 +2189,20 @@ int DemoHost::runHeadlessTimeline(
         std::cerr << "[headless] exact-FBF fail-fast triggered at completed "
                      "step "
                   << step << ": " << decision.reason << ".\n";
+        break;
+      }
+    }
+    if (timeline.exactFbfSourceContinuation) {
+      const auto decision = detail::evaluateHeadlessExactFbfSourceContinuation(
+          makeSourceContinuationGateDiagnostics(stepResult.diagnostics));
+      if (decision.triggered) {
+        sourceContinuation.triggered = true;
+        sourceContinuation.step = step;
+        sourceContinuation.reason = decision.reason;
+        std::cerr
+            << "[headless] exact-FBF source-continuation gate triggered at "
+               "completed step "
+            << step << ": " << decision.reason << ".\n";
         break;
       }
     }
@@ -1960,14 +2278,18 @@ int DemoHost::runHeadlessTimeline(
         shotResults,
         actionResults,
         finalDiagnostics,
-        timeline.exactFbfFailFast ? &failFast : nullptr);
+        timeline.exactFbfFailFast ? &failFast : nullptr,
+        timeline.exactFbfSourceContinuation ? &sourceContinuation : nullptr);
     eventFailed |= !sidecarWritten;
     if (sidecarWritten)
       std::cout << "[headless] wrote timeline sidecar " << timeline.sidecarPath
                 << "\n";
   }
 
-  return sceneFailed || eventFailed || failFast.triggered ? 1 : 0;
+  return sceneFailed || eventFailed || failFast.triggered
+                 || sourceContinuation.triggered
+             ? 1
+             : 0;
 }
 
 //==============================================================================

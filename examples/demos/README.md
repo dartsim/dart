@@ -29,6 +29,7 @@ pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_2
 pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
 pixi run demos -- --scene fbf_author_card_house_5_construction
 pixi run demos -- --scene fbf_author_card_house_4_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
@@ -75,6 +76,17 @@ new adapter does not claim that its selected CLI arguments were the historical
 paper invocation, nor source-backend, trajectory, outcome, or timing
 equivalence, Fig. 6/video parity, or final media. It remains an adapter-only
 lane.
+
+`fbf_author_card_house_4_impact_source_continuation_current_source` reuses the
+same card-house bodies, release action, time step, capture schedule, and
+source-style inner initialization while additionally requesting the separate
+source-continuation termination and gamma policy. Its headless gate is
+deliberately separate from the strict exact-FBF fail-fast gate: it accepts only
+finite `success`, `plateau_accepted`, or
+`max_iterations_accepted` group outcomes with complete per-group telemetry and
+no boxed-LCP fallback. The strict scene and its residual/cap gate remain
+unchanged, so the two policies produce distinct evidence lanes rather than
+silently weakening the existing one.
 
 `fbf_author_masonry_arch_25_crown_impact_current_source` preserves the public
 author repository's raw numeric 25-wedge geometry, mass/friction values, three
