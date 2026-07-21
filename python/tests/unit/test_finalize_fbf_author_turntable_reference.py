@@ -32,6 +32,17 @@ def module():
     return _load_module()
 
 
+@pytest.fixture(scope="module")
+def evidence_bundle(module):
+    bundle = module.DEFAULT_BUNDLE
+    if not bundle.exists():
+        pytest.skip(
+            "requires the ignored local author-turntable evidence bundle at "
+            f"{bundle}"
+        )
+    return bundle
+
+
 def _case(module, case_id):
     return module.CASE_BY_ID[case_id]
 
@@ -52,7 +63,7 @@ def _write_trajectory(path, arrays):
     np.savez(path, **{key: arrays[key] for key in arrays})
 
 
-def test_repository_bundle_validates_expected_partial_negative(module):
+def test_repository_bundle_validates_expected_partial_negative(module, evidence_bundle):
     report = module.validate_bundle(BUNDLE)
 
     assert report["pass"] is True
@@ -74,7 +85,9 @@ def test_repository_bundle_validates_expected_partial_negative(module):
     }
 
 
-def test_manifest_binds_source_invocations_environment_and_nonclaims(module):
+def test_manifest_binds_source_invocations_environment_and_nonclaims(
+    module, evidence_bundle
+):
     manifest = module.read_json(BUNDLE / "manifest.json")
 
     assert module.validate_manifest_contract(manifest) == manifest
@@ -91,7 +104,7 @@ def test_manifest_binds_source_invocations_environment_and_nonclaims(module):
     assert manifest["nonclaims"] == list(module.NONCLAIMS)
 
 
-def test_bundle_rejects_same_size_hash_mutation(module, tmp_path):
+def test_bundle_rejects_same_size_hash_mutation(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(BUNDLE, bundle)
     target = bundle / module.CASES[0].result_path
@@ -103,7 +116,7 @@ def test_bundle_rejects_same_size_hash_mutation(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_bundle_rejects_unexpected_path(module, tmp_path):
+def test_bundle_rejects_unexpected_path(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(BUNDLE, bundle)
     (bundle / "unexpected.txt").write_text("unexpected", encoding="utf-8")
@@ -112,7 +125,7 @@ def test_bundle_rejects_unexpected_path(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_bundle_rejects_internal_symlink(module, tmp_path):
+def test_bundle_rejects_internal_symlink(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(BUNDLE, bundle)
     target = bundle / module.CASES[0].result_path
@@ -131,7 +144,7 @@ def test_bundle_rejects_root_symlink(module, tmp_path):
         module.validate_bundle(link)
 
 
-def test_bundle_rejects_ancestor_directory_symlink(module, tmp_path):
+def test_bundle_rejects_ancestor_directory_symlink(module, evidence_bundle, tmp_path):
     real_parent = tmp_path / "real"
     real_parent.mkdir()
     shutil.copytree(BUNDLE, real_parent / "bundle")
@@ -244,7 +257,7 @@ def test_history_decompression_is_bounded_and_rejects_trailing_data(module, tmp_
     ],
 )
 def test_trajectory_npz_rejects_member_dtype_and_shape_mutations(
-    module, tmp_path, mutation, message
+    module, evidence_bundle, tmp_path, mutation, message
 ):
     case = _case(module, "mu_0_5_omega_2")
     arrays = module.load_trajectory(BUNDLE / case.trajectory_path)
@@ -256,7 +269,7 @@ def test_trajectory_npz_rejects_member_dtype_and_shape_mutations(
         module.load_trajectory(path)
 
 
-def test_trajectory_npz_disables_pickle_loading(module, monkeypatch):
+def test_trajectory_npz_disables_pickle_loading(module, evidence_bundle, monkeypatch):
     case = _case(module, "mu_0_5_omega_2")
     real_load = module.np.load
     observed = []
@@ -271,7 +284,7 @@ def test_trajectory_npz_disables_pickle_loading(module, monkeypatch):
     assert observed == [False]
 
 
-def test_result_metric_must_recompute_from_trajectory(module):
+def test_result_metric_must_recompute_from_trajectory(module, evidence_bundle):
     case = _case(module, "mu_0_5_omega_2")
     arrays = module.load_trajectory(BUNDLE / case.trajectory_path)
     trajectory = module.summarize_trajectory(arrays, case)
@@ -282,7 +295,7 @@ def test_result_metric_must_recompute_from_trajectory(module):
         module.validate_result(result, trajectory, case)
 
 
-def test_result_config_rejects_boolean_integer_substitution(module):
+def test_result_config_rejects_boolean_integer_substitution(module, evidence_bundle):
     case = _case(module, "mu_0_5_omega_2")
     arrays = module.load_trajectory(BUNDLE / case.trajectory_path)
     trajectory = module.summarize_trajectory(arrays, case)
@@ -293,7 +306,7 @@ def test_result_config_rejects_boolean_integer_substitution(module):
         module.validate_result(result, trajectory, case)
 
 
-def test_trajectory_outcome_exit_index_is_source_derived(module):
+def test_trajectory_outcome_exit_index_is_source_derived(module, evidence_bundle):
     case = _case(module, "mu_0_5_omega_5")
     arrays = module.load_trajectory(BUNDLE / case.trajectory_path)
     arrays["r"][case.first_exit_index] = module.EXIT_RADIUS
@@ -305,7 +318,9 @@ def test_trajectory_outcome_exit_index_is_source_derived(module):
         module.summarize_trajectory(arrays, case)
 
 
-def test_history_uses_initial_and_coulomb_residual_convergence_rules(module):
+def test_history_uses_initial_and_coulomb_residual_convergence_rules(
+    module, evidence_bundle
+):
     case = _case(module, "mu_0_5_omega_5")
     history = _history(module, case)
     summary = module.summarize_history(history, case)
@@ -331,7 +346,9 @@ def test_history_uses_initial_and_coulomb_residual_convergence_rules(module):
         module.summarize_history(mutated, case)
 
 
-def test_history_preserves_expected_nonconverged_plateau_not_cap(module):
+def test_history_preserves_expected_nonconverged_plateau_not_cap(
+    module, evidence_bundle
+):
     case = _case(module, "mu_0_2_omega_2")
     history = _history(module, case)
     summary = module.summarize_history(history, case)
@@ -357,7 +374,9 @@ def test_history_preserves_expected_nonconverged_plateau_not_cap(module):
         ("claim_valid", True),
     ],
 )
-def test_manifest_rejects_forbidden_claim_promotion(module, field, value):
+def test_manifest_rejects_forbidden_claim_promotion(
+    module, evidence_bundle, field, value
+):
     manifest = module.read_json(BUNDLE / "manifest.json")
     manifest["predicates"][field] = value
 
@@ -365,7 +384,7 @@ def test_manifest_rejects_forbidden_claim_promotion(module, field, value):
         module.validate_manifest_contract(manifest)
 
 
-def test_manifest_rejects_nonclaim_removal(module):
+def test_manifest_rejects_nonclaim_removal(module, evidence_bundle):
     manifest = module.read_json(BUNDLE / "manifest.json")
     manifest["nonclaims"].pop()
 
@@ -373,7 +392,7 @@ def test_manifest_rejects_nonclaim_removal(module):
         module.validate_manifest_contract(manifest)
 
 
-def test_manifest_rejects_boolean_integer_substitution(module):
+def test_manifest_rejects_boolean_integer_substitution(module, evidence_bundle):
     manifest = module.read_json(BUNDLE / "manifest.json")
     manifest["predicates"]["artifact_valid"] = 1
 
@@ -381,7 +400,7 @@ def test_manifest_rejects_boolean_integer_substitution(module):
         module.validate_manifest_contract(manifest)
 
 
-def test_cli_verify_only_prints_strict_json(module, capsys):
+def test_cli_verify_only_prints_strict_json(module, evidence_bundle, capsys):
     assert module.main(["--verify-only", "--bundle", str(BUNDLE)]) == 0
     captured = capsys.readouterr()
     report = json.loads(captured.out)

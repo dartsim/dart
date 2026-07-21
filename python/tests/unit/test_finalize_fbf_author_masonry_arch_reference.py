@@ -35,6 +35,17 @@ def module():
     return _load_module()
 
 
+@pytest.fixture(scope="module")
+def evidence_bundle(module):
+    bundle = module.DEFAULT_BUNDLE
+    if not bundle.exists():
+        pytest.skip(
+            "requires the ignored local author-masonry-arch evidence bundle at "
+            f"{bundle}"
+        )
+    return bundle
+
+
 def _hardlink_bundle(destination):
     def link_or_copy(source, target):
         try:
@@ -48,7 +59,7 @@ def _hardlink_bundle(destination):
     return destination
 
 
-def test_repository_bundle_validates_scientific_negative(module):
+def test_repository_bundle_validates_scientific_negative(module, evidence_bundle):
     report = module.validate_bundle(BUNDLE)
 
     assert report == {
@@ -64,7 +75,9 @@ def test_repository_bundle_validates_scientific_negative(module):
     }
 
 
-def test_manifest_binds_source_environment_and_literal_invocation(module):
+def test_manifest_binds_source_environment_and_literal_invocation(
+    module, evidence_bundle
+):
     manifest = module.validate_manifest(module.read_json(BUNDLE / "manifest.json"))
 
     assert manifest["source"] == {
@@ -124,7 +137,9 @@ def test_manifest_binds_source_environment_and_literal_invocation(module):
     }
 
 
-def test_manifest_distinguishes_source_default_from_observed_override(module):
+def test_manifest_distinguishes_source_default_from_observed_override(
+    module, evidence_bundle
+):
     manifest = module.read_json(BUNDLE / "manifest.json")
 
     assert manifest["run"]["source_default"] == {
@@ -140,7 +155,9 @@ def test_manifest_distinguishes_source_default_from_observed_override(module):
     assert manifest["claim_boundary"]["historical_or_paper_invocation"] is False
 
 
-def test_summary_separates_configured_and_natural_residual_semantics(module):
+def test_summary_separates_configured_and_natural_residual_semantics(
+    module, evidence_bundle
+):
     summary = module.read_json(BUNDLE / "summary.json")
     assert summary == module.expected_summary()
     history = summary["history"]
@@ -203,7 +220,7 @@ def test_initial_natural_residual_shortcut_is_strict(module, value, expected):
     assert module._initial_natural_residual_shortcut_passes(value) is expected
 
 
-def test_summary_keeps_contact_count_change_inferred_only(module):
+def test_summary_keeps_contact_count_change_inferred_only(module, evidence_bundle):
     summary = module.read_json(BUNDLE / "summary.json")
     history = summary["history"]
 
@@ -227,7 +244,9 @@ def test_summary_keeps_contact_count_change_inferred_only(module):
     )
 
 
-def test_artifact_index_covers_all_durable_artifacts_without_cycle(module):
+def test_artifact_index_covers_all_durable_artifacts_without_cycle(
+    module, evidence_bundle
+):
     index = module.read_json(BUNDLE / "artifact-index.json")
     module.validate_artifact_index(BUNDLE, index)
 
@@ -242,7 +261,7 @@ def test_artifact_index_covers_all_durable_artifacts_without_cycle(module):
     assert len(history["sha256"]) == 64
 
 
-def test_report_is_concise_and_preserves_claim_boundary(module):
+def test_report_is_concise_and_preserves_claim_boundary(module, evidence_bundle):
     report = (BUNDLE / "REPORT.md").read_text(encoding="utf-8")
     normalized = " ".join(report.split())
 
@@ -254,7 +273,9 @@ def test_report_is_concise_and_preserves_claim_boundary(module):
     assert len(report.splitlines()) < 50
 
 
-def test_repository_projection_recomputes_exact_history_metrics(module):
+def test_repository_projection_recomputes_exact_history_metrics(
+    module, evidence_bundle
+):
     projection = BUNDLE / module.HISTORY_PATH
 
     assert module.summarize_projected_gzip_history(projection) == (
@@ -326,7 +347,9 @@ def test_manifest_rejects_forbidden_claim_promotion(module, field, value):
         module.validate_manifest(manifest)
 
 
-def test_bundle_rejects_same_size_hash_mutation_before_history_parse(module, tmp_path):
+def test_bundle_rejects_same_size_hash_mutation_before_history_parse(
+    module, evidence_bundle, tmp_path
+):
     bundle = _hardlink_bundle(tmp_path / "bundle")
     target = bundle / module.RESULT_PATH
     data = bytearray(target.read_bytes())
@@ -338,7 +361,7 @@ def test_bundle_rejects_same_size_hash_mutation_before_history_parse(module, tmp
         module.validate_bundle(bundle)
 
 
-def test_bundle_rejects_unexpected_path(module, tmp_path):
+def test_bundle_rejects_unexpected_path(module, evidence_bundle, tmp_path):
     bundle = _hardlink_bundle(tmp_path / "bundle")
     (bundle / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
 
@@ -346,7 +369,7 @@ def test_bundle_rejects_unexpected_path(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_bundle_rejects_internal_symlink(module, tmp_path):
+def test_bundle_rejects_internal_symlink(module, evidence_bundle, tmp_path):
     bundle = _hardlink_bundle(tmp_path / "bundle")
     target = bundle / module.RESULT_PATH
     target.unlink()
@@ -398,7 +421,7 @@ def test_gzip_decompression_is_size_bounded(module, tmp_path):
         )
 
 
-def test_trajectory_npz_disables_pickle_loading(module, monkeypatch):
+def test_trajectory_npz_disables_pickle_loading(module, evidence_bundle, monkeypatch):
     real_load = module.np.load
     observed = []
 
@@ -412,7 +435,7 @@ def test_trajectory_npz_disables_pickle_loading(module, monkeypatch):
     assert observed == [False]
 
 
-def test_trajectory_npz_rejects_unexpected_member(module, tmp_path):
+def test_trajectory_npz_rejects_unexpected_member(module, evidence_bundle, tmp_path):
     arrays = module.load_trajectory(BUNDLE / module.TRAJECTORY_PATH)
     arrays["unexpected"] = np.zeros(1, dtype=np.float64)
     path = tmp_path / "trajectory.npz"
@@ -422,7 +445,7 @@ def test_trajectory_npz_rejects_unexpected_member(module, tmp_path):
         module.load_trajectory(path)
 
 
-def test_result_config_rejects_boolean_integer_substitution(module):
+def test_result_config_rejects_boolean_integer_substitution(module, evidence_bundle):
     arrays = module.load_trajectory(BUNDLE / module.TRAJECTORY_PATH)
     trajectory = module.summarize_trajectory(arrays)
     result = module.read_json(BUNDLE / module.RESULT_PATH)
@@ -465,7 +488,7 @@ def test_publish_rolls_back_existing_bundle_on_post_promotion_failure(module, tm
     assert not list(tmp_path.glob(".*.backup-*"))
 
 
-def test_final_bundle_has_no_reserved_transient_directories(module):
+def test_final_bundle_has_no_reserved_transient_directories(module, evidence_bundle):
     _, directories = module._bundle_entries(BUNDLE)
 
     assert ".staging" not in directories

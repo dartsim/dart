@@ -29,8 +29,18 @@ def module():
 
 
 @pytest.fixture(scope="module")
-def sealed_runs(module):
-    return module._load_bundle_runs(module.DEFAULT_BUNDLE)
+def evidence_bundle(module):
+    bundle = module.DEFAULT_BUNDLE
+    if not bundle.exists():
+        pytest.skip(
+            "requires the ignored local author-incline evidence bundle at " f"{bundle}"
+        )
+    return bundle
+
+
+@pytest.fixture(scope="module")
+def sealed_runs(module, evidence_bundle):
+    return module._load_bundle_runs(evidence_bundle)
 
 
 def _materialize_source_repo(module, root: Path) -> Path:
@@ -55,7 +65,7 @@ def test_schema_names_are_stable(module):
     )
 
 
-def test_default_bundle_verifies(module):
+def test_default_bundle_verifies(module, evidence_bundle):
     report = module.validate_bundle(module.DEFAULT_BUNDLE)
 
     assert report == {
@@ -71,7 +81,7 @@ def test_default_bundle_verifies(module):
     }
 
 
-def test_default_bundle_has_exact_regular_members(module):
+def test_default_bundle_has_exact_regular_members(module, evidence_bundle):
     assert module._regular_members(module.DEFAULT_BUNDLE) == set(
         module.EXACT_BUNDLE_MEMBERS
     )
@@ -79,7 +89,9 @@ def test_default_bundle_has_exact_regular_members(module):
     assert len(module.SOURCE_ARTIFACT_PATHS) == 34
 
 
-def test_retained_metrics_keep_configured_and_natural_residuals_distinct(module):
+def test_retained_metrics_keep_configured_and_natural_residuals_distinct(
+    module, evidence_bundle
+):
     runs = module._load_bundle_runs(module.DEFAULT_BUNDLE)
     metrics = module._metrics(runs)
 
@@ -105,7 +117,9 @@ def test_comparison_contact_evidence_is_fbf_only(module, sealed_runs):
     assert all(row["fbf_contacts_per_step"] == "" for row in rows[7:])
 
 
-def test_false_flag_cannot_be_promoted_from_small_natural_residual(module):
+def test_false_flag_cannot_be_promoted_from_small_natural_residual(
+    module, evidence_bundle
+):
     runs = module._load_bundle_runs(module.DEFAULT_BUNDLE)
     failed_step = runs["fbf"]["histories"][4]["steps"][1]
     assert failed_step["final_residual"] < module.TERMINATION_TOLERANCE
@@ -153,7 +167,7 @@ def test_preterminal_configured_gate_cannot_pass(module, sealed_runs):
         module._validate_history(history, 0.3, "20260719T151337Z", "history")
 
 
-def test_contact_count_mutation_fails_closed(module):
+def test_contact_count_mutation_fails_closed(module, evidence_bundle):
     runs = module._load_bundle_runs(module.DEFAULT_BUNDLE)
     runs["fbf"]["histories"][0]["steps"][0]["num_contacts"] = 3
 
@@ -161,7 +175,7 @@ def test_contact_count_mutation_fails_closed(module):
         module._metrics(runs)
 
 
-def test_mu_0_55_nonconvergence_location_is_sealed(module):
+def test_mu_0_55_nonconvergence_location_is_sealed(module, evidence_bundle):
     runs = module._load_bundle_runs(module.DEFAULT_BUNDLE)
     runs["fbf"]["histories"][4]["steps"][1]["step_idx"] = 2
 
@@ -298,7 +312,7 @@ def test_result_history_summary_disconnect_fails_closed(module, sealed_runs):
         module._metrics(runs)
 
 
-def test_derived_artifacts_are_exact_regenerations(module):
+def test_derived_artifacts_are_exact_regenerations(module, evidence_bundle):
     runs = module._load_bundle_runs(module.DEFAULT_BUNDLE)
     metrics = module._metrics(runs)
 
@@ -313,7 +327,7 @@ def test_derived_artifacts_are_exact_regenerations(module):
     )
 
 
-def test_sweep_result_copy_uses_exact_json_types(module, tmp_path):
+def test_sweep_result_copy_uses_exact_json_types(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     sweep_path = bundle / "runs/20260719T151337Z/sweep_results.json"
@@ -325,7 +339,7 @@ def test_sweep_result_copy_uses_exact_json_types(module, tmp_path):
         module._load_bundle_runs(bundle)
 
 
-def test_stored_artifact_tamper_fails_closed(module, tmp_path):
+def test_stored_artifact_tamper_fails_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     with (bundle / "comparison.csv").open("ab") as stream:
@@ -335,7 +349,7 @@ def test_stored_artifact_tamper_fails_closed(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_manifest_parity_promotion_fails_closed(module, tmp_path):
+def test_manifest_parity_promotion_fails_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     manifest_path = bundle / "manifest.json"
@@ -347,7 +361,7 @@ def test_manifest_parity_promotion_fails_closed(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_manifest_source_path_alias_fails_closed(module, tmp_path):
+def test_manifest_source_path_alias_fails_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     manifest_path = bundle / "manifest.json"
@@ -367,7 +381,9 @@ def test_manifest_source_path_alias_fails_closed(module, tmp_path):
         ("canonical_source_path", "source path differs"),
     ),
 )
-def test_manifest_source_provenance_is_exact(module, tmp_path, mutation, match):
+def test_manifest_source_provenance_is_exact(
+    module, evidence_bundle, tmp_path, mutation, match
+):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     manifest_path = bundle / "manifest.json"
@@ -403,7 +419,7 @@ def test_manifest_source_provenance_is_exact(module, tmp_path, mutation, match):
     ),
 )
 def test_manifest_and_verification_scalar_types_are_exact(
-    module, tmp_path, mutation, match
+    module, evidence_bundle, tmp_path, mutation, match
 ):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
@@ -438,7 +454,7 @@ def test_manifest_and_verification_scalar_types_are_exact(
         module.validate_bundle(bundle)
 
 
-def test_duplicate_json_keys_fail_closed(module, tmp_path):
+def test_duplicate_json_keys_fail_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     result_path = bundle / "runs/20260719T151337Z/mu0.3000_fbf/result.json"
@@ -454,7 +470,7 @@ def test_duplicate_json_keys_fail_closed(module, tmp_path):
         module._load_bundle_runs(bundle)
 
 
-def test_duplicate_gzip_history_keys_fail_closed(module, tmp_path):
+def test_duplicate_gzip_history_keys_fail_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     history_path = bundle / ("runs/20260719T151337Z/mu0.3000_fbf/history.json.gz")
@@ -470,7 +486,7 @@ def test_duplicate_gzip_history_keys_fail_closed(module, tmp_path):
         module._load_bundle_runs(bundle)
 
 
-def test_infinite_json_constant_fails_closed(module, tmp_path):
+def test_infinite_json_constant_fails_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     result_path = bundle / "runs/20260719T151857Z/mu0.3000_mujoco/result.json"
@@ -483,7 +499,7 @@ def test_infinite_json_constant_fails_closed(module, tmp_path):
         module._load_bundle_runs(bundle)
 
 
-def test_extra_member_and_symlink_fail_closed(module, tmp_path):
+def test_extra_member_and_symlink_fail_closed(module, evidence_bundle, tmp_path):
     bundle = tmp_path / "bundle"
     shutil.copytree(module.DEFAULT_BUNDLE, bundle)
     (bundle / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
@@ -497,7 +513,9 @@ def test_extra_member_and_symlink_fail_closed(module, tmp_path):
         module.validate_bundle(bundle)
 
 
-def test_symlinked_ancestor_fails_before_bundle_reads(module, tmp_path):
+def test_symlinked_ancestor_fails_before_bundle_reads(
+    module, evidence_bundle, tmp_path
+):
     real_parent = tmp_path / "real"
     real_parent.mkdir()
     shutil.copytree(module.DEFAULT_BUNDLE, real_parent / "bundle")
@@ -508,7 +526,7 @@ def test_symlinked_ancestor_fails_before_bundle_reads(module, tmp_path):
         module.validate_bundle(alias / "bundle")
 
 
-def test_source_membership_extra_file_fails_closed(module, tmp_path):
+def test_source_membership_extra_file_fails_closed(module, evidence_bundle, tmp_path):
     source_copy = _materialize_source_repo(module, tmp_path)
     extra = module._source_run_root(source_copy, "20260719T151337Z") / "extra.txt"
     extra.write_text("unexpected\n", encoding="utf-8")
@@ -517,7 +535,9 @@ def test_source_membership_extra_file_fails_closed(module, tmp_path):
         module._load_source_runs(source_copy)
 
 
-def test_finalize_rejects_symlinked_destination_ancestor(module, tmp_path):
+def test_finalize_rejects_symlinked_destination_ancestor(
+    module, evidence_bundle, tmp_path
+):
     source_repo = _materialize_source_repo(module, tmp_path)
     real_parent = tmp_path / "real"
     real_parent.mkdir()
@@ -530,7 +550,7 @@ def test_finalize_rejects_symlinked_destination_ancestor(module, tmp_path):
 
 
 def test_finalize_builds_and_verifies_missing_destination(
-    module, tmp_path, monkeypatch
+    module, evidence_bundle, tmp_path, monkeypatch
 ):
     source_repo = _materialize_source_repo(module, tmp_path)
     source_identity = module._expected_source_identity()
@@ -564,7 +584,7 @@ def test_post_promotion_failure_restores_previous_bundle(module, tmp_path, monke
     assert not list(tmp_path.glob(".bundle.backup-*"))
 
 
-def test_cli_verify_only_succeeds(module, capsys):
+def test_cli_verify_only_succeeds(module, evidence_bundle, capsys):
     assert module.main(["--bundle", str(module.DEFAULT_BUNDLE), "--verify-only"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "valid_current_source_scientific_negative"
