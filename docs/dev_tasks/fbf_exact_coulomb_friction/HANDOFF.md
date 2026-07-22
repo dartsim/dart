@@ -684,6 +684,15 @@ Pinned-author masonry-arch truth:
 
 Source-pinned 101-stone DART truth:
 
+- Read FIG08_ARCH101_DIAGNOSIS.md before changing this lane. The source sums
+  per-shape collision gaps (`0.010` stone-to-stone and `0.105`
+  stone-to-ground), while the Native adapter currently uses zero-gap
+  activation. The unsupported crown follows analytic free fall, crosses the
+  standing displacement gate at step 188, and only then reaches the exact
+  iteration cap at step 209. Step-size-scale, relaxation, serial-BGS, and
+  doubled-inner-sweep trials are rejected; the last delays the cap to step 235
+  at about 2.8x cost after physical failure. Test default-off proximity gaps as
+  one factor before more solver tuning.
 - Preserve
   assets/paper_evidence/fig08_arch101_author_current_v1/.
 - Scene `fbf_author_masonry_arch_101_standing_current_source` binds author

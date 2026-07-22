@@ -738,6 +738,16 @@ schedule, release/impact oracle, valid media, and Fig. 7 parity remain blocked.
 
 ## Source-Pinned 101-Stone Standing Scientific Negative
 
+Read [FIG08_ARCH101_DIAGNOSIS.md](FIG08_ARCH101_DIAGNOSIS.md) before changing
+this scene or tuning the exact solver. Post-capture diagnosis shows that the
+source's summed proximity gaps (`0.010` stone-to-stone and `0.105`
+stone-to-ground) are absent from the zero-gap Native adapter. The unsupported
+crown follows analytic free fall and crosses the standing displacement gate at
+step 188, before the exact solver caps at step 209. Four one-factor solver
+trials were rejected; even doubling inner sweeps only delayed the cap to step
+235 at about 2.8x cost after the physical gate had already failed. Isolate
+default-off proximity-gap semantics before any further solver tuning.
+
 Preserve the ignored
 `assets/paper_evidence/fig08_arch101_author_current_v1/` packet. The
 `fbf_author_masonry_arch_101_standing_current_source` scene and

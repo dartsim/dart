@@ -761,6 +761,15 @@ promotable media, or Fig. 7 parity follows.
 
 ## Source-Pinned 101-Stone Standing Scientific Negative
 
+The post-capture root-cause and reject ledger is
+[FIG08_ARCH101_DIAGNOSIS.md](FIG08_ARCH101_DIAGNOSIS.md). The standing blocker
+precedes the later exact iteration cap: the DART crown crosses the displacement
+gate in analytic free fall at step 188. Missing source-style summed proximity
+gaps are the first confirmed modeling mismatch to isolate, not a proven fix.
+All four one-factor solver trials remain strict negatives, so the next
+experiment isolates default-off contact-gap semantics instead of combining
+tuning knobs.
+
 The ignored packet is
 `assets/paper_evidence/fig08_arch101_author_current_v1/`. Scene
 `fbf_author_masonry_arch_101_standing_current_source` binds the pinned author
