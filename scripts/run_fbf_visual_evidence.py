@@ -1462,6 +1462,54 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         collision_detector_override=False,
         long_run=True,
     ),
+    "card_house_author_10_impact_colored_bgs_diagnostic_current_source": CaptureSchedule(
+        id="card_house_author_10_impact_colored_bgs_diagnostic_current_source",
+        scene=("fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source"),
+        title="Ten-level card-house one-factor colored-BGS diagnostic",
+        source_segment="dart_only_diagnostic_no_source_segment",
+        total_steps=40,
+        frame_stride=40,
+        panel_steps=(0,),
+        panel_labels=("strict one-factor diagnostic initial state",),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "10"),
+            ("cards", "155"),
+            ("cubes", "4; remain kinematic in the 40-step prefix"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("diagnostic_steps", "40"),
+            ("solver_threads", "1"),
+            ("one_factor_delta", "colored_block_gauss_seidel=false -> true"),
+            ("participant_affinity", "disabled"),
+            ("max_contacts", "4096"),
+            ("max_contacts_per_pair", "4"),
+            ("ground_contact_gap_m", "0.1 for the ground ShapeFrame"),
+            (
+                "dynamic_shape_contact_gap_m",
+                "0.005 for the 155 card and 4 cube ShapeFrames",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This is an exact-FBF DART manifold-ordering diagnostic, not the "
+            "source solver's per-contact colored block-GS implementation.",
+            "One thread deliberately excludes persistent-pool dispatch, CPU "
+            "placement, participant affinity, and parallel-performance claims.",
+            "The 40-step prefix contains no cube release and cannot establish "
+            "trajectory, physical-outcome, Tables 6-7, video, or paper parity.",
+        ),
+        known_gate_blockers=(
+            "The strict baseline currently stops after completed step 31; this "
+            "schedule is a fail-closed blocker discriminator, not promotable media.",
+        ),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        encode_mp4=False,
+        expect_motion=False,
+        supported_solver_lanes=("exact",),
+    ),
     "card_house_author_10_impact_source_continuation_current_source": CaptureSchedule(
         id="card_house_author_10_impact_source_continuation_current_source",
         scene=("fbf_author_card_house_10_impact_source_continuation_current_source"),
@@ -3074,6 +3122,7 @@ def _validate_diagnostics(
         if diagnostics.get("gap") != BOXED_DIAGNOSTICS_GAP:
             raise ValueError(f"{label}: boxed diagnostic gap is unavailable or stale")
         return
+    _validate_colored_bgs_cumulative_diagnostics(diagnostics, label=label)
     if not exact_required:
         return
     if not diagnostics.get("available"):
@@ -3364,6 +3413,22 @@ def _validate_source_continuation_trajectory_step(
     state["next_solve_index"] = next_solve_index
 
 
+def _validate_colored_bgs_cumulative_diagnostics(
+    diagnostics: dict[str, Any], *, label: str, required: bool = False
+) -> int | None:
+    if "colored_block_gauss_seidel" not in diagnostics:
+        if required:
+            raise ValueError(f"{label}: cumulative colored-BGS diagnostics are missing")
+        return None
+    colored = diagnostics.get("colored_block_gauss_seidel")
+    if not isinstance(colored, dict) or set(colored) != {"solves"}:
+        raise ValueError(f"{label}: cumulative colored-BGS fields changed")
+    solves = colored.get("solves")
+    if isinstance(solves, bool) or not isinstance(solves, int) or solves < 0:
+        raise ValueError(f"{label}: cumulative colored-BGS solves are invalid")
+    return solves
+
+
 def _validate_last_failure_diagnostics(
     diagnostics: dict[str, Any], *, label: str
 ) -> None:
@@ -3501,6 +3566,169 @@ def _validate_last_failure_diagnostics(
         ) or any(last_failure.get(name) is not None for name in numeric_fields):
             raise ValueError(f"{label}: last_failure adapter failure is inconsistent")
 
+    # Timeline schema v1 predates retained colored-BGS failure telemetry.
+    # Preserve verification of sealed legacy sidecars that omit this additive
+    # object; schedules that claim colored-BGS evidence require it separately.
+    if "colored_block_gauss_seidel" not in last_failure:
+        return
+    colored = last_failure.get("colored_block_gauss_seidel")
+    if not isinstance(colored, dict):
+        raise ValueError(
+            f"{label}: last_failure colored-BGS diagnostics are unavailable/invalid"
+        )
+    expected_colored_fields = {
+        "enabled",
+        "participant_affinity_enabled",
+        "used",
+        "solves",
+        "dispatches",
+        "participants",
+        "manifolds",
+        "colors",
+        "max_manifolds_per_color",
+        "logical_cpu_ids",
+        "max_phase_logical_cpu_ids",
+    }
+    if set(colored) != expected_colored_fields:
+        raise ValueError(f"{label}: last_failure colored-BGS fields changed")
+    for name in ("enabled", "participant_affinity_enabled", "used"):
+        if not isinstance(colored.get(name), bool):
+            raise ValueError(f"{label}: last_failure colored-BGS {name} is invalid")
+    counter_fields = (
+        "solves",
+        "dispatches",
+        "participants",
+        "manifolds",
+        "colors",
+        "max_manifolds_per_color",
+    )
+    for name in counter_fields:
+        value = colored.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{label}: last_failure colored-BGS {name} is invalid")
+    for name in ("logical_cpu_ids", "max_phase_logical_cpu_ids"):
+        values = colored.get(name)
+        if (
+            not isinstance(values, list)
+            or any(
+                isinstance(value, bool) or not isinstance(value, int) or value < 0
+                for value in values
+            )
+            or values != sorted(set(values))
+        ):
+            raise ValueError(f"{label}: last_failure colored-BGS {name} is invalid")
+    if len(colored["max_phase_logical_cpu_ids"]) > colored["participants"]:
+        raise ValueError(
+            f"{label}: last_failure colored-BGS max-phase CPUs exceed participants"
+        )
+    topology = (
+        colored["manifolds"],
+        colored["colors"],
+        colored["max_manifolds_per_color"],
+    )
+    if any(topology) and not all(value > 0 for value in topology):
+        raise ValueError(f"{label}: last_failure colored-BGS topology is incomplete")
+    if colored["colors"] > 0:
+        if colored["colors"] > colored["manifolds"]:
+            raise ValueError(
+                f"{label}: last_failure colored-BGS colors exceed manifolds"
+            )
+        minimum_width = (
+            colored["manifolds"] + colored["colors"] - 1
+        ) // colored["colors"]
+        maximum_width = colored["manifolds"] - colored["colors"] + 1
+        if not minimum_width <= colored["max_manifolds_per_color"] <= maximum_width:
+            raise ValueError(
+                f"{label}: last_failure colored-BGS color width is inconsistent"
+            )
+    if not set(colored["max_phase_logical_cpu_ids"]).issubset(
+        colored["logical_cpu_ids"]
+    ):
+        raise ValueError(
+            f"{label}: last_failure colored-BGS max-phase CPUs are not observed CPUs"
+        )
+    if not colored["enabled"] and (
+        colored["used"]
+        or any(colored[name] != 0 for name in counter_fields)
+        or any(
+            colored[name]
+            for name in ("logical_cpu_ids", "max_phase_logical_cpu_ids")
+        )
+    ):
+        raise ValueError(f"{label}: disabled last_failure colored-BGS state is nonempty")
+    if colored["used"]:
+        if (
+            not colored["enabled"]
+            or colored["solves"] == 0
+            or colored["manifolds"] == 0
+            or colored["colors"] == 0
+            or colored["max_manifolds_per_color"] <= 1
+        ):
+            raise ValueError(f"{label}: last_failure colored-BGS use is inconsistent")
+    elif colored["solves"] != 0:
+        raise ValueError(f"{label}: unused last_failure colored-BGS solves are nonzero")
+    if colored["dispatches"] > 0 and (
+        not colored["enabled"]
+        or colored["participants"] <= 1
+        or not all(value > 0 for value in topology)
+    ):
+        raise ValueError(
+            f"{label}: last_failure colored-BGS dispatch state is inconsistent"
+        )
+    if colored["dispatches"] == 0 and (
+        colored["logical_cpu_ids"] or colored["max_phase_logical_cpu_ids"]
+    ):
+        raise ValueError(
+            f"{label}: last_failure colored-BGS CPUs exist without a dispatch"
+        )
+
+
+def _require_author_card_house_colored_bgs_failed_attempt(
+    diagnostics: dict[str, Any], *, label: str
+) -> dict[str, Any]:
+    failure = diagnostics.get("last_failure")
+    colored = (
+        failure.get("colored_block_gauss_seidel") if isinstance(failure, dict) else None
+    )
+    if not isinstance(colored, dict):
+        raise ValueError(f"{label}: colored-BGS failed-attempt evidence is missing")
+    if (
+        colored.get("enabled") is not True
+        or colored.get("participant_affinity_enabled") is not False
+        or colored.get("used") is not True
+        or colored.get("solves", 0) <= 0
+        or colored.get("dispatches") != 0
+        or colored.get("participants") != 1
+        or colored.get("manifolds", 0) <= 0
+        or colored.get("colors", 0) <= 0
+        or colored.get("max_manifolds_per_color", 0) <= 1
+        or colored.get("logical_cpu_ids") != []
+        or colored.get("max_phase_logical_cpu_ids") != []
+    ):
+        raise ValueError(
+            f"{label}: colored-BGS failed-attempt contract is not one-thread "
+            "ordering-only evidence"
+        )
+    cumulative_solves = _validate_colored_bgs_cumulative_diagnostics(
+        diagnostics, label=label, required=True
+    )
+    if cumulative_solves is None or cumulative_solves < colored["solves"]:
+        raise ValueError(
+            f"{label}: cumulative colored-BGS solves do not retain the failure"
+        )
+    return colored
+
+
+def _require_author_card_house_colored_bgs_usage(
+    diagnostics: dict[str, Any], *, label: str
+) -> int:
+    solves = _validate_colored_bgs_cumulative_diagnostics(
+        diagnostics, label=label, required=True
+    )
+    if solves is None or solves <= 0:
+        raise ValueError(f"{label}: colored-BGS path was never used")
+    return solves
+
 
 def _legacy_demo_command(command: Sequence[str]) -> list[str]:
     return [item for item in command if item != HEADLESS_EXACT_FBF_FAIL_FAST_FLAG]
@@ -3532,6 +3760,7 @@ def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
         "card_house_author_5_impact_current_source",
         "card_house_author_5_impact_source_continuation_current_source",
         "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }
 
@@ -3580,6 +3809,7 @@ def _author_card_house_dynamics_selection(
         }
     if schedule_id in {
         "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }:
         return {
@@ -3895,6 +4125,14 @@ def _is_author_card_house_source_continuation_schedule(
         "card_house_author_5_impact_source_continuation_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }
+
+
+def _is_author_card_house_colored_bgs_diagnostic_schedule(
+    schedule: CaptureSchedule,
+) -> bool:
+    return (schedule.source_schedule_id or schedule.id) == (
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    )
 
 
 def _is_author_masonry_arch_source_continuation_schedule(
@@ -5847,17 +6085,24 @@ def _expected_author_masonry_arch_solver_contract(
 
 
 def _expected_author_card_house_solver_contract(
-    solver_lane: str, *, source_continuation: bool = False
+    solver_lane: str,
+    *,
+    source_continuation: bool = False,
+    colored_bgs_diagnostic: bool = False,
 ) -> dict[str, Any]:
     if solver_lane not in SOLVER_LANES:
         raise ValueError(f"unsupported author card-house solver lane {solver_lane!r}")
     exact = solver_lane == "exact"
+    if colored_bgs_diagnostic and not exact:
+        raise ValueError("colored-BGS diagnostic requires the exact solver lane")
+    if colored_bgs_diagnostic and source_continuation:
+        raise ValueError("colored-BGS diagnostic cannot request source continuation")
     contract = {
         "lane": "exact_fbf" if exact else "boxed_lcp",
         "split_impulse_enabled": False,
         "source_inner_initialization_requested": exact,
         "source_inner_initialization_active": exact,
-        "colored_block_gauss_seidel_enabled": False,
+        "colored_block_gauss_seidel_enabled": colored_bgs_diagnostic,
         "participant_affinity_enabled": False,
         "exact_options": (
             {
@@ -6207,6 +6452,9 @@ def _validate_author_card_house_adapter_contract(
         schedule.solver_lane,
         source_continuation=_is_author_card_house_source_continuation_schedule(
             schedule
+        ),
+        colored_bgs_diagnostic=(
+            _is_author_card_house_colored_bgs_diagnostic_schedule(schedule)
         ),
     ):
         raise ValueError(f"{sidecar_path}: author card-house solver contract changed")
@@ -7718,6 +7966,7 @@ def _validate_failed_exact_fbf_sidecar(
         "boxed_lcp_fallbacks",
     )
     prior_counters = {name: 0 for name in counter_names}
+    prior_colored_bgs_solves: int | None = None
     diagnostics_by_step: dict[int, dict[str, Any]] = {}
     reason_by_step: dict[int, str | None] = {}
     for item in trajectory_steps:
@@ -7762,6 +8011,25 @@ def _validate_failed_exact_fbf_sidecar(
         _validate_last_failure_diagnostics(
             diagnostics, label=f"{sidecar_path}: step {step}"
         )
+        current_colored_bgs_solves = _validate_colored_bgs_cumulative_diagnostics(
+            diagnostics,
+            label=f"{sidecar_path}: step {step}",
+            required=_is_author_card_house_colored_bgs_diagnostic_schedule(schedule),
+        )
+        if current_colored_bgs_solves is not None:
+            if step == 0 and current_colored_bgs_solves != 0:
+                raise ValueError(
+                    f"{sidecar_path}: step 0: colored-BGS solves exist before simulation"
+                )
+            if (
+                prior_colored_bgs_solves is not None
+                and current_colored_bgs_solves < prior_colored_bgs_solves
+            ):
+                raise ValueError(
+                    f"{sidecar_path}: step {step}: cumulative colored-BGS solves "
+                    "regressed"
+                )
+            prior_colored_bgs_solves = current_colored_bgs_solves
         prior_counters = current_counters
         diagnostics_by_step[step] = diagnostics
         reason_by_step[step] = reason
@@ -7917,12 +8185,24 @@ def _validate_failed_exact_fbf_sidecar(
         raise ValueError(
             f"{sidecar_path}: fail-fast reason does not match diagnostics priority"
         )
+    colored_bgs_failed_attempt = None
+    if _is_author_card_house_colored_bgs_diagnostic_schedule(schedule):
+        colored_bgs_failed_attempt = (
+            _require_author_card_house_colored_bgs_failed_attempt(
+                offending_diagnostics, label=str(sidecar_path)
+            )
+        )
     return {
         "sidecar": str(sidecar_path),
         "completed_steps": completed_steps,
         "reason": state["reason"],
         "headless_exact_fbf_fail_fast": state,
         "physics_contract": physics_contract_report,
+        **(
+            {"colored_bgs_failed_attempt": colored_bgs_failed_attempt}
+            if colored_bgs_failed_attempt is not None
+            else {}
+        ),
         **(
             {
                 "author_backspin_scene_state_metrics": (
@@ -8306,6 +8586,7 @@ def validate_sidecar(
     )
     prior_counters = {name: 0 for name in aggregate_counter_names}
     prior_worst: float | None = None
+    prior_colored_bgs_solves: int | None = None
     continuation_trajectory_state = _new_source_continuation_trajectory_state()
     diagnostics_by_step: dict[int, dict[str, Any]] = {}
     for item in trajectory_steps:
@@ -8340,6 +8621,32 @@ def validate_sidecar(
                 label=f"trajectory step {step}",
             )
             if schedule.exact_fbf_required:
+                current_colored_bgs_solves = (
+                    _validate_colored_bgs_cumulative_diagnostics(
+                        diagnostics,
+                        label=f"trajectory step {step}",
+                        required=(
+                            _is_author_card_house_colored_bgs_diagnostic_schedule(
+                                schedule
+                            )
+                        ),
+                    )
+                )
+                if current_colored_bgs_solves is not None:
+                    if step == 0 and current_colored_bgs_solves != 0:
+                        raise ValueError(
+                            "trajectory step 0: colored-BGS solves exist before "
+                            "simulation"
+                        )
+                    if (
+                        prior_colored_bgs_solves is not None
+                        and current_colored_bgs_solves < prior_colored_bgs_solves
+                    ):
+                        raise ValueError(
+                            f"trajectory step {step}: cumulative colored-BGS "
+                            "solves regressed"
+                        )
+                    prior_colored_bgs_solves = current_colored_bgs_solves
                 current_counters = {
                     name: diagnostics[name] for name in aggregate_counter_names
                 }
@@ -8517,6 +8824,13 @@ def validate_sidecar(
         and final_diagnostics.get("exact_attempts", 0) <= 0
     ):
         raise ValueError(f"{sidecar_path}: exact FBF never attempted a contact group")
+    colored_bgs_cumulative_solves = None
+    if _is_author_card_house_colored_bgs_diagnostic_schedule(schedule):
+        colored_bgs_cumulative_solves = (
+            _require_author_card_house_colored_bgs_usage(
+                final_diagnostics, label=str(sidecar_path)
+            )
+        )
     return {
         "sidecar": str(sidecar_path),
         "shot_count": len(shots),
@@ -8559,6 +8873,11 @@ def validate_sidecar(
             else {}
         ),
         "physics_contract": physics_contract_report,
+        **(
+            {"colored_bgs_cumulative_solves": colored_bgs_cumulative_solves}
+            if colored_bgs_cumulative_solves is not None
+            else {}
+        ),
         **(
             {
                 "author_backspin_scene_state_metrics": (

@@ -523,6 +523,9 @@ public:
   /// Number of attempted colored frozen-cone solves in the last exact attempt.
   std::size_t getLastExactCoulombColoredBlockGaussSeidelSolves() const;
 
+  /// Cumulative attempted colored frozen-cone solves for this solver instance.
+  std::size_t getNumExactCoulombColoredBlockGaussSeidelSolves() const;
+
   /// Number of persistent-pool dispatches in the last exact attempt.
   ///
   /// A multi-threaded FBF attempt dispatches its worker indices once and keeps
@@ -620,6 +623,46 @@ public:
   /// trajectory diagnostics can identify the failed island rather than the
   /// final group solved in the same World step.
   std::size_t getLastFailedExactCoulombContactCount() const;
+
+  /// Whether colored inner BGS was enabled for the retained failed attempt.
+  bool getLastFailedExactCoulombColoredBlockGaussSeidelEnabled() const;
+
+  /// Whether participant affinity was enabled for the retained failure.
+  bool
+  getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled()
+      const;
+
+  /// Whether the retained failed attempt used colored inner BGS.
+  bool getLastFailedExactCoulombColoredBlockGaussSeidelUsed() const;
+
+  /// Colored frozen-cone solves in the retained failed attempt.
+  std::size_t getLastFailedExactCoulombColoredBlockGaussSeidelSolves() const;
+
+  /// Persistent-pool dispatches in the retained failed attempt.
+  std::size_t getLastFailedExactCoulombColoredBlockGaussSeidelDispatches()
+      const;
+
+  /// Maximum colored participants in the retained failed attempt.
+  std::size_t getLastFailedExactCoulombColoredBlockGaussSeidelParticipants()
+      const;
+
+  /// Contact manifolds in the retained failed attempt's colored schedule.
+  std::size_t getLastFailedExactCoulombColoredBlockGaussSeidelManifolds() const;
+
+  /// Sequential colors in the retained failed attempt's schedule.
+  std::size_t getLastFailedExactCoulombColoredBlockGaussSeidelColors() const;
+
+  /// Largest independent-manifold color in the retained failed attempt.
+  std::size_t
+  getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor() const;
+
+  /// Logical CPU IDs observed in the retained failed attempt.
+  std::vector<int>
+  getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds() const;
+
+  /// Largest one-dispatch CPU set in the retained failed attempt.
+  std::vector<int>
+  getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds() const;
 
   /// Outer FBF iterations from the most recent failed exact-Coulomb solve.
   int getLastFailedExactCoulombIterations() const;

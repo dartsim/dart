@@ -35,6 +35,7 @@ pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_cur
 pixi run demos -- --scene fbf_author_card_house_5_impact_current_source
 pixi run demos -- --scene fbf_author_card_house_5_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_card_house_10_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source
 pixi run demos -- --scene fbf_author_card_house_10_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source
@@ -176,7 +177,20 @@ The separate ten-level current-source pair follows the same boundary.
 `fbf_author_card_house_10_impact_current_source` binds the supported
 `--levels 10 --frames 800` selection to 155 cards, four existing cubes, the
 source's heterogeneous per-shape gap values, 3,200 DART substeps, and a
-runner-scheduled release after completed step 1,600. The additive
+runner-scheduled release after completed step 1,600. The separately named
+`fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source` exposes
+a one-factor blocker diagnostic over that strict scene: it enables DART's
+deterministic manifold-colored inner BGS. Its qualifying 40-step evidence
+schedule retains one solver thread, disabled participant affinity, strict
+tolerance and iteration caps, no
+accepted outer cap, no fallback, no source continuation, and the same contact
+frontend and state. The interactive host retains its usual solver controls,
+but only the exact lane qualifies for this diagnostic. Its bounded exact-only
+evidence schedule runs 40 fail-fast steps and retains failed-group colored-path
+counters in the sidecar.
+It tests DART ordering only—not the source solver's per-contact coloring,
+parallel performance, global-workspace scope, trajectory/outcome parity,
+Tables 6-7, video, or paper parity. The additive
 `fbf_author_card_house_10_impact_source_continuation_current_source` scene
 keeps that geometry, contact frontend, clock, camera, and release action while
 requesting continuation only in its exact-FBF lane. The paper video contains

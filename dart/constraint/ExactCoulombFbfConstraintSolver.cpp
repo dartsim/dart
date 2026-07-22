@@ -367,6 +367,7 @@ struct ExactCoulombColoredBlockGaussSeidelState
   bool participantAffinityEnabled = false;
   bool used = false;
   std::size_t solves = 0u;
+  std::size_t cumulativeSolves = 0u;
   std::size_t dispatches = 0u;
   std::size_t maxParticipants = 0u;
   std::size_t manifoldCount = 0u;
@@ -403,6 +404,7 @@ struct ExactCoulombLastFailureState
   detail::ExactCoulombConstraintBuildStatus buildStatus
       = detail::ExactCoulombConstraintBuildStatus::EmptyInput;
   std::size_t contactCount = 0u;
+  ExactCoulombColoredBlockGaussSeidelState coloredBlockGaussSeidel;
 };
 
 bool isPreferredExactCoulombCpuPhaseSet(
@@ -734,6 +736,7 @@ void recordExactCoulombColoredBlockGaussSeidelState(
   auto& state = exactCoulombColoredBlockGaussSeidelStateBySolver()[solver];
   state.used = latest.used;
   state.solves = latest.solves;
+  state.cumulativeSolves += latest.solves;
   state.dispatches = latest.dispatches;
   state.maxParticipants = latest.maxParticipants;
   state.manifoldCount = latest.manifoldCount;
@@ -883,11 +886,14 @@ void recordExactCoulombLastFailureState(
     detail::ExactCoulombConstraintBuildStatus buildStatus,
     std::size_t contactCount)
 {
+  const auto coloredBlockGaussSeidel
+      = getExactCoulombColoredBlockGaussSeidelState(solver);
   std::lock_guard<std::mutex> lock(exactCoulombLastFailureStateMutex());
   auto& state = exactCoulombLastFailureStateBySolver()[solver];
   state.status = status;
   state.buildStatus = buildStatus;
   state.contactCount = contactCount;
+  state.coloredBlockGaussSeidel = coloredBlockGaussSeidel;
 }
 
 void eraseExactCoulombLastFailureState(
@@ -2007,6 +2013,13 @@ std::size_t ExactCoulombFbfConstraintSolver::
 
 //==============================================================================
 std::size_t ExactCoulombFbfConstraintSolver::
+    getNumExactCoulombColoredBlockGaussSeidelSolves() const
+{
+  return getExactCoulombColoredBlockGaussSeidelState(this).cumulativeSolves;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
     getLastExactCoulombColoredBlockGaussSeidelDispatches() const
 {
   return getExactCoulombColoredBlockGaussSeidelState(this).dispatches;
@@ -2176,6 +2189,93 @@ std::size_t
 ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombContactCount() const
 {
   return getExactCoulombLastFailureState(this).contactCount;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelEnabled() const
+{
+  return getExactCoulombLastFailureState(this).coloredBlockGaussSeidel.enabled;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled()
+        const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.participantAffinityEnabled;
+}
+
+//==============================================================================
+bool ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelUsed() const
+{
+  return getExactCoulombLastFailureState(this).coloredBlockGaussSeidel.used;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelSolves() const
+{
+  return getExactCoulombLastFailureState(this).coloredBlockGaussSeidel.solves;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelDispatches() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.dispatches;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelParticipants() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.maxParticipants;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelManifolds() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.manifoldCount;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelColors() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.colorCount;
+}
+
+//==============================================================================
+std::size_t ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.maxManifoldsPerColor;
+}
+
+//==============================================================================
+std::vector<int> ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds() const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.logicalCpuIds;
+}
+
+//==============================================================================
+std::vector<int> ExactCoulombFbfConstraintSolver::
+    getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds()
+        const
+{
+  return getExactCoulombLastFailureState(this)
+      .coloredBlockGaussSeidel.maxPhaseLogicalCpuIds;
 }
 
 //==============================================================================

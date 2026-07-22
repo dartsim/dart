@@ -46,13 +46,20 @@ def _write_frames(module, schedule, output_dir):
 
     for step in schedule.capture_steps:
         path = module._frame_path(output_dir, step)
-        pixels = bytearray([20 + step, 40 + step, 60 + step] * (640 * 480))
+        pixels = bytearray(
+            [20 + step, 40 + step, 60 + step]
+            * (schedule.width * schedule.height)
+        )
         pixels[0:3] = bytes((200 - step, 100 + step, 30 + step))
-        viewport_pixel = (100 * 640 + 270) * 3
+        viewport_row = min(100, schedule.height - 1)
+        viewport_column = min(270, schedule.width - 1)
+        viewport_pixel = (
+            viewport_row * schedule.width + viewport_column
+        ) * 3
         pixels[viewport_pixel : viewport_pixel + 3] = bytes(
             (180 - step, 90 + step, 20 + step)
         )
-        write_png(path, 640, 480, bytes(pixels))
+        write_png(path, schedule.width, schedule.height, bytes(pixels))
 
 
 def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
@@ -76,6 +83,7 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
                 "contacts": 0 if step == 0 else 1,
                 "exact_failures": 0,
                 "boxed_lcp_fallbacks": 0,
+                "colored_block_gauss_seidel": {"solves": 0},
                 "last_failure": None,
             }
             if schedule.exact_fbf_required
@@ -215,6 +223,19 @@ def _last_failure_diagnostics():
         "safe_step_size": 0.277,
         "coupling_variation_ratio": 0.0053,
         "shrink_iterations": 0,
+        "colored_block_gauss_seidel": {
+            "enabled": False,
+            "participant_affinity_enabled": False,
+            "used": False,
+            "solves": 0,
+            "dispatches": 0,
+            "participants": 0,
+            "manifolds": 0,
+            "colors": 0,
+            "max_manifolds_per_color": 0,
+            "logical_cpu_ids": [],
+            "max_phase_logical_cpu_ids": [],
+        },
     }
 
 
@@ -484,6 +505,7 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "exact_solves": 0,
         "residual": None,
         "worst_residual": None,
+        "colored_block_gauss_seidel": {"solves": 0},
         "last_failure": _last_failure_diagnostics(),
     }
     clean_diagnostics = {
@@ -494,6 +516,7 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "exact_solves": 0,
         "residual": None,
         "worst_residual": None,
+        "colored_block_gauss_seidel": {"solves": 0},
         "last_failure": None,
     }
     steps = [
@@ -1202,10 +1225,17 @@ def _author_masonry_arch_101_scene_state(
 
 
 def _author_card_house_adapter_contract(
-    module, *, solver_lane="exact", source_continuation=False, levels=4
+    module,
+    *,
+    solver_lane="exact",
+    source_continuation=False,
+    colored_bgs_diagnostic=False,
+    levels=4,
 ):
     if levels not in {4, 5, 10}:
         raise ValueError("unsupported author card-house test level count")
+    if colored_bgs_diagnostic and (levels != 10 or source_continuation):
+        raise ValueError("invalid colored-BGS diagnostic test configuration")
     source_default_timing = levels in {5, 10}
     frames = 600 if levels == 4 else 800
     card_count = {4: 26, 5: 40, 10: 155}[levels]
@@ -1216,6 +1246,10 @@ def _author_card_house_adapter_contract(
         scene_id = (
             f"fbf_author_card_house_{levels}_impact_"
             "source_continuation_current_source"
+        )
+    elif colored_bgs_diagnostic:
+        scene_id = (
+            "fbf_author_card_house_10_impact_colored_bgs_diagnostic_" "current_source"
         )
     claim_boundary = {
         "current_source_parameterized_configuration_port": True,
@@ -1427,7 +1461,9 @@ def _author_card_house_adapter_contract(
             },
             "process_state": {"observed_contact_erp": 0.0},
             "solver": module._expected_author_card_house_solver_contract(
-                solver_lane, source_continuation=source_continuation
+                solver_lane,
+                source_continuation=source_continuation,
+                colored_bgs_diagnostic=colored_bgs_diagnostic,
             ),
             "inventory": {
                 "cards": card_count,
@@ -2021,6 +2057,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "masonry_arch_101_author_standing_current_source",
         "card_house_10_construction",
         "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
         "card_house_author_5_construction",
         "card_house_10_dynamics",
@@ -2377,6 +2414,23 @@ def test_source_continuation_diagnostics_reject_corrupt_group_telemetry(mutation
         module._validate_source_continuation_diagnostics(diagnostics, label="fixture")
 
 
+def test_source_continuation_diagnostics_reject_malformed_present_colored_bgs():
+    module = _load_module()
+
+    for colored in (
+        None,
+        {"solves": -1},
+        {"solves": True},
+        {"solves": 0, "extra": 1},
+    ):
+        diagnostics = _source_continuation_diagnostics()
+        diagnostics["colored_block_gauss_seidel"] = colored
+        with pytest.raises(ValueError, match="cumulative colored-BGS"):
+            module._validate_source_continuation_diagnostics(
+                diagnostics, label="fixture"
+            )
+
+
 def test_strict_exact_sidecar_requires_nontriggered_fail_fast_state(tmp_path):
     module = _load_module()
     schedule = _test_schedule(module, exact_required=True)
@@ -2644,12 +2698,18 @@ def test_partial_source_continuation_sidecar_binds_event_prefix(tmp_path, prefix
         ("residual", None, "residual terms are inconsistent"),
         ("residual", 4.2e-4, "residual aggregate is inconsistent"),
         ("step_size", 0.0, "step_size is invalid"),
+        (
+            "colored_block_gauss_seidel",
+            None,
+            "colored-BGS diagnostics are unavailable",
+        ),
     ],
 )
 def test_last_failure_diagnostics_reject_incoherent_fields(field, value, message):
     module = _load_module()
     diagnostics = {
         "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 200},
         "last_failure": _last_failure_diagnostics(),
     }
     diagnostics["last_failure"][field] = value
@@ -2662,12 +2722,287 @@ def test_last_failure_diagnostics_accepts_zero_iteration_cap():
     module = _load_module()
     diagnostics = {
         "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 200},
         "last_failure": _last_failure_diagnostics(),
     }
     diagnostics["last_failure"]["best_iteration"] = 0
     diagnostics["last_failure"]["iterations"] = 0
 
     module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_last_failure_diagnostics_accepts_legacy_colored_bgs_omission():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"].pop("colored_block_gauss_seidel")
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_colored_bgs_failed_attempt_is_retained_as_one_thread_evidence():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 200},
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"]["colored_block_gauss_seidel"].update(
+        {
+            "enabled": True,
+            "used": True,
+            "solves": 200,
+            "participants": 1,
+            "manifolds": 17,
+            "colors": 9,
+            "max_manifolds_per_color": 3,
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+    retained = module._require_author_card_house_colored_bgs_failed_attempt(
+        diagnostics, label="test"
+    )
+    assert retained["solves"] == 200
+    assert retained["dispatches"] == 0
+    assert retained["participants"] == 1
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("enabled", False),
+        ("used", False),
+        ("solves", 0),
+        ("dispatches", 1),
+        ("participants", 2),
+        ("manifolds", 0),
+        ("colors", 0),
+        ("max_manifolds_per_color", 1),
+        ("logical_cpu_ids", [0]),
+    ],
+)
+def test_colored_bgs_failed_attempt_rejects_confounded_or_unused_state(field, value):
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 200},
+        "last_failure": _last_failure_diagnostics(),
+    }
+    colored = diagnostics["last_failure"]["colored_block_gauss_seidel"]
+    colored.update(
+        {
+            "enabled": True,
+            "used": True,
+            "solves": 200,
+            "participants": 1,
+            "manifolds": 17,
+            "colors": 9,
+            "max_manifolds_per_color": 3,
+        }
+    )
+    colored[field] = value
+
+    with pytest.raises(ValueError, match="colored-BGS"):
+        module._require_author_card_house_colored_bgs_failed_attempt(
+            diagnostics, label="test"
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        {"manifolds": 2, "colors": 3, "max_manifolds_per_color": 2},
+        {"manifolds": 8, "colors": 3, "max_manifolds_per_color": 1},
+        {"manifolds": 8, "colors": 3, "max_manifolds_per_color": 7},
+        {"logical_cpu_ids": [1], "max_phase_logical_cpu_ids": [2]},
+    ],
+)
+def test_colored_bgs_failed_attempt_rejects_impossible_topology(mutation):
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 200},
+        "last_failure": _last_failure_diagnostics(),
+    }
+    colored = diagnostics["last_failure"]["colored_block_gauss_seidel"]
+    colored.update(
+        {
+            "enabled": True,
+            "used": True,
+            "solves": 200,
+            "participants": 1,
+            "manifolds": 17,
+            "colors": 9,
+            "max_manifolds_per_color": 3,
+        }
+    )
+    colored.update(mutation)
+
+    with pytest.raises(ValueError, match="colored-BGS"):
+        module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_colored_bgs_failure_diagnostics_accept_dispatch_before_inner_solve():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 0},
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"]["colored_block_gauss_seidel"].update(
+        {
+            "enabled": True,
+            "used": False,
+            "solves": 0,
+            "dispatches": 2,
+            "participants": 2,
+            "manifolds": 3,
+            "colors": 2,
+            "max_manifolds_per_color": 2,
+            "logical_cpu_ids": [1, 2, 3],
+            "max_phase_logical_cpu_ids": [1, 2],
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_colored_bgs_failure_diagnostics_accept_preworker_inner_failure():
+    module = _load_module()
+    diagnostics = {
+        "exact_failures": 1,
+        "colored_block_gauss_seidel": {"solves": 1},
+        "last_failure": _last_failure_diagnostics(),
+    }
+    diagnostics["last_failure"]["colored_block_gauss_seidel"].update(
+        {
+            "enabled": True,
+            "used": True,
+            "solves": 1,
+            "dispatches": 0,
+            "participants": 0,
+            "manifolds": 2,
+            "colors": 1,
+            "max_manifolds_per_color": 2,
+        }
+    )
+
+    module._validate_last_failure_diagnostics(diagnostics, label="test")
+
+
+def test_colored_bgs_cumulative_usage_is_required_for_success_evidence():
+    module = _load_module()
+
+    assert (
+        module._require_author_card_house_colored_bgs_usage(
+            {"colored_block_gauss_seidel": {"solves": 17}}, label="test"
+        )
+        == 17
+    )
+    for diagnostics in (
+        {},
+        {"colored_block_gauss_seidel": {"solves": 0}},
+        {"colored_block_gauss_seidel": {"solves": True}},
+        {"colored_block_gauss_seidel": {"solves": 1, "extra": 2}},
+    ):
+        with pytest.raises(ValueError, match="colored-BGS"):
+            module._require_author_card_house_colored_bgs_usage(
+                diagnostics, label="test"
+            )
+
+
+def test_colored_bgs_failed_sidecar_binds_contract_and_retained_attempt(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    ]
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo, step=2)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["physics_contract"] = _author_card_house_adapter_contract(
+        module, levels=10, colored_bgs_diagnostic=True
+    )
+    for diagnostics in (
+        sidecar["steps"][2]["solver_diagnostics"],
+        sidecar["solver_diagnostics"],
+    ):
+        diagnostics["colored_block_gauss_seidel"]["solves"] = 200
+        diagnostics["last_failure"]["colored_block_gauss_seidel"].update(
+            {
+                "enabled": True,
+                "used": True,
+                "solves": 200,
+                "participants": 1,
+                "manifolds": 17,
+                "colors": 9,
+                "max_manifolds_per_color": 3,
+            }
+        )
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    report = module._validate_failed_exact_fbf_sidecar(
+        schedule, output_dir, expected_demo=demo
+    )
+    assert report["completed_steps"] == 2
+    assert report["colored_bgs_failed_attempt"]["used"] is True
+    assert report["colored_bgs_failed_attempt"]["dispatches"] == 0
+
+
+def test_colored_bgs_failed_sidecar_rejects_nonmonotonic_cumulative_use(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    ]
+    output_dir = tmp_path / schedule.id
+    demo = tmp_path / "dart-demos"
+    _write_failed_sidecar(module, schedule, output_dir, demo, step=2)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["physics_contract"] = _author_card_house_adapter_contract(
+        module, levels=10, colored_bgs_diagnostic=True
+    )
+    for diagnostics in (
+        sidecar["steps"][2]["solver_diagnostics"],
+        sidecar["solver_diagnostics"],
+    ):
+        diagnostics["colored_block_gauss_seidel"]["solves"] = 200
+        diagnostics["last_failure"]["colored_block_gauss_seidel"].update(
+            {
+                "enabled": True,
+                "used": True,
+                "solves": 200,
+                "participants": 1,
+                "manifolds": 17,
+                "colors": 9,
+                "max_manifolds_per_color": 3,
+            }
+        )
+
+    sidecar["steps"][0]["solver_diagnostics"]["colored_block_gauss_seidel"][
+        "solves"
+    ] = 1
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+    with pytest.raises(ValueError, match="exist before simulation"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
+
+    sidecar["steps"][0]["solver_diagnostics"]["colored_block_gauss_seidel"][
+        "solves"
+    ] = 0
+    sidecar["steps"][1]["solver_diagnostics"]["colored_block_gauss_seidel"][
+        "solves"
+    ] = 201
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+    with pytest.raises(ValueError, match="cumulative colored-BGS solves regressed"):
+        module._validate_failed_exact_fbf_sidecar(
+            schedule, output_dir, expected_demo=demo
+        )
 
 
 @pytest.mark.parametrize(
@@ -3172,6 +3507,9 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         "makeFbfAuthorCardHouse10ImpactCurrentSourceScene": (
             "fbf_author_card_house_10_impact_current_source"
         ),
+        "makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene": (
+            "fbf_author_card_house_10_impact_colored_bgs_diagnostic_" "current_source"
+        ),
         "makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene": (
             "fbf_author_card_house_10_impact_source_continuation_current_source"
         ),
@@ -3344,6 +3682,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "painleve_author_mu055",
             "card_house_10_construction",
             "card_house_author_10_impact_current_source",
+            "card_house_author_10_impact_colored_bgs_diagnostic_current_source",
             "card_house_author_10_impact_source_continuation_current_source",
             "card_house_author_5_construction",
             "card_house_author_5_impact_current_source",
@@ -3372,6 +3711,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "card_house_10_construction": "fbf_paper_card_house_10",
         "card_house_author_10_impact_current_source": (
             "fbf_author_card_house_10_impact_current_source"
+        ),
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source": (
+            "fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source"
         ),
         "card_house_author_10_impact_source_continuation_current_source": (
             "fbf_author_card_house_10_impact_source_continuation_current_source"
@@ -3426,6 +3768,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
             "incline_author_sweep_current_source",
             "card_house_author_5_construction",
             "card_house_author_10_impact_current_source",
+            "card_house_author_10_impact_colored_bgs_diagnostic_current_source",
             "card_house_author_10_impact_source_continuation_current_source",
             "card_house_author_5_impact_current_source",
             "card_house_author_5_impact_source_continuation_current_source",
@@ -3988,6 +4331,89 @@ def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
         contract["adapter_boundaries"]["source_separation_over_dt_term_represented"]
         is True
     )
+
+
+def test_author_card_house_10_colored_bgs_contract_has_one_factor_delta(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    ]
+    baseline = _author_card_house_adapter_contract(module, levels=10)
+    diagnostic = _author_card_house_adapter_contract(
+        module, levels=10, colored_bgs_diagnostic=True
+    )
+
+    report = module._validate_author_card_house_adapter_contract(
+        schedule,
+        {"physics_contract": diagnostic},
+        sidecar_path=tmp_path / "colored.json",
+    )
+    assert report["solver_lane"] == "exact_fbf"
+
+    baseline["dart_adapter"]["scene_id"] = diagnostic["dart_adapter"]["scene_id"]
+    baseline["dart_adapter"]["solver"]["colored_block_gauss_seidel_enabled"] = True
+    assert diagnostic == baseline
+    assert diagnostic["dart_adapter"]["solver"]["participant_affinity_enabled"] is False
+    assert "source_continuation" not in diagnostic["dart_adapter"]["solver"]
+    assert (
+        diagnostic["dart_adapter"]["solver"]["exact_options"][
+            "accept_outer_max_iterations"
+        ]
+        is False
+    )
+    assert (
+        diagnostic["dart_adapter"]["solver"]["exact_options"][
+            "fallback_to_boxed_lcp_enabled"
+        ]
+        is False
+    )
+
+
+def test_author_card_house_10_colored_bgs_success_requires_cumulative_use(
+    tmp_path,
+):
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    ]
+    output_dir = tmp_path / schedule.id
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["physics_contract"] = _author_card_house_adapter_contract(
+        module, levels=10, colored_bgs_diagnostic=True
+    )
+    diagnostics_by_step = {
+        item["step"]: item["solver_diagnostics"] for item in sidecar["steps"]
+    }
+    for step, diagnostics in diagnostics_by_step.items():
+        diagnostics["colored_block_gauss_seidel"]["solves"] = step
+    for shot in sidecar["shots"]:
+        shot["solver_diagnostics"] = json.loads(
+            json.dumps(diagnostics_by_step[shot["step"]])
+        )
+    sidecar["solver_diagnostics"] = json.loads(
+        json.dumps(diagnostics_by_step[schedule.total_steps])
+    )
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    report = module.validate_sidecar(schedule, output_dir)
+    assert report["colored_bgs_cumulative_solves"] == schedule.total_steps
+
+    for diagnostics in diagnostics_by_step.values():
+        diagnostics["colored_block_gauss_seidel"]["solves"] = 0
+    for shot in sidecar["shots"]:
+        shot["solver_diagnostics"] = json.loads(
+            json.dumps(diagnostics_by_step[shot["step"]])
+        )
+    sidecar["solver_diagnostics"] = json.loads(
+        json.dumps(diagnostics_by_step[schedule.total_steps])
+    )
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="colored-BGS path was never used"):
+        module.validate_sidecar(schedule, output_dir)
 
 
 @pytest.mark.parametrize(
@@ -5879,8 +6305,8 @@ def test_author_card_house_construction_schedule_has_explicit_clock_and_boundary
     assert schedule.panel_steps == (0,)
     assert schedule.video_steps == ()
     assert schedule.encode_mp4 is False
-    assert schedule.encode_gif is False
     assert schedule.expect_motion is False
+    assert schedule.encode_gif is False
     assert schedule.exact_fbf_required is False
     assert schedule.collision_detector == "native"
     assert schedule.collision_detector_override is False
@@ -6174,6 +6600,54 @@ def test_author_card_house_10_impact_schedule_is_source_selected_and_fail_closed
     resolved, skips = module._resolve_solver_lanes([schedule], "both")
     assert [item.id for item in resolved] == [schedule.id, boxed.id]
     assert skips == []
+
+
+def test_author_card_house_10_colored_bgs_schedule_is_bounded_and_exact_only():
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_10_impact_colored_bgs_diagnostic_current_source"
+    ]
+    command = module.build_demo_command(
+        schedule, Path("dart-demos"), Path("/tmp/card10-colored")
+    )
+
+    assert schedule.scene == (
+        "fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source"
+    )
+    assert schedule.source_segment == "dart_only_diagnostic_no_source_segment"
+    assert schedule.total_steps == 40
+    assert schedule.threads == 1
+    assert schedule.actions == ()
+    assert schedule.panel_steps == (0,)
+    assert schedule.capture_steps == (0,)
+    assert schedule.video_steps == ()
+    assert schedule.encode_mp4 is False
+    assert schedule.expect_motion is False
+    assert schedule.exact_fbf_required is True
+    assert schedule.source_continuation_required is False
+    assert schedule.supported_solver_lanes == ("exact",)
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert schedule.configuration_dict()["one_factor_delta"] == (
+        "colored_block_gauss_seidel=false -> true"
+    )
+    assert command[command.index("--steps") + 1] == "40"
+    assert command[command.index("--threads") + 1] == "1"
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG not in command
+    assert "--collision-detector" not in command
+    assert "e" not in schedule.pre_run_actions
+
+    resolved, skips = module._resolve_solver_lanes([schedule], "both")
+    assert resolved == [schedule]
+    assert skips == [
+        {
+            "kind": "schedule",
+            "schedule_id": schedule.id,
+            "requested_solver_lane": "boxed",
+            "reason": "scene is exact-only",
+        }
+    ]
 
 
 def test_author_card_house_10_source_continuation_schedule_is_separate():

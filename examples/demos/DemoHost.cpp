@@ -249,10 +249,37 @@ void writeJsonNumber(std::ostream& out, double value)
 }
 
 //==============================================================================
+void writeJsonIntArray(std::ostream& out, const std::vector<int>& values)
+{
+  out << '[';
+  for (std::size_t index = 0u; index < values.size(); ++index) {
+    if (index > 0u)
+      out << ',';
+    out << values[index];
+  }
+  out << ']';
+}
+
+//==============================================================================
 struct SolverDiagnosticsSnapshot
 {
   struct LastFailure
   {
+    struct ColoredBlockGaussSeidel
+    {
+      bool enabled = false;
+      bool participantAffinityEnabled = false;
+      bool used = false;
+      std::size_t solves = 0u;
+      std::size_t dispatches = 0u;
+      std::size_t participants = 0u;
+      std::size_t manifolds = 0u;
+      std::size_t colors = 0u;
+      std::size_t maxManifoldsPerColor = 0u;
+      std::vector<int> logicalCpuIds;
+      std::vector<int> maxPhaseLogicalCpuIds;
+    };
+
     bool available = false;
     std::size_t contacts = 0u;
     std::string status;
@@ -272,6 +299,7 @@ struct SolverDiagnosticsSnapshot
     double safeStepSize = std::numeric_limits<double>::quiet_NaN();
     double couplingVariationRatio = std::numeric_limits<double>::quiet_NaN();
     int shrinkIterations = 0;
+    ColoredBlockGaussSeidel coloredBlockGaussSeidel;
   };
 
   struct GroupOutcome
@@ -310,6 +338,7 @@ struct SolverDiagnosticsSnapshot
   std::size_t exactFailures = 0u;
   std::size_t boxedLcpFallbacks = 0u;
   std::size_t warmStarts = 0u;
+  std::size_t coloredBlockGaussSeidelSolves = 0u;
   std::size_t contacts = 0u;
   bool sourceContinuationRequested = false;
   bool sourceContinuationLastActive = false;
@@ -409,6 +438,8 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
   snapshot.exactFailures = solver->getNumExactCoulombFailures();
   snapshot.boxedLcpFallbacks = solver->getNumBoxedLcpFallbacks();
   snapshot.warmStarts = solver->getNumExactCoulombWarmStarts();
+  snapshot.coloredBlockGaussSeidelSolves
+      = solver->getNumExactCoulombColoredBlockGaussSeidelSolves();
   const auto continuationOptions
       = solver->getExactCoulombSourceContinuationOptions();
   snapshot.sourceContinuationRequested = continuationOptions.enabled;
@@ -524,6 +555,34 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
         = solver->getLastFailedExactCoulombCouplingVariationRatio();
     snapshot.lastFailure.shrinkIterations
         = solver->getLastFailedExactCoulombShrinkIterations();
+    auto& colored = snapshot.lastFailure.coloredBlockGaussSeidel;
+    colored.enabled
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelEnabled();
+    colored.participantAffinityEnabled
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled();
+    colored.used
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelUsed();
+    colored.solves
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelSolves();
+    colored.dispatches
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelDispatches();
+    colored.participants
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelParticipants();
+    colored.manifolds
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelManifolds();
+    colored.colors
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelColors();
+    colored.maxManifoldsPerColor
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor();
+    colored.logicalCpuIds
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds();
+    colored.maxPhaseLogicalCpuIds
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds();
   }
   return snapshot;
 }
@@ -560,6 +619,8 @@ void writeSolverDiagnosticsJson(
   out << ",\n      \"exact_failures\": " << snapshot.exactFailures
       << ",\n      \"boxed_lcp_fallbacks\": " << snapshot.boxedLcpFallbacks
       << ",\n      \"warm_starts\": " << snapshot.warmStarts
+      << ",\n      \"colored_block_gauss_seidel\": {\"solves\": "
+      << snapshot.coloredBlockGaussSeidelSolves << "}"
       << ",\n      \"contacts\": " << snapshot.contacts;
   if (snapshot.sourceContinuationRequested) {
     out << ",\n      \"source_continuation\": {"
@@ -662,8 +723,24 @@ void writeSolverDiagnosticsJson(
   writeJsonNumber(out, failure.safeStepSize);
   out << ",\n        \"coupling_variation_ratio\": ";
   writeJsonNumber(out, failure.couplingVariationRatio);
-  out << ",\n        \"shrink_iterations\": " << failure.shrinkIterations
-      << "\n      }\n    }";
+  out << ",\n        \"shrink_iterations\": " << failure.shrinkIterations;
+  const auto& colored = failure.coloredBlockGaussSeidel;
+  out << ",\n        \"colored_block_gauss_seidel\": {"
+      << "\n          \"enabled\": " << (colored.enabled ? "true" : "false")
+      << ",\n          \"participant_affinity_enabled\": "
+      << (colored.participantAffinityEnabled ? "true" : "false")
+      << ",\n          \"used\": " << (colored.used ? "true" : "false")
+      << ",\n          \"solves\": " << colored.solves
+      << ",\n          \"dispatches\": " << colored.dispatches
+      << ",\n          \"participants\": " << colored.participants
+      << ",\n          \"manifolds\": " << colored.manifolds
+      << ",\n          \"colors\": " << colored.colors
+      << ",\n          \"max_manifolds_per_color\": "
+      << colored.maxManifoldsPerColor << ",\n          \"logical_cpu_ids\": ";
+  writeJsonIntArray(out, colored.logicalCpuIds);
+  out << ",\n          \"max_phase_logical_cpu_ids\": ";
+  writeJsonIntArray(out, colored.maxPhaseLogicalCpuIds);
+  out << "\n        }\n      }\n    }";
 }
 
 //==============================================================================

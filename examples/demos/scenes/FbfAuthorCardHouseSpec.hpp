@@ -88,6 +88,8 @@ inline constexpr const char* kFiveLevelSourceContinuationDynamicsDemoSceneId
     = "fbf_author_card_house_5_impact_source_continuation_current_source";
 inline constexpr const char* kTenLevelDynamicsDemoSceneId
     = "fbf_author_card_house_10_impact_current_source";
+inline constexpr const char* kTenLevelColoredBgsDiagnosticDemoSceneId
+    = "fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source";
 inline constexpr const char* kTenLevelSourceContinuationDynamicsDemoSceneId
     = "fbf_author_card_house_10_impact_source_continuation_current_source";
 inline constexpr const char* kAuthorRepository
@@ -167,6 +169,7 @@ struct DynamicsScenario
   std::size_t levelCount;
   std::size_t selectedFrames;
   bool sourceContinuation;
+  bool coloredBlockGaussSeidelDiagnostic;
   bool sourceContactGapValuesRepresented;
 
   constexpr std::size_t selectedSubsteps() const
@@ -180,17 +183,20 @@ inline constexpr DynamicsScenario kFourLevelImpactScenario{
     kFigureLevelCount,
     kFigureEvidenceFrames,
     false,
+    false,
     false};
 inline constexpr DynamicsScenario kFourLevelSourceContinuationScenario{
     kSourceContinuationDynamicsDemoSceneId,
     kFigureLevelCount,
     kFigureEvidenceFrames,
     true,
+    false,
     false};
 inline constexpr DynamicsScenario kFiveLevelImpactScenario{
     kFiveLevelDynamicsDemoSceneId,
     kDefaultLevelCount,
     kTotalFrames,
+    false,
     false,
     true};
 inline constexpr DynamicsScenario kFiveLevelSourceContinuationScenario{
@@ -198,14 +204,28 @@ inline constexpr DynamicsScenario kFiveLevelSourceContinuationScenario{
     kDefaultLevelCount,
     kTotalFrames,
     true,
+    false,
     true};
 inline constexpr DynamicsScenario kTenLevelImpactScenario{
-    kTenLevelDynamicsDemoSceneId, kTenLevelCount, kTotalFrames, false, true};
+    kTenLevelDynamicsDemoSceneId,
+    kTenLevelCount,
+    kTotalFrames,
+    false,
+    false,
+    true};
+inline constexpr DynamicsScenario kTenLevelColoredBgsDiagnosticScenario{
+    kTenLevelColoredBgsDiagnosticDemoSceneId,
+    kTenLevelCount,
+    kTotalFrames,
+    false,
+    true,
+    true};
 inline constexpr DynamicsScenario kTenLevelSourceContinuationScenario{
     kTenLevelSourceContinuationDynamicsDemoSceneId,
     kTenLevelCount,
     kTotalFrames,
     true,
+    false,
     true};
 
 inline constexpr std::size_t kSourceMaxContacts = 4096u;
@@ -1694,6 +1714,16 @@ inline std::string dynamicsAdapterContractJson(
       && contract.exactSourceContinuationActive) {
     throw std::invalid_argument(
         "author card-house source continuation is unexpectedly active");
+  }
+  if (contract.exactOptionsAvailable
+      && contract.exactColoredBlockGaussSeidelEnabled
+             != scenario.coloredBlockGaussSeidelDiagnostic) {
+    throw std::invalid_argument(
+        "author card-house colored-BGS diagnostic request is inconsistent");
+  }
+  if (contract.exactParticipantAffinityEnabled) {
+    throw std::invalid_argument(
+        "author card-house participant affinity must remain disabled");
   }
 
   std::ostringstream out;

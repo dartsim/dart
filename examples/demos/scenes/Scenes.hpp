@@ -137,6 +137,10 @@ namespace dart_demos {
 /// Research > FBF author card house: source-parameterized ten-level impact.
 [[nodiscard]] DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene();
 
+/// Research > FBF author card house: one-factor colored-BGS diagnostic.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene();
+
 /// Research > FBF author card house: exact source-continuation impact lane.
 [[nodiscard]] DemoScene
 makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene();
