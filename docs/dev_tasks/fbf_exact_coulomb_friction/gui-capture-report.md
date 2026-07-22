@@ -431,8 +431,9 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 `dt=1/240 s`. Exact and boxed share Native `FourPointPlanar`, capacity 4,096,
 and subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
-tests, and exact/boxed contract smoke pass. The strict exact request fails closed at completed step
+The demo build, 13 focused headless/continuation C++ tests, five author-incline
+production-world C++ contract tests, 370 runner Python tests, and exact/boxed
+contract smoke pass. The strict exact request fails closed at completed step
 35 when collision contacts jump from 44 to 68. The constrained groups are 56,
 8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact
 group, then attempts 102 and 103 succeed. Its 100-step request records 103
