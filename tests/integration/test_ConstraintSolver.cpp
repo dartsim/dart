@@ -392,6 +392,38 @@ protected:
   void refreshCollisionObject(collision::CollisionObject*) override {}
 };
 
+class NegativeDepthNativeCollisionDetector final
+  : public collision::NativeCollisionDetector
+{
+public:
+  using NativeCollisionDetector::collide;
+
+  static std::shared_ptr<NegativeDepthNativeCollisionDetector> create()
+  {
+    return std::shared_ptr<NegativeDepthNativeCollisionDetector>(
+        new NegativeDepthNativeCollisionDetector());
+  }
+
+  bool collide(
+      collision::CollisionGroup* group,
+      const collision::CollisionOption& option,
+      collision::CollisionResult* result) override
+  {
+    const bool collided
+        = NativeCollisionDetector::collide(group, option, result);
+    if (result != nullptr) {
+      for (std::size_t i = 0u; i < result->getNumContacts(); ++i) {
+        auto& contact = result->getContact(i);
+        contact.penetrationDepth = -std::abs(contact.penetrationDepth);
+      }
+    }
+    return collided;
+  }
+
+private:
+  NegativeDepthNativeCollisionDetector() = default;
+};
+
 class ExposedThreadedConstraintSolver final
   : public constraint::BoxedLcpConstraintSolver
 {
@@ -584,6 +616,21 @@ public:
   void solveGroupForTest(constraint::ConstrainedGroup& group)
   {
     solveConstrainedGroup(group);
+  }
+
+  void updateConstraintsForTest()
+  {
+    updateConstraints();
+  }
+
+  std::size_t getNumActiveConstraintsForTest() const
+  {
+    return mActiveConstraints.size();
+  }
+
+  std::size_t getNumContactConstraintsForTest() const
+  {
+    return mContactConstraints.size();
   }
 };
 
@@ -2521,6 +2568,96 @@ TEST(ConstraintSolver, SharedFixedCustomContactSupportForcesSerialAfterBuild)
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_EQ(1, solver.getMaxConcurrentSolves());
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    NativeContactGapAdmitsOnlyConfiguredNegativeContactsWithoutBias)
+{
+  auto configuredGround = createSolverTestPlane("configured_ground");
+  auto configuredBox = createSolverTestBox(
+      "configured_box",
+      Eigen::Vector3d::Ones(),
+      Eigen::Vector3d(0.0, 0.0, 0.55),
+      true);
+  auto* configuredGroundShape
+      = configuredGround->getBodyNode(0)->getShapeNode(0);
+  auto* configuredBoxShape = configuredBox->getBodyNode(0)->getShapeNode(0);
+
+  auto configuredDetector = collision::NativeCollisionDetector::create();
+  configuredDetector->setContactGap(configuredGroundShape, 0.1);
+  configuredDetector->setContactGap(configuredBoxShape, 0.005);
+
+  ExposedBoxedLcpConstraintSolver configuredSolver;
+  configuredSolver.setCollisionDetector(configuredDetector);
+  configuredSolver.addSkeleton(configuredGround);
+  configuredSolver.addSkeleton(configuredBox);
+  configuredSolver.getCollisionOption().allowNegativePenetrationDepthContacts
+      = true;
+  configuredSolver.updateConstraintsForTest();
+
+  const auto& configuredResult = configuredSolver.getLastCollisionResult();
+  ASSERT_EQ(1u, configuredResult.getNumContacts());
+  EXPECT_NEAR(-0.05, configuredResult.getContact(0).penetrationDepth, 1e-12);
+  EXPECT_EQ(1u, configuredSolver.getNumContactConstraintsForTest());
+  EXPECT_EQ(1u, configuredSolver.getNumActiveConstraintsForTest());
+
+  auto configuredContact = configuredResult.getContact(0);
+  ExposedContactConstraint configuredConstraint(
+      configuredContact, 0.001, constraint::ContactSurfaceParams{});
+  constraint::ConstraintBase& configuredConstraintBase = configuredConstraint;
+  configuredConstraintBase.update();
+  ASSERT_TRUE(configuredConstraintBase.isActive());
+
+  std::array<double, 3> x{};
+  std::array<double, 3> lo{};
+  std::array<double, 3> hi{};
+  std::array<double, 3> b{};
+  std::array<double, 3> w{};
+  std::array<int, 3> findex{{-1, -1, -1}};
+  constraint::ConstraintInfo info;
+  info.x = x.data();
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.b = b.data();
+  info.w = w.data();
+  info.findex = findex.data();
+  info.invTimeStep = 1000.0;
+  info.useSplitImpulse = false;
+
+  const double previousErp
+      = constraint::ContactConstraint::getErrorReductionParameter();
+  constraint::ContactConstraint::setErrorReductionParameter(0.2);
+  configuredConstraint.getInformation(&info);
+  constraint::ContactConstraint::setErrorReductionParameter(previousErp);
+
+  EXPECT_NEAR(0.0, b[0], 1e-12);
+  EXPECT_NEAR(0.0, b[1], 1e-12);
+  EXPECT_NEAR(0.0, b[2], 1e-12);
+
+  auto unconfiguredGround = createSolverTestPlane("unconfigured_ground");
+  auto unconfiguredBox = createSolverTestBox(
+      "unconfigured_box",
+      Eigen::Vector3d::Ones(),
+      Eigen::Vector3d(0.0, 0.0, 0.49),
+      true);
+  auto unconfiguredDetector = NegativeDepthNativeCollisionDetector::create();
+
+  ExposedBoxedLcpConstraintSolver unconfiguredSolver;
+  unconfiguredSolver.setCollisionDetector(unconfiguredDetector);
+  unconfiguredSolver.addSkeleton(unconfiguredGround);
+  unconfiguredSolver.addSkeleton(unconfiguredBox);
+  unconfiguredSolver.getCollisionOption().allowNegativePenetrationDepthContacts
+      = true;
+  unconfiguredSolver.updateConstraintsForTest();
+
+  const auto& unconfiguredResult = unconfiguredSolver.getLastCollisionResult();
+  ASSERT_GT(unconfiguredResult.getNumContacts(), 0u);
+  for (std::size_t i = 0u; i < unconfiguredResult.getNumContacts(); ++i)
+    EXPECT_LT(unconfiguredResult.getContact(i).penetrationDepth, 0.0);
+  EXPECT_EQ(0u, unconfiguredSolver.getNumContactConstraintsForTest());
+  EXPECT_EQ(0u, unconfiguredSolver.getNumActiveConstraintsForTest());
 }
 
 //==============================================================================

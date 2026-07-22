@@ -38,6 +38,8 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -89,6 +91,34 @@ constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
+
+//==============================================================================
+static bool isConfiguredNativeProximityContact(
+    const collision::Contact& contact)
+{
+  if (!(contact.penetrationDepth < 0.0)
+      || !std::isfinite(contact.penetrationDepth)) {
+    return false;
+  }
+
+  const auto* object1 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact.collisionObject1);
+  const auto* object2 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact.collisionObject2);
+  if (!object1 || !object2)
+    return false;
+
+  const auto* detector
+      = dynamic_cast<const collision::NativeCollisionDetector*>(
+          object1->getCollisionDetector());
+  if (!detector || object2->getCollisionDetector() != detector)
+    return false;
+
+  const double summedGap = detector->getContactGap(object1->getShapeFrame())
+                           + detector->getContactGap(object2->getShapeFrame());
+  const double separation = -contact.penetrationDepth;
+  return std::isfinite(summedGap) && summedGap > 0.0 && separation < summedGap;
+}
 
 bool contactTouchesPlaneShape(const collision::Contact& collisionContact)
 {
@@ -1287,12 +1317,16 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       bodyNode2->setColliding(true);
       DART_SUPPRESS_DEPRECATED_END
 
-      // If penetration depth is negative, then the collision isn't really
-      // happening and the contact point should be ignored.
-      // TODO(MXG): Investigate ways to leverage the proximity information of a
-      //            negative penetration to improve collision handling.
-      if (contact.penetrationDepth < 0.0)
+      // Ordinary negative-depth backend contacts remain non-constraints. Native
+      // speculative contacts are admitted only when their detector explicitly
+      // configures per-ShapeFrame gaps and the physical separation is strictly
+      // inside the summed gap. ContactConstraint clamps their penetration error
+      // correction to zero, so they impose only the non-closing velocity cone.
+      if (contact.penetrationDepth < 0.0
+          && (!mCollisionOption.allowNegativePenetrationDepthContacts
+              || !isConfiguredNativeProximityContact(contact))) {
         continue;
+      }
 
       if (isSoftContact(bodyNode1, bodyNode2)) {
         SoftContactConstraintPtr softContactConstraint;
