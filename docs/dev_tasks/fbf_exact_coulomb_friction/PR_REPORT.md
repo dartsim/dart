@@ -894,7 +894,45 @@ media:
 | Older reconstructed dynamic 10-level card house | No completed step 1 | No valid artifact; distinct from the source-supported lane |
 | Source-supported ten-level card house | Previous checkpoint `ffe23d347b0` retains the historical step-1 blocker; predictive checkpoint `3647959a188` clears step 1, then fails after completed step 31 on a 79-contact group while boxed completes 40 | Improved but still strict-prefix-blocked; no source/trajectory/physical/paper parity and no valid long artifact or final video |
 
-The local literal-wedge standing bundle at
+The current-head exact/boxed literal-standing recapture is ignored outside Git
+at `assets/pr_media_current_head_fig07/`. Capture and independent reuse
+verification pass for two 600-step members and their synchronized group. Their
+external summary SHA-256 values are
+`5a1de1f915d75c373f06aeb48978b92a540bc245427c55584f68ad178ea491bb` and
+`e4b3d44d5f2afebef9f79bcb92b38ee282f5635c38fa4be2f4264a5f961acce5`.
+
+Exact records 600/600 solves, 96 contacts, zero accepted
+caps/failures/fallbacks, final/worst residual
+`9.778093504499096e-7` / `9.999807145410957e-7`, 599 warm starts, and 7,933
+iterations. Exact timeline/clip/panel/metadata hashes are
+`6041addd27a79a747cdbcdaafb495f787d4e90a906ec0616aa16e5a33d9c9b74`,
+`24c110421572500bec9f43a431061ae5a386e7e59940e86030e3059cc90d9676`,
+`cd3498c90fd549365dadc9cf96908c4c3d86da81cbd5dd64ff4d891407b4ee6b`,
+and `614704cc1ed70065d81b789c019e618ac54d7013f706b26a346ea236ef876802`.
+Boxed completes 600/600 with `BoxedLcpConstraintSolver`; its corresponding
+hashes are
+`809ca91a475fdd0ebe3ad6b5cba73115c9ec2b3dd4a98e478beca229abf62321`,
+`80e79fa6b356f951e9615dd94aad2de2f55d0bbab07d7b116cb07c1b3bef686c`,
+`078990e4d7a950ba9e207102624d651d948f546f1153bf85077e8084c01b040a`,
+and `944a6636bd6febb79ab9d6abda0a92165acd34ab3aa96b42f55f1c36731e6d45`.
+The labeled group clip/panel/metadata hashes are
+`89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e`,
+`5ce6efcebcb5f6a2385f6aea6de7933cccfa7446979b7ea0e46ef2aab5199633`,
+and `5cc2513eb16db191454b27126783df70adbe3ad2617d3faa3f51597ab43966bb`.
+The grouped H.264/yuv420p clip is 1320x530, 301 frames at 30 fps over
+10.033333 s, and fully decodes.
+
+Manual final-endpoint and group-panel inspection finds both arches visibly
+standing with clear labels/framing. That is qualitative observation only:
+exact, boxed, and group metadata all set
+`automated_semantic_outcome_validated=false`. The composite is presentation,
+not a physical oracle or solver-superiority test. This recapture proves no
+source/paper trajectory, outcome, timing, crown impact, or Fig. 7 parity. The
+separate source-configuration crown-impact adapter remains blocked at strict
+step 142. The group clip still needs manual PR-browser-composer upload and a
+recorded GitHub user-attachment URL.
+
+The earlier trace-equivalent local literal-wedge standing bundle at
 `assets/paper_evidence/fig07_arch25_literal/` is locally finalized as valid
 current-source, non-paper reconstruction evidence. It contains five selected local
 1280x720 stills, a fully decoded 61-frame H.264 schedule, and a timeline. Its
@@ -1268,7 +1306,10 @@ cross-platform CI.
 - Preserve the finalized incline, historical Painleve proxy, source-pinned
   Painleve adapter, backspin, and turntable bundles within their lane-specific
   claim boundaries. Upload the two source-pinned Painleve exact-vs-boxed clips
-  only through the browser composer and record their GitHub URLs. Promote only
+  and the current-head Figure 7 literal-standing group only through the browser
+  composer and record their GitHub URLs. Keep the Figure 7 visible-standing
+  observation manual-only and preserve its separate step-142 impact blocker.
+  Promote only
   the remaining
   post-review small rows through validated immutable bundles; produce
   long-scene sidecars/media only when their solver/outcome gates pass.

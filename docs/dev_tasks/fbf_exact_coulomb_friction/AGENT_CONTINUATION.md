@@ -44,7 +44,7 @@ renderer, Apple hardware, or paper timer boundary.
 | Every-step deadline | Maxima are `287.473818 ms` and `180.504588 ms` | Neither thread count passes an all-step 60 Hz deadline |
 | Paper timing | The current author workload and kernel are inspectable, but DART's engine, precision, host, and timer boundary are unmatched and the historical Apple/timing attestation is absent | Paper timing target and verdict remain null |
 | Current small CPU matrix | Locally finalized current-source `paper_cpu`/Native bundle binds 60 artifacts, 27 complete CPU-4 invocations, and 5,220 rows | 9/9 physical classifiers pass; 7/9 strict-solver/local-real-time contracts pass; zero warmups and unmatched paper contracts prohibit a paper timing claim |
-| Literal 25-stone visual evidence | Locally finalized current-source bundle has 19 indexed artifacts / 21 physical files, five selected local stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Pass for the reconstructed no-projectile scene; the 6.1 s clip is a 1.639344x time-lapse |
+| Literal 25-stone visual evidence | Current-head capture and independent reuse verification pass for exact, boxed, and their synchronized group. Exact completes 600/600 with 96 contacts and zero caps/failures/fallbacks; boxed completes 600/600 | Capture/integrity and exact-telemetry pass for the reconstructed no-projectile scene; both visibly standing is manual-only because no automated semantic/physical oracle exists |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source non-paper threshold evidence; capture contacts 8 versus aggregate trace contacts 6 are explicitly not compared, and Fig. 1/2 plus video.03 remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves separate current-source FBF, MuJoCo, and Kamino CPU runs on `mu=.3,.4,.45,.5,.55,.6,.8`; every lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric source-pinned scientific-negative/reference evidence only; FBF records 839/840 configured convergence flags, timing is excluded, and no DART/full-state/historical/golden/media/timing/performance/parity claim follows |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle passes capture and independent verify with four 121-sample exact/boxed traces, four 61-frame H.264/yuv420p members, four decoded groups, machine-classified outcomes, and manually audited panels/keyframes | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and no source-backend, trajectory, paper-Figure-5, timing, or solver-superiority claim follows |
@@ -192,7 +192,28 @@ negative, not a replacement for this canonical result.
 
 ## Current Literal-Arch Visual Evidence
 
-The current-source visual bundle is
+The ignored current-head recapture root is
+`assets/pr_media_current_head_fig07/`. The capture and independent reuse
+verification summaries pass for two members plus one group with no failures or
+skips. Their external summary SHA-256 values are
+`5a1de1f915d75c373f06aeb48978b92a540bc245427c55584f68ad178ea491bb` and
+`e4b3d44d5f2afebef9f79bcb92b38ee282f5635c38fa4be2f4264a5f961acce5`.
+
+| Current-head artifact | Result | SHA-256 identity |
+| --- | --- | --- |
+| Exact member | 600/600 exact solves; 96 contacts; zero accepted caps/failures/fallbacks; final/worst residual `9.778093504499096e-7` / `9.999807145410957e-7`; 599 warm starts; 7,933 iterations | timeline `6041addd27a79a747cdbcdaafb495f787d4e90a906ec0616aa16e5a33d9c9b74`; clip `24c110421572500bec9f43a431061ae5a386e7e59940e86030e3059cc90d9676`; panel `cd3498c90fd549365dadc9cf96908c4c3d86da81cbd5dd64ff4d891407b4ee6b`; metadata `614704cc1ed70065d81b789c019e618ac54d7013f706b26a346ea236ef876802` |
+| Boxed member | 600/600 with `BoxedLcpConstraintSolver` | timeline `809ca91a475fdd0ebe3ad6b5cba73115c9ec2b3dd4a98e478beca229abf62321`; clip `80e79fa6b356f951e9615dd94aad2de2f55d0bbab07d7b116cb07c1b3bef686c`; panel `078990e4d7a950ba9e207102624d651d948f546f1153bf85077e8084c01b040a`; metadata `944a6636bd6febb79ab9d6abda0a92165acd34ab3aa96b42f55f1c36731e6d45` |
+| Labeled exact-versus-boxed group | 1320x530 H.264/yuv420p; 301 frames; 30 fps; 10.033333 s; full decode passes | clip `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e`; panel `5ce6efcebcb5f6a2385f6aea6de7933cccfa7446979b7ea0e46ef2aab5199633`; metadata `5cc2513eb16db191454b27126783df70adbe3ad2617d3faa3f51597ab43966bb` |
+
+Manual endpoint/group inspection finds both arches visibly standing and the
+labels/framing clear. This is qualitative only: every metadata record has
+`automated_semantic_outcome_validated=false`, and the group is presentation,
+not a physical oracle or superiority test. Claim no source/paper trajectory,
+outcome, timing, solver superiority, crown-impact, or Fig. 7 parity. The
+separate source-configuration crown-impact adapter remains blocked at strict
+step 142. GitHub browser-composer upload remains pending.
+
+The earlier trace-equivalent current-source visual bundle is
 `assets/paper_evidence/fig07_arch25_literal/`.
 The off-screen capture independently mirrors the current
 `masonry_arch_25_literal_wedge` trace contract. Its equivalence audit compares
@@ -1107,7 +1128,7 @@ closure check.
 
 | Gate | Current state | Required next evidence |
 | --- | --- | --- |
-| Literal 25-stone static arch | Exact trajectory, residual, outcome, mean-real-time, multicore, trace-equivalent visual, and manual-inspection gates pass locally | Preserve the authoritative P-core bundle and narrow reconstructed stable/standing claim |
+| Literal 25-stone static arch | Exact trajectory, residual, outcome, mean-real-time, multicore, and earlier trace-equivalent visual gates pass. The current-head exact/boxed recapture and independent verification pass, but its visible-standing assessment is manual-only | Preserve both evidence roots and the narrow reconstructed no-projectile claim; upload the labeled current-head group through the PR browser composer and record its URL without promoting a physical/superiority/Fig. 7 claim |
 | Projectile impact sequences | Frozen v1 is a locally sealed scientific negative: contact order/finite/fallback gates pass, but cap/residual/global/far-field gates fail | Preserve v1 without tuning; obtain source-equivalent passing evidence and inspected impact media only from a separately declared contract |
 | Card house | The strict adapter still fails the 56-contact group at step 35. A separate source-continuation exact/boxed capture completes 2,400 steps through release with full acceptance telemetry and qualitative manual inspection | Continue isolated strict solver A/B work; keep colored source parity separate; independently review and publish the continuation clip only as continuation evidence, never merge it with the reconstructed manifold claim or present accepted finite iterates as strict success |
 | 101-stone arch | Source-pinned DART exact stops at step 209 on an iteration cap; boxed completes but collapses. The older literal v7 and oriented-box negatives remain distinct | Preserve the precise negative and decoded blocker media; obtain a full strict exact standing trajectory, matched Kamino outcome, approved comparison contract, and only then parity-eligible media |
@@ -1140,7 +1161,8 @@ closure check.
    before paired media. Run colored-scheduling and global-scope diagnostics one
    factor at a time; do not loosen tolerance or iteration caps. Upload any
    final ten-level exact clip manually through the PR browser composer and
-   record its URL. Upload the two Painleve exact-vs-boxed clips
+   record its URL. Upload the current-head Figure 7 exact-vs-boxed group and the
+   two Painleve exact-vs-boxed clips
    through the same browser-composer path and record their URLs. Continue
    generating the remaining full card, strict 101-stone, figure, and
    source-equivalent impact artifacts. Upload the 101-stone diagnostic only as

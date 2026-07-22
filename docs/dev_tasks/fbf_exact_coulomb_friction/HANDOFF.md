@@ -148,7 +148,40 @@ Schema truth:
 
 Current literal-arch visual truth:
 
-- Use assets/paper_evidence/fig07_arch25_literal/.
+- The ignored current-head exact/boxed root is
+  assets/pr_media_current_head_fig07/. Capture and independent reuse
+  verification pass for two 600-step members and one group, with external
+  summary SHA-256 values
+  5a1de1f915d75c373f06aeb48978b92a540bc245427c55584f68ad178ea491bb and
+  e4b3d44d5f2afebef9f79bcb92b38ee282f5635c38fa4be2f4264a5f961acce5.
+- Exact records 600/600 solves, 96 contacts, zero accepted
+  caps/failures/fallbacks, final/worst residual 9.778093504499096e-7 /
+  9.999807145410957e-7, 599 warm starts, and 7,933 iterations. Its
+  timeline/clip/panel/metadata hashes are
+  6041addd27a79a747cdbcdaafb495f787d4e90a906ec0616aa16e5a33d9c9b74,
+  24c110421572500bec9f43a431061ae5a386e7e59940e86030e3059cc90d9676,
+  cd3498c90fd549365dadc9cf96908c4c3d86da81cbd5dd64ff4d891407b4ee6b,
+  and 614704cc1ed70065d81b789c019e618ac54d7013f706b26a346ea236ef876802.
+- Boxed completes 600/600 with BoxedLcpConstraintSolver. Its corresponding
+  hashes are
+  809ca91a475fdd0ebe3ad6b5cba73115c9ec2b3dd4a98e478beca229abf62321,
+  80e79fa6b356f951e9615dd94aad2de2f55d0bbab07d7b116cb07c1b3bef686c,
+  078990e4d7a950ba9e207102624d651d948f546f1153bf85077e8084c01b040a,
+  and 944a6636bd6febb79ab9d6abda0a92165acd34ab3aa96b42f55f1c36731e6d45.
+- The group clip/panel/metadata hashes are
+  89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e,
+  5ce6efcebcb5f6a2385f6aea6de7933cccfa7446979b7ea0e46ef2aab5199633,
+  and 5cc2513eb16db191454b27126783df70adbe3ad2617d3faa3f51597ab43966bb.
+  The 1320x530 H.264/yuv420p group clip has 301 frames at 30 fps over
+  10.033333 s and fully decodes.
+- Manual endpoint/group inspection finds both visibly standing and the labels
+  clear. This is qualitative only: every metadata record sets
+  automated_semantic_outcome_validated=false. It is not a physical oracle,
+  source/paper trajectory or outcome, timing, superiority, crown-impact, or
+  Fig. 7 parity result. The separate crown-impact adapter remains blocked at
+  strict step 142. Upload remains pending through the PR browser composer.
+- Keep the earlier trace-equivalent bundle at
+  assets/paper_evidence/fig07_arch25_literal/ as distinct provenance.
 - The separate session-local small visual matrix at
   `/tmp/fbf_visual_evidence_postreview_20260712` revalidates its selected nine
   schedules and exact group outputs against its recorded `dart-demos` SHA-256

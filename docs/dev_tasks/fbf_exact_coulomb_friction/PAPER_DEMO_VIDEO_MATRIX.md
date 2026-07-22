@@ -44,7 +44,7 @@ strict convergence nor paper or solver-superiority evidence.
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The author group passes solver, timeline, stream, decode, and independent replay gates; manual inspection shows ejected/ejected/retained-through-6-s/ejected in source order. All four paired proxies pass with the DART collision frontend fixed across lanes, and both solvers visibly produce ejected/ejected/captured/ejected over 4 s. These remain DART reconstructions rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored current-head bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
-| Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Paired exact/boxed capture is automated for all three schedules | The current literal standing capture passes 600 exact solves with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; both lanes visibly remain standing through 10 s. A clean source-configuration exact smoke now clears the former step-68 local failure and completes 100 strict steps, then fails closed on an outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither lane has completed the 2,000-step schedule or a physical-outcome/media gate. Its 500-frame invocation is not the 400-frame source default, and the oriented-box proxy remains nonliteral. Impact and paper parity remain blocked. | Local literal-standing exact-vs-boxed clip ready; source-configuration exact media blocked at step 142; GitHub URL pending |
+| Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Current-head paired exact/boxed literal-standing capture and independent reuse verification pass; paired capture is automated for all three schedules | Exact completes 600/600 with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; boxed completes 600/600. Both visibly standing is manual qualitative observation only because metadata records no automated semantic/physical oracle. The source-configuration exact lane remains blocked on an outer iteration cap at strict step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither it nor the standing pair proves impact, trajectory/outcome, timing, superiority, or paper parity. | Current-head literal-standing exact-vs-boxed clip ready locally; source-configuration impact media blocked at step 142; GitHub URL pending |
 | Fig. 8 / 101-stone arch segment | Source-pinned `fbf_author_masonry_arch_101_standing_current_source`; `masonry_arch_101_author_standing_current_source`. The older `fbf_paper_masonry_arch_101`; `masonry_arch_101` proxy remains diagnostic-only | Exact/boxed capture is automated, but the current exact failed prefix prevents a valid full paired comparison. Boxed has a complete decoded member clip; a diagnostic hstack freezes exact at its last frame and is labeled as such | Partial blocker evidence, parity blocked: strict exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`); boxed completes 1,600/1,600 but fails the standing oracle and visibly collapses. The independent current public-source control also fails the local standing criterion by saved vertical displacement and continues after 1,473/1,600 capped steps. The isolated source-sized contact-gap variant is rejected because it caps earlier at step 161. None is a converged standing result, matched Kamino comparison, historical source trajectory/backend match, golden, timing, or paper-parity result | Local boxed-collapse and frozen-prefix diagnostic clips ready below; GitHub URL pending |
 | Tables 6-7 / ten-level card house | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source`; corresponding schedules use the same names without the `fbf_` prefix. The older reconstruction remains diagnostic-only | Both schedules use Native `FourPointPlanar`, capacity 4,096, four contacts per pair, one `0.1 m` ground gap, and 159 `0.005 m` card/cube gaps. Only the continuation exact lane requests continuation policy | Strict reaches completed step 31 before a 79-contact failure. The final exact continuation reseal and independent reuse verification pass: 3,200/3,200, 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau accepts, 763 max-iteration accepts, and `automated_semantic_outcome_validated=false`. A clean boxed control completes 80/80, but the full attempt reached only step 112, was interrupted, and is non-evidence. Paired media, boxed outcome, source/trajectory/physical parity, Tables 6-7 parity, strict convergence, and superiority remain blocked. See `CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md` | Final exact-only clip is locally resealed and reverified; full boxed member, paired media, and manual browser upload remain pending |
 
@@ -268,6 +268,42 @@ non-evidence. No paired clip or boxed physical outcome exists. This observation
 does not establish a performance result or solver superiority. The final exact
 member must be uploaded manually through the PR browser composer; no GitHub
 user-attachment URL exists.
+
+### Figure 7: current-head literal 25-stone standing pair
+
+The ignored current-head root is `assets/pr_media_current_head_fig07/`.
+Capture and independent reuse verification pass for two 600-step members and
+their synchronized group. The external summary hashes are
+`5a1de1f915d75c373f06aeb48978b92a540bc245427c55584f68ad178ea491bb` and
+`e4b3d44d5f2afebef9f79bcb92b38ee282f5635c38fa4be2f4264a5f961acce5`.
+
+- Exact timeline/clip/panel/metadata:
+  `6041addd27a79a747cdbcdaafb495f787d4e90a906ec0616aa16e5a33d9c9b74`,
+  `24c110421572500bec9f43a431061ae5a386e7e59940e86030e3059cc90d9676`,
+  `cd3498c90fd549365dadc9cf96908c4c3d86da81cbd5dd64ff4d891407b4ee6b`,
+  `614704cc1ed70065d81b789c019e618ac54d7013f706b26a346ea236ef876802`.
+- Boxed timeline/clip/panel/metadata:
+  `809ca91a475fdd0ebe3ad6b5cba73115c9ec2b3dd4a98e478beca229abf62321`,
+  `80e79fa6b356f951e9615dd94aad2de2f55d0bbab07d7b116cb07c1b3bef686c`,
+  `078990e4d7a950ba9e207102624d651d948f546f1153bf85077e8084c01b040a`,
+  `944a6636bd6febb79ab9d6abda0a92165acd34ab3aa96b42f55f1c36731e6d45`.
+- Group clip/panel/metadata:
+  `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e`,
+  `5ce6efcebcb5f6a2385f6aea6de7933cccfa7446979b7ea0e46ef2aab5199633`,
+  `5cc2513eb16db191454b27126783df70adbe3ad2617d3faa3f51597ab43966bb`.
+
+Exact records 600/600 solves, 96 final contacts, zero accepted
+caps/failures/fallbacks, final/worst residual
+`9.778093504499096e-7` / `9.999807145410957e-7`, 599 warm starts, and 7,933
+iterations. Boxed completes 600/600 with `BoxedLcpConstraintSolver`. The
+1320x530 grouped H.264/yuv420p clip has 301 frames at 30 fps over 10.033333 s
+and fully decodes. Manual endpoint/group inspection finds both visibly
+standing and the presentation legible. All three metadata records set
+`automated_semantic_outcome_validated=false`, so that observation is not an
+automated physical oracle, trajectory/outcome comparison, solver-superiority
+result, crown-impact result, or Fig. 7 parity. The separate crown-impact
+adapter remains blocked at strict step 142. Upload the group clip only through
+the PR browser composer and record the resulting URL; do not commit the bundle.
 
 ### Figure 8: source-pinned 101-stone standing blocker
 

@@ -40,7 +40,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Local timing | Three measured 600-step runs per thread count give 1-thread mean `6.122883343333333 ms` and 4-thread mean `4.26939745 ms`, with validated speedup `1.4341328993236115x` | Both means meet 60 Hz; neither run set meets an every-step deadline |
 | Paper timing | The recorded timing row is reconstructed float64 DART on x86-64 Linux, not the public Warp/Newton float32 workload, and the historical Apple host/timing protocol is unattested | Paper target and timing verdict remain null |
 | Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
-| Literal 25-stone visual evidence | Locally finalized current-source bundle has 19 indexed artifacts / 21 physical files, five selected local stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Valid reconstructed no-projectile, non-paper visual evidence; the 6.1 s clip is a 1.639344x time-lapse |
+| Literal 25-stone visual evidence | The ignored current-head exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over `mu=.3,.4,.45,.5,.55,.6,.8`; each lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric current-source scientific-negative/reference evidence only; FBF has 839/840 configured convergence flags, every timing field is diagnostic-only, and no DART, historical-paper, full-state, golden, media, timing, performance, or parity claim follows |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
@@ -140,7 +140,47 @@ Authoritative bundle file SHA-256 values are:
 
 ## Current Literal-Arch Visual Evidence
 
-The current-source bundle is
+The current-head paired recapture is ignored outside Git at
+`assets/pr_media_current_head_fig07/`. Capture passes for two members and one
+group with no failures or skips; its external summary
+`/tmp/fig07_literal_standing_current_head_summary.json` has SHA-256
+`5a1de1f915d75c373f06aeb48978b92a540bc245427c55584f68ad178ea491bb`.
+Independent reuse verification also passes for the same two members and group;
+`/tmp/fig07_literal_standing_current_head_verify.json` has SHA-256
+`e4b3d44d5f2afebef9f79bcb92b38ee282f5635c38fa4be2f4264a5f961acce5`.
+
+The exact member completes 600/600 steps with 600/600 exact solves, 96 final
+contacts, zero accepted caps/failures/fallbacks, final residual
+`9.778093504499096e-7`, worst residual `9.999807145410957e-7`, 599 warm starts,
+and 7,933 total iterations. Its timeline, clip, panel, and metadata SHA-256
+values are
+`6041addd27a79a747cdbcdaafb495f787d4e90a906ec0616aa16e5a33d9c9b74`,
+`24c110421572500bec9f43a431061ae5a386e7e59940e86030e3059cc90d9676`,
+`cd3498c90fd549365dadc9cf96908c4c3d86da81cbd5dd64ff4d891407b4ee6b`,
+and `614704cc1ed70065d81b789c019e618ac54d7013f706b26a346ea236ef876802`.
+The boxed member completes 600/600 with `BoxedLcpConstraintSolver`; its
+corresponding hashes are
+`809ca91a475fdd0ebe3ad6b5cba73115c9ec2b3dd4a98e478beca229abf62321`,
+`80e79fa6b356f951e9615dd94aad2de2f55d0bbab07d7b116cb07c1b3bef686c`,
+`078990e4d7a950ba9e207102624d651d948f546f1153bf85077e8084c01b040a`,
+and `944a6636bd6febb79ab9d6abda0a92165acd34ab3aa96b42f55f1c36731e6d45`.
+The labeled exact-versus-boxed group clip, panel, and metadata hashes are
+`89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e`,
+`5ce6efcebcb5f6a2385f6aea6de7933cccfa7446979b7ea0e46ef2aab5199633`,
+and `5cc2513eb16db191454b27126783df70adbe3ad2617d3faa3f51597ab43966bb`.
+The group clip is 1320x530 H.264/yuv420p, 301 frames at 30 fps over
+10.033333 s, and fully decodes.
+
+Manual endpoint and group-panel inspection finds both arches visibly standing
+with clear labels and framing. That is qualitative observation only: all three
+metadata records set `automated_semantic_outcome_validated=false`, and the
+group is a presentation artifact, not a physical oracle or superiority test.
+No source/paper trajectory, outcome, timing, solver-superiority, crown-impact,
+or Fig. 7 parity follows. The separate source-configuration crown-impact
+adapter remains blocked at strict step 142. The group clip still needs manual
+PR-browser-composer upload and a recorded GitHub user-attachment URL.
+
+The earlier trace-equivalent current-source bundle is
 `assets/paper_evidence/fig07_arch25_literal/`.
 It binds an independently rendered off-screen capture to the current
 `fbf_paper_trace` workload with 600 compared rows and zero differences in all
@@ -1108,9 +1148,11 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    incline sweep, historical current-source Painleve proxy, finalized
    source-pinned Painleve adapter, and backspin bundles. Preserve its
    trace/outcome audit, independent replay, and manual inspection, upload the
-   two exact-vs-boxed clips through the PR browser composer, then
-   continue with the other
-   smaller-figure recaptures and strict card work. Continue isolated
+   two exact-vs-boxed clips through the PR browser composer. Also preserve and
+   upload the current-head Figure 7 literal-standing exact-vs-boxed group only
+   through that browser-composer path, recording its URL and retaining the
+   manual-only standing boundary. Then continue with the other smaller-figure
+   recaptures and strict card work. Continue isolated
    one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
    fallback, or fail-fast changes. For the ten-level lane, preserve the final,
    independently reverified 3,200-step exact continuation member. Treat the
