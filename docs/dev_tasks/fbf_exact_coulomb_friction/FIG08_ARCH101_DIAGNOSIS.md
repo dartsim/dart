@@ -130,7 +130,7 @@ The default-off Native implementation expands broad-phase candidates, emits
 finite signed convex-convex and plane-convex proximity manifolds strictly
 inside the summed gap, and admits only explicitly configured negative-depth
 contacts without penetration bias. Its focused collision and solver suites
-pass 50/50 and 65/65. The sealed source-pinned scene remains unchanged.
+pass 50/50 and 66/66. The sealed source-pinned scene remains unchanged.
 
 An external one-factor harness then applied the source-sized gaps: `0.005` to
 every stone/cube collision shape and `0.1` to the ground. First contact and
@@ -148,8 +148,9 @@ sealed scene, combine them with rejected tuning knobs, or capture a full
 exact/boxed pair from this variant. Revisit only with a matched historical
 contact oracle or recovered historical Figure 8 invocation/backend.
 
-The complete public `--stones 101` control therefore cannot serve as a
-converged golden trajectory and does not preserve the initial configuration
-under the local standing criterion. The historical Figure 8 invocation and
-backend remain unrecovered. Do not claim source visual collapse, historical
-Figure 8 parity, or DART-versus-source solver superiority.
+The complete current-source FBF `--stones 101` run fails the local standing
+criterion while continuing 1,473 capped substeps. It cannot serve as a
+converged golden trajectory. Stop Figure 8 parity work until the historical invocation/backend
+or a matched historical contact oracle is recovered. Do not claim source
+visual collapse, historical Figure 8 parity, or DART-versus-source solver
+superiority.
