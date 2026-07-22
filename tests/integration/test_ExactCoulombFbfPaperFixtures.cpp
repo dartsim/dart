@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../../examples/demos/scenes/FbfAuthorBackspinSpec.hpp"
 #include "../../examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
 #include "../../examples/demos/scenes/FbfAuthorPainleveSpec.hpp"
 #include "../../examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
@@ -2532,6 +2533,315 @@ TEST(ExactCoulombFbfPaperFixtures, BackspinSphereReachesAnalyticalRollingState)
 }
 
 //==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorBackspinContractIsSourceBound)
+{
+  using namespace fbf_author_backspin;
+
+  ScopedContactErrorReductionParameter scopedErp;
+  const auto exactWorld = createWorld(SolverLane::ExactFbf);
+  const auto boxedWorld = createWorld(SolverLane::BoxedLcp);
+  const std::string implementationHash
+      = DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256;
+  const auto exact = inspectPhysicsContract(exactWorld, implementationHash);
+  const auto boxed = inspectPhysicsContract(boxedWorld, implementationHash);
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_FALSE(exact.sourceContinuationEnabled);
+  EXPECT_FALSE(exact.postCorrectionProjectionEnabled);
+  EXPECT_TRUE(exact.sourceInnerInitializationEnabled);
+  EXPECT_FALSE(exact.coloredBlockGaussSeidelEnabled);
+  EXPECT_FALSE(exact.participantAffinityEnabled);
+  EXPECT_FALSE(exact.fallbackToBoxedLcpEnabled);
+  EXPECT_FALSE(exact.splitImpulseEnabled);
+  EXPECT_DOUBLE_EQ(exact.observedSphereMass, 1.0);
+  EXPECT_DOUBLE_EQ(exact.observedSphereRadius, 0.25);
+  EXPECT_DOUBLE_EQ(exact.groundPrimaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(exact.groundSecondaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(exact.groundRestitution, kDartRestitution);
+  EXPECT_DOUBLE_EQ(exact.spherePrimaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(exact.sphereSecondaryFriction, kFriction);
+  EXPECT_DOUBLE_EQ(exact.sphereRestitution, kDartRestitution);
+  EXPECT_TRUE(exact.observedGroundSize.isApprox(
+      Eigen::Vector3d(30.0, 1.0, 0.1), 1e-12));
+
+  const std::string json = physicsContractJson(exact);
+  EXPECT_NE(json.find(kContractSchema), std::string::npos);
+  EXPECT_NE(json.find(kAuthorCommit), std::string::npos);
+  EXPECT_NE(json.find(kAuthorTree), std::string::npos);
+  EXPECT_NE(json.find(kAuthorRunBlob), std::string::npos);
+  EXPECT_NE(json.find(kAuthorRunSha256), std::string::npos);
+  EXPECT_NE(json.find(kAuthorSourceRunId), std::string::npos);
+  EXPECT_NE(json.find(kAuthorSweepResultsSha256), std::string::npos);
+  EXPECT_NE(json.find(kAuthorMetadataJsonSha256), std::string::npos);
+  EXPECT_NE(json.find(kAuthorResultJsonSha256), std::string::npos);
+  EXPECT_NE(json.find(kAuthorTrajectoryNpzSha256), std::string::npos);
+  EXPECT_NE(json.find(kAuthorHistoryJsonSha256), std::string::npos);
+  EXPECT_NE(json.find(kSceneStateSchema), std::string::npos);
+  EXPECT_NE(
+      json.find("\"checker_texture_visual_only\":true"), std::string::npos);
+  EXPECT_NE(json.find("\"observed_contact_erp\":0"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"projected_gradient_retry_enabled\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"dense_residual_polish_enabled\":false"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"accept_outer_max_iterations\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"run_fixed_inner_sweeps\":false"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_inner_initialization_enabled\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"full_source_trajectory_equivalence\":false"),
+      std::string::npos);
+  EXPECT_NE(json.find("\"primary_friction\":0.5"), std::string::npos);
+  EXPECT_NE(json.find("\"secondary_friction\":0.5"), std::string::npos);
+  EXPECT_NE(json.find("\"restitution\":0"), std::string::npos);
+
+  const auto fields = sceneStateFields(exactWorld);
+  ASSERT_EQ(fields.size(), 17u);
+  EXPECT_EQ(fields.front().first, "world_time_seconds");
+  EXPECT_EQ(fields.back().first, "supported");
+  EXPECT_EQ(fields[2].first, "position_y_m");
+  EXPECT_EQ(fields[7].first, "angular_velocity_x_rad_s");
+  EXPECT_EQ(fields[9].first, "angular_velocity_z_rad_s");
+  EXPECT_DOUBLE_EQ(fields.front().second, 0.0);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorBackspinContractRejectsContactMaterialDrift)
+{
+  using namespace fbf_author_backspin;
+
+  enum class Body
+  {
+    Ground,
+    Sphere
+  };
+  enum class Field
+  {
+    PrimaryFriction,
+    SecondaryFriction,
+    Restitution,
+    AveragePreservingAnisotropy
+  };
+  struct Mutation
+  {
+    const char* name;
+    Body body;
+    Field field;
+  };
+  const std::array<Mutation, 7> mutations{{
+      {"ground primary friction", Body::Ground, Field::PrimaryFriction},
+      {"ground secondary friction", Body::Ground, Field::SecondaryFriction},
+      {"ground restitution", Body::Ground, Field::Restitution},
+      {"sphere primary friction", Body::Sphere, Field::PrimaryFriction},
+      {"sphere secondary friction", Body::Sphere, Field::SecondaryFriction},
+      {"sphere restitution", Body::Sphere, Field::Restitution},
+      {"ground average-preserving anisotropy",
+       Body::Ground,
+       Field::AveragePreservingAnisotropy},
+  }};
+
+  ScopedContactErrorReductionParameter scopedErp;
+  const std::string implementationHash
+      = DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256;
+  for (const auto& mutation : mutations) {
+    SCOPED_TRACE(mutation.name);
+    const auto world = createWorld(SolverLane::ExactFbf);
+    const char* skeletonName = mutation.body == Body::Ground
+                                   ? "backspin_author_ground"
+                                   : "backspin_author_ball";
+    auto* node = world->getSkeleton(skeletonName)
+                     ->getBodyNode(0u)
+                     ->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+    ASSERT_NE(node, nullptr);
+    auto* dynamics = node->getDynamicsAspect();
+    ASSERT_NE(dynamics, nullptr);
+    switch (mutation.field) {
+      case Field::PrimaryFriction:
+        dynamics->setPrimaryFrictionCoeff(0.4);
+        break;
+      case Field::SecondaryFriction:
+        dynamics->setSecondaryFrictionCoeff(0.6);
+        break;
+      case Field::Restitution:
+        dynamics->setRestitutionCoeff(0.1);
+        break;
+      case Field::AveragePreservingAnisotropy:
+        dynamics->setPrimaryFrictionCoeff(0.4);
+        dynamics->setSecondaryFrictionCoeff(0.6);
+        break;
+    }
+    EXPECT_THROW(
+        inspectPhysicsContract(world, implementationHash), std::runtime_error);
+  }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorBackspinCompletesRollingAndRollOff)
+{
+  using namespace fbf_author_backspin;
+
+  struct Outcome
+  {
+    double x = 0.0;
+    double y = 0.0;
+    double z = 0.0;
+    double vx = 0.0;
+    double vy = 0.0;
+    double vz = 0.0;
+    double wx = 0.0;
+    double wy = 0.0;
+    double wz = 0.0;
+    double slip = 0.0;
+    double lastSupportedX = 0.0;
+    double maxAbsY = 0.0;
+    double maxAbsVy = 0.0;
+    double maxAbsWx = 0.0;
+    double maxAbsWz = 0.0;
+    std::size_t firstSupportedStep = 0u;
+    std::size_t rollingTailSamples = 0u;
+    bool hadSupport = false;
+    bool lostSupportAfterContact = false;
+    bool supportReappeared = false;
+    bool terminalSupported = false;
+    bool rollingWhileSupported = false;
+    ExactResidualTrace residualTrace;
+    std::size_t exactSolves = 0u;
+    std::size_t failures = 0u;
+    std::size_t fallbacks = 0u;
+  };
+
+  const auto run = [](SolverLane lane) {
+    Outcome outcome;
+    const auto world = createWorld(lane);
+    const auto sphere = world->getSkeleton("backspin_author_ball");
+    if (!sphere) {
+      ADD_FAILURE() << "author backspin sphere is missing";
+      return outcome;
+    }
+    auto* solver = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+        world->getConstraintSolver());
+    std::size_t previousExactSolves = 0u;
+    ScopedContactErrorReductionParameter scopedErp;
+    for (std::size_t step = 0u; step < kTotalSteps; ++step) {
+      world->step();
+      sampleExactResidualTrace(
+          solver, previousExactSolves, outcome.residualTrace);
+      const auto& contacts
+          = world->getConstraintSolver()->getLastCollisionResult();
+      const bool supported = contacts.getNumContacts() > 0u;
+      const auto* body = sphere->getBodyNode(0u);
+      if (supported) {
+        if (outcome.lostSupportAfterContact)
+          outcome.supportReappeared = true;
+        if (!outcome.hadSupport)
+          outcome.firstSupportedStep = step + 1u;
+        outcome.hadSupport = true;
+        outcome.lastSupportedX = body->getWorldTransform().translation().x();
+      } else if (outcome.hadSupport) {
+        outcome.lostSupportAfterContact = true;
+      }
+      const double slip = body->getLinearVelocity().x()
+                          - kRadius * body->getAngularVelocity().y();
+      if (supported && std::abs(slip) <= 0.5)
+        outcome.rollingWhileSupported = true;
+      if (supported) {
+        if (std::abs(slip) <= 0.5)
+          ++outcome.rollingTailSamples;
+        else
+          outcome.rollingTailSamples = 0u;
+      }
+      outcome.maxAbsY = std::max(
+          outcome.maxAbsY,
+          std::abs(body->getWorldTransform().translation().y()));
+      outcome.maxAbsVy
+          = std::max(outcome.maxAbsVy, std::abs(body->getLinearVelocity().y()));
+      outcome.maxAbsWx = std::max(
+          outcome.maxAbsWx, std::abs(body->getAngularVelocity().x()));
+      outcome.maxAbsWz = std::max(
+          outcome.maxAbsWz, std::abs(body->getAngularVelocity().z()));
+    }
+
+    const auto* body = sphere->getBodyNode(0u);
+    outcome.x = body->getWorldTransform().translation().x();
+    outcome.y = body->getWorldTransform().translation().y();
+    outcome.z = body->getWorldTransform().translation().z();
+    outcome.vx = body->getLinearVelocity().x();
+    outcome.vy = body->getLinearVelocity().y();
+    outcome.vz = body->getLinearVelocity().z();
+    outcome.wx = body->getAngularVelocity().x();
+    outcome.wy = body->getAngularVelocity().y();
+    outcome.wz = body->getAngularVelocity().z();
+    outcome.slip = outcome.vx - kRadius * outcome.wy;
+    outcome.terminalSupported = world->getConstraintSolver()
+                                    ->getLastCollisionResult()
+                                    .getNumContacts()
+                                > 0u;
+    if (solver) {
+      outcome.exactSolves = solver->getNumExactCoulombSolves();
+      outcome.failures = solver->getNumExactCoulombFailures();
+      outcome.fallbacks = solver->getNumBoxedLcpFallbacks();
+    }
+    return outcome;
+  };
+
+  const Outcome exact = run(SolverLane::ExactFbf);
+  const Outcome boxed = run(SolverLane::BoxedLcp);
+
+  EXPECT_TRUE(exact.hadSupport);
+  EXPECT_LE(exact.firstSupportedStep, kDartMaxFirstSupportedStep);
+  EXPECT_TRUE(exact.rollingWhileSupported);
+  EXPECT_GE(exact.rollingTailSamples, kDartRequiredRollingTailSamples);
+  EXPECT_TRUE(exact.lostSupportAfterContact);
+  EXPECT_FALSE(exact.supportReappeared);
+  EXPECT_FALSE(exact.terminalSupported);
+  EXPECT_GT(exact.exactSolves, 0u);
+  EXPECT_EQ(exact.failures, 0u);
+  EXPECT_EQ(exact.fallbacks, 0u);
+  EXPECT_EQ(exact.residualTrace.failedSteps, 0u);
+  EXPECT_EQ(exact.residualTrace.nonFiniteResiduals, 0u);
+  EXPECT_LE(exact.residualTrace.maxResidual, kDartTolerance);
+
+  EXPECT_TRUE(std::isfinite(exact.x));
+  EXPECT_TRUE(std::isfinite(exact.y));
+  EXPECT_TRUE(std::isfinite(exact.z));
+  EXPECT_TRUE(std::isfinite(exact.vx));
+  EXPECT_TRUE(std::isfinite(exact.vy));
+  EXPECT_TRUE(std::isfinite(exact.vz));
+  EXPECT_TRUE(std::isfinite(exact.wx));
+  EXPECT_TRUE(std::isfinite(exact.wy));
+  EXPECT_TRUE(std::isfinite(exact.wz));
+  EXPECT_LE(
+      std::abs(exact.lastSupportedX + kGroundHalfExtentX),
+      kRadius + kDartEdgeContactTolerance);
+  EXPECT_LT(exact.x, -kGroundHalfExtentX);
+  EXPECT_LT(exact.vx, 0.0);
+  EXPECT_LT(exact.z, 0.0);
+  EXPECT_LE(exact.maxAbsY, kDartMaxOffAxisMagnitude);
+  EXPECT_LE(exact.maxAbsVy, kDartMaxOffAxisMagnitude);
+  EXPECT_LE(exact.maxAbsWx, kDartMaxOffAxisMagnitude);
+  EXPECT_LE(exact.maxAbsWz, kDartMaxOffAxisMagnitude);
+  EXPECT_NEAR(exact.vx, kSourceReferenceFinalLinearVelocity, 0.5);
+  EXPECT_NEAR(exact.wy, kSourceReferenceFinalAngularVelocity, 2.0);
+  EXPECT_NEAR(exact.slip, kSourceReferenceFinalSlipVelocity, 0.5);
+  EXPECT_NEAR(exact.z, kSourceReferenceFinalHeight, 0.1);
+
+  EXPECT_TRUE(boxed.hadSupport);
+  EXPECT_TRUE(boxed.lostSupportAfterContact);
+  EXPECT_FALSE(boxed.supportReappeared);
+  EXPECT_FALSE(boxed.terminalSupported);
+  EXPECT_TRUE(std::isfinite(boxed.x));
+  EXPECT_TRUE(std::isfinite(boxed.z));
+  EXPECT_TRUE(std::isfinite(boxed.vx));
+  EXPECT_TRUE(std::isfinite(boxed.wy));
+}
+
+//==============================================================================
 TEST(ExactCoulombFbfPaperFixtures, PainleveProxySlideTumbleThreshold)
 {
   const auto exactSlide = runPainleveBox(0.5, true);
@@ -2827,7 +3137,7 @@ TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseSourceConstructionIsPinned)
   using namespace fbf_author_card_house;
 
   EXPECT_STREQ(kAuthorCommit, "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0");
-  EXPECT_STREQ(kAuthorTree, "ffcdafb61adeda2239c8366d054b548b50d26685e");
+  EXPECT_STREQ(kAuthorTree, "ffcdafb61adeda2239c8366d054b548b50d26685");
   EXPECT_STREQ(
       kAuthorCardHouseBlob, "35f33651bc9674a259071ac723e47755504152db");
   EXPECT_STREQ(

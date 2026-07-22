@@ -109,7 +109,7 @@ EXPECTED_SEMANTIC_OUTCOME_GATE = (
 )
 EXPECTED_AUTHOR_REPOSITORY = "https://github.com/matthcsong/fbf-sca-2026"
 EXPECTED_AUTHOR_COMMIT = "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
-EXPECTED_AUTHOR_TREE = "ffcdafb61adeda2239c8366d054b548b50d26685e"
+EXPECTED_AUTHOR_TREE = "ffcdafb61adeda2239c8366d054b548b50d26685"
 EXPECTED_CLAIM_BOUNDARY = {
     "construction_only": True,
     "source_geometry_and_initial_pose_port": True,

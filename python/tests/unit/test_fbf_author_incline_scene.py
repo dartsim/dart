@@ -666,6 +666,8 @@ def test_solver_comparison_group_claim_binds_ordered_terminal_slices(tmp_path):
         "source_segment": group.source_segment,
         "solver_lane": group.solver_lane,
         "source_group_id": group.source_group_id,
+        "comparison_basis": group.comparison_basis,
+        "policy_asymmetry": dict(group.policy_asymmetry),
         "actual_simulator": True,
         "generated_imagery": False,
         "paper_comparable": False,

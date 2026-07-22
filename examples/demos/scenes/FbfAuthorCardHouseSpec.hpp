@@ -95,7 +95,7 @@ inline constexpr const char* kAuthorRepository
 inline constexpr const char* kAuthorCommit
     = "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0";
 inline constexpr const char* kAuthorTree
-    = "ffcdafb61adeda2239c8366d054b548b50d26685e";
+    = "ffcdafb61adeda2239c8366d054b548b50d26685";
 inline constexpr const char* kAuthorCardHouseBlob
     = "35f33651bc9674a259071ac723e47755504152db";
 inline constexpr const char* kAuthorCardHouseRunSha256

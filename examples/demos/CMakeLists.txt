@@ -133,15 +133,20 @@ if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)
 endif()
 
-# Bind the queryable author-incline, author-turntable, author-Painleve,
-# author-card-house, author-masonry-arch, and literal-masonry-arch contracts in
-# dart-demos to their exact shared specs and production scene source.
+# Bind the queryable author-incline, author-backspin, author-turntable,
+# author-Painleve, author-card-house, author-masonry-arch, and
+# literal-masonry-arch contracts in dart-demos to their exact shared specs and
+# production scene source.
 # CMAKE_CONFIGURE_DEPENDS
 # refreshes the embedded hashes before any bound source is rebuilt, so a stale
 # binary cannot satisfy an evidence finalizer.
 set(
   fbf_author_incline_spec_source
   "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorInclineSpec.hpp"
+)
+set(
+  fbf_author_backspin_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorBackspinSpec.hpp"
 )
 set(
   fbf_author_turntable_spec_source
@@ -186,6 +191,7 @@ set_property(
   PROPERTY
     CMAKE_CONFIGURE_DEPENDS
       "${fbf_author_incline_spec_source}"
+      "${fbf_author_backspin_spec_source}"
       "${fbf_author_turntable_spec_source}"
       "${fbf_author_painleve_spec_source}"
       "${fbf_author_card_house_spec_source}"
@@ -197,6 +203,10 @@ set_property(
       "${fbf_paper_friction_demo_source}"
 )
 file(SHA256 "${fbf_author_incline_spec_source}" fbf_author_incline_spec_sha256)
+file(
+  SHA256 "${fbf_author_backspin_spec_source}"
+  fbf_author_backspin_spec_sha256
+)
 file(
   SHA256 "${fbf_author_turntable_spec_source}"
   fbf_author_turntable_spec_sha256
@@ -237,6 +247,8 @@ set_property(
     COMPILE_DEFINITIONS
       DART_FBF_AUTHOR_INCLINE_SPEC_SHA256="${fbf_author_incline_spec_sha256}"
       DART_FBF_AUTHOR_INCLINE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_BACKSPIN_SPEC_SHA256="${fbf_author_backspin_spec_sha256}"
+      DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
       DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_PAINLEVE_SPEC_SHA256="${fbf_author_painleve_spec_sha256}"

@@ -191,7 +191,7 @@ VIDEO_SEGMENTS = (
 # matrix is the primary four-cell reconstruction; the earlier paper-proxy
 # matrix remains available as a separate diagnostic lane.
 REQUIRED_VIDEO_SCHEDULES = {
-    "backspin": ("backspin",),
+    "backspin": ("backspin_author_current_source", "backspin"),
     "incline": ("incline", "incline_author_sweep_current_source"),
     "turntable": (
         "turntable_author_mu02_omega2",
@@ -500,6 +500,81 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         ),
         width=1920,
         encode_gif=True,
+    ),
+    "backspin_author_current_source": CaptureSchedule(
+        id="backspin_author_current_source",
+        scene="fbf_author_backspin_current_source",
+        title="Author-pinned current-source backspin",
+        source_segment="backspin",
+        total_steps=240,
+        frame_stride=2,
+        panel_steps=(0, 60, 120, 180, 206),
+        panel_labels=("t=0s", "t=1s", "t=2s", "t=3s", "t=3.43s poster"),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("author_run_blob", "82d8916233df8db1cacc5915699dc53a5d08ea17"),
+            ("source_run_id", "20260722T185956Z"),
+            (
+                "source_sweep_results_sha256",
+                "830e0db3b81406ab3ac305383f811daa45680b4bd2a8a94f198250b8b4cbb2ca",
+            ),
+            (
+                "source_result_json_sha256",
+                "29a63de1277ec96c6e4f23c4650634c28c1a783a56995a5138c2d3bd15066adc",
+            ),
+            (
+                "source_trajectory_npz_sha256",
+                "77a28f87962bef54132b98fa1f37d9e82807d33b8e5c3bb154e814bb02462133",
+            ),
+            (
+                "panel_selection",
+                "step 206 visual-review poster; not a source event-time oracle",
+            ),
+            ("radius_m", "0.25"),
+            ("mass_kg", "1"),
+            ("mu", "0.5"),
+            ("source_contact_gap_m", "0.001"),
+            ("ground_full_dimensions_m", "30,1,0.1"),
+            ("initial_linear_velocity_x_m_s", "4"),
+            ("initial_angular_velocity_y_rad_s", "-200"),
+            ("clock", "dt=1/60 s; 240 steps; 4 s"),
+            ("source_terminal_vx_m_s", "-11.428571701049805"),
+            ("source_terminal_wy_rad_s", "-45.71428680419922"),
+            ("source_terminal_slip_velocity_m_s", "0"),
+            ("source_terminal_z_m", "-1.3714094161987305"),
+            (
+                "terminal_reference_tolerances",
+                "vx<=0.5 m/s; wy<=2 rad/s; slip<=0.5 m/s; z<=0.1 m",
+            ),
+            (
+                "orientation_cue",
+                "renderer-applied high-contrast checker texture with "
+                "registration tile",
+            ),
+        ),
+        mismatches=COMMON_DART_MISMATCH
+        + (
+            "The retained source run uses the current public no-argument "
+            "four-second configuration; it does not identify the historical "
+            "paper invocation or rendering setup.",
+            "DART Native FourPointPlanar collision and rigid contact do not "
+            "implement the source gap=.001, ke=1e4, or kd=1e3 shape semantics "
+            "equivalently.",
+            "The preregistered gate covers supported slip convergence, later "
+            "roll-off, and a narrow terminal-state projection. It does not "
+            "claim source trajectory/backend equivalence, timing, video parity, "
+            "solver superiority, or paper parity.",
+            "The checker-textured visual mesh is VisualAspect-only and does not "
+            "participate in collision, inertia, friction, or dynamics.",
+            "The step-206 poster is a presentation choice near the observed "
+            "DART slab edge; it is not a source roll-off timing claim. Terminal "
+            "outcome validation still uses completed step 240.",
+        ),
+        known_gate_blockers=(),
+        boxed_comparison_gate_blockers=(),
+        width=1920,
+        collision_detector="native",
+        collision_detector_override=False,
     ),
     "turntable_mu02_omega2": CaptureSchedule(
         id="turntable_mu02_omega2",
@@ -1744,6 +1819,20 @@ AUTHOR_TURN_TABLE_VISUAL_RESOURCES = (
         ROOT / "data" / "obj" / "fbf_author_turntable_disc.mtl",
     ),
 )
+AUTHOR_BACKSPIN_VISUAL_RESOURCES = (
+    (
+        "backspin_checker_obj",
+        ROOT / "data" / "obj" / "fbf_backspin_checker_sphere.obj",
+    ),
+    (
+        "backspin_checker_mtl",
+        ROOT / "data" / "obj" / "fbf_backspin_checker_sphere.mtl",
+    ),
+    (
+        "backspin_checker_texture",
+        ROOT / "data" / "obj" / "fbf_backspin_checker.ppm",
+    ),
+)
 PAINLEVE_MEMBERS = ("painleve_mu05", "painleve_mu055")
 AUTHOR_PAINLEVE_MEMBERS = ("painleve_author_mu05", "painleve_author_mu055")
 AUTHOR_INCLINE_SCHEDULE_ID = "incline_author_sweep_current_source"
@@ -1915,6 +2004,50 @@ AUTHOR_INCLINE_SCENE_STATE_FIELDS = (
         for prefix in AUTHOR_INCLINE_STATE_PREFIXES
         for suffix in AUTHOR_INCLINE_STATE_SUFFIXES
     ),
+)
+AUTHOR_BACKSPIN_SCHEDULE_ID = "backspin_author_current_source"
+AUTHOR_BACKSPIN_CONTRACT_SCHEMA_VERSION = "dart.fbf_author_backspin_dynamics_adapter/v1"
+AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION = "dart.fbf_author_backspin_scene_state/v1"
+AUTHOR_BACKSPIN_OUTCOME_SCHEMA_VERSION = (
+    "dart.fbf_author_backspin_current_source_outcome/v1"
+)
+AUTHOR_BACKSPIN_OUTCOME_CLAIM_SCOPE = "current_source_terminal_outcome_slice"
+AUTHOR_BACKSPIN_RADIUS_M = 0.25
+AUTHOR_BACKSPIN_GROUND_HALF_EXTENT_X_M = 15.0
+AUTHOR_BACKSPIN_EDGE_CONTACT_TOLERANCE_M = 0.05
+AUTHOR_BACKSPIN_MAX_FIRST_SUPPORTED_STEP = 2
+AUTHOR_BACKSPIN_REQUIRED_ROLLING_TAIL_SAMPLES = 5
+AUTHOR_BACKSPIN_MAX_OFF_AXIS_MAGNITUDE = 1e-9
+AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE = {
+    "linear_velocity_x_m_s": -11.428571701049805,
+    "angular_velocity_y_rad_s": -45.71428680419922,
+    "slip_velocity_m_s": 0.0,
+    "position_z_m": -1.3714094161987305,
+}
+AUTHOR_BACKSPIN_TERMINAL_TOLERANCES = {
+    "linear_velocity_x_m_s": 0.5,
+    "angular_velocity_y_rad_s": 2.0,
+    "slip_velocity_m_s": 0.5,
+    "position_z_m": 0.1,
+}
+AUTHOR_BACKSPIN_SCENE_STATE_FIELDS = (
+    "world_time_seconds",
+    "position_x_m",
+    "position_y_m",
+    "position_z_m",
+    "linear_velocity_x_m_s",
+    "linear_velocity_y_m_s",
+    "linear_velocity_z_m_s",
+    "angular_velocity_x_rad_s",
+    "angular_velocity_y_rad_s",
+    "angular_velocity_z_rad_s",
+    "orientation_w",
+    "orientation_x",
+    "orientation_y",
+    "orientation_z",
+    "slip_velocity_m_s",
+    "contact_count",
+    "supported",
 )
 AUTHOR_PAINLEVE_OUTCOME_SCHEMA_VERSION = (
     "dart.fbf_author_painleve_dart_adapter_outcome/v1"
@@ -2447,10 +2580,15 @@ def _sha256(path: Path) -> str:
 def _visual_resource_snapshot(
     schedule: CaptureSchedule,
 ) -> dict[str, dict[str, str]] | None:
-    if schedule.id not in AUTHOR_TURN_TABLE_MEMBERS:
+    source_schedule_id = schedule.source_schedule_id or schedule.id
+    if schedule.id in AUTHOR_TURN_TABLE_MEMBERS:
+        resources = AUTHOR_TURN_TABLE_VISUAL_RESOURCES
+    elif source_schedule_id == AUTHOR_BACKSPIN_SCHEDULE_ID:
+        resources = AUTHOR_BACKSPIN_VISUAL_RESOURCES
+    else:
         return None
     snapshot: dict[str, dict[str, str]] = {}
-    for key, resource in AUTHOR_TURN_TABLE_VISUAL_RESOURCES:
+    for key, resource in resources:
         resource = resource.resolve()
         if not resource.is_file():
             raise FileNotFoundError(resource)
@@ -2468,15 +2606,13 @@ def _bind_visual_resource_snapshots(
     if before is None and after is None:
         return None
     if before is None or after is None or before.keys() != after.keys():
-        raise ValueError("author-turntable visual resource set changed during capture")
+        raise ValueError("visual resource set changed during capture")
     binding: dict[str, dict[str, str | bool]] = {}
     for key in before:
         before_item = before[key]
         after_item = after[key]
         if before_item != after_item:
-            raise ValueError(
-                f"author-turntable visual resource {key} changed during capture"
-            )
+            raise ValueError(f"visual resource {key} changed during capture")
         binding[key] = {
             "path": before_item["path"],
             "sha256_before_capture": before_item["sha256"],
@@ -2706,6 +2842,27 @@ def _validate_capture_claim_boundary(
         "semantic_outcome_gate": CAPTURE_SEMANTIC_OUTCOME_GATE,
         "known_mismatches": list(schedule.mismatches),
     }
+    if _is_author_backspin_schedule(schedule):
+        timeline_validation = metadata.get("timeline_validation", {})
+        _require_author_backspin_adapter_report(
+            timeline_validation.get("physics_contract"),
+            schedule=schedule,
+            label=str(metadata_path),
+        )
+        timeline_outcome = timeline_validation.get(
+            "author_backspin_scene_state_metrics"
+        )
+        _require_author_backspin_outcome_claim(
+            timeline_outcome,
+            solver_lane=schedule.solver_lane,
+            label=str(metadata_path),
+        )
+        capture_claims.update(
+            {
+                "automated_current_source_backspin_outcome_evaluated": True,
+                "current_source_backspin_outcome": timeline_outcome,
+            }
+        )
     if _is_author_painleve_schedule(schedule):
         timeline_outcome = metadata.get("timeline_validation", {}).get(
             "dart_adapter_outcome"
@@ -2760,9 +2917,7 @@ def _validate_runtime_visual_resources(
         return
     expected = _bind_visual_resource_snapshots(snapshot, snapshot)
     if runtime.get("visual_resources") != expected:
-        raise ValueError(
-            f"{metadata_path}: author-turntable visual resource binding changed"
-        )
+        raise ValueError(f"{metadata_path}: visual resource binding changed")
 
 
 def build_plan(
@@ -3449,8 +3604,251 @@ def _is_author_painleve_schedule(schedule: CaptureSchedule) -> bool:
     return (schedule.source_schedule_id or schedule.id) in AUTHOR_PAINLEVE_MEMBERS
 
 
+def _is_author_backspin_schedule(schedule: CaptureSchedule) -> bool:
+    return (schedule.source_schedule_id or schedule.id) == AUTHOR_BACKSPIN_SCHEDULE_ID
+
+
 def _is_author_incline_schedule(schedule: CaptureSchedule) -> bool:
     return (schedule.source_schedule_id or schedule.id) == AUTHOR_INCLINE_SCHEDULE_ID
+
+
+def _require_author_backspin_outcome_claim(
+    report: Any,
+    *,
+    solver_lane: str,
+    label: str,
+) -> dict[str, Any]:
+    if not isinstance(report, dict):
+        raise ValueError(f"{label}: author backspin outcome is unavailable")
+    expected = {
+        "schema_version": AUTHOR_BACKSPIN_OUTCOME_SCHEMA_VERSION,
+        "scene_state_schema_version": AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_BACKSPIN_OUTCOME_CLAIM_SCOPE,
+        "scene_id": "fbf_author_backspin_current_source",
+        "solver_lane": solver_lane,
+        "sample_count": 241,
+        "complete_240_step_trace": True,
+        "trace_contract_validated": True,
+        "outcome_evaluated": True,
+        "pass": True,
+    }
+    if any(
+        not _claim_value_matches(report.get(key), value)
+        for key, value in expected.items()
+    ):
+        raise ValueError(f"{label}: author backspin outcome claim changed")
+    outcome_fields = (
+        "supported_contact_observed",
+        "slip_converged_while_supported",
+        "support_interval_contiguous",
+        "support_lost_at_left_slab_edge",
+        "later_support_loss_observed",
+        "terminal_airborne",
+        "terminal_beyond_left_slab_edge",
+        "planar_motion_preserved",
+        "terminal_reference_within_tolerance",
+        "source_outcome_matches",
+    )
+    if any(not isinstance(report.get(name), bool) for name in outcome_fields):
+        raise ValueError(f"{label}: author backspin outcome observation changed")
+    if solver_lane == "exact" and any(not report[name] for name in outcome_fields):
+        raise ValueError(f"{label}: author backspin exact outcome claim changed")
+    if report.get("physical_outcome_validated") is not report.get(
+        "source_outcome_matches"
+    ):
+        raise ValueError(f"{label}: author backspin outcome result changed")
+    if not _contract_value_matches(
+        report.get("source_terminal_reference"),
+        AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE,
+    ) or not _contract_value_matches(
+        report.get("terminal_tolerances"), AUTHOR_BACKSPIN_TERMINAL_TOLERANCES
+    ):
+        raise ValueError(f"{label}: author backspin source projection changed")
+    terminal = report.get("final")
+    deltas = report.get("terminal_absolute_deltas")
+    if (
+        not isinstance(terminal, dict)
+        or not isinstance(deltas, dict)
+        or set(deltas) != set(AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE)
+    ):
+        raise ValueError(f"{label}: author backspin terminal observation changed")
+    for name, reference in AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE.items():
+        value = terminal.get(name)
+        delta = deltas.get(name)
+        if (
+            not _is_finite_number(value)
+            or not _is_finite_number(delta)
+            or not math.isclose(
+                float(delta),
+                abs(float(value) - reference),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+        ):
+            raise ValueError(f"{label}: author backspin terminal observation changed")
+
+    supported_sample_count = report.get("supported_sample_count")
+    first_supported_step = report.get("first_supported_step")
+    last_supported_step = report.get("last_supported_step")
+    last_supported_position_x_m = report.get("last_supported_position_x_m")
+    minimum_supported_slip = report.get("minimum_supported_absolute_slip_velocity_m_s")
+    rolling_tail_sample_count = report.get("rolling_tail_sample_count")
+    maximum_rolling_tail_slip = report.get(
+        "maximum_rolling_tail_absolute_slip_velocity_m_s"
+    )
+    if (
+        not isinstance(supported_sample_count, int)
+        or isinstance(supported_sample_count, bool)
+        or supported_sample_count < 0
+        or supported_sample_count > expected["sample_count"]
+    ):
+        raise ValueError(f"{label}: author backspin support summary changed")
+    supported_contact_observed = supported_sample_count > 0
+    if supported_contact_observed:
+        if (
+            not isinstance(first_supported_step, int)
+            or isinstance(first_supported_step, bool)
+            or not isinstance(last_supported_step, int)
+            or isinstance(last_supported_step, bool)
+            or first_supported_step < 0
+            or first_supported_step > last_supported_step
+            or last_supported_step >= expected["sample_count"]
+            or not _is_finite_number(minimum_supported_slip)
+            or float(minimum_supported_slip) < 0.0
+            or not _is_finite_number(last_supported_position_x_m)
+            or not isinstance(rolling_tail_sample_count, int)
+            or isinstance(rolling_tail_sample_count, bool)
+            or rolling_tail_sample_count < 0
+            or rolling_tail_sample_count > AUTHOR_BACKSPIN_REQUIRED_ROLLING_TAIL_SAMPLES
+            or not _is_finite_number(maximum_rolling_tail_slip)
+            or float(maximum_rolling_tail_slip) < 0.0
+            or float(minimum_supported_slip) > float(maximum_rolling_tail_slip)
+        ):
+            raise ValueError(f"{label}: author backspin support summary changed")
+    elif any(
+        value is not None
+        for value in (
+            first_supported_step,
+            last_supported_step,
+            last_supported_position_x_m,
+            minimum_supported_slip,
+            rolling_tail_sample_count,
+            maximum_rolling_tail_slip,
+        )
+    ):
+        raise ValueError(f"{label}: author backspin support summary changed")
+
+    terminal_supported = terminal.get("supported")
+    terminal_contact_count = terminal.get("contact_count")
+    if (
+        not isinstance(terminal_supported, bool)
+        or not isinstance(terminal_contact_count, int)
+        or isinstance(terminal_contact_count, bool)
+        or terminal_contact_count < 0
+    ):
+        raise ValueError(f"{label}: author backspin terminal support changed")
+    if not _is_finite_number(terminal.get("position_x_m")):
+        raise ValueError(f"{label}: author backspin terminal position changed")
+    maximum_off_axis_magnitudes = report.get("maximum_off_axis_magnitudes")
+    expected_off_axis_names = {
+        "position_y_m",
+        "linear_velocity_y_m_s",
+        "angular_velocity_x_rad_s",
+        "angular_velocity_z_rad_s",
+    }
+    if (
+        not isinstance(maximum_off_axis_magnitudes, dict)
+        or set(maximum_off_axis_magnitudes) != expected_off_axis_names
+        or any(
+            not _is_finite_number(value) or float(value) < 0.0
+            for value in maximum_off_axis_magnitudes.values()
+        )
+    ):
+        raise ValueError(f"{label}: author backspin off-axis summary changed")
+
+    prompt_supported_contact_observed = supported_contact_observed and (
+        first_supported_step <= AUTHOR_BACKSPIN_MAX_FIRST_SUPPORTED_STEP
+    )
+    slip_converged_while_supported = supported_contact_observed and (
+        rolling_tail_sample_count == AUTHOR_BACKSPIN_REQUIRED_ROLLING_TAIL_SAMPLES
+        and float(maximum_rolling_tail_slip)
+        <= AUTHOR_BACKSPIN_TERMINAL_TOLERANCES["slip_velocity_m_s"]
+    )
+    support_interval_contiguous = supported_contact_observed and (
+        supported_sample_count == last_supported_step - first_supported_step + 1
+    )
+    support_lost_at_left_slab_edge = supported_contact_observed and (
+        abs(float(last_supported_position_x_m) + AUTHOR_BACKSPIN_GROUND_HALF_EXTENT_X_M)
+        <= AUTHOR_BACKSPIN_RADIUS_M + AUTHOR_BACKSPIN_EDGE_CONTACT_TOLERANCE_M
+    )
+    later_support_loss_observed = (
+        supported_contact_observed
+        and last_supported_step < expected["sample_count"] - 1
+        and not terminal_supported
+    )
+    terminal_airborne = (
+        not terminal_supported
+        and terminal_contact_count == 0
+        and float(terminal["position_z_m"]) < 0.0
+    )
+    terminal_beyond_left_slab_edge = (
+        float(terminal["position_x_m"]) < -AUTHOR_BACKSPIN_GROUND_HALF_EXTENT_X_M
+    )
+    planar_motion_preserved = all(
+        float(value) <= AUTHOR_BACKSPIN_MAX_OFF_AXIS_MAGNITUDE
+        for value in maximum_off_axis_magnitudes.values()
+    )
+    terminal_reference_within_tolerance = all(
+        float(deltas[name]) <= tolerance
+        for name, tolerance in AUTHOR_BACKSPIN_TERMINAL_TOLERANCES.items()
+    )
+    source_outcome_matches = all(
+        (
+            supported_contact_observed,
+            prompt_supported_contact_observed,
+            slip_converged_while_supported,
+            support_interval_contiguous,
+            support_lost_at_left_slab_edge,
+            later_support_loss_observed,
+            terminal_airborne,
+            terminal_beyond_left_slab_edge,
+            planar_motion_preserved,
+            terminal_reference_within_tolerance,
+            float(terminal["linear_velocity_x_m_s"]) < 0.0,
+        )
+    )
+    recomputed_outcomes = {
+        "supported_contact_observed": supported_contact_observed,
+        "prompt_supported_contact_observed": prompt_supported_contact_observed,
+        "slip_converged_while_supported": slip_converged_while_supported,
+        "support_interval_contiguous": support_interval_contiguous,
+        "support_lost_at_left_slab_edge": support_lost_at_left_slab_edge,
+        "later_support_loss_observed": later_support_loss_observed,
+        "terminal_airborne": terminal_airborne,
+        "terminal_beyond_left_slab_edge": terminal_beyond_left_slab_edge,
+        "planar_motion_preserved": planar_motion_preserved,
+        "terminal_reference_within_tolerance": (terminal_reference_within_tolerance),
+        "source_outcome_matches": source_outcome_matches,
+    }
+    if any(
+        report.get(name) is not recomputed
+        for name, recomputed in recomputed_outcomes.items()
+    ):
+        raise ValueError(f"{label}: author backspin derived outcome changed")
+    if report.get("physical_outcome_validated") is not source_outcome_matches:
+        raise ValueError(f"{label}: author backspin outcome result changed")
+
+    expected_boundary = {
+        "current_source_terminal_outcome_slice_valid": source_outcome_matches,
+        "source_full_trajectory_equivalence": False,
+        "source_backend_equivalence": False,
+        "solver_equivalence": False,
+        "paper_parity": False,
+        "solver_superiority": False,
+    }
+    if not _claim_value_matches(report.get("claim_boundary"), expected_boundary):
+        raise ValueError(f"{label}: author backspin claim boundary changed")
+    return report
 
 
 def _require_author_incline_terminal_outcome_claim(
@@ -3880,6 +4278,327 @@ def _validate_author_incline_scene_state_trace(
             "paper_parity": False,
         },
         "pass": True,
+    }
+
+
+def _validate_author_backspin_scene_state_trace(
+    schedule: CaptureSchedule,
+    trajectory_steps: Any,
+    *,
+    sidecar_path: Path,
+    expected_last_step: int,
+) -> dict[str, Any] | None:
+    if not _is_author_backspin_schedule(schedule):
+        return None
+    if (
+        schedule.total_steps != 240
+        or not math.isclose(
+            schedule.time_step_seconds, 1.0 / 60.0, rel_tol=0.0, abs_tol=0.0
+        )
+        or isinstance(expected_last_step, bool)
+        or not isinstance(expected_last_step, int)
+        or expected_last_step < 0
+        or expected_last_step > schedule.total_steps
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin schedule changed")
+    if not isinstance(trajectory_steps, list) or len(trajectory_steps) != (
+        expected_last_step + 1
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author backspin scene-state trace length changed"
+        )
+
+    samples: list[dict[str, Any]] = []
+    supported_steps: list[int] = []
+    supported_slip_magnitudes: list[tuple[int, float]] = []
+    maximum_off_axis_magnitudes = {
+        "position_y_m": 0.0,
+        "linear_velocity_y_m_s": 0.0,
+        "angular_velocity_x_rad_s": 0.0,
+        "angular_velocity_z_rad_s": 0.0,
+    }
+    for expected_step, item in enumerate(trajectory_steps):
+        if not isinstance(item, dict) or item.get("step") != expected_step:
+            raise ValueError(
+                f"{sidecar_path}: author backspin scene-state steps are out of order"
+            )
+        sim_time = item.get("sim_time")
+        expected_time = schedule.time_at_step(expected_step)
+        if not _is_finite_number(sim_time) or not math.isclose(
+            float(sim_time), expected_time, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author backspin scene-state time mismatch at "
+                f"step {expected_step}"
+            )
+
+        state = item.get("scene_state")
+        label = f"{sidecar_path}: author backspin scene state at step {expected_step}"
+        if not isinstance(state, dict):
+            raise ValueError(f"{label} is missing")
+        if set(state) != set(AUTHOR_BACKSPIN_SCENE_STATE_FIELDS) or not all(
+            _is_finite_number(state.get(name))
+            for name in AUTHOR_BACKSPIN_SCENE_STATE_FIELDS
+        ):
+            raise ValueError(f"{label} fields changed or are non-finite")
+        if not math.isclose(
+            float(state["world_time_seconds"]),
+            expected_time,
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"{label} world time changed")
+
+        contact_count_value = float(state["contact_count"])
+        if contact_count_value < 0.0 or not contact_count_value.is_integer():
+            raise ValueError(f"{label} contact count is not a nonnegative integer")
+        contact_count = int(contact_count_value)
+        supported_value = float(state["supported"])
+        if supported_value not in (0.0, 1.0):
+            raise ValueError(f"{label} supported flag is not numeric 0/1")
+        supported = supported_value == 1.0
+        if supported != (contact_count > 0):
+            raise ValueError(f"{label} support and contact count disagree")
+
+        orientation = [
+            float(state[f"orientation_{component}"])
+            for component in ("w", "x", "y", "z")
+        ]
+        orientation_norm = math.sqrt(sum(value * value for value in orientation))
+        if not math.isclose(orientation_norm, 1.0, rel_tol=0.0, abs_tol=1e-8):
+            raise ValueError(f"{label} orientation quaternion is not normalized")
+
+        velocity_x = float(state["linear_velocity_x_m_s"])
+        angular_velocity_y = float(state["angular_velocity_y_rad_s"])
+        slip_velocity = float(state["slip_velocity_m_s"])
+        expected_slip_velocity = (
+            velocity_x - AUTHOR_BACKSPIN_RADIUS_M * angular_velocity_y
+        )
+        if not math.isclose(
+            slip_velocity,
+            expected_slip_velocity,
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"{label} slip velocity disagrees with body velocity")
+
+        if supported:
+            supported_steps.append(expected_step)
+            supported_slip_magnitudes.append((expected_step, abs(slip_velocity)))
+        for name in maximum_off_axis_magnitudes:
+            maximum_off_axis_magnitudes[name] = max(
+                maximum_off_axis_magnitudes[name], abs(float(state[name]))
+            )
+        samples.append(
+            {
+                "step": expected_step,
+                "time_seconds": float(sim_time),
+                "position_x_m": float(state["position_x_m"]),
+                "position_y_m": float(state["position_y_m"]),
+                "position_z_m": float(state["position_z_m"]),
+                "linear_velocity_x_m_s": velocity_x,
+                "linear_velocity_y_m_s": float(state["linear_velocity_y_m_s"]),
+                "linear_velocity_z_m_s": float(state["linear_velocity_z_m_s"]),
+                "angular_velocity_x_rad_s": float(state["angular_velocity_x_rad_s"]),
+                "angular_velocity_y_rad_s": angular_velocity_y,
+                "angular_velocity_z_rad_s": float(state["angular_velocity_z_rad_s"]),
+                "orientation_wxyz": orientation,
+                "slip_velocity_m_s": slip_velocity,
+                "contact_count": contact_count,
+                "supported": supported,
+            }
+        )
+
+    complete_trace = expected_last_step == schedule.total_steps
+    initial = samples[0]
+    final = samples[-1]
+    if complete_trace:
+        initial_expected = {
+            "position_x_m": 0.0,
+            "position_y_m": 0.0,
+            "position_z_m": AUTHOR_BACKSPIN_RADIUS_M + 0.001,
+            "linear_velocity_x_m_s": 4.0,
+            "linear_velocity_y_m_s": 0.0,
+            "linear_velocity_z_m_s": 0.0,
+            "angular_velocity_x_rad_s": 0.0,
+            "angular_velocity_y_rad_s": -200.0,
+            "angular_velocity_z_rad_s": 0.0,
+            "slip_velocity_m_s": 54.0,
+        }
+        if any(
+            not math.isclose(float(initial[name]), value, rel_tol=0.0, abs_tol=1e-9)
+            for name, value in initial_expected.items()
+        ) or any(
+            not math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-9)
+            for actual, expected in zip(
+                initial["orientation_wxyz"], (1.0, 0.0, 0.0, 0.0)
+            )
+        ):
+            raise ValueError(f"{sidecar_path}: author backspin initial state changed")
+    support_interval_contiguous = bool(supported_steps) and supported_steps == list(
+        range(supported_steps[0], supported_steps[-1] + 1)
+    )
+    prompt_supported_contact_observed = bool(supported_steps) and (
+        supported_steps[0] <= AUTHOR_BACKSPIN_MAX_FIRST_SUPPORTED_STEP
+    )
+    rolling_tail_slips = [
+        slip_magnitude
+        for _, slip_magnitude in supported_slip_magnitudes[
+            -AUTHOR_BACKSPIN_REQUIRED_ROLLING_TAIL_SAMPLES:
+        ]
+    ]
+    maximum_rolling_tail_slip = max(rolling_tail_slips) if rolling_tail_slips else None
+    slip_converged_while_supported = (
+        len(rolling_tail_slips) == AUTHOR_BACKSPIN_REQUIRED_ROLLING_TAIL_SAMPLES
+        and maximum_rolling_tail_slip
+        <= AUTHOR_BACKSPIN_TERMINAL_TOLERANCES["slip_velocity_m_s"]
+    )
+    last_supported_position_x_m = (
+        samples[supported_steps[-1]]["position_x_m"] if supported_steps else None
+    )
+    support_lost_at_left_slab_edge = bool(supported_steps) and (
+        abs(float(last_supported_position_x_m) + AUTHOR_BACKSPIN_GROUND_HALF_EXTENT_X_M)
+        <= AUTHOR_BACKSPIN_RADIUS_M + AUTHOR_BACKSPIN_EDGE_CONTACT_TOLERANCE_M
+    )
+    terminal_beyond_left_slab_edge = complete_trace and (
+        final["position_x_m"] < -AUTHOR_BACKSPIN_GROUND_HALF_EXTENT_X_M
+    )
+    planar_motion_preserved = all(
+        value <= AUTHOR_BACKSPIN_MAX_OFF_AXIS_MAGNITUDE
+        for value in maximum_off_axis_magnitudes.values()
+    )
+    if complete_trace and schedule.solver_lane == "exact":
+        if not supported_steps:
+            raise ValueError(
+                f"{sidecar_path}: author backspin never established supported contact"
+            )
+        if not prompt_supported_contact_observed:
+            raise ValueError(
+                f"{sidecar_path}: author backspin did not establish prompt contact"
+            )
+        if not slip_converged_while_supported:
+            raise ValueError(
+                f"{sidecar_path}: author backspin slip did not converge while supported"
+            )
+        if not support_interval_contiguous:
+            raise ValueError(
+                f"{sidecar_path}: author backspin support interval is discontinuous"
+            )
+        if not planar_motion_preserved:
+            raise ValueError(
+                f"{sidecar_path}: author backspin developed off-axis motion"
+            )
+        if final["supported"] or final["contact_count"] != 0:
+            raise ValueError(
+                f"{sidecar_path}: author backspin terminal state is not airborne"
+            )
+        if supported_steps[-1] >= schedule.total_steps:
+            raise ValueError(
+                f"{sidecar_path}: author backspin did not lose support after contact"
+            )
+        if (
+            final["position_z_m"] >= 0.0
+            or final["linear_velocity_x_m_s"] >= 0.0
+            or not terminal_beyond_left_slab_edge
+            or not support_lost_at_left_slab_edge
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author backspin terminal roll-off outcome changed"
+            )
+
+    terminal_absolute_deltas = {
+        name: abs(float(final[name]) - reference)
+        for name, reference in AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE.items()
+    }
+    terminal_reference_within_tolerance = complete_trace and all(
+        terminal_absolute_deltas[name] <= tolerance
+        for name, tolerance in AUTHOR_BACKSPIN_TERMINAL_TOLERANCES.items()
+    )
+    if (
+        complete_trace
+        and schedule.solver_lane == "exact"
+        and not terminal_reference_within_tolerance
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author backspin terminal source projection changed"
+        )
+
+    supported_contact_observed = bool(supported_steps)
+    later_support_loss_observed = bool(supported_steps) and (
+        supported_steps[-1] < expected_last_step and not final["supported"]
+    )
+    terminal_airborne = (
+        complete_trace
+        and not final["supported"]
+        and final["contact_count"] == 0
+        and final["position_z_m"] < 0.0
+    )
+    source_outcome_matches = all(
+        (
+            complete_trace,
+            supported_contact_observed,
+            prompt_supported_contact_observed,
+            slip_converged_while_supported,
+            support_interval_contiguous,
+            support_lost_at_left_slab_edge,
+            later_support_loss_observed,
+            terminal_airborne,
+            terminal_beyond_left_slab_edge,
+            planar_motion_preserved,
+            terminal_reference_within_tolerance,
+            final["linear_velocity_x_m_s"] < 0.0,
+        )
+    )
+    return {
+        "schema_version": AUTHOR_BACKSPIN_OUTCOME_SCHEMA_VERSION,
+        "scene_state_schema_version": AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_BACKSPIN_OUTCOME_CLAIM_SCOPE,
+        "scene_id": schedule.scene,
+        "solver_lane": schedule.solver_lane,
+        "sample_count": len(samples),
+        "complete_240_step_trace": complete_trace,
+        "trace_contract_validated": complete_trace,
+        "outcome_evaluated": complete_trace,
+        "initial": initial,
+        "final": final,
+        "supported_sample_count": len(supported_steps),
+        "first_supported_step": supported_steps[0] if supported_steps else None,
+        "last_supported_step": supported_steps[-1] if supported_steps else None,
+        "last_supported_position_x_m": last_supported_position_x_m,
+        "minimum_supported_absolute_slip_velocity_m_s": (
+            min(value for _, value in supported_slip_magnitudes)
+            if supported_slip_magnitudes
+            else None
+        ),
+        "rolling_tail_sample_count": (
+            len(rolling_tail_slips) if supported_slip_magnitudes else None
+        ),
+        "maximum_rolling_tail_absolute_slip_velocity_m_s": (maximum_rolling_tail_slip),
+        "supported_contact_observed": supported_contact_observed,
+        "prompt_supported_contact_observed": prompt_supported_contact_observed,
+        "slip_converged_while_supported": slip_converged_while_supported,
+        "support_interval_contiguous": support_interval_contiguous,
+        "support_lost_at_left_slab_edge": support_lost_at_left_slab_edge,
+        "later_support_loss_observed": later_support_loss_observed,
+        "terminal_airborne": terminal_airborne,
+        "terminal_beyond_left_slab_edge": terminal_beyond_left_slab_edge,
+        "maximum_off_axis_magnitudes": maximum_off_axis_magnitudes,
+        "planar_motion_preserved": planar_motion_preserved,
+        "source_terminal_reference": dict(AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE),
+        "terminal_tolerances": dict(AUTHOR_BACKSPIN_TERMINAL_TOLERANCES),
+        "terminal_absolute_deltas": terminal_absolute_deltas,
+        "terminal_reference_within_tolerance": (terminal_reference_within_tolerance),
+        "source_outcome_matches": source_outcome_matches,
+        "physical_outcome_validated": source_outcome_matches,
+        "claim_boundary": {
+            "current_source_terminal_outcome_slice_valid": source_outcome_matches,
+            "source_full_trajectory_equivalence": False,
+            "source_backend_equivalence": False,
+            "solver_equivalence": False,
+            "paper_parity": False,
+            "solver_superiority": False,
+        },
+        "pass": complete_trace,
     }
 
 
@@ -4456,6 +5175,13 @@ def _is_author_painleve_solver_comparison_group(group: GroupOutputSpec) -> bool:
         and len(group.members) == 2
         and group.members[0] in AUTHOR_PAINLEVE_MEMBERS
         and group.members[1] == _boxed_schedule_id(group.members[0])
+    )
+
+
+def _is_author_backspin_solver_comparison_group(group: GroupOutputSpec) -> bool:
+    return group.solver_lane == "both" and group.members == (
+        AUTHOR_BACKSPIN_SCHEDULE_ID,
+        _boxed_schedule_id(AUTHOR_BACKSPIN_SCHEDULE_ID),
     )
 
 
@@ -5286,7 +6012,7 @@ def _validate_author_card_house_adapter_contract(
     expected_binding = {
         "repository": "https://github.com/matthcsong/fbf-sca-2026",
         "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
-        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
         "card_house_run_blob": "35f33651bc9674a259071ac723e47755504152db",
         "card_house_run_py_sha256": (
             "18c58c85eaad865aeef480b46e880a52088f266b79c90226f624637221ee36f8"
@@ -5574,6 +6300,326 @@ def _validate_author_card_house_adapter_contract(
     }
 
 
+def _author_backspin_expected_source_binding() -> dict[str, str]:
+    return {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+        "runner_path": "paper_examples/backspin-ball/run.py",
+        "runner_blob": "82d8916233df8db1cacc5915699dc53a5d08ea17",
+        "runner_sha256": (
+            "c9174e88bf18dbe050d72568639de50b8477f2bc57ea9558637087da4268409a"
+        ),
+        "source_run_id": "20260722T185956Z",
+        "sweep_results_sha256": (
+            "830e0db3b81406ab3ac305383f811daa45680b4bd2a8a94f198250b8b4cbb2ca"
+        ),
+        "metadata_json_sha256": (
+            "0d919084b7ef8dcc42e9c89c7b7a3c9256e50c4eac664b6b861c407b5ed9eb84"
+        ),
+        "result_json_sha256": (
+            "29a63de1277ec96c6e4f23c4650634c28c1a783a56995a5138c2d3bd15066adc"
+        ),
+        "trajectory_npz_sha256": (
+            "77a28f87962bef54132b98fa1f37d9e82807d33b8e5c3bb154e814bb02462133"
+        ),
+        "history_json_sha256": (
+            "2d0d6fc73923d227e748002785ee11543f8aa292bf7926a03c21a9b4a7f7a3c9"
+        ),
+        "configuration_spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorBackspinSpec.hpp"
+        ),
+        "exact_solver_options_sha256": _sha256(
+            ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+        ),
+        "demo_implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+    }
+
+
+def _author_backspin_source_projection_contract() -> dict[str, Any]:
+    return {
+        "terminal_vx_m_s": AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE[
+            "linear_velocity_x_m_s"
+        ],
+        "terminal_wy_rad_s": AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE[
+            "angular_velocity_y_rad_s"
+        ],
+        "terminal_slip_m_s": AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE[
+            "slip_velocity_m_s"
+        ],
+        "terminal_z_m": AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE["position_z_m"],
+        "terminal_supported": False,
+    }
+
+
+def _require_author_backspin_adapter_report(
+    report: Any,
+    *,
+    schedule: CaptureSchedule,
+    label: str,
+) -> dict[str, Any]:
+    expected = {
+        "schema_version": AUTHOR_BACKSPIN_CONTRACT_SCHEMA_VERSION,
+        "source_binding": _author_backspin_expected_source_binding(),
+        "source_reference_projection": (_author_backspin_source_projection_contract()),
+        "solver_lane": "exact_fbf" if schedule.solver_lane == "exact" else "boxed_lcp",
+        "scene_state_schema_version": AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION,
+        "checker_texture_visual_only": True,
+        "support_observation": "two_body_collision_result_contact_count_proxy",
+        "scoped_erp": 0.0,
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+    if not _contract_value_matches(report, expected):
+        raise ValueError(f"{label}: author backspin adapter report changed")
+    return report
+
+
+def _validate_author_backspin_adapter_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_author_backspin_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(f"{sidecar_path}: author backspin adapter contract is missing")
+    if (
+        contract.get("schema_version") != AUTHOR_BACKSPIN_CONTRACT_SCHEMA_VERSION
+        or contract.get("kind") != "current_source_configuration_dynamics_adapter"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected author backspin schema")
+
+    source_binding = contract.get("source_binding")
+    expected_binding = _author_backspin_expected_source_binding()
+    if source_binding != expected_binding:
+        raise ValueError(f"{sidecar_path}: author backspin source hashes changed")
+
+    density = 1.0 / (4.0 / 3.0 * math.pi * AUTHOR_BACKSPIN_RADIUS_M**3)
+    expected_source_configuration = {
+        "gravity_m_s2": 9.81,
+        "radius_m": AUTHOR_BACKSPIN_RADIUS_M,
+        "mass_kg": 1.0,
+        "density_kg_m3": density,
+        "friction": 0.5,
+        "initial_center_m": [0.0, 0.0, 0.251],
+        "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+        "initial_angular_velocity_rad_s": [0.0, -200.0, 0.0],
+        "time_step_seconds": 1.0 / 60.0,
+        "duration_seconds": 4.0,
+        "total_steps": 240,
+        "ground_half_extents_m": [15.0, 0.5, 0.05],
+        "shape_gap_m": 0.001,
+        "shape_stiffness": 1.0e4,
+        "shape_damping": 1.0e3,
+        "max_contacts": 4096,
+    }
+    if not _contract_value_matches(
+        contract.get("source_configuration"), expected_source_configuration
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author backspin source configuration changed"
+        )
+    expected_source_projection = _author_backspin_source_projection_contract()
+    if not _contract_value_matches(
+        contract.get("source_reference_projection"), expected_source_projection
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin source projection changed")
+
+    adapter = contract.get("dart_adapter")
+    if (
+        not isinstance(adapter, dict)
+        or adapter.get("scene_id") != schedule.scene
+        or adapter.get("scene_state_schema")
+        != AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin adapter identity changed")
+    if not _contract_value_matches(
+        adapter.get("world"),
+        {
+            "time_step_seconds": 1.0 / 60.0,
+            "gravity_m_s2": [0.0, 0.0, -9.81],
+            "simulation_threads": schedule.threads,
+            "deactivation_enabled": False,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin world policy changed")
+    if not _contract_value_matches(
+        adapter.get("collision"),
+        {
+            "detector": "native",
+            "contact_manifold": "four_point_planar",
+            "max_contacts": 4,
+            "max_contacts_per_pair": 4,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin collision contract changed")
+
+    exact = schedule.solver_lane == "exact"
+    expected_solver = {
+        "lane": "exact_fbf" if exact else "boxed_lcp",
+        "configuration_policy": "source_cli_parameterized_strict_dart_adapter",
+        "split_impulse_enabled": False,
+        "exact_options": (
+            {
+                "constraint_regularization_enabled": False,
+                "matrix_free_operator_enabled": False,
+                "contact_row_operator_enabled": True,
+                "dense_contact_row_snapshot_enabled": True,
+                "warm_start_enabled": True,
+                "step_size_persistence_enabled": True,
+                "step_size_recovery_growth_factor": 1.0 / 0.7,
+                "warm_start_match_distance": 0.02,
+                "diagonal_seed_enabled": True,
+                "matrix_free_seed_enabled": False,
+                "projected_gradient_retry_enabled": False,
+                "dense_residual_polish_enabled": False,
+                "max_outer_iterations": 200,
+                "accept_outer_max_iterations": False,
+                "tolerance": 1e-6,
+                "initial_step_size": None,
+                "cap_initial_step_size_at_safe_bound": True,
+                "step_size_scale": 10.0,
+                "outer_relaxation": 1.0,
+                "coupling_variation_tolerance": 0.9,
+                "shrink_factor": 0.7,
+                "max_step_shrink_iterations": 8,
+                "adaptive_step_size_enabled": True,
+                "spectral_iterations": 10,
+                "inner_max_sweeps": 10,
+                "inner_local_solver": "exact_metric_projection",
+                "run_fixed_inner_sweeps": False,
+                "accept_inner_max_iterations": True,
+                "inner_local_iterations": 200,
+                "inner_tolerance": 1e-6,
+                "inner_local_tolerance": 1e-6,
+                "inner_diagonal_regularization": 0.0,
+                "projected_gradient_max_iterations": 200,
+                "projected_gradient_tolerance": 1e-6,
+                "dense_residual_polish_iterations": 8,
+                "dense_residual_polish_line_search_iterations": 8,
+                "dense_residual_polish_regularization": 1e-9,
+                "max_residual_history_samples": 0,
+                "max_residual_history_records": 0,
+                "source_inner_initialization_enabled": True,
+                "colored_block_gauss_seidel_enabled": False,
+                "participant_affinity_enabled": False,
+                "source_continuation_enabled": False,
+                "post_correction_projection_enabled": False,
+                "fallback_to_boxed_lcp_enabled": False,
+            }
+            if exact
+            else None
+        ),
+        "cross_step_options": (
+            {
+                "warm_start_match_mode": "ordered_body_b_local_feature",
+                "warm_start_normal_cosine": 0.9,
+                "strict_warm_start_match_distance": True,
+                "warm_start_max_age": 3,
+                "persistent_step_size_safe_bound_scale": 10.0,
+                "minimum_step_size": 1e-6,
+                "maximum_step_size": 1e6,
+                "warm_start_residual_threshold": 1e-4,
+                "warm_start_step_size_cap": 1e4,
+                "persist_uncapped_step_size_on_warm_start_cap": True,
+                "require_residual_improvement_for_unconverged_cache_save": True,
+            }
+            if exact
+            else None
+        ),
+    }
+    if not _contract_value_matches(adapter.get("solver"), expected_solver):
+        raise ValueError(f"{sidecar_path}: author backspin solver contract changed")
+    if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
+        raise ValueError(f"{sidecar_path}: author backspin scoped ERP is not zero")
+
+    identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    if not _contract_value_matches(
+        adapter.get("ground"),
+        {
+            "mobile": False,
+            "size_m": [30.0, 1.0, 0.1],
+            "initial_pose": {
+                "translation": [0.0, 0.0, -0.05],
+                "rotation": identity,
+            },
+            "primary_friction": 0.5,
+            "secondary_friction": 0.5,
+            "restitution": 0.0,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin ground state changed")
+    if not _contract_value_matches(
+        adapter.get("sphere"),
+        {
+            "mobile": True,
+            "radius_m": AUTHOR_BACKSPIN_RADIUS_M,
+            "initial_pose": {
+                "translation": [0.0, 0.0, 0.251],
+                "rotation": identity,
+            },
+            "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+            "initial_angular_velocity_rad_s": [0.0, -200.0, 0.0],
+            "primary_friction": 0.5,
+            "secondary_friction": 0.5,
+            "restitution": 0.0,
+            "mass_kg": 1.0,
+            "moment_kg_m2": [
+                [0.025, 0.0, 0.0],
+                [0.0, 0.025, 0.0],
+                [0.0, 0.0, 0.025],
+            ],
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author backspin sphere state changed")
+
+    expected_boundaries = {
+        "source_initial_geometric_separation_represented": True,
+        "source_shape_gap_semantics_implemented": False,
+        "source_shape_stiffness_semantics_implemented": False,
+        "source_shape_damping_semantics_implemented": False,
+        "source_collision_backend_implemented": False,
+        "source_solver_backend_semantics_implemented": False,
+        "source_float32_semantics_implemented": False,
+        "checker_texture_visual_only": True,
+        "support_observation": "two_body_collision_result_contact_count_proxy",
+    }
+    if contract.get("adapter_boundaries") != expected_boundaries:
+        raise ValueError(f"{sidecar_path}: author backspin adapter boundaries changed")
+    expected_claim_boundary = {
+        "current_source_configuration_port": True,
+        "terminal_outcome_slice_candidate": True,
+        "historical_paper_invocation_known": False,
+        "full_source_trajectory_equivalence": False,
+        "solver_equivalence": False,
+        "renderer_equivalence": False,
+        "timing_comparability": False,
+        "fig03_parity": False,
+        "paper_parity": False,
+    }
+    if contract.get("claim_boundary") != expected_claim_boundary:
+        raise ValueError(f"{sidecar_path}: author backspin claim boundary changed")
+
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "source_reference_projection": expected_source_projection,
+        "solver_lane": expected_solver["lane"],
+        "scene_state_schema_version": AUTHOR_BACKSPIN_SCENE_STATE_SCHEMA_VERSION,
+        "checker_texture_visual_only": True,
+        "support_observation": "two_body_collision_result_contact_count_proxy",
+        "scoped_erp": adapter["process_state"]["observed_contact_erp"],
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+
+
 def _validate_author_incline_adapter_contract(
     schedule: CaptureSchedule,
     data: dict[str, Any],
@@ -5815,7 +6861,7 @@ def _validate_author_painleve_adapter_contract(
     expected_binding = {
         "repository": "https://github.com/matthcsong/fbf-sca-2026",
         "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
-        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
         "painleve_run_blob": "afaa03613b0ad0a30290168d2fd64221fc3523b7",
         "painleve_run_py_sha256": (
             "818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3"
@@ -6302,6 +7348,11 @@ def _validate_schedule_physics_contract(
     )
     if report is not None:
         return report
+    report = _validate_author_backspin_adapter_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    if report is not None:
+        return report
     report = _validate_author_incline_adapter_contract(
         schedule, data, sidecar_path=sidecar_path
     )
@@ -6715,6 +7766,12 @@ def _validate_failed_exact_fbf_sidecar(
         diagnostics_by_step[step] = diagnostics
         reason_by_step[step] = reason
 
+    author_backspin_scene_state_metrics = _validate_author_backspin_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=trigger_step,
+    )
     author_incline_scene_state_metrics = _validate_author_incline_scene_state_trace(
         schedule,
         trajectory_steps,
@@ -6866,6 +7923,15 @@ def _validate_failed_exact_fbf_sidecar(
         "reason": state["reason"],
         "headless_exact_fbf_fail_fast": state,
         "physics_contract": physics_contract_report,
+        **(
+            {
+                "author_backspin_scene_state_metrics": (
+                    author_backspin_scene_state_metrics
+                )
+            }
+            if author_backspin_scene_state_metrics is not None
+            else {}
+        ),
         **(
             {"author_incline_scene_state_metrics": author_incline_scene_state_metrics}
             if author_incline_scene_state_metrics is not None
@@ -7321,6 +8387,12 @@ def validate_sidecar(
                     prior_worst = float(current_worst)
         diagnostics_by_step[step] = diagnostics
 
+    author_backspin_scene_state_metrics = _validate_author_backspin_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=schedule.total_steps,
+    )
     author_incline_scene_state_metrics = _validate_author_incline_scene_state_trace(
         schedule,
         trajectory_steps,
@@ -7487,6 +8559,15 @@ def validate_sidecar(
             else {}
         ),
         "physics_contract": physics_contract_report,
+        **(
+            {
+                "author_backspin_scene_state_metrics": (
+                    author_backspin_scene_state_metrics
+                )
+            }
+            if author_backspin_scene_state_metrics is not None
+            else {}
+        ),
         **(
             {"author_incline_scene_state_metrics": author_incline_scene_state_metrics}
             if author_incline_scene_state_metrics is not None
@@ -7938,6 +9019,16 @@ def run_schedule(
         "paper_comparable": False,
         **(
             {
+                "automated_current_source_backspin_outcome_evaluated": True,
+                "current_source_backspin_outcome": timeline_report[
+                    "author_backspin_scene_state_metrics"
+                ],
+            }
+            if _is_author_backspin_schedule(schedule)
+            else {}
+        ),
+        **(
+            {
                 "automated_current_dart_adapter_outcome_validated": True,
                 "current_dart_adapter_outcome": timeline_report["dart_adapter_outcome"],
             }
@@ -8027,6 +9118,19 @@ def _validate_group_claim_boundary(
                 "policy_asymmetry": dict(group.policy_asymmetry),
             }
         )
+    if _is_author_backspin_solver_comparison_group(group):
+        outcomes = metadata.get("current_source_backspin_outcomes")
+        if not isinstance(outcomes, list) or len(outcomes) != len(SOLVER_LANES):
+            raise ValueError(
+                f"{metadata_path}: author backspin outcomes are unavailable"
+            )
+        for report, solver_lane in zip(outcomes, SOLVER_LANES):
+            _require_author_backspin_outcome_claim(
+                report,
+                solver_lane=solver_lane,
+                label=str(metadata_path),
+            )
+        claims["automated_current_source_backspin_outcomes_evaluated"] = True
     if _is_author_painleve_solver_comparison_group(group):
         comparison = metadata.get("current_dart_adapter_outcome_comparison")
         if not isinstance(comparison, dict) or comparison.get("pass") is not True:
@@ -8102,6 +9206,7 @@ def _group_member_contract(
 
     members: list[dict[str, Any]] = []
     outcome_reports: list[dict[str, Any]] = []
+    author_backspin_outcome_reports: list[dict[str, Any]] = []
     author_incline_outcome_reports: list[dict[str, Any]] = []
     durations: list[float] = []
     frame_counts: list[int | None] = []
@@ -8129,6 +9234,14 @@ def _group_member_contract(
         if metadata.get("automated_semantic_outcome_validated") is not False:
             raise ValueError(
                 f"{metadata_path}: semantic outcome must remain a manual gate"
+            )
+        if _is_author_backspin_solver_comparison_group(group):
+            author_backspin_outcome_reports.append(
+                _require_author_backspin_outcome_claim(
+                    metadata.get("current_source_backspin_outcome"),
+                    solver_lane=schedule.solver_lane,
+                    label=str(metadata_path),
+                )
             )
         if _is_author_painleve_solver_comparison_group(group):
             outcome = metadata.get("current_dart_adapter_outcome")
@@ -8274,6 +9387,11 @@ def _group_member_contract(
         **(
             {"dart_adapter_outcome_comparison": outcome_comparison}
             if outcome_comparison is not None
+            else {}
+        ),
+        **(
+            {"current_source_backspin_outcomes": author_backspin_outcome_reports}
+            if _is_author_backspin_solver_comparison_group(group)
             else {}
         ),
         **(
@@ -8632,6 +9750,16 @@ def run_group_output(
             )
         },
         "members": contract["members"],
+        **(
+            {
+                "automated_current_source_backspin_outcomes_evaluated": True,
+                "current_source_backspin_outcomes": contract[
+                    "current_source_backspin_outcomes"
+                ],
+            }
+            if _is_author_backspin_solver_comparison_group(group)
+            else {}
+        ),
         **(
             {
                 "automated_current_dart_adapter_outcome_validated": True,
@@ -9006,6 +10134,12 @@ def _verify_existing(
     stored_timeline = metadata.get("timeline_validation", {})
     if stored_timeline != timeline:
         raise ValueError(f"{metadata_path}: timeline validation binding changed")
+    if _is_author_backspin_schedule(schedule):
+        current_outcome = timeline.get("author_backspin_scene_state_metrics")
+        if metadata.get("current_source_backspin_outcome") != current_outcome:
+            raise ValueError(
+                f"{metadata_path}: author backspin outcome binding changed"
+            )
     if _is_author_painleve_schedule(schedule):
         current_outcome = timeline.get("dart_adapter_outcome")
         if metadata.get("current_dart_adapter_outcome") != current_outcome:
@@ -9088,6 +10222,10 @@ def _verify_existing_group(
     ):
         raise ValueError(f"{metadata_path}: group identity/order/labels changed")
     _validate_group_claim_boundary(metadata, group, metadata_path=metadata_path)
+    if _is_author_backspin_solver_comparison_group(group) and metadata.get(
+        "current_source_backspin_outcomes"
+    ) != contract.get("current_source_backspin_outcomes"):
+        raise ValueError(f"{metadata_path}: author backspin outcome binding changed")
     if _is_author_painleve_solver_comparison_group(group) and metadata.get(
         "current_dart_adapter_outcome_comparison"
     ) != contract.get("dart_adapter_outcome_comparison"):

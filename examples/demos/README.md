@@ -20,6 +20,7 @@ pixi run demos -- --verify-fbf-scene-docs
 pixi run demos -- --scene fbf_paper_incline
 pixi run demos -- --scene fbf_author_incline_sweep_current_source
 pixi run demos -- --scene fbf_paper_backspin
+pixi run demos -- --scene fbf_author_backspin_current_source
 pixi run demos -- --scene fbf_paper_turntable
 pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_2
 pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_5
@@ -70,6 +71,29 @@ contact. Source `gap=.005`, `ke=1e4`, and `kd=1e3` are recorded but not claimed
 as equivalent DART contact semantics. The older `fbf_paper_painleve*` scenes
 remain historical proxy diagnostics with different geometry, density, pose,
 velocity, and duration.
+
+`fbf_author_backspin_current_source` preserves the current public author's
+1 kg, .25 m-radius sphere; `mu=.5`; `vx=4 m/s`; `wy=-200 rad/s`; finite
+30 x 1 x .1 m slab; 1/60 s step; and complete four-second horizon. Its
+high-contrast checker mesh is rendering-only: the analytical sphere remains
+the sole collision, inertia, mass, and friction shape. The strict exact-FBF
+lane is checked against a sealed source terminal projection after supported
+slip convergence and later slab roll-off; the boxed lane reports its observed
+outcome without requiring failure. This is a current-source DART adapter, not
+source-backend, renderer, timing, historical-paper, or full-trajectory parity.
+
+Capture and independently revalidate the exact/boxed evidence with:
+
+```bash
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py run \
+  --scenario backspin_author_current_source --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root /tmp/fbf-author-backspin
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py verify \
+  --scenario backspin_author_current_source --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root /tmp/fbf-author-backspin
+```
 
 The separate `fbf_author_incline_sweep_current_source` scene preserves the
 operator-selected Figure 1 `mu={.3,.4,.45,.5,.55,.6,.8}` grid passed through
