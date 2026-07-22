@@ -262,30 +262,27 @@ qualitative review only. The metadata deliberately records
 `automated_semantic_outcome_validated=false`; there is no machine physical-
 outcome oracle or source trajectory comparison.
 
-The final local artifacts remain ignored outside Git under
-`assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/`:
+The authoritative same-binary exact artifacts remain ignored outside Git under
+`assets/pr_media_current_head_c95_card10_same_binary_exact_v2/card_house_author_10_impact_source_continuation_current_source/`:
 
 - timeline SHA-256:
-  `7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae`;
+  `edddf5bab098f655f6fa6a0adf50bc236474f987fa99f630a1b18d15d6d232ce`;
 - clip SHA-256:
   `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`;
 - panel SHA-256:
   `e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6`;
 - metadata SHA-256:
-  `223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f`.
+  `23fe61063c024d3e93466395798951b4942755ef6bd0c4b3650f5ee00c48c84d`.
 
-The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
-`9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2`
-and reports `pass=true`. Independent reuse verification also passes in
-352.27 s. Its separate summary `/tmp/card10_exact_final_verify.json` has
-SHA-256
-`83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e`;
-it records kind `verification`, one result, no skips or groups, full-decode
-success, and the matching metadata hash. The role-separated
-`/tmp/ten-cont-final-review-verify.json` is byte-identical at the same SHA-256.
-The exact schedule's blockers are empty only within this narrow continuation-
-evidence boundary, while the boxed
-runtime blocker remains explicit.
+The separate run summary `/tmp/card10_same_binary_exact_c95_v2_summary.json`
+has SHA-256
+`ebf02723ab30875204bed78ebcffe1ef53bebfee8d25e84c5e5649aeb4b0ebf1`
+and reports `pass=true`. Independent reuse verification also passes; its
+summary `/tmp/card10_same_binary_exact_c95_v2_verify.json` has SHA-256
+`6701bcdea5664d095380e7fa5870972965dec76fdf1595d2e3ca3d8038463055`
+and records kind `verification`, one result, no skips or groups, full-decode
+success, and the matching metadata hash. The exact schedule's blockers are
+empty only within this narrow continuation-evidence boundary.
 
 A clean boxed control completes all 80 requested steps in about 4 minutes 46
 seconds with `BoxedLcpConstraintSolver`. Its timeline SHA-256 is
@@ -293,19 +290,39 @@ seconds with `BoxedLcpConstraintSolver`. Its timeline SHA-256 is
 This control is a valid bounded solver-identity/completion result, not a
 full trajectory or outcome.
 
-The corresponding full boxed capture did not complete. After approximately
-the same wall-time budget as the full exact capture (about 12 minutes 35
-seconds), boxed LCP had reached only step 112 of 3,200. The process was
-interrupted; it emitted no completed timeline sidecar. Its partial frames are
-non-evidence and must not be reused for a paired clip or outcome claim. The
-full boxed trajectory, physical outcome, and paired media therefore remain
-blocked. This bounded runtime observation does not establish solver
-superiority or a general performance result.
+The subsequent full boxed member completes all 3,200 requested steps with the
+same source scene, action, clock, capture cadence, and byte-identical
+`dart-demos` SHA-256
+`5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149`.
+Its capture and independent reuse verification pass with no failures. The
+660x506 H.264/yuv420p clip has 401 frames at 30 fps over 13.366667 s and passes
+a full decode. Boxed timeline, clip, panel, and metadata SHA-256 values are
+`7d1d272913f4bb72bb0f98bff3d8417668ed86d2522fe913ca3f0bbfca658b43`,
+`c3bf391fafa0913e53ce857c497e6411a2810d71f8201a5cffb56e4dd6eb2f20`,
+`918eec24dbb1c30876a6d6f4a38fbb209100fe0e2fc7728d8518d233ac19db76`,
+and `54414a7ab170569a1645bfaace87ea08b8d7f0fb5ce1ae51b9df87da75c19aae`.
+Its ignored root is
+`assets/pr_media_current_head_c95_card10_boxed_full/card_house_author_10_impact_source_continuation_current_source__boxed/`.
+Metadata records `automated_semantic_outcome_validated=false`; manual endpoint
+inspection shows the multi-level construction largely collapsed.
 
-Next, resolve the full boxed-runtime gate before producing paired media. Upload
-the final exact clip only through the PR browser composer and record the
-resulting
-`github.com/user-attachments/...` URL. Separately continue the
+A synchronized, visibly labeled presentation composite places the two
+independently verified members side by side. It is H.264/yuv420p, 1320x530,
+401 frames, 30 fps, 13.366667 s, and passes probe and full-decode checks. Its
+clip, panel, and presentation-manifest SHA-256 values are
+`d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2`,
+`848805bece727c73e35e51261edd9a02a655cefdb2facd75affdd4667b972794`,
+and `800d03fcf8ca5c461b9ce18bbef0ea948a30864fa2bdb739774cf20ca0b333dc`.
+The manifest records `presentation_only=true`, `same_demo_binary=true`, and
+`runner_group_contract_validated=false`. Exact requests source continuation;
+boxed does not, so this is qualitative same-binary continuation-policy
+presentation evidence, not a solver-only A/B. Manual endpoint inspection finds
+the exact lane retaining an upright multi-level structure while boxed is
+largely collapsed, but no automated physical-outcome oracle validates that
+observation.
+
+Upload the labeled comparison only through the PR browser composer and record
+the resulting `github.com/user-attachments/...` URL. Separately continue the
 one-factor colored-scheduling and global-scope diagnostics. Do not loosen
 tolerance, iteration caps, fallback, fail-fast, or accepted-cap policy to
 force a strict pass. Neither this continuation run nor the corrected strict

@@ -4,7 +4,7 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six locally finalized
-bundles, and the visual workflow declares 28 schedules.
+bundles, and the visual workflow declares 29 schedules.
 
 ## Source And Comparability Boundary
 
@@ -52,6 +52,16 @@ bundles, and the visual workflow declares 28 schedules.
   scientific-negative/reference evidence, not historical, DART-matched,
   golden, media, timing, performance, or parity evidence; the visual bundle
   count remains six.
+- A separate DART adapter now binds the source geometry/clock and the
+  operator-selected seven-value grid to simultaneous labeled lanes. Exact and
+  boxed complete 120 steps and pass supported/upright/in-lane/contact plus
+  first-three-slide/last-four-stick gates. Their retained-source-FBF maximum
+  endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s`
+  and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. The 61-frame
+  ignored paired clip independently verifies, but this is only a
+  current-source terminal/outcome slice—not source trajectory/backend/solver
+  or full physical equivalence, historical video/golden, timing, superiority,
+  or paper parity.
 - The repository does not contain the historical paper renderer
   cameras/materials/goldens, exact Apple-silicon model, or original timing-run
   and warmup/aggregation attestation. Only masonry-arch meshes are shipped.
@@ -239,7 +249,7 @@ colored-inner-BGS contract validated above.
 
 | ID | Paper fixture/result | Current evidence | Current status and missing proof |
 | --- | --- | --- | --- |
-| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Locally finalized 21-indexed/23-physical DART visual/trace bundle plus numeric author-pinned FBF/MuJoCo/Kamino runs over `mu=.3,.4,.45,.5,.55,.6,.8` | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; author FBF has 839/840 configured convergence flags, the separate strict DART `mu=.5` row has three accepted caps, and matched DART/full-state external/golden/paper-contact/history/timing/real-time proof remains missing |
+| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | New source-bound seven-cell DART demo/schedule over `mu=.3,.4,.45,.5,.55,.6,.8`, independently verified exact/boxed paired media, the older two-cell visual/trace bundle, and numeric author FBF/MuJoCo/Kamino runs | Partial: both DART lanes classify `.3/.4/.45` slide and `.5/.55/.6/.8` stick and match the retained source-FBF terminal projection within `.01 m/.01 m/s`. The source oracle is non-strict at 839/840 configured flags (`mu=.55`, step 1 at 200/200); source trajectory/backend/full-state, historical invocation/golden/video, paper contact/history/timing/real-time, superiority, and paper parity remain missing |
 | Fig. 3 | Backspin sphere reverses toward analytical terminal state | Locally finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
@@ -272,7 +282,7 @@ releases them immediately when used interactively; the evidence runner invokes
 `p` after completed substep 1,600. The horizon is 2,400 substeps at
 `dt=1/240 s`. Exact and boxed use the same Native
 `FourPointPlanar` frontend with contact capacity 4,096 and manifold subdivision
-4. The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
+4. The demo build, 13 focused headless/continuation C++ tests, 370 runner Python
 tests, and both contract-smoke validators pass.
 
 The strict exact 100-step prefix records 103 attempts, 102 solves, one failure,
@@ -765,7 +775,8 @@ constraint-solver tests, 66/66 `ConstraintSolver` tests, 50/50 Native-collision
 tests, 13/13 `SplitImpulse` tests, 3/3 masonry-wedge-dynamics tests, 36 passing
 paper fixtures with 3 skipped,
 9/9 focused CTests in both Release and Debug, 8/8 author-masonry adapter tests,
-338/338 visual-runner tests, 29/29 demo scene-doc contracts, 64/64 author-incline finalizer
+5/5 author-incline production-world contract tests, 370/370 visual-runner tests,
+30/30 demo scene-doc contracts, 64/64 author-incline finalizer
 tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. With the compact local incline bundle present,

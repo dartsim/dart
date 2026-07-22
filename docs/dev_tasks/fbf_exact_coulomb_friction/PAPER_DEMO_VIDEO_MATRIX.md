@@ -39,14 +39,14 @@ strict convergence nor paper or solver-superiority evidence.
 
 | Paper/video example | Primary demo scene(s) and capture schedule(s) | Existing-solver comparison | Current gate | PR video |
 | --- | --- | --- | --- | --- |
-| Figs. 1-2 / incline segment | `fbf_paper_incline`; `incline` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | The current member and comparison artifacts pass timeline, solver-identity, stream, and decode gates. Both lanes visibly reproduce the DART threshold pair, with no material solver difference. Separate exact traces corroborate slide/stick behavior, but the combined render has eight contacts versus six across the traces and four per cell in the paper timing row. | Local exact-vs-boxed clip ready below; GitHub URL pending |
+| Figs. 1-2 / incline segment | Source-bound `fbf_author_incline_sweep_current_source`; `incline_author_sweep_current_source`. The older `fbf_paper_incline`; `incline` pair remains a two-cell regression fixture | Paired exact/boxed capture and a solver-labeled synchronized seven-cell comparison are automated | Capture and independent reuse verification pass for both complete 120-step traces and the 61-frame group. All cells remain supported/upright/in-lane/contact-participating; `.3/.4/.45` slide and `.5/.55/.6/.8` stick. Exact/boxed maximum source-FBF endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s` and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. The retained source has 839/840 configured convergence flags, so this is a non-strict current-source terminal/outcome slice—not source trajectory/backend/full-physical/video/timing/paper parity or superiority | Local seven-cell exact-vs-boxed clip ready below; GitHub URL pending browser-composer upload |
 | Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | The c95-bound exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The c95-bound groups pass solver, timeline, stream, decode, and independent replay gates. Their clip hashes are byte-identical to the previously timeline/clip-audited media: author source order is ejected/ejected/retained-through-6-s/ejected, while both proxy solvers produce ejected/ejected/captured/ejected over 4 s. These remain manual current-DART classifications rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored c95-bound bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. Colored ordering and global scope are bounded rejects; source-sized-gap, residual-cadence, same-binary terminal spectral-estimate, and same-binary source-seed-values candidates also fail the 36-step gate with explicit claim limits. These are six bounded strict-prefix rejects. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
 | Fig. 7 / 25-stone arch segment | Strict `fbf_author_masonry_arch_25_crown_impact_current_source` plus separate `fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source`; corresponding schedules omit the `fbf_` prefix. Literal-standing and reduced-proxy lanes remain separate | Literal-standing and source-continuation exact/boxed pairs plus independent reuse verification pass | Strict source configuration remains blocked at step 142. The continuation pair completes 2,000/2,000 and releases at 1,600; exact has 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau and 98 max-iteration accepts. Both arches standing and cubes reaching the crown is a manual, nearly identical visual observation only. Metadata has false paper/semantic flags; no strict convergence, superiority, outcome, timing, backend, trajectory, or paper parity follows | Literal-standing and bounded continuation groups ready locally; strict gate blocked at step 142; GitHub URLs pending browser-composer upload |
 | Fig. 8 / 101-stone arch segment | Source-pinned `fbf_author_masonry_arch_101_standing_current_source`; `masonry_arch_101_author_standing_current_source`. The older `fbf_paper_masonry_arch_101`; `masonry_arch_101` proxy remains diagnostic-only | Exact/boxed capture is automated, but the current exact failed prefix prevents a valid full paired comparison. Boxed has a complete decoded member clip; a diagnostic hstack freezes exact at its last frame and is labeled as such | Partial blocker evidence, parity blocked: strict exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`); boxed completes 1,600/1,600 but fails the standing oracle and visibly collapses. Independent full current-source FBF and Kamino controls also fail the same local standing criterion; neither supplies a historical invocation, convergence/contact oracle, full poses, or parity-eligible media. The isolated source-sized contact-gap variant is rejected because it caps earlier at step 161. None is a converged standing result, historical source trajectory/backend match, golden, timing, or paper-parity result | Local boxed-collapse and frozen-prefix diagnostic clips ready below; GitHub URL pending |
-| Tables 6-7 / ten-level card house | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source`; corresponding schedules use the same names without the `fbf_` prefix. The older reconstruction remains diagnostic-only | Both schedules use Native `FourPointPlanar`, capacity 4,096, four contacts per pair, one `0.1 m` ground gap, and 159 `0.005 m` card/cube gaps. Only the continuation exact lane requests continuation policy | Strict reaches completed step 31 before a 79-contact failure. The final exact continuation reseal and independent reuse verification pass: 3,200/3,200, 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau accepts, 763 max-iteration accepts, and `automated_semantic_outcome_validated=false`. A clean boxed control completes 80/80, but the full attempt reached only step 112, was interrupted, and is non-evidence. Paired media, boxed outcome, source/trajectory/physical parity, Tables 6-7 parity, strict convergence, and superiority remain blocked. See `CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md` | Final exact-only clip is locally resealed and reverified; full boxed member, paired media, and manual browser upload remain pending |
+| Tables 6-7 / ten-level card house | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source`; corresponding schedules use the same names without the `fbf_` prefix. The older reconstruction remains diagnostic-only | Both schedules use Native `FourPointPlanar`, capacity 4,096, four contacts per pair, one `0.1 m` ground gap, and 159 `0.005 m` card/cube gaps. Only the continuation exact lane requests continuation policy | Strict reaches completed step 31 before a 79-contact failure. Same-binary exact and boxed continuation members complete 3,200/3,200 and pass independent verification. Exact records 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau accepts, and 763 max-iteration accepts; boxed has no exact-FBF telemetry. Their synchronized labeled pair fully decodes. Manual inspection finds retained upright multi-level structure in exact and a largely collapsed boxed endpoint, but the lanes differ in continuation policy and have `automated_semantic_outcome_validated=false`. This is not a solver-only A/B, strict convergence, automated physical outcome, source/trajectory/Tables 6-7 parity, superiority, or paper parity. See `CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md` | Same-binary presentation-only labeled pair is locally verified; manual browser upload remains pending |
 
 The source-pinned Figure 5 adapter binds author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, tree
@@ -82,8 +82,9 @@ and four initially kinematic `0.8 m`, `256 kg` cubes. Interactive `p` releases
 them immediately; the evidence runner invokes `p` after completed substep
 1,600. The 2,400-step schedule uses `dt=1/240 s`.
 
-The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
-tests, and exact/boxed contract-smoke validators pass. The exact 100-step prefix records
+The demo build, 13 focused headless/continuation C++ tests, five author-incline
+production-world C++ contract tests, 370 runner Python tests, and exact/boxed
+contract-smoke validators pass. The exact 100-step prefix records
 103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
 worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
 worst residual `9.826274595482653e-7`. At step 35, attempt 101 is the failed
@@ -288,7 +289,7 @@ Upload order does not change any row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
 | --- | --- | --- | --- |
-| Minimum | Figs. 1-2 incline exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/incline__exact_vs_boxed/clip.mp4` | `ea4341982f2c3b6510a27b9999db0768c8c271453f630fe47b6fd35d45c300fa` |
+| Minimum | Figs. 1-2 seven-cell current-source incline exact vs boxed | `assets/pr_media_author_incline_final_candidate_v6/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` |
 | Minimum | Fig. 3 checker backspin exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/backspin__exact_vs_boxed/clip.mp4` | `2056924dae3ccbffcc66e7203513e00e7a8b890c002243b84bc46dad2adc2498` |
 | Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
 | Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
@@ -296,7 +297,7 @@ Upload order does not change any row's scientific status.
 | Minimum | Fig. 6 source continuation exact vs boxed | `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
 | Minimum | Fig. 7 crown continuation exact vs boxed | `assets/pr_media_current_head_fig07_crown_continuation/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8` |
 | Minimum | Fig. 8 frozen-prefix diagnostic | `assets/paper_evidence/fig08_arch101_author_current_v1/groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4` | `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94` |
-| Minimum | Tables 6-7 exact continuation only | `assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/clip.mp4` | `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d` |
+| Minimum | Tables 6-7 same-binary qualitative continuation-policy pair | `assets/pr_media_current_head_c95_card10_same_binary_exact_v2/groups/card_house_author_10_impact_source_continuation_current_source__exact_vs_boxed_same_binary_qualitative/clip.mp4` | `d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2` |
 | Supplemental | Fig. 4 proxy `mu=.2, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega2__exact_vs_boxed/clip.mp4` | `56f2a7ee598dffd6716cdf4a7b6b8560e7587ec9bc871f74d0d6e28c4d00daf3` |
 | Supplemental | Fig. 4 proxy `mu=.2, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega5__exact_vs_boxed/clip.mp4` | `2cab4896f79a116949e360871ac319b6193849fd04ad7bf1bfd43cdec16814e3` |
 | Supplemental | Fig. 4 proxy `mu=.5, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega2__exact_vs_boxed/clip.mp4` | `5d16450c622dd21ae1144ce66df3c04419f0bf88448fe3ccd32f90f170fc6b62` |
@@ -305,8 +306,8 @@ Upload order does not change any row's scientific status.
 
 The mandatory caption boundaries remain: Figure 4's author group is
 exact-only; Figure 6/7/Tables 6-7 continuation clips are non-strict; Figure 8
-freezes exact after its valid prefix; and Tables 6-7 lacks a complete boxed
-member. The four Figure 4 proxy pairs are reconstructed DART comparisons, not
+freezes exact after its valid prefix; and the Tables 6-7 pair includes a
+continuation-policy difference. The four Figure 4 proxy pairs are reconstructed DART comparisons, not
 the author-pinned scene. No GitHub user-attachment URL is recorded, so the
 manifest remains a browser-composer handoff rather than published PR media.
 
@@ -341,9 +342,9 @@ presentation evidence only: the DART lanes do not map to the paper lanes, and
 no frame golden or trajectory comparison exists. The candidate remains outside
 Git until uploaded through the PR editor.
 
-### Tables 6-7: ten-level source-continuation final exact member
+### Tables 6-7: ten-level same-binary continuation-policy presentation pair
 
-This exact-only member is locally resealed and independently reverified. The
+The exact member is locally resealed and independently reverified. The
 separately named continuation schedule passes all 3,200 steps and the
 step-1,600 release with 7,702/7,702 exact solves, zero
 failures/fallbacks, 2,427 plateau accepts, 763 max-iteration accepts, zero
@@ -358,38 +359,53 @@ confirms only legibility, release, visible post-release evolution, and lower
 structure remaining at the endpoint. Metadata keeps `paper_comparable=false` and
 `automated_semantic_outcome_validated=false`.
 
-- Ignored final root:
-  `assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/`.
+- Ignored exact root:
+  `assets/pr_media_current_head_c95_card10_same_binary_exact_v2/card_house_author_10_impact_source_continuation_current_source/`.
 - Timeline SHA-256:
-  `7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae`.
+  `edddf5bab098f655f6fa6a0adf50bc236474f987fa99f630a1b18d15d6d232ce`.
 - Clip SHA-256:
   `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`.
 - Panel SHA-256:
   `e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6`.
 - Metadata SHA-256:
-  `223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f`.
+  `23fe61063c024d3e93466395798951b4942755ef6bd0c4b3650f5ee00c48c84d`.
 
-The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
-`9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2`
-and reports `pass=true`. Independent reuse verification passes in 352.27 s;
-its separate `/tmp/card10_exact_final_verify.json` summary has SHA-256
-`83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e`,
+The separate run summary `/tmp/card10_same_binary_exact_c95_v2_summary.json`
+has SHA-256
+`ebf02723ab30875204bed78ebcffe1ef53bebfee8d25e84c5e5649aeb4b0ebf1`
+and reports `pass=true`. Independent reuse verification passes; its separate
+`/tmp/card10_same_binary_exact_c95_v2_verify.json` summary has SHA-256
+`6701bcdea5664d095380e7fa5870972965dec76fdf1595d2e3ca3d8038463055`,
 kind `verification`, one result, no skips or groups, full-decode success, and
-the matching metadata hash. The role-separated
-`/tmp/ten-cont-final-review-verify.json` is byte-identical at the same SHA-256.
-The exact schedule's blockers are empty only
+the matching metadata hash. The exact schedule's blockers are empty only
 within the narrow continuation boundary.
 
 A clean boxed control completes 80/80 in about 4 minutes 46 seconds with
 `BoxedLcpConstraintSolver`; its timeline SHA-256 is
 `ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d`.
-It is not a full outcome. The attempted full boxed member
-reached only step 112/3,200 in approximately the same wall budget and was
-interrupted without a complete timeline sidecar; all partial frames are
-non-evidence. No paired clip or boxed physical outcome exists. This observation
-does not establish a performance result or solver superiority. The final exact
-member must be uploaded manually through the PR browser composer; no GitHub
-user-attachment URL exists.
+It is not a full outcome. The subsequent full boxed member completes
+3,200/3,200 and passes capture plus independent reuse verification against the
+same `dart-demos` SHA-256 `5725672a...` as exact. Its decoded 401-frame clip has
+SHA-256 `c3bf391fafa0913e53ce857c497e6411a2810d71f8201a5cffb56e4dd6eb2f20`;
+timeline, panel, and metadata hashes are
+`7d1d272913f4bb72bb0f98bff3d8417668ed86d2522fe913ca3f0bbfca658b43`,
+`918eec24dbb1c30876a6d6f4a38fbb209100fe0e2fc7728d8518d233ac19db76`,
+and `54414a7ab170569a1645bfaace87ea08b8d7f0fb5ce1ae51b9df87da75c19aae`.
+
+The synchronized labeled comparison is H.264/yuv420p, 1320x530, 401 frames,
+30 fps, 13.366667 s, and fully decodes. Its clip/panel/manifest SHA-256 values
+are `d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2`,
+`848805bece727c73e35e51261edd9a02a655cefdb2facd75affdd4667b972794`,
+and `800d03fcf8ca5c461b9ce18bbef0ea948a30864fa2bdb739774cf20ca0b333dc`.
+The manifest records `presentation_only=true`, `same_demo_binary=true`, and
+`runner_group_contract_validated=false`. Manual inspection finds retained
+upright multi-level structure in exact and a largely collapsed boxed endpoint,
+but exact requests source continuation while boxed does not. This is
+qualitative continuation-policy presentation evidence—not a solver-only A/B,
+automated physical outcome, strict convergence, performance/superiority,
+source/trajectory/Tables 6-7 parity, or paper parity. The labeled pair must be
+uploaded manually through the PR browser composer; no GitHub user-attachment
+URL exists.
 
 ### Figure 7: c95-bound literal 25-stone standing pair
 
@@ -514,28 +530,45 @@ The runner preserves no convergence/contact history, full poses, rotations,
 cube trajectory, or media. This is another full-horizon current-source numeric
 negative, not a matched historical Figure 8 oracle or an attachment candidate.
 
-### Figures 1-2: incline threshold pair
+### Figures 1-2: seven-cell current-source incline sweep
 
-The exact capture has 61 distinct frames and reports 240/240 exact solves,
-zero accepted caps, failures, or boxed fallbacks, and worst residual
-`9.999836962261359e-7`. Manual inspection shows the same reconstructed
-slide/stick threshold separation in both solver lanes; it does not show a
-meaningful exact-versus-boxed difference.
+The source-bound exact and boxed captures each contain a complete 120-step
+trace and 61 distinct H.264/yuv420p frames. The synchronized group is
+2600x890, 30 fps, 2.033333 s, passes full decode and independent reuse
+verification, and has SHA-256
+`a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723`.
+Its local ignored path is
+`assets/pr_media_author_incline_final_candidate_v6/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4`.
+The group panel and metadata hashes are
+`1c49eddac9fe2959ea4475e29f68ced2e5ce779ae7261b03f5fb3b8f58a04e42`
+and `1e5bc5293d5c83a72075a2884c6fdf7ef17e5b8795b55da8028c9bc7f2602505`.
+The copied demo binary, capture summary, and independent verification summary
+hashes are respectively
+`67d399eee85ffd286984a877b8f4181b9ce3030acf5f9b2bc03886e54e7a5f20`,
+`243ba16ef500fc8d3bb71e1b264e0bd2e99dbd23257a3bb9cfa809a4fbeaacba`, and
+`02305f4faeeb792198dc7e85cf4348ffa3f3d52a742fa4e63f8b01e52bd27b4c`.
+The group metadata asserts the narrow current-source FBF terminal/outcome-slice
+validation flag and deliberately leaves generic automated semantic validation
+false.
 
-- Direct comparison candidate:
-  `assets/pr_media_current_head_c95_small_rows/groups/incline__exact_vs_boxed/clip.mp4`,
-  SHA-256
-  `ea4341982f2c3b6510a27b9999db0768c8c271453f630fe47b6fd35d45c300fa`.
-- Exact member SHA-256:
-  `ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9`;
-  boxed member SHA-256:
-  `aa0e1408b8946d991ab0bf2857775750b341bf087e95b605def6ae3d609166cb`.
+All seven DART cells remain supported, upright, in-lane, and
+contact-participating. Both solvers classify `.3/.4/.45` as slide and
+`.5/.55/.6/.8` as stick. Exact maximum absolute displacement/velocity deltas
+from the retained source-FBF terminal projection are
+`0.002426469449185232 m` / `0.0011201728594518558 m/s`; boxed deltas are
+`0.0011521317667995284 m` / `0.00030012480388411203 m/s`. The projection binds
+raw results, canonical projection, and `mu=.55` history SHA-256 values
+`f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12`,
+`e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921`,
+and `c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f`.
+The retained source records only 839/840 configured convergence flags because
+`mu=.55`, step 1 reaches 200/200. Therefore the comparison supports only a
+current-source terminal/outcome slice, not strict source convergence,
+trajectory/backend/solver/full-state or physical equivalence, historical
+video/golden, timing, paper parity, or superiority.
 
-The comparison is 1320x530 for 61 frames (2.033333 s). Separate exact traces
-own the quantitative threshold claim: `mu=.4` travels `1.7686892884927794 m`,
-while `mu=.5` travels `0.0008905412965980523 m`. The combined renderer and
-independent traces use different placements and contact counts, so no
-full-state equivalence or paper contact/timing parity is claimed.
+The older two-cell `incline` pair remains a regression fixture; it is no
+longer the recommended Figures 1-2 browser upload.
 
 ### Figure 3: backspin reversal
 

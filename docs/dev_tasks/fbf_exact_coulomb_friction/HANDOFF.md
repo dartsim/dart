@@ -86,6 +86,35 @@ External truth:
   scientific-negative/reference evidence, not a DART match, historical run,
   golden, media, timing, performance, or parity result, and it does not change
   the six-bundle visual inventory.
+- A separately registered DART demo,
+  fbf_author_incline_sweep_current_source, presents that operator-selected
+  seven-value grid in labeled simultaneous Y lanes. Its exact and boxed
+  120-step traces pass the supported/upright/in-lane/contact and
+  first-three-slide/last-four-stick gates. Maximum retained-source-FBF endpoint
+  deltas are 0.002426469449185232 m / 0.0011201728594518558 m/s for exact and
+  0.0011521317667995284 m / 0.00030012480388411203 m/s for boxed.
+- The local ignored upload candidate is
+  assets/pr_media_author_incline_final_candidate_v6/groups/
+  incline_author_sweep_current_source__exact_vs_boxed/clip.mp4. Capture and
+  independent reuse verification pass; it is 61-frame H.264/yuv420p at 30 fps,
+  2600x890, 2.033333 s, SHA-256
+  a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723.
+  The copied demo binary, capture summary, and independent verification summary
+  SHA-256 values are
+  67d399eee85ffd286984a877b8f4181b9ce3030acf5f9b2bc03886e54e7a5f20,
+  243ba16ef500fc8d3bb71e1b264e0bd2e99dbd23257a3bb9cfa809a4fbeaacba,
+  and 02305f4faeeb792198dc7e85cf4348ffa3f3d52a742fa4e63f8b01e52bd27b4c.
+  Group metadata sets the narrow
+  automated_current_source_fbf_terminal_outcome_slice_validated flag true and
+  leaves generic automated_semantic_outcome_validated false.
+  Source raw/projection/mu=.55-history hashes are respectively
+  f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12,
+  e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921,
+  and c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f.
+  The retained source has 839/840 configured convergence flags; mu=.55 step 1
+  reaches 200/200, so source_reference_strictly_converged=false. This proves
+  only a current-source terminal/outcome slice, not source trajectory/backend,
+  solver/full-physical equivalence, timing/video/paper parity, or superiority.
 
 PR truth:
 
@@ -124,7 +153,7 @@ C95-bound small-row media truth:
   independently audited H.264/yuv420p clips: nine minimum source-row clips and
   five supplemental direct comparisons. Every listed SHA matches and every
   clip passes a full `ffmpeg -xerror` decode. Retain the mandatory non-strict,
-  frozen-prefix, exact-only, proxy, and missing-boxed caption boundaries.
+  frozen-prefix, exact-only, proxy, and continuation-policy caption boundaries.
 
 Exact-math truth:
 
@@ -627,7 +656,7 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 13 headless/continuation C++ tests, 338 visual-runner Python
+- The demo build, 13 headless/continuation C++ tests, 370 visual-runner Python
   tests, and exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
@@ -914,32 +943,45 @@ Source-supported ten-level card-house truth:
   post-release evolution, and lower structure remaining; it is not a physical
   oracle.
 - Final timeline, clip, panel, and metadata SHA-256 values are
-  7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae,
+  edddf5bab098f655f6fa6a0adf50bc236474f987fa99f630a1b18d15d6d232ce,
   19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d,
   e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6,
-  and 223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f.
+  and 23fe61063c024d3e93466395798951b4942755ef6bd0c4b3650f5ee00c48c84d.
   The ignored root is
-  assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/.
-- The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
-  9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2
-  and reports pass. Independent reuse verification passes in 352.27 s. Its
-  separate `/tmp/card10_exact_final_verify.json` summary has SHA-256
-  83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e,
+  assets/pr_media_current_head_c95_card10_same_binary_exact_v2/card_house_author_10_impact_source_continuation_current_source/.
+- The separate run summary
+  `/tmp/card10_same_binary_exact_c95_v2_summary.json` has SHA-256
+  ebf02723ab30875204bed78ebcffe1ef53bebfee8d25e84c5e5649aeb4b0ebf1
+  and reports pass. Independent reuse verification passes. Its
+  separate `/tmp/card10_same_binary_exact_c95_v2_verify.json` summary has
+  SHA-256
+  6701bcdea5664d095380e7fa5870972965dec76fdf1595d2e3ca3d8038463055,
   kind verification, one result, no skips or groups, full-decode success, and
-  the matching metadata hash. The role-separated
-  `/tmp/ten-cont-final-review-verify.json` is byte-identical at the same
-  SHA-256. The exact schedule has no blockers only within
+  the matching metadata hash. The exact schedule has no blockers only within
   the narrow continuation-evidence boundary.
 - A clean boxed control completes 80/80 in about 4 minutes 46 seconds with
   BoxedLcpConstraintSolver. Timeline SHA-256 is
   ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d.
   This is a bounded solver-identity/completion control, not a full outcome.
-- The full boxed attempt reached only step 112/3,200 in about the same wall
-  budget, was interrupted, and has no complete timeline sidecar. Partial
-  frames are non-evidence. Full boxed outcome and paired media remain blocked;
-  this bounded runtime observation is not performance or superiority evidence.
+- The full boxed member completes 3,200/3,200 with the same scene, action,
+  clock, cadence, and byte-identical demo SHA-256 5725672a... as exact. Capture
+  and independent reuse verification pass; timeline, clip, panel, and metadata
+  SHA-256 values are 7d1d272913f4bb72bb0f98bff3d8417668ed86d2522fe913ca3f0bbfca658b43,
+  c3bf391fafa0913e53ce857c497e6411a2810d71f8201a5cffb56e4dd6eb2f20,
+  918eec24dbb1c30876a6d6f4a38fbb209100fe0e2fc7728d8518d233ac19db76,
+  and 54414a7ab170569a1645bfaace87ea08b8d7f0fb5ce1ae51b9df87da75c19aae.
+- The presentation-only same-binary labeled pair fully decodes. Its clip,
+  panel, and manifest SHA-256 values are
+  d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2,
+  848805bece727c73e35e51261edd9a02a655cefdb2facd75affdd4667b972794,
+  and 800d03fcf8ca5c461b9ce18bbef0ea948a30864fa2bdb739774cf20ca0b333dc.
+  Manual endpoint inspection finds retained upright multi-level structure in
+  exact and a largely collapsed boxed endpoint, but exact requests source
+  continuation while boxed does not. This is not a solver-only A/B, automated
+  physical outcome, strict convergence, performance/superiority, or parity
+  result.
 - No source/paper physical parity, Tables 6-7 parity, strict convergence,
-  trajectory parity, or solver superiority follows. The final exact clip still
+  trajectory parity, or solver superiority follows. The labeled pair still
   requires manual PR-browser-composer upload and a recorded user-attachment
   URL. For this ten-level lane, colored scheduling and source-global scope both
   remain pending one-factor diagnostics; do not loosen tolerance, caps,
@@ -1200,7 +1242,7 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six locally finalized bundles, and the visual
-  workflow declares 28 schedules; validator passes and fail-closed hashes local
+  workflow declares 29 schedules; validator passes and fail-closed hashes local
   bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1272,12 +1314,15 @@ Latest recorded focused gates:
   contract. The older pushed checkpoint's step-1 failure remains historical.
   Predictive checkpoint `3647959a188` clears exact step 1 and has the separate
   completed-step-31 / boxed-step-40 evidence above;
+- author-incline shared-specification and production-world C++ contract: 5/5
+  passed for exact/boxed solver wiring, finite stepped state, and contact
+  inventory;
 - predictive-checkpoint gates: `ConstraintSolver` 66/66, Native
   collision detector 50/50, `SplitImpulse` 13/13, exact solver 38/38, and
   paper fixtures 36 passed with 3 explicit opt-in skips;
 - visual runner, including source-pinned 101-stone, both ten-level card-house
   schedule/oracle contracts, and Figure 7 crown-impact continuation, passed
-  338/338;
+  370/370, including the seven-cell author incline;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -1286,7 +1331,7 @@ Latest recorded focused gates:
   before implementation/media head c95bd5fb916; a Clang 22 warning-as-error
   syntax check passes, while current remote confirmation must be read live;
 - author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
-- demo scene documentation verifier: 29 scenes passed; exact/boxed real
+- demo scene documentation verifier: 30 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
@@ -1323,11 +1368,10 @@ Immediate order:
    separate ten-level lane's corrected 79-contact post-step-31 failure under
    the same strict policies. Preserve the distinction between previous
    checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Preserve
-   the final, independently reverified ten-level exact continuation member.
-   Preserve
-   the clean 80-step boxed control, but treat the interrupted step-112 boxed
-   run and partial frames as non-evidence; resolve full boxed
-   runtime before paired media. The one-participant colored-ordering result is
+   the independently reverified ten-level exact and boxed continuation members
+   and their same-binary presentation-only labeled pair. Keep the superseded
+   interrupted step-112 boxed run and partial frames as non-evidence. The
+   one-participant colored-ordering result is
    rejected only for the four-level Figure 6 strict-prefix blocker, as are the
    one-global-group, source-sized-gap, residual-cadence, terminal
    spectral-estimate, and source-seed-values results. Preserve all six bounded
@@ -1337,7 +1381,7 @@ Immediate order:
    scheduling and global-scope diagnostics pending one factor at a time
    without loosening tolerance or caps. Use the ignored c95-bound
    c95bd5fb916 reseal as the authoritative Figures 1-5 upload source. Upload any
-   final exact member only through the PR browser composer and
+   final labeled pair only through the PR browser composer and
    record the URL.
    Independently review the completed telemetry-rich source-continuation
    capture without calling accepted finite iterates strict success; publish it
