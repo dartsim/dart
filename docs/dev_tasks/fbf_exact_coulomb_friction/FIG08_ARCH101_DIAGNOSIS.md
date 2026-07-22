@@ -41,7 +41,9 @@ strict exact solve reaches its first cap. At step 209 the analytic free-fall
 displacement is `3.7375078125`, exactly the recorded maximum displacement.
 Clearing the solver cap alone therefore cannot establish standing.
 
-## Pinned-Source Short Probe
+## Pinned-Source Control
+
+### Short probe
 
 An isolated CPU run of the pinned source used its explicit public command:
 
@@ -61,9 +63,32 @@ covers only 7.5 percent of the full horizon.
 This short probe confirms different contact onset and fail-through policies,
 but it also shows that the source crown initially falls by essentially the
 same analytic amount. Source-style gaps are required for a faithful comparison;
-they are not yet proven sufficient to make the 101-stone arch stand. A full
-400-frame source run is scheduled separately because the measured runtime is
-approximately 50 to 85 minutes.
+they are not proven sufficient to make the 101-stone arch stand.
+
+### Full current-source run
+
+The same pinned public command completed all 400 frames / 1,600 substeps and
+exited zero in 1,071.20 seconds. That completion is not convergence evidence:
+only 127 substeps converged, while 1,473 (`92.0625%`) exhausted the source's
+200-outer-iteration cap and continued. Contacts ranged from 8 to 432 and ended
+at 428. The final step was nonconverged at residual `0.002282420096486425`.
+
+The saved keystone (`stone-51`) fell from `66.13856506347656` to
+`58.90357971191406`, or `7.2349853515625` raw units. Fifty-seven of 99 mobile
+stones changed height by more than the local three-unit standing limit. All
+saved trajectory arrays and all 7,190,132 numeric history values are finite.
+The audit JSON SHA-256 is
+`56844eee3d908a1078fe7e76c6a92e31f2de79eb6e1e503ca7173d4e078c6cd4`;
+history, result, and trajectory SHA-256 values are respectively
+`e5ec24fd156ef40919785096ccac1ceb7fdfb981b1d3e3ba1fb0356346a1c9ac`,
+`97bf1609df85707cc810631a9315c0efb2b4c15d9344a56628c10f66dbf08eba`,
+and `ed7b151f491146a0b02161dbeddcdb86a07ddf780a48cf82b23eb58598cdf634`.
+
+The public runner persists only initial/final stone heights and the keystone
+height timeline. It does not save final x/y positions, quaternions, or media.
+This proves failure of the local standing criterion by vertical displacement
+alone, but it does not support a visual-collapse, full 3D displacement, or
+rotation claim.
 
 ## Step-209 Solver Diagnosis
 
@@ -74,9 +99,11 @@ tolerance. The capped solve remains finite and is accepted internally; the
 strict evidence runner then fails closed. There are no local exact failures,
 boxed fallbacks, non-finite values, or line-search shrink events at this state.
 
-This is a valid current-DART strict negative. It is not evidence that the
-pinned source solver fails: the source uses different solver policies and does
-not apply DART's fail-fast evidence gate.
+This is a valid current-DART strict negative. The DART step-209 cap alone does
+not establish failure at a corresponding source state because the source uses
+different solver policies and no fail-fast evidence gate. The independent
+source nonconvergence result above is a separate full-run observation, not a
+step-to-step trajectory match.
 
 ## Rejected One-Factor Solver Trials
 
@@ -107,7 +134,8 @@ collision-only comparison of pair identities, points, normals, signed
 separations, and multiplicity at matched poses. Only after that matches closely
 enough should a 1,600-substep exact/boxed dynamics run be captured.
 
-The public pinned source's complete `--stones 101` outcome is still being
-validated independently. Until that completes, do not claim that its supported
-101-stone selection stands, reproduces historical Figure 8, or supplies a
-golden trajectory.
+The complete public `--stones 101` control therefore cannot serve as a
+converged golden trajectory and does not preserve the initial configuration
+under the local standing criterion. The historical Figure 8 invocation and
+backend remain unrecovered. Do not claim source visual collapse, historical
+Figure 8 parity, or DART-versus-source solver superiority.

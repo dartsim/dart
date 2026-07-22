@@ -770,6 +770,15 @@ All four one-factor solver trials remain strict negatives, so the next
 experiment isolates default-off contact-gap semantics instead of combining
 tuning knobs.
 
+The independent pinned-source `--stones 101` control completes 1,600/1,600
+but only 127 substeps converge; 1,473 exhaust `max_outer=200` and continue. Its
+saved keystone drops `7.2349853515625` raw units, and 57/99 mobile stones exceed
+the local three-unit height-change limit. Audit SHA-256 is
+`56844eee3d908a1078fe7e76c6a92e31f2de79eb6e1e503ca7173d4e078c6cd4`.
+The public runner saves no final x/y, rotations, or media, so this is a finite
+current-source negative rather than a converged golden or visual/paper-parity
+result.
+
 The ignored packet is
 `assets/paper_evidence/fig08_arch101_author_current_v1/`. Scene
 `fbf_author_masonry_arch_101_standing_current_source` binds the pinned author

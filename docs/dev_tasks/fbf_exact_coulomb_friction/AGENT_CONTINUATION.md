@@ -747,6 +747,13 @@ step 188, before the exact solver caps at step 209. Four one-factor solver
 trials were rejected; even doubling inner sweeps only delayed the cap to step
 235 at about 2.8x cost after the physical gate had already failed. Isolate
 default-off proximity-gap semantics before any further solver tuning.
+The independent pinned-source control also completes 1,600/1,600 only by
+continuing after 1,473 capped/nonconverged substeps; its saved keystone drops
+`7.2349853515625` raw units and 57/99 mobile stones exceed the local
+three-unit height-change limit. Audit SHA-256 is
+`56844eee3d908a1078fe7e76c6a92e31f2de79eb6e1e503ca7173d4e078c6cd4`.
+It supplies neither a converged golden nor a visual-collapse/paper-parity
+claim because the public runner saves no final x/y, rotations, or media.
 
 Preserve the ignored
 `assets/paper_evidence/fig08_arch101_author_current_v1/` packet. The

@@ -693,6 +693,13 @@ Source-pinned 101-stone DART truth:
   doubled-inner-sweep trials are rejected; the last delays the cap to step 235
   at about 2.8x cost after physical failure. Test default-off proximity gaps as
   one factor before more solver tuning.
+- The independent public-source control completes 1600/1600 but only 127 steps
+  converge; 1473 hit `max_outer=200` and continue. The saved keystone drops
+  7.2349853515625 raw units and 57/99 mobile stones exceed the local
+  three-unit height-change limit. Audit SHA-256 is
+  56844eee3d908a1078fe7e76c6a92e31f2de79eb6e1e503ca7173d4e078c6cd4.
+  No final x/y, rotation, or media is saved, so claim no source visual collapse,
+  converged golden, historical Figure 8 parity, or solver superiority.
 - Preserve
   assets/paper_evidence/fig08_arch101_author_current_v1/.
 - Scene `fbf_author_masonry_arch_101_standing_current_source` binds author
