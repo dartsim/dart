@@ -36,6 +36,7 @@
 // aids; the authoritative parity gates remain the unit/integration tests,
 // benchmark, and CSV trace exporter.
 
+#include "FbfAuthorBackspinSpec.hpp"
 #include "FbfAuthorCardHouseSpec.hpp"
 #include "FbfAuthorInclineSpec.hpp"
 #include "FbfAuthorMasonryArchDartAdapter.hpp"
@@ -416,7 +417,7 @@ SkeletonPtr createGround(double friction)
 }
 
 //==============================================================================
-void addBackspinCheckerTexture(BodyNode* body)
+void addBackspinCheckerTexture(BodyNode* body, double radius)
 {
   const dart::common::Uri meshUri(
       "dart://sample/obj/fbf_backspin_checker_sphere.obj");
@@ -433,7 +434,7 @@ void addBackspinCheckerTexture(BodyNode* body)
   // MeshShape renderer to bind the OBJ material's checker texture.
   DART_SUPPRESS_DEPRECATED_BEGIN
   auto checker = std::make_shared<MeshShape>(
-      Eigen::Vector3d::Constant(kBackspinRadius), mesh, meshUri, retriever);
+      Eigen::Vector3d::Constant(radius), mesh, meshUri, retriever);
   DART_SUPPRESS_DEPRECATED_END
   auto* checkerNode = body->createShapeNodeWith<VisualAspect>(checker);
   checkerNode->getVisualAspect()->setRGBA(Eigen::Vector4d::Ones());
@@ -450,7 +451,7 @@ SkeletonPtr createBackspinSphere()
       = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
   node->getDynamicsAspect()->setFrictionCoeff(kBackspinFriction);
   setShapeInertia(body, shape);
-  addBackspinCheckerTexture(body);
+  addBackspinCheckerTexture(body, kBackspinRadius);
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation().z() = kBackspinRadius - 0.005;
@@ -581,6 +582,14 @@ fbf_author_incline::SolverLane authorInclineSolverLane(SolverMode mode)
 }
 
 //==============================================================================
+fbf_author_backspin::SolverLane authorBackspinSolverLane(SolverMode mode)
+{
+  return mode == SolverMode::ExactFbf
+             ? fbf_author_backspin::SolverLane::ExactFbf
+             : fbf_author_backspin::SolverLane::BoxedLcp;
+}
+
+//==============================================================================
 void colorAuthorInclineWorld(const WorldPtr& world)
 {
   for (const auto& cell : fbf_author_incline::kCells) {
@@ -613,6 +622,18 @@ WorldPtr createAuthorInclineWorld(SolverMode mode)
 {
   auto world = fbf_author_incline::createWorld(authorInclineSolverLane(mode));
   colorAuthorInclineWorld(world);
+  return world;
+}
+
+//==============================================================================
+WorldPtr createAuthorBackspinWorld(SolverMode mode)
+{
+  auto world = fbf_author_backspin::createWorld(authorBackspinSolverLane(mode));
+  const auto sphere = world->getSkeleton("backspin_author_ball");
+  if (!sphere || sphere->getNumBodyNodes() != 1u)
+    throw std::runtime_error("author backspin visual sphere is missing");
+  addBackspinCheckerTexture(
+      sphere->getBodyNode(0u), fbf_author_backspin::kRadius);
   return world;
 }
 
@@ -3022,6 +3043,76 @@ DemoScene makeFbfPaperBackspinScene()
       "This scene exposes the implemented single-contact fixture and solver "
       "diagnostics. Paper trajectory plots and external comparisons are still "
       "reported as missing.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorBackspinCurrentSourceScene()
+{
+  using namespace fbf_author_backspin;
+  return makeFbfPaperScene(
+      kSceneId,
+      "FBF Author Backspin (Current Source)",
+      "Source-pinned 1 kg checker sphere over the complete four-second "
+      "finite-slab backspin and roll-off horizon.",
+      // The view remains nearly perpendicular to the Y spin axis and frames
+      // the complete supported trajectory. The terminal airborne state is
+      // still retained in the trace even after the sphere falls below view.
+      CameraHome{
+          ::osg::Vec3d(-6.5, -18.0, 4.5),
+          ::osg::Vec3d(-6.5, 0.0, -0.25),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorBackspinWorld(state->solverMode);
+      },
+      kDartMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c: radius .25 m, "
+      "mass 1 kg, mu=.5, center z=.251 m, vx=4 m/s, wy=-200 rad/s, a "
+      "30 x 1 x .1 m finite slab, dt=1/60 s, and 240 completed steps.",
+      "The source-FBF reference first reaches rolling with reversed vx, then "
+      "leaves the finite slab and is airborne at four seconds. Exact evidence "
+      "must complete all 240 strict steps without accepted caps, failures, or "
+      "boxed fallback and satisfy the preregistered rolling/roll-off terminal "
+      "slice. The boxed lane reports its observed outcome without a required "
+      "failure.",
+      "The initial .001 m geometric separation is represented, but source "
+      "shape-gap, stiffness/damping, Warp/Newton float32 collision and solver "
+      "semantics are not. The checker mesh is VisualAspect-only; collision, "
+      "mass, inertia, and friction remain on the analytical SphereShape. This "
+      "is a current-source DART outcome slice, not source trajectory/backend/"
+      "renderer/timing equivalence or Figure 3/paper parity.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr&, const std::shared_ptr<FbfPaperState>&) {
+        ImGui::Separator();
+        ImGui::TextDisabled("Pinned author parameters (b3f3c5c)");
+        ImGui::TextUnformatted("Sphere: radius .25 m; mass 1 kg; mu=.5");
+        ImGui::TextUnformatted("Initial: z=.251 m; vx=4; wy=-200");
+        ImGui::TextUnformatted("Finite slab: 30 x 1 x .1 m");
+        ImGui::TextUnformatted("dt=1/60 s; horizon=240 steps (4 s)");
+        ImGui::TextUnformatted("Checker mesh: rendering only");
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return physicsContractJson(inspectPhysicsContract(
+              world, DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256));
+        };
+        setup.sceneStateProvider = [world] {
+          return sceneStateFields(world);
+        };
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installSolver(world, authorBackspinSolverLane(mode));
+      });
 }
 
 //==============================================================================

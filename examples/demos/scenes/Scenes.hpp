@@ -92,6 +92,9 @@ namespace dart_demos {
 /// Research > FBF backspin: exact-Coulomb paper backspin sphere fixture.
 [[nodiscard]] DemoScene makeFbfPaperBackspinScene();
 
+/// Research > FBF author backspin: source-pinned full-horizon adapter.
+[[nodiscard]] DemoScene makeFbfAuthorBackspinCurrentSourceScene();
+
 /// Research > FBF turntable: exact-Coulomb paper turntable capture/ejection.
 [[nodiscard]] DemoScene makeFbfPaperTurntableScene();
 

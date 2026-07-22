@@ -1301,7 +1301,7 @@ def _author_card_house_adapter_contract(
         "source_binding": {
             "repository": "https://github.com/matthcsong/fbf-sca-2026",
             "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
-            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
             "card_house_run_blob": "35f33651bc9674a259071ac723e47755504152db",
             "card_house_run_py_sha256": (
                 "18c58c85eaad865aeef480b46e880a52088f266b79c90226f624637221ee36f8"
@@ -1447,6 +1447,225 @@ def _author_card_house_adapter_contract(
     }
 
 
+def _author_backspin_adapter_contract(module, *, solver_lane="exact"):
+    exact = solver_lane == "exact"
+    identity = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ]
+    return {
+        "schema_version": "dart.fbf_author_backspin_dynamics_adapter/v1",
+        "kind": "current_source_configuration_dynamics_adapter",
+        "source_binding": {
+            "repository": "https://github.com/matthcsong/fbf-sca-2026",
+            "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+            "runner_path": "paper_examples/backspin-ball/run.py",
+            "runner_blob": "82d8916233df8db1cacc5915699dc53a5d08ea17",
+            "runner_sha256": (
+                "c9174e88bf18dbe050d72568639de50b8477f2bc57ea9558637087da4268409a"
+            ),
+            "source_run_id": "20260722T185956Z",
+            "sweep_results_sha256": (
+                "830e0db3b81406ab3ac305383f811daa45680b4bd2a8a94f198250b8b4cbb2ca"
+            ),
+            "metadata_json_sha256": (
+                "0d919084b7ef8dcc42e9c89c7b7a3c9256e50c4eac664b6b861c407b5ed9eb84"
+            ),
+            "result_json_sha256": (
+                "29a63de1277ec96c6e4f23c4650634c28c1a783a56995a5138c2d3bd15066adc"
+            ),
+            "trajectory_npz_sha256": (
+                "77a28f87962bef54132b98fa1f37d9e82807d33b8e5c3bb154e814bb02462133"
+            ),
+            "history_json_sha256": (
+                "2d0d6fc73923d227e748002785ee11543f8aa292bf7926a03c21a9b4a7f7a3c9"
+            ),
+            "configuration_spec_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfAuthorBackspinSpec.hpp"
+            ),
+            "exact_solver_options_sha256": module._sha256(
+                ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+            ),
+            "demo_implementation_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+            ),
+        },
+        "source_configuration": {
+            "gravity_m_s2": 9.81,
+            "radius_m": 0.25,
+            "mass_kg": 1.0,
+            "density_kg_m3": 1.0 / (4.0 / 3.0 * math.pi * 0.25**3),
+            "friction": 0.5,
+            "initial_center_m": [0.0, 0.0, 0.251],
+            "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+            "initial_angular_velocity_rad_s": [0.0, -200.0, 0.0],
+            "time_step_seconds": 1.0 / 60.0,
+            "duration_seconds": 4.0,
+            "total_steps": 240,
+            "ground_half_extents_m": [15.0, 0.5, 0.05],
+            "shape_gap_m": 0.001,
+            "shape_stiffness": 1.0e4,
+            "shape_damping": 1.0e3,
+            "max_contacts": 4096,
+        },
+        "source_reference_projection": {
+            "terminal_vx_m_s": -11.428571701049805,
+            "terminal_wy_rad_s": -45.71428680419922,
+            "terminal_slip_m_s": 0.0,
+            "terminal_z_m": -1.3714094161987305,
+            "terminal_supported": False,
+        },
+        "dart_adapter": {
+            "scene_id": "fbf_author_backspin_current_source",
+            "scene_state_schema": "dart.fbf_author_backspin_scene_state/v1",
+            "world": {
+                "time_step_seconds": 1.0 / 60.0,
+                "gravity_m_s2": [0.0, 0.0, -9.81],
+                "simulation_threads": 1,
+                "deactivation_enabled": False,
+            },
+            "collision": {
+                "detector": "native",
+                "contact_manifold": "four_point_planar",
+                "max_contacts": 4,
+                "max_contacts_per_pair": 4,
+            },
+            "solver": {
+                "lane": "exact_fbf" if exact else "boxed_lcp",
+                "configuration_policy": (
+                    "source_cli_parameterized_strict_dart_adapter"
+                ),
+                "split_impulse_enabled": False,
+                "exact_options": (
+                    {
+                        "constraint_regularization_enabled": False,
+                        "matrix_free_operator_enabled": False,
+                        "contact_row_operator_enabled": True,
+                        "dense_contact_row_snapshot_enabled": True,
+                        "warm_start_enabled": True,
+                        "step_size_persistence_enabled": True,
+                        "step_size_recovery_growth_factor": 1.0 / 0.7,
+                        "warm_start_match_distance": 0.02,
+                        "diagonal_seed_enabled": True,
+                        "matrix_free_seed_enabled": False,
+                        "projected_gradient_retry_enabled": False,
+                        "dense_residual_polish_enabled": False,
+                        "max_outer_iterations": 200,
+                        "accept_outer_max_iterations": False,
+                        "tolerance": 1e-6,
+                        "initial_step_size": None,
+                        "cap_initial_step_size_at_safe_bound": True,
+                        "step_size_scale": 10.0,
+                        "outer_relaxation": 1.0,
+                        "coupling_variation_tolerance": 0.9,
+                        "shrink_factor": 0.7,
+                        "max_step_shrink_iterations": 8,
+                        "adaptive_step_size_enabled": True,
+                        "spectral_iterations": 10,
+                        "inner_max_sweeps": 10,
+                        "inner_local_solver": "exact_metric_projection",
+                        "run_fixed_inner_sweeps": False,
+                        "accept_inner_max_iterations": True,
+                        "inner_local_iterations": 200,
+                        "inner_tolerance": 1e-6,
+                        "inner_local_tolerance": 1e-6,
+                        "inner_diagonal_regularization": 0.0,
+                        "projected_gradient_max_iterations": 200,
+                        "projected_gradient_tolerance": 1e-6,
+                        "dense_residual_polish_iterations": 8,
+                        "dense_residual_polish_line_search_iterations": 8,
+                        "dense_residual_polish_regularization": 1e-9,
+                        "max_residual_history_samples": 0,
+                        "max_residual_history_records": 0,
+                        "source_inner_initialization_enabled": True,
+                        "colored_block_gauss_seidel_enabled": False,
+                        "participant_affinity_enabled": False,
+                        "source_continuation_enabled": False,
+                        "post_correction_projection_enabled": False,
+                        "fallback_to_boxed_lcp_enabled": False,
+                    }
+                    if exact
+                    else None
+                ),
+                "cross_step_options": (
+                    {
+                        "warm_start_match_mode": "ordered_body_b_local_feature",
+                        "warm_start_normal_cosine": 0.9,
+                        "strict_warm_start_match_distance": True,
+                        "warm_start_max_age": 3,
+                        "persistent_step_size_safe_bound_scale": 10.0,
+                        "minimum_step_size": 1e-6,
+                        "maximum_step_size": 1e6,
+                        "warm_start_residual_threshold": 1e-4,
+                        "warm_start_step_size_cap": 1e4,
+                        "persist_uncapped_step_size_on_warm_start_cap": True,
+                        "require_residual_improvement_for_unconverged_cache_save": (
+                            True
+                        ),
+                    }
+                    if exact
+                    else None
+                ),
+            },
+            "process_state": {"observed_contact_erp": 0.0},
+            "ground": {
+                "mobile": False,
+                "size_m": [30.0, 1.0, 0.1],
+                "initial_pose": {
+                    "translation": [0.0, 0.0, -0.05],
+                    "rotation": identity,
+                },
+                "primary_friction": 0.5,
+                "secondary_friction": 0.5,
+                "restitution": 0.0,
+            },
+            "sphere": {
+                "mobile": True,
+                "radius_m": 0.25,
+                "initial_pose": {
+                    "translation": [0.0, 0.0, 0.251],
+                    "rotation": identity,
+                },
+                "initial_linear_velocity_m_s": [4.0, 0.0, 0.0],
+                "initial_angular_velocity_rad_s": [0.0, -200.0, 0.0],
+                "primary_friction": 0.5,
+                "secondary_friction": 0.5,
+                "restitution": 0.0,
+                "mass_kg": 1.0,
+                "moment_kg_m2": [
+                    [0.025, 0.0, 0.0],
+                    [0.0, 0.025, 0.0],
+                    [0.0, 0.0, 0.025],
+                ],
+            },
+        },
+        "adapter_boundaries": {
+            "source_initial_geometric_separation_represented": True,
+            "source_shape_gap_semantics_implemented": False,
+            "source_shape_stiffness_semantics_implemented": False,
+            "source_shape_damping_semantics_implemented": False,
+            "source_collision_backend_implemented": False,
+            "source_solver_backend_semantics_implemented": False,
+            "source_float32_semantics_implemented": False,
+            "checker_texture_visual_only": True,
+            "support_observation": ("two_body_collision_result_contact_count_proxy"),
+        },
+        "claim_boundary": {
+            "current_source_configuration_port": True,
+            "terminal_outcome_slice_candidate": True,
+            "historical_paper_invocation_known": False,
+            "full_source_trajectory_equivalence": False,
+            "solver_equivalence": False,
+            "renderer_equivalence": False,
+            "timing_comparability": False,
+            "fig03_parity": False,
+            "paper_parity": False,
+        },
+    }
+
+
 def _author_painleve_adapter_contract(module, *, solver_lane="exact", mu=0.5):
     exact = solver_lane == "exact"
     scene = "fbf_author_painleve_mu_0_5" if mu == 0.5 else "fbf_author_painleve_mu_0_55"
@@ -1461,7 +1680,7 @@ def _author_painleve_adapter_contract(module, *, solver_lane="exact", mu=0.5):
         "source_binding": {
             "repository": "https://github.com/matthcsong/fbf-sca-2026",
             "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
-            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685e",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
             "painleve_run_blob": "afaa03613b0ad0a30290168d2fd64221fc3523b7",
             "painleve_run_py_sha256": (
                 "818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3"
@@ -1700,6 +1919,75 @@ def _author_painleve_outcome_trace(
     return trajectory
 
 
+def _author_backspin_scene_state_trace(schedule, *, last_supported_step=210):
+    reference = {
+        "vx": -11.428571701049805,
+        "wy": -45.71428680419922,
+        "z": -1.3714094161987305,
+    }
+    trajectory = []
+    for step in range(schedule.total_steps + 1):
+        transition = min(step / 120.0, 1.0)
+        vx = 4.0 + (reference["vx"] - 4.0) * transition
+        wy = -200.0 + (reference["wy"] + 200.0) * transition
+        slip = vx - 0.25 * wy
+        supported = 0 < step <= last_supported_step
+        airborne_fraction = max(
+            (step - last_supported_step) / (schedule.total_steps - last_supported_step),
+            0.0,
+        )
+        z = 0.251 + (reference["z"] - 0.251) * airborne_fraction
+        angle = -0.12 * step
+        if step <= last_supported_step:
+            position_x = -15.116 * step / last_supported_step
+        else:
+            position_x = -15.116 + (-21.621 + 15.116) * (
+                (step - last_supported_step)
+                / (schedule.total_steps - last_supported_step)
+            )
+        state = {
+            "world_time_seconds": schedule.time_at_step(step),
+            "position_x_m": position_x,
+            "position_y_m": 0.0,
+            "position_z_m": z,
+            "linear_velocity_x_m_s": vx,
+            "linear_velocity_y_m_s": 0.0,
+            "linear_velocity_z_m_s": -4.905 * airborne_fraction,
+            "angular_velocity_x_rad_s": 0.0,
+            "angular_velocity_y_rad_s": wy,
+            "angular_velocity_z_rad_s": 0.0,
+            "orientation_w": math.cos(0.5 * angle),
+            "orientation_x": 0.0,
+            "orientation_y": math.sin(0.5 * angle),
+            "orientation_z": 0.0,
+            "slip_velocity_m_s": slip,
+            "contact_count": 1.0 if supported else 0.0,
+            "supported": 1.0 if supported else 0.0,
+        }
+        trajectory.append(
+            {
+                "step": step,
+                "sim_time": schedule.time_at_step(step),
+                "scene_state": state,
+            }
+        )
+    return trajectory
+
+
+def _author_backspin_nonmatching_scene_state_trace(schedule):
+    trajectory = _author_backspin_scene_state_trace(schedule)
+    for item in trajectory:
+        item["scene_state"]["contact_count"] = 0.0
+        item["scene_state"]["supported"] = 0.0
+    final = trajectory[-1]["scene_state"]
+    final["position_z_m"] = 0.251
+    final["linear_velocity_x_m_s"] = 4.0
+    final["linear_velocity_z_m_s"] = 0.0
+    final["angular_velocity_y_rad_s"] = -200.0
+    final["slip_velocity_m_s"] = 54.0
+    return trajectory
+
+
 def test_schedule_matrix_covers_every_requested_visual_case():
     module = _load_module()
 
@@ -1707,6 +1995,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "incline",
         "incline_author_sweep_current_source",
         "backspin",
+        "backspin_author_current_source",
         "turntable_mu02_omega2",
         "turntable_mu02_omega5",
         "turntable_mu05_omega2",
@@ -2622,6 +2911,107 @@ def test_boxed_sidecar_binds_solver_and_unavailable_exact_diagnostics(tmp_path):
     assert report["pass"] is True
 
 
+def test_author_backspin_boxed_trace_binds_observation_without_requiring_match(
+    tmp_path,
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    boxed = module._derive_boxed_schedule(exact)
+    trajectory = _author_backspin_nonmatching_scene_state_trace(boxed)
+
+    report = module._validate_author_backspin_scene_state_trace(
+        boxed,
+        trajectory,
+        sidecar_path=tmp_path / "boxed.json",
+        expected_last_step=boxed.total_steps,
+    )
+
+    assert report["trace_contract_validated"] is True
+    assert report["outcome_evaluated"] is True
+    assert report["supported_contact_observed"] is False
+    assert report["terminal_airborne"] is False
+    assert report["terminal_reference_within_tolerance"] is False
+    assert report["source_outcome_matches"] is False
+    assert report["physical_outcome_validated"] is False
+    assert report["pass"] is True
+    assert (
+        report["claim_boundary"]["current_source_terminal_outcome_slice_valid"] is False
+    )
+    assert (
+        module._require_author_backspin_outcome_claim(
+            report,
+            solver_lane="boxed",
+            label="boxed",
+        )
+        is report
+    )
+    with pytest.raises(ValueError, match="outcome claim changed"):
+        module._require_author_backspin_outcome_claim(
+            report,
+            solver_lane="exact",
+            label="exact",
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "terminal_velocity",
+        "supported_sample_count",
+        "minimum_supported_slip",
+        "first_supported_step",
+        "rolling_tail_slip",
+        "terminal_support",
+        "terminal_edge",
+        "support_edge",
+        "off_axis_summary",
+    ),
+)
+def test_author_backspin_claim_recomputes_derived_outcome(tmp_path, mutation):
+    module = _load_module()
+    schedule = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    report = module._validate_author_backspin_scene_state_trace(
+        schedule,
+        _author_backspin_scene_state_trace(schedule),
+        sidecar_path=tmp_path / "exact.json",
+        expected_last_step=schedule.total_steps,
+    )
+
+    if mutation == "terminal_velocity":
+        value = 100.0
+        report["final"]["linear_velocity_x_m_s"] = value
+        report["terminal_absolute_deltas"]["linear_velocity_x_m_s"] = abs(
+            value
+            - module.AUTHOR_BACKSPIN_SOURCE_TERMINAL_REFERENCE["linear_velocity_x_m_s"]
+        )
+    elif mutation == "supported_sample_count":
+        report["supported_sample_count"] = 0
+    elif mutation == "minimum_supported_slip":
+        report["minimum_supported_absolute_slip_velocity_m_s"] = 1.0
+    elif mutation == "first_supported_step":
+        report["first_supported_step"] = 100
+    elif mutation == "rolling_tail_slip":
+        report["maximum_rolling_tail_absolute_slip_velocity_m_s"] = 1.0
+    elif mutation == "terminal_support":
+        report["final"]["supported"] = True
+        report["final"]["contact_count"] = 1
+    elif mutation == "terminal_edge":
+        report["final"]["position_x_m"] = 0.0
+    elif mutation == "support_edge":
+        report["last_supported_position_x_m"] = 0.0
+    elif mutation == "off_axis_summary":
+        report["maximum_off_axis_magnitudes"]["position_y_m"] = 0.1
+    else:
+        raise AssertionError(mutation)
+
+    with pytest.raises(ValueError, match="author backspin"):
+        module._require_author_backspin_outcome_claim(
+            report,
+            solver_lane="exact",
+            label="mutated",
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
@@ -2839,7 +3229,7 @@ def test_backspin_checker_texture_is_visual_only_and_renderer_bound():
     assert "createShapeNodeWith<VisualAspect>(checker)" in helper
     assert "CollisionAspect" not in helper
     assert "DynamicsAspect" not in helper
-    assert "addBackspinCheckerTexture(body);" in source
+    assert "addBackspinCheckerTexture(body, kBackspinRadius);" in source
 
     sphere_start = source.index("SkeletonPtr createBackspinSphere()")
     sphere_end = source.index(
@@ -2849,7 +3239,7 @@ def test_backspin_checker_texture_is_visual_only_and_renderer_bound():
     sphere = source[sphere_start:sphere_end]
     assert "createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape)" in sphere
     assert "setShapeInertia(body, shape);" in sphere
-    assert "addBackspinCheckerTexture(body);" in sphere
+    assert "addBackspinCheckerTexture(body, kBackspinRadius);" in sphere
 
     obj = (ROOT / "data/obj/fbf_backspin_checker_sphere.obj").read_text(
         encoding="utf-8"
@@ -3032,6 +3422,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
         set(module.AUTHOR_TURN_TABLE_MEMBERS)
         | set(module.AUTHOR_PAINLEVE_MEMBERS)
         | {
+            module.AUTHOR_BACKSPIN_SCHEDULE_ID,
             "incline_author_sweep_current_source",
             "card_house_author_5_construction",
             "card_house_author_10_impact_current_source",
@@ -3680,6 +4071,374 @@ def test_author_card_house_10_adapter_contract_rejects_claim_or_gap_drift(
             {"physics_contract": contract},
             sidecar_path=tmp_path / "timeline.json",
         )
+
+
+@pytest.mark.parametrize("solver_lane", ("exact", "boxed"))
+def test_author_backspin_adapter_contract_binds_source_and_solver_lane(
+    tmp_path, solver_lane
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    schedule = exact if solver_lane == "exact" else module._derive_boxed_schedule(exact)
+    contract = _author_backspin_adapter_contract(module, solver_lane=solver_lane)
+
+    report = module._validate_schedule_physics_contract(
+        schedule,
+        {"physics_contract": contract},
+        sidecar_path=tmp_path / f"{solver_lane}.json",
+    )
+
+    expected_lane = "exact_fbf" if solver_lane == "exact" else "boxed_lcp"
+    assert report["schema_version"] == ("dart.fbf_author_backspin_dynamics_adapter/v1")
+    assert report["solver_lane"] == expected_lane
+    assert report["scene_state_schema_version"] == (
+        "dart.fbf_author_backspin_scene_state/v1"
+    )
+    assert report["checker_texture_visual_only"] is True
+    assert report["support_observation"] == (
+        "two_body_collision_result_contact_count_proxy"
+    )
+    assert report["scoped_erp"] == 0.0
+    assert report["physical_outcome_validated"] is False
+    assert report["pass"] is True
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (("schema_version",), "v0", "schema"),
+        (("source_binding", "commit"), "0" * 40, "source hashes"),
+        (("source_binding", "metadata_json_sha256"), "0" * 64, "source hashes"),
+        (("source_binding", "history_json_sha256"), "0" * 64, "source hashes"),
+        (("source_configuration", "shape_gap_m"), 0.01, "source configuration"),
+        (
+            ("source_reference_projection", "terminal_supported"),
+            True,
+            "source projection",
+        ),
+        (("dart_adapter", "scene_state_schema"), "v0", "adapter identity"),
+        (("dart_adapter", "world", "simulation_threads"), 2, "world policy"),
+        (("dart_adapter", "collision", "max_contacts"), 8, "collision contract"),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "source_continuation_enabled",
+            ),
+            True,
+            "solver contract",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "projected_gradient_retry_enabled",
+            ),
+            True,
+            "solver contract",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "accept_outer_max_iterations",
+            ),
+            True,
+            "solver contract",
+        ),
+        (
+            (
+                "dart_adapter",
+                "solver",
+                "exact_options",
+                "source_inner_initialization_enabled",
+            ),
+            False,
+            "solver contract",
+        ),
+        (
+            ("dart_adapter", "process_state", "observed_contact_erp"),
+            0.01,
+            "scoped ERP",
+        ),
+        (("dart_adapter", "ground", "size_m", 0), 3.0, "ground state"),
+        (
+            ("dart_adapter", "ground", "primary_friction"),
+            0.4,
+            "ground state",
+        ),
+        (
+            ("dart_adapter", "ground", "secondary_friction"),
+            0.6,
+            "ground state",
+        ),
+        (("dart_adapter", "ground", "restitution"), 0.1, "ground state"),
+        (("dart_adapter", "sphere", "mass_kg"), 2.0, "sphere state"),
+        (
+            ("dart_adapter", "sphere", "primary_friction"),
+            0.4,
+            "sphere state",
+        ),
+        (
+            ("dart_adapter", "sphere", "secondary_friction"),
+            0.6,
+            "sphere state",
+        ),
+        (
+            ("dart_adapter", "sphere", "restitution"),
+            0.1,
+            "sphere state",
+        ),
+        (
+            ("adapter_boundaries", "checker_texture_visual_only"),
+            False,
+            "adapter boundaries",
+        ),
+        (("claim_boundary", "paper_parity"), True, "claim boundary"),
+    ],
+)
+def test_author_backspin_adapter_contract_rejects_mutation(
+    tmp_path, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    contract = json.loads(json.dumps(_author_backspin_adapter_contract(module)))
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_backspin_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
+@pytest.mark.parametrize("solver_lane", ("exact", "boxed"))
+def test_author_backspin_scene_state_trace_binds_rolloff_outcome(tmp_path, solver_lane):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    schedule = exact if solver_lane == "exact" else module._derive_boxed_schedule(exact)
+
+    report = module._validate_author_backspin_scene_state_trace(
+        schedule,
+        _author_backspin_scene_state_trace(schedule),
+        sidecar_path=tmp_path / f"{solver_lane}.json",
+        expected_last_step=schedule.total_steps,
+    )
+
+    assert report["scene_state_schema_version"] == (
+        "dart.fbf_author_backspin_scene_state/v1"
+    )
+    assert report["solver_lane"] == solver_lane
+    assert report["sample_count"] == 241
+    assert report["complete_240_step_trace"] is True
+    assert report["supported_contact_observed"] is True
+    assert report["prompt_supported_contact_observed"] is True
+    assert report["slip_converged_while_supported"] is True
+    assert report["support_interval_contiguous"] is True
+    assert report["support_lost_at_left_slab_edge"] is True
+    assert report["later_support_loss_observed"] is True
+    assert report["terminal_airborne"] is True
+    assert report["terminal_beyond_left_slab_edge"] is True
+    assert report["planar_motion_preserved"] is True
+    assert report["terminal_reference_within_tolerance"] is True
+    assert report["first_supported_step"] == 1
+    assert report["last_supported_step"] == 210
+    assert report["rolling_tail_sample_count"] == 5
+    assert report["maximum_rolling_tail_absolute_slip_velocity_m_s"] <= 0.5
+    assert report["final"]["position_z_m"] == pytest.approx(-1.3714094161987305)
+    assert report["final"]["supported"] is False
+    assert report["claim_boundary"] == {
+        "current_source_terminal_outcome_slice_valid": True,
+        "source_full_trajectory_equivalence": False,
+        "source_backend_equivalence": False,
+        "solver_equivalence": False,
+        "paper_parity": False,
+        "solver_superiority": False,
+    }
+    assert report["pass"] is True
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("missing_field", "fields changed or are non-finite"),
+        ("nonfinite", "fields changed or are non-finite"),
+        ("support_flag", "supported flag is not numeric 0/1"),
+        ("contact_disagreement", "support and contact count disagree"),
+        ("quaternion", "orientation quaternion is not normalized"),
+        ("slip_inconsistent", "slip velocity disagrees with body velocity"),
+        ("never_supported", "never established supported contact"),
+        ("late_contact", "did not establish prompt contact"),
+        ("slip_not_converged", "slip did not converge while supported"),
+        ("transient_slip_hit", "slip did not converge while supported"),
+        ("support_gap", "support interval is discontinuous"),
+        ("off_axis", "developed off-axis motion"),
+        ("terminal_supported", "terminal state is not airborne"),
+        ("wrong_edge", "terminal roll-off outcome changed"),
+        ("terminal_not_rolloff", "terminal roll-off outcome changed"),
+        ("terminal_projection", "terminal source projection changed"),
+    ],
+)
+def test_author_backspin_scene_state_trace_rejects_contract_drift(
+    tmp_path, mutation, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    trajectory = _author_backspin_scene_state_trace(schedule)
+    if mutation == "missing_field":
+        trajectory[5]["scene_state"].pop("position_x_m")
+    elif mutation == "nonfinite":
+        trajectory[5]["scene_state"]["position_x_m"] = math.nan
+    elif mutation == "support_flag":
+        trajectory[5]["scene_state"]["supported"] = 0.5
+    elif mutation == "contact_disagreement":
+        trajectory[5]["scene_state"]["contact_count"] = 0.0
+    elif mutation == "quaternion":
+        trajectory[5]["scene_state"]["orientation_w"] = 2.0
+    elif mutation == "slip_inconsistent":
+        trajectory[5]["scene_state"]["slip_velocity_m_s"] += 1.0
+    elif mutation == "never_supported":
+        for item in trajectory:
+            item["scene_state"]["contact_count"] = 0.0
+            item["scene_state"]["supported"] = 0.0
+    elif mutation == "late_contact":
+        for item in trajectory[1:100]:
+            item["scene_state"]["contact_count"] = 0.0
+            item["scene_state"]["supported"] = 0.0
+    elif mutation == "slip_not_converged":
+        for item in trajectory[1:211]:
+            state = item["scene_state"]
+            state["linear_velocity_x_m_s"] = (
+                0.25 * state["angular_velocity_y_rad_s"] + 1.0
+            )
+            state["slip_velocity_m_s"] = 1.0
+    elif mutation == "transient_slip_hit":
+        for item in trajectory[1:211]:
+            state = item["scene_state"]
+            state["linear_velocity_x_m_s"] = (
+                0.25 * state["angular_velocity_y_rad_s"] + 1.0
+            )
+            state["slip_velocity_m_s"] = 1.0
+        transient = trajectory[100]["scene_state"]
+        transient["linear_velocity_x_m_s"] = (
+            0.25 * transient["angular_velocity_y_rad_s"]
+        )
+        transient["slip_velocity_m_s"] = 0.0
+    elif mutation == "support_gap":
+        trajectory[100]["scene_state"]["contact_count"] = 0.0
+        trajectory[100]["scene_state"]["supported"] = 0.0
+    elif mutation == "off_axis":
+        trajectory[100]["scene_state"]["position_y_m"] = 0.01
+    elif mutation == "terminal_supported":
+        for item in trajectory[211:]:
+            item["scene_state"]["contact_count"] = 1.0
+            item["scene_state"]["supported"] = 1.0
+    elif mutation == "wrong_edge":
+        for item in trajectory:
+            item["scene_state"]["position_x_m"] = abs(
+                item["scene_state"]["position_x_m"]
+            )
+    elif mutation == "terminal_not_rolloff":
+        trajectory[-1]["scene_state"]["position_z_m"] = 0.1
+    elif mutation == "terminal_projection":
+        state = trajectory[-1]["scene_state"]
+        state["linear_velocity_x_m_s"] += 1.0
+        state["slip_velocity_m_s"] = (
+            state["linear_velocity_x_m_s"] - 0.25 * state["angular_velocity_y_rad_s"]
+        )
+    else:
+        raise AssertionError(mutation)
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_backspin_scene_state_trace(
+            schedule,
+            trajectory,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=schedule.total_steps,
+        )
+
+
+def test_author_backspin_partial_scene_state_trace_stays_fail_closed(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    trajectory = _author_backspin_scene_state_trace(schedule)[:81]
+
+    report = module._validate_author_backspin_scene_state_trace(
+        schedule,
+        trajectory,
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=80,
+    )
+
+    assert report["complete_240_step_trace"] is False
+    assert report["physical_outcome_validated"] is False
+    assert (
+        report["claim_boundary"]["current_source_terminal_outcome_slice_valid"] is False
+    )
+    assert report["pass"] is False
+    with pytest.raises(ValueError, match="outcome claim changed"):
+        module._require_author_backspin_outcome_claim(
+            report,
+            solver_lane="exact",
+            label="partial",
+        )
+
+
+def test_author_backspin_sidecar_returns_bound_scene_state_outcome(tmp_path):
+    module = _load_module()
+    schedule = module.dataclasses.replace(
+        module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID],
+        width=640,
+        height=480,
+        encode_mp4=False,
+    )
+    output_dir = tmp_path / schedule.id
+    _write_sidecar(module, schedule, output_dir)
+    timeline_path = output_dir / "timeline.json"
+    timeline = json.loads(timeline_path.read_text(encoding="utf-8"))
+    timeline["physics_contract"] = _author_backspin_adapter_contract(module)
+    state_trace = _author_backspin_scene_state_trace(schedule)
+    for step, item in enumerate(timeline["steps"]):
+        item["scene_state"] = state_trace[step]["scene_state"]
+    timeline_path.write_text(json.dumps(timeline), encoding="utf-8")
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from _image_tools import write_png
+
+    for step in schedule.capture_steps:
+        pixel = bytes(((20 + step) % 256, (40 + step) % 256, (60 + step) % 256))
+        pixels = bytearray(pixel * (schedule.width * schedule.height))
+        pixels[0:3] = bytes((200, 100, 30))
+        viewport_pixel = (100 * schedule.width + 270) * 3
+        pixels[viewport_pixel : viewport_pixel + 3] = bytes((180, 90, 20))
+        write_png(
+            module._frame_path(output_dir, step),
+            schedule.width,
+            schedule.height,
+            bytes(pixels),
+        )
+
+    report = module.validate_sidecar(
+        schedule,
+        output_dir,
+        expected_demo=Path("dart-demos"),
+    )
+
+    outcome = report["author_backspin_scene_state_metrics"]
+    assert outcome["pass"] is True
+    assert outcome["solver_lane"] == "exact"
+    assert outcome["terminal_airborne"] is True
+    assert report["physics_contract"]["solver_lane"] == "exact_fbf"
+    assert report["physics_contract"]["checker_texture_visual_only"] is True
+    assert report["step_count"] == 241
+    assert report["shot_count"] == 5
 
 
 def test_author_painleve_adapter_contract_binds_source_mass_and_lanes(tmp_path):
@@ -4723,6 +5482,60 @@ def test_published_panel_instants_and_completed_step_actions_are_fixed():
     assert author_101.panel_steps == (0, 400, 800, 1200, 1600)
     assert author_101.actions == ()
     assert "endpoint" in author_101.panel_labels[-1]
+
+
+def test_author_backspin_schedule_is_source_pinned_and_group_ready():
+    module = _load_module()
+    schedule = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    configuration = schedule.configuration_dict()
+
+    assert schedule.scene == "fbf_author_backspin_current_source"
+    assert schedule.source_segment == "backspin"
+    assert schedule.total_steps == 240
+    assert schedule.time_step_seconds == pytest.approx(1.0 / 60.0)
+    assert schedule.frame_stride == 2
+    assert len(schedule.video_steps) == 121
+    assert schedule.panel_steps == (0, 60, 120, 180, 206)
+    assert schedule.panel_labels[-1] == "t=3.43s poster"
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert schedule.exact_fbf_required is True
+    assert schedule.source_continuation_required is False
+    assert schedule.known_gate_blockers == ()
+    assert schedule.boxed_comparison_gate_blockers == ()
+    assert configuration["author_commit"] == (
+        "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
+    )
+    assert configuration["author_run_blob"] == (
+        "82d8916233df8db1cacc5915699dc53a5d08ea17"
+    )
+    assert configuration["source_sweep_results_sha256"] == (
+        "830e0db3b81406ab3ac305383f811daa45680b4bd2a8a94f198250b8b4cbb2ca"
+    )
+    assert configuration["source_result_json_sha256"] == (
+        "29a63de1277ec96c6e4f23c4650634c28c1a783a56995a5138c2d3bd15066adc"
+    )
+    assert configuration["source_trajectory_npz_sha256"] == (
+        "77a28f87962bef54132b98fa1f37d9e82807d33b8e5c3bb154e814bb02462133"
+    )
+    assert configuration["panel_selection"] == (
+        "step 206 visual-review poster; not a source event-time oracle"
+    )
+    assert schedule.id in module.REQUIRED_VIDEO_SCHEDULES["backspin"]
+    assert any("roll-off" in mismatch for mismatch in schedule.mismatches)
+    assert any("VisualAspect-only" in mismatch for mismatch in schedule.mismatches)
+    assert any("presentation choice" in mismatch for mismatch in schedule.mismatches)
+
+    boxed = module._derive_boxed_schedule(schedule)
+    group = module._derive_solver_comparison_group(schedule)
+    assert boxed.scene == schedule.scene
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.source_continuation_required is False
+    assert group.id == "backspin_author_current_source__exact_vs_boxed"
+    assert group.members == (schedule.id, boxed.id)
+    assert group.panel_step == 206
+    assert group.comparison_basis == module.SOLVER_ONLY_COMPARISON_BASIS
+    assert group.policy_asymmetry == ()
 
 
 def test_author_masonry_impact_schedule_is_fail_closed_and_source_pinned():
@@ -5912,6 +6725,28 @@ def _write_group_member_artifacts(
             "known_mismatches": list(schedule.mismatches),
             "pass": True,
         }
+        if module._is_author_backspin_schedule(schedule):
+            physics_report = module._validate_author_backspin_adapter_contract(
+                schedule,
+                {
+                    "physics_contract": _author_backspin_adapter_contract(
+                        module, solver_lane=schedule.solver_lane
+                    )
+                },
+                sidecar_path=timeline_path,
+            )
+            outcome = module._validate_author_backspin_scene_state_trace(
+                schedule,
+                _author_backspin_scene_state_trace(schedule),
+                sidecar_path=timeline_path,
+                expected_last_step=schedule.total_steps,
+            )
+            metadata["timeline_validation"][
+                "author_backspin_scene_state_metrics"
+            ] = outcome
+            metadata["timeline_validation"]["physics_contract"] = physics_report
+            metadata["automated_current_source_backspin_outcome_evaluated"] = True
+            metadata["current_source_backspin_outcome"] = outcome
         if module._is_author_incline_schedule(schedule):
             outcome = _author_incline_outcome_report(module, schedule)
             metadata["timeline_validation"][
@@ -6014,6 +6849,87 @@ def test_author_incline_group_members_bind_scoped_terminal_outcomes(
             "automated_current_source_fbf_terminal_outcome_slice_validated changed"
         ),
     ):
+        module._group_member_contract(
+            group,
+            schedules,
+            output_root=tmp_path,
+            ffprobe=Path("ffprobe"),
+        )
+
+
+def test_author_backspin_group_members_bind_complete_scene_state_outcomes(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    schedules = [exact, module._derive_boxed_schedule(exact)]
+    group = module._derive_solver_comparison_group(exact)
+    expected_duration = len(exact.video_steps) / exact.output_fps
+    probes = _write_group_member_artifacts(
+        module,
+        group,
+        tmp_path,
+        [expected_duration, expected_duration],
+        schedules=schedules,
+    )
+    monkeypatch.setattr(module, "_probe_media", lambda path, _ffprobe: probes[path])
+    boxed_metadata_path = tmp_path / schedules[1].id / "metadata.json"
+    boxed_metadata = json.loads(boxed_metadata_path.read_text(encoding="utf-8"))
+    boxed_outcome = module._validate_author_backspin_scene_state_trace(
+        schedules[1],
+        _author_backspin_nonmatching_scene_state_trace(schedules[1]),
+        sidecar_path=tmp_path / "boxed-observed.json",
+        expected_last_step=schedules[1].total_steps,
+    )
+    boxed_metadata["timeline_validation"][
+        "author_backspin_scene_state_metrics"
+    ] = boxed_outcome
+    boxed_metadata["current_source_backspin_outcome"] = boxed_outcome
+    boxed_metadata_path.write_text(json.dumps(boxed_metadata), encoding="utf-8")
+
+    contract = module._group_member_contract(
+        group,
+        schedules,
+        output_root=tmp_path,
+        ffprobe=Path("ffprobe"),
+    )
+
+    outcomes = contract["current_source_backspin_outcomes"]
+    assert [report["solver_lane"] for report in outcomes] == ["exact", "boxed"]
+    assert outcomes[0]["source_outcome_matches"] is True
+    assert outcomes[1]["source_outcome_matches"] is False
+    assert all(report["trace_contract_validated"] for report in outcomes)
+    assert module._is_author_backspin_solver_comparison_group(group)
+
+    exact_metadata_path = tmp_path / schedules[0].id / "metadata.json"
+    exact_metadata = json.loads(exact_metadata_path.read_text(encoding="utf-8"))
+    exact_metadata["timeline_validation"].pop("physics_contract")
+    exact_metadata_path.write_text(json.dumps(exact_metadata), encoding="utf-8")
+    with pytest.raises(ValueError, match="adapter report changed"):
+        module._group_member_contract(
+            group,
+            schedules,
+            output_root=tmp_path,
+            ffprobe=Path("ffprobe"),
+        )
+    _write_group_member_artifacts(
+        module,
+        group,
+        tmp_path,
+        [expected_duration, expected_duration],
+        schedules=schedules,
+    )
+    boxed_metadata = json.loads(boxed_metadata_path.read_text(encoding="utf-8"))
+    boxed_metadata["timeline_validation"][
+        "author_backspin_scene_state_metrics"
+    ] = boxed_outcome
+    boxed_metadata["current_source_backspin_outcome"] = boxed_outcome
+    boxed_metadata_path.write_text(json.dumps(boxed_metadata), encoding="utf-8")
+
+    metadata = json.loads(boxed_metadata_path.read_text(encoding="utf-8"))
+    metadata["current_source_backspin_outcome"]["source_outcome_matches"] = True
+    boxed_metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    with pytest.raises(ValueError, match="capture claim boundary"):
         module._group_member_contract(
             group,
             schedules,
@@ -6849,6 +7765,79 @@ def test_author_capture_binds_obj_and_mtl_before_and_after_demo(tmp_path, monkey
         )
 
 
+@pytest.mark.parametrize("solver_lane", ("exact", "boxed"))
+@pytest.mark.parametrize(
+    "resource_key",
+    ("backspin_checker_obj", "backspin_checker_mtl", "backspin_checker_texture"),
+)
+def test_author_backspin_capture_binds_checker_resources(
+    tmp_path, monkeypatch, solver_lane, resource_key
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    schedule = exact if solver_lane == "exact" else module._derive_boxed_schedule(exact)
+    resources = {
+        "backspin_checker_obj": tmp_path / "checker.obj",
+        "backspin_checker_mtl": tmp_path / "checker.mtl",
+        "backspin_checker_texture": tmp_path / "checker.ppm",
+    }
+    for path in resources.values():
+        path.write_bytes(b"v1")
+    monkeypatch.setattr(
+        module,
+        "AUTHOR_BACKSPIN_VISUAL_RESOURCES",
+        tuple(resources.items()),
+    )
+
+    before = module._visual_resource_snapshot(schedule)
+    binding = module._bind_visual_resource_snapshots(before, before)
+    assert set(binding) == set(resources)
+    assert binding[resource_key]["path"] == str(resources[resource_key].resolve())
+
+    resources[resource_key].write_bytes(b"v2")
+    after = module._visual_resource_snapshot(schedule)
+    with pytest.raises(
+        ValueError,
+        match=f"{resource_key} changed during capture",
+    ):
+        module._bind_visual_resource_snapshots(before, after)
+
+
+@pytest.mark.parametrize("solver_lane", ("exact", "boxed"))
+@pytest.mark.parametrize(
+    "resource_key",
+    ("backspin_checker_obj", "backspin_checker_mtl", "backspin_checker_texture"),
+)
+def test_author_backspin_reuse_verification_rejects_checker_hash_drift(
+    tmp_path, monkeypatch, solver_lane, resource_key
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_BACKSPIN_SCHEDULE_ID]
+    schedule = exact if solver_lane == "exact" else module._derive_boxed_schedule(exact)
+    resources = {
+        "backspin_checker_obj": tmp_path / "checker.obj",
+        "backspin_checker_mtl": tmp_path / "checker.mtl",
+        "backspin_checker_texture": tmp_path / "checker.ppm",
+    }
+    for path in resources.values():
+        path.write_bytes(b"v1")
+    monkeypatch.setattr(
+        module,
+        "AUTHOR_BACKSPIN_VISUAL_RESOURCES",
+        tuple(resources.items()),
+    )
+    snapshot = module._visual_resource_snapshot(schedule)
+    visual_resources = module._bind_visual_resource_snapshots(snapshot, snapshot)
+
+    resources[resource_key].write_bytes(b"v2")
+    with pytest.raises(ValueError, match="visual resource binding changed"):
+        module._validate_runtime_visual_resources(
+            schedule,
+            {"visual_resources": visual_resources},
+            metadata_path=tmp_path / "metadata.json",
+        )
+
+
 def test_author_reuse_verification_rejects_visual_resource_hash_drift(
     tmp_path, monkeypatch
 ):
@@ -7631,7 +8620,7 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         in report["known_gate_blocked_schedules"]
     )
     assert "masonry_arch_101" not in report["known_gate_blocked_schedules"]
-    assert report["required_schedule_count"] == 17
+    assert report["required_schedule_count"] == 18
 
 
 def test_audited_local_source_hashes_are_pinned():
