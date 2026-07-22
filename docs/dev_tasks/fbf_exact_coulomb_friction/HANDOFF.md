@@ -652,24 +652,48 @@ Source-supported ten-level card-house truth:
   Newton/Warp collision, stiffness/damping, float32, or backend semantics.
 - The one-frame pinned-source control converges all four substeps with 424
   contacts. Its 30-frame / 120-substep control stays finite but reports only 33
-  converged and 87 non-converged entries, first false at source index 33. It is
-  continuation evidence, not a strict trajectory oracle.
-- The Release demo and focused fixtures build; the three ten-level C++ tests,
-  both C++ lint gates, and all 331 visual-runner Python tests pass.
-- Registered strict exact fails closed at completed DART step 1. It records 264
-  final contacts, 18 attempts, 17 solves, one failure, zero accepted caps, and
-  zero boxed fallbacks. The retained 39-contact group reaches 200 iterations
-  with residual 8.891154359157548e-6 and best residual
-  8.727149191711674e-6 against tolerance 1e-6. Capacity 4,096 is not the
-  immediate blocker.
-- Boxed LCP completes the same one-step registered-scene control. That is not a
-  long trajectory or physical-outcome result. Exact timeline SHA-256 is
+  converged and 87 non-converged entries, first false at `step_idx=33`. Its
+  Warp/Newton backend and contact counts differ from DART, so the nearby index
+  is continuation evidence, not a strict DART trajectory or physical oracle.
+- The pushed Release demo and focused fixtures build; checkpoint `ffe23d347b0`
+  passed the three then-current ten-level C++ tests, both C++ lint gates, and
+  the then-current 331-test visual runner.
+- Pushed checkpoint `ffe23d347b0` retains the historical completed-step-1
+  failure: 264 final contacts, 18 attempts, 17 solves, one failure, and a
+  39-contact group at residual 8.891154359157548e-6 after 200 iterations.
+  Boxed completes that one-step control. Historical exact timeline SHA-256 is
   c0af3c2b03d38b68bd30374394bebb83286b08e91414641796f8ff58ec202bbf;
-  boxed timeline SHA-256 is
+  historical boxed timeline SHA-256 is
   059d8d8c21db86df9b8708cf0da9b8bd63e024f2a9723d5a491c0bee2d3e78b0.
-- No ten-level video is justified. Diagnose the strict 39-contact blocker
-  without changing tolerance, fallback, accepted-cap, or fail-fast policy.
-  See CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
+- Predictive checkpoint `3647959a188` matches the
+  source's scalar `separation / dt` velocity allowance narrowly, clears exact
+  step 1 with 18/18 solves and zero failures, then reaches completed step 31
+  before a 79-contact group fails after 200 iterations at residual
+  1.072805023427092e-5. Boxed completes all 40 requested steps.
+- Final scoped local timelines are
+  `/tmp/card10-predictive-scoped-exact1.0VwT5s/timeline.json` (SHA-256
+  bb1c352a3a2e35b7ee0796899dfbffb59358790fe8871cc8a936cbf62404066f),
+  `/tmp/card10-predictive-scoped-boxed1.Kye74m/timeline.json` (SHA-256
+  8947284c4719212722a67ef920d9e5e60892ae1ecf5195f4312703cb2061fbc7),
+  `/tmp/card10-predictive-scoped-exact40.YMlQ9q/timeline.json` (SHA-256
+  8154d5e4eeeec934e717717f9381dd1e5f300f2691702143881a6bcf047a2495),
+  and `/tmp/card10-predictive-scoped-boxed40.JE0tj6/timeline.json` (SHA-256
+  b08bedc459bd0ea946c9b7a0bedf8030215c847b3377ebc3e127861ca5096b94).
+- Final local gates pass: `ConstraintSolver` 66/66, Native collision detector
+  50/50, `SplitImpulse` 13/13, exact solver 38/38, paper fixtures 36 passed
+  with 3 explicit opt-in skips, visual runner 332/332, and independent
+  post-fix re-review `ALLOW`.
+- Comparable source `step_idx=30` converges 422 contacts in one global
+  workspace at Coulomb-relative `7.59e-7`; DART completed step 31 has 304
+  contacts across 18 islands and fails one 79-contact group. Source uses
+  colored BGS with convergence checked every five sweeps; current DART uses
+  sequential BGS with ten fixed sweeps. These are not the same operator or
+  contact problem.
+- No ten-level final video is justified. Add a separately labeled
+  source-continuation ten-level video lane and test colored scheduling and
+  global solve scope one factor at a time. Do not loosen tolerance, caps,
+  fallback, accepted-cap, or fail-fast policy. See
+  CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
 
 Pinned-author masonry-arch truth:
 
@@ -963,11 +987,12 @@ Evidence truth:
 Latest recorded focused gates:
 
 - exact math 56/56 Release;
-- exact constraint solver 32/32;
-- ConstraintSolver 64/64;
-- Native collision 42/42;
+- exact constraint solver 38/38;
+- ConstraintSolver 66/66;
+- Native collision 50/50;
+- SplitImpulse 13/13;
 - masonry wedge dynamics 3/3;
-- default paper fixtures 31 pass / 3 explicit stress skip;
+- default paper fixtures 36 pass / 3 explicit opt-in skips;
 - focused Release and Debug CTest matrices 9/9 in each configuration;
 - schema-v8 CPU runner tests 230/230;
 - literal-wedge visual finalization tests 16/16;
@@ -984,10 +1009,15 @@ Latest recorded focused gates:
 - current-source four-level author-card demo build passed;
 - current-source four-level headless/continuation C++ fixtures passed 13/13;
 - source-supported ten-level card-house demo/test build passed; its focused C++
-  fixtures passed 3/3, both C++ lint gates passed, and its registered strict
-  step-1 gate produced the precise failure above while boxed passed;
+  fixtures passed 3/3 and both C++ lint gates passed at the pushed checkpoint.
+  That checkpoint's step-1 failure remains historical. Predictive checkpoint
+  `3647959a188` clears exact step 1 and has the separate
+  completed-step-31 / boxed-step-40 evidence above;
+- predictive-checkpoint gates: `ConstraintSolver` 66/66, Native
+  collision detector 50/50, `SplitImpulse` 13/13, exact solver 38/38, and
+  paper fixtures 36 passed with 3 explicit opt-in skips;
 - visual runner, including source-pinned 101-stone and ten-level card-house
-  schedule/oracle contracts, passed 331/331;
+  schedule/oracle contracts, passed 332/332;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -1003,7 +1033,8 @@ Latest recorded focused gates:
   intentional status `partial`, 118 live file-identity rechecks, and zero
   skipped, while explicit archive mode reports zero live rechecks and 118
   skipped; and
-- deterministic colored-scheduler stress 1,000 runs passed.
+- deterministic colored-scheduler stress 1,000 runs passed; and
+- independent post-fix re-review of checkpoint `3647959a188`: `ALLOW`.
 
 That sealed live closure resolved `libdart.so.6.19` to the recorded
 `libdart.so.6.19.3`. The normal development symlink is restored to
@@ -1029,9 +1060,13 @@ Immediate order:
    adapter's completed-step-35 exact failure is precisely characterized but
    not corrected. Continue one-factor-at-a-time strict work without changing
    tolerance, caps, fallback, fail-fast, or accepted-cap policy. Diagnose the
-   separate ten-level lane's 39-contact step-1 failure under the same strict
-   policies before attempting its long run or media. Preserve and
-   independently review the completed telemetry-rich source-continuation
+   separate ten-level lane's corrected 79-contact post-step-31 failure under
+   the same strict policies. Preserve the distinction between previous
+   checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Add a separately
+   named source-continuation ten-level video lane, then test colored scheduling
+   and global solve scope one factor at a time without loosening tolerance or
+   caps.
+   Independently review the completed telemetry-rich source-continuation
    capture without calling accepted finite iterates strict success; publish it
    only through the PR editor after explicit approval and record the resulting
    URL. Then continue strict full-duration card work, remaining smaller-figure, and

@@ -34,11 +34,14 @@ at the endpoint. This is valid source-continuation capture evidence, not strict
 convergence, quantitative trajectory/golden/backend/timing parity, solver
 superiority, or Fig. 6 paper parity. The local paired clip is not yet uploaded
 to the PR. A third, separate source-supported ten-level lane now binds 155
-cards and four cubes with the pinned heterogeneous gap values. Its strict exact
-run fails closed at completed step 1 on a 39-contact, 200-iteration group at
-residual `8.891154359157548e-6` against `1e-6`; boxed completes the same
-one-step control, and 264 total contacts are far below capacity 4,096. This is
-a precise blocker, not a long trajectory or video result. The pinned-author
+cards and four cubes with the pinned heterogeneous gap values. Previous
+checkpoint `ffe23d347b0` retains its historical 39-contact step-1 blocker.
+Predictive checkpoint `3647959a188` clears exact step 1, then reaches completed step 31
+before a 79-contact, 200-iteration group fails at residual
+`1.072805023427092e-5`; boxed completes 40. The pinned source first
+nonconverges at `step_idx=33`, but backend and contact counts differ. This is a
+later precise blocker, not source/trajectory/physical equivalence or a long
+trajectory/video result. The pinned-author
 incline sweep and sealed
 author masonry-arch negative also remain current. A separate source-pinned
 101-stone DART lane now precisely fails: strict exact stops at step 209 on an
@@ -642,7 +645,7 @@ re-capture:
 The local MP4 remains outside Git and is only an attachment candidate until a
 GitHub user-attachment URL is recorded.
 
-### Source-Supported Ten-Level Card-House Blocker
+### Source-Supported Ten-Level Card-House Current Blocker
 
 Keep `fbf_author_card_house_10_impact_current_source` and
 `card_house_author_10_impact_current_source` distinct from the five-level
@@ -655,14 +658,34 @@ keeping Newton/Warp collision, stiffness/damping, float32, and backend semantic
 equivalence false.
 
 The pinned source's 120-substep control stays finite but reports 33 converged
-and 87 non-converged entries, first false at source index 33. The DART Release
-build, three focused C++ tests, both C++ lint gates, and all 331 visual-runner
-Python tests pass. Registered strict exact then fails at completed step 1: 18
-attempts, 17 solves, one failure, zero accepted caps/fallbacks, and a retained
-39-contact max-iteration residual `8.891154359157548e-6` against `1e-6`.
-Boxed completes the same one-step control. There is no valid long trajectory,
-physical outcome, video, historical Tables 6-7 invocation, or paper-parity
-claim. Read CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md before changing it.
+and 87 non-converged entries, first false at `step_idx=33`. Its Warp/Newton
+backend and contact counts differ from DART, so it is not a trajectory or
+physical oracle. The DART Release build, three focused C++ tests, both C++ lint
+gates, and all 331 visual-runner Python tests passed for pushed checkpoint
+`ffe23d347b0`. That checkpoint retains the historical 39-contact completed-step-1
+failure at residual `8.891154359157548e-6`.
+
+Predictive checkpoint `3647959a188` matches the
+source's scalar `separation / dt` velocity allowance narrowly, clears exact
+step 1 with 18/18 solves and zero failures, then reaches completed step 31
+before a 79-contact group fails after 200 iterations at residual
+`1.072805023427092e-5`; boxed completes 40. Final scoped timeline SHA-256
+values for exact step 1, boxed step 1, exact 40-step request, and boxed 40-step
+request are
+`bb1c352a3a2e35b7ee0796899dfbffb59358790fe8871cc8a936cbf62404066f`,
+`8947284c4719212722a67ef920d9e5e60892ae1ecf5195f4312703cb2061fbc7`,
+`8154d5e4eeeec934e717717f9381dd1e5f300f2691702143881a6bcf047a2495`,
+and `b08bedc459bd0ea946c9b7a0bedf8030215c847b3377ebc3e127861ca5096b94`;
+paths are recorded in CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
+
+Comparable source `step_idx=30` converges 422 contacts in one global workspace
+at Coulomb-relative `7.59e-7`; DART completed step 31 has 304 contacts across
+18 islands and fails one 79-contact group. Source uses colored BGS and checks
+inner convergence every five sweeps; current DART uses sequential BGS and ten
+fixed sweeps. These are not the same operator/problem. There is
+no valid long trajectory, physical outcome, final video, historical Tables 6-7
+invocation, source equivalence, or paper-parity claim. Read that diagnosis
+before changing the lane.
 
 ### Pinned-Author Masonry-Arch Scientific Negative
 
@@ -888,9 +911,11 @@ fail-closed negative, retained in the ignored local evidence cache at
   A distinct source-pinned DART scene now exists, but its exact lane stops at
   step 209 and boxed collapses. A strict standing trajectory, matched source and
   Kamino outcomes and parity-eligible long-run media remain missing. The
-  separately named source-supported 10-level card house exists but fails
-  strict exact at completed step 1; its long trajectory and media remain
-  missing. The
+  separately named source-supported 10-level card house now clears exact step
+  1 at predictive checkpoint `3647959a188`, then fails after completed
+  step 31; its full strict trajectory, physical outcome, and media remain
+  missing.
+  The
   remaining smaller figures beyond the finalized incline, Painleve, backspin,
   and turntable bundles, and the full paper video/GUI matrix remain missing.
 - Card-manifold v2 is complete only as current-source non-strict sensitivity
@@ -945,11 +970,12 @@ explicit DART reconstruction choices, not author parameters.
 ## Current Recorded Gates
 
 - exact-Coulomb math: 56/56 in Release;
-- exact constraint solver: 32/32;
-- `ConstraintSolver` integration: 64/64;
-- Native collision: 42/42;
+- exact constraint solver: 38/38;
+- `ConstraintSolver` integration: 66/66;
+- Native collision: 50/50;
+- `SplitImpulse`: 13/13;
 - masonry wedge dynamics: 3/3;
-- default paper fixtures: 31 passed, 3 explicit stress cases skipped;
+- default paper fixtures: 36 passed, 3 explicit opt-in skips;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
 - schema-v8 CPU evidence tests: 230/230;
 - literal-wedge visual finalization tests: 16/16;
@@ -966,10 +992,13 @@ explicit DART reconstruction choices, not author parameters.
 - current-source four-level author-card demo build: passed;
 - current-source four-level headless/continuation C++ fixtures: 13/13 passed;
 - source-supported ten-level card-house demo/test build: passed; focused C++
-  fixtures 3/3 passed, both C++ lint gates passed, and its exact/boxed one-step
-  gate produced the precise blocker/control above;
+  fixtures 3/3 and both C++ lint gates passed for previous checkpoint
+  `ffe23d347b0`; its
+  historical step-1 blocker and predictive checkpoint `3647959a188`'s
+  exact-step-1, exact-prefix-31, and boxed-prefix-40 results remain explicitly
+  separate;
 - visual runner, including source-pinned 101-stone and ten-level card-house
-  schedule/oracle contracts: 331/331 passed;
+  schedule/oracle contracts: 332/332 passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -980,7 +1009,8 @@ explicit DART reconstruction choices, not author parameters.
   step-zero JSON cross-check passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
-- deterministic colored-scheduler stress: 1,000 runs passed.
+- deterministic colored-scheduler stress: 1,000 runs passed; and
+- independent post-fix re-review of `3647959a188`: `ALLOW`.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded
 `libdart.so.6.19.3`. The normal development symlink is restored to
@@ -1005,8 +1035,10 @@ only for an explicit live-closure recheck.
    and record its URL. Continue one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
-   Diagnose the separate ten-level lane's 39-contact step-1 failure under the
-   same strict policies before attempting a long trajectory or media.
+   Add a separately named source-continuation ten-level video lane, then test
+   colored scheduling and global solve scope one factor at a time. Do not
+   loosen tolerance, caps, fallback, or fail-fast. Keep predictive checkpoint
+   `3647959a188` distinct from previous checkpoint `ffe23d347b0`.
    Preserve and independently review the completed telemetry-rich continuation
    capture without calling accepted finite iterates strict success, then attach
    the paired clip to PR #3377 only with explicit approval and record the

@@ -49,7 +49,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
 | Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
-| Current-source ten-level card-house adapter | `fbf_author_card_house_10_impact_current_source` and `card_house_author_10_impact_current_source` bind the supported `--levels 10` selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, release after step 1,600, and paired exact/boxed lanes. The gap adapter represents the pinned source's one `0.1 m` ground value plus 159 `0.005 m` card/cube values; broad source contact-gap semantics remain false | Implementation/contract tests pass, but strict exact fails closed at completed step 1: 18 attempts / 17 solves, one 39-contact max-iteration failure at residual `8.891154e-6` versus `1e-6`, zero fallbacks, and 264 total contacts versus capacity 4,096. Boxed completes the same one-step control. No long trajectory or media is valid. The historical Tables 6-7 invocation, source video segment, backend/trajectory/timing equivalence, physical outcome, superiority, and paper parity remain unproven; see [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md) |
+| Current-source ten-level card-house adapter | `fbf_author_card_house_10_impact_current_source` and `card_house_author_10_impact_current_source` bind the supported `--levels 10` selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, release after step 1,600, and paired exact/boxed lanes. The gap adapter represents the pinned source's one `0.1 m` ground value plus 159 `0.005 m` card/cube values. Predictive checkpoint `3647959a188` matches the scalar source `separation / dt` velocity allowance narrowly; broad source contact-gap/backend semantics remain false | Previous checkpoint `ffe23d347b0` retains the historical 39-contact step-1 blocker. Predictive checkpoint `3647959a188` clears exact step 1, then a strict 40-step request reaches completed step 31 before a 79-contact group fails at residual `1.072805023427092e-5` after 200 iterations; boxed completes 40. At the comparable row, source `step_idx=30` converges 422 contacts in one global workspace at Coulomb-relative `7.59e-7`, while DART has 304 contacts in 18 islands, so these are not the same operator/problem. No source, trajectory, physical, paper, or solver-superiority parity and no ten-level final video is valid; see [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md) |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Source-pinned 101-stone DART adapter | The new author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Strict exact stops at step 209 on an iteration cap; boxed completes but fails the standing oracle and visibly collapses | Precise current-DART scientific negative only; no source-backend, float32, trajectory/outcome, Fig. 8/video.08, Kamino, golden, timing, performance, or superiority claim follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
@@ -992,11 +992,12 @@ performance artifact.
 The latest recorded focused results on the current source are:
 
 - exact-Coulomb math: 56/56 in Release;
-- exact constraint solver: 32/32;
-- `ConstraintSolver` integration: 64/64;
-- Native collision: 42/42;
+- exact constraint solver: 38/38;
+- `ConstraintSolver` integration: 66/66;
+- Native collision: 50/50;
+- `SplitImpulse`: 13/13;
 - masonry wedge dynamics: 3/3;
-- default paper fixtures: 31 passed, 3 explicit stress cases skipped;
+- default paper fixtures: 36 passed, 3 explicit opt-in skips;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
 - schema-v8 CPU evidence tests: 230/230;
 - literal-wedge visual finalization tests: 16/16;
@@ -1014,8 +1015,8 @@ The latest recorded focused results on the current source are:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level headless/continuation C++ fixture tests: 13/13;
-- visual-runner Python tests, including the source-pinned 101-stone
-  schedule/oracle contracts: 320/320;
+- visual-runner Python tests, including the source-pinned 101-stone and
+  ten-level card-house schedule/oracle contracts: 332/332;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
@@ -1024,7 +1025,8 @@ The latest recorded focused results on the current source are:
 - manifest validation: under the sealed producer closure, live mode performed
   118 file-identity rechecks with zero skipped; explicit archive mode reported
   all 118 skipped rechecks; and
-- deterministic colored-scheduler stress: 1,000 runs passed.
+- deterministic colored-scheduler stress: 1,000 runs passed; and
+- independent post-fix re-review of checkpoint `3647959a188`: `ALLOW`.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded
 `libdart.so.6.19.3`. The normal development symlink is restored to
@@ -1048,7 +1050,10 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    continue with the other
    smaller-figure recaptures and strict card work. Continue isolated
    one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
-   fallback, or fail-fast changes. Preserve and independently review the
+   fallback, or fail-fast changes. For the ten-level lane, add a separately
+   labeled source-continuation video path and test colored scheduling and
+   global solve scope one factor at a time; do not loosen tolerance or caps.
+   Preserve and independently review the
    completed telemetry-rich source-continuation clip, do not relabel it as
    strict convergence or solver superiority, and publish it only through the PR
    editor after explicit approval. Continue
