@@ -167,8 +167,11 @@ boxed remains upright until impact, so do not map DART lanes to paper lanes or i
 mechanism. This qualitative difference is not solver superiority or
 quantitative parity. Any next strict A/B must isolate
 one remaining mismatch without changing tolerance, caps, fallback, or
-fail-fast. Source-global constrained scope versus DART per-island solving is
-the next solver discriminator. No strict release or
+fail-fast. The c95-bound colored-ordering and one-global-group probes are both
+bounded rejects for the step-35 blocker: the latter still fails at step 35,
+and its stock-partition sub-audit localizes the only nonconverged residual to
+the 56-contact island with exactly zero off-block `W` coupling. No strict
+release or
 strict full-run trajectory, quantitative physical outcome, source-backend or
 timing equivalence, approved golden, Fig. 6 or paper parity, or superiority
 follows. See
@@ -209,6 +212,39 @@ H.264/yuv420p at 30 fps and passes a full decode. The direct comparison labels
 are intentionally limited to
 `EXACT COULOMB FBF` and `EXISTING BOXED LCP`; they identify lanes without
 claiming that a visible outcome is numerically or paper-valid.
+
+### Browser-upload manifest
+
+An independent handoff audit verified the following 14 recommended files.
+Every file exists under ignored task assets, matches the listed SHA-256, probes
+as H.264/yuv420p at 30 fps, and passes a complete `ffmpeg -xerror` decode. None
+is tracked. The first nine clips are the minimum one-per-source-row set; the
+last five retain promised direct comparisons that the minimum set would hide.
+Upload order does not change any row's scientific status.
+
+| Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
+| --- | --- | --- | --- |
+| Minimum | Figs. 1-2 incline exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/incline__exact_vs_boxed/clip.mp4` | `ea4341982f2c3b6510a27b9999db0768c8c271453f630fe47b6fd35d45c300fa` |
+| Minimum | Fig. 3 checker backspin exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/backspin__exact_vs_boxed/clip.mp4` | `2056924dae3ccbffcc66e7203513e00e7a8b890c002243b84bc46dad2adc2498` |
+| Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
+| Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
+| Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
+| Minimum | Fig. 6 source continuation exact vs boxed | `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
+| Minimum | Fig. 7 crown continuation exact vs boxed | `assets/pr_media_current_head_fig07_crown_continuation/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8` |
+| Minimum | Fig. 8 frozen-prefix diagnostic | `assets/paper_evidence/fig08_arch101_author_current_v1/groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4` | `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94` |
+| Minimum | Tables 6-7 exact continuation only | `assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/clip.mp4` | `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d` |
+| Supplemental | Fig. 4 proxy `mu=.2, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega2__exact_vs_boxed/clip.mp4` | `56f2a7ee598dffd6716cdf4a7b6b8560e7587ec9bc871f74d0d6e28c4d00daf3` |
+| Supplemental | Fig. 4 proxy `mu=.2, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega5__exact_vs_boxed/clip.mp4` | `2cab4896f79a116949e360871ac319b6193849fd04ad7bf1bfd43cdec16814e3` |
+| Supplemental | Fig. 4 proxy `mu=.5, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega2__exact_vs_boxed/clip.mp4` | `5d16450c622dd21ae1144ce66df3c04419f0bf88448fe3ccd32f90f170fc6b62` |
+| Supplemental | Fig. 4 proxy `mu=.5, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4` | `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8` |
+| Supplemental | Fig. 7 literal-standing baseline exact vs boxed | `assets/pr_media_current_head_fig07/groups/masonry_arch_25_literal_standing__exact_vs_boxed/clip.mp4` | `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e` |
+
+The mandatory caption boundaries remain: Figure 4's author group is
+exact-only; Figure 6/7/Tables 6-7 continuation clips are non-strict; Figure 8
+freezes exact after its valid prefix; and Tables 6-7 lacks a complete boxed
+member. The four Figure 4 proxy pairs are reconstructed DART comparisons, not
+the author-pinned scene. No GitHub user-attachment URL is recorded, so the
+manifest remains a browser-composer handoff rather than published PR media.
 
 ### Figure 6: source-continuation card house
 

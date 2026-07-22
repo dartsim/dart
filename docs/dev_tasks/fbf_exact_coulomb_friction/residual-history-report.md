@@ -12,8 +12,13 @@ the tested option matrix supplies no strict correction. A one-factor
 c95-bound probe exercises the colored ordering/path with one participant
 and zero parallel dispatches but changes the failed residual by only
 `2.19e-14` relative. Reject it only as the next Figure 6 blocker discriminator;
-source-global constrained scope versus DART per-island solves is next. This is
-not a multicore or general colored-BGS result. A historical
+this is not a multicore or general colored-BGS result. A subsequent isolated
+c95-bound global-scope probe also fails at completed step 35, with the failed
+68-contact aggregate's native-partition sub-audit localizing nonconvergence to
+the 56-contact island and exactly zero off-block operator coupling. Reject
+solve scope only as this blocker
+discriminator; it changes the within-tolerance trajectory and is not a general
+equivalence result. A historical
 debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
@@ -155,6 +160,29 @@ outer budget moves the first failure but does not supply a strict solution.
 This localizes the observed blocker to slow outer dual/complementarity
 convergence on a contact-rich island; it does not prove one underlying causal
 defect.
+
+An isolated c95-bound one-factor diagnostic then merged all native constrained
+groups only at the real solve boundary. Both native and global 36-step runs
+fail closed at completed step 35. Native solves 56/8/4 contacts and reproduces
+the retained `4.0844850280896461e-4` failed residual. The global 68-contact
+solve ends at `4.0848243204467147e-4`; its reaction re-evaluates at
+`4.0848243204472058e-4` on the 56-contact native island, while the 8- and
+4-contact islands pass at `6.1744758287200254e-11` and zero. The independently
+assembled global `W` has exactly zero off-block norm under the native partition
+for every generation.
+
+The two modes share identical contact fingerprints through generation 28.
+Both accept generation 28 below `1e-6`, but their admissible reactions differ,
+and fingerprints first diverge at generation 29. Global scope passes through
+generation 33, then its 68-contact aggregate fails at generation 34; the
+sub-audit identifies the same dominant native island. This rejects native-
+island scope alone as the step-35 cause; it does not prove global/per-island
+trajectory equivalence, source equivalence, outcome, performance, superiority,
+Figure 6, or paper parity. The sealed isolated report and manifest are
+`/tmp/fbf_fig06_global_scope_c95.TSfONI/RESULTS.md` and
+`SHA256SUMS`, with SHA-256 values
+`633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
+`90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
 The pinned source recovers and advances a finite iterate even when its
 configured convergence flag is false. One process-local GDB preview tested only

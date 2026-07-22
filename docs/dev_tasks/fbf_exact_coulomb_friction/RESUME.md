@@ -25,8 +25,12 @@ source-selected four-level/26-card adapter still fails closed at completed step
 one-factor colored-BGS probe exercises the colored ordering/path for 200 solves
 with one participant and zero parallel dispatches, but changes the failed
 residual by only `2.19e-14` relative. Reject it only as the next Figure 6
-step-35 discriminator; the next Figure 6 solver discriminator is source-global
-constrained scope versus DART's per-island solves. A new
+step-35 discriminator. An isolated one-global-group probe also fails at step
+35: its 68-contact residual is `4.0848243204467147e-4`, the sliced
+56-contact-native-island residual is `4.0848243204472058e-4`, and every
+off-block `W` coefficient is zero. Reject native-island scope only as this
+blocker hypothesis; the global run changes the within-tolerance trajectory and
+does not prove general equivalence. A new
 telemetry-rich source-continuation adapter completes exact and boxed through all
 2,400 steps and the successful step-1,600 cube release. Exact records
 3,351/3,351 attempts/solves, zero failures/fallbacks, 2,605 successes, 113
@@ -68,6 +72,10 @@ verification pass with 20 members, 13 groups, zero failures, and five expected
 exact-only author-turntable boxed skips. Run/verify summary SHA-256 values are
 `8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af` and
 `264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
+The consolidated browser handoff now lists 14 independently audited clips:
+nine minimum source-row uploads and five supplemental comparisons. Every
+listed SHA matches, every stream is H.264/yuv420p at 30 fps, and every file
+passes a full `ffmpeg -xerror` decode. No GitHub user-attachment URL exists.
 
 ## Read First
 
@@ -656,6 +664,21 @@ shrink-cap, plateau, and continuation semantics are unchanged
 by this strict A/B and are exercised only by the separately labeled
 continuation lane below.
 
+The isolated c95-bound global-scope A/B likewise fails at completed step 35.
+Native reproduces `4.0844850280896461e-4` on the 56-contact group. A single
+68-contact solve reaches `4.0848243204467147e-4`; re-evaluation under the
+original 56/8/4 partition localizes the failure to the 56-contact island at
+`4.0848243204472058e-4`, while the other two islands pass. Off-block `W`
+coupling is exactly zero for every generation. Both modes pass generation 28
+from identical fingerprints with different within-tolerance reactions, then
+first diverge in contact fingerprints at generation 29. This rejects native
+solve scope alone as the step-35 cause, not global/per-island equivalence or
+any source, trajectory, outcome, performance, superiority, video, or paper
+claim. The isolated report and manifest under
+`/tmp/fbf_fig06_global_scope_c95.TSfONI/` have SHA-256 values
+`633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
+`90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
+
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
 123/677 from release onward. First false/cap indices are 33/35; worst natural
@@ -1180,10 +1203,10 @@ only for an explicit live-closure recheck.
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
-   colored-ordering candidate is rejected only as the next step-35
-   discriminator; test source-global constrained scope versus DART per-island
-   solving next. Keep the separate ten-level colored/global-scope diagnostics
-   pending one factor at a time.
+   colored-ordering candidate and the one-global-group candidate are both
+   rejected only as step-35 discriminators. Do not add another strict solver
+   knob without a source-backed, preregistered mismatch. Keep the separate
+   ten-level colored/global-scope diagnostics pending one factor at a time.
    Preserve the final, independently reverified ten-level exact continuation
    member and both `/tmp` summaries. Preserve the
    clean 80-step boxed control, but treat the interrupted step-112 full attempt

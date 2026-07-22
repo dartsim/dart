@@ -108,6 +108,11 @@ C95-bound small-row media truth:
   or general solver-superiority evidence.
 - No attachment URL is recorded. Upload accepted MP4s through GitHub's browser
   composer and record the resulting user-attachment URLs.
+- The consolidated browser handoff in PAPER_DEMO_VIDEO_MATRIX.md contains 14
+  independently audited H.264/yuv420p clips: nine minimum source-row clips and
+  five supplemental direct comparisons. Every listed SHA matches and every
+  clip passes a full `ffmpeg -xerror` decode. Retain the mandatory non-strict,
+  frozen-prefix, exact-only, proxy, and missing-boxed caption boundaries.
 
 Exact-math truth:
 
@@ -651,8 +656,18 @@ Current-source four-level Figure 6 adapter truth:
   solves with one participant and zero parallel dispatches, but changes the
   failed residual by only 2.19e-14 relative. Reject it only as the next Figure
   6 step-35 discriminator, not as a multicore or general colored-BGS result.
-  The next Figure 6 solver discriminator is source-global constrained scope
-  versus DART per-island solves.
+  A subsequent isolated c95-bound one-global-group probe also fails at
+  completed step 35. Its global 68-contact residual is
+  4.0848243204467147e-4, its sliced 56-contact residual is
+  4.0848243204472058e-4, and every off-block `W` coefficient under the native
+  partition is zero. Native and global pass generation 28 from identical
+  fingerprints with different within-tolerance reactions, then first diverge
+  in contact fingerprints at generation 29. Reject native-island scope only
+  as this blocker hypothesis, not as a general equivalence, source, outcome,
+  performance, superiority, video, Figure 6, or paper result. The isolated
+  report and manifest under /tmp/fbf_fig06_global_scope_c95.TSfONI/ hash to
+  633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9 and
+  90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -1215,9 +1230,11 @@ Immediate order:
    the clean 80-step boxed control, but treat the interrupted step-112 boxed
    run and partial frames as non-evidence; resolve full boxed
    runtime before paired media. The one-participant colored-ordering result is
-   rejected only for the four-level Figure 6 step-35 blocker. Keep ten-level
-   colored scheduling and global-scope diagnostics pending one factor at a
-   time without loosening tolerance or caps. Use the ignored c95-bound
+   rejected only for the four-level Figure 6 step-35 blocker, as is the
+   one-global-group result. Require a new source-backed, preregistered mismatch
+   before another four-level strict solver A/B. Keep ten-level colored
+   scheduling and global-scope diagnostics pending one factor at a time
+   without loosening tolerance or caps. Use the ignored c95-bound
    c95bd5fb916 reseal as the authoritative Figures 1-5 upload source. Upload any
    final exact member only through the PR browser composer and
    record the URL.

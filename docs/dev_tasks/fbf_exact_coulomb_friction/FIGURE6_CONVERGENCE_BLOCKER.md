@@ -210,6 +210,7 @@ diagnostics only; the temporary wrappers are not evidence producers.
 | Accept caps, strict fail-fast | 32 | rejected as `iteration_cap` |
 | Accept caps, no fail-fast, 100 steps | 100 | 81 accepted caps, `0.1455523` |
 | Colored BGS only, c95-bound binary `c95bd5fb916` | 35 | failed, `4.0844850280895566e-4` |
+| One global constrained group, c95-bound isolated diagnostic | 35 | failed as a 68-contact aggregate at `4.0848243204467147e-4`; the diagnostic native-partition sub-audit localizes nonconvergence to the 56-contact island |
 
 Warm start off, persistence off, the fuller author-inspired cross-step policy,
 30 inner sweeps, 20 shrink attempts, projected-gradient retry, dense polish,
@@ -241,6 +242,60 @@ SHA-256 8458bfc8bc0c8b127dbd11be0c8f4f45c44383c04a5868736c9d59b61bcb890f
 /tmp/fbf_fig06_colored_ab_c95_colored_v2.TAnBSG/stderr.log
 SHA-256 543c35944d7c33e2b314e811af9381a9c2854274d4dadb5931d233f0ea868716
 ```
+
+## Global Constrained-Scope A/B
+
+An isolated diagnostic clone pinned to implementation/media head
+`c95bd5fb916832c46c60d2ca1948b52d1e2cd7ba` compared the stock native
+constrained-group partition with a single global exact-FBF group. The
+environment-gated patch was not applied to the topic branch. It retained the
+strict current-source scene contract, the contact-row operator, one simulation
+thread, zero ERP, no split impulse or deactivation, no fallback/retry/polish,
+and no continuation or accepted-cap policy. It merged groups only immediately
+before the real solve and independently reconstructed a dense diagnostic
+operator after each solve.
+
+Both 36-step requests exited through the exact fail-fast at completed step 35.
+The stock run reproduces the c95-bound result: the 56/8/4-contact groups end at
+residuals `4.0844850280896461e-4`, `9.6415993787912730e-7`, and zero. The
+global run solves all 68 contacts together and ends at
+`4.0848243204467147e-4`; slicing that reaction under the original partition
+gives `4.0848243204472058e-4`, `6.1744758287200254e-11`, and zero. Every
+off-block coefficient of the global `W` is exactly zero under the native
+partition for all 35 generations.
+
+At generation 28, both modes start from identical contact fingerprints and
+pass their declared residual gates. Their accepted, within-tolerance reactions
+differ, and the contact fingerprints first diverge at generation 29. The
+global run remains clean through generation 33, then fails at generation 34 on
+the 68-contact aggregate; the diagnostic native-partition sub-audit identifies
+the same dominant 56-contact island as the only nonconverged partition. Neither
+run accepts a capped iterate or invokes boxed fallback. The preregistered
+100-step extension was therefore not run.
+
+This rejects only the hypothesis that DART's native-island solve scope is, by
+itself, the Figure 6 step-35 cause. It does not show general equivalence between
+global and per-island solves: the different admissible generation-28 reactions
+change the later trajectory. It establishes no trajectory, physical outcome,
+source-backend, timing, performance, solver-superiority, video, Figure 6, or
+paper-parity claim. The global result has one final replicate. No raw `W`
+matrix is retained; the zero-coupling statement is bound to the reviewed
+instrumentation and its complete per-generation logged aggregates.
+
+The isolated evidence package is
+`/tmp/fbf_fig06_global_scope_c95.TSfONI/`:
+
+- `RESULTS.md` SHA-256
+  `633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9`;
+- diagnostic patch SHA-256
+  `c1ded53666dd0c515bc81591f22644ace2ccb59a22ae172a60467cef2f5395e2`;
+- native sidecar SHA-256
+  `9960523cab291c47c51f8d92f5360acb40d1a5f22658e2f7486b32c32396c7aa`;
+- global sidecar SHA-256
+  `2690bd7a217bcb380f2a0fd83f78e6e14838d0286189e0f875e8a66e5fb5e33d`;
+  and
+- complete `SHA256SUMS` manifest SHA-256
+  `90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
 ## Source-Style Continuation Preview
 
@@ -354,9 +409,9 @@ The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
 must isolate one remaining source mismatch without combining tolerance,
 budget, fallback, fail-fast, or accepted-cap changes. The one-participant
-colored-ordering candidate is rejected for this Figure 6 step-35 blocker; the
-next solver-level discriminator is the source's global constrained scope
-versus DART's per-island solves. Source
+colored-ordering candidate and the one-global-group candidate are both rejected
+for this Figure 6 step-35 blocker. Do not promote another solver knob without a
+new source-backed, preregistered mismatch. Source
 shrink-cap, plateau, and continuation semantics likewise require a separately
 labeled, telemetry-rich physical/video lane before producing strict outcome
 evidence. The continuation lane now has a validated local full-resolution

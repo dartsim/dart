@@ -50,7 +50,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
+| Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. One-participant colored ordering and one-global-group scope are bounded rejects for this blocker; global scope has zero off-block coupling, and its diagnostic native-partition sub-audit localizes nonconvergence to the 56-contact island. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
 | Current-source ten-level card-house adapter | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source` bind the supported `--levels 10` selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, release after step 1,600, and the pinned heterogeneous gap values. Predictive checkpoint `3647959a188` matches only the scalar source `separation / dt` velocity allowance | Strict reaches completed step 31 before a 79-contact failure. The final exact continuation reseal and independent reuse verification pass: 3,200/3,200, 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau and 763 max-iteration accepts, and `automated_semantic_outcome_validated=false`. A clean boxed control completes 80/80, but the full attempt reached only step 112, was interrupted, and is non-evidence; paired media remains blocked. No source, trajectory, physical, Tables 6-7, paper, or solver-superiority parity follows; see [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md) |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Source-pinned 101-stone DART adapter | The new author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Strict exact stops at step 209 on an iteration cap; boxed completes but fails the standing oracle and visibly collapses. Independent full current-source FBF and Kamino controls also fail the same local standing criterion | Precise current-DART and current-source scientific negatives only; no historical invocation/backend, converged golden, full trajectory/outcome, Fig. 8/video.08, timing, performance, or superiority claim follows |
@@ -705,8 +705,22 @@ numerical noise (`2.19e-14` relative). Reject that setting only as the next
 Figure 6 blocker discriminator; it is not a multicore or general colored-BGS
 result. Source shrink-cap, plateau, and continuation semantics are unchanged
 by this strict A/B and are exercised only by the separately labeled lane
-below. The next Figure 6 solver-level discriminator is source-global
-constrained scope versus DART's per-island solves.
+below.
+
+The isolated c95-bound one-global-group A/B also fails at completed step 35.
+Native reproduces the 56/8/4-contact partition and
+`4.0844850280896461e-4` failed residual. The global 68-contact solve reaches
+`4.0848243204467147e-4`; its diagnostic native-partition sub-audit localizes
+`4.0848243204472058e-4` to the 56-contact island, while the 8- and 4-contact
+islands pass. Every off-block `W` coefficient is zero in all 35 observed
+generations. The paired modes pass generation 28 from identical problems with
+different within-tolerance reactions and first diverge in contact fingerprints
+at generation 29. Reject native-island scope alone as the step-35 cause, not
+global/per-island equivalence or any source, trajectory, outcome, timing,
+performance, superiority, video, Figure 6, or paper claim. The isolated report
+and manifest under `/tmp/fbf_fig06_global_scope_c95.TSfONI/` have SHA-256
+`633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
+`90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
 The pinned author control completes 2,400 substeps while reporting only 1,455
 converged and 945 unconverged steps: 632 caps and 313 plateau stops. Before
@@ -1216,10 +1230,11 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    interrupted step-112 boxed attempt and its partial frames as non-evidence;
    paired media remains blocked until a complete, validated boxed member
    exists. For the four-level Figure 6 blocker, the one-participant colored
-   ordering candidate is rejected as the next discriminator; test global
-   constrained scope versus per-island solving next. For the ten-level lane,
-   colored scheduling and global scope both remain pending one-factor
-   diagnostics. Do not loosen tolerance or caps.
+   ordering candidate and the one-global-group candidate are both rejected as
+   this step-35 discriminator. Require a new source-backed, preregistered
+   mismatch before another strict solver A/B. For the ten-level lane, colored
+   scheduling and global scope both remain pending one-factor diagnostics. Do
+   not loosen tolerance or caps.
    Preserve and independently review the
    completed telemetry-rich source-continuation clip, do not relabel it as
    strict convergence or solver superiority, and publish it only through the PR

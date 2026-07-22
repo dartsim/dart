@@ -361,6 +361,15 @@ ejected/ejected/retained/ejected and proxy classifications. These are narrow cur
 parity or general solver-superiority evidence. No MP4 is tracked; browser-only
 PR upload and resulting user-attachment URLs remain pending.
 
+The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 14
+recommended clips: nine minimum one-per-source-row uploads and five
+supplemental direct comparisons. An independent audit verified every local
+path and SHA-256, H.264/yuv420p at 30 fps, and a complete
+`ffmpeg -xerror` decode. This establishes upload readiness only. Figure 4's
+author group remains exact-only; Figures 6/7/Tables 6-7 remain continuation
+evidence; Figure 8 remains a frozen-prefix diagnostic; the Figure 4 proxy
+pairs are reconstructed; and Tables 6-7 still lacks a complete boxed member.
+
 The source audit pins the combined 82 s video, teaser, and paper and validates
 all nine contiguous source segments. The SHA-256 values are:
 
@@ -680,8 +689,23 @@ participant and zero parallel dispatches. It still fails the same step-35
 group and improves residual by only `2.19e-14` relative. Reject it only as the
 next Figure 6 blocker discriminator, not as a multicore or general colored-BGS
 result. Source shrink-cap, plateau, and continuation semantics remain separate
-and unchanged by this A/B. The next Figure 6 solver-level discriminator is
-source-global constrained scope versus DART's per-island solves.
+and unchanged by this A/B.
+
+The subsequent isolated c95-bound global-scope A/B also stops at completed
+step 35. Stock native scope reproduces the 56/8/4-contact partition and
+`4.0844850280896461e-4` failed residual. The global 68-contact solve reaches
+`4.0848243204467147e-4`; slicing that solution under the native partition
+localizes `4.0848243204472058e-4` to the same 56-contact island, with the 8-
+and 4-contact islands converged. Off-block `W` coupling is exactly zero in all
+35 generations. Both modes pass generation 28 from identical contact
+fingerprints with different within-tolerance reactions, and fingerprints first
+diverge at generation 29. This rejects native-island scope alone as the
+step-35 cause; it does not prove global/per-island equivalence or any source,
+trajectory, physical-outcome, performance, superiority, video, Figure 6, or
+paper-parity claim. The isolated report and hash manifest are under
+`/tmp/fbf_fig06_global_scope_c95.TSfONI/`; their SHA-256 values are
+`633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
+`90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
 The pinned author control completes all 2,400 substeps but reports 1,455
 converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
@@ -713,8 +737,9 @@ does not reach release and boxed remains bounded to 100 steps. This does not
 establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
 superiority. It remains an adapter-only lane. Any next strict A/B must isolate
-one remaining source mismatch; source-global constrained scope is next, while
-source shrink-cap or continuation semantics remain separate work. The older reconstructed
+one remaining source mismatch; colored ordering and one-global-group scope are
+now rejected as this blocker discriminator, while source shrink-cap or
+continuation semantics remain separate work. The older reconstructed
 `fbf_paper_card_house_26` lane remains distinct.
 
 ### Figure 6 Source-Continuation Attachment Candidate
@@ -1345,9 +1370,9 @@ cross-platform CI.
   failure and complete its strict 2,400-step exact and boxed trajectories
   through the step-1,600 release. Keep any next strict A/B isolated from
   tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
-  The one-participant colored-ordering candidate is ineffective for this
-  Figure 6 blocker; test source-global constrained scope versus DART per-island
-  solving next. Preserve and
+  The one-participant colored-ordering and one-global-group candidates are
+  ineffective for this Figure 6 blocker. Require a new source-backed,
+  preregistered mismatch before another strict solver A/B. Preserve and
   independently review the separately labeled telemetry-rich continuation
   capture without presenting accepted finite iterates as strict exact success;
   upload it only through the PR editor and record the URL. Keep those lanes
