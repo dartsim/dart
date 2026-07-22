@@ -46,6 +46,23 @@ SOLVER_COMPARISON_LABELS = (
     "EXACT COULOMB FBF",
     "EXISTING BOXED LCP",
 )
+SOURCE_CONTINUATION_COMPARISON_LABELS = (
+    "EXACT COULOMB FBF + SOURCE CONTINUATION",
+    "EXISTING BOXED LCP (NO SOURCE CONTINUATION)",
+)
+SOLVER_ONLY_COMPARISON_BASIS = (
+    "the synchronized lanes share the scene configuration and runtime schedule; "
+    "only the active constraint solver differs"
+)
+SOURCE_CONTINUATION_COMPARISON_BASIS = (
+    "the synchronized lanes share the scene bodies, contact frontend, clock, and "
+    "scheduled actions, but the exact lane additionally requests source "
+    "continuation; this is not a solver-only comparison"
+)
+SOURCE_CONTINUATION_POLICY_ASYMMETRY = (
+    ("exact_lane", "exact_fbf_with_source_continuation"),
+    ("boxed_lane", "boxed_lcp_without_source_continuation"),
+)
 EXACT_SOLVER_NAME = "ExactCoulombFbfConstraintSolver"
 BOXED_SOLVER_NAME = "BoxedLcpConstraintSolver"
 BOXED_DIAGNOSTICS_GAP = "active solver does not expose exact-Coulomb FBF diagnostics"
@@ -1467,6 +1484,169 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         source_continuation_required=True,
         long_run=True,
     ),
+    "card_house_author_5_impact_current_source": CaptureSchedule(
+        id="card_house_author_5_impact_current_source",
+        scene="fbf_author_card_house_5_impact_current_source",
+        title="Author-pinned source-default five-level card-house impact",
+        source_segment="paper_tables_6_7_no_video_segment",
+        total_steps=3200,
+        # The public source default advances four 240 Hz substeps for every
+        # 60 Hz display frame. One evidence frame every eight substeps keeps
+        # its 800-frame horizon in a 30 fps video.
+        frame_stride=8,
+        panel_steps=(0, 120, 1600, 1680, 3200),
+        panel_labels=(
+            "initial source-default configuration",
+            "early standing probe t=.5s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "source-default frame-800 endpoint (t=13.33s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "5"),
+            ("cards", "40"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("source_frames", "800"),
+            ("release_substep", "1600"),
+            ("total_substeps", "3200"),
+            ("max_contacts", "4096"),
+            ("max_contacts_per_pair", "4"),
+            ("collision_shape_frames", "45"),
+            ("ground_contact_gap_m", "0.1 for the ground ShapeFrame"),
+            (
+                "dynamic_shape_contact_gap_m",
+                "0.005 for the 40 card and 4 cube ShapeFrames",
+            ),
+            ("negative_depth_contacts", "enabled for configured Native gaps"),
+            (
+                "capture_invocation",
+                "current public source defaults (levels=5, frames=800)",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This scene selects the public source's no-argument five-level and "
+            "800-frame defaults, but no historical Tables 6/7 invocation was "
+            "recovered. It is a current-source-default adapter, not historical "
+            "paper parity.",
+            "The source assigns gap=.1, stiffness=2500, and damping=100 to the "
+            "ground, versus gap=.005, stiffness=1e4, and damping=1e3 for each "
+            "of the 44 card/cube shapes. DART Native represents the two gap "
+            "values with signed contacts, but not the authors' Warp collision, "
+            "Newton/float32 solver, or stiffness/damping semantics.",
+            "The paper video has no five-level card-house segment, and the "
+            "author repository supplies no approved rendering golden, strict "
+            "trajectory oracle, or physical-outcome oracle for this run.",
+        ),
+        known_gate_blockers=(
+            "The strict DART exact-FBF run fails closed after completed step "
+            "31 on a retained 39-contact group, before the step-1,600 release.",
+            "The separately declared continuation exact/boxed media completes, "
+            "but its asymmetric policy contract cannot establish strict success "
+            "or a solver-only comparison.",
+            "No source trajectory or physical-outcome oracle is available for "
+            "a strict equivalence claim.",
+        ),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        long_run=True,
+    ),
+    "card_house_author_5_impact_source_continuation_current_source": CaptureSchedule(
+        id="card_house_author_5_impact_source_continuation_current_source",
+        scene=("fbf_author_card_house_5_impact_source_continuation_current_source"),
+        title=(
+            "Author-pinned source-default five-level card-house "
+            "source-continuation lane"
+        ),
+        source_segment="paper_tables_6_7_no_video_segment",
+        total_steps=3200,
+        frame_stride=8,
+        panel_steps=(0, 120, 1600, 1680, 3200),
+        panel_labels=(
+            "initial source-default configuration",
+            "early standing probe t=.5s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "source-default frame-800 endpoint (t=13.33s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "5"),
+            ("cards", "40"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("source_frames", "800"),
+            ("release_substep", "1600"),
+            ("total_substeps", "3200"),
+            ("max_contacts", "4096"),
+            ("max_contacts_per_pair", "4"),
+            ("collision_shape_frames", "45"),
+            ("ground_contact_gap_m", "0.1 for the ground ShapeFrame"),
+            (
+                "dynamic_shape_contact_gap_m",
+                "0.005 for the 40 card and 4 cube ShapeFrames",
+            ),
+            ("negative_depth_contacts", "enabled for configured Native gaps"),
+        )
+        + SOURCE_CONTINUATION_CONFIGURATION
+        + (
+            (
+                "capture_invocation",
+                "current public source defaults (levels=5, frames=800)",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This separate exact lane ports source continuation decisions into "
+            "the DART adapter; it does not reproduce the authors' Warp/Newton "
+            "float32 collision or linear-algebra backend.",
+            "This scene selects the public source's no-argument five-level and "
+            "800-frame defaults, but no historical Tables 6/7 invocation was "
+            "recovered. It is a current-source-default adapter, not historical "
+            "paper parity.",
+            "DART Native represents the source's 0.1 m ground and 0.005 m "
+            "dynamic-shape gap values with signed contacts, but not its "
+            "collision backend or stiffness/damping semantics.",
+            "The paper video has no five-level card-house segment, and no "
+            "approved source rendering, trajectory, or outcome golden is "
+            "available.",
+        ),
+        known_gate_blockers=(),
+        boxed_comparison_mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This same-physics comparison selects DART's existing boxed-LCP "
+            "solver with source continuation disabled; it is qualitative "
+            "comparison media, not exact-FBF or source/paper evidence.",
+            "The exact lane requests source-continuation policy while the boxed "
+            "lane has no equivalent policy, so the pair is not a solver-only "
+            "A/B comparison and cannot support a superiority claim.",
+            "This scene selects the public source's no-argument five-level and "
+            "800-frame defaults, but no historical Tables 6/7 invocation was "
+            "recovered.",
+            "DART Native represents the source's two gap values with signed "
+            "contacts, but not its collision backend or stiffness/damping "
+            "semantics.",
+            "The paper video has no five-level card-house segment, and no "
+            "approved source rendering golden is available.",
+        ),
+        boxed_comparison_gate_blockers=(),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        source_continuation_required=True,
+        long_run=True,
+    ),
     "card_house_author_5_construction": CaptureSchedule(
         id="card_house_author_5_construction",
         scene="fbf_author_card_house_5_construction",
@@ -1841,6 +2021,8 @@ class GroupOutputSpec:
     panel_labels: tuple[str, ...] | None = None
     solver_lane: str = "exact"
     source_group_id: str | None = None
+    comparison_basis: str | None = None
+    policy_asymmetry: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         if len(self.members) != len(self.labels):
@@ -1885,19 +2067,45 @@ class GroupOutputSpec:
                 raise ValueError(
                     f"{self.id}: solver comparison members must be exact then boxed"
                 )
-            if self.labels != SOLVER_COMPARISON_LABELS:
+            if not self.comparison_basis:
+                raise ValueError(f"{self.id}: solver comparison basis must be explicit")
+            expected_labels = (
+                SOURCE_CONTINUATION_COMPARISON_LABELS
+                if self.policy_asymmetry
+                else SOLVER_COMPARISON_LABELS
+            )
+            expected_basis = (
+                SOURCE_CONTINUATION_COMPARISON_BASIS
+                if self.policy_asymmetry
+                else SOLVER_ONLY_COMPARISON_BASIS
+            )
+            if self.comparison_basis != expected_basis:
                 raise ValueError(
-                    f"{self.id}: solver comparison labels must identify only "
-                    "the solver lanes"
+                    f"{self.id}: solver comparison basis must expose its "
+                    "comparison policy"
                 )
-            if (
-                self.panel_labels is not None
-                and self.panel_labels != SOLVER_COMPARISON_LABELS
+            if self.labels != expected_labels:
+                raise ValueError(
+                    f"{self.id}: solver comparison labels must expose its "
+                    "comparison policy"
+                )
+            if self.panel_labels is not None and self.panel_labels != expected_labels:
+                raise ValueError(
+                    f"{self.id}: solver comparison panel labels must expose its "
+                    "comparison policy"
+                )
+            if self.policy_asymmetry not in (
+                (),
+                SOURCE_CONTINUATION_POLICY_ASYMMETRY,
             ):
                 raise ValueError(
-                    f"{self.id}: solver comparison panel labels must identify "
-                    "only the solver lanes"
+                    f"{self.id}: unsupported solver comparison policy asymmetry"
                 )
+        elif self.comparison_basis is not None or self.policy_asymmetry:
+            raise ValueError(
+                f"{self.id}: only solver comparisons may declare a comparison "
+                "basis or policy asymmetry"
+            )
         if self.source_group_id == self.id:
             raise ValueError(f"{self.id}: derived source group cannot equal its id")
 
@@ -1972,6 +2180,61 @@ def _boxed_schedule_id(schedule_id: str) -> str:
 
 def _expected_solver(schedule: CaptureSchedule) -> str:
     return EXACT_SOLVER_NAME if schedule.solver_lane == "exact" else BOXED_SOLVER_NAME
+
+
+def _solver_comparison_policy_contract(
+    schedule: CaptureSchedule,
+) -> tuple[str, tuple[str, ...], tuple[tuple[str, str], ...]]:
+    if schedule.source_continuation_required:
+        return (
+            SOURCE_CONTINUATION_COMPARISON_BASIS,
+            SOURCE_CONTINUATION_COMPARISON_LABELS,
+            SOURCE_CONTINUATION_POLICY_ASYMMETRY,
+        )
+    return SOLVER_ONLY_COMPARISON_BASIS, SOLVER_COMPARISON_LABELS, ()
+
+
+def _validate_solver_comparison_policy_contract(
+    group: GroupOutputSpec, schedule: CaptureSchedule
+) -> None:
+    if group.solver_lane != "both":
+        return
+    if schedule.id != group.members[0] or schedule.solver_lane != "exact":
+        raise ValueError(
+            f"{group.id}: comparison policy must be bound to its exact member"
+        )
+    expected_basis, expected_labels, expected_asymmetry = (
+        _solver_comparison_policy_contract(schedule)
+    )
+    if (
+        group.comparison_basis != expected_basis
+        or group.labels != expected_labels
+        or group.resolved_panel_labels != expected_labels
+        or group.policy_asymmetry != expected_asymmetry
+    ):
+        raise ValueError(
+            f"{group.id}: solver comparison policy contract changed for "
+            f"{schedule.id}"
+        )
+
+
+def _validate_solver_comparison_member_contract(
+    group: GroupOutputSpec, schedules: Sequence[CaptureSchedule]
+) -> None:
+    if group.solver_lane != "both":
+        return
+    if tuple(schedule.id for schedule in schedules) != group.members:
+        raise ValueError(
+            f"{group.id}: solver comparison members are missing or out of order"
+        )
+    exact, boxed = schedules
+    canonical_exact = _schedule_for_id(group.members[0])
+    if exact != canonical_exact:
+        raise ValueError(f"{group.id}: exact member contract changed")
+    expected_boxed = _derive_boxed_schedule(canonical_exact)
+    if boxed != expected_boxed:
+        raise ValueError(f"{group.id}: boxed counterpart contract changed")
+    _validate_solver_comparison_policy_contract(group, canonical_exact)
 
 
 def _derive_boxed_schedule(schedule: CaptureSchedule) -> CaptureSchedule:
@@ -2101,15 +2364,22 @@ def _derive_solver_comparison_group(schedule: CaptureSchedule) -> GroupOutputSpe
         raise ValueError(
             f"{schedule.id}: an exact-versus-boxed video comparison cannot be derived"
         )
-    return GroupOutputSpec(
+    comparison_basis, comparison_labels, policy_asymmetry = (
+        _solver_comparison_policy_contract(schedule)
+    )
+    group = GroupOutputSpec(
         id=f"{schedule.id}{SOLVER_COMPARISON_SUFFIX}",
         source_segment=schedule.source_segment,
         members=(schedule.id, _boxed_schedule_id(schedule.id)),
-        labels=SOLVER_COMPARISON_LABELS,
+        labels=comparison_labels,
         layout="side-by-side",
         panel_step=schedule.panel_steps[-1],
         solver_lane="both",
+        comparison_basis=comparison_basis,
+        policy_asymmetry=policy_asymmetry,
     )
+    _validate_solver_comparison_policy_contract(group, schedule)
+    return group
 
 
 def _solver_comparison_groups(
@@ -2506,6 +2776,19 @@ def build_plan(
 ) -> dict[str, Any]:
     schedules = list(schedules)
     groups = list(GROUP_OUTPUTS.values() if groups is None else groups)
+    schedule_by_id = {schedule.id: schedule for schedule in schedules}
+    if len(schedule_by_id) != len(schedules):
+        raise ValueError("capture plan schedule identifiers must be unique")
+    for group in groups:
+        if group.solver_lane == "both":
+            try:
+                group_schedules = [schedule_by_id[member] for member in group.members]
+            except KeyError as error:
+                raise ValueError(
+                    f"{group.id}: capture plan is missing solver comparison member "
+                    f"{error.args[0]}"
+                ) from error
+            _validate_solver_comparison_member_contract(group, group_schedules)
     plans = [schedule_plan(schedule, demo, output_root) for schedule in schedules]
     return {
         "schema_version": SCHEMA_VERSION,
@@ -2528,6 +2811,14 @@ def build_plan(
                 "solver_lane": group.solver_lane,
                 "source_group_id": group.source_group_id,
                 "labels": list(group.labels),
+                **(
+                    {
+                        "comparison_basis": group.comparison_basis,
+                        "policy_asymmetry": dict(group.policy_asymmetry),
+                    }
+                    if group.solver_lane == "both"
+                    else {}
+                ),
                 "layout": (
                     "2x2 in source order"
                     if group.layout == "2x2"
@@ -3083,6 +3374,8 @@ def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
     return (schedule.source_schedule_id or schedule.id) in {
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_5_impact_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
         "card_house_author_10_impact_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }
@@ -3110,6 +3403,25 @@ def _author_card_house_dynamics_selection(
             "ground_contact_gap_shape_frames": 0,
             "dynamic_contact_gap_shape_frames": 0,
             "source_contact_gap_values_represented": False,
+        }
+    if schedule_id in {
+        "card_house_author_5_impact_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
+    }:
+        return {
+            "levels": 5,
+            "frames": 800,
+            "cards": 40,
+            "leaning_cards": 30,
+            "bridge_cards": 10,
+            "cube_initial_height_m": 13.0830308488593,
+            "collision_shape_frames": 45,
+            "contact_gap_shape_frames": 45,
+            "ground_contact_gap_m": 0.1,
+            "dynamic_shape_contact_gap_m": 0.005,
+            "ground_contact_gap_shape_frames": 1,
+            "dynamic_contact_gap_shape_frames": 44,
+            "source_contact_gap_values_represented": True,
         }
     if schedule_id in {
         "card_house_author_10_impact_current_source",
@@ -3182,6 +3494,7 @@ def _is_author_card_house_source_continuation_schedule(
 ) -> bool:
     return (schedule.source_schedule_id or schedule.id) in {
         "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }
 
@@ -7666,6 +7979,14 @@ def _media_stream(probe: dict[str, Any], *, label: str) -> dict[str, Any]:
 
 def _group_semantic_outcome_gate(group: GroupOutputSpec) -> str:
     if group.solver_lane == "both":
+        if group.policy_asymmetry:
+            return (
+                "the synchronized exact-with-source-continuation versus "
+                "boxed-without-source-continuation composite is a "
+                "policy-asymmetric presentation artifact, not a solver-only A/B; "
+                "it does not establish solver superiority; manual inspection plus "
+                "per-member physical trace/test contracts remain required"
+            )
         return (
             "the synchronized exact-versus-boxed composite is a presentation "
             "artifact; it does not establish solver superiority; manual inspection "
@@ -7699,6 +8020,13 @@ def _validate_group_claim_boundary(
         "automated_semantic_outcome_validated": False,
         "semantic_outcome_gate": _group_semantic_outcome_gate(group),
     }
+    if group.solver_lane == "both":
+        claims.update(
+            {
+                "comparison_basis": group.comparison_basis,
+                "policy_asymmetry": dict(group.policy_asymmetry),
+            }
+        )
     if _is_author_painleve_solver_comparison_group(group):
         comparison = metadata.get("current_dart_adapter_outcome_comparison")
         if not isinstance(comparison, dict) or comparison.get("pass") is not True:
@@ -7749,6 +8077,8 @@ def _group_member_contract(
             f"{group.id}: solver lanes are missing or out of order; "
             f"expected {expected_lanes}, got {member_lanes}"
         )
+    if group.solver_lane == "both":
+        _validate_solver_comparison_member_contract(group, schedules)
 
     first = schedules[0]
     expected_member_stream = _expected_media_stream(first, "mp4")
@@ -8281,6 +8611,14 @@ def run_group_output(
         "layout": group.layout,
         "member_order": list(group.members),
         "labels": list(group.labels),
+        **(
+            {
+                "comparison_basis": group.comparison_basis,
+                "policy_asymmetry": dict(group.policy_asymmetry),
+            }
+            if group.solver_lane == "both"
+            else {}
+        ),
         "synchronization": {
             key: contract[key]
             for key in (

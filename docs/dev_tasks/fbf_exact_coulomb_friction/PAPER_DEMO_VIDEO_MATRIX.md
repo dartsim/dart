@@ -83,7 +83,7 @@ them immediately; the evidence runner invokes `p` after completed substep
 1,600. The 2,400-step schedule uses `dt=1/240 s`.
 
 The demo build, 13 focused headless/continuation C++ tests, five author-incline
-production-world C++ contract tests, 370 runner Python tests, and exact/boxed
+production-world C++ contract tests, 359 runner Python tests, and exact/boxed
 contract-smoke validators pass. The exact 100-step prefix records
 103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
 worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
@@ -248,6 +248,68 @@ inspection/diagnostic scenes. The older reconstructed 26-card lane remains
 useful negative evidence. None replaces or can be relabeled as the new
 source-selected row.
 
+## Supplemental Non-Paper Source-Default Five-Level Card House
+
+The visual workflow now declares 31 schedules, including distinct strict
+`card_house_author_5_impact_current_source` and continuation
+`card_house_author_5_impact_source_continuation_current_source` schedules. They
+bind the current public no-argument five-level default: 40 cards, four
+initially kinematic cubes, 800 display frames / 3,200 DART substeps, and
+release after completed step 1,600. Both use `dt=1/240 s`, Native
+`FourPointPlanar`, 4,096-contact capacity, four contacts per pair, one `0.1 m`
+ground gap, and 44 `0.005 m` dynamic-shape gaps. This is supplemental current
+source-default evidence, not a paper row, the source-selected four-level
+Figure 6 scene, a historical Tables 6-7 invocation, or a recovered paper
+command.
+
+Strict exact fails closed after completed step 31, before release, on a
+39-contact group at 200 iterations. Its residual is
+`9.022404720646783e-6` against the `1e-6` tolerance; 248 attempts produce 247
+solves and one failure, with zero accepted caps and zero boxed fallbacks.
+
+The separate continuation exact member and boxed member each complete
+3,200/3,200 steps, capture 401 shots, execute the step-1,600 release
+successfully, and produce fully decoded 660x506 H.264/yuv420p clips at 30 fps
+for 13.366667 s. Exact has 399 unique images because two settled shot pairs
+are duplicates; boxed has 401. Exact records 7,337/7,337 attempts/solves, zero
+failures/fallbacks, 2,245 plateau accepts, 836 max-iteration accepts, zero
+shrink-cap accepts, 7,298 warm starts, and 303,900 iterations. Its final/worst
+residuals are `1.2757511844995566e-7` / `0.6378480998790657`, with 266 maximum
+and 248 final contacts. Independent exact and boxed reuse audits pass; their
+summary SHA-256 values are
+`1b7c42c0836aa17fd55f952e6335167a5786d37e54236f9088fa5d1a6a1885fd`
+and `078212b68ae07e234c94b2537d41158cd5c944492e930de7e1fc2b329f5a6453`.
+The boxed audit measures all-frame right/bottom margins of at least 40/30 px
+and endpoint margins of about 41/33 px.
+
+Exact timeline/clip/metadata SHA-256 values are
+`35c7fddedc2dbdb6f2b00323f19dcc6df98ac1e4188d246f06ef562ad44aea80`,
+`956ca7c32fcc23501a863d0e7ec2668fe7ffe5986343a5dcaf49ba6886be8816`,
+and `3afe8c7a3bc795827ff4318438b150d176699dc9dd55057bb48dd025684ffbdf`.
+Boxed values are
+`ba771601affe997b07a66ddc161f4a110ea4eced0b4d94773b219270b63a322f`,
+`319747d1a24a8a735ab4b4485b44a39905e3f6d40fe00257f78ba9b9451fcaa7`,
+and `f77af90deac3f740d06ba0bec2eca17d837cf83974b253c35f3b76dbca35113e`.
+
+The ignored labeled candidate is
+`assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4`.
+Its labels are `EXACT COULOMB FBF + SOURCE CONTINUATION` and
+`EXISTING BOXED LCP (NO SOURCE CONTINUATION)`, so the policy asymmetry is
+explicit. The 1320x530 H.264/yuv420p clip has 401 frames at 30 fps over
+13.366667 s and passes full decode. Clip, panel, and presentation-manifest
+SHA-256 values are
+`b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b`,
+`484fdc35aed15ba06e253be63e5ff9bb46f88bc6c273150d8f78a646da0dc7f8`,
+and `2c80a8cca4cb3a0a11f49a1747bb5cc90092f884e05f0b30d3959e8e2a3eb3cf`.
+Manual inspection records visible pre-release and endpoint differences, while
+`automated_semantic_outcome_validated` remains false.
+
+This clip is not strict success, a solver-only A/B, solver superiority, an
+automated semantic or physical outcome, source trajectory/backend/timing
+evidence, historical Tables 6-7 evidence, paper-video parity, or paper parity.
+The v1 and v2 captures are superseded framing probes and excluded. The v3
+assets remain ignored and the browser-upload URL is pending.
+
 ## Current Local Attachment Candidates
 
 The authoritative small-row upload root is the ignored c95-bound
@@ -280,11 +342,11 @@ claiming that a visible outcome is numerically or paper-valid.
 
 ### Browser-upload manifest
 
-An independent handoff audit verified the following 14 recommended files.
+An independent handoff audit verified the following 15 recommended files.
 Every file exists under ignored task assets, matches the listed SHA-256, probes
 as H.264/yuv420p at 30 fps, and passes a complete `ffmpeg -xerror` decode. None
 is tracked. The first nine clips are the minimum one-per-source-row set; the
-last five retain promised direct comparisons that the minimum set would hide.
+last six retain promised direct comparisons that the minimum set would hide.
 Upload order does not change any row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
@@ -303,11 +365,13 @@ Upload order does not change any row's scientific status.
 | Supplemental | Fig. 4 proxy `mu=.5, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega2__exact_vs_boxed/clip.mp4` | `5d16450c622dd21ae1144ce66df3c04419f0bf88448fe3ccd32f90f170fc6b62` |
 | Supplemental | Fig. 4 proxy `mu=.5, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4` | `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8` |
 | Supplemental | Fig. 7 literal-standing baseline exact vs boxed | `assets/pr_media_current_head_fig07/groups/masonry_arch_25_literal_standing__exact_vs_boxed/clip.mp4` | `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e` |
+| Supplemental | Non-paper five-level source-default exact-with-continuation vs boxed-without-continuation | `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4` | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
 
 The mandatory caption boundaries remain: Figure 4's author group is
 exact-only; Figure 6/7/Tables 6-7 continuation clips are non-strict; Figure 8
 freezes exact after its valid prefix; and the Tables 6-7 pair includes a
-continuation-policy difference. The four Figure 4 proxy pairs are reconstructed DART comparisons, not
+continuation-policy difference. The supplemental five-level pair is non-paper
+source-default evidence and also compares asymmetric policies. The four Figure 4 proxy pairs are reconstructed DART comparisons, not
 the author-pinned scene. No GitHub user-attachment URL is recorded, so the
 manifest remains a browser-composer handoff rather than published PR media.
 

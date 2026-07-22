@@ -38,7 +38,11 @@ debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
 continuation-policy evidence rather than strict convergence or a Figure 9
-residual-history result. The current-source, one-factor card-manifold comparison also
+residual-history result. The public-source-default five-level adapter supplies a
+second strict negative and a complete continuation run: strict stops after 31
+completed substeps on a retained 39-contact group, while continuation reaches
+all 3,200 substeps with typed acceptance telemetry. Those results are likewise
+not Figure 9 per-outer histories. The current-source, one-factor card-manifold comparison also
 completes 600 emitted rows in both modes, but neither trajectory is strict and
 its physical, timing, and paper verdicts remain null. A separate locally sealed bundle
 establishes a positive 600-step exact result for a non-paper literal-wedge
@@ -49,7 +53,7 @@ seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
-and the visual workflow declares 28 schedules.
+and the visual workflow declares 31 schedules.
 
 ## Prior-Source Strict Full-Card Evidence
 
@@ -352,6 +356,49 @@ The summary, exact timeline, boxed timeline, and paired clip SHA-256 values are
 `1618e284f97ff7ed49e3288636269f5bea6131faa3bae45428e42e23de660bd8`,
 and `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
 The artifacts remain outside Git and the clip has no PR attachment URL.
+
+## Source-Default Five-Level Strict And Continuation Residual Status
+
+The strict `fbf_author_card_house_5_impact_current_source` lane represents the
+current public no-argument five-level, 800-frame source default through the DART
+adapter. It reaches 31 completed substeps before failing closed, before cube
+release, on one retained 39-contact exact group after 200 outer iterations. Its
+final residual is `9.022404720646783e-6` against the strict `1e-6` gate. The
+failed run records 248 attempts, 247 solves, one exact failure, zero accepted
+caps, and zero boxed fallbacks. This is a precise diagnostic negative, not a
+trajectory, physical-outcome, video, or strict-success result.
+
+The separately named
+`fbf_author_card_house_5_impact_source_continuation_current_source` exact lane
+completes all 3,200 substeps and executes the step-1,600 release. Its final v3
+timeline records 7,337 attempts and solves, zero failures or fallbacks, 2,245
+plateau accepts, 836 max-iteration accepts, zero line-search shrink caps, 7,298
+warm starts, and 303,900 total outer iterations. The final step has 248
+contacts and residual `1.2757511844995566e-7`; the largest aggregate contact
+count is 266 and the recorded worst residual is `0.6378480998790657`. The
+paired boxed lane completes the same clock and action but exposes no exact-FBF
+telemetry.
+
+These are per-step/per-group continuation diagnostics, not recovered Figure 9
+per-outer-iteration curves. Exact requests source continuation while boxed does
+not, so their synchronized media is a policy-asymmetric qualitative
+presentation—not a solver-only A/B, strict success, or superiority result. The
+adapter does not recover the historical Tables 6-7 invocation, Warp/Newton
+float32 collision and stiffness/damping behavior, source backend semantics,
+source trajectory, or a paper-video five-level segment.
+
+The ignored final roots are
+`assets/pr_media_card5_source_default_exact_v3/`,
+`assets/pr_media_card5_source_default_boxed_v3/`, and
+`assets/pr_media_card5_source_default_group_v3/`. Exact and boxed timeline
+SHA-256 values are
+`35c7fddedc2dbdb6f2b00323f19dcc6df98ac1e4188d246f06ef562ad44aea80`
+and
+`ba771601affe997b07a66ddc161f4a110ea4eced0b4d94773b219270b63a322f`;
+the policy-qualified presentation clip SHA-256 is
+`b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b`.
+The earlier v1 and v2 captures are superseded framing probes and are excluded
+from browser upload.
 
 ## Current-Source Card Manifold Sensitivity v2
 

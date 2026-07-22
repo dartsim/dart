@@ -82,6 +82,10 @@ inline constexpr const char* kDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_current_source";
 inline constexpr const char* kSourceContinuationDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_source_continuation_current_source";
+inline constexpr const char* kFiveLevelDynamicsDemoSceneId
+    = "fbf_author_card_house_5_impact_current_source";
+inline constexpr const char* kFiveLevelSourceContinuationDynamicsDemoSceneId
+    = "fbf_author_card_house_5_impact_source_continuation_current_source";
 inline constexpr const char* kTenLevelDynamicsDemoSceneId
     = "fbf_author_card_house_10_impact_current_source";
 inline constexpr const char* kTenLevelSourceContinuationDynamicsDemoSceneId
@@ -183,6 +187,18 @@ inline constexpr DynamicsScenario kFourLevelSourceContinuationScenario{
     kFigureEvidenceFrames,
     true,
     false};
+inline constexpr DynamicsScenario kFiveLevelImpactScenario{
+    kFiveLevelDynamicsDemoSceneId,
+    kDefaultLevelCount,
+    kTotalFrames,
+    false,
+    true};
+inline constexpr DynamicsScenario kFiveLevelSourceContinuationScenario{
+    kFiveLevelSourceContinuationDynamicsDemoSceneId,
+    kDefaultLevelCount,
+    kTotalFrames,
+    true,
+    true};
 inline constexpr DynamicsScenario kTenLevelImpactScenario{
     kTenLevelDynamicsDemoSceneId, kTenLevelCount, kTotalFrames, false, true};
 inline constexpr DynamicsScenario kTenLevelSourceContinuationScenario{

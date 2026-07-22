@@ -19,13 +19,14 @@ paper parity, an every-step real-time guarantee, the paper's timing rows, or a
 claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
-The local visual inventory has six locally finalized bundles. The visual
-workflow also includes separately named strict and source-continuation
-four-level and ten-level card-house schedules. The four-level continuation
-schedule has validated local exact/boxed media. The ten-level continuation
-schedule has independently reverified 3,200-step exact and boxed members plus
-a decoded same-binary presentation-only pair. Neither increases the six-bundle
-inventory.
+The local visual inventory has six locally finalized bundles, and the visual
+workflow now declares 31 schedules. It also includes separately named strict
+and source-continuation four-level, source-default five-level, and ten-level
+card-house schedules. The four-level continuation schedule has validated local
+exact/boxed media. The five-level source-default and ten-level continuation
+schedules each have independently verified 3,200-step exact and boxed members
+plus decoded policy-asymmetric presentation-only pairs. None increases the
+six-bundle inventory.
 
 The current topic tip tracks zero files under
 `docs/dev_tasks/fbf_exact_coulomb_friction/assets/`, but the topic history still
@@ -421,8 +422,8 @@ ejected/ejected/retained/ejected and proxy classifications. These are narrow cur
 parity or general solver-superiority evidence. No MP4 is tracked; browser-only
 PR upload and resulting user-attachment URLs remain pending.
 
-The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 14
-recommended clips: nine minimum one-per-source-row uploads and five
+The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 15
+recommended clips: nine minimum one-per-source-row uploads and six
 supplemental direct comparisons. An independent audit verified every local
 path and SHA-256, H.264/yuv420p at 30 fps, and a complete
 `ffmpeg -xerror` decode. This establishes upload readiness only. Figure 4's
@@ -680,6 +681,72 @@ does not prove release, standing, trajectory, solver behavior, contact
 dynamics, physical outcome, the historical four-level/26-card trajectory,
 Fig. 6 or video parity, timing, performance, or paper parity.
 
+### Supplemental Source-Default Five-Level Card-House Diagnostic
+
+The separate `fbf_author_card_house_5_impact_current_source` and
+`fbf_author_card_house_5_impact_source_continuation_current_source` scenes,
+with matching capture schedules that omit the `fbf_` prefix, bind the current
+public no-argument five-level default: 40 cards, four initially kinematic
+cubes, 800 display frames / 3,200 DART substeps, and cube release after
+completed step 1,600. Both use `dt=1/240 s`, Native `FourPointPlanar`, 4,096
+contact capacity, four contacts per pair, one `0.1 m` ground gap, and 44
+`0.005 m` dynamic-shape gaps. This is a non-paper source-default diagnostic,
+not the source-selected four-level Figure 6 row, a recovered historical paper
+invocation, or the ten-level Tables 6-7 row.
+
+The strict exact lane fails closed after completed step 31, before release, on
+a 39-contact group at 200 iterations. Its final residual is
+`9.022404720646783e-6` against the `1e-6` tolerance; 248 attempts produce 247
+solves and one failure, with zero accepted caps and zero boxed fallbacks. It
+therefore supplies no strict success or complete strict trajectory.
+
+The separately named continuation exact member and the boxed member each
+complete 3,200/3,200 steps, capture 401 shots, and execute the step-1,600
+release successfully. Exact records 7,337/7,337 attempts/solves, zero
+failures/fallbacks, 2,245 plateau accepts, 836 maximum-iteration accepts, zero
+shrink-cap accepts, 7,298 warm starts, and 303,900 total iterations. Its final
+and worst residuals are `1.2757511844995566e-7` and
+`0.6378480998790657`; maximum and final contact counts are 266 and 248. Exact
+has 399 unique images because two settled shot pairs are duplicates; boxed has
+401. Both 660x506 member clips are H.264/yuv420p, 30 fps, 401 frames,
+13.366667 s, and pass full decode.
+
+Independent exact and boxed reuse audits pass; their summary SHA-256 values
+are `1b7c42c0836aa17fd55f952e6335167a5786d37e54236f9088fa5d1a6a1885fd`
+and `078212b68ae07e234c94b2537d41158cd5c944492e930de7e1fc2b329f5a6453`.
+Exact timeline/clip/metadata SHA-256 values are
+`35c7fddedc2dbdb6f2b00323f19dcc6df98ac1e4188d246f06ef562ad44aea80`,
+`956ca7c32fcc23501a863d0e7ec2668fe7ffe5986343a5dcaf49ba6886be8816`,
+and `3afe8c7a3bc795827ff4318438b150d176699dc9dd55057bb48dd025684ffbdf`.
+Boxed values are
+`ba771601affe997b07a66ddc161f4a110ea4eced0b4d94773b219270b63a322f`,
+`319747d1a24a8a735ab4b4485b44a39905e3f6d40fe00257f78ba9b9451fcaa7`,
+and `f77af90deac3f740d06ba0bec2eca17d837cf83974b253c35f3b76dbca35113e`.
+The boxed independent audit also finds every rendered foreground pixel at
+least 40 px from the right edge and 30 px from the bottom edge; its endpoint
+margins are about 41 px and 33 px.
+
+The final ignored presentation candidate is
+`assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4`.
+It labels the lanes `EXACT COULOMB FBF + SOURCE CONTINUATION` and
+`EXISTING BOXED LCP (NO SOURCE CONTINUATION)`, making the policy asymmetry
+explicit. The 1320x530 H.264/yuv420p clip has 401 frames at 30 fps over
+13.366667 s and passes full decode. Clip, panel, and presentation-manifest
+SHA-256 values are
+`b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b`,
+`484fdc35aed15ba06e253be63e5ff9bb46f88bc6c273150d8f78a646da0dc7f8`,
+and `2c80a8cca4cb3a0a11f49a1747bb5cc90092f884e05f0b30d3959e8e2a3eb3cf`.
+Manual inspection finds different pre-release and endpoint structure, but the
+records deliberately set `automated_semantic_outcome_validated=false`.
+
+This pair is not strict success, a solver-only A/B, solver superiority, an
+automated semantic or physical outcome, a historical Tables 6-7 invocation,
+source trajectory/backend/timing evidence, paper-video parity, or paper
+parity. The v1 and v2 captures are superseded framing probes and excluded from
+upload evidence. The v3 assets remain ignored, and the final clip has no
+GitHub user-attachment URL until it is uploaded through the PR browser
+composer.
+
 ### Current-Source Four-Level Figure 6 Adapter
 
 The separate `fbf_author_card_house_4_impact_current_source` demo scene and
@@ -698,7 +765,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 in
 the declared 2,400-step, `dt=1/240 s` run. Exact and boxed lanes share the same
 Native `FourPointPlanar` frontend, 4,096-contact capacity, and manifold
 subdivision 4.
-The demo build, 13 focused headless/continuation C++ fixtures, 370 runner Python
+The demo build, 13 focused headless/continuation C++ fixtures, 359 runner Python
 tests, and both adapter-contract smoke validators pass.
 
 The strict exact 100-step request fails closed at completed step 35 when the
@@ -1483,18 +1550,22 @@ boxed negatives do not close those comparison gaps.
   `SplitImpulse`: 13/13 passed.
 - Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
   the full
-  paper fixture binary reports 36 passed and 3 explicit opt-in skips.
+  paper fixture binary reports 39 passed and 3 explicit opt-in skips.
 - Source-supported ten-level card-house build: passed; all four
   `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation
   contract. Its step-1 blocker remains historical; predictive checkpoint
   `3647959a188` has separate exact-step-1, exact-prefix-31, and
   boxed-prefix-40 evidence.
+- Source-default five-level card-house build and both focused strict/
+  continuation C++ fixtures: passed. The final exact and boxed v3 captures and
+  both independent reuse audits pass; the labeled 401-frame presentation pair
+  passes H.264/yuv420p probe and full decode.
 - Author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory.
 - Visual runner, including source-pinned 101-stone, both ten-level card-house
   schedule/oracle contracts, Figure 7 crown-impact continuation, and the
-  seven-cell author incline: 370/370
+  seven-cell author incline: 359/359
   passed.
 - Independent post-fix re-review of `3647959a188`: `ALLOW`.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
@@ -1514,7 +1585,7 @@ boxed negatives do not close those comparison gaps.
 - Author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
   all four previously sealed bundles pass verify-only. The new boxed 101-stone
   capture and independent reuse verification also pass.
-- Demo scene documentation verifier: 30 scenes passed; exact and boxed real
+- Demo scene documentation verifier: 32 scenes passed; exact and boxed real
   step-zero JSON contracts match the validator.
 - The manifest validates 29 canonical requirements with status `partial`.
   Under the local sealed producer closure, live mode performed 118 file-identity
@@ -1597,6 +1668,13 @@ cross-platform CI.
   colored scheduling and global solve scope as separate one-factor diagnostics
   without loosening
   tolerance, iteration caps, fallback, fail-fast, or accepted-cap policy.
+- Preserve the independently verified five-level source-default v3 members and
+  the policy-asymmetric labeled pair as supplemental non-paper diagnostics.
+  Keep the strict step-31 failure distinct from the exact continuation member,
+  and keep v1/v2 classified as superseded framing probes. Upload only the v3
+  pair through the PR browser composer and record its GitHub user-attachment
+  URL; do not present it as strict success, a solver-only A/B, superiority, an
+  automated physical outcome, historical Tables 6-7 evidence, or paper parity.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.
 - Keep multicore claims confined to the validated opt-in colored literal-arch

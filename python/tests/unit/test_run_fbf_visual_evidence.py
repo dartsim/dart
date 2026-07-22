@@ -1204,26 +1204,19 @@ def _author_masonry_arch_101_scene_state(
 def _author_card_house_adapter_contract(
     module, *, solver_lane="exact", source_continuation=False, levels=4
 ):
-    if levels not in {4, 10}:
+    if levels not in {4, 5, 10}:
         raise ValueError("unsupported author card-house test level count")
-    ten_level = levels == 10
-    frames = 800 if ten_level else 600
-    card_count = 155 if ten_level else 26
-    leaning_count = 110 if ten_level else 20
-    bridge_count = 45 if ten_level else 6
-    scene_id = (
-        "fbf_author_card_house_10_impact_source_continuation_current_source"
-        if ten_level and source_continuation
-        else (
-            "fbf_author_card_house_10_impact_current_source"
-            if ten_level
-            else (
-                "fbf_author_card_house_4_impact_source_continuation_current_source"
-                if source_continuation
-                else "fbf_author_card_house_4_impact_current_source"
-            )
+    source_default_timing = levels in {5, 10}
+    frames = 600 if levels == 4 else 800
+    card_count = {4: 26, 5: 40, 10: 155}[levels]
+    leaning_count = {4: 20, 5: 30, 10: 110}[levels]
+    bridge_count = {4: 6, 5: 10, 10: 45}[levels]
+    scene_id = f"fbf_author_card_house_{levels}_impact_current_source"
+    if source_continuation:
+        scene_id = (
+            f"fbf_author_card_house_{levels}_impact_"
+            "source_continuation_current_source"
         )
-    )
     claim_boundary = {
         "current_source_parameterized_configuration_port": True,
         "source_release_action_ported_to_dart": True,
@@ -1252,7 +1245,7 @@ def _author_card_house_adapter_contract(
         "max_contacts": 4096,
         "max_contacts_per_pair": 4,
         "enable_contact": True,
-        "allow_negative_penetration_depth_contacts": ten_level,
+        "allow_negative_penetration_depth_contacts": source_default_timing,
         "default_empty_body_node_filter": True,
     }
     adapter_boundaries = {
@@ -1265,7 +1258,7 @@ def _author_card_house_adapter_contract(
         "source_float32_semantics_implemented": False,
         "dart_native_four_point_planar_is_adapter_choice": True,
     }
-    if ten_level:
+    if source_default_timing:
         claim_boundary["historical_tables_6_7_invocation_known"] = False
         source_contact = {
             "friction": 0.8,
@@ -1284,10 +1277,10 @@ def _author_card_house_adapter_contract(
             {
                 "ground_contact_gap_m": 0.1,
                 "dynamic_shape_contact_gap_m": 0.005,
-                "collision_shape_frames": 160,
-                "collision_shape_frames_with_contact_gap": 160,
+                "collision_shape_frames": {5: 45, 10: 160}[levels],
+                "collision_shape_frames_with_contact_gap": {5: 45, 10: 160}[levels],
                 "ground_shape_frames_with_contact_gap": 1,
-                "dynamic_shape_frames_with_contact_gap": 159,
+                "dynamic_shape_frames_with_contact_gap": {5: 44, 10: 159}[levels],
                 "speculative_contact_velocity_allowance": (
                     "physical_separation_over_time_step"
                 ),
@@ -1728,6 +1721,8 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "painleve_author_mu055",
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_5_impact_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
         "card_house_26",
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
@@ -1842,6 +1837,7 @@ def test_fail_fast_flag_is_routed_only_to_required_exact_schedules(tmp_path):
     "schedule_id",
     (
         "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
         "masonry_arch_25_author_crown_impact_source_continuation_current_source",
     ),
@@ -2777,6 +2773,12 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         "makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene": (
             "fbf_author_card_house_4_impact_source_continuation_current_source"
         ),
+        "makeFbfAuthorCardHouse5ImpactCurrentSourceScene": (
+            "fbf_author_card_house_5_impact_current_source"
+        ),
+        "makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene": (
+            "fbf_author_card_house_5_impact_source_continuation_current_source"
+        ),
         "makeFbfAuthorCardHouse10ImpactCurrentSourceScene": (
             "fbf_author_card_house_10_impact_current_source"
         ),
@@ -2954,6 +2956,8 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "card_house_author_10_impact_current_source",
             "card_house_author_10_impact_source_continuation_current_source",
             "card_house_author_5_construction",
+            "card_house_author_5_impact_current_source",
+            "card_house_author_5_impact_source_continuation_current_source",
             "card_house_author_4_impact_current_source",
             "card_house_author_4_impact_source_continuation_current_source",
             "card_house_10_dynamics",
@@ -2983,6 +2987,12 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "fbf_author_card_house_10_impact_source_continuation_current_source"
         ),
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
+        "card_house_author_5_impact_current_source": (
+            "fbf_author_card_house_5_impact_current_source"
+        ),
+        "card_house_author_5_impact_source_continuation_current_source": (
+            "fbf_author_card_house_5_impact_source_continuation_current_source"
+        ),
         "card_house_author_4_impact_current_source": (
             "fbf_author_card_house_4_impact_current_source"
         ),
@@ -3026,6 +3036,8 @@ def test_capture_schedules_select_the_required_collision_frontend():
             "card_house_author_5_construction",
             "card_house_author_10_impact_current_source",
             "card_house_author_10_impact_source_continuation_current_source",
+            "card_house_author_5_impact_current_source",
+            "card_house_author_5_impact_source_continuation_current_source",
             "card_house_author_4_impact_current_source",
             "card_house_author_4_impact_source_continuation_current_source",
             "masonry_arch_25_literal_standing",
@@ -3381,6 +3393,145 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
         "historical_tables_6_7_invocation_known"
         not in legacy_contract["claim_boundary"]
     )
+
+
+def test_author_card_house_5_adapter_contract_binds_source_defaults_and_gaps(
+    tmp_path,
+):
+    module = _load_module()
+    exact = module.SCHEDULES["card_house_author_5_impact_current_source"]
+    boxed = module._derive_boxed_schedule(exact)
+
+    exact_report = module._validate_author_card_house_adapter_contract(
+        exact,
+        {"physics_contract": _author_card_house_adapter_contract(module, levels=5)},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_card_house_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_card_house_adapter_contract(
+                module, solver_lane="boxed", levels=5
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["card_count"] == boxed_report["card_count"] == 40
+    assert exact_report["cube_count"] == boxed_report["cube_count"] == 4
+    assert exact_report["release_action_completed_step"] == 1600
+    assert exact_report["physical_outcome_validated"] is False
+
+    contract = _author_card_house_adapter_contract(module, levels=5)
+    cards = contract["source_configuration"]["cards"]
+    assert cards["count"] == 40
+    assert cards["leaning_count"] == 30
+    assert cards["bridge_count"] == 10
+    assert contract["source_configuration"]["cubes"][
+        "initial_height_m"
+    ] == pytest.approx(13.0830308488593)
+    assert contract["source_configuration"]["schedule"] == {
+        "display_time_step_seconds": 1.0 / 60.0,
+        "substeps_per_frame": 4,
+        "runtime_time_step_seconds": 1.0 / 240.0,
+        "release_frame": 400,
+        "release_substep": 1600,
+        "total_frames": 800,
+        "total_substeps": 3200,
+    }
+    assert contract["dart_adapter"]["collision"] == {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "max_contacts": 4096,
+        "max_contacts_per_pair": 4,
+        "enable_contact": True,
+        "allow_negative_penetration_depth_contacts": True,
+        "default_empty_body_node_filter": True,
+        "ground_contact_gap_m": 0.1,
+        "dynamic_shape_contact_gap_m": 0.005,
+        "collision_shape_frames": 45,
+        "collision_shape_frames_with_contact_gap": 45,
+        "ground_shape_frames_with_contact_gap": 1,
+        "dynamic_shape_frames_with_contact_gap": 44,
+        "speculative_contact_velocity_allowance": (
+            "physical_separation_over_time_step"
+        ),
+    }
+    assert (
+        contract["adapter_boundaries"]["source_contact_gap_values_represented"] is True
+    )
+    assert (
+        contract["adapter_boundaries"]["source_separation_over_dt_term_represented"]
+        is True
+    )
+    assert contract["claim_boundary"]["historical_paper_invocation_known"] is False
+    assert contract["claim_boundary"]["historical_tables_6_7_invocation_known"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (
+            ("selected_source_invocation", "arguments", "levels"),
+            10,
+            "selected source invocation",
+        ),
+        (
+            ("source_configuration", "cards", "leaning_count"),
+            25,
+            "source configuration",
+        ),
+        (
+            ("source_configuration", "cards", "bridge_count"),
+            15,
+            "source configuration",
+        ),
+        (
+            ("source_configuration", "schedule", "total_frames"),
+            600,
+            "source configuration",
+        ),
+        (
+            ("dart_adapter", "collision", "collision_shape_frames"),
+            160,
+            "collision contract",
+        ),
+        (
+            (
+                "dart_adapter",
+                "collision",
+                "dynamic_shape_frames_with_contact_gap",
+            ),
+            45,
+            "collision contract",
+        ),
+        (("dart_adapter", "inventory", "cards"), 155, "inventory"),
+        (
+            ("claim_boundary", "historical_tables_6_7_invocation_known"),
+            True,
+            "claim boundary",
+        ),
+    ],
+)
+def test_author_card_house_5_adapter_contract_rejects_selection_drift(
+    tmp_path, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_5_impact_current_source"]
+    contract = _author_card_house_adapter_contract(module, levels=5)
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_card_house_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
 
 
 def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
@@ -4004,6 +4155,11 @@ def test_demo_scene_state_provider_is_typed_and_fail_closed():
             "card_house_author_4_impact_source_continuation_current_source",
             4,
             26,
+        ),
+        (
+            "card_house_author_5_impact_source_continuation_current_source",
+            5,
+            40,
         ),
         (
             "card_house_author_10_impact_source_continuation_current_source",
@@ -4939,6 +5095,206 @@ def test_author_card_house_construction_schedule_has_explicit_clock_and_boundary
     assert any("not the authors'" in mismatch for mismatch in schedule.mismatches)
 
 
+def test_author_card_house_5_impact_schedule_is_source_default_and_fail_closed():
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_5_impact_current_source"]
+    configuration = schedule.configuration_dict()
+    plan = module.schedule_plan(schedule, Path("dart-demos"), Path("/tmp/out"))
+    command = module.build_demo_command(schedule, Path("dart-demos"), Path("/tmp/out"))
+
+    assert schedule.scene == "fbf_author_card_house_5_impact_current_source"
+    assert schedule.source_segment == "paper_tables_6_7_no_video_segment"
+    assert schedule.total_steps == 3200
+    assert schedule.time_step_seconds == pytest.approx(1.0 / 240.0)
+    assert schedule.frame_stride == 8
+    assert len(schedule.video_steps) == 401
+    assert schedule.panel_steps == (0, 120, 1600, 1680, 3200)
+    assert schedule.actions == (
+        module.ScheduledAction(1600, "p", "release the four existing source cubes"),
+    )
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.source_continuation_required is False
+    assert schedule.long_run is True
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert configuration["author_commit"] == (
+        "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
+    )
+    assert configuration["levels"] == "5"
+    assert configuration["cards"] == "40"
+    assert configuration["source_frames"] == "800"
+    assert configuration["release_substep"] == "1600"
+    assert configuration["total_substeps"] == "3200"
+    assert configuration["max_contacts"] == "4096"
+    assert configuration["max_contacts_per_pair"] == "4"
+    assert configuration["collision_shape_frames"] == "45"
+    assert configuration["ground_contact_gap_m"] == "0.1 for the ground ShapeFrame"
+    assert "0.005" in configuration["dynamic_shape_contact_gap_m"]
+    assert "40 card" in configuration["dynamic_shape_contact_gap_m"]
+    assert "4 cube" in configuration["dynamic_shape_contact_gap_m"]
+    assert any("no-argument five-level" in item for item in schedule.mismatches)
+    assert any(
+        "gap=.1" in item and "gap=.005" in item and "44 card/cube shapes" in item
+        for item in schedule.mismatches
+    )
+    assert any(
+        "strict" in item and "trajectory oracle" in item for item in schedule.mismatches
+    )
+    assert len(schedule.known_gate_blockers) == 3
+    assert any(
+        "completed step 31" in item and "39-contact" in item
+        for item in schedule.known_gate_blockers
+    )
+    assert any(
+        "continuation exact/boxed media completes" in item
+        and "not establish strict success" in item
+        for item in schedule.known_gate_blockers
+    )
+    assert any(
+        "trajectory" in item and "equivalence claim" in item
+        for item in schedule.known_gate_blockers
+    )
+    assert plan["evidence_ready"] is False
+    assert plan["paper_comparable"] is False
+    assert "--collision-detector" not in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG not in command
+    assert command[command.index("--steps") + 1] == "3200"
+    shot_value = f"1600:{module._frame_path(Path('/tmp/out'), 1600)}"
+    assert command.index(shot_value) < command.index("1600:p")
+    assert all(
+        schedule.id not in schedule_ids
+        for schedule_ids in module.REQUIRED_VIDEO_SCHEDULES.values()
+    )
+
+    boxed = module._derive_boxed_schedule(schedule)
+    boxed_plan = module.schedule_plan(
+        boxed, Path("dart-demos"), Path("/tmp/five-strict-boxed")
+    )
+    boxed_command = module.build_demo_command(
+        boxed, Path("dart-demos"), Path("/tmp/five-strict-boxed")
+    )
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.scene == schedule.scene
+    assert boxed.actions == schedule.actions
+    assert boxed.time_step_seconds == schedule.time_step_seconds
+    assert boxed.pre_run_actions == ("e",)
+    assert boxed.exact_fbf_required is False
+    assert boxed.source_continuation_required is False
+    assert boxed_plan["paper_comparable"] is False
+    assert boxed_plan["evidence_ready"] is False
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in boxed_command
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG not in boxed_command
+
+
+def test_author_card_house_5_source_continuation_schedule_is_separate_and_qualitative():
+    module = _load_module()
+    strict = module.SCHEDULES["card_house_author_5_impact_current_source"]
+    schedule = module.SCHEDULES[
+        "card_house_author_5_impact_source_continuation_current_source"
+    ]
+    output = Path("/tmp/five-source-continuation")
+    exact_plan = module.schedule_plan(schedule, Path("dart-demos"), output)
+    exact_command = module.build_demo_command(schedule, Path("dart-demos"), output)
+    configuration = schedule.configuration_dict()
+
+    assert schedule.scene == (
+        "fbf_author_card_house_5_impact_source_continuation_current_source"
+    )
+    assert schedule.source_segment == strict.source_segment
+    assert schedule.total_steps == strict.total_steps == 3200
+    assert (
+        schedule.time_step_seconds
+        == strict.time_step_seconds
+        == pytest.approx(1.0 / 240.0)
+    )
+    assert schedule.frame_stride == strict.frame_stride == 8
+    assert len(schedule.video_steps) == 401
+    assert schedule.panel_steps == strict.panel_steps == (0, 120, 1600, 1680, 3200)
+    assert schedule.actions == strict.actions
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert schedule.long_run is True
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.source_continuation_required is True
+    assert configuration["levels"] == "5"
+    assert configuration["cards"] == "40"
+    assert configuration["source_frames"] == "800"
+    assert configuration["release_substep"] == "1600"
+    assert configuration["total_substeps"] == "3200"
+    assert configuration["exact_policy"] == "source_continuation"
+    assert schedule.known_gate_blockers == ()
+    assert schedule.boxed_comparison_gate_blockers == ()
+    assert exact_plan["known_gate_blockers"] == []
+    assert exact_plan["evidence_ready"] is True
+    assert exact_plan["paper_comparable"] is False
+    assert exact_plan["actual_simulator_required"] is True
+    assert exact_plan["generated_imagery_allowed"] is False
+    assert any("source continuation" in item.lower() for item in schedule.mismatches)
+    assert any(
+        "not" in item.lower() and "paper" in item.lower()
+        for item in schedule.mismatches
+    )
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG in exact_command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in exact_command
+    assert exact_command[exact_command.index("--steps") + 1] == "3200"
+    assert all(
+        schedule.id not in schedule_ids
+        for schedule_ids in module.REQUIRED_VIDEO_SCHEDULES.values()
+    )
+
+    boxed = module._derive_boxed_schedule(schedule)
+    boxed_output = Path("/tmp/five-source-continuation-boxed")
+    boxed_plan = module.schedule_plan(boxed, Path("dart-demos"), boxed_output)
+    boxed_command = module.build_demo_command(boxed, Path("dart-demos"), boxed_output)
+    assert boxed.scene == schedule.scene
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.exact_fbf_required is False
+    assert boxed.source_continuation_required is False
+    assert boxed.pre_run_actions == ("e",)
+    assert boxed_plan["known_gate_blockers"] == []
+    assert boxed_plan["paper_comparable"] is False
+    assert boxed_plan["evidence_ready"] is False
+    assert any(
+        "comparison" in item.lower() and "not exact-fbf" in item.lower()
+        for item in boxed_plan["known_mismatches"]
+    )
+    boxed_configuration = boxed.configuration_dict()
+    assert boxed_configuration["comparison_counterpart"] == "same_physics_boxed_lcp"
+    assert boxed_configuration["source_exact_policy"] == "source_continuation"
+    assert boxed_configuration["active_exact_policy"] == "not_applicable"
+    assert all(
+        key not in boxed_configuration
+        for key in module.SOURCE_CONTINUATION_CONFIGURATION_KEYS
+    )
+    assert module.HEADLESS_EXACT_FBF_SOURCE_CONTINUATION_FLAG not in boxed_command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG not in boxed_command
+
+    contract = _author_card_house_adapter_contract(
+        module, source_continuation=True, levels=5
+    )
+    assert contract["dart_adapter"]["scene_id"] == schedule.scene
+    assert all(
+        contract["claim_boundary"][name] is False
+        for name in (
+            "historical_paper_invocation_known",
+            "trajectory_valid",
+            "physical_outcome_valid",
+            "trajectory_equivalence",
+            "solver_equivalence",
+            "physical_outcome_equivalence",
+            "fig06_parity",
+            "video06_parity",
+            "timing_comparability",
+            "paper_parity",
+        )
+    )
+
+
 def test_author_card_house_10_impact_schedule_is_source_selected_and_fail_closed():
     module = _load_module()
     schedule = module.SCHEDULES["card_house_author_10_impact_current_source"]
@@ -5278,6 +5634,8 @@ def test_solver_comparison_group_derivation_binds_exact_then_boxed():
     assert group.panel_step == schedule.panel_steps[-1]
     assert group.solver_lane == "both"
     assert group.source_group_id is None
+    assert group.comparison_basis == module.SOLVER_ONLY_COMPARISON_BASIS
+    assert group.policy_asymmetry == ()
 
     assert module._solver_comparison_groups([schedule], "both") == [group]
     assert module._solver_comparison_groups([schedule], "exact") == []
@@ -5294,12 +5652,119 @@ def test_solver_comparison_group_rejects_unsupported_sources_and_contracts():
         )
     with pytest.raises(ValueError, match="exact then boxed"):
         module.dataclasses.replace(group, members=tuple(reversed(group.members)))
-    with pytest.raises(ValueError, match="identify only the solver lanes"):
+    with pytest.raises(ValueError, match="expose its comparison policy"):
         module.dataclasses.replace(group, labels=("EXACT", "BOXED"))
-    with pytest.raises(ValueError, match="panel labels must identify"):
+    with pytest.raises(ValueError, match="panel labels must expose"):
         module.dataclasses.replace(group, panel_labels=("REST", "TUMBLE"))
+    with pytest.raises(ValueError, match="basis must be explicit"):
+        module.dataclasses.replace(group, comparison_basis=None)
+    with pytest.raises(ValueError, match="unsupported.*policy asymmetry"):
+        module.dataclasses.replace(
+            group,
+            labels=module.SOURCE_CONTINUATION_COMPARISON_LABELS,
+            comparison_basis=module.SOURCE_CONTINUATION_COMPARISON_BASIS,
+            policy_asymmetry=(("exact_lane", "unknown"),),
+        )
     with pytest.raises(ValueError, match="unsupported solver lane"):
         module.dataclasses.replace(group, solver_lane="hybrid")
+
+
+@pytest.mark.parametrize(
+    "schedule_id",
+    (
+        "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_5_impact_source_continuation_current_source",
+        "card_house_author_10_impact_source_continuation_current_source",
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source",
+    ),
+)
+def test_source_continuation_comparison_exposes_policy_asymmetry(schedule_id):
+    module = _load_module()
+    schedule = module.SCHEDULES[schedule_id]
+
+    group = module._derive_solver_comparison_group(schedule)
+    plan = module.build_plan(
+        [schedule, module._derive_boxed_schedule(schedule)],
+        Path("dart-demos"),
+        Path("/tmp/source-continuation-comparison"),
+        solver_lane="both",
+        groups=[group],
+    )
+    group_plan = plan["group_outputs"][group.id]
+
+    assert group.labels == module.SOURCE_CONTINUATION_COMPARISON_LABELS
+    assert group.resolved_panel_labels == (module.SOURCE_CONTINUATION_COMPARISON_LABELS)
+    assert group.comparison_basis == module.SOURCE_CONTINUATION_COMPARISON_BASIS
+    assert group.policy_asymmetry == module.SOURCE_CONTINUATION_POLICY_ASYMMETRY
+    assert "not a solver-only comparison" in group.comparison_basis
+    assert "not a solver-only A/B" in module._group_semantic_outcome_gate(group)
+    assert group_plan["labels"] == list(module.SOURCE_CONTINUATION_COMPARISON_LABELS)
+    assert group_plan["panel_labels"] == list(
+        module.SOURCE_CONTINUATION_COMPARISON_LABELS
+    )
+    assert group_plan["comparison_basis"] == (
+        module.SOURCE_CONTINUATION_COMPARISON_BASIS
+    )
+    assert group_plan["policy_asymmetry"] == dict(
+        module.SOURCE_CONTINUATION_POLICY_ASYMMETRY
+    )
+
+
+def test_source_continuation_comparison_rejects_stripped_or_contradictory_policy():
+    module = _load_module()
+    schedule = module.SCHEDULES[
+        "card_house_author_5_impact_source_continuation_current_source"
+    ]
+    group = module._derive_solver_comparison_group(schedule)
+    stripped = module.dataclasses.replace(
+        group,
+        labels=module.SOLVER_COMPARISON_LABELS,
+        comparison_basis=module.SOLVER_ONLY_COMPARISON_BASIS,
+        policy_asymmetry=(),
+    )
+
+    with pytest.raises(ValueError, match="comparison policy contract changed"):
+        module._validate_solver_comparison_policy_contract(stripped, schedule)
+    with pytest.raises(ValueError, match="comparison policy contract changed"):
+        module.build_plan(
+            [schedule, module._derive_boxed_schedule(schedule)],
+            Path("dart-demos"),
+            Path("/tmp/stripped-source-continuation-comparison"),
+            solver_lane="both",
+            groups=[stripped],
+        )
+    with pytest.raises(ValueError, match="basis must expose its comparison policy"):
+        module.dataclasses.replace(
+            group, comparison_basis=module.SOLVER_ONLY_COMPARISON_BASIS
+        )
+
+
+def test_solver_comparison_rejects_mutated_exact_or_boxed_member_contracts():
+    module = _load_module()
+    exact = module.SCHEDULES[
+        "card_house_author_5_impact_source_continuation_current_source"
+    ]
+    boxed = module._derive_boxed_schedule(exact)
+    group = module._derive_solver_comparison_group(exact)
+    mutated_exact = module.dataclasses.replace(exact, actions=())
+    mutated_boxed = module.dataclasses.replace(boxed, scene="fbf_backspin", actions=())
+
+    with pytest.raises(ValueError, match="exact member contract changed"):
+        module.build_plan(
+            [mutated_exact, boxed],
+            Path("dart-demos"),
+            Path("/tmp/mutated-exact-comparison"),
+            solver_lane="both",
+            groups=[group],
+        )
+    with pytest.raises(ValueError, match="boxed counterpart contract changed"):
+        module.build_plan(
+            [exact, mutated_boxed],
+            Path("dart-demos"),
+            Path("/tmp/mutated-boxed-comparison"),
+            solver_lane="both",
+            groups=[group],
+        )
 
 
 def test_boxed_painleve_group_uses_solver_neutral_parameter_labels():
@@ -6309,6 +6774,8 @@ def test_existing_incline_group_rejects_terminal_outcome_reuse_mutation(
         "layout": group.layout,
         "member_order": list(group.members),
         "labels": list(group.labels),
+        "comparison_basis": group.comparison_basis,
+        "policy_asymmetry": dict(group.policy_asymmetry),
         "actual_simulator": True,
         "generated_imagery": False,
         "paper_comparable": False,

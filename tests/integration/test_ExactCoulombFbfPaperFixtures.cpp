@@ -3085,6 +3085,312 @@ TEST(
 //==============================================================================
 TEST(
     ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseFiveLevelSourceDefaultDynamicsContractIsPinned)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kFiveLevelDynamicsDemoSceneId,
+      "fbf_author_card_house_5_impact_current_source");
+  EXPECT_STREQ(
+      kFiveLevelImpactScenario.demoSceneId, kFiveLevelDynamicsDemoSceneId);
+  EXPECT_EQ(kFiveLevelImpactScenario.levelCount, kDefaultLevelCount);
+  EXPECT_EQ(kFiveLevelImpactScenario.selectedFrames, kTotalFrames);
+  EXPECT_EQ(kFiveLevelImpactScenario.selectedSubsteps(), kTotalSubsteps);
+  EXPECT_FALSE(kFiveLevelImpactScenario.sourceContinuation);
+  EXPECT_TRUE(kFiveLevelImpactScenario.sourceContactGapValuesRepresented);
+  EXPECT_EQ(leaningCardCount(kDefaultLevelCount), 30u);
+  EXPECT_EQ(bridgeCardCount(kDefaultLevelCount), 10u);
+  EXPECT_EQ(cardCount(kDefaultLevelCount), 40u);
+  EXPECT_EQ(kReleaseFrame, 400u);
+  EXPECT_EQ(kReleaseSubstep, 1600u);
+  EXPECT_LT(kReleaseSubstep, kFiveLevelImpactScenario.selectedSubsteps());
+  EXPECT_EQ(kReleaseActionKey, 'p');
+
+  const auto exactWorld = createAuthorCardHouseConstructionWorld(
+      kDefaultLevelCount, true, &kFiveLevelImpactScenario);
+  const auto boxedWorld = createAuthorCardHouseConstructionWorld(
+      kDefaultLevelCount, false, &kFiveLevelImpactScenario);
+  EXPECT_EQ(exactWorld->getNumSkeletons(), 45u);
+  EXPECT_EQ(boxedWorld->getNumSkeletons(), exactWorld->getNumSkeletons());
+
+  const auto exact = inspectDynamicsAdapterContract(
+      exactWorld, kFiveLevelImpactScenario, "integration_fixture", true);
+  const auto boxed = inspectDynamicsAdapterContract(
+      boxedWorld, kFiveLevelImpactScenario, "integration_fixture", false);
+
+  EXPECT_EQ(exact.scenario, &kFiveLevelImpactScenario);
+  EXPECT_EQ(boxed.scenario, exact.scenario);
+  EXPECT_FALSE(exact.sourceContinuationScene);
+  EXPECT_FALSE(boxed.sourceContinuationScene);
+  EXPECT_EQ(exact.levelCount, 5u);
+  EXPECT_EQ(boxed.levelCount, exact.levelCount);
+  EXPECT_EQ(exact.cardCount, 40u);
+  EXPECT_EQ(boxed.cardCount, exact.cardCount);
+  EXPECT_EQ(exact.cubeCount, kCubeCount);
+  EXPECT_EQ(boxed.cubeCount, exact.cubeCount);
+  EXPECT_EQ(exact.releasedCubeCount, 0u);
+  EXPECT_EQ(boxed.releasedCubeCount, exact.releasedCubeCount);
+  EXPECT_TRUE(exact.finiteState);
+  EXPECT_TRUE(boxed.finiteState);
+
+  EXPECT_DOUBLE_EQ(exact.worldTime, 0.0);
+  EXPECT_DOUBLE_EQ(boxed.worldTime, exact.worldTime);
+  EXPECT_DOUBLE_EQ(exact.timeStep, kRuntimeTimeStep);
+  EXPECT_DOUBLE_EQ(boxed.timeStep, exact.timeStep);
+  EXPECT_TRUE(boxed.gravity.isApprox(exact.gravity, 0.0));
+  EXPECT_EQ(boxed.simulationThreads, exact.simulationThreads);
+  EXPECT_EQ(boxed.deactivationEnabled, exact.deactivationEnabled);
+
+  EXPECT_EQ(exact.collisionDetector, "native");
+  EXPECT_EQ(boxed.collisionDetector, exact.collisionDetector);
+  EXPECT_EQ(exact.contactManifold, "four_point_planar");
+  EXPECT_EQ(boxed.contactManifold, exact.contactManifold);
+  EXPECT_EQ(exact.maxContacts, kSourceMaxContacts);
+  EXPECT_EQ(boxed.maxContacts, exact.maxContacts);
+  EXPECT_EQ(exact.maxContactsPerPair, kDartMaxContactsPerPair);
+  EXPECT_EQ(boxed.maxContactsPerPair, exact.maxContactsPerPair);
+  EXPECT_TRUE(exact.contactGenerationEnabled);
+  EXPECT_TRUE(boxed.contactGenerationEnabled);
+  EXPECT_TRUE(exact.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_TRUE(boxed.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_TRUE(exact.negativePenetrationDepthContactsAllowed);
+  EXPECT_TRUE(boxed.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(exact.groundContactGap, kSourceGroundContactGap);
+  EXPECT_DOUBLE_EQ(boxed.groundContactGap, exact.groundContactGap);
+  EXPECT_DOUBLE_EQ(exact.dynamicShapeContactGap, kContactGap);
+  EXPECT_DOUBLE_EQ(boxed.dynamicShapeContactGap, exact.dynamicShapeContactGap);
+  EXPECT_EQ(exact.collisionShapeFrameCount, 45u);
+  EXPECT_EQ(boxed.collisionShapeFrameCount, exact.collisionShapeFrameCount);
+  EXPECT_EQ(exact.collisionShapeFramesWithContactGap, 45u);
+  EXPECT_EQ(
+      boxed.collisionShapeFramesWithContactGap,
+      exact.collisionShapeFramesWithContactGap);
+  EXPECT_EQ(exact.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(boxed.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(exact.dynamicShapeFramesWithContactGap, 44u);
+  EXPECT_EQ(boxed.dynamicShapeFramesWithContactGap, 44u);
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_TRUE(exact.exactOptionsAvailable);
+  EXPECT_FALSE(exact.boxedOptionsAvailable);
+  EXPECT_EQ(exact.exactOptions.maxOuterIterations, kSourceMaxOuterIterations);
+  EXPECT_DOUBLE_EQ(exact.exactOptions.tolerance, kSourceOuterTolerance);
+  EXPECT_FALSE(exact.exactOptions.acceptOuterMaxIterations);
+  EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_FALSE(exact.exactPostCorrectionProjectionEnabled);
+  EXPECT_TRUE(exact.exactSourceInnerInitializationRequested);
+  EXPECT_TRUE(exact.exactSourceInnerInitializationActive);
+  EXPECT_FALSE(exact.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(exact.exactSourceContinuationActive);
+  EXPECT_FALSE(exact.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_FALSE(exact.exactParticipantAffinityEnabled);
+
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_FALSE(boxed.exactOptionsAvailable);
+  EXPECT_TRUE(boxed.boxedOptionsAvailable);
+  EXPECT_EQ(boxed.boxedPrimarySolver, "DantzigBoxedLcpSolver");
+  EXPECT_EQ(boxed.boxedSecondarySolver, "PgsBoxedLcpSolver");
+  EXPECT_FALSE(boxed.boxedMatrixFreeOptions.mEnabled);
+
+  const std::string exactJson = dynamicsAdapterContractJson(exact);
+  EXPECT_NE(
+      exactJson.find(
+          "\"scene_id\":\"fbf_author_card_house_5_impact_current_source\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"arguments\":{\"solvers\":[\"fbf\"],\"levels\":5,"
+                     "\"frames\":800"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"total_frames\":800,\"total_substeps\":3200"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_contact_gap_values_represented\":true"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"paper_parity\":false"), std::string::npos);
+
+  releaseCubes(exactWorld, kDefaultLevelCount);
+  releaseCubes(boxedWorld, kDefaultLevelCount);
+  EXPECT_EQ(releasedCubeCount(exactWorld, kDefaultLevelCount), kCubeCount);
+  EXPECT_EQ(releasedCubeCount(boxedWorld, kDefaultLevelCount), kCubeCount);
+  releaseCubes(exactWorld, kDefaultLevelCount);
+  releaseCubes(boxedWorld, kDefaultLevelCount);
+  EXPECT_EQ(releasedCubeCount(exactWorld, kDefaultLevelCount), kCubeCount);
+  EXPECT_EQ(releasedCubeCount(boxedWorld, kDefaultLevelCount), kCubeCount);
+  EXPECT_EQ(exactWorld->getNumSkeletons(), 45u);
+  EXPECT_EQ(boxedWorld->getNumSkeletons(), 45u);
+  EXPECT_DOUBLE_EQ(exactWorld->getTime(), 0.0);
+  EXPECT_DOUBLE_EQ(boxedWorld->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseFiveLevelSourceContinuationLaneIsSeparateAndFailClosed)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kFiveLevelSourceContinuationDynamicsDemoSceneId,
+      "fbf_author_card_house_5_impact_source_continuation_current_source");
+  EXPECT_STREQ(
+      kFiveLevelSourceContinuationScenario.demoSceneId,
+      kFiveLevelSourceContinuationDynamicsDemoSceneId);
+  EXPECT_EQ(
+      kFiveLevelSourceContinuationScenario.levelCount, kDefaultLevelCount);
+  EXPECT_EQ(kFiveLevelSourceContinuationScenario.selectedFrames, kTotalFrames);
+  EXPECT_EQ(
+      kFiveLevelSourceContinuationScenario.selectedSubsteps(), kTotalSubsteps);
+  EXPECT_TRUE(kFiveLevelSourceContinuationScenario.sourceContinuation);
+  EXPECT_TRUE(
+      kFiveLevelSourceContinuationScenario.sourceContactGapValuesRepresented);
+  EXPECT_STRNE(
+      kFiveLevelSourceContinuationScenario.demoSceneId,
+      kFiveLevelImpactScenario.demoSceneId);
+
+  const auto exactWorld = createAuthorCardHouseConstructionWorld(
+      kDefaultLevelCount, true, &kFiveLevelSourceContinuationScenario);
+  const auto boxedWorld = createAuthorCardHouseConstructionWorld(
+      kDefaultLevelCount, false, &kFiveLevelSourceContinuationScenario);
+  const auto exact = inspectDynamicsAdapterContract(
+      exactWorld,
+      kFiveLevelSourceContinuationScenario,
+      "integration_fixture",
+      true);
+  const auto boxed = inspectDynamicsAdapterContract(
+      boxedWorld,
+      kFiveLevelSourceContinuationScenario,
+      "integration_fixture",
+      false);
+
+  EXPECT_EQ(exact.scenario, &kFiveLevelSourceContinuationScenario);
+  EXPECT_EQ(boxed.scenario, exact.scenario);
+  EXPECT_TRUE(exact.sourceContinuationScene);
+  EXPECT_TRUE(boxed.sourceContinuationScene);
+  EXPECT_EQ(exact.levelCount, 5u);
+  EXPECT_EQ(boxed.levelCount, exact.levelCount);
+  EXPECT_EQ(exact.cardCount, 40u);
+  EXPECT_EQ(boxed.cardCount, exact.cardCount);
+  EXPECT_EQ(exact.cubeCount, kCubeCount);
+  EXPECT_EQ(boxed.cubeCount, exact.cubeCount);
+  EXPECT_EQ(exact.releasedCubeCount, 0u);
+  EXPECT_EQ(boxed.releasedCubeCount, 0u);
+  EXPECT_TRUE(exact.finiteState);
+  EXPECT_TRUE(boxed.finiteState);
+
+  EXPECT_DOUBLE_EQ(exact.worldTime, 0.0);
+  EXPECT_DOUBLE_EQ(boxed.worldTime, exact.worldTime);
+  EXPECT_DOUBLE_EQ(exact.timeStep, kRuntimeTimeStep);
+  EXPECT_DOUBLE_EQ(boxed.timeStep, exact.timeStep);
+  EXPECT_EQ(exact.collisionDetector, "native");
+  EXPECT_EQ(boxed.collisionDetector, exact.collisionDetector);
+  EXPECT_EQ(exact.contactManifold, "four_point_planar");
+  EXPECT_EQ(boxed.contactManifold, exact.contactManifold);
+  EXPECT_EQ(exact.maxContacts, kSourceMaxContacts);
+  EXPECT_EQ(boxed.maxContacts, exact.maxContacts);
+  EXPECT_EQ(exact.maxContactsPerPair, kDartMaxContactsPerPair);
+  EXPECT_EQ(boxed.maxContactsPerPair, exact.maxContactsPerPair);
+  EXPECT_TRUE(exact.contactGenerationEnabled);
+  EXPECT_TRUE(boxed.contactGenerationEnabled);
+  EXPECT_TRUE(exact.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_TRUE(boxed.defaultEmptyBodyNodeCollisionFilter);
+  EXPECT_TRUE(exact.negativePenetrationDepthContactsAllowed);
+  EXPECT_TRUE(boxed.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(exact.groundContactGap, kSourceGroundContactGap);
+  EXPECT_DOUBLE_EQ(boxed.groundContactGap, exact.groundContactGap);
+  EXPECT_DOUBLE_EQ(exact.dynamicShapeContactGap, kContactGap);
+  EXPECT_DOUBLE_EQ(boxed.dynamicShapeContactGap, exact.dynamicShapeContactGap);
+  EXPECT_EQ(exact.collisionShapeFrameCount, 45u);
+  EXPECT_EQ(boxed.collisionShapeFrameCount, 45u);
+  EXPECT_EQ(exact.collisionShapeFramesWithContactGap, 45u);
+  EXPECT_EQ(boxed.collisionShapeFramesWithContactGap, 45u);
+  EXPECT_EQ(exact.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(boxed.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(exact.dynamicShapeFramesWithContactGap, 44u);
+  EXPECT_EQ(boxed.dynamicShapeFramesWithContactGap, 44u);
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_TRUE(exact.exactOptionsAvailable);
+  EXPECT_FALSE(exact.boxedOptionsAvailable);
+  EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_EQ(
+      exact.exactOptions.maxResidualHistorySamples,
+      kSourceContinuationResidualHistorySamples);
+  EXPECT_EQ(
+      exact.exactOptions.maxResidualHistoryRecords,
+      kSourceContinuationResidualHistoryRecords);
+  EXPECT_TRUE(exact.exactSourceContinuationOptions.enabled);
+  EXPECT_EQ(
+      exact.exactSourceContinuationOptions.residualCheckInterval,
+      kSourceResidualCheckInterval);
+  EXPECT_EQ(
+      exact.exactSourceContinuationOptions.plateauPatience,
+      kSourcePlateauPatience);
+  EXPECT_DOUBLE_EQ(
+      exact.exactSourceContinuationOptions.plateauRelativeTolerance,
+      kSourcePlateauRelativeTolerance);
+  EXPECT_FALSE(exact.exactSourceContinuationActive);
+  EXPECT_FALSE(exact.exactPostCorrectionProjectionEnabled);
+  EXPECT_TRUE(exact.exactSourceInnerInitializationRequested);
+  EXPECT_TRUE(exact.exactSourceInnerInitializationActive);
+  EXPECT_EQ(
+      exact.exactCrossStepOptions.warmStartMatchMode,
+      constraint::ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature);
+  EXPECT_TRUE(exact.exactCrossStepOptions.useStrictWarmStartMatchDistance);
+  EXPECT_EQ(
+      exact.exactCrossStepOptions.warmStartMaxAge, kSourceWarmStartMaxAge);
+
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_FALSE(boxed.exactOptionsAvailable);
+  EXPECT_TRUE(boxed.boxedOptionsAvailable);
+  EXPECT_EQ(boxed.boxedPrimarySolver, "DantzigBoxedLcpSolver");
+  EXPECT_EQ(boxed.boxedSecondarySolver, "PgsBoxedLcpSolver");
+  EXPECT_FALSE(boxed.boxedMatrixFreeOptions.mEnabled);
+
+  const std::string exactJson = dynamicsAdapterContractJson(exact);
+  EXPECT_NE(
+      exactJson.find("\"scene_id\":\"fbf_author_card_house_5_impact_source_"
+                     "continuation_current_source\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"source_continuation\":{\"policy\":\"source_continuation\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"options_available\":true,\"requested\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_contact_gap_values_represented\":true"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"trajectory_valid\":false"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"physical_outcome_valid\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"paper_parity\":false"), std::string::npos);
+
+  const std::string boxedJson = dynamicsAdapterContractJson(boxed);
+  EXPECT_NE(
+      boxedJson.find("\"options_available\":false,\"requested\":false"),
+      std::string::npos);
+  EXPECT_NE(boxedJson.find("\"exact_options\":null"), std::string::npos);
+  EXPECT_NE(
+      boxedJson.find("\"primary_solver\":\"DantzigBoxedLcpSolver\""),
+      std::string::npos);
+  EXPECT_NE(boxedJson.find("\"paper_parity\":false"), std::string::npos);
+
+  releaseCubes(exactWorld, kDefaultLevelCount);
+  releaseCubes(boxedWorld, kDefaultLevelCount);
+  EXPECT_EQ(releasedCubeCount(exactWorld, kDefaultLevelCount), kCubeCount);
+  EXPECT_EQ(releasedCubeCount(boxedWorld, kDefaultLevelCount), kCubeCount);
+  EXPECT_EQ(exactWorld->getNumSkeletons(), 45u);
+  EXPECT_EQ(boxedWorld->getNumSkeletons(), 45u);
+  EXPECT_DOUBLE_EQ(exactWorld->getTime(), 0.0);
+  EXPECT_DOUBLE_EQ(boxedWorld->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
     AuthorCardHouseTenLevelCurrentSourceInventoryScheduleAndGapsArePinned)
 {
   using namespace fbf_author_card_house;

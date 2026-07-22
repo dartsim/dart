@@ -18,7 +18,7 @@ incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
 four-cell turntable matrix. A sixth locally finalized visual bundle records the
 author five-level construction at step zero; it remains construction-only
 evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 28 schedules. The task-wide manifest remains 29
+workflow inventory declares 31 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
@@ -39,8 +39,8 @@ ignored local state, not repository media; PR user-attachment URLs are still
 pending browser-composer upload.
 
 The consolidated browser-upload manifest in
-`PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and five
-supplemental direct comparisons. An independent handoff audit rechecked all 14
+`PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and six
+supplemental direct comparisons. An independent handoff audit rechecked all 15
 paths and hashes, probed H.264/yuv420p at 30 fps, and completed an
 `ffmpeg -xerror` decode for every file. This closes local upload-readiness only;
 no GitHub user-attachment URL or additional physics/parity claim follows.
@@ -218,6 +218,7 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Historical Painleve proxy pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; it remains separate historical diagnostic evidence and does not replace the source-pinned adapter result |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Source-default five-level dynamic diagnostic | Strict fails after completed step 31; separate exact-continuation and boxed members complete 3,200/3,200, release successfully at step 1,600, and produce independently verified 401-shot media plus a decoded labeled pair | Manual inspection records different pre-release and endpoint structure; final v3 framing keeps the visible action in view | Supplemental non-paper evidence only: asymmetric continuation policies, no strict success, solver-only A/B, automated physical outcome, superiority, historical Tables 6-7/source trajectory/backend/timing/paper-video, or parity claim |
 | Source-selected four-level Figure 6 adapter | Strict prefix remains a step-35 negative; separate source-continuation exact/boxed capture completes 2,400/2,400 through release with all acceptance telemetry, decoded 301-frame media, and manual inspection | Both stand through release; exact retains substantial multi-level endpoint structure while boxed is mostly collapsed | Continuation evidence only: exact has 3,351/3,351 solves, 113 plateau and 633 max-iteration accepts, 0 failures/fallbacks/shrink caps, and worst residual `0.917120`. No strict convergence, quantitative physical/trajectory/golden/backend/timing parity, superiority, or paper parity |
 
 ### Source-pinned Figure 5 Painleve capture
@@ -416,6 +417,64 @@ standing, trajectory, solver, contact-dynamics, physical-outcome, historical
 four-level/26-card trajectory, Fig. 6/video, timing, performance, or parity
 claim.
 
+### Supplemental non-paper source-default five-level capture
+
+The distinct `fbf_author_card_house_5_impact_current_source` and
+`fbf_author_card_house_5_impact_source_continuation_current_source` scenes,
+with matching schedules that omit the `fbf_` prefix, bind the current public
+no-argument default: five levels, 40 cards, four initially kinematic cubes,
+800 display frames / 3,200 substeps, and release after completed step 1,600.
+Both use `dt=1/240 s`, Native `FourPointPlanar`, 4,096-contact capacity, four
+contacts per pair, one `0.1 m` ground gap, and 44 `0.005 m` dynamic-shape
+gaps. This is a source-default diagnostic, not the source-selected four-level
+Figure 6 row, the ten-level Tables 6-7 row, or a recovered paper invocation.
+
+Strict exact fails closed after completed step 31, before release, on a
+39-contact group at 200 iterations and residual
+`9.022404720646783e-6` against `1e-6`. Its 248 attempts produce 247 solves and
+one failure, with zero accepted caps and zero boxed fallbacks. The separate
+continuation exact and boxed members each complete 3,200/3,200, capture 401
+shots, and release successfully at step 1,600. Exact records 7,337/7,337
+attempts/solves, zero failures/fallbacks, 2,245 plateau accepts, 836
+max-iteration accepts, zero shrink-cap accepts, 7,298 warm starts, and 303,900
+iterations. Final/worst residuals are `1.2757511844995566e-7` /
+`0.6378480998790657`; maximum/final contact counts are 266/248. Exact has 399
+unique images because two settled shot pairs repeat; boxed has 401.
+
+Both member clips are 660x506 H.264/yuv420p at 30 fps, 401 frames, and
+13.366667 s, and both fully decode. Independent exact and boxed reuse audits
+pass with summary SHA-256 values
+`1b7c42c0836aa17fd55f952e6335167a5786d37e54236f9088fa5d1a6a1885fd`
+and `078212b68ae07e234c94b2537d41158cd5c944492e930de7e1fc2b329f5a6453`.
+The boxed audit records all-frame right/bottom margins of at least 40/30 px
+and endpoint margins of about 41/33 px. Exact timeline/clip/metadata SHA-256
+values are
+`35c7fddedc2dbdb6f2b00323f19dcc6df98ac1e4188d246f06ef562ad44aea80`,
+`956ca7c32fcc23501a863d0e7ec2668fe7ffe5986343a5dcaf49ba6886be8816`,
+and `3afe8c7a3bc795827ff4318438b150d176699dc9dd55057bb48dd025684ffbdf`;
+boxed values are
+`ba771601affe997b07a66ddc161f4a110ea4eced0b4d94773b219270b63a322f`,
+`319747d1a24a8a735ab4b4485b44a39905e3f6d40fe00257f78ba9b9451fcaa7`,
+and `f77af90deac3f740d06ba0bec2eca17d837cf83974b253c35f3b76dbca35113e`.
+
+The final ignored browser candidate is
+`assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4`.
+It explicitly labels `EXACT COULOMB FBF + SOURCE CONTINUATION` against
+`EXISTING BOXED LCP (NO SOURCE CONTINUATION)`. The 1320x530 H.264/yuv420p
+group has 401 frames at 30 fps over 13.366667 s and fully decodes. Clip, panel,
+and presentation-manifest SHA-256 values are
+`b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b`,
+`484fdc35aed15ba06e253be63e5ff9bb46f88bc6c273150d8f78a646da0dc7f8`,
+and `2c80a8cca4cb3a0a11f49a1747bb5cc90092f884e05f0b30d3959e8e2a3eb3cf`.
+Manual inspection records different pre-release and endpoint structure, but
+the records set `automated_semantic_outcome_validated=false`.
+
+This is not strict success, a solver-only A/B, superiority, an automated
+semantic or physical outcome, historical Tables 6-7 or source trajectory/
+backend/timing evidence, paper-video parity, or paper parity. The v1/v2
+captures are superseded framing probes and excluded. The v3 media remains
+ignored, with its browser-upload URL pending.
+
 The separately named `fbf_author_card_house_4_impact_current_source` scene and
 `card_house_author_4_impact_current_source` schedule pin author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. They use the supported selection
@@ -432,7 +491,7 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 and subdivision 4.
 
 The demo build, 13 focused headless/continuation C++ tests, five author-incline
-production-world C++ contract tests, 370 runner Python tests, and exact/boxed
+production-world C++ contract tests, 359 runner Python tests, and exact/boxed
 contract smoke pass. The strict exact request fails closed at completed step
 35 when collision contacts jump from 44 to 68. The constrained groups are 56,
 8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact
@@ -502,6 +561,7 @@ rate, and frame count:
 | Incline, locally finalized v1 | Combined view | 660x506, 30 fps, 61 frames | `ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9` |
 | Backspin, locally finalized v3 | Single view | 1300x506, 30 fps, 66 decoded frames | `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928` |
 | Figure 6 source continuation, local candidate | Side by side | 1320x530, 30 fps, 301 decoded frames | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
+| Five-level source default, supplemental v3 | Side by side, policy-asymmetric labels | 1320x530, 30 fps, 401 decoded frames | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
 
 The member order, labels, synchronized duration, source-frame hashes, and
 composite hashes are recorded in the group metadata. These integrity checks
@@ -721,6 +781,12 @@ shown by `--help` and rejects hash or segment-boundary drift.
 - Keep the source-continuation Figure 6 clip separately labeled, independently
   reviewed, and outside Git; attach it only with its acceptance telemetry and
   narrow qualitative claim, then record the GitHub user-attachment URL.
+- Preserve the final v3 five-level source-default exact/boxed members and
+  policy-asymmetric labeled pair as supplemental non-paper evidence. Keep the
+  strict step-31 failure separate, exclude the superseded v1/v2 framing probes,
+  and attach only the v3 pair through the PR browser composer. Record its URL
+  without claiming strict success, a solver-only comparison, automated
+  physical outcome, superiority, historical Tables 6-7 evidence, or parity.
 - Produce strict full-duration card/arch outcome evidence only after every
   requested step satisfies the strict exact-solver and quantitative
   physical-outcome contracts.
