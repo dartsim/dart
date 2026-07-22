@@ -559,7 +559,8 @@ SHA-256 is
 This closes only a current-DART blocker-media slice. It does not supply a
 complete exact comparison, source backend/trajectory/outcome equivalence,
 standing, matched Kamino, golden, timing, performance, Fig. 8/video.08 parity,
-or solver-superiority evidence.
+or solver-superiority evidence. Both Figure 8 GitHub media URLs remain pending
+manual browser-composer upload.
 
 The current literal 101-stone v1 artifact is
 `assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. It fails
