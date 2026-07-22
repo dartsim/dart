@@ -978,6 +978,58 @@ TEST(DARTCollisionDetector, PublicSoftMeshCollideRefreshesDartObjectCache)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, PublicSoftMeshCollideRefreshesSameCountTopology)
+{
+  auto groups = makeFaceInteriorSoftMeshGroups(false);
+  groups.detector->setSoftFaceInteriorContactsEnabled(true);
+
+  collision::CollisionResult initialResult;
+  ASSERT_TRUE(groups.primitiveGroup->collide(
+      groups.softGroup.get(),
+      collision::CollisionOption(true, 10u),
+      &initialResult));
+  ASSERT_EQ(initialResult.getNumContacts(), 1u);
+
+  const auto& initialContact = initialResult.getContact(0u);
+  auto* primitiveObject = initialContact.collisionObject1;
+  auto* softObject = initialContact.collisionObject2;
+  ASSERT_EQ(groups.primitiveFrame.get(), primitiveObject->getShapeFrame());
+  ASSERT_EQ(groups.softShapeNode, softObject->getShapeFrame());
+  ASSERT_EQ(initialContact.triID2, 0);
+
+  const auto numPointMasses = groups.softBody->getNumPointMasses();
+  const auto numFaces = groups.softBody->getNumFaces();
+  auto properties = groups.softBody->getAspectProperties();
+  ASSERT_GT(properties.mFaces.size(), 2u);
+  std::swap(properties.mFaces[0], properties.mFaces[2]);
+  groups.softBody->setAspectProperties(properties);
+  ASSERT_EQ(groups.softBody->getNumPointMasses(), numPointMasses);
+  ASSERT_EQ(groups.softBody->getNumFaces(), numFaces);
+
+  collision::CollisionResult refreshedResult;
+  EXPECT_GT(
+      collision::collide(primitiveObject, softObject, refreshedResult), 0);
+  ASSERT_EQ(refreshedResult.getNumContacts(), 1u);
+
+  const auto& refreshedContact = refreshedResult.getContact(0u);
+  EXPECT_EQ(refreshedContact.collisionObject1, primitiveObject);
+  EXPECT_EQ(refreshedContact.collisionObject2, softObject);
+  EXPECT_EQ(refreshedContact.point, initialContact.point);
+  EXPECT_EQ(refreshedContact.normal, initialContact.normal);
+  EXPECT_EQ(refreshedContact.penetrationDepth, initialContact.penetrationDepth);
+  EXPECT_EQ(refreshedContact.triID2, 2);
+
+  groups.primitiveFrame->setTranslation(Eigen::Vector3d(-0.5, -0.5, -0.15));
+  collision::CollisionResult vertexResult;
+  EXPECT_GT(collision::collide(primitiveObject, softObject, vertexResult), 0);
+  ASSERT_EQ(vertexResult.getNumContacts(), 1u);
+  const auto& vertexContact = vertexResult.getContact(0u);
+  EXPECT_TRUE(
+      vertexContact.point.isApprox(Eigen::Vector3d(-0.5, -0.5, -0.05), 1e-12));
+  EXPECT_EQ(vertexContact.triID2, 2);
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, PublicSoftSoftCollideIgnoresNonDartObjects)
 {
   auto groups = makeSoftSoftMeshGroups();

@@ -358,6 +358,17 @@ void DARTCollisionObject::refreshSoftMeshCache()
         || mCachedSoftFirstFaceByPointMass.size() != numPointMasses
         || mCachedSoftBodyNodeVersion != softBodyNodeVersion;
 
+  if (!softTopologyChanged) {
+    for (std::size_t faceIndex = 0u; faceIndex < numFaces; ++faceIndex) {
+      if (!mCachedSoftFaces[faceIndex]
+               .indices.cwiseEqual(faces[faceIndex])
+               .all()) {
+        softTopologyChanged = true;
+        break;
+      }
+    }
+  }
+
   updateCachedBounds(
       boundsMin,
       boundsMax,
