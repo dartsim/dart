@@ -2,10 +2,13 @@
 
 This is the PR-facing status report for the DART 6.20 exact-Coulomb FBF work.
 It states what the current branch demonstrates and, just as importantly, what
-it does not demonstrate. Implementation and media evidence below are bound to
-`c95bd5fb916`; later documentation-only checkpoints do not change that binary
-or media identity. The live PR body/head/check state must still be queried and
-synchronized after each push.
+it does not demonstrate. The older Figures 1-5 reseal is bound to
+`c95bd5fb916`; the source-default five-level implementation/media is bound to
+checkpoint `0e3937e6294` and demo SHA-256
+`74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`.
+Later documentation-only checkpoints change neither binary/media identity.
+The live PR body/head/check state must still be queried and synchronized after
+each push.
 
 ## Direct Coverage Answer
 
@@ -1605,10 +1608,10 @@ PR #3374 is merged. Its historical final head is abbreviated `1f816` and its
 merge commit is abbreviated `fa17fad`; the relevant visual-evidence changes
 are integrated in this worktree.
 
-PR #3377 was verified open and draft at implementation/media head
-`c95bd5fb916` on 2026-07-22. Topic head, target ancestry,
-merge state, checks, and reviews are mutable and are deliberately not frozen
-into this report. Before reporting or publishing, run:
+The last live audit before five-level checkpoint `0e3937e6294` found PR #3377
+open and draft at remote head `c5765b37a08`, targeting `6a1d377f616`. Topic
+head, target ancestry, merge state, checks, and reviews are mutable and are
+deliberately not frozen into this report. Before reporting or publishing, run:
 
 ```bash
 git fetch origin

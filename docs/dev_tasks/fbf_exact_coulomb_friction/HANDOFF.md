@@ -126,11 +126,15 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- PR #3377 was verified open and draft at head c95bd5fb916 on 2026-07-22. Its topic head, target
-  ancestry, merge state, checks, and reviews are mutable and must be queried
-  live rather than copied from this handoff. It is not completion evidence.
-- Implementation and media evidence is bound to c95bd5fb916; a later
-  documentation-only checkpoint does not change that binary/media identity.
+- The last live audit before five-level checkpoint 0e3937e6294 found PR #3377
+  open and draft at remote head c5765b37a08, targeting 6a1d377f616. Topic head,
+  target ancestry, merge state, checks, and reviews are mutable and must be
+  queried live rather than copied from this handoff. It is not completion
+  evidence.
+- Five-level implementation/media is bound to 0e3937e6294 and demo SHA-256
+  74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067.
+  The older Figures 1-5 reseal remains separately bound to c95bd5fb916; later
+  documentation-only checkpoints change neither binary/media identity.
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
 

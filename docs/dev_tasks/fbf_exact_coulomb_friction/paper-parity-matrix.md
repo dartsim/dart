@@ -807,12 +807,14 @@ closure is explicitly recreated. Archive mode remains the clean validation
 path for the sealed local evidence.
 
 PR #3374 is merged at final head `1f816` and merge commit `fa17fad` (abbreviated
-hashes). PR #3377 was verified open and draft at implementation/media head
-`c95bd5fb916` on 2026-07-22. Its target
-ancestry, topic head, divergence, merge state, checks, and reviews are
-intentionally not frozen into this matrix; fetch and query them live before
-reporting or publishing. PR #3377 remains work in progress and is not
-completion evidence.
+hashes). The last live audit before five-level checkpoint `0e3937e6294` found
+PR #3377 open and draft at remote head `c5765b37a08`, targeting
+`6a1d377f616`. The five-level implementation/media is bound to
+`0e3937e6294`; the older Figures 1-5 reseal remains separately bound to
+`c95bd5fb916`. Target ancestry, topic head, divergence, merge state, checks,
+and reviews are intentionally not frozen into this matrix; fetch and query
+them live before reporting or publishing. PR #3377 remains work in progress
+and is not completion evidence.
 `PR_REPORT.md` records the live-verification policy and historical
 branch-regression versus base/workflow CI classification.
 

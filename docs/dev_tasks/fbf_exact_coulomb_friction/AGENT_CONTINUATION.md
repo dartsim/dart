@@ -41,7 +41,7 @@ renderer, Apple hardware, or paper timer boundary.
 | --- | --- | --- |
 | Public author reference | The MIT-licensed repository is available at pinned commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` with the solver, six runnable examples, current configurations, pinned dependencies, and optional MuJoCo/Kamino runners | Available and source-auditable; porting and matched runs are now internal work |
 | PR #3374 | Merged at `fa17fad` | Required visual infrastructure is available on the release branch |
-| PR #3377 | Verified open and draft at implementation/media head `c95bd5fb916` on 2026-07-22; topic head, target ancestry, merge state, checks, and reviews remain mutable and must be queried live | WIP, not completion evidence; later documentation-only checkpoints do not change the c95 binary/media identity |
+| PR #3377 | The last live audit before five-level checkpoint `0e3937e6294` found the PR open and draft at remote head `c5765b37a08`, targeting `6a1d377f616`; topic head, target ancestry, merge state, checks, and reviews remain mutable and must be queried live | WIP, not completion evidence. Five-level implementation/media is bound to `0e3937e6294`; the older Figures 1-5 reseal remains bound to `c95bd5fb916` |
 | Exact algebra | Row signs validated; row-operator versus impulse-test `W` relative error `1.33e-16`; spectral-nullspace regressions pass | Tested formulation is internally consistent |
 | Literal 25-stone exact dynamics | Schema-v8 mark26 has eight complete 600-step processes: one warmup plus three measured runs at each of one and four threads | Full local exact trajectory is proven for the reconstructed non-paper scene |
 | Exact solve contract | 1,800 measured steps per thread count; maximum residual `9.999807145410957e-7`; zero exact failures, caps, or fallbacks | Pass |
@@ -1397,7 +1397,7 @@ closure check.
 | Small figures and video | The implementation/media-head `c95bd5fb916` reseal covers 20 Figures 1-5 exact/boxed members and 13 groups with zero failures; five exact-only author-turntable boxed skips are expected | Preserve the ignored reseal and independent verification; manually upload the accepted group clips through the PR composer and record their URLs while retaining every DART/source/history/golden/media boundary |
 | Paper performance | Current source is available, but matched DART runs are pending and historical comparability remains partly external | Audit and run the pinned author workloads; keep the exact historical Apple host, renderer, and timing-attestation gaps explicit |
 | Manifest | Validator passes with 24 partial, 5 blocked, and 0 complete | Keep every row bound to current artifacts while retaining missing source-equivalence and historical-parity blockers |
-| CI/PR | PR #3377 is draft; implementation/media evidence is bound to `c95bd5fb916`, while later documentation-only checkpoints do not change that binary/media identity | Keep it draft, synchronize the truthful body after each push, and require current-head CI |
+| CI/PR | PR #3377 is draft. Five-level implementation/media is bound to `0e3937e6294`; the older Figures 1-5 reseal remains separately bound to `c95bd5fb916` | Keep it draft, synchronize the truthful body after each push, and require current-head CI |
 | Final review | Not current | Two clean independent reviews of the final post-fix state |
 
 ## Immediate Work Order
