@@ -45,7 +45,7 @@ strict convergence nor paper or solver-superiority evidence.
 | Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored current-head bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
 | Fig. 7 / 25-stone arch segment | `fbf_author_masonry_arch_25_crown_impact_current_source`; `masonry_arch_25_author_crown_impact_current_source` for the source-configuration 500-frame release diagnostic, `fbf_paper_masonry_arch_25_literal_standing`; `masonry_arch_25_literal_standing` for the literal no-projectile phase, plus `fbf_paper_masonry_arch_25`; `masonry_arch_25` for the reduced crown-impact proxy | Paired exact/boxed capture is automated for all three schedules | The current literal standing capture passes 600 exact solves with 96 contacts, zero accepted caps/failures/fallbacks, and worst residual below `1e-6`; both lanes visibly remain standing through 10 s. A clean source-configuration exact smoke now clears the former step-68 local failure and completes 100 strict steps, then fails closed on an outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks). Neither lane has completed the 2,000-step schedule or a physical-outcome/media gate. Its 500-frame invocation is not the 400-frame source default, and the oriented-box proxy remains nonliteral. Impact and paper parity remain blocked. | Local literal-standing exact-vs-boxed clip ready; source-configuration exact media blocked at step 142; GitHub URL pending |
-| Fig. 8 / 101-stone arch segment | `fbf_paper_masonry_arch_101`; `masonry_arch_101` | Paired exact/boxed capture is automated | Blocked for parity: this is a reduced 38-contact oriented-box approximation; full-manifold long-run standing behavior and a matched Kamino comparison are unproven. | Pending |
+| Fig. 8 / 101-stone arch segment | Source-pinned `fbf_author_masonry_arch_101_standing_current_source`; `masonry_arch_101_author_standing_current_source`. The older `fbf_paper_masonry_arch_101`; `masonry_arch_101` proxy remains diagnostic-only | Exact/boxed capture is automated, but the current exact failed prefix prevents a valid full paired comparison. Boxed has a complete decoded member clip; a diagnostic hstack freezes exact at its last frame and is labeled as such | Partial blocker evidence, parity blocked: strict exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`); boxed completes 1,600/1,600 but fails the standing oracle and visibly collapses. Neither is a standing result, matched Kamino comparison, source trajectory/backend match, golden, timing, or paper-parity result | Local boxed-collapse and frozen-prefix diagnostic clips ready below; GitHub URL pending |
 | Tables 6-7 / ten-level card house | `fbf_paper_card_house_10_dynamic`; `card_house_10_dynamics` (construction inspection is separate) | Paired exact/boxed capture is automated | Blocked: the 512-contact budget is known to saturate, and no completed zero-failure, zero-fallback 155-card trajectory exists. The source video has no corresponding segment. | Pending |
 
 The source-pinned Figure 5 adapter binds author commit
@@ -218,6 +218,45 @@ exactly matching the audited hash. The official segment is contextual
 presentation evidence only: the DART lanes do not map to the paper lanes, and
 no frame golden or trajectory comparison exists. The candidate remains outside
 Git until uploaded through the PR editor.
+
+### Figure 8: source-pinned 101-stone standing blocker
+
+The ignored packet is
+`assets/paper_evidence/fig08_arch101_author_current_v1/`. It binds the public
+`--stones 101` selection, all 101 author meshes, 99 mobile stones, two fixed
+springers, three pinned cubes, and the source-supported 400-frame /
+1,600-substep schedule. `drop_frame=400` is the endpoint, so no release occurs.
+
+Strict exact fails closed after 209 completed steps on an iteration cap with
+208 contacts, 5,000 iterations, residual `1.2582804496066107e-6`, 342/342
+attempts/solves, one accepted cap, zero exact failures, and zero boxed
+fallbacks. Its timeline SHA-256 is
+`df1ed4afc9ef5aa74f7c0b6da0560ae0d1b63fca28f45051ed27c5dfb3632889`.
+Boxed completes all 1,600 steps with a valid inventory/finite/cube-pinning
+trace but fails standing; maximum mobile-body displacement is
+`21.2188459736`, maximum rotation is `3.14152663339 rad`, and its timeline
+SHA-256 is
+`a8caee71c9356a72fa65210207d7b4209d9e305363974ec07c81f19ec14bfa1e`.
+
+- Boxed-collapse candidate:
+  `masonry_arch_101_author_standing_current_source__boxed/clip.mp4`, 660x506,
+  201 frames, H.264/yuv420p, 30 fps, 6.7 s, full decode, SHA-256
+  `7635c2722b20fb8bcb0255054cc9172153d1dd640fd8e81df4df52c0e515d3c0`.
+- Diagnostic frozen-prefix hstack:
+  `groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4`,
+  1320x506, 201 frames, 30 fps, 6.7 s, full decode, SHA-256
+  `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94`.
+- Compact summary SHA-256:
+  `1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`.
+
+Capture and independent boxed reuse verification pass. Manual inspection finds
+the arch intact at steps 0 and 400, loss of the crown-standing configuration by
+step 800, and visible collapse by steps 1,200 and 1,600. The hstack freezes
+exact at its last rendered step-208 frame while boxed continues and explicitly
+claims no superiority or parity. The official 74-80 s segment is contextual
+source-video evidence only; no matched Kamino result, source camera/golden, or
+complete exact trajectory exists. Both candidates remain outside Git until a
+maintainer uploads a narrowly captioned blocker clip through the PR editor.
 
 ### Figures 1-2: incline threshold pair
 

@@ -8,6 +8,9 @@ The source-selected strict card, reconstructed card, 101-stone arch, and
 crown-impact examples do not have valid current strict long-run media. A
 separate source-continuation card lane now has validated local exact/boxed media
 with explicit acceptance telemetry; it is not strict or paper-parity evidence.
+The new source-pinned 101-stone lane has independently verified boxed-collapse
+media and a diagnostic hstack that freezes the failed exact prefix; neither is a
+strict standing or parity artifact.
 The current-source nine-row
 numeric small matrix is now a locally finalized evidence bundle. Five dynamic
 visual bundles are locally finalized: literal-wedge standing, the two-cell
@@ -15,7 +18,7 @@ incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
 four-cell turntable matrix. A sixth locally finalized visual bundle records the
 author five-level construction at step zero; it remains construction-only
 evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 21 schedules. The task-wide manifest remains 29
+workflow inventory declares 25 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
@@ -513,7 +516,7 @@ completed sidecar/media bundle:
 | Strict source-selected four-level/26-card settle/projectile | 2,400 steps | Strict exact fails closed at completed step 35 on a 56-contact group; boxed control completes 100/2,400. An unsealed accept-cap preview completes 2,400 and executes `p` at step 1,600, but records 1,106/3,231 caps and worst residual `0.616089` | `artifact_valid=false`; no strict release, valid outcome, or media |
 | 26-card settle/projectile | 600 steps | Step 6/600 | `artifact_valid=false`; incomplete |
 | 25-stone oriented-box reconstructed arch | 360 steps | Step 24/360; visibly collapsed at 0.4 s | `artifact_valid=false`; `physical_outcome_valid=false` |
-| 101-stone reconstructed arch | 600 steps | Step 120/600; visibly collapsed at 2 s | `artifact_valid=false`; `physical_outcome_valid=false` |
+| Older oriented-box 101-stone proxy | 600 steps | Step 120/600; visibly collapsed at 2 s | `artifact_valid=false`; `physical_outcome_valid=false`; distinct from the source-pinned adapter below |
 | Dynamic 10-level card house | Long schedule | No completed step 1 | `artifact_valid=false`; no outcome evidence |
 
 There are no strict-valid long sidecars or media for these bounded schedules.
@@ -521,6 +524,38 @@ The attempts are negative evidence and must not be replaced by one-step,
 reduced-scene, or boxed-LCP captures under the same label. The separately
 labeled source-continuation card-house pair below and literal-wedge standing
 capture follow different declared contracts.
+
+### Source-pinned 101-stone blocker media
+
+The distinct
+`fbf_author_masonry_arch_101_standing_current_source` scene binds all 101
+author meshes and the source-supported `--stones 101`, 400-frame /
+1,600-substep no-release schedule. Strict exact fails closed after step 209 on
+an iteration cap with 208 contacts, residual `1.2582804496066107e-6`, 342/342
+attempts/solves, one accepted cap, zero exact failures, and zero boxed
+fallbacks. Its incomplete state trace fails standing; maximum mobile-body
+displacement is `3.7375078125` and crown Z falls from `66.1385625` to
+`62.4010546875`.
+
+Boxed completes 1,600/1,600 with all 1,601 inventory, finite-state, and
+cube-pinning samples valid, but fails standing. Maximum displacement is
+`21.2188459736`, maximum rotation is `3.14152663339 rad`, and crown
+minimum/final are `58.3806809854` / `61.1013192467`. Its 660x506,
+201-frame H.264/yuv420p clip runs 6.7 s at 30 fps, fully decodes, and has
+SHA-256
+`7635c2722b20fb8bcb0255054cc9172153d1dd640fd8e81df4df52c0e515d3c0`.
+Capture and independent reuse verification pass. Manual inspection finds an
+intact arch through step 400, loss of the crown-standing configuration by step
+800, and visible collapse by steps 1,200 and 1,600.
+
+The 1320x506 diagnostic hstack freezes exact at its last rendered step-208
+frame while boxed continues; its 201-frame full decode has SHA-256
+`d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94`.
+The compact bundle-summary SHA-256 is
+`1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`.
+This is valid blocker presentation, not a complete exact/boxed comparison,
+standing result, matched Kamino panel, source/golden match, paper parity, or
+solver-superiority evidence. GitHub URLs remain pending.
 
 The positive literal-wedge result is a separate scene contract and does not
 relabel or invalidate the oriented-box visual failure. Its standing capture
@@ -617,6 +652,12 @@ numeric-only negative evidence and has no media. The literal 101-stone v7 lane
 is an identity-resolved step-1 failed-prefix negative, and the card-v2 lane is
 non-strict numeric sensitivity; neither supplies valid long media.
 
+The source-pinned 101-stone adapter is a fourth, separate tier: it uses the
+author meshes and source-supported schedule with DART Native collision and
+float64 dynamics. Its exact step-209 cap and complete boxed collapse provide
+current-DART blocker evidence only, not source backend/trajectory/outcome or
+paper equivalence.
+
 ## Reproduction Entry Points
 
 Use the current built executable and retain negative exit status:
@@ -669,6 +710,10 @@ shown by `--help` and rejects hash or segment-boundary drift.
   `8.6992952e-4`, zero local exact failures), still before the runner's
   step-1,600 release. Do not promote this bounded trajectory or create an exact
   comparison clip from it.
+- Preserve the source-pinned 101-stone boxed clip and frozen-prefix hstack only
+  as blocker media. A parity-eligible Fig. 8/video.08 row still requires a full
+  strict exact standing run, matched Kamino outcome, and approved visual
+  comparison; upload any blocker clip through the PR editor with that boundary.
 - Preserve card-manifold v2 as diagnostic-only sensitivity evidence; its two
   non-strict trajectories and raw wall times cannot promote media.
 - Keep the frozen crown-impact v1 negative unchanged. Any revised impact

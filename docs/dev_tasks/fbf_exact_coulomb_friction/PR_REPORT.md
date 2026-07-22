@@ -43,6 +43,13 @@ exact attempts solve, but the 5,000-iteration outer solve ends at residual
 `8.6992952e-4` with 96 contacts. This is a diagnostic solver blocker, not
 completed impact evidence or promotable media.
 
+A distinct source-pinned 101-stone DART adapter now executes the public
+`--stones 101`, 400-frame no-release schedule. Strict exact fails closed after
+step 209 at residual `1.2582804496066107e-6`; boxed completes 1,600 steps but
+fails the standing oracle and visibly collapses. The decoded boxed clip and a
+frozen-prefix hstack are precise blocker evidence, not Fig. 8/video.08 parity,
+a matched Kamino result, or solver-superiority evidence.
+
 The separate pinned-author incline sweep is also numeric current-source
 scientific-negative/reference evidence. It covers all seven Figure 1 friction
 values in the public FBF, MuJoCo, and Kamino runners, but it is not a matched
@@ -762,7 +769,7 @@ media:
 | --- | --- | --- |
 | Full 26-card sequence | Step 6/600 | Incomplete; no valid artifact |
 | 25-stone oriented-box arch | Step 24/360; visibly collapsed at 0.4 s | Physical mismatch; no valid artifact |
-| 101-stone arch | Step 120/600; visibly collapsed at 2 s | Physical mismatch; no valid artifact |
+| Older oriented-box 101-stone proxy | Step 120/600; visibly collapsed at 2 s | Physical mismatch; no valid artifact; distinct from the source-pinned adapter below |
 | Dynamic 10-level card house | No completed step 1 | No valid artifact |
 
 The local literal-wedge standing bundle at
@@ -849,6 +856,45 @@ The standing bundle validates only the no-projectile reconstruction. The CPU
 bundle remains the timing owner, and the impact negative supplies neither
 passing crown-impact media/outcome nor paper parity.
 
+The source-pinned 101-stone DART packet is separately retained at
+`assets/paper_evidence/fig08_arch101_author_current_v1/`. It binds the author
+commit, the `--stones 101` selection, 101-mesh tree
+`e0c209235673d2f69c3c5de7708ab1dfadec96e3`, and path-manifest SHA-256
+`7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf`.
+The scene contains 101 tapered meshes with 99 mobile stones, two fixed
+springers, and three pinned cubes. Its source-supported 400-frame /
+1,600-substep schedule ends at `drop_frame=400` and performs no release.
+
+Strict exact fails closed after 209/1,600 completed steps on an iteration cap:
+208 contacts, 5,000 iterations, residual/best/worst
+`1.2582804496066107e-6`, 342/342 attempts/solves, one accepted cap, zero exact
+failures, and zero boxed fallbacks. Its 210 state samples are incomplete and
+fail the standing oracle; crown height falls from `66.1385625` to
+`62.4010546875`, and maximum mobile-body displacement is `3.7375078125`.
+Boxed completes 1,600/1,600 with a valid 1,601-sample inventory, finite-state,
+and cube-pinning trace, but fails standing: maximum displacement
+`21.2188459736`, maximum rotation `3.14152663339 rad`, and crown minimum/final
+`58.3806809854` / `61.1013192467`.
+
+The boxed H.264/yuv420p clip is 660x506, 201 frames, 30 fps, 6.7 s, fully
+decoded, and SHA-256
+`7635c2722b20fb8bcb0255054cc9172153d1dd640fd8e81df4df52c0e515d3c0`.
+Manual inspection finds an intact arch through step 400, crown loss by step
+800, and visible collapse by steps 1,200 and 1,600. The diagnostic 1320x506
+hstack freezes exact at its last rendered step-208 frame while boxed continues;
+its SHA-256 is
+`d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94`.
+Capture and independent boxed reuse verification pass. The compact summary
+SHA-256 is
+`1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`,
+and exact/boxed timeline SHA-256 values are
+`df1ed4afc9ef5aa74f7c0b6da0560ae0d1b63fca28f45051ed27c5dfb3632889`
+and `a8caee71c9356a72fa65210207d7b4209d9e305363974ec07c81f19ec14bfa1e`.
+GitHub attachment URLs remain pending. This is a current-DART scientific
+negative, not a complete exact/boxed comparison, source trajectory/outcome
+equivalence, Fig. 8/video.08 parity, matched Kamino, golden, timing,
+performance, or superiority evidence.
+
 The separately frozen 101-stone literal protocol is
 `LITERAL_ARCH_101_V1.md`; its current provenance-bound bundle is
 `assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. It promotes
@@ -930,6 +976,7 @@ those production box scenes.
 | 25-stone literal dynamics | Exact-inertia literal wedges, `1 um` closure, Native `FourPointPlanar` | 96 contacts, 24 pairs/manifolds, 3 colors, width 8 for all measured steps | Non-paper 600-step standing trajectory, validated standing media, and matched 1-to-4-thread scaling only |
 | Literal crown-impact v1 | Standing contract plus three frozen projectiles; numeric only | Arch contact step 607 before ground step 616; finite, but 5 caps and residual/outcome gates fail | Preregistered non-paper scientific negative only |
 | Pinned-author 25-stone diagnostic | Author meshes and Warp/Newton float32 pipeline; 500 frames / 2,000 substeps | 100 contacts at release; 40 initial-shortcut and 117 configured-outer-gate convergences, plus 1,843 nonconverged outer solves; no pair identities | Current-source scientific negative only; no DART dynamics, trajectory, outcome, timing, repeatability, media, or paper-invocation parity |
+| Source-pinned 101-stone DART adapter | All 101 author meshes, Native `FourPointPlanar`, float64 DART; 400 frames / 1,600 no-release substeps | Exact stops at step 209 on an iteration cap with 208 contacts and residual `1.2582804496e-6`; boxed completes but fails the standing oracle and collapses | Current-DART source-parameterized scientific negative and blocker media only; no source/backend/outcome, Kamino, timing, or Fig. 8 parity |
 | Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure; Compact time-zero probe, Native `FourPointPlanar` trace, and v7 one-step identity companion; numeric only | Compact repeat-2 time zero has 100 adjacent plus 2 springer-ground pairs; the failed step-1 FourPointPlanar graph is identity-resolved as exactly 100 adjacent pairs/400 contacts with multiplicity 4, zero non-adjacent or ground pairs, but solver-taxonomy/affinity equivalence fail and the frozen solve fails after 5,000 outers at residual `0.7815364614` | Frozen non-paper failed-prefix scientific negative; no source-equivalence, standing, physical, timing, media, long-run, or parity claim |
 | Card-house manifold sensitivity v2 | Reconstructed 26-card command with Native `Compact` or `FourPointPlanar`; numeric only | Both emit 600 rows but are non-strict; FourPointPlanar increases mean contacts/multiplicity and fails the terminal convergence gate | Frozen one-factor diagnostic only; no physical/timing/media/paper claim |
 
@@ -962,6 +1009,11 @@ invocation/timing logs and warmup/aggregation attestation. Local
 evidence remains x86-64/float64 DART on reconstructed scenes, and the paper
 publishes no multicore CPU reference.
 
+The new 101-stone adapter ports the current source-supported geometry,
+selection, initial state, and 400-frame schedule, not the Warp/Newton float32
+backend or a recovered historical Figure 8 invocation. Its precise exact and
+boxed negatives do not close those comparison gaps.
+
 ## Current Verification
 
 - Current-source four-level author-card demo build: passed.
@@ -970,8 +1022,8 @@ publishes no multicore CPU reference.
 - Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
   the full
   paper fixture binary reports 31 passed and 3 explicit stress skips.
-- Visual runner with the source-selected correction, inner-initialization, and
-  continuation contracts: 259/259 passed.
+- Visual runner, including source-pinned 101-stone schedule/oracle contracts:
+  320/320 passed.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
   `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
   methods, and exports the additive source-inner setter/getter without changing
@@ -987,8 +1039,11 @@ publishes no multicore CPU reference.
 - Focused manifest/backspin/incline/author-masonry/author-incline evidence
   suite: 859 passed post-merge in 163.95 s.
 - Full no-cache dartpy Python suite: 1,555 passed in 165.09 s.
-- Author masonry-arch focused CTest: 1/1 passed; all four locally sealed
-  bundles pass verify-only.
+- Author masonry-arch focused CTest: 1/1 target and 7/7 contained tests passed;
+  all four previously sealed bundles pass verify-only. The new boxed 101-stone
+  capture and independent reuse verification also pass.
+- Demo scene documentation verifier: 26 scenes passed; exact and boxed real
+  step-zero JSON contracts match the validator.
 - The manifest validates 29 canonical requirements with status `partial`.
   Under the local sealed producer closure, live mode performed 118 file-identity
   rechecks with zero skipped; explicit archive mode reported zero live
@@ -1063,9 +1118,11 @@ cross-platform CI.
 - Complete strict full-duration physical outcomes for every card and arch row.
 - Audit and port the pinned public author scenes, solver configuration, local
   kernel, and current external runners; preserve the sealed masonry-arch run
-  as a negative and turn its configuration-only DART spec into a dynamics port
-  only through a separately validated contract. Produce matched runs or record
-  exact DART/source differences. Keep the unavailable historical
+  and the new source-pinned 101-stone DART run as distinct negatives. The 101
+  adapter now executes current-source geometry and schedule, but still needs a
+  full strict standing run, matched Kamino outcome, and approved visual
+  comparison. Produce matched runs or record exact DART/source differences.
+  Keep the unavailable historical
   renderer/goldens, Apple hardware, precision, and paper timing-attestation
   gaps explicit.
 - Preserve the finalized incline, historical Painleve proxy, source-pinned

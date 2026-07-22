@@ -57,6 +57,10 @@ External truth:
   paper.
 - The sealed author masonry-arch run is a current-source scientific negative,
   not a historical paper invocation or DART parity evidence.
+- A separate source-pinned 101-stone DART adapter now runs the current
+  source-supported 400-frame no-release schedule. Exact stops at step 209 on an
+  iteration cap; boxed completes but collapses. This is precise current-DART
+  negative evidence, not Fig. 8/video.08 or solver-superiority evidence.
 - The numeric author_incline_sweep_reference_v1 packet preserves independent
   current-source FBF, MuJoCo, and Kamino CPU runs on
   mu=.3,.4,.45,.5,.55,.6,.8. Each lane has seven 120-step cells; the retained
@@ -678,6 +682,43 @@ Pinned-author masonry-arch truth:
   prototype was unnecessary and removed; the current path does not mutate the
   candidate or loosen the ordinary scalar-gap predicate.
 
+Source-pinned 101-stone DART truth:
+
+- Preserve
+  assets/paper_evidence/fig08_arch101_author_current_v1/.
+- Scene `fbf_author_masonry_arch_101_standing_current_source` binds author
+  `--stones 101`, mesh tree e0c209235673d2f69c3c5de7708ab1dfadec96e3,
+  path-manifest SHA-256
+  7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf,
+  101 stones/99 mobile/two fixed springers/three pinned cubes, and 400 frames x
+  four substeps. `drop_frame=400` is the endpoint, so no release occurs.
+- Strict exact fails closed after 209/1600 completed steps on an iteration cap:
+  208 contacts, 5000 iterations, residual 1.2582804496066107e-6, 342/342
+  attempts/solves, one accepted cap, zero exact failures/fallbacks. The
+  incomplete state trace fails standing; crown Z falls 66.1385625 ->
+  62.4010546875 and maximum mobile displacement is 3.7375078125.
+- Boxed completes 1600/1600 with all 1601 inventory/finite/cube-pinning samples
+  valid but fails standing: maximum displacement 21.2188459736, maximum
+  rotation 3.14152663339 rad, crown minimum/final 58.3806809854 /
+  61.1013192467. Manual inspection shows crown loss by step 800 and collapse
+  by steps 1200/1600.
+- Exact/boxed timeline SHA-256 values are
+  df1ed4afc9ef5aa74f7c0b6da0560ae0d1b63fca28f45051ed27c5dfb3632889 and
+  a8caee71c9356a72fa65210207d7b4209d9e305363974ec07c81f19ec14bfa1e.
+  The fully decoded boxed clip SHA-256 is
+  7635c2722b20fb8bcb0255054cc9172153d1dd640fd8e81df4df52c0e515d3c0.
+  The diagnostic hstack freezes exact at its final step-208 frame while boxed
+  continues; SHA-256
+  d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94.
+- Capture and independent boxed reuse verification pass. Compact summary
+  SHA-256 is
+  1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481.
+  GitHub URLs remain pending.
+- Keep this current-DART negative distinct from the literal v7 reconstruction
+  below. Claim no source/backend/float32 trajectory or outcome equivalence,
+  matched Kamino, golden, timing, performance, Fig. 8/video.08 parity, or
+  solver superiority.
+
 Current reconstructed crown-impact truth:
 
 - Use LITERAL_CROWN_IMPACT_V1.md and
@@ -821,7 +862,7 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six locally finalized bundles, and the visual
-  workflow declares 21 schedules; validator passes and fail-closed hashes local
+  workflow declares 25 schedules; validator passes and fail-closed hashes local
   bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -859,10 +900,10 @@ Evidence truth:
 - Impact v1 is complete only as a preregistered numeric negative. A passing
   source-equivalent impact outcome/media and remaining paper-media artifacts
   are pending.
-- Arch101 v7 is an identity-resolved step-1 failed-prefix blocker, and
-  card-manifold v2 is
-  complete non-strict sensitivity evidence. Neither promotes a physical,
-  timing, media, real-time, or paper-parity claim.
+- Arch101 v7 is an identity-resolved step-1 failed-prefix blocker. The distinct
+  source-pinned 101-stone DART lane adds a step-209 exact blocker and an
+  independently verified boxed-collapse clip, but no standing or parity claim.
+  Card-manifold v2 is complete non-strict sensitivity evidence.
 
 Latest recorded focused gates:
 
@@ -887,8 +928,8 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level headless/continuation C++ fixtures passed 13/13;
-- visual runner with the source-selected correction, inner-initialization, and
-  continuation contracts passed 259/259;
+- visual runner, including source-pinned 101-stone schedule/oracle contracts,
+  passed 320/320;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -896,7 +937,9 @@ Latest recorded focused gates:
 - the shared current-head Clang/FreeBSD polymorphic-`typeid` compile failure is
   fixed locally; a Clang 22 warning-as-error syntax check passes, with remote
   confirmation pending the next push;
-- author masonry-arch focused CTest: 1/1 passed;
+- author masonry-arch focused CTest: 1/1 target and 7/7 contained tests passed;
+- demo scene documentation verifier: 26 scenes passed; exact/boxed real
+  step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
   intentional status `partial`, 118 live file-identity rechecks, and zero
@@ -917,10 +960,13 @@ Immediate order:
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
    numeric incline sweep, historical verified Painleve proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the
-   arch101-v7 and card-v2 blockers. Preserve the finalized source-pinned
+   arch101-v7, source-pinned 101-stone DART, and card-v2 blockers. Preserve the
+   finalized source-pinned
    Painleve exact/boxed capture, complete state-trace outcome audit, independent
    replay, and manual inspection; upload its two exact-vs-boxed clips only
-   through the PR browser composer and record the resulting URLs. The
+   through the PR browser composer and record the resulting URLs. Upload the
+   101-stone hstack, if selected, only as a frozen-prefix blocker with no
+   superiority/parity claim and record its URL. The
    source-selected four-level card
    adapter's completed-step-35 exact failure is precisely characterized but
    not corrected. Continue one-factor-at-a-time strict work without changing
