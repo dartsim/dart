@@ -335,6 +335,100 @@ The verified isolated package is `/tmp/fbf_fig06_gap_c95.m6bsif/`:
 - complete `SHA256SUMS` manifest SHA-256
   `11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
 
+## Residual-Sampling Cadence Diagnostic
+
+The pinned source checks its configured `coulomb_rel` termination residual
+every five outer iterations, while the strict DART path checks every outer
+iteration. A c95-bound one-factor diagnostic changed only the
+internal exact-FBF default from cadence `1` to `5`. Its single preregistered
+36-step run still failed closed after completed step 35 on a 56-contact group
+at 200 iterations and
+residual `4.0845024466967225e-4`. It recorded 103 attempts, 102 solves, one
+failure, 3,450 total outer iterations, zero accepted caps, and zero fallbacks.
+Every nonzero per-step sum of successful outer iterations was divisible by
+five, corroborating that the candidate exercised the requested cadence.
+
+This candidate proves only that cadence five is insufficient to clear the
+current c95 strict prefix. Its copied stock comparator is bound by the two
+sidecar source hashes to ancestor `844c9c316195897cf2bf51f38eafc8ec9dcf959a`,
+not a freshly built c95 binary; neither sidecar hash covers the patched
+`dart/math/detail/ExactCoulombFbfSolver.hpp` header. Baseline residual and
+iteration differences are therefore contextual only, not a same-revision,
+same-binary, controlled A/B or causal cadence estimate.
+
+The diagnostic's global-default patch must not ship. Two cadence-focused unit
+tests pass, but the complete 66-test math binary has 64 passes and two expected
+legacy-default failures. A scene-specific option-plumbing change would require
+a separate design and current-head control. No trajectory, outcome,
+source/backend/float32/contact equivalence, timing, video, performance,
+superiority, Figure 6, or paper-parity claim follows.
+
+The verified package is
+`/tmp/fbf_fig06_residual_cadence_c95.0QXC5c/`:
+
+- `RESULTS.md` SHA-256
+  `1f57c569f7feacb2c681cb17a70743782f07822abcbc1eb13d7822d81e9df18f`;
+- one-factor patch SHA-256
+  `1c1346021972e563df3d81fa2ea77313eea33923b8c5b719afcd454ceebd5e86`;
+- cadence-5 sidecar SHA-256
+  `ab91ef67f6964fbf4c21bd0e94d68a81c034171dcc2a401a2c993028f7830b8f`;
+- analysis SHA-256
+  `be078d23eb57d17b4cf4accd1595a8f7df195a389d6ebb02228cd6bf44b0e72a`;
+  and
+- complete `SHA256SUMS` manifest SHA-256
+  `69db5e8915fadc31aae34d94c5f484928841b286566e172eea9535ee262d7645`.
+
+## Terminal Spectral-Estimate Diagnostic
+
+The pinned source retains the norm of its tenth power-iteration product,
+whereas the DART path performs ten normalized products and then an eleventh
+product for a terminal Rayleigh quotient. An isolated c95 diagnostic used one
+instrumented Release binary for both selectors and changed only that terminal
+rule: stock `rayleigh11` versus `last_norm10`. It deliberately retained DART's
+float64 all-ones seed, `normal_t1_t2` order, contact-row operator
+implementation, scene, and all strict solver policies; it is not
+source-estimator equivalence.
+
+The sealed control exactly reproduces the existing fail-fast: completed step
+35, exact attempt 101, 56 contacts, 200 iterations, residual
+`4.0844850280896461e-4`, safe gamma `0.27728679157546576`, final gamma
+`2.7728679157546576`, 103 attempts, 102 solves, and one failure. All 103
+control traces record eleven products and one terminal Rayleigh product. The
+single recorded `last_norm10` arm has ten products and no Rayleigh product on
+all 103 traces, but still fails at the same step, attempt, and contact count:
+residual `4.07679549813362e-4`, safe gamma `0.2785358481187644`, and final
+gamma `2.785358481187644`. The sealed marker/timeline/trace triplet per selector
+is internally consistent with the preregistered one-shot protocol, and
+`run_once.sh` refuses output-path reuse, but neither is external proof that no
+discarded run occurred elsewhere.
+
+The final residual first differs at attempt 57 / step 29. The recorded
+contact-frame hash, reduced-state hash, and ten product-norm sequence first
+differ at attempt 67 / step 30, and iteration count first differs at attempt
+77 / step 31. The raw `reduced_problem_fnv1a64` field covers only contact
+count, `freeVelocity`, and friction coefficients, not `W`, an operator digest,
+the initial reaction, or the complete reduced problem. `product_norms` stores
+norms only, not product vectors. Therefore
+the failure-state residual and gamma deltas are contextual, not a same-problem
+local causal estimate. The valid controlled conclusion is only that
+`last_norm10` does not clear this 36-step gate. No claim about a longer
+trajectory, outcome, performance, superiority, video, Figure 6, or paper
+parity follows.
+
+The Release build completed 350/350, both focused solver/contact unit suites
+passed, and `git diff --check` passed. The verified package is
+`/tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/`:
+
+- `RESULTS.md` SHA-256
+  `e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda`;
+- `comparison.json` SHA-256
+  `8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`;
+- diagnostic patch SHA-256
+  `0d79fe90284ff481463716ba0a0bfa87b11272bacd4f8a5fe0960c4835c64227`;
+  and
+- complete `SHA256SUMS` manifest SHA-256
+  `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
+
 ## Source-Style Continuation Preview
 
 The pinned author runtime recovers and advances a finite iterate even when its
@@ -447,9 +541,11 @@ The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
 must isolate one remaining source mismatch without combining tolerance,
 budget, fallback, fail-fast, or accepted-cap changes. The one-participant
-colored-ordering, one-global-group, and source-sized-gap candidates are all
-rejected for this Figure 6 strict-prefix blocker. Do not promote another solver
-knob without a new source-backed, preregistered mismatch. Source
+colored-ordering, one-global-group, source-sized-gap, residual-cadence, and
+terminal spectral-estimate candidates are all rejected for this Figure 6
+strict-prefix blocker. Do not
+promote another solver knob without a new source-backed, preregistered
+mismatch. Source
 shrink-cap, plateau, and continuation semantics likewise require a separately
 labeled, telemetry-rich physical/video lane before producing strict outcome
 evidence. The continuation lane now has a validated local full-resolution

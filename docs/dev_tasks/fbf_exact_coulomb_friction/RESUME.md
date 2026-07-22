@@ -35,9 +35,20 @@ fails closed, now after completed step 31 on a 31-contact group at residual
 `1.0006073317077885e-5`; because its ancestor-bound comparison contact stream
 differs from step 1, reject only the hypothesis that
 this gap representation clears the strict 36-step prefix. Keep the scene
-unchanged. A new
-telemetry-rich source-continuation adapter completes exact and boxed through all
-2,400 steps and the successful step-1,600 cube release. Exact records
+unchanged. A separate c95 candidate changes only the internal exact-FBF
+residual cadence from `1` to source cadence `5`; it still fails at completed
+step 35 on the 56-contact group at residual `4.0845024466967225e-4`. Its stock
+comparator is ancestor-bound rather than a fresh c95 control, so this rejects
+only cadence five as sufficient to clear the prefix, not a causal delta. A
+same-binary terminal-estimate candidate changes only `rayleigh11` to
+`last_norm10`; its recorded `last_norm10` arm passes all
+ten-product/no-Rayleigh trace
+checks but still fails the step-35 gate. Recorded state summaries diverge by
+step 30 and do not cover `W` or product vectors, so final-state deltas are
+contextual and the result rejects only that terminal rule as the prefix fix. A
+new telemetry-rich source-continuation adapter completes exact and boxed
+through all 2,400 steps and the successful step-1,600 cube release. Exact
+records
 3,351/3,351 attempts/solves, zero failures/fallbacks, 2,605 successes, 113
 plateau accepts, 633 max-iteration accepts, zero shrink caps, and worst residual
 `0.91712002943322535` first reached at step 2,101. The 746 accepts are 22.262%
@@ -702,6 +713,48 @@ paper-parity claim. Preserve the checked-in scene. Verified package:
 `SHA256SUMS`
 `11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
 
+The isolated cadence-5 candidate is c95 plus one changed internal default. Its
+single preregistered run stops after completed step 35: 56 contacts, 200
+iterations, residual `4.0845024466967225e-4`, 103 attempts, 102 solves, one
+failure, 3,450 total iterations, zero accepted caps, and zero fallback.
+Successful-iteration sums are all divisible by five. The copied stock sidecar
+maps to ancestor `844c9c3`, and neither source-binding hash covers the patched
+math header. Do not attribute stock/candidate deltas to cadence or call this a
+same-binary controlled A/B. The global-default patch fails two legacy-default
+tests even though both cadence-focused tests pass, so keep it out of the main
+tree. It establishes no trajectory, outcome, backend, float32, performance,
+superiority, video, Figure 6, or paper-parity result. Verified package:
+`/tmp/fbf_fig06_residual_cadence_c95.0QXC5c/`; `RESULTS.md`
+`1f57c569f7feacb2c681cb17a70743782f07822abcbc1eb13d7822d81e9df18f`;
+`SHA256SUMS`
+`69db5e8915fadc31aae34d94c5f484928841b286566e172eea9535ee262d7645`.
+
+The c95 terminal spectral-estimate A/B uses one instrumented Release binary
+and changes only stock `rayleigh11` to `last_norm10`. The control exactly
+reproduces completed step 35 / exact attempt 101 / 56 contacts, residual
+`4.0844850280896461e-4`, 103 attempts, 102 solves, and one failure. The single
+recorded candidate satisfies all 103 ten-product/no-Rayleigh trace invariants
+but still fails at the same gate coordinates with residual
+`4.07679549813362e-4`. Residuals first diverge at attempt 57 / step 29;
+recorded contact-frame and reduced-state hashes plus product-norm sequences
+first diverge at attempt 67 / step 30. The reduced-state hash covers only
+contact count, `freeVelocity`, and coefficients; the summaries exclude `W`,
+operator identity, the initial reaction, the complete reduced problem, and
+product vectors. Final failure deltas are contextual. The
+only valid controlled result is that `last_norm10` does not clear the strict
+prefix; seed, float precision, coordinate order, backend, trajectory, outcome,
+performance, superiority, video, Figure 6, and paper parity remain unmatched.
+The one marker/timeline/trace triplet per selector is internally consistent
+with the preregistered protocol, and the guard refuses output-path reuse, but
+neither is external proof of no discarded run.
+Verified package:
+`/tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/`; `RESULTS.md`
+`e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda`;
+`comparison.json`
+`8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`;
+`SHA256SUMS`
+`f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
+
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
 123/677 from release onward. First false/cap indices are 33/35; worst natural
@@ -1226,8 +1279,8 @@ only for an explicit live-closure recheck.
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
-   colored-ordering candidate, the one-global-group candidate, and the
-   source-sized-gap candidate are rejected only as strict-prefix
+   colored-ordering, one-global-group, source-sized-gap, residual-cadence, and
+   terminal spectral-estimate candidates are rejected only as strict-prefix
    discriminators. Do not add another strict solver
    knob without a source-backed, preregistered mismatch. Keep the separate
    ten-level colored/global-scope diagnostics pending one factor at a time.

@@ -23,7 +23,13 @@ strict 36-step gate, now after completed step 31 on a 31-contact group at
 residual `1.0006073317077885e-5`; its ancestor-bound comparison stream differs
 from step 1. Reject only that gap
 representation as the strict-prefix fix; it is not a general gap, trajectory,
-performance, superiority, or source-equivalence result. A historical
+performance, superiority, or source-equivalence result. A c95 cadence-5
+candidate likewise fails at step 35; its ancestor-bound stock comparator makes
+all deltas contextual, so the valid result is only candidate-local. A
+same-binary `last_norm10` terminal-estimate candidate also fails the step-35
+gate; its recorded state summaries diverge before failure and exclude `W` and
+product vectors, so the valid result is only that it does not clear the strict
+prefix. A historical
 debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
@@ -210,6 +216,52 @@ verified package is `/tmp/fbf_fig06_gap_c95.m6bsif/`; `RESULTS.md` and
 `SHA256SUMS` hash to
 `3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a` and
 `11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
+
+The cadence diagnostic changes only the c95 internal exact-FBF residual-check
+default from `1` to source cadence `5`. Its one strict run fails after completed
+step 35 on a 56-contact group at 200 iterations and residual
+`4.0845024466967225e-4`: 103 attempts, 102 solves, one failure, 3,450 total
+outer iterations, zero accepted caps, and zero fallback. All nonzero per-step
+successful-iteration sums are divisible by five.
+
+The copied stock timeline is bound to ancestor `844c9c3`, not a fresh c95
+binary, and the sidecar source hashes do not cover the patched math header.
+Stock/candidate residual and iteration differences are therefore context only;
+this is not a same-revision, same-binary, controlled A/B or causal cadence
+estimate. Two cadence-specific tests pass, while the full math binary exposes
+two expected legacy-default failures, so the global-default diagnostic patch
+must not ship. The candidate establishes no trajectory, outcome, backend,
+float32, performance, superiority, video, Figure 6, or paper-parity result.
+Verified package: `/tmp/fbf_fig06_residual_cadence_c95.0QXC5c/`; `RESULTS.md`
+`1f57c569f7feacb2c681cb17a70743782f07822abcbc1eb13d7822d81e9df18f`;
+`SHA256SUMS`
+`69db5e8915fadc31aae34d94c5f484928841b286566e172eea9535ee262d7645`.
+
+The terminal spectral-estimate diagnostic uses the same c95 instrumented
+Release binary for stock `rayleigh11` and candidate `last_norm10`. The exact
+control reproduces completed step 35 / attempt 101 / 56 contacts, residual
+`4.0844850280896461e-4`, 103 attempts, 102 solves, and one failure. The single
+recorded variant satisfies all 103 ten-product/no-Rayleigh trace invariants but
+also fails there with residual `4.07679549813362e-4`.
+
+Residuals first diverge at attempt 57 / step 29. Recorded contact-frame and
+reduced-state hashes plus product-norm sequences first diverge at attempt 67 /
+step 30. The reduced-state hash covers only contact count, `freeVelocity`, and
+coefficients; `W`, an operator digest, the initial reaction, the complete
+reduced problem, and product vectors are unrecorded. Failure-state
+residual/gamma deltas are contextual, not a same-problem local
+causal estimate. The controlled result rejects only `last_norm10` as the
+strict-prefix fix. It supplies no source-estimator, longer-trajectory, outcome,
+backend, float32, performance, superiority, video, Figure 6, Figure 9, or
+paper-parity result. The marker/timeline/trace triplets are internally
+consistent with the preregistered protocol but cannot externally prove no
+discarded run occurred. Verified package:
+`/tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/`; `RESULTS.md`
+`e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda`;
+`comparison.json`
+`8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`;
+`SHA256SUMS`
+`f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
 
 The pinned source recovers and advances a finite iterate even when its
 configured convergence flag is false. One process-local GDB preview tested only
@@ -938,6 +990,8 @@ evidence, not a reason to omit the run or substitute a reduced scenario.
 - Make the strict full-card trajectory finish within the paper cap and
   tolerance without fallback.
 - Preserve the source-selected Figure 6 step-35 record as a strict negative.
+  Preserve the terminal-estimate A/B as a numeric strict-prefix negative, not
+  Figure 9 residual-history evidence.
   Keep both the historical debugger preview and the reproducible
   source-continuation full run outside strict trajectory/outcome and Figure 9
   claims; only the latter is a validated, separately labeled visual attachment

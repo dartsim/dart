@@ -30,9 +30,21 @@ Inspect and preserve any existing worktree changes. Durable branch state:
 
 The topic tip tracks zero files under
 docs/dev_tasks/fbf_exact_coulomb_friction/assets/, but topic history still has
-492 task-asset blobs totaling 96,573,227 bytes. PR #3377 must be true-squash-
-merged so those blobs do not enter release-6.20, unless the topic history is
-explicitly rewritten first. Do not use a merge commit or rebase merge.
+493 unique task-asset blob IDs: 492 topic-added nonempty blobs totaling
+96,573,227 bytes plus the shared empty blob already reachable from the base. PR
+#3377 must be squash-merged so the 492 topic-added blobs do not enter
+release-6.20, unless the topic history is explicitly rewritten first. Do not
+use a merge commit or rebase merge.
+
+The `0747b33bccf` tip audit against `6a1d377f616` finds 254 changed paths
+(7.788 MiB), with no Git binary entries, changed or tracked task assets,
+generated-capture/log/media suffix matches, or visible untracked files. The
+intentional P3 checker PPM is a runtime input, not generated evidence. At that
+audit snapshot,
+the role-based task ignore kept 8,662 local evidence files totaling 595,725,990
+bytes out of Git. Keep all generated task evidence under an `assets/` output
+root; do not replace that contract with global extension ignores that can hide
+runtime inputs.
 
 Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
 Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
@@ -683,6 +695,45 @@ Current-source four-level Figure 6 adapter truth:
   3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a and
   SHA256SUMS SHA-256
   11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119.
+- A separate c95-bound one-factor candidate changes the internal exact-FBF
+  residual cadence from 1 to the source value 5. Its single 36-step strict run
+  still fails at completed step 35 on a 56-contact group at 200 iterations and
+  residual 4.0845024466967225e-4: 103 attempts, 102 solves, one failure, 3450
+  total iterations, zero accepted caps, and zero fallback. All nonzero
+  successful-iteration sums are divisible by five. The copied stock sidecar is
+  ancestor-bound to 844c9c3 rather than freshly built at c95, and neither
+  source-binding hash covers the patched math header. Treat every stock delta
+  as context only; this establishes only that cadence five does not clear the
+  prefix. The global-default patch is unshippable because two legacy-default
+  tests fail, despite both cadence-focused tests passing. Keep the main tree
+  unchanged. Package /tmp/fbf_fig06_residual_cadence_c95.0QXC5c/ has
+  RESULTS.md SHA-256
+  1f57c569f7feacb2c681cb17a70743782f07822abcbc1eb13d7822d81e9df18f and
+  SHA256SUMS SHA-256
+  69db5e8915fadc31aae34d94c5f484928841b286566e172eea9535ee262d7645.
+- A same-binary c95 terminal spectral-estimate A/B changes only stock
+  rayleigh11 to last_norm10. The control exactly reproduces step 35 / attempt
+  101 / 56 contacts, residual 4.0844850280896461e-4, 103 attempts, 102 solves,
+  and one failure. The single recorded variant passes all 103
+  ten-product/no-Rayleigh trace invariants but still fails at those same gate
+  coordinates with residual 4.07679549813362e-4. Residuals first diverge at
+  attempt 57 / step 29; recorded contact-frame/reduced-state hashes and
+  product-norm sequences first diverge at attempt 67 / step 30. The
+  reduced-state hash covers only contact count, freeVelocity, and coefficients;
+  product_norms stores norms only. Those summaries exclude W, operator
+  identity, the initial reaction, the complete reduced problem, and product
+  vectors, so final-state
+  deltas are contextual. Reject only last_norm10 as the 36-step fix; do not
+  infer source-estimator, trajectory, performance, superiority, video, Figure
+  6, or paper parity. The sealed marker/timeline/trace triplets are internally
+  consistent with the preregistered protocol, and the guard refuses output-path
+  reuse, but neither is external proof of no discarded run. Package
+  /tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/ has RESULTS.md SHA-256
+  e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda,
+  comparison.json SHA-256
+  8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6,
+  and SHA256SUMS SHA-256
+  f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -1245,8 +1296,9 @@ Immediate order:
    the clean 80-step boxed control, but treat the interrupted step-112 boxed
    run and partial frames as non-evidence; resolve full boxed
    runtime before paired media. The one-participant colored-ordering result is
-   rejected only for the four-level Figure 6 step-35 blocker, as is the
-   one-global-group result, as is the source-sized-gap result. Require a new
+   rejected only for the four-level Figure 6 strict-prefix blocker, as are the
+   one-global-group, source-sized-gap, residual-cadence, and terminal
+   spectral-estimate results. Require a new
    source-backed, preregistered mismatch
    before another four-level strict solver A/B. Keep ten-level colored
    scheduling and global-scope diagnostics pending one factor at a time

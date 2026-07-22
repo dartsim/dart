@@ -28,10 +28,22 @@ full boxed member remains blocked. Neither increases the six-bundle inventory.
 
 The current topic tip tracks zero files under
 `docs/dev_tasks/fbf_exact_coulomb_friction/assets/`, but the topic history still
-contains 492 task-asset blobs totaling 96,573,227 bytes. PR #3377 must use a
-true squash merge so those historical blobs do not enter `release-6.20`, unless
-the topic history is explicitly rewritten first. A merge commit or rebase merge
-does not satisfy this history-size gate.
+contains 493 unique task-asset blob IDs: 492 topic-added nonempty blobs
+totaling 96,573,227 bytes plus the shared empty blob already reachable from the
+base. PR #3377 must use a true squash merge so the 492 topic-added blobs do not
+enter `release-6.20`, unless the topic history is explicitly rewritten first.
+A merge commit or rebase merge does not satisfy this history-size gate.
+
+A fresh `0747b33bccf` tip audit against `6a1d377f616` classifies all 254
+changed paths (7.788 MiB): it finds no Git binary entries, changed task-asset
+paths, generated-capture/log/media suffix matches, tracked task assets, or
+visible untracked files. The intentional P3 checker PPM is a runtime input,
+not generated evidence. At that audit snapshot, the role-based
+`docs/dev_tasks/.gitignore` rule kept 8,662 generated evidence files totaling
+595,725,990 bytes out of Git. Generators must keep writing task evidence below
+an `assets/` output root;
+global extension ignores would also hide intentional runtime inputs such as
+the Figure 3 checker texture.
 
 The sealed pinned-author masonry-arch run is scientific-negative source
 evidence, not a DART comparison: 40 true flags use the initial
@@ -730,6 +742,65 @@ one-factor patch
 `SHA256SUMS`
 `11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
 
+A separate c95-bound candidate changes only the internal exact-FBF residual
+cadence from `1` to the pinned source value `5`. Its single preregistered strict
+run still stops after completed step 35 on the 56-contact group at 200
+iterations and residual `4.0845024466967225e-4`. It records 103 attempts, 102
+solves, one failure, 3,450 total outer iterations, zero accepted caps, and zero
+fallback; every nonzero successful-iteration sum is divisible by five.
+
+The copied stock sidecar maps to ancestor `844c9c3`, not a freshly built c95
+binary, and neither sidecar source-binding hash covers the patched math header.
+This proves only that the cadence-5 candidate does not clear the strict prefix;
+stock deltas are contextual, not a same-revision/same-binary controlled A/B or
+causal cadence estimate. The global-default patch must not ship: both cadence
+tests pass, but the full math binary has 64 passes and two expected
+legacy-default failures. No trajectory, outcome, backend, float32, timing,
+performance, superiority, video, Figure 6, or paper-parity claim follows. The
+verified package is `/tmp/fbf_fig06_residual_cadence_c95.0QXC5c/`:
+`RESULTS.md`
+`1f57c569f7feacb2c681cb17a70743782f07822abcbc1eb13d7822d81e9df18f`,
+one-factor patch
+`1c1346021972e563df3d81fa2ea77313eea33923b8c5b719afcd454ceebd5e86`, and
+`SHA256SUMS`
+`69db5e8915fadc31aae34d94c5f484928841b286566e172eea9535ee262d7645`.
+
+A c95 terminal spectral-estimate A/B uses the same instrumented Release binary
+for stock `rayleigh11` and candidate `last_norm10`; only the terminal estimate
+selector changes. The control exactly reproduces completed step 35, exact
+attempt 101, 56 contacts, residual `4.0844850280896461e-4`, safe gamma
+`0.27728679157546576`, final gamma `2.7728679157546576`, 103 attempts, 102
+solves, and one failure. The single recorded candidate satisfies all 103
+ten-product/no-Rayleigh trace invariants but still fails at the same gate
+coordinates with residual `4.07679549813362e-4`.
+
+Residuals first diverge at attempt 57 / step 29. Recorded contact-frame and
+reduced-state hashes plus ten product-norm sequences first diverge at attempt
+67 / step 30, and iterations first diverge at attempt 77 / step 31. The raw
+`reduced_problem_fnv1a64` field hashes only contact count, `freeVelocity`, and
+coefficients; it omits `W`, the initial reaction, and the complete reduced
+problem. `product_norms` stores norms only, so product vectors and an operator
+digest are also unrecorded. Failure-state
+residual/gamma deltas are therefore
+contextual, not a same-problem local causal estimate. The valid controlled
+verdict is only that `last_norm10` does not clear the strict prefix. The DART
+seed, scalar type, coordinate order, and backend remain source mismatches, and
+no trajectory, outcome, timing, performance, superiority, video, Figure 6, or
+paper-parity claim follows. The sealed marker/timeline/trace triplets are
+internally consistent with the protocol, and the guard refuses output-path
+reuse, but neither externally proves no discarded run occurred.
+
+Release build 350/350, both focused unit suites, `git diff --check`, the
+comparison replay, and all package checksums pass. Verified package:
+`/tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/`; `RESULTS.md`
+`e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda`;
+`comparison.json`
+`8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`;
+diagnostic patch
+`0d79fe90284ff481463716ba0a0bfa87b11272bacd4f8a5fe0960c4835c64227`;
+`SHA256SUMS`
+`f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
+
 The pinned author control completes all 2,400 substeps but reports 1,455
 converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
 split is 1,332/268 and the release-and-after split is 123/677; first false and
@@ -760,8 +831,9 @@ does not reach release and boxed remains bounded to 100 steps. This does not
 establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
 superiority. It remains an adapter-only lane. Any next strict A/B must isolate
-one remaining source mismatch; colored ordering, one-global-group scope, and
-source-sized gaps are now rejected as strict-prefix discriminators, while
+one remaining source mismatch; colored ordering, one-global-group scope,
+source-sized gaps, residual cadence, and terminal spectral estimation are now
+rejected as strict-prefix discriminators, while
 source shrink-cap or
 continuation semantics remain separate work. The older reconstructed
 `fbf_paper_card_house_26` lane remains distinct.
@@ -1394,8 +1466,9 @@ cross-platform CI.
   failure and complete its strict 2,400-step exact and boxed trajectories
   through the step-1,600 release. Keep any next strict A/B isolated from
   tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
-  The one-participant colored-ordering, one-global-group, and source-sized-gap
-  candidates are ineffective for this Figure 6 blocker. Require a new source-backed,
+  The colored-ordering, one-global-group, source-sized-gap, residual-cadence,
+  and terminal spectral-estimate candidates are ineffective for this Figure 6
+  blocker. Require a new source-backed,
   preregistered mismatch before another strict solver A/B. Preserve and
   independently review the separately labeled telemetry-rich continuation
   capture without presenting accepted finite iterates as strict exact success;
