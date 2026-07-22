@@ -23,7 +23,7 @@ claim that DART beats the paper.
 
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six locally finalized bundles, and the visual
-workflow now declares 31 schedules. It also includes separately named strict
+workflow now declares 32 schedules. It also includes separately named strict
 and source-continuation four-level, source-default five-level, and ten-level
 card-house schedules. The four-level continuation schedule has validated local
 exact/boxed media. The five-level source-default and ten-level continuation
@@ -39,14 +39,17 @@ base. PR #3377 must use a true squash merge so the 492 topic-added blobs do not
 enter `release-6.20`, unless the topic history is explicitly rewritten first.
 A merge commit or rebase merge does not satisfy this history-size gate.
 
-A fresh `0747b33bccf` tip audit against `6a1d377f616` classifies all 254
-changed paths (7.788 MiB): it finds no Git binary entries, changed task-asset
-paths, generated-capture/log/media suffix matches, tracked task assets, or
-visible untracked files. The intentional P3 checker PPM is a runtime input,
-not generated evidence. At that audit snapshot, the role-based
-`docs/dev_tasks/.gitignore` rule kept 8,662 generated evidence files totaling
-595,725,990 bytes out of Git. Generators must keep writing task evidence below
-an `assets/` output root;
+A fresh pre-push audit against `6a1d377f616` classifies a 260-path intended
+base-to-tip/worktree union: it finds zero changed or tracked task-asset paths
+and zero generated-capture/log/media suffix matches. The only three visible
+untracked paths are the intended new backspin specification, finalizer, and
+finalizer test; they become ordinary tracked source in this checkpoint. The
+intentional P3 checker PPM is a runtime input, not generated evidence. The
+role-based `docs/dev_tasks/.gitignore` rule keeps all 13,480 present generated
+evidence files totaling 999,659,711 bytes out of Git. The current remote PR
+snapshot contains 257 changed paths, zero task-asset paths, and zero media/raw-
+evidence suffix matches. Generators must keep writing task evidence below an
+`assets/` output root;
 global extension ignores would also hide intentional runtime inputs such as
 the Figure 3 checker texture.
 
@@ -402,9 +405,11 @@ composer; no attachment URL is recorded yet.
 
 ## Visual Evidence
 
-The authoritative Figures 1-5 upload source is the ignored c95-bound
-reseal `assets/pr_media_current_head_c95_small_rows/`, produced from committed
-implementation head `c95bd5fb916`. Demo and runner SHA-256 values are
+The retained Figures 1-2 and 4-5 upload source is the ignored c95-bound reseal
+`assets/pr_media_current_head_c95_small_rows/`; Figure 3 uses the stronger
+source-pinned author-backspin capture documented below. The c95
+reseal was produced from committed implementation head `c95bd5fb916`. Demo
+and runner SHA-256 values are
 `5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149`
 and `89f76166954d0d8cb85996980c7235b6def387dd8994de3ef001f56b99744116`.
 The capture summary passes with 20 members, 13 groups, zero failures, and five
@@ -417,16 +422,17 @@ and five expected skips; `/tmp/fbf_small_rows_c95_verify.json` has SHA-256
 Every member and group records `actual_simulator=true`,
 `generated_imagery=false`, `paper_comparable=false`, and
 `automated_semantic_outcome_validated=false`.
-Fresh temporal panels confirm the checker-textured Figure 3 ball visibly
-rotates in both lanes and Painleve `mu=.55` remains exact-tumbled versus
+The superseded c95 temporal panels confirm the reconstructed Figure 3 checker
+ball rotates in both lanes; the preferred source-pinned capture below binds the
+checker resources and signed state trace. Painleve `mu=.55` remains exact-tumbled versus
 boxed-upright. The c95 turntable group hashes are byte-identical to previously
 audited clips/timelines, which retain the narrow source-order
 ejected/ejected/retained/ejected and proxy classifications. These are narrow current-DART observations, not paper
 parity or general solver-superiority evidence. No MP4 is tracked; browser-only
 PR upload and resulting user-attachment URLs remain pending.
 
-The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 15
-recommended clips: nine minimum one-per-source-row uploads and six
+The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 16
+recommended clips: nine minimum one-per-source-row uploads and seven
 supplemental direct comparisons. An independent audit verified every local
 path and SHA-256, H.264/yuv420p at 30 fps, and a complete
 `ffmpeg -xerror` decode. This establishes upload readiness only. Figure 4's
@@ -578,7 +584,48 @@ tracked fixtures are separate implementations, so this is not trace
 equivalence, author-scene parity, external-solver parity, an approved source
 golden/diff, paper timing, or real-time evidence.
 
-The backspin subset has also been independently recaptured and locally
+### Source-Pinned Author Figure 3 Backspin
+
+The preferred PR media is now the ignored
+`assets/pr_media_author_backspin_v2/` capture of
+`fbf_author_backspin_current_source` under schedule
+`backspin_author_current_source`, not the reconstructed c95 bundle below. It
+binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, the sealed
+source-reference manifest SHA-256
+`7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`,
+the DART implementation, exact options, explicit ground/sphere primary and
+secondary friction plus restitution, process state, and the checker OBJ/MTL/PPM
+before and after capture. The source's configured terminal flag is true for all
+240 steps, but 183 projected natural residuals exceed `1e-6`; this is not
+strict natural-residual convergence. Capture and independent reuse verification
+pass for two members and one group; their summary SHA-256 values are
+`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+
+Exact and boxed each complete 240 steps / 241 states and pass prompt contact,
+contiguous support through step 206, a five-sample rolling tail, zero measured
+off-axis motion, left-edge roll-off, airborne terminal state, and the
+preregistered source-terminal tolerances. Exact records 205/205 solves, no
+accepted caps, failures, or fallbacks, and worst residual
+`9.990141261260073e-7`. Exact terminal `vx/wy/slip/z` is
+`-11.4796920141/-46.2074988932/0.0721827092/-1.3729371427`; boxed is
+`-11.4821219179/-46.2486366906/0.0800372547/-1.3731065400`.
+
+Manual inspection confirms visible checker-facet orientation changes in
+consecutive frames and the temporal panel. The exact 121-frame H.264/yuv420p
+clip is the preferred upload at SHA-256
+`b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
+the labeled exact/boxed group is supplemental at SHA-256
+`e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+The imagery does not prove signed direction/rate because 30 fps aliases the
+initial `-200 rad/s`; the trace owns signed `wy`. Both solvers pass, so no
+solver equivalence/superiority, source backend/full-trajectory or video
+equivalence, timing/real-time evidence, historical Figure 3 invocation, or
+paper parity follows. Browser upload and GitHub attachment URLs remain pending.
+
+### Historical Reconstructed Figure 3 Backspin
+
+The historical backspin subset was independently recaptured and locally
 finalized at
 `assets/paper_evidence/fig03_backspin_current_v3`. Its exact-membership index
 binds 18 artifacts within a 20-file physical directory. The MP4/GIF preserve
@@ -618,7 +665,8 @@ signed angular direction. The contact-free step rules out continuous contact;
 rest and an airborne landing phase are unproven. Separate demo and CSV scenes
 are not full-state trace-equivalent. No external-solver, paper,
 approved-golden, timing, or real-time parity follows. Both `fig.03` and
-`video.02_backspin` remain `partial`.
+`video.02_backspin` remain `partial`. It is superseded as the preferred PR
+upload by the source-pinned author lane above.
 
 ### Finalized Author-Pinned Fig. 4 Turntable Bundle
 
@@ -1553,7 +1601,12 @@ boxed negatives do not close those comparison gaps.
   `SplitImpulse`: 13/13 passed.
 - Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
   the full
-  paper fixture binary reports 39 passed and 3 explicit opt-in skips.
+  paper fixture binary reports 42 passed and 3 explicit opt-in skips.
+- Source-pinned author-backspin visual-runner/finalizer Python suites: 463/463
+  passed; Black and isort checks pass without changes.
+- Author-backspin numeric reference verify-only passes with four artifacts,
+  240 configured convergence flags, 240 trajectory states, and status
+  `valid_current_source_numeric_reference`.
 - Source-supported ten-level card-house build: passed; all four
   `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation
   contract. Its step-1 blocker remains historical; predictive checkpoint
@@ -1588,7 +1641,7 @@ boxed negatives do not close those comparison gaps.
 - Author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
   all four previously sealed bundles pass verify-only. The new boxed 101-stone
   capture and independent reuse verification also pass.
-- Demo scene documentation verifier: 32 scenes passed; exact and boxed real
+- Demo scene documentation verifier: 33 scenes passed; exact and boxed real
   step-zero JSON contracts match the validator.
 - The manifest validates 29 canonical requirements with status `partial`.
   Under the local sealed producer closure, live mode performed 118 file-identity
@@ -1702,7 +1755,8 @@ cross-platform CI.
   URLs. Keep both visible-outcome observations manual-only, label continuation
   non-strict, and preserve the separate step-142 strict impact blocker.
   Use the validated implementation/media-head `c95bd5fb916` small-row reseal as the
-  authoritative Figures 1-5 upload source; produce
+  retained Figures 1-2 and 4-5 upload source, with the source-pinned author
+  capture used for Figure 3; produce
   long-scene sidecars/media only when their solver/outcome gates pass.
 - Complete the final integrated lint, build, test, Python, docs, manifest,
   trace-schema, demo, media, and independent-review batteries.

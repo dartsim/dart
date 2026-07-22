@@ -132,13 +132,14 @@ same local standing criterion; neither is a historical invocation or supplies
 parity-eligible media/full-pose evidence. The overall 29-row audit is still 24
 partial, 5 blocked, 0 complete, and the finalized visual bundle count remains
 six. The ignored `assets/pr_media_current_head_c95_small_rows/` reseal is the
-authoritative Figures 1-5 upload source: capture and independent reuse
+retained Figures 1-2 and 4-5 upload source; the source-pinned author capture
+supersedes its reconstructed Figure 3. Capture and independent reuse
 verification pass with 20 members, 13 groups, zero failures, and five expected
 exact-only author-turntable boxed skips. Run/verify summary SHA-256 values are
 `8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af` and
 `264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
-The consolidated browser handoff now lists 15 independently audited clips:
-nine minimum source-row uploads and six supplemental comparisons. Every
+The consolidated browser handoff now lists 16 independently audited clips:
+nine minimum source-row uploads and seven supplemental comparisons. Every
 listed SHA matches, every stream is H.264/yuv420p at 30 fps, and every file
 passes a full `ffmpeg -xerror` decode. No GitHub user-attachment URL exists.
 
@@ -564,7 +565,37 @@ rigid-body rest is unproven. The bundle does not establish author-scene/paper
 parity, faithful external-solver parity, an approved golden/diff, paper timing,
 or real-time performance.
 
-### Finalized Fig. 03 And Video.02 Backspin Evidence
+### Source-Pinned Author Fig. 03 Backspin Evidence
+
+Resume Figure 3 from the ignored `assets/pr_media_author_backspin_v2/` root,
+not the older reconstructed bundle. The
+`fbf_author_backspin_current_source` / `backspin_author_current_source` pair
+binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and the sealed
+`author_backspin_reference_v1` manifest SHA-256
+`7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`.
+Capture and independent reuse verification pass with summary SHA-256 values
+`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+Exact and boxed each complete 240 steps / 241 state samples and pass the narrow
+supported-rolling, left-edge roll-off, planar-motion, airborne-terminal, and
+source-terminal-tolerance gates. Exact records 205/205 solves, zero accepted
+caps/failures/fallbacks, and worst residual `9.990141261260073e-7`.
+
+The 121-frame exact clip
+`backspin_author_current_source/clip.mp4` is the preferred primary upload at
+SHA-256 `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
+the 121-frame labeled comparison is supplemental at SHA-256
+`e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+Manual inspection confirms changing checker orientation, but 30 fps aliases
+the initial `-200 rad/s`, so the trace—not the video—owns signed spin. Both
+solvers pass; preserve the no-superiority/equivalence, no-source-backend/full-
+trajectory/video/timing, and no-paper-parity boundary. Attachment URLs are
+still pending browser-composer upload.
+
+### Historical Reconstructed Fig. 03 And Video.02 Backspin Evidence
+
+This compact bundle is superseded by the source-pinned author adapter for PR
+media; retain it only as historical reconstructed-DART regression evidence.
 
 Preserve the locally finalized current-source bundle at
 `assets/paper_evidence/fig03_backspin_current_v3/`.
@@ -1330,7 +1361,7 @@ fail-closed negative, retained in the ignored local evidence cache at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six locally finalized bundles, and
-  the visual workflow declares 31 schedules. Its validator fail-closed hashes
+  the visual workflow declares 32 schedules. Its validator fail-closed hashes
   local bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1373,7 +1404,11 @@ explicit DART reconstruction choices, not author parameters.
 - Native collision: 50/50;
 - `SplitImpulse`: 13/13;
 - masonry wedge dynamics: 3/3;
-- default paper fixtures: 39 passed, 3 explicit opt-in skips;
+- default paper fixtures: 42 passed, 3 explicit opt-in skips;
+- source-pinned author-backspin visual-runner/finalizer Python suites: 463/463;
+- author-backspin numeric reference verify-only: four artifacts, 240 configured
+  convergence flags, 240 trajectory states, status
+  `valid_current_source_numeric_reference`;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
 - schema-v8 CPU evidence tests: 230/230;
 - literal-wedge visual finalization tests: 16/16;
@@ -1410,7 +1445,7 @@ explicit DART reconstruction choices, not author parameters.
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
   8/8 contained tests passed;
-- demo scene documentation verifier: 32 scenes passed; exact/boxed real
+- demo scene documentation verifier: 33 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
@@ -1443,7 +1478,8 @@ only for an explicit live-closure recheck.
    selected, only as a frozen-prefix blocker with no superiority/parity claim
    and record its URL. Use the implementation/media-head `c95bd5fb916`
    small-row reseal as
-   the authoritative Figures 1-5 browser-upload source. Continue
+   the retained Figures 1-2 and 4-5 browser-upload source and use the
+   source-pinned author capture for Figure 3. Continue
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6

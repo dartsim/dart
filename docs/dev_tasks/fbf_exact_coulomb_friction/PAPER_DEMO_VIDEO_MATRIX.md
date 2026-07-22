@@ -40,7 +40,7 @@ strict convergence nor paper or solver-superiority evidence.
 | Paper/video example | Primary demo scene(s) and capture schedule(s) | Existing-solver comparison | Current gate | PR video |
 | --- | --- | --- | --- | --- |
 | Figs. 1-2 / incline segment | Source-bound `fbf_author_incline_sweep_current_source`; `incline_author_sweep_current_source`. The older `fbf_paper_incline`; `incline` pair remains a two-cell regression fixture | Paired exact/boxed capture and a solver-labeled synchronized seven-cell comparison are automated | Capture and independent reuse verification pass for both complete 120-step traces and the 61-frame group. All cells remain supported/upright/in-lane/contact-participating; `.3/.4/.45` slide and `.5/.55/.6/.8` stick. Exact/boxed maximum source-FBF endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s` and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. The retained source has 839/840 configured convergence flags, so this is a non-strict current-source terminal/outcome slice—not source trajectory/backend/full-physical/video/timing/paper parity or superiority | Local seven-cell exact-vs-boxed clip ready below; GitHub URL pending browser-composer upload |
-| Fig. 3 / backspin segment | `fbf_paper_backspin`; `backspin` | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated | The c95-bound exact and boxed captures pass timeline, solver-identity, full-decode, H.264/yuv420p, visible translational-reversal, and paired 240-step rolling-state gates. Both solvers reproduce the DART reconstruction; no old-solver failure is claimed. The checker cue is visual-only, and signed angular telemetry remains outside the claim. | Local exact-vs-boxed clip ready below; GitHub URL pending |
+| Fig. 3 / backspin segment | Source-pinned `fbf_author_backspin_current_source`; `backspin_author_current_source`. The older `fbf_paper_backspin`; `backspin` pair remains a reconstructed regression | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated. The exact member is the preferred primary upload because its checker remains larger than in the side-by-side group | Both complete 240 steps / 241 state samples and pass prompt-contact, contiguous support, five-sample rolling tail, planar-motion, left-edge roll-off, airborne terminal, and source-terminal tolerance gates. Both solvers pass under the same DART scene; no solver failure, superiority, or equivalence is claimed. The checker is visual-only; signed `wy` is trace-bound, while 30 fps imagery cannot establish signed direction/rate. Source backend/full-trajectory/renderer/video/timing/Figure 3/paper parity remain false | Local exact primary and exact-vs-boxed supplemental clips ready below; GitHub URLs pending browser-composer upload |
 | Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The c95-bound groups pass solver, timeline, stream, decode, and independent replay gates. Their clip hashes are byte-identical to the previously timeline/clip-audited media: author source order is ejected/ejected/retained-through-6-s/ejected, while both proxy solvers produce ejected/ejected/captured/ejected over 4 s. These remain manual current-DART classifications rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
 | Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored c95-bound bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. Colored ordering and global scope are bounded rejects; source-sized-gap, residual-cadence, same-binary terminal spectral-estimate, and same-binary source-seed-values candidates also fail the 36-step gate with explicit claim limits. These are six bounded strict-prefix rejects. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
@@ -50,7 +50,7 @@ strict convergence nor paper or solver-superiority evidence.
 
 The source-pinned Figure 5 adapter binds author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, tree
-`ffcdafb61adeda2239c8366d054b548b50d26685e`, and Painleve `run.py` blob
+`ffcdafb61adeda2239c8366d054b548b50d26685`, and Painleve `run.py` blob
 `afaa03613b0ad0a30290168d2fd64221fc3523b7` (SHA-256
 `818fa8f75c2c73e2dd08f0e0e9f9f5d58f63d8073dce38f874e2da24b2aa46e3`).
 The adapter contract also binds SHA-256
@@ -250,7 +250,7 @@ source-selected row.
 
 ## Supplemental Non-Paper Source-Default Five-Level Card House
 
-The visual workflow now declares 31 schedules, including distinct strict
+The visual workflow now declares 32 schedules, including distinct strict
 `card_house_author_5_impact_current_source` and continuation
 `card_house_author_5_impact_source_continuation_current_source` schedules. They
 bind the current public no-argument five-level default: 40 cards, four
@@ -312,12 +312,14 @@ assets remain ignored and the browser-upload URL is pending.
 
 ## Current Local Attachment Candidates
 
-The authoritative small-row upload root is the ignored c95-bound
+The retained Figures 1-2 and 4-5 small-row upload root is the ignored c95-bound
 reseal `assets/pr_media_current_head_c95_small_rows/`, captured from committed
 head `c95bd5fb916` with demo binary SHA-256
 `5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149`
 and runner SHA-256
 `89f76166954d0d8cb85996980c7235b6def387dd8994de3ef001f56b99744116`.
+Its reconstructed Figure 3 media is historical and superseded by the
+source-pinned author-backspin candidates below.
 The run summary passes with 20 member results, 13 groups, zero failures, and
 five expected boxed skips for the exact-only author-turntable schedules/group;
 its SHA-256 is
@@ -342,17 +344,17 @@ claiming that a visible outcome is numerically or paper-valid.
 
 ### Browser-upload manifest
 
-An independent handoff audit verified the following 15 recommended files.
+An independent handoff audit verified the following 16 recommended files.
 Every file exists under ignored task assets, matches the listed SHA-256, probes
 as H.264/yuv420p at 30 fps, and passes a complete `ffmpeg -xerror` decode. None
 is tracked. The first nine clips are the minimum one-per-source-row set; the
-last six retain promised direct comparisons that the minimum set would hide.
+last seven retain promised direct comparisons that the minimum set would hide.
 Upload order does not change any row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
 | --- | --- | --- | --- |
 | Minimum | Figs. 1-2 seven-cell current-source incline exact vs boxed | `assets/pr_media_author_incline_final_candidate_v6/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` |
-| Minimum | Fig. 3 checker backspin exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/backspin__exact_vs_boxed/clip.mp4` | `2056924dae3ccbffcc66e7203513e00e7a8b890c002243b84bc46dad2adc2498` |
+| Minimum | Fig. 3 source-pinned checker backspin exact | `assets/pr_media_author_backspin_v2/backspin_author_current_source/clip.mp4` | `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30` |
 | Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
 | Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
 | Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
@@ -366,8 +368,11 @@ Upload order does not change any row's scientific status.
 | Supplemental | Fig. 4 proxy `mu=.5, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4` | `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8` |
 | Supplemental | Fig. 7 literal-standing baseline exact vs boxed | `assets/pr_media_current_head_fig07/groups/masonry_arch_25_literal_standing__exact_vs_boxed/clip.mp4` | `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e` |
 | Supplemental | Non-paper five-level source-default exact-with-continuation vs boxed-without-continuation | `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4` | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
+| Supplemental | Fig. 3 source-pinned checker backspin exact vs boxed | `assets/pr_media_author_backspin_v2/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4` | `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b` |
 
-The mandatory caption boundaries remain: Figure 4's author group is
+The mandatory caption boundaries remain: Figure 3's checker is a visual-only
+rotation cue and its 30 fps sampling does not establish signed angular
+direction or rate; Figure 4's author group is
 exact-only; Figure 6/7/Tables 6-7 continuation clips are non-strict; Figure 8
 freezes exact after its valid prefix; and the Tables 6-7 pair includes a
 continuation-policy difference. The supplemental five-level pair is non-paper
@@ -636,37 +641,72 @@ longer the recommended Figures 1-2 browser upload.
 
 ### Figure 3: backspin reversal
 
-Figure 3 was resealed from implementation/media head `c95bd5fb916` with 131 distinct frames
-per lane. The exact-FBF sidecar reports 129/129 exact solves, zero
-accepted caps, failures, or boxed fallbacks, and a worst residual of
-`9.96497154974839e-7`. The boxed sidecar reports
-`BoxedLcpConstraintSolver` with the expected exact-diagnostics-unavailable
-gap. Manual panel inspection confirms that the ivory/charcoal checker cells
-and coral registration tile visibly change orientation.
+The preferred Figure 3 candidate is now the separately named source-pinned
+`fbf_author_backspin_current_source` scene and
+`backspin_author_current_source` schedule. They bind the current public
+four-second configuration at author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and an independently sealed
+240-step numeric reference. The source's configured terminal Coulomb flag is
+true for all 240 steps, but 183 projected natural residuals exceed `1e-6`, so
+that fact is not reported as strict natural-residual convergence.
 
-The paired 130-step traces reach their forward maxima at step 48, first report
-negative translational velocity at step 49, and finish behind the initial
-position at about `x=-2.936 m`. Independent 240-step traces pass the full DART
-rolling-state gate for both solvers: exact finishes at `vx=-11.5671 m/s` and
-boxed at `vx=-11.5658 m/s`, against the `-11.4286 m/s` analytical target with
-a `0.5 m/s` tolerance. This demonstrates the reconstructed translational
-reversal; it does not prove signed angular-velocity or paper-renderer parity.
+Exact and boxed DART lanes each complete 240 steps and emit 241-state traces.
+Both first become supported at step 2, remain supported contiguously through
+step 206, satisfy the five-sample rolling-tail gate, leave the finite slab at
+its left edge, finish airborne beyond the slab, preserve zero measured
+off-axis motion, and remain within the preregistered source-terminal
+tolerances. Exact finishes at `vx=-11.4796920141 m/s`,
+`wy=-46.2074988932 rad/s`, slip `0.0721827092 m/s`, and
+`z=-1.3729371427 m`; boxed finishes at `vx=-11.4821219179 m/s`,
+`wy=-46.2486366906 rad/s`, slip `0.0800372547 m/s`, and
+`z=-1.3731065400 m`. The source terminal projection is
+`vx=-11.4285717010 m/s`, `wy=-45.7142868042 rad/s`, zero slip, and
+`z=-1.3714094162 m`. Exact records 205/205 solves, zero accepted caps,
+failures, or boxed fallbacks, and worst residual
+`9.990141261260073e-7`; the boxed lane exposes no exact-FBF diagnostics.
+The capture summary and independent reuse-verification summary pass for two
+members and one group at SHA-256
+`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+The demo binary SHA-256 is
+`ee513a684857509d587f8fb69b27492c7fe847f1e3a0130fbbe6031afae60606`;
+the bound configuration spec / demo implementation SHA-256 values are
+`bd8ff3660f05d63fb4be699389166f04c8887e9d6285bf0e68b851fb4126bd64`
+and `065383b24eecceb597f6d66e84748d6aaef3bf390531b10ab5882515b29dc76f`.
 
-- Exact attachment candidate:
-  `assets/pr_media_current_head_c95_small_rows/backspin/clip.mp4`, SHA-256
-  `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928`.
-- Boxed attachment candidate:
-  `assets/pr_media_current_head_c95_small_rows/backspin__boxed/clip.mp4`, SHA-256
-  `c9855a7a0bdcd5b5540baf5fba5fa40779ee2908be7a09149ddb1bc7e06851d0`.
-- Direct comparison candidate:
-  `assets/pr_media_current_head_c95_small_rows/groups/backspin__exact_vs_boxed/clip.mp4`,
+The renderer attaches a high-contrast ivory/charcoal checker mesh as
+`VisualAspect` only; the physical sphere remains the collision, inertia,
+friction, and dynamics geometry. Capture metadata binds the OBJ, MTL, and PPM
+before and after capture at SHA-256
+`1a10b78223e0af8b786452458f5d62b904afc398f4630003830742092dac014e`,
+`a8cd05a3cf64c8909bafc2ab36ac8d0ef9f5e59538e96eefe77389ddcdf9f004`,
+and `324819cc828864dc0e5459593b0801f48e1754f49d7a096c8e6469531a62a3fb`.
+Manual inspection confirms visible facet-orientation
+changes in consecutive frames and across the temporal panel. That observation
+is only a rotation-visibility check: 30 fps sampling aliases the initial
+`-200 rad/s` rate, so signed direction and rate remain trace-backed rather
+than video-backed.
+
+- Preferred exact attachment candidate:
+  `assets/pr_media_author_backspin_v2/backspin_author_current_source/clip.mp4`,
   SHA-256
-  `2056924dae3ccbffcc66e7203513e00e7a8b890c002243b84bc46dad2adc2498`.
+  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`.
+- Boxed member candidate:
+  `assets/pr_media_author_backspin_v2/backspin_author_current_source__boxed/clip.mp4`,
+  SHA-256
+  `dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`.
+- Supplemental labeled comparison candidate:
+  `assets/pr_media_author_backspin_v2/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
 
-The members are 2.2-second, 66-frame, 1300x506 clips; the direct comparison is
-2600x530 with the same duration and frame count. They remain ignored local
-evidence until a maintainer uploads the comparison through the pull-request
-editor and records the resulting GitHub-hosted URL in the Figure 3 row.
+All three clips have 121 H.264/yuv420p frames at 30 fps and pass full decode.
+The 1300x506 exact member is preferred because the texture is larger than in
+the 2600x530 comparison. Both solvers pass the bounded outcome, so this is not
+solver superiority or equivalence, source backend/full-trajectory or video
+equivalence, timing/real-time evidence, a historical Figure 3 invocation, or
+paper parity. The older c95 `backspin` bundle remains historical reconstructed
+DART regression evidence and must not replace this upload candidate.
 
 ### Figure 4: turntable parameter matrix
 

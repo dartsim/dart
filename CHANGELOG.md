@@ -330,8 +330,8 @@
     reduced Coulomb friction forward-backward-forward splitting architecture
     from Song, Fan, Ascher, and Pai (SCA 2026), with a scratch-backed
     contact-row Delassus operator, cross-step contact-manifold warm starts,
-    boxed-LCP fallback, paper-scene fixtures/benchmarks/traces, nine
-    `dart-demos` inspection scenes, and an author-faithful Rigid-IPC
+    boxed-LCP fallback, paper-scene fixtures/benchmarks/traces, source-pinned
+    `dart-demos` comparison scenes, and an author-faithful Rigid-IPC
     masonry-arch generator. The default contact path is unchanged:
     [#3377](https://github.com/dartsim/dart/pull/3377)
 

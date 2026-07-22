@@ -36,15 +36,17 @@ docs/dev_tasks/fbf_exact_coulomb_friction/assets/, but topic history still has
 release-6.20, unless the topic history is explicitly rewritten first. Do not
 use a merge commit or rebase merge.
 
-The `0747b33bccf` tip audit against `6a1d377f616` finds 254 changed paths
-(7.788 MiB), with no Git binary entries, changed or tracked task assets,
-generated-capture/log/media suffix matches, or visible untracked files. The
-intentional P3 checker PPM is a runtime input, not generated evidence. At that
-audit snapshot,
-the role-based task ignore kept 8,662 local evidence files totaling 595,725,990
-bytes out of Git. Keep all generated task evidence under an `assets/` output
-root; do not replace that contract with global extension ignores that can hide
-runtime inputs.
+The pre-push audit against `6a1d377f616` finds a 260-path intended base-to-tip/
+worktree union, zero changed or tracked task assets, and zero generated media/
+raw-evidence suffix matches. The only three visible untracked paths are the
+intended new backspin specification, finalizer, and finalizer test; the
+checkpoint commits them as ordinary source. The role-based task ignore keeps
+all 13,480 present local evidence files totaling 999,659,711 bytes out of Git.
+The current remote PR snapshot has 257 changed paths, zero task assets, and zero
+media/raw-evidence suffix matches. The intentional P3 checker PPM is a runtime
+input, not generated evidence. Keep all generated task evidence under an
+`assets/` output root; do not replace that contract with global extension
+ignores that can hide runtime inputs.
 
 Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
 Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
@@ -138,11 +140,12 @@ PR truth:
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
 
-C95-bound small-row media truth:
+C95-bound retained small-row media truth:
 
-- The authoritative ignored Figures 1-5 upload root is
+- The retained ignored Figures 1-2 and 4-5 upload root is
   assets/pr_media_current_head_c95_small_rows/ at implementation head
-  c95bd5fb916. Demo SHA-256 is
+  c95bd5fb916. Its reconstructed Figure 3 member/group are historical and
+  superseded by the source-pinned author capture. Demo SHA-256 is
   5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149.
 - Capture passes with 20 member results, 13 groups, zero failures, and five
   expected boxed skips for exact-only author-turntable schedules/group. Run
@@ -151,8 +154,9 @@ C95-bound small-row media truth:
 - Independent reuse verification passes with the same 20 members, 13 groups,
   and five expected skips. /tmp/fbf_small_rows_c95_verify.json SHA-256 is
   264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e.
-- Fresh temporal panels show the Figure 3 checker texture and coral
-  registration tile rotating in both lanes; the Painleve mu=.55 group shows
+- Historical c95 temporal panels show the reconstructed Figure 3 checker
+  texture and coral registration tile rotating in both lanes; the Painleve
+  mu=.55 group shows
   exact-tumbled versus boxed-upright. The c95 turntable group hashes are
   byte-identical to the previously audited clips/timelines, which retain the
   narrow ejected/ejected/retained/ejected author classification and proxy
@@ -160,9 +164,9 @@ C95-bound small-row media truth:
   or general solver-superiority evidence.
 - No attachment URL is recorded. Upload accepted MP4s through GitHub's browser
   composer and record the resulting user-attachment URLs.
-- The consolidated browser handoff in PAPER_DEMO_VIDEO_MATRIX.md contains 15
+- The consolidated browser handoff in PAPER_DEMO_VIDEO_MATRIX.md contains 16
   independently audited H.264/yuv420p clips: nine minimum source-row clips and
-  six supplemental direct comparisons. Every listed SHA matches and every
+  seven supplemental direct comparisons. Every listed SHA matches and every
   clip passes a full `ffmpeg -xerror` decode. Retain the mandatory non-strict,
   frozen-prefix, exact-only, proxy, and continuation-policy caption boundaries.
 
@@ -529,7 +533,34 @@ Historical finalized Painleve proxy visual truth:
   paper parity, faithful external-solver parity, an approved golden/diff,
   paper timing, or real-time performance.
 
-Finalized Fig. 03 and video.02 backspin truth:
+Source-pinned author Fig. 03 backspin truth:
+
+- Prefer `fbf_author_backspin_current_source` with schedule
+  `backspin_author_current_source` and ignored capture root
+  `assets/pr_media_author_backspin_v2/`. They bind author commit
+  `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and sealed source-reference
+  manifest SHA-256
+  `7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`.
+- Capture and independent reuse verification pass for two members and one
+  group; summary SHA-256 values are
+  `f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+  `390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+- Exact and boxed both complete 240 steps / 241 states and pass the bounded
+  rolling, contiguous-support, left-edge roll-off, planar-motion, airborne
+  terminal, and source-terminal-tolerance slice. Exact records 205/205 solves,
+  zero accepted caps/failures/fallbacks, and worst residual
+  `9.990141261260073e-7`.
+- Prefer the 121-frame exact member for browser upload, SHA-256
+  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
+  retain the labeled exact/boxed group as a supplement, SHA-256
+  `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+- The visual-only checker is hash-bound before/after capture and visibly
+  changes orientation. At 30 fps the initial `-200 rad/s` aliases, so signed
+  spin is trace-backed. Both solvers pass; no equivalence/superiority,
+  source-backend/full-trajectory/video/timing, historical Figure 3, or paper
+  parity claim follows. GitHub attachment URLs remain pending.
+
+Historical reconstructed Fig. 03 and video.02 backspin truth:
 
 - Preserve
   assets/paper_evidence/fig03_backspin_current_v3/. Its exact-membership index
@@ -1309,14 +1340,14 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six locally finalized bundles, and the visual
-  workflow declares 31 schedules; validator passes and fail-closed hashes local
+  workflow declares 32 schedules; validator passes and fail-closed hashes local
   bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   enforces current-truth promotion boundaries.
-- The browser-upload handoff contains 15 independently audited clips: nine
-  minimum source-row uploads and six supplemental comparisons. The source-
-  default five-level group-v3 is the sixth supplemental clip; adding it changes
+- The browser-upload handoff contains 16 independently audited clips: nine
+  minimum source-row uploads and seven supplemental comparisons. The source-
+  pinned Figure 3 group is the seventh supplemental clip; adding it changes
   neither the canonical 29-row manifest status nor the six formally finalized
   visual-bundle count.
 - The P-core mark26 bundle is the authoritative performance/scaling evidence
@@ -1365,7 +1396,11 @@ Latest recorded focused gates:
 - Native collision 50/50;
 - SplitImpulse 13/13;
 - masonry wedge dynamics 3/3;
-- default paper fixtures 39 pass / 3 explicit opt-in skips;
+- default paper fixtures 42 pass / 3 explicit opt-in skips;
+- source-pinned author-backspin visual-runner/finalizer Python suites 463/463;
+- author-backspin numeric reference verify-only passes with four artifacts,
+  240 configured convergence flags, 240 trajectory states, and status
+  `valid_current_source_numeric_reference`;
 - focused Release and Debug CTest matrices 9/9 in each configuration;
 - schema-v8 CPU runner tests 230/230;
 - literal-wedge visual finalization tests 16/16;
@@ -1407,7 +1442,7 @@ Latest recorded focused gates:
   before implementation/media head c95bd5fb916; a Clang 22 warning-as-error
   syntax check passes, while current remote confirmation must be read live;
 - author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
-- demo scene documentation verifier: 32 scenes passed; exact/boxed real
+- demo scene documentation verifier: 33 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
@@ -1462,7 +1497,8 @@ Immediate order:
    before another four-level strict solver A/B. Keep ten-level colored
    scheduling and global-scope diagnostics pending one factor at a time
    without loosening tolerance or caps. Use the ignored c95-bound
-   c95bd5fb916 reseal as the authoritative Figures 1-5 upload source. Upload any
+   c95bd5fb916 reseal as the retained Figures 1-2 and 4-5 upload source; use
+   the source-pinned author capture for Figure 3. Upload any
    final labeled pair only through the PR browser composer and
    record the URL.
    Independently review the completed telemetry-rich source-continuation

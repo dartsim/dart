@@ -4,7 +4,7 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six locally finalized
-bundles, and the visual workflow declares 31 schedules.
+bundles, and the visual workflow declares 32 schedules.
 
 ## Source And Comparability Boundary
 
@@ -260,7 +260,7 @@ colored-inner-BGS contract validated above.
 | ID | Paper fixture/result | Current evidence | Current status and missing proof |
 | --- | --- | --- | --- |
 | Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | New source-bound seven-cell DART demo/schedule over `mu=.3,.4,.45,.5,.55,.6,.8`, independently verified exact/boxed paired media, the older two-cell visual/trace bundle, and numeric author FBF/MuJoCo/Kamino runs | Partial: both DART lanes classify `.3/.4/.45` slide and `.5/.55/.6/.8` stick and match the retained source-FBF terminal projection within `.01 m/.01 m/s`. The source oracle is non-strict at 839/840 configured flags (`mu=.55`, step 1 at 200/200); source trajectory/backend/full-state, historical invocation/golden/video, paper contact/history/timing/real-time, superiority, and paper parity remain missing |
-| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Locally finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
+| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Source-pinned `fbf_author_backspin_current_source` exact/boxed 240-step traces, preregistered rolling/roll-off/source-terminal slice, independently sealed public-source numeric reference, checker-textured exact/group MP4s, and manual checker-rotation inspection | Partial: both DART solvers pass the bounded terminal/outcome slice and trace signed `wy`; the visual checker shows orientation changes but 30 fps aliases the initial angular rate. Source backend/full-trajectory, solver equivalence/superiority, renderer/video/golden, historical invocation, timing/real-time, Figure 3, and paper parity remain unproven. The older `fig03_backspin_current_v3` bundle is historical only |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
 | Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, six bounded c95 colored/global-scope/source-gap/cadence/terminal-estimate/source-seed-values diagnostics, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, while c95 cadence-5, same-binary `last_norm10`, and same-binary source-seed-values candidates still fail at step 35; each has explicit claim limits and leaves the scene unchanged. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
@@ -523,7 +523,29 @@ remain `partial` pending the full friction sweep/plot, matched external rows,
 approved source golden/diff, paper contact-count match, full 11 s semantic
 edit, paper timing, and real-time parity.
 
-The locally finalized Fig. 3/video.02 bundle binds 18 indexed artifacts in a
+The preferred current-source Figure 3 evidence is now the separately named
+`fbf_author_backspin_current_source` / `backspin_author_current_source` lane.
+It binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, a sealed
+240-step numeric reference, explicit DART physics/process/solver contracts, and
+the visual-only checker resources. Capture and independent reuse verification
+pass with summary SHA-256 values
+`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+Exact and boxed each complete 240 steps /
+241 states and pass the bounded rolling/contiguous-support/left-edge-roll-off/
+planar-motion/airborne-terminal/source-terminal slice. Exact records 205/205
+solves with no accepted caps, failures, or fallbacks and worst residual
+`9.990141261260073e-7`. The exact primary clip SHA-256 is
+`b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
+the labeled comparison SHA-256 is
+`e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+Manual inspection validates changing checker orientation only; 30 fps aliases
+the initial angular rate and signed `wy` remains trace-backed. Both solvers
+pass, so solver equivalence/superiority, source backend/full-trajectory or
+video equivalence, timing/real-time evidence, historical Figure 3 invocation,
+and paper parity remain false.
+
+The historical reconstructed Fig. 3/video.02 bundle binds 18 indexed artifacts in a
 20-file physical directory. The MP4/GIF preserve the motion schedule, three
 selected local stills retain steps 0, 1, and 2, and the 140-file raw capture
 staging directory is pruned after local sealing. With the compact local bundle
@@ -556,7 +578,8 @@ alias the `-200 rad/s` motion and do not prove signed angular direction. Step
 120 rules out continuous contact; neither rest nor an airborne landing phase
 is proven. Separate demo and CSV scenes are not full-state trace-equivalent.
 External-solver, paper, approved-golden, timing, and real-time parity remain
-unproven. Both `fig.03` and `video.02_backspin` remain `partial`.
+unproven. Both `fig.03` and `video.02_backspin` remain `partial`, and this older
+bundle is superseded as the preferred PR upload.
 
 The locally finalized Fig. 4 bundle is
 `assets/paper_evidence/fig04_turntable_author_current_v1/`. It pins author
@@ -787,7 +810,7 @@ tests, 13/13 `SplitImpulse` tests, 3/3 masonry-wedge-dynamics tests, 39 passing
 paper fixtures with 3 skipped,
 9/9 focused CTests in both Release and Debug, 8/8 author-masonry adapter tests,
 5/5 author-incline production-world contract tests, 359/359 visual-runner tests,
-32/32 demo scene-doc contracts, 64/64 author-incline finalizer
+33/33 demo scene-doc contracts, 64/64 author-incline finalizer
 tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. With the compact local incline bundle present,
