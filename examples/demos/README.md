@@ -31,6 +31,8 @@ pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
 pixi run demos -- --scene fbf_author_card_house_5_construction
 pixi run demos -- --scene fbf_author_card_house_4_impact_current_source
 pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_current_source
+pixi run demos -- --scene fbf_author_card_house_5_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_5_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_card_house_10_impact_current_source
 pixi run demos -- --scene fbf_author_card_house_10_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
@@ -131,6 +133,20 @@ finite `success`, `plateau_accepted`, or
 no boxed-LCP fallback. The strict scene and its residual/cap gate remain
 unchanged, so the two policies produce distinct evidence lanes rather than
 silently weakening the existing one.
+
+The source-default five-level pair makes the public no-argument configuration
+dynamic without changing the construction-only scene.
+`fbf_author_card_house_5_impact_current_source` contains exactly 40 cards and
+the four existing cubes, represents the pinned 0.1 m ground and 0.005 m
+dynamic-shape gap values through the same Native FourPointPlanar frontend, and
+uses the source-default 800-frame/3,200-substep clock with release after
+completed step 1,600. The separately named
+`fbf_author_card_house_5_impact_source_continuation_current_source` keeps the
+same bodies, gaps, frontend, clock, and release action while requesting the
+source-continuation policy only for exact FBF. Both remain current-source DART
+adapters: source contact/backend semantics, historical-paper provenance,
+trajectory/outcome parity, Fig. 6/video parity, solver superiority, and timing
+comparability are unclaimed.
 
 The separate ten-level current-source pair follows the same boundary.
 `fbf_author_card_house_10_impact_current_source` binds the supported

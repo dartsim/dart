@@ -128,12 +128,19 @@ namespace dart_demos {
 /// Research > FBF author card house: source-parameterized four-level impact.
 [[nodiscard]] DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene();
 
+/// Research > FBF author card house: source-default five-level impact.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceScene();
+
 /// Research > FBF author card house: source-parameterized ten-level impact.
 [[nodiscard]] DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene();
 
 /// Research > FBF author card house: exact source-continuation impact lane.
 [[nodiscard]] DemoScene
 makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene();
+
+/// Research > FBF author card house: five-level source-continuation impact.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene();
 
 /// Research > FBF author card house: ten-level source-continuation impact lane.
 [[nodiscard]] DemoScene

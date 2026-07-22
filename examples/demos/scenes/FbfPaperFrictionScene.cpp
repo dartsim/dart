@@ -1908,6 +1908,17 @@ DemoScene makeFbfAuthorTurntableParameterizedScene(
 }
 
 //==============================================================================
+CameraHome authorCardHouseFiveLevelCameraHome()
+{
+  // Keep the source-default construction and the post-impact cube scatter
+  // inside DemoHost's fixed evidence viewport.
+  return CameraHome{
+      ::osg::Vec3d(37.0, -49.1, 23.6),
+      ::osg::Vec3d(0.0, 0.0, 5.5),
+      ::osg::Vec3d(0.0, 0.0, 1.0)};
+}
+
+//==============================================================================
 DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
 {
   DemoScene scene;
@@ -1945,10 +1956,7 @@ DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
               "dart_demos",
               DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256));
     };
-    setup.cameraHome = CameraHome{
-        ::osg::Vec3d(26.8, -35.6, 18.6),
-        ::osg::Vec3d(0.0, 0.0, 5.5),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    setup.cameraHome = authorCardHouseFiveLevelCameraHome();
     setup.renderPanel = [levelCount] {
       ImGui::TextDisabled("Pinned author construction (b3f3c5c)");
       ImGui::Text("Levels: %zu", levelCount);
@@ -2085,6 +2093,75 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
       [](const WorldPtr& world, SolverMode mode) {
         installAuthorCardHouseSolver(
             world, mode, false, true, false, &kFourLevelImpactScenario);
+      });
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kFiveLevelDynamicsDemoSceneId,
+      "FBF Author Card House 5: Impact (Current Source Default)",
+      "Public-author source-default five-level configuration: 40 cards, four "
+      "kinematic cubes, and the 800-frame release schedule in DART "
+      "exact/boxed lanes.",
+      authorCardHouseFiveLevelCameraHome(),
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kFiveLevelImpactScenario, state->solverMode, false, true);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c and its "
+      "no-argument five-level, 800-frame card-house defaults: 30 leaning "
+      "cards, 10 bridges, four initially kinematic 0.8 m cubes, and mu=.8. "
+      "DART uses four substeps per frame at dt=1/240 s and releases the "
+      "existing cubes after completed step 1,600.",
+      "The expected evidence is a deterministic, finite DART exact/boxed "
+      "comparison over 3,200 substeps. Exact evidence must fail closed on "
+      "the 4,096-contact global cap, four-contact pair cap, residual, "
+      "failure, fallback, and finite-state gates.",
+      "This is a DART adapter for the current public source defaults, not a "
+      "recovered historical paper invocation. The pinned 0.1 m ground and "
+      "0.005 m card/cube gap values are represented by Native speculative "
+      "contacts, but source collision-gap, stiffness/damping, backend, and "
+      "float32 semantics are not implemented. Trajectory/outcome "
+      "equivalence, Fig. 6/video parity, solver superiority, and timing "
+      "comparability remain unproven.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kFiveLevelImpactScenario);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kFiveLevelImpactScenario,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf));
+        };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, releaseLabel, [world] {
+              releaseCubes(world, kFiveLevelImpactScenario.levelCount);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(
+            world, mode, false, true, false, &kFiveLevelImpactScenario);
       });
 }
 
@@ -2253,6 +2330,99 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
             true,
             true,
             &kFourLevelSourceContinuationScenario);
+      });
+}
+
+//==============================================================================
+DemoScene
+makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kFiveLevelSourceContinuationDynamicsDemoSceneId,
+      "FBF Author Card House 5: Source Continuation",
+      "The source-default five-level card-house adapter in a separate exact "
+      "lane that requests the pinned source continuation policy. The boxed "
+      "comparison keeps the same 40 cards, four cubes, contacts, clock, and "
+      "release action.",
+      authorCardHouseFiveLevelCameraHome(),
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kFiveLevelSourceContinuationScenario,
+            state->solverMode,
+            false,
+            true);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "This lane preserves the strict source-default five-level geometry, "
+      "Native contact-gap values, and 1/240 s DART schedule. Exact FBF "
+      "additionally requests source-style natural-residual plateau, finite "
+      "max-budget, and line-search shrink-cap continuation. The action `p` "
+      "releases the four cubes after completed step 1,600 in the evidence "
+      "schedule.",
+      "Headless capture may advance only when every exact contact group is "
+      "reported as a finite success, plateau acceptance, or max-iteration "
+      "acceptance. Solver failures, boxed fallback in the exact lane, "
+      "nonfinite state, and missing per-group telemetry stop the run.",
+      "This is a DART continuation experiment on the current public source "
+      "defaults. It does not establish the historical paper invocation, "
+      "source collision/backend equivalence, trajectory parity, physical-"
+      "outcome parity, solver superiority, paper/video parity, or timing "
+      "comparability.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state) {
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kFiveLevelSourceContinuationScenario);
+        ImGui::TextDisabled("Exact lane policy: source_continuation");
+        ImGui::Text(
+            "Requested: %s",
+            state->solverMode == SolverMode::ExactFbf ? "yes"
+                                                      : "not applicable");
+        ImGui::Text(
+            "Natural plateau: interval %d, patience %d, rtol %.3g",
+            kSourceResidualCheckInterval,
+            kSourcePlateauPatience,
+            kSourcePlateauRelativeTolerance);
+        ImGui::Text(
+            "Armijo: %d inner trials; small-change threshold %.1e",
+            kSourceArmijoMaxBacktracks,
+            kSourceCouplingVariationSkipThreshold);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kFiveLevelSourceContinuationScenario,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf));
+        };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, releaseLabel, [world] {
+              releaseCubes(
+                  world, kFiveLevelSourceContinuationScenario.levelCount);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(
+            world,
+            mode,
+            false,
+            true,
+            true,
+            &kFiveLevelSourceContinuationScenario);
       });
 }
 
@@ -3012,6 +3182,12 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene()
 }
 
 //==============================================================================
+DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse5ImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
 DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene()
 {
   return makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene();
@@ -3021,6 +3197,12 @@ DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene()
 DemoScene makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene()
 {
   return makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceParameterizedScene();
 }
 
 //==============================================================================
