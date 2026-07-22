@@ -887,19 +887,70 @@ def _literal_arch_physics_contract(module, *, solver_lane="exact"):
     return contract
 
 
-def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
+def _author_masonry_arch_adapter_contract(
+    module, *, solver_lane="exact", stone_count=25
+):
+    scenarios = {
+        25: {
+            "schema_version": (
+                "dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1"
+            ),
+            "mesh_tree": "2552017df4061c49f7df064d847a4268a6e02d1a",
+            "mesh_tree_sha256": (
+                "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
+            ),
+            "mesh_directory": "meshes/arch/num_stones=25",
+            "selected_cli_arguments": "--stones 25",
+            "mobile_stones": 23,
+            "source_obj_record_arch_top_z": 65.273375,
+            "source_runtime_arch_top_z_float32": 65.27337646484375,
+            "cube_initial_z": 75.27337646484375,
+            "scene_id": "fbf_author_masonry_arch_25_crown_impact_current_source",
+            "evidence_frames": 500,
+            "evidence_substeps": 2000,
+            "release_within_horizon": True,
+            "release_action_scheduled": True,
+            "action_completed_step": 1600,
+            "release_action_key": "p",
+            "action_semantics": "immediate_on_invocation",
+        },
+        101: {
+            "schema_version": ("dart.fbf_author_masonry_arch_standing_dart_adapter/v1"),
+            "mesh_tree": "e0c209235673d2f69c3c5de7708ab1dfadec96e3",
+            "mesh_tree_sha256": (
+                "7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf"
+            ),
+            "mesh_directory": "meshes/arch/num_stones=101",
+            "selected_cli_arguments": "--stones 101",
+            "mobile_stones": 99,
+            "source_obj_record_arch_top_z": 69.628159,
+            "source_runtime_arch_top_z_float32": 69.62815856933594,
+            "cube_initial_z": 79.62815856933594,
+            "scene_id": "fbf_author_masonry_arch_101_standing_current_source",
+            "evidence_frames": 400,
+            "evidence_substeps": 1600,
+            "release_within_horizon": False,
+            "release_action_scheduled": False,
+            "action_completed_step": None,
+            "release_action_key": None,
+            "action_semantics": "not_registered_for_standing_lane",
+        },
+    }
+    scenario = scenarios[stone_count]
     return {
-        "schema_version": ("dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1"),
+        "schema_version": scenario["schema_version"],
         "kind": "source_configuration_dynamics_adapter",
         "source_binding": {
             "repository": "https://github.com/matthcsong/fbf-sca-2026",
             "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+            "run_py_blob": "35a052d7ef0975e7c828c9678d163054dfbb3ef2",
             "run_py_sha256": (
                 "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73"
             ),
-            "mesh_tree_sha256": (
-                "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
-            ),
+            "mesh_tree": scenario["mesh_tree"],
+            "mesh_tree_sha256": scenario["mesh_tree_sha256"],
+            "mesh_directory": scenario["mesh_directory"],
             "configuration_spec_sha256": module._sha256(
                 ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
             ),
@@ -910,14 +961,25 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
                 ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
             ),
         },
+        "source_selection": {
+            "source_default_stones": 25,
+            "selected_cli_arguments": scenario["selected_cli_arguments"],
+            "selected_stones": stone_count,
+            "historical_paper_invocation_known": False,
+        },
         "source_configuration": {
             "coordinate_scale": 1.0,
             "coordinate_units": "author_raw_numeric_values",
-            "stones": 25,
+            "stones": stone_count,
             "fixed_springers": 2,
             "cubes": 3,
             "cube_edge": 3.0,
             "cube_mass": 54000.0,
+            "source_obj_record_arch_top_z": scenario["source_obj_record_arch_top_z"],
+            "source_runtime_arch_top_z_float32": scenario[
+                "source_runtime_arch_top_z_float32"
+            ],
+            "cube_initial_z": scenario["cube_initial_z"],
             "friction": 0.8,
             "contact_gap": 0.005,
             "shape_stiffness": 10000.0,
@@ -927,11 +989,11 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
             "runtime_time_step_seconds": 1.0 / 240.0,
             "release_frame": 400,
             "release_substep": 1600,
-            "evidence_frames": 500,
-            "evidence_substeps": 2000,
+            "evidence_frames": scenario["evidence_frames"],
+            "evidence_substeps": scenario["evidence_substeps"],
         },
         "dart_adapter": {
-            "scene_id": "fbf_author_masonry_arch_25_crown_impact_current_source",
+            "scene_id": scenario["scene_id"],
             "world": {
                 "time_step_seconds": 1.0 / 240.0,
                 "gravity_coordinate_units_per_s2": [0.0, 0.0, -9.81],
@@ -948,22 +1010,81 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
             "solver": module._expected_author_masonry_arch_solver_contract(solver_lane),
             "process_state": {"observed_contact_erp": 0.0},
             "inventory": {
-                "stones": 25,
-                "mobile_stones": 23,
+                "stones": stone_count,
+                "mobile_stones": scenario["mobile_stones"],
                 "cubes": 3,
                 "cubes_released": False,
             },
             "schedule": {
-                "evidence_runner_action_completed_step": 1600,
-                "release_action_key": "p",
-                "interactive_action_semantics": "immediate_on_invocation",
+                "evidence_frames": scenario["evidence_frames"],
+                "evidence_substeps": scenario["evidence_substeps"],
+                "source_release_frame": 400,
+                "source_release_substep": 1600,
+                "source_release_within_evidence_horizon": scenario[
+                    "release_within_horizon"
+                ],
+                "evidence_runner_release_action_scheduled": scenario[
+                    "release_action_scheduled"
+                ],
+                "evidence_runner_action_completed_step": scenario[
+                    "action_completed_step"
+                ],
+                "release_action_key": scenario["release_action_key"],
+                "interactive_action_semantics": scenario["action_semantics"],
             },
+            "standing_outcome_oracle": (
+                {
+                    "scene_state_schema": (
+                        module.AUTHOR_MASONRY_ARCH_101_SCENE_STATE_SCHEMA_VERSION
+                    ),
+                    "required_completed_substeps": (
+                        module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS
+                    ),
+                    "required_world_time_seconds": (
+                        module.AUTHOR_MASONRY_ARCH_101_REQUIRED_WORLD_TIME_SECONDS
+                    ),
+                    "horizon_time_tolerance_seconds": (
+                        module.AUTHOR_MASONRY_ARCH_101_HORIZON_TIME_TOLERANCE_SECONDS
+                    ),
+                    "max_mobile_body_origin_displacement": (
+                        module.AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_BODY_ORIGIN_DISPLACEMENT
+                    ),
+                    "max_mobile_rotation_delta_rad": (
+                        module.AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_ROTATION_DELTA_RAD
+                    ),
+                    "max_crown_height_loss": (
+                        module.AUTHOR_MASONRY_ARCH_101_MAX_CROWN_HEIGHT_LOSS
+                    ),
+                    "max_kinematic_cube_pose_error": (
+                        module.AUTHOR_MASONRY_ARCH_101_MAX_KINEMATIC_CUBE_POSE_ERROR
+                    ),
+                    "requires_exact_inventory": True,
+                    "requires_all_bodies_finite": True,
+                    "requires_cubes_kinematic": True,
+                    "requires_cubes_at_pinned_poses": True,
+                    "positive_standing_qualification_requires_standing_in_both_lanes": True,
+                    "comparison_capture_validity_is_runner_level": True,
+                    "complete_trace_valid_is_not_positive_standing_qualification": True,
+                    "current_dart_adapter_outcome_only": True,
+                    "source_outcome_equivalence": False,
+                }
+                if stone_count == 101
+                else None
+            ),
         },
         "claim_boundary": {
             "source_numeric_geometry_mass_friction_and_initial_state_ported_to_dart": True,
-            "source_release_action_ported_to_dart": True,
-            "source_release_schedule_declared_for_evidence_runner": True,
+            "source_release_action_ported_to_dart": scenario[
+                "release_action_scheduled"
+            ],
+            "source_release_schedule_declared_for_evidence_runner": scenario[
+                "release_action_scheduled"
+            ],
             "interactive_demo_auto_releases_at_source_step": False,
+            "historical_paper_invocation_known": False,
+            "current_dart_adapter_standing_outcome_oracle_declared": (
+                stone_count == 101
+            ),
             "source_collision_semantics_equivalent": False,
             "source_contact_gap_semantics_equivalent": False,
             "source_solver_backend_equivalent": False,
@@ -971,9 +1092,94 @@ def _author_masonry_arch_adapter_contract(module, *, solver_lane="exact"):
             "trajectory_equivalent": False,
             "physical_outcome_equivalent": False,
             "fig07_parity": False,
+            "fig08_parity": False,
             "video07_parity": False,
+            "video08_parity": False,
             "timing_comparable": False,
             "paper_parity": False,
+        },
+    }
+
+
+def _author_masonry_arch_101_scene_state(
+    module, step, *, solver_lane="exact", collapsed=False, released_cube=False
+):
+    time_seconds = step / 240.0
+    horizon_complete = step >= module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS
+    crown_initial_z = 69.0
+    crown_loss = 4.0 if collapsed else 0.5 * step / 1600.0
+    mobile_displacement = 4.0 if collapsed else crown_loss
+    mobile_rotation = 0.3 if collapsed else 0.0
+    kinematic_cube_count = 2.0 if released_cube else 3.0
+    inventory_valid = True
+    all_bodies_finite = True
+    cubes_remain_kinematic = kinematic_cube_count == 3.0
+    cubes_remain_pinned = cubes_remain_kinematic
+    mobile_displacement_bounded = (
+        mobile_displacement
+        <= module.AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_BODY_ORIGIN_DISPLACEMENT
+    )
+    mobile_rotation_bounded = (
+        mobile_rotation <= module.AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_ROTATION_DELTA_RAD
+    )
+    crown_height_preserved = (
+        crown_initial_z - crown_loss
+        >= crown_initial_z - module.AUTHOR_MASONRY_ARCH_101_MAX_CROWN_HEIGHT_LOSS
+    )
+    complete_trace_valid = (
+        horizon_complete
+        and inventory_valid
+        and all_bodies_finite
+        and cubes_remain_pinned
+    )
+    standing_outcome_valid = (
+        complete_trace_valid
+        and mobile_displacement_bounded
+        and mobile_rotation_bounded
+        and crown_height_preserved
+    )
+
+    def numeric(value):
+        return 1.0 if value else 0.0
+
+    return {
+        "step": step,
+        "sim_time": time_seconds,
+        "scene_state": {
+            "solver_lane_exact_fbf": numeric(solver_lane == "exact"),
+            "solver_lane_boxed_lcp": numeric(solver_lane == "boxed"),
+            "world_time_seconds": time_seconds,
+            "world_skeleton_count": 105.0,
+            "observed_stone_count": 101.0,
+            "observed_mobile_stone_count": 99.0,
+            "mobility_matching_stone_count": 101.0,
+            "finite_stone_count": 101.0,
+            "observed_cube_count": 3.0,
+            "finite_cube_count": 3.0,
+            "kinematic_cube_count": kinematic_cube_count,
+            "ground_valid": 1.0,
+            "crown_observed": 1.0,
+            "crown_body_origin_initial_z": crown_initial_z,
+            "crown_body_origin_z": crown_initial_z - crown_loss,
+            "crown_body_origin_displacement": crown_loss,
+            "crown_rotation_delta_rad": mobile_rotation,
+            "max_mobile_body_origin_displacement": mobile_displacement,
+            "max_mobile_rotation_delta_rad": mobile_rotation,
+            "max_kinematic_cube_body_origin_displacement": 0.0,
+            "max_kinematic_cube_rotation_delta_rad": 0.0,
+            "standing_horizon_complete": numeric(horizon_complete),
+            "standing_inventory_valid": numeric(inventory_valid),
+            "standing_all_bodies_finite": numeric(all_bodies_finite),
+            "standing_cubes_remain_kinematic": numeric(cubes_remain_kinematic),
+            "standing_cubes_remain_pinned": numeric(cubes_remain_pinned),
+            "standing_mobile_displacement_bounded": numeric(
+                mobile_displacement_bounded
+            ),
+            "standing_mobile_rotation_bounded": numeric(mobile_rotation_bounded),
+            "standing_crown_height_preserved": numeric(crown_height_preserved),
+            "standing_complete_trace_valid": numeric(complete_trace_valid),
+            "standing_outcome_valid": numeric(standing_outcome_valid),
+            "standing_lane_evidence_qualifies": numeric(standing_outcome_valid),
         },
     }
 
@@ -1452,6 +1658,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "masonry_arch_25_author_crown_impact_current_source",
         "masonry_arch_25",
         "masonry_arch_101",
+        "masonry_arch_101_author_standing_current_source",
         "card_house_10_construction",
         "card_house_author_5_construction",
         "card_house_10_dynamics",
@@ -2650,6 +2857,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "card_house_10_dynamics",
             "masonry_arch_25_literal_standing",
             "masonry_arch_25_author_crown_impact_current_source",
+            "masonry_arch_101_author_standing_current_source",
         )
     } == {
         "turntable_mu02_omega2": "fbf_paper_turntable_mu_0_2_omega_2",
@@ -2679,6 +2887,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "masonry_arch_25_author_crown_impact_current_source": (
             "fbf_author_masonry_arch_25_crown_impact_current_source"
         ),
+        "masonry_arch_101_author_standing_current_source": (
+            "fbf_author_masonry_arch_101_standing_current_source"
+        ),
     }
     command = module.build_demo_command(
         module.SCHEDULES["turntable_mu02_omega2"],
@@ -2703,6 +2914,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
             "card_house_author_4_impact_source_continuation_current_source",
             "masonry_arch_25_literal_standing",
             "masonry_arch_25_author_crown_impact_current_source",
+            "masonry_arch_101_author_standing_current_source",
         }
     )
     legacy_members = set(module.SCHEDULES) - native_members
@@ -2790,6 +3002,147 @@ def test_author_arch_adapter_contract_binds_exact_and_boxed_initial_state(tmp_pa
     assert exact_report["release_action_completed_step"] == 1600
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
     assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_arch_101_adapter_contract_binds_source_selection_and_lanes(tmp_path):
+    module = _load_module()
+    exact = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    boxed = module._derive_boxed_schedule(exact)
+    exact_report = module._validate_author_masonry_arch_adapter_contract(
+        exact,
+        {
+            "physics_contract": _author_masonry_arch_adapter_contract(
+                module, stone_count=101
+            )
+        },
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_masonry_arch_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_masonry_arch_adapter_contract(
+                module, solver_lane="boxed", stone_count=101
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["stone_count"] == boxed_report["stone_count"] == 101
+    assert exact_report["cube_count"] == boxed_report["cube_count"] == 3
+    assert exact_report["source_selection"] == {
+        "source_default_stones": 25,
+        "selected_cli_arguments": "--stones 101",
+        "selected_stones": 101,
+        "historical_paper_invocation_known": False,
+    }
+    assert exact_report["source_binding"]["mesh_tree_sha256"] == (
+        "7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf"
+    )
+    assert exact_report["evidence_substeps"] == 1600
+    assert exact_report["release_action_scheduled"] is False
+    assert exact_report["release_action_completed_step"] is None
+    assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
+    assert exact_report["physical_outcome_validated"] is False
+
+
+def test_author_arch_101_scene_state_trace_is_fail_closed_before_horizon(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    trace = [_author_masonry_arch_101_scene_state(module, step) for step in range(210)]
+
+    report = module._validate_author_masonry_arch_101_scene_state_trace(
+        schedule,
+        trace,
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=209,
+    )
+
+    assert report["sample_count"] == 210
+    assert report["complete_horizon"] is False
+    assert report["comparison_capture_valid"] is False
+    assert report["physical_outcome_validated"] is False
+
+
+def test_author_arch_101_boxed_collapse_remains_valid_comparison(tmp_path):
+    module = _load_module()
+    exact = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    schedule = module._derive_boxed_schedule(exact)
+    trace = [
+        _author_masonry_arch_101_scene_state(
+            module,
+            step,
+            solver_lane="boxed",
+            collapsed=step == module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS,
+        )
+        for step in range(module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS + 1)
+    ]
+
+    report = module._validate_author_masonry_arch_101_scene_state_trace(
+        schedule,
+        trace,
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS,
+    )
+
+    assert report["complete_trace_valid"] is True
+    assert report["comparison_capture_valid"] is True
+    assert report["standing_outcome_valid"] is False
+    assert report["lane_evidence_qualifies"] is False
+    assert report["physical_outcome_validated"] is False
+    module._require_author_masonry_arch_101_complete_outcome(
+        schedule,
+        report,
+        sidecar_path=tmp_path / "timeline.json",
+    )
+
+
+def test_author_arch_101_trace_aggregates_transient_integrity_failure(tmp_path):
+    module = _load_module()
+    exact = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    schedule = module._derive_boxed_schedule(exact)
+    trace = [
+        _author_masonry_arch_101_scene_state(
+            module,
+            step,
+            solver_lane="boxed",
+            released_cube=step == 800,
+        )
+        for step in range(module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS + 1)
+    ]
+
+    report = module._validate_author_masonry_arch_101_scene_state_trace(
+        schedule,
+        trace,
+        sidecar_path=tmp_path / "timeline.json",
+        expected_last_step=module.AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS,
+    )
+
+    assert report["complete_trace_valid"] is False
+    assert report["comparison_capture_valid"] is False
+    assert report["physical_outcome_validated"] is False
+    with pytest.raises(ValueError, match="comparison trace is incomplete"):
+        module._require_author_masonry_arch_101_complete_outcome(
+            schedule,
+            report,
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
+def test_author_arch_101_scene_state_trace_rejects_oracle_mismatch(tmp_path):
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    trace = [_author_masonry_arch_101_scene_state(module, step) for step in range(2)]
+    trace[1]["scene_state"]["standing_inventory_valid"] = 0.0
+
+    with pytest.raises(ValueError, match="standing oracle"):
+        module._validate_author_masonry_arch_101_scene_state_trace(
+            schedule,
+            trace,
+            sidecar_path=tmp_path / "timeline.json",
+            expected_last_step=1,
+        )
 
 
 def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
@@ -3659,6 +4012,109 @@ def test_author_arch_adapter_contract_rejects_mutation(tmp_path, field, value, m
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
+        (("source_binding", "commit"), "0" * 40, "source hashes"),
+        (("source_binding", "tree"), "0" * 40, "source hashes"),
+        (("source_binding", "run_py_blob"), "0" * 40, "source hashes"),
+        (("source_binding", "run_py_sha256"), "0" * 64, "source hashes"),
+        (("source_binding", "mesh_tree"), "0" * 40, "source hashes"),
+        (("source_binding", "mesh_tree_sha256"), "0" * 64, "source hashes"),
+        (
+            ("source_binding", "configuration_spec_sha256"),
+            "0" * 64,
+            "source hashes",
+        ),
+        (
+            ("source_binding", "dart_adapter_sha256"),
+            "0" * 64,
+            "source hashes",
+        ),
+        (
+            ("source_binding", "demo_implementation_sha256"),
+            "0" * 64,
+            "source hashes",
+        ),
+        (
+            ("source_selection", "selected_cli_arguments"),
+            "--stones 25",
+            "source selection",
+        ),
+        (
+            ("source_configuration", "source_runtime_arch_top_z_float32"),
+            69.0,
+            "configuration",
+        ),
+        (("dart_adapter", "inventory", "stones"), 25, "inventory"),
+        (
+            (
+                "dart_adapter",
+                "schedule",
+                "evidence_runner_release_action_scheduled",
+            ),
+            True,
+            "release schedule",
+        ),
+        (
+            (
+                "dart_adapter",
+                "standing_outcome_oracle",
+                "max_mobile_body_origin_displacement",
+            ),
+            4.0,
+            "standing oracle",
+        ),
+        (
+            (
+                "claim_boundary",
+                "current_dart_adapter_standing_outcome_oracle_declared",
+            ),
+            False,
+            "claim boundary",
+        ),
+        (("claim_boundary", "fig08_parity"), True, "claim boundary"),
+        (("claim_boundary", "video08_parity"), True, "claim boundary"),
+    ],
+)
+def test_author_arch_101_adapter_contract_rejects_mutation(
+    tmp_path, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    contract = _author_masonry_arch_adapter_contract(module, stone_count=101)
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_masonry_arch_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
+def test_author_arch_101_contract_rejects_a_runner_release_action(tmp_path):
+    module = _load_module()
+    schedule = module.dataclasses.replace(
+        module.SCHEDULES["masonry_arch_101_author_standing_current_source"],
+        actions=(module.ScheduledAction(1600, "p", "unexpected release"),),
+    )
+
+    with pytest.raises(ValueError, match="evidence schedule"):
+        module._validate_author_masonry_arch_adapter_contract(
+            schedule,
+            {
+                "physics_contract": _author_masonry_arch_adapter_contract(
+                    module, stone_count=101
+                )
+            },
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
         (("source_binding", "spec_sha256"), "0" * 64, "source hashes"),
         (("process_state", "observed_contact_erp"), 0.01, "scoped ERP"),
         (("collision", "contact_manifold"), "compact", "collision contract"),
@@ -3730,6 +4186,15 @@ def test_published_panel_instants_and_completed_step_actions_are_fixed():
     )
     assert "pre-release" in author_impact.panel_labels[2]
 
+    author_101 = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    assert author_101.total_steps == 1600
+    assert author_101.time_step_seconds == pytest.approx(1.0 / 240.0)
+    assert author_101.frame_stride == 8
+    assert len(author_101.video_steps) == 201
+    assert author_101.panel_steps == (0, 400, 800, 1200, 1600)
+    assert author_101.actions == ()
+    assert "endpoint" in author_101.panel_labels[-1]
+
 
 def test_author_masonry_impact_schedule_is_fail_closed_and_source_pinned():
     module = _load_module()
@@ -3761,6 +4226,41 @@ def test_author_masonry_impact_schedule_is_fail_closed_and_source_pinned():
     assert boxed.source_schedule_id == schedule.id
     assert boxed.solver_lane == "boxed"
     assert boxed.exact_fbf_required is False
+
+
+def test_author_masonry_101_schedule_is_fail_closed_and_source_pinned():
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_101_author_standing_current_source"]
+    output = Path("/tmp/out")
+    plan = module.schedule_plan(schedule, Path("dart-demos"), output)
+    command = module.build_demo_command(schedule, Path("dart-demos"), output)
+    configuration = schedule.configuration_dict()
+
+    assert module.REQUIRED_VIDEO_SCHEDULES["masonry_arch_101"] == (schedule.id,)
+    assert schedule.scene == "fbf_author_masonry_arch_101_standing_current_source"
+    assert schedule.source_segment == "masonry_arch_101"
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.actions == ()
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert configuration["source_selection"] == "--stones 101"
+    assert configuration["contact_frontend"] == "Native FourPointPlanar"
+    assert configuration["drop_frame"] == "400"
+    assert configuration["total_substeps"] == "1600"
+    assert any("not historical Figure 8" in item for item in schedule.mismatches)
+    assert schedule.known_gate_blockers
+    assert plan["evidence_ready"] is False
+    assert "--collision-detector" not in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert command[command.index("--steps") + 1] == "1600"
+    assert "1600:p" not in command
+
+    boxed = module._derive_boxed_schedule(schedule)
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.exact_fbf_required is False
+    assert boxed.actions == ()
 
 
 def test_demo_command_requests_shots_before_same_step_actions():
@@ -5872,7 +6372,11 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         "masonry_arch_25_author_crown_impact_current_source"
         in report["known_gate_blocked_schedules"]
     )
-    assert "masonry_arch_101" in report["known_gate_blocked_schedules"]
+    assert (
+        "masonry_arch_101_author_standing_current_source"
+        in report["known_gate_blocked_schedules"]
+    )
+    assert "masonry_arch_101" not in report["known_gate_blocked_schedules"]
     assert report["required_schedule_count"] == 15
 
 

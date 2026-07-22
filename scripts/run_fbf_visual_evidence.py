@@ -193,7 +193,7 @@ REQUIRED_VIDEO_SCHEDULES = {
         "masonry_arch_25_author_crown_impact_current_source",
         "masonry_arch_25",
     ),
-    "masonry_arch_101": ("masonry_arch_101",),
+    "masonry_arch_101": ("masonry_arch_101_author_standing_current_source",),
 }
 
 
@@ -1022,7 +1022,7 @@ SCHEDULES: dict[str, CaptureSchedule] = {
     "masonry_arch_101": CaptureSchedule(
         id="masonry_arch_101",
         scene="fbf_paper_masonry_arch_101",
-        title="101-stone long-run arch",
+        title="Legacy 101-stone visual proxy diagnostic",
         source_segment="masonry_arch_101",
         total_steps=600,
         frame_stride=2,
@@ -1031,6 +1031,9 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         configuration=(("stones", "101"), ("local_duration_seconds", "10")),
         mismatches=COMMON_DART_MISMATCH
         + (
+            "This legacy reduced-contact proxy is retained only as a diagnostic; "
+            "the author-parameterized 101-stone schedule is the required source "
+            "capture lane.",
             "The source does not publish its long-run duration; ten seconds is a "
             "declared local observation window, not a source-equivalent time.",
             "The production scene pins both inferred endpoints, uses mu=0.8, and "
@@ -1045,6 +1048,67 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "The current literal-wedge exact attempt fails closed on its first "
             "dynamic step; this reduced-contact visual proxy cannot replace it.",
         ),
+        long_run=True,
+    ),
+    "masonry_arch_101_author_standing_current_source": CaptureSchedule(
+        id="masonry_arch_101_author_standing_current_source",
+        scene="fbf_author_masonry_arch_101_standing_current_source",
+        title="Author-pinned 101-stone current-source standing run",
+        source_segment="masonry_arch_101",
+        total_steps=1600,
+        # Four 240 Hz substeps form each source display frame. Capturing every
+        # other display frame preserves the 6.67 s source duration at 30 fps.
+        frame_stride=8,
+        panel_steps=(0, 400, 800, 1200, 1600),
+        panel_labels=(
+            "initial --stones 101 configuration",
+            "source frame 100 (t=1.67s)",
+            "source frame 200 (t=3.33s)",
+            "source frame 300 (t=5s)",
+            "source frame 400 endpoint (t=6.67s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("source_selection", "--stones 101"),
+            ("stones", "101 author-pinned tapered meshes"),
+            ("mobile_stones", "99; both springers fixed"),
+            ("cubes", "3; remain kinematic through the source endpoint"),
+            ("mu", "0.8"),
+            ("contact_frontend", "Native FourPointPlanar"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("source_frames", "400"),
+            ("drop_frame", "400"),
+            ("release_substep", "1600; endpoint, no release action"),
+            ("total_substeps", "1600"),
+            ("capture_invocation", "current source --stones 101 selection"),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This DART scene ports the public author's --stones 101 geometry, "
+            "initial state, and 400-frame standing schedule; DART Native "
+            "collision and float64 dynamics are not the authors' Warp/Newton "
+            "float32 backend.",
+            "The source supports --stones 101, but no historical Figure 8 "
+            "invocation was recovered. This is a current-source parameterized "
+            "run, not historical Figure 8 or paper parity.",
+            "The source sets drop_frame equal to the 400-frame endpoint, so this "
+            "schedule deliberately performs no cube-release action.",
+            "The author repository supplies no historical paper camera, "
+            "materials, lighting, approved frame golden, or DART trajectory "
+            "oracle.",
+        ),
+        known_gate_blockers=(
+            "No current DART exact-FBF run of this 1,600-substep standing "
+            "schedule has yet passed the fail-fast solver and physical-outcome "
+            "gates.",
+            "No paired exact/boxed media has yet been captured and independently "
+            "validated for this source-parameterized 101-stone port.",
+        ),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
         long_run=True,
     ),
     "card_house_10_construction": CaptureSchedule(
@@ -1219,6 +1283,50 @@ AUTHOR_PAINLEVE_SCENE_STATE_FIELDS = (
     "angular_velocity_x_rad_s",
     "angular_velocity_y_rad_s",
     "angular_velocity_z_rad_s",
+)
+AUTHOR_MASONRY_ARCH_101_SCENE_STATE_SCHEMA_VERSION = (
+    "dart.fbf_author_masonry_arch_101_standing_scene_state/v1"
+)
+AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS = 1600
+AUTHOR_MASONRY_ARCH_101_REQUIRED_WORLD_TIME_SECONDS = 1600.0 / 240.0
+AUTHOR_MASONRY_ARCH_101_HORIZON_TIME_TOLERANCE_SECONDS = 0.5 / 240.0
+AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_BODY_ORIGIN_DISPLACEMENT = 3.0
+AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_ROTATION_DELTA_RAD = math.pi / 12.0
+AUTHOR_MASONRY_ARCH_101_MAX_CROWN_HEIGHT_LOSS = 3.0
+AUTHOR_MASONRY_ARCH_101_MAX_KINEMATIC_CUBE_POSE_ERROR = 1.0e-12
+AUTHOR_MASONRY_ARCH_101_SCENE_STATE_FIELDS = (
+    "solver_lane_exact_fbf",
+    "solver_lane_boxed_lcp",
+    "world_time_seconds",
+    "world_skeleton_count",
+    "observed_stone_count",
+    "observed_mobile_stone_count",
+    "mobility_matching_stone_count",
+    "finite_stone_count",
+    "observed_cube_count",
+    "finite_cube_count",
+    "kinematic_cube_count",
+    "ground_valid",
+    "crown_observed",
+    "crown_body_origin_initial_z",
+    "crown_body_origin_z",
+    "crown_body_origin_displacement",
+    "crown_rotation_delta_rad",
+    "max_mobile_body_origin_displacement",
+    "max_mobile_rotation_delta_rad",
+    "max_kinematic_cube_body_origin_displacement",
+    "max_kinematic_cube_rotation_delta_rad",
+    "standing_horizon_complete",
+    "standing_inventory_valid",
+    "standing_all_bodies_finite",
+    "standing_cubes_remain_kinematic",
+    "standing_cubes_remain_pinned",
+    "standing_mobile_displacement_bounded",
+    "standing_mobile_rotation_bounded",
+    "standing_crown_height_preserved",
+    "standing_complete_trace_valid",
+    "standing_outcome_valid",
+    "standing_lane_evidence_qualifies",
 )
 
 
@@ -2450,10 +2558,16 @@ def _is_literal_masonry_arch_schedule(schedule: CaptureSchedule) -> bool:
     ) == "masonry_arch_25_literal_standing"
 
 
-def _is_author_masonry_arch_impact_schedule(schedule: CaptureSchedule) -> bool:
-    return (
-        schedule.source_schedule_id or schedule.id
-    ) == "masonry_arch_25_author_crown_impact_current_source"
+def _author_masonry_arch_source_schedule_id(
+    schedule: CaptureSchedule,
+) -> str | None:
+    schedule_id = schedule.source_schedule_id or schedule.id
+    if schedule_id in {
+        "masonry_arch_25_author_crown_impact_current_source",
+        "masonry_arch_101_author_standing_current_source",
+    }:
+        return schedule_id
+    return None
 
 
 def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
@@ -2642,6 +2756,223 @@ def _validate_author_painleve_scene_state_trace(
         "minimum_uprightness_cosine": minimum_uprightness,
         "maximum_angular_speed_rad_s": maximum_angular_speed,
     }
+
+
+def _validate_author_masonry_arch_101_scene_state_trace(
+    schedule: CaptureSchedule,
+    trajectory_steps: Any,
+    *,
+    sidecar_path: Path,
+    expected_last_step: int,
+) -> dict[str, Any] | None:
+    if (
+        _author_masonry_arch_source_schedule_id(schedule)
+        != "masonry_arch_101_author_standing_current_source"
+    ):
+        return None
+    if (
+        isinstance(expected_last_step, bool)
+        or not isinstance(expected_last_step, int)
+        or expected_last_step < 0
+        or expected_last_step > schedule.total_steps
+    ):
+        raise ValueError(f"{sidecar_path}: invalid author arch trace endpoint")
+    if not isinstance(trajectory_steps, list) or len(trajectory_steps) != (
+        expected_last_step + 1
+    ):
+        raise ValueError(f"{sidecar_path}: author arch scene-state trace length")
+
+    expected_lane = {
+        "solver_lane_exact_fbf": 1.0 if schedule.solver_lane == "exact" else 0.0,
+        "solver_lane_boxed_lcp": 1.0 if schedule.solver_lane == "boxed" else 0.0,
+    }
+    initial_crown_z: float | None = None
+    maximum_mobile_displacement = 0.0
+    maximum_mobile_rotation = 0.0
+    minimum_crown_z = math.inf
+    trace_integrity_valid = True
+    standing_components_valid = True
+    final_state: dict[str, Any] | None = None
+    for expected_step, item in enumerate(trajectory_steps):
+        if not isinstance(item, dict) or item.get("step") != expected_step:
+            raise ValueError(
+                f"{sidecar_path}: author arch scene-state steps are out of order"
+            )
+        expected_time = schedule.time_at_step(expected_step)
+        sim_time = item.get("sim_time")
+        if not _is_finite_number(sim_time) or not math.isclose(
+            float(sim_time), expected_time, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author arch scene-state time mismatch at "
+                f"step {expected_step}"
+            )
+
+        state = item.get("scene_state")
+        label = f"{sidecar_path}: author arch scene state at step {expected_step}"
+        if not isinstance(state, dict):
+            raise ValueError(f"{label} is missing")
+        if set(state) != set(AUTHOR_MASONRY_ARCH_101_SCENE_STATE_FIELDS) or not all(
+            _is_finite_number(state.get(name))
+            for name in AUTHOR_MASONRY_ARCH_101_SCENE_STATE_FIELDS
+        ):
+            raise ValueError(f"{label} fields changed or are non-finite")
+        if any(
+            float(state[name]) != expected for name, expected in expected_lane.items()
+        ):
+            raise ValueError(f"{label} solver lane changed")
+        if not math.isclose(
+            float(state["world_time_seconds"]),
+            expected_time,
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"{label} world time changed")
+
+        crown_initial_z = float(state["crown_body_origin_initial_z"])
+        crown_z = float(state["crown_body_origin_z"])
+        crown_displacement = float(state["crown_body_origin_displacement"])
+        if initial_crown_z is None:
+            initial_crown_z = crown_initial_z
+        elif not math.isclose(
+            crown_initial_z, initial_crown_z, rel_tol=0.0, abs_tol=1e-12
+        ):
+            raise ValueError(f"{label} crown reference height changed")
+        if crown_displacement + 1e-9 < abs(crown_z - crown_initial_z):
+            raise ValueError(f"{label} crown displacement is inconsistent")
+
+        inventory_valid = (
+            float(state["world_skeleton_count"]) == 105.0
+            and float(state["observed_stone_count"]) == 101.0
+            and float(state["observed_mobile_stone_count"]) == 99.0
+            and float(state["mobility_matching_stone_count"]) == 101.0
+            and float(state["observed_cube_count"]) == 3.0
+            and float(state["ground_valid"]) == 1.0
+            and float(state["crown_observed"]) == 1.0
+        )
+        all_bodies_finite = (
+            float(state["finite_stone_count"]) == 101.0
+            and float(state["finite_cube_count"]) == 3.0
+        )
+        cubes_remain_kinematic = float(state["kinematic_cube_count"]) == 3.0
+        cubes_remain_pinned = (
+            cubes_remain_kinematic
+            and float(state["max_kinematic_cube_body_origin_displacement"])
+            <= AUTHOR_MASONRY_ARCH_101_MAX_KINEMATIC_CUBE_POSE_ERROR
+            and float(state["max_kinematic_cube_rotation_delta_rad"])
+            <= AUTHOR_MASONRY_ARCH_101_MAX_KINEMATIC_CUBE_POSE_ERROR
+        )
+        mobile_displacement_bounded = (
+            float(state["max_mobile_body_origin_displacement"])
+            <= AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_BODY_ORIGIN_DISPLACEMENT
+        )
+        mobile_rotation_bounded = (
+            float(state["max_mobile_rotation_delta_rad"])
+            <= AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_ROTATION_DELTA_RAD
+        )
+        crown_height_preserved = (
+            crown_z >= crown_initial_z - AUTHOR_MASONRY_ARCH_101_MAX_CROWN_HEIGHT_LOSS
+        )
+        horizon_complete = (
+            expected_time
+            >= AUTHOR_MASONRY_ARCH_101_REQUIRED_WORLD_TIME_SECONDS
+            - AUTHOR_MASONRY_ARCH_101_HORIZON_TIME_TOLERANCE_SECONDS
+        )
+        complete_trace_valid = (
+            horizon_complete
+            and inventory_valid
+            and all_bodies_finite
+            and cubes_remain_pinned
+        )
+        standing_outcome_valid = (
+            complete_trace_valid
+            and mobile_displacement_bounded
+            and mobile_rotation_bounded
+            and crown_height_preserved
+        )
+        expected_flags = {
+            "standing_horizon_complete": horizon_complete,
+            "standing_inventory_valid": inventory_valid,
+            "standing_all_bodies_finite": all_bodies_finite,
+            "standing_cubes_remain_kinematic": cubes_remain_kinematic,
+            "standing_cubes_remain_pinned": cubes_remain_pinned,
+            "standing_mobile_displacement_bounded": mobile_displacement_bounded,
+            "standing_mobile_rotation_bounded": mobile_rotation_bounded,
+            "standing_crown_height_preserved": crown_height_preserved,
+            "standing_complete_trace_valid": complete_trace_valid,
+            "standing_outcome_valid": standing_outcome_valid,
+            "standing_lane_evidence_qualifies": standing_outcome_valid,
+        }
+        if any(
+            float(state[name]) != (1.0 if expected else 0.0)
+            for name, expected in expected_flags.items()
+        ):
+            raise ValueError(f"{label} standing oracle disagrees with state")
+
+        trace_integrity_valid = (
+            trace_integrity_valid
+            and inventory_valid
+            and all_bodies_finite
+            and cubes_remain_pinned
+        )
+        standing_components_valid = (
+            standing_components_valid
+            and mobile_displacement_bounded
+            and mobile_rotation_bounded
+            and crown_height_preserved
+        )
+
+        maximum_mobile_displacement = max(
+            maximum_mobile_displacement,
+            float(state["max_mobile_body_origin_displacement"]),
+        )
+        maximum_mobile_rotation = max(
+            maximum_mobile_rotation,
+            float(state["max_mobile_rotation_delta_rad"]),
+        )
+        minimum_crown_z = min(minimum_crown_z, crown_z)
+        final_state = state
+
+    assert final_state is not None and initial_crown_z is not None
+    complete_horizon = expected_last_step == AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS
+    complete_trace_valid = complete_horizon and trace_integrity_valid
+    standing_outcome_valid = complete_trace_valid and standing_components_valid
+    return {
+        "schema_version": AUTHOR_MASONRY_ARCH_101_SCENE_STATE_SCHEMA_VERSION,
+        "scene_id": schedule.scene,
+        "solver_lane": schedule.solver_lane,
+        "sample_count": len(trajectory_steps),
+        "completed_substeps": expected_last_step,
+        "complete_horizon": complete_horizon,
+        "initial_crown_body_origin_z": initial_crown_z,
+        "final_crown_body_origin_z": float(final_state["crown_body_origin_z"]),
+        "minimum_crown_body_origin_z": minimum_crown_z,
+        "maximum_mobile_body_origin_displacement": maximum_mobile_displacement,
+        "maximum_mobile_rotation_delta_rad": maximum_mobile_rotation,
+        "complete_trace_valid": complete_trace_valid,
+        "standing_outcome_valid": standing_outcome_valid,
+        "lane_evidence_qualifies": standing_outcome_valid,
+        "comparison_capture_valid": complete_trace_valid,
+        "physical_outcome_validated": standing_outcome_valid,
+    }
+
+
+def _require_author_masonry_arch_101_complete_outcome(
+    schedule: CaptureSchedule,
+    metrics: dict[str, Any] | None,
+    *,
+    sidecar_path: Path,
+) -> None:
+    if metrics is None:
+        return
+    if schedule.solver_lane == "exact" and not metrics["standing_outcome_valid"]:
+        raise ValueError(
+            f"{sidecar_path}: exact author arch did not pass the standing oracle"
+        )
+    if schedule.solver_lane == "boxed" and not metrics["comparison_capture_valid"]:
+        raise ValueError(
+            f"{sidecar_path}: boxed author arch comparison trace is incomplete"
+        )
 
 
 def _validate_author_painleve_dart_adapter_outcome(
@@ -4059,15 +4390,63 @@ def _validate_author_masonry_arch_adapter_contract(
     *,
     sidecar_path: Path,
 ) -> dict[str, Any] | None:
-    if not _is_author_masonry_arch_impact_schedule(schedule):
+    source_schedule_id = _author_masonry_arch_source_schedule_id(schedule)
+    if source_schedule_id is None:
         return None
+
+    scenarios = {
+        "masonry_arch_25_author_crown_impact_current_source": {
+            "schema_version": (
+                "dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1"
+            ),
+            "mesh_tree": "2552017df4061c49f7df064d847a4268a6e02d1a",
+            "mesh_tree_sha256": (
+                "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
+            ),
+            "mesh_directory": "meshes/arch/num_stones=25",
+            "selected_cli_arguments": "--stones 25",
+            "stones": 25,
+            "mobile_stones": 23,
+            "source_obj_record_arch_top_z": 65.273375,
+            "source_runtime_arch_top_z_float32": 65.27337646484375,
+            "cube_initial_z": 75.27337646484375,
+            "evidence_frames": 500,
+            "evidence_substeps": 2000,
+            "release_within_evidence_horizon": True,
+            "release_action_scheduled": True,
+            "release_action_completed_step": 1600,
+            "release_action_key": "p",
+            "interactive_action_semantics": "immediate_on_invocation",
+        },
+        "masonry_arch_101_author_standing_current_source": {
+            "schema_version": ("dart.fbf_author_masonry_arch_standing_dart_adapter/v1"),
+            "mesh_tree": "e0c209235673d2f69c3c5de7708ab1dfadec96e3",
+            "mesh_tree_sha256": (
+                "7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf"
+            ),
+            "mesh_directory": "meshes/arch/num_stones=101",
+            "selected_cli_arguments": "--stones 101",
+            "stones": 101,
+            "mobile_stones": 99,
+            "source_obj_record_arch_top_z": 69.628159,
+            "source_runtime_arch_top_z_float32": 69.62815856933594,
+            "cube_initial_z": 79.62815856933594,
+            "evidence_frames": 400,
+            "evidence_substeps": 1600,
+            "release_within_evidence_horizon": False,
+            "release_action_scheduled": False,
+            "release_action_completed_step": None,
+            "release_action_key": None,
+            "interactive_action_semantics": "not_registered_for_standing_lane",
+        },
+    }
+    scenario = scenarios[source_schedule_id]
 
     contract = data.get("physics_contract")
     if not isinstance(contract, dict):
         raise ValueError(f"{sidecar_path}: author arch adapter contract is missing")
     if (
-        contract.get("schema_version")
-        != ("dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1")
+        contract.get("schema_version") != scenario["schema_version"]
         or contract.get("kind") != "source_configuration_dynamics_adapter"
     ):
         raise ValueError(f"{sidecar_path}: unexpected author arch adapter schema")
@@ -4076,12 +4455,14 @@ def _validate_author_masonry_arch_adapter_contract(
     expected_binding = {
         "repository": "https://github.com/matthcsong/fbf-sca-2026",
         "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+        "run_py_blob": "35a052d7ef0975e7c828c9678d163054dfbb3ef2",
         "run_py_sha256": (
             "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73"
         ),
-        "mesh_tree_sha256": (
-            "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
-        ),
+        "mesh_tree": scenario["mesh_tree"],
+        "mesh_tree_sha256": scenario["mesh_tree_sha256"],
+        "mesh_directory": scenario["mesh_directory"],
         "configuration_spec_sha256": _sha256(
             ROOT / "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
         ),
@@ -4095,14 +4476,27 @@ def _validate_author_masonry_arch_adapter_contract(
     if source_binding != expected_binding:
         raise ValueError(f"{sidecar_path}: author arch adapter source hashes changed")
 
+    if contract.get("source_selection") != {
+        "source_default_stones": 25,
+        "selected_cli_arguments": scenario["selected_cli_arguments"],
+        "selected_stones": scenario["stones"],
+        "historical_paper_invocation_known": False,
+    }:
+        raise ValueError(f"{sidecar_path}: author arch source selection changed")
+
     expected_source_configuration = {
         "coordinate_scale": 1.0,
         "coordinate_units": "author_raw_numeric_values",
-        "stones": 25,
+        "stones": scenario["stones"],
         "fixed_springers": 2,
         "cubes": 3,
         "cube_edge": 3.0,
         "cube_mass": 54000.0,
+        "source_obj_record_arch_top_z": scenario["source_obj_record_arch_top_z"],
+        "source_runtime_arch_top_z_float32": scenario[
+            "source_runtime_arch_top_z_float32"
+        ],
+        "cube_initial_z": scenario["cube_initial_z"],
         "friction": 0.8,
         "contact_gap": 0.005,
         "shape_stiffness": 10000.0,
@@ -4112,8 +4506,8 @@ def _validate_author_masonry_arch_adapter_contract(
         "runtime_time_step_seconds": 1.0 / 240.0,
         "release_frame": 400,
         "release_substep": 1600,
-        "evidence_frames": 500,
-        "evidence_substeps": 2000,
+        "evidence_frames": scenario["evidence_frames"],
+        "evidence_substeps": scenario["evidence_substeps"],
     }
     if contract.get("source_configuration") != expected_source_configuration:
         raise ValueError(f"{sidecar_path}: author arch source configuration changed")
@@ -4152,24 +4546,89 @@ def _validate_author_masonry_arch_adapter_contract(
     if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
         raise ValueError(f"{sidecar_path}: author arch scoped ERP is not zero")
     if adapter.get("inventory") != {
-        "stones": 25,
-        "mobile_stones": 23,
+        "stones": scenario["stones"],
+        "mobile_stones": scenario["mobile_stones"],
         "cubes": 3,
         "cubes_released": False,
     }:
         raise ValueError(f"{sidecar_path}: author arch initial inventory changed")
     if adapter.get("schedule") != {
-        "evidence_runner_action_completed_step": 1600,
-        "release_action_key": "p",
-        "interactive_action_semantics": "immediate_on_invocation",
+        "evidence_frames": scenario["evidence_frames"],
+        "evidence_substeps": scenario["evidence_substeps"],
+        "source_release_frame": 400,
+        "source_release_substep": 1600,
+        "source_release_within_evidence_horizon": scenario[
+            "release_within_evidence_horizon"
+        ],
+        "evidence_runner_release_action_scheduled": scenario[
+            "release_action_scheduled"
+        ],
+        "evidence_runner_action_completed_step": scenario[
+            "release_action_completed_step"
+        ],
+        "release_action_key": scenario["release_action_key"],
+        "interactive_action_semantics": scenario["interactive_action_semantics"],
     }:
         raise ValueError(f"{sidecar_path}: author arch release schedule changed")
 
+    expected_standing_oracle = None
+    if scenario["stones"] == 101:
+        expected_standing_oracle = {
+            "scene_state_schema": (AUTHOR_MASONRY_ARCH_101_SCENE_STATE_SCHEMA_VERSION),
+            "required_completed_substeps": (AUTHOR_MASONRY_ARCH_101_REQUIRED_SUBSTEPS),
+            "required_world_time_seconds": (
+                AUTHOR_MASONRY_ARCH_101_REQUIRED_WORLD_TIME_SECONDS
+            ),
+            "horizon_time_tolerance_seconds": (
+                AUTHOR_MASONRY_ARCH_101_HORIZON_TIME_TOLERANCE_SECONDS
+            ),
+            "max_mobile_body_origin_displacement": (
+                AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_BODY_ORIGIN_DISPLACEMENT
+            ),
+            "max_mobile_rotation_delta_rad": (
+                AUTHOR_MASONRY_ARCH_101_MAX_MOBILE_ROTATION_DELTA_RAD
+            ),
+            "max_crown_height_loss": AUTHOR_MASONRY_ARCH_101_MAX_CROWN_HEIGHT_LOSS,
+            "max_kinematic_cube_pose_error": (
+                AUTHOR_MASONRY_ARCH_101_MAX_KINEMATIC_CUBE_POSE_ERROR
+            ),
+            "requires_exact_inventory": True,
+            "requires_all_bodies_finite": True,
+            "requires_cubes_kinematic": True,
+            "requires_cubes_at_pinned_poses": True,
+            "positive_standing_qualification_requires_standing_in_both_lanes": True,
+            "comparison_capture_validity_is_runner_level": True,
+            "complete_trace_valid_is_not_positive_standing_qualification": True,
+            "current_dart_adapter_outcome_only": True,
+            "source_outcome_equivalence": False,
+        }
+    if not _contract_value_matches(
+        adapter.get("standing_outcome_oracle"), expected_standing_oracle
+    ):
+        raise ValueError(f"{sidecar_path}: author arch standing oracle changed")
+
+    expected_actions = [(1600, "p")] if scenario["release_action_scheduled"] else []
+    if (
+        schedule.total_steps != scenario["evidence_substeps"]
+        or not math.isclose(
+            schedule.time_step_seconds, 1.0 / 240.0, rel_tol=0.0, abs_tol=1e-15
+        )
+        or [(action.step, action.key) for action in schedule.actions]
+        != expected_actions
+    ):
+        raise ValueError(f"{sidecar_path}: author arch evidence schedule changed")
+
     expected_claim_boundary = {
         "source_numeric_geometry_mass_friction_and_initial_state_ported_to_dart": True,
-        "source_release_action_ported_to_dart": True,
-        "source_release_schedule_declared_for_evidence_runner": True,
+        "source_release_action_ported_to_dart": scenario["release_action_scheduled"],
+        "source_release_schedule_declared_for_evidence_runner": scenario[
+            "release_action_scheduled"
+        ],
         "interactive_demo_auto_releases_at_source_step": False,
+        "historical_paper_invocation_known": False,
+        "current_dart_adapter_standing_outcome_oracle_declared": (
+            scenario["stones"] == 101
+        ),
         "source_collision_semantics_equivalent": False,
         "source_contact_gap_semantics_equivalent": False,
         "source_solver_backend_equivalent": False,
@@ -4177,7 +4636,9 @@ def _validate_author_masonry_arch_adapter_contract(
         "trajectory_equivalent": False,
         "physical_outcome_equivalent": False,
         "fig07_parity": False,
+        "fig08_parity": False,
         "video07_parity": False,
+        "video08_parity": False,
         "timing_comparable": False,
         "paper_parity": False,
     }
@@ -4189,6 +4650,11 @@ def _validate_author_masonry_arch_adapter_contract(
         "solver_lane": expected_lane,
         "stone_count": adapter["inventory"]["stones"],
         "cube_count": adapter["inventory"]["cubes"],
+        "source_selection": contract["source_selection"],
+        "evidence_substeps": adapter["schedule"]["evidence_substeps"],
+        "release_action_scheduled": adapter["schedule"][
+            "evidence_runner_release_action_scheduled"
+        ],
         "release_action_completed_step": adapter["schedule"][
             "evidence_runner_action_completed_step"
         ],
@@ -4623,6 +5089,14 @@ def _validate_failed_exact_fbf_sidecar(
         sidecar_path=sidecar_path,
         expected_last_step=trigger_step,
     )
+    author_arch_scene_state_metrics = (
+        _validate_author_masonry_arch_101_scene_state_trace(
+            schedule,
+            trajectory_steps,
+            sidecar_path=sidecar_path,
+            expected_last_step=trigger_step,
+        )
+    )
 
     for collection_name in ("shots", "actions", "events"):
         collection = data.get(collection_name)
@@ -4757,6 +5231,15 @@ def _validate_failed_exact_fbf_sidecar(
         **(
             {"scene_state_metrics": scene_state_metrics}
             if scene_state_metrics is not None
+            else {}
+        ),
+        **(
+            {
+                "author_masonry_arch_101_scene_state_metrics": (
+                    author_arch_scene_state_metrics
+                )
+            }
+            if author_arch_scene_state_metrics is not None
             else {}
         ),
     }
@@ -5201,6 +5684,19 @@ def validate_sidecar(
         sidecar_path=sidecar_path,
         expected_last_step=schedule.total_steps,
     )
+    author_arch_scene_state_metrics = (
+        _validate_author_masonry_arch_101_scene_state_trace(
+            schedule,
+            trajectory_steps,
+            sidecar_path=sidecar_path,
+            expected_last_step=schedule.total_steps,
+        )
+    )
+    _require_author_masonry_arch_101_complete_outcome(
+        schedule,
+        author_arch_scene_state_metrics,
+        sidecar_path=sidecar_path,
+    )
     dart_adapter_outcome = (
         _validate_author_painleve_dart_adapter_outcome(
             schedule,
@@ -5345,6 +5841,15 @@ def validate_sidecar(
         **(
             {"scene_state_metrics": scene_state_metrics}
             if scene_state_metrics is not None
+            else {}
+        ),
+        **(
+            {
+                "author_masonry_arch_101_scene_state_metrics": (
+                    author_arch_scene_state_metrics
+                )
+            }
+            if author_arch_scene_state_metrics is not None
             else {}
         ),
         **(

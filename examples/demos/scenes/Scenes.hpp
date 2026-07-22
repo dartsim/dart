@@ -132,6 +132,10 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene();
 [[nodiscard]] DemoScene
 makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();
 
+/// Research > FBF author masonry arch: source-supported 101-wedge standing
+/// lane over the source-default no-release horizon.
+[[nodiscard]] DemoScene makeFbfAuthorMasonryArch101StandingCurrentSourceScene();
+
 /// Returns the canonical runtime-inspected configuration-only contract for
 /// fbf_author_card_house_5_construction. Renderer styling is disclosed but
 /// intentionally excluded from source parity. Throws std::invalid_argument

@@ -78,10 +78,23 @@ inline constexpr const char* kAuthorMeshTree
 inline constexpr const char* kAuthorMeshTreeSha256
     = "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d";
 inline constexpr const char* kAuthorMeshDirectory = "meshes/arch/num_stones=25";
+inline constexpr const char* kAuthorMeshTree101
+    = "e0c209235673d2f69c3c5de7708ab1dfadec96e3";
+// Path-sensitive two-level GNU sha256sum manifest hash over the 101 OBJ files,
+// computed from the author repository root with:
+//   find meshes/arch/num_stones=101 -maxdepth 1 -type f -name '*.obj' -print0
+//     | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum
+inline constexpr const char* kAuthorMeshTreeSha256101
+    = "7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf";
+inline constexpr const char* kAuthorMeshDirectory101
+    = "meshes/arch/num_stones=101";
+inline constexpr const char* kAuthorStoneSelection25 = "--stones 25";
+inline constexpr const char* kAuthorStoneSelection101 = "--stones 101";
 inline constexpr const char* kSpecSourceSha256
     = DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256;
 
 inline constexpr std::size_t kStoneCount = 25u;
+inline constexpr std::size_t kStoneCount101 = 101u;
 inline constexpr std::size_t kFixedSpringerCount = 2u;
 inline constexpr std::size_t kCubeCount = 3u;
 inline constexpr const char* kGroundShape = "plane";
@@ -117,6 +130,13 @@ inline constexpr double kSourceObjRecordArchTopZ = 65.273375;
 inline constexpr double kSourceRuntimeArchTopZFloat32 = 65.27337646484375;
 inline constexpr double kCubeInitialZ
     = kSourceRuntimeArchTopZFloat32 + kDropHeight;
+// The selected `--stones 101` source mesh set reaches its crown at the first
+// value below. The source loads OBJ records into NumPy float32 before taking
+// the maximum, producing the second value and therefore the third cube pose.
+inline constexpr double kSourceObjRecordArchTopZ101 = 69.628159;
+inline constexpr double kSourceRuntimeArchTopZFloat32101 = 69.62815856933594;
+inline constexpr double kCubeInitialZ101
+    = kSourceRuntimeArchTopZFloat32101 + kDropHeight;
 
 inline constexpr std::size_t kSourceMaxContacts = 4096u;
 inline constexpr int kSourceMaxOuterIterations = 200;
@@ -168,9 +188,64 @@ inline constexpr bool kTrajectoryEquivalence = false;
 inline constexpr bool kDynamicsEquivalence = false;
 inline constexpr bool kPhysicalOutcomeEquivalence = false;
 inline constexpr bool kFig07Parity = false;
+inline constexpr bool kFig08Parity = false;
 inline constexpr bool kVideo07Arch25Parity = false;
+inline constexpr bool kVideo08Arch101Parity = false;
 inline constexpr bool kTimingComparability = false;
 inline constexpr bool kPaperParity = false;
+
+enum class SourceScenario
+{
+  Arch25,
+  Arch101,
+};
+
+struct SourceScenarioSpec
+{
+  SourceScenario scenario = SourceScenario::Arch25;
+  std::size_t stoneCount = 0u;
+  const char* authorMeshTree = nullptr;
+  const char* authorMeshTreeSha256 = nullptr;
+  const char* authorMeshDirectory = nullptr;
+  const char* authorStoneSelection = nullptr;
+  double sourceObjRecordArchTopZ = 0.0;
+  double sourceRuntimeArchTopZFloat32 = 0.0;
+  double cubeInitialZ = 0.0;
+};
+
+inline constexpr SourceScenarioSpec kSourceScenario25{
+    SourceScenario::Arch25,
+    kStoneCount,
+    kAuthorMeshTree,
+    kAuthorMeshTreeSha256,
+    kAuthorMeshDirectory,
+    kAuthorStoneSelection25,
+    kSourceObjRecordArchTopZ,
+    kSourceRuntimeArchTopZFloat32,
+    kCubeInitialZ};
+
+inline constexpr SourceScenarioSpec kSourceScenario101{
+    SourceScenario::Arch101,
+    kStoneCount101,
+    kAuthorMeshTree101,
+    kAuthorMeshTreeSha256101,
+    kAuthorMeshDirectory101,
+    kAuthorStoneSelection101,
+    kSourceObjRecordArchTopZ101,
+    kSourceRuntimeArchTopZFloat32101,
+    kCubeInitialZ101};
+
+//==============================================================================
+inline const SourceScenarioSpec& sourceScenarioSpec(SourceScenario scenario)
+{
+  switch (scenario) {
+    case SourceScenario::Arch25:
+      return kSourceScenario25;
+    case SourceScenario::Arch101:
+      return kSourceScenario101;
+  }
+  throw std::invalid_argument("author masonry-arch source scenario is invalid");
+}
 
 using Triangle = std::array<std::size_t, 3>;
 using Vertices = std::array<Eigen::Vector3d, 8>;
@@ -285,13 +360,14 @@ inline MassProperties computeMassProperties(const Vertices& localVertices)
 }
 
 //==============================================================================
-inline std::vector<StoneSpec> makeStoneSpecs()
+inline std::vector<StoneSpec> makeStoneSpecs(SourceScenario scenario)
 {
+  const auto& scenarioSpec = sourceScenarioSpec(scenario);
   const auto generated = dart::math::detail::generateMasonryArchStoneWedges(
-      kStoneCount,
+      scenarioSpec.stoneCount,
       {},
       dart::math::detail::MasonryArchBarrierGapPolicy::IncludeSourceOffsets);
-  if (generated.size() != kStoneCount)
+  if (generated.size() != scenarioSpec.stoneCount)
     throw std::runtime_error("author masonry-arch generator count mismatch");
 
   std::vector<StoneSpec> specs;
@@ -314,10 +390,16 @@ inline std::vector<StoneSpec> makeStoneSpecs()
     spec.mass = spec.density * spec.volume;
     spec.moment = spec.mass * properties.momentPerUnitMass;
     spec.friction = kFriction;
-    spec.mobile = index != 0u && index + 1u != kStoneCount;
+    spec.mobile = index != 0u && index + 1u != scenarioSpec.stoneCount;
     specs.push_back(spec);
   }
   return specs;
+}
+
+//==============================================================================
+inline std::vector<StoneSpec> makeStoneSpecs()
+{
+  return makeStoneSpecs(SourceScenario::Arch25);
 }
 
 //==============================================================================
@@ -334,8 +416,9 @@ inline double archTopZ(const std::vector<StoneSpec>& stones)
 }
 
 //==============================================================================
-inline std::vector<CubeSpec> makeCubeSpecs()
+inline std::vector<CubeSpec> makeCubeSpecs(SourceScenario scenario)
 {
+  const auto& scenarioSpec = sourceScenarioSpec(scenario);
   std::vector<CubeSpec> specs;
   specs.reserve(kCubeCount);
   for (std::size_t index = 0u; index < kCubeCount; ++index) {
@@ -348,7 +431,7 @@ inline std::vector<CubeSpec> makeCubeSpecs()
          - 0.5 * static_cast<double>(kCubeCount - 1u))
             * kCubeSpacing,
         0.0,
-        kCubeInitialZ);
+        scenarioSpec.cubeInitialZ);
     spec.density = kCubeDensity;
     spec.mass = kCubeMass;
     spec.moment = Eigen::Matrix3d::Identity()
@@ -358,6 +441,12 @@ inline std::vector<CubeSpec> makeCubeSpecs()
     specs.push_back(spec);
   }
   return specs;
+}
+
+//==============================================================================
+inline std::vector<CubeSpec> makeCubeSpecs()
+{
+  return makeCubeSpecs(SourceScenario::Arch25);
 }
 
 //==============================================================================
