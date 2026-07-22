@@ -734,6 +734,38 @@ Current-source four-level Figure 6 adapter truth:
   8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6,
   and SHA256SUMS SHA-256
   f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553.
+- The sixth bounded four-level strict-prefix diagnostic is a same-binary c95
+  source-seed-values A/B. It changes only the initial-vector selector from
+  stock `ones64` to `rs42_f32_values_dart_norm64`; both arms retain
+  `rayleigh11`, DART `[n,t1,t2]` order, float64 Eigen normalization and power
+  products, ten configured products plus the terminal Rayleigh product, and
+  the frozen scene and strict policies. The variant promotes the raw
+  NumPy-2.4.4 `RandomState(42).randn(4096 * 3).astype(float32)` values to
+  double before DART normalization. The registered 168-value raw prefix has
+  SHA-256
+  7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1 and
+  aborts above that dimension. The control exactly reproduces step 35 /
+  attempt 101 / 56 contacts / 200 iterations, residual
+  4.0844850280896461e-4, 103 attempts, 102 solves, and one failure. The sole
+  variant also fails there with residual 4.1638905763175730e-4 and best
+  residual 4.1593800452634807e-4 at iteration 199. Seed/product-norm/estimate
+  telemetry differs from attempt 1; residual and iteration count first differ
+  at attempt 57 / step 29, and contact-frame/reduced-state hashes first differ
+  at attempt 67 / step 30. The reduced-state hash omits W and the complete
+  solver input, and product_norms omits product vectors, so post-divergence
+  residual/gamma deltas are contextual. Reject only these raw source values,
+  promoted and DART-normalized in float64, as sufficient for the frozen
+  36-step gate. Do not infer source-estimator or coordinate-order parity, a
+  root cause, a longer trajectory, Figure 6/video parity, timing, performance,
+  or superiority. No visual verdict applies. The one-shot artifacts are
+  internal protocol evidence, not external proof of no discarded invocation.
+  Package
+  /tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/ has RESULTS.md SHA-256
+  07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3,
+  comparison.json SHA-256
+  8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb,
+  and SHA256SUMS SHA-256
+  b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -1297,8 +1329,9 @@ Immediate order:
    run and partial frames as non-evidence; resolve full boxed
    runtime before paired media. The one-participant colored-ordering result is
    rejected only for the four-level Figure 6 strict-prefix blocker, as are the
-   one-global-group, source-sized-gap, residual-cadence, and terminal
-   spectral-estimate results. Require a new
+   one-global-group, source-sized-gap, residual-cadence, terminal
+   spectral-estimate, and source-seed-values results. Preserve all six bounded
+   rejects. Require a new
    source-backed, preregistered mismatch
    before another four-level strict solver A/B. Keep ten-level colored
    scheduling and global-scope diagnostics pending one factor at a time

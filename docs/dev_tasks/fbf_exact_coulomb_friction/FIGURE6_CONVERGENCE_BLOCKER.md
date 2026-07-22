@@ -429,6 +429,74 @@ passed, and `git diff --check` passed. The verified package is
 - complete `SHA256SUMS` manifest SHA-256
   `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
 
+## Source-Seed-Values Diagnostic
+
+The sixth bounded four-level strict-prefix diagnostic isolates the source's
+initial-vector values. One c95 instrumented Release binary is used for both
+arms. The only selector difference is stock float64 `ones64` versus
+`rs42_f32_values_dart_norm64`, which promotes the raw source RNG float32 values
+to double before the unchanged Eigen float64 normalization. Both arms retain
+stock `rayleigh11`, DART `[n,t1,t2]` order, ten configured float64 products plus
+the terminal Rayleigh product, and the same scene, policies, tolerances, caps,
+fallback, and fail-fast settings.
+
+The source oracle is bound to author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, `solver_fbf.py` SHA-256
+`8ec32aa20bf8d6c1173ed6c7f3735e2926fbb4b5059ee2236e26ad27eb22f941`,
+NumPy 2.4.4, and
+`RandomState(42).randn(4096 * 3).astype(float32)`. The registered 168-value
+raw prefix has SHA-256
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`;
+the diagnostic aborts above that dimension. Independent replay reproduced the
+raw-prefix and normalized-seed hashes for every observed dimension: 6, 12, 24,
+and 168.
+
+The prerequisite control exactly reproduces completed step 35, attempt 101, 56
+contacts, 200 iterations, residual `4.0844850280896461e-4`, safe gamma
+`0.27728679157546576`, final gamma `2.7728679157546576`, 103 attempts, 102
+solves, and one failure. The sole recorded variant also fails at completed step
+35 / attempt 101 / 56 contacts / 200 iterations. Its residual is
+`4.1638905763175730e-4`, best residual is `4.1593800452634807e-4` at iteration
+199, safe gamma is `0.26989166211867666`, and final gamma is
+`2.6989166211867666`; it also records 103 attempts, 102 solves, one failure,
+zero accepted caps, and zero boxed fallbacks.
+
+The intended seed, ten-product norm sequence, and retained estimate differ at
+attempt 1 / step 1. Final residual and iteration count first differ at attempt
+57 / step 29; the contact-frame and recorded reduced-state hashes first differ
+at attempt 67 / step 30. `reduced_problem_fnv1a64` covers only contact count,
+`freeVelocity`, and coefficients, not `W` or the complete solver input, while
+`product_norms` contains norms rather than product vectors. Matching recorded
+fields before attempt 67 therefore does not prove operator or complete-problem
+identity, and all post-divergence failure and gamma deltas are contextual.
+
+The only supported causal verdict is that the source-derived raw float32
+values, promoted to double and normalized by the unchanged DART/Eigen float64
+path, do not clear the frozen 36-step gate. This does not establish
+source-estimator parity, coordinate-order parity, a general root cause, a
+longer trajectory, Figure 6/video parity, timing, performance, or solver
+superiority. No visual verdict applies. The marker/timeline/trace triplet for
+each arm and path-reuse guard are internally consistent with the
+one-shot/no-rerun protocol, but do not externally prove that no invocation was
+discarded elsewhere.
+
+The Release build completed 356/356, both focused math unit suites passed,
+`git diff --check` passed, and both fail-closed validators plus the independent
+replay passed. Both arms use binary SHA-256
+`f1dd0f0b04cc6339d77a0c9f640b7c4725b4b3be19695e3e827b6ed7d29087a1`.
+The verified package is
+`/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/`:
+
+- `RESULTS.md` SHA-256
+  `07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`;
+- `comparison.json` SHA-256
+  `8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`;
+- frozen `RUN_MANIFEST.json` SHA-256
+  `523e27735ec30b0e1bb4703befa1ab836e85d0e5f6ff9c5f641db5e2c58dc653`;
+  and
+- complete `SHA256SUMS` manifest SHA-256
+  `b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
+
 ## Source-Style Continuation Preview
 
 The pinned author runtime recovers and advances a finite iterate even when its
@@ -541,9 +609,10 @@ The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
 must isolate one remaining source mismatch without combining tolerance,
 budget, fallback, fail-fast, or accepted-cap changes. The one-participant
-colored-ordering, one-global-group, source-sized-gap, residual-cadence, and
-terminal spectral-estimate candidates are all rejected for this Figure 6
-strict-prefix blocker. Do not
+colored-ordering, one-global-group, source-sized-gap, residual-cadence,
+terminal spectral-estimate, and source-seed-values candidates are all rejected
+for this Figure 6 strict-prefix blocker. Preserve all six bounded rejects. Do
+not
 promote another solver knob without a new source-backed, preregistered
 mismatch. Source
 shrink-cap, plateau, and continuation semantics likewise require a separately

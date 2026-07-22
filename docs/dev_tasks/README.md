@@ -42,8 +42,9 @@ reproduction commands, and claim boundaries in the task Markdown files.
 
 If media is useful beyond the active task, promote a deliberately selected,
 reasonably sized artifact to `docs/assets/` under the documentation placement
-rules. Attach review-only videos through the pull-request editor instead of
-adding them to the repository.
+rules. Attach review-only videos through
+[GitHub's pull-request attachment workflow](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files)
+instead of adding them to the repository.
 
 Before completing a task, move durable facts to the owner selected by
 `docs/information-architecture.md`: published docs, onboarding docs, AI policy,

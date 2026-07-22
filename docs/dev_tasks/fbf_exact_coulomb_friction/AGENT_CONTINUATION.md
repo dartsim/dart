@@ -55,7 +55,7 @@ renderer, Apple hardware, or paper timer boundary.
 | Backspin visual evidence | Locally finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three selected local stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` remain partial |
 | Author-pinned turntable visual evidence | Locally finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and four complete 360-step author-configured visual-lane cells: three eject and `mu=.5, omega=2` remains on support through 6 s | Valid finite-horizon author-source-pinned non-paper DART evidence; no zero-slip, co-rotation, full-state, paper-golden, timing, real-time, or parity claim |
 | Author card-house construction | Locally finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence; zero simulation substeps and no release, standing, dynamics, solver, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
-| Current-source four-level card-house adapter | Strict and source-continuation adapters bind the same supported four-level, 600-frame selection to 26 source-sized cards, four initially kinematic cubes, and a 2,400-substep exact/boxed DART schedule | Strict source-inner replays still fail the 56-contact group at step 35. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, and a c95 cadence-5 candidate still fails at step 35; both have explicit comparator/claim limits and leave the scene unchanged. A same-binary `last_norm10` terminal-estimate candidate also fails at step 35; its failure-state deltas are contextual after earlier trajectory divergence. The separate continuation capture completes both lanes through release; exact has 3,351/3,351 solves, zero failures/fallbacks, 113 plateau and 633 max-iteration accepts, zero shrink caps, and worst residual `0.917120`. Manual inspection finds more endpoint structure in exact, but this is not strict convergence, quantitative physical/trajectory parity, golden/backend/timing parity, superiority, or Fig. 6 paper parity |
+| Current-source four-level card-house adapter | Strict and source-continuation adapters bind the same supported four-level, 600-frame selection to 26 source-sized cards, four initially kinematic cubes, and a 2,400-substep exact/boxed DART schedule | Strict source-inner replays still fail the 56-contact group at step 35. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, while c95 cadence-5, same-binary `last_norm10`, and same-binary source-seed-values candidates still fail at step 35; all six bounded strict-prefix diagnostics retain explicit claim limits and leave the scene unchanged. The separate continuation capture completes both lanes through release; exact has 3,351/3,351 solves, zero failures/fallbacks, 113 plateau and 633 max-iteration accepts, zero shrink caps, and worst residual `0.917120`. Manual inspection finds more endpoint structure in exact, but this is not strict convergence, quantitative physical/trajectory parity, golden/backend/timing parity, superiority, or Fig. 6 paper parity |
 | Current-source ten-level card-house adapter | Separate strict and source-continuation scene/schedule pairs bind `--levels 10` to 155 cards, four cubes, 3,200 DART substeps, release after step 1,600, and the pinned heterogeneous gaps. Predictive checkpoint `3647959a188` matches only the scalar source `separation / dt` allowance | Strict reaches completed step 31 before a 79-contact failure. The final exact continuation reseal and independent reuse verification pass: 3,200/3,200, 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau and 763 max-iteration accepts, and no automated semantic-outcome validation. A clean boxed control completes 80/80, but the full run reached only step 112, was interrupted, and is non-evidence. Paired media remains blocked. No source, trajectory, physical, Tables 6-7, superiority, or paper parity is valid; see `CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md` |
 | Pinned-author masonry arch | `author_masonry_arch_reference_v1` records the 500-frame / 2,000-substep author run with release at substep 1,600; a deterministic projection represents every substep, with only 157 author convergence flags true and 1,843 false | Valid source-pinned scientific negative; not the 400-frame source default or a paper invocation, and not DART/cross-solver dynamics, trajectory, outcome, timing, repeatability, pair-contact, or media parity |
 | Source-pinned 101-stone DART adapter | `fbf_author_masonry_arch_101_standing_current_source` binds all 101 author meshes and the source-supported `--stones 101`, 400-frame / 1,600-substep no-release schedule. The strict exact lane fails closed at completed step 209 on an iteration cap; boxed completes but fails the local standing oracle and visibly collapses. Full current-source FBF and Kamino controls also fail the same local standing criterion | Precise current-DART/current-source scientific negatives. They are not a historical invocation/backend, converged golden, full trajectory/outcome, Fig. 8/video.08, timing, performance, or solver-superiority evidence |
@@ -743,6 +743,42 @@ package: `/tmp/fbf_fig06_spectral_terminal_c95.OjNIB4/evidence/`;
 `SHA256SUMS`
 `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
 
+The sixth bounded four-level strict-prefix diagnostic is a same-binary c95
+source-seed-values A/B. It changes only the initial-vector selector from stock
+`ones64` to `rs42_f32_values_dart_norm64`; both arms retain `rayleigh11`, DART
+`[n,t1,t2]` order, float64 Eigen normalization and power products, ten
+configured products plus the terminal Rayleigh product, and the frozen scene
+and strict policies. The variant promotes the raw NumPy-2.4.4
+`RandomState(42).randn(4096 * 3).astype(float32)` prefix to double before the
+unchanged DART normalization. Its registered 168-value raw prefix has SHA-256
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`,
+and the selector aborts above that dimension.
+
+The control exactly reproduces completed step 35 / exact attempt 101 / 56
+contacts / 200 iterations, residual `4.0844850280896461e-4`, 103 attempts, 102
+solves, and one failure. The sole recorded variant also fails there with
+residual `4.1638905763175730e-4` and best residual
+`4.1593800452634807e-4` at iteration 199. Seed, product-norm, and retained
+estimate telemetry differs from attempt 1; final residual and iteration count
+first differ at attempt 57 / step 29, and contact-frame plus recorded
+reduced-state hashes first differ at attempt 67 / step 30. The reduced-state
+hash omits `W` and the complete solver input, while `product_norms` omits
+product vectors, so all post-divergence residual and gamma deltas are
+contextual. The supported verdict is only that these raw source values,
+promoted to double and normalized by DART's unchanged float64 path, do not
+clear the frozen 36-step gate. This does not establish source-estimator or
+coordinate-order parity, a root cause, a longer trajectory, Figure 6/video
+parity, timing, performance, or superiority. No visual verdict applies. The
+one marker/timeline/trace triplet per arm and path-reuse guard are internal
+protocol evidence, not external proof that no invocation was discarded.
+Verified package:
+`/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/`; `RESULTS.md`
+`07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`;
+`comparison.json`
+`8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`;
+`SHA256SUMS`
+`b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
+
 The pinned author control completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
 123/677 from release onward. First false/cap indices are 33/35; worst natural
@@ -1246,7 +1282,7 @@ closure check.
 | --- | --- | --- |
 | Literal 25-stone static arch | Exact trajectory, residual, outcome, mean-real-time, multicore, and earlier trace-equivalent visual gates pass. The c95-bound exact/boxed recapture and independent verification pass, but its visible-standing assessment is manual-only | Preserve both evidence roots and the narrow reconstructed no-projectile claim; upload the labeled c95-bound group through the PR browser composer and record its URL without promoting a physical/superiority/Fig. 7 claim |
 | Projectile impact sequences | Frozen v1 remains a scientific negative. The separate current-source continuation pair completes through release, but has accepted non-strict outcomes and only manual, nearly identical visual observations; strict source configuration remains blocked at step 142 | Preserve v1 without tuning and continuation without promotion; upload its group through the browser composer, then obtain source-equivalent strict evidence and a real outcome oracle from a separately declared contract |
-| Card house | The strict adapter still fails the 56-contact group at step 35. A separate source-continuation exact/boxed capture completes 2,400 steps through release with full acceptance telemetry and qualitative manual inspection. Its colored-ordering, one-global-group, source-sized-gap, residual-cadence, and terminal spectral-estimate candidates are ineffective | Preserve all five bounded rejects and require a new source-backed, preregistered mismatch before another strict solver A/B; none rejects the literal-arch colored result or pending ten-level diagnostics. Publish the continuation clip only as continuation evidence, never present accepted finite iterates as strict success |
+| Card house | The strict adapter still fails the 56-contact group at step 35. A separate source-continuation exact/boxed capture completes 2,400 steps through release with full acceptance telemetry and qualitative manual inspection. Its colored-ordering, one-global-group, source-sized-gap, residual-cadence, terminal spectral-estimate, and source-seed-values candidates are ineffective | Preserve all six bounded rejects and require a new source-backed, preregistered mismatch before another strict solver A/B; none rejects the literal-arch colored result or pending ten-level diagnostics. Publish the continuation clip only as continuation evidence, never present accepted finite iterates as strict success |
 | 101-stone arch | Source-pinned DART exact stops at step 209 on an iteration cap; boxed completes but collapses. Full current-source FBF and Kamino controls also fail the standing gate. The older literal v7 and oriented-box negatives remain distinct | Preserve the precise negatives and decoded blocker media; recover the historical invocation/backend or a matched historical oracle before attempting parity-eligible media |
 | 10-level card house | Strict remains blocked after completed step 31. The final continuation exact member passes 3,200/3,200 and independent reuse verification, but has no automated semantic-outcome validation. A clean boxed control completes 80/80; full boxed reached only step 112, was interrupted, and is non-evidence | Preserve both strict checkpoints and final hashes. Resolve boxed runtime before paired media, and manually upload only the final exact clip. Keep colored/global-scope work one-factor-at-a-time; do not loosen tolerance, caps, fallback, or accepted-cap policy |
 | Small figures and video | The implementation/media-head `c95bd5fb916` reseal covers 20 Figures 1-5 exact/boxed members and 13 groups with zero failures; five exact-only author-turntable boxed skips are expected | Preserve the ignored reseal and independent verification; manually upload the accepted group clips through the PR composer and record their URLs while retaining every DART/source/history/golden/media boundary |
@@ -1267,8 +1303,8 @@ closure check.
    traces, outcome audit, independent replay, and manual inspection. Continue
    one-factor-at-a-time strict work on the step-35 failure without
    changing tolerance/caps/fallback/fail-fast. The one-participant Figure 6
-   colored-ordering, one-global-group, source-sized-gap, residual-cadence, and
-   terminal spectral-estimate discriminators are
+   colored-ordering, one-global-group, source-sized-gap, residual-cadence,
+   terminal spectral-estimate, and source-seed-values discriminators are
    ineffective; require a new source-backed, preregistered mismatch before
    another strict solver A/B, while keeping the ten-level colored/global-scope
    diagnostics pending. Preserve and

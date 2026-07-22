@@ -243,7 +243,7 @@ colored-inner-BGS contract validated above.
 | Fig. 3 | Backspin sphere reverses toward analytical terminal state | Locally finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
-| Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, bounded c95 colored/global-scope/source-gap/cadence/terminal-estimate diagnostics, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, and c95 cadence-5 and same-binary `last_norm10` candidates still fail at step 35; each has explicit claim limits and leaves the scene unchanged. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
+| Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, six bounded c95 colored/global-scope/source-gap/cadence/terminal-estimate/source-seed-values diagnostics, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, while c95 cadence-5, same-binary `last_norm10`, and same-binary source-seed-values candidates still fail at step 35; each has explicit claim limits and leaves the scene unchanged. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, sealed pinned-author 500-frame scientific negative, and a newly registered 2,000-substep source-configuration DART capture schedule | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags. The new DART exact lane clears the former step-68 local failure and completes 100 strict steps, then fails closed on a distinct outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks); neither lane has completed the 2,000-step physical/media gates, the 500-frame invocation is not the source default, and no source-matched DART impact or paper-timing row is established |
 | Fig. 8 | 101-stone arch remains balanced | Source-pinned current-DART 101-mesh adapter and boxed-collapse media, independent full current-source FBF/Kamino numeric negatives, plus the older oriented-box bounded attempt and provenance-bound literal v7 failed-step-1 run | Partial blocker evidence; parity blocked: source-pinned exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`), and boxed completes 1,600 steps but fails the standing oracle and collapses. Current-source FBF and Kamino also fail the local standing criterion. The diagnostic hstack freezes exact at step 208. No lane supplies standing, the historical invocation/backend, full-pose source trajectory, golden media, timing, or paper-parity proof |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
@@ -364,6 +364,37 @@ reuse, but neither is external proof of no discarded run. Verified
 `e33894ab0b771544209d48724641716c491b04073ec5bec533c07df653e54cda`,
 `8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`, and
 `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
+
+The sixth bounded c95 diagnostic uses the same instrumented Release binary in
+both arms and changes only the initial-vector selector from stock `ones64` to
+`rs42_f32_values_dart_norm64`. Both arms retain `rayleigh11`, DART
+`[n,t1,t2]` order, float64 Eigen normalization/products, ten configured
+products plus the terminal Rayleigh product, and the frozen strict contract.
+The variant promotes a raw NumPy-2.4.4 `RandomState(42)` float32 prefix to
+double before DART normalization; its registered 168-value prefix has SHA-256
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`
+and aborts above that dimension. The control exactly reproduces step 35 /
+attempt 101 / 56 contacts / 200 iterations, residual
+`4.0844850280896461e-4`, 103 attempts, 102 solves, and one failure. The sole
+variant also fails there, with residual `4.1638905763175730e-4` and best
+residual `4.1593800452634807e-4` at iteration 199.
+
+Seed/product-norm/retained-estimate telemetry differs from attempt 1. Residual
+and iteration count first differ at attempt 57 / step 29; contact-frame and
+recorded reduced-state hashes first differ at attempt 67 / step 30. The
+reduced-state hash omits `W` and the complete solver input, while
+`product_norms` omits product vectors, so all post-divergence deltas are
+contextual. The valid verdict rejects only the source-derived raw float32
+values, promoted to double and normalized by DART's unchanged float64 path, as
+sufficient for the frozen 36-step gate. It supplies no source-estimator or
+coordinate-order parity, general root cause, longer trajectory, outcome,
+timing, performance, superiority, video, Figure 6, or paper-parity evidence.
+The one-shot artifacts cannot externally prove no discarded invocation.
+Verified `/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/` `RESULTS.md`,
+`comparison.json`, and `SHA256SUMS` hash to
+`07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`,
+`8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`, and
+`b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
 
 The separate
 `fbf_author_card_house_4_impact_source_continuation_current_source` capture

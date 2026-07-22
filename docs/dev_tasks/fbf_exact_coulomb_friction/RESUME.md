@@ -46,7 +46,13 @@ ten-product/no-Rayleigh trace
 checks but still fails the step-35 gate. Recorded state summaries diverge by
 step 30 and do not cover `W` or product vectors, so final-state deltas are
 contextual and the result rejects only that terminal rule as the prefix fix. A
-new telemetry-rich source-continuation adapter completes exact and boxed
+same-binary source-seed-values candidate changes only stock `ones64` to raw
+source RNG float32 values promoted to double before DART's unchanged float64
+normalization. It also fails at step 35 / attempt 101 / 56 contacts; recorded
+state summaries diverge before failure and omit `W` and product vectors. This
+is the sixth bounded strict-prefix reject and establishes only that this seed
+rule does not clear the frozen 36-step gate. A new telemetry-rich
+source-continuation adapter completes exact and boxed
 through all 2,400 steps and the successful step-1,600 cube release. Exact
 records
 3,351/3,351 attempts/solves, zero failures/fallbacks, 2,605 successes, 113
@@ -755,6 +761,39 @@ Verified package:
 `SHA256SUMS`
 `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
 
+The sixth bounded four-level strict-prefix diagnostic is a same-binary c95
+source-seed-values A/B. It changes only stock `ones64` to
+`rs42_f32_values_dart_norm64`; both arms retain `rayleigh11`, DART
+`[n,t1,t2]` order, float64 Eigen normalization and products, ten configured
+products plus the terminal Rayleigh product, and the frozen scene and strict
+policies. The variant promotes the raw NumPy-2.4.4
+`RandomState(42).randn(4096 * 3).astype(float32)` values to double before the
+unchanged DART normalization. Its registered 168-value prefix SHA-256 is
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`
+and it aborts above that dimension.
+
+The control exactly reproduces completed step 35 / attempt 101 / 56 contacts /
+200 iterations, residual `4.0844850280896461e-4`, 103 attempts, 102 solves,
+and one failure. The sole recorded variant also fails there with residual
+`4.1638905763175730e-4` and best residual `4.1593800452634807e-4` at iteration
+199. Seed, product-norm, and retained-estimate telemetry differs at attempt 1;
+residual and iteration count first differ at attempt 57 / step 29, while
+contact-frame and recorded reduced-state hashes first differ at attempt 67 /
+step 30. The reduced-state hash omits `W` and the complete solver input, and
+`product_norms` omits product vectors, so post-divergence residual/gamma deltas
+are contextual. The supported verdict is only that the raw source float32
+values, promoted to double and normalized by DART's unchanged float64 path, do
+not clear this frozen gate. It establishes no source-estimator or
+coordinate-order parity, root cause, longer trajectory, Figure 6/video parity,
+timing, performance, or superiority. No visual verdict applies. The one-shot
+artifacts cannot externally prove that no run was discarded. Verified package:
+`/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/`; `RESULTS.md`
+`07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`;
+`comparison.json`
+`8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`;
+`SHA256SUMS`
+`b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
+
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
 123/677 from release onward. First false/cap indices are 33/35; worst natural
@@ -1279,9 +1318,10 @@ only for an explicit live-closure recheck.
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
-   colored-ordering, one-global-group, source-sized-gap, residual-cadence, and
-   terminal spectral-estimate candidates are rejected only as strict-prefix
-   discriminators. Do not add another strict solver
+   colored-ordering, one-global-group, source-sized-gap, residual-cadence,
+   terminal spectral-estimate, and source-seed-values candidates are rejected
+   only as six bounded strict-prefix discriminators. Do not add another strict
+   solver
    knob without a source-backed, preregistered mismatch. Keep the separate
    ten-level colored/global-scope diagnostics pending one factor at a time.
    Preserve the final, independently reverified ten-level exact continuation

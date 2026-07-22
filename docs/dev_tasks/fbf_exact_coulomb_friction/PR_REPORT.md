@@ -801,6 +801,49 @@ diagnostic patch
 `SHA256SUMS`
 `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
 
+A sixth bounded four-level strict-prefix diagnostic uses the same c95
+instrumented Release binary in both arms and changes only the initial-vector
+selector from stock `ones64` to `rs42_f32_values_dart_norm64`. Both arms retain
+`rayleigh11`, DART `[n,t1,t2]` order, float64 Eigen normalization and power
+products, ten configured products plus the terminal Rayleigh product, and the
+frozen scene and strict policies. The source variant promotes the raw
+NumPy-2.4.4 `RandomState(42).randn(4096 * 3).astype(float32)` values to double
+before unchanged DART normalization. Its registered 168-value raw prefix has
+SHA-256
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`
+and aborts above that dimension.
+
+The control exactly reproduces completed step 35, attempt 101, 56 contacts,
+200 iterations, residual `4.0844850280896461e-4`, safe gamma
+`0.27728679157546576`, final gamma `2.7728679157546576`, 103 attempts, 102
+solves, and one failure. The sole recorded variant also fails at those gate
+coordinates, with residual `4.1638905763175730e-4`, best residual
+`4.1593800452634807e-4` at iteration 199, safe gamma
+`0.26989166211867666`, and final gamma `2.6989166211867666`. Seed,
+product-norm, and retained-estimate telemetry differs from attempt 1; residual
+and iteration count first differ at attempt 57 / step 29, while contact-frame
+and recorded reduced-state hashes first differ at attempt 67 / step 30.
+
+The reduced-state hash covers contact count, `freeVelocity`, and coefficients,
+but not `W` or the complete solver input; `product_norms` records norms, not
+product vectors. Post-divergence residual and gamma deltas are therefore
+contextual. The only supported verdict is that these source-derived raw
+float32 values, promoted to double and normalized by the unchanged DART
+float64 path, do not clear the frozen 36-step gate. This does not establish
+source-estimator or coordinate-order parity, a general root cause, a longer
+trajectory, Figure 6/video parity, timing, performance, or superiority. No
+visual verdict applies. The one marker/timeline/trace triplet per arm and
+path-reuse guard are internally consistent with the one-shot protocol, but do
+not externally prove that no run was discarded. Release build 356/356, both
+focused unit suites, both validators, independent replay, and
+`git diff --check` pass. Verified package:
+`/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/`; `RESULTS.md`
+`07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`;
+`comparison.json`
+`8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`;
+`SHA256SUMS`
+`b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
+
 The pinned author control completes all 2,400 substeps but reports 1,455
 converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
 split is 1,332/268 and the release-and-after split is 123/677; first false and
@@ -832,8 +875,9 @@ establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
 superiority. It remains an adapter-only lane. Any next strict A/B must isolate
 one remaining source mismatch; colored ordering, one-global-group scope,
-source-sized gaps, residual cadence, and terminal spectral estimation are now
-rejected as strict-prefix discriminators, while
+source-sized gaps, residual cadence, terminal spectral estimation, and source
+seed values are now rejected as six bounded strict-prefix discriminators,
+while
 source shrink-cap or
 continuation semantics remain separate work. The older reconstructed
 `fbf_paper_card_house_26` lane remains distinct.
@@ -1467,8 +1511,9 @@ cross-platform CI.
   through the step-1,600 release. Keep any next strict A/B isolated from
   tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
   The colored-ordering, one-global-group, source-sized-gap, residual-cadence,
-  and terminal spectral-estimate candidates are ineffective for this Figure 6
-  blocker. Require a new source-backed,
+  terminal spectral-estimate, and source-seed-values candidates are ineffective
+  for this Figure 6 blocker. Preserve all six bounded rejects. Require a new
+  source-backed,
   preregistered mismatch before another strict solver A/B. Preserve and
   independently review the separately labeled telemetry-rich continuation
   capture without presenting accepted finite iterates as strict exact success;

@@ -29,7 +29,11 @@ all deltas contextual, so the valid result is only candidate-local. A
 same-binary `last_norm10` terminal-estimate candidate also fails the step-35
 gate; its recorded state summaries diverge before failure and exclude `W` and
 product vectors, so the valid result is only that it does not clear the strict
-prefix. A historical
+prefix. A same-binary source-seed-values candidate also fails at step 35 /
+attempt 101 / 56 contacts. Its state summaries diverge before failure and have
+the same operator-identity limits, so it rejects only that seed rule as
+sufficient for the frozen 36-step prefix. This is the sixth bounded
+strict-prefix reject. A historical
 debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
@@ -262,6 +266,42 @@ discarded run occurred. Verified package:
 `8b7af123ccaa42fd9c6bbeb0916c5b691ed3234c428ae62e404e6f26449227f6`;
 `SHA256SUMS`
 `f18efba2ffb1f7f8ee0f88798c9bcd38103b571210949de5c0cc625fed3fd553`.
+
+The sixth bounded four-level strict-prefix diagnostic uses the same c95
+instrumented Release binary for stock `ones64` and candidate
+`rs42_f32_values_dart_norm64`. Only the initial-vector selector changes. Both
+arms retain `rayleigh11`, DART `[n,t1,t2]` order, float64 Eigen normalization
+and power products, ten configured products plus the terminal Rayleigh
+product, and the frozen strict contract. The variant promotes the raw
+NumPy-2.4.4 `RandomState(42).randn(4096 * 3).astype(float32)` values to double
+before unchanged DART normalization. Its registered 168-value prefix has
+SHA-256
+`7506d5e093b6e3787fccb4c91aee3a26feffd8548637a9a76825ad1a9f3ccfe1`
+and aborts above that dimension.
+
+The control exactly reproduces completed step 35 / attempt 101 / 56 contacts /
+200 iterations, residual `4.0844850280896461e-4`, 103 attempts, 102 solves,
+and one failure. The sole variant also fails there with residual
+`4.1638905763175730e-4` and best residual `4.1593800452634807e-4` at iteration
+199. Seed, ten-product-norm, and retained-estimate telemetry differs at attempt
+1. Final residual and iteration count first differ at attempt 57 / step 29;
+contact-frame and recorded reduced-state hashes first differ at attempt 67 /
+step 30. The reduced-state hash omits `W` and the complete solver input, and
+`product_norms` omits product vectors, so post-divergence residual and gamma
+deltas are contextual rather than same-problem local causal estimates.
+
+The supported verdict is only that the raw source float32 values, promoted to
+double and normalized by DART's unchanged float64 path, do not clear the
+frozen 36-step gate. This supplies no source-estimator or coordinate-order
+parity, root cause, longer trajectory, outcome, backend, timing, performance,
+superiority, video, Figure 6, Figure 9, or paper-parity result. The one-shot
+artifacts cannot externally prove that no run was discarded. Verified package:
+`/tmp/fbf_fig06_source_seed_c95.Uemp3S/evidence/`; `RESULTS.md`
+`07b2f08f55bcb0210149e441c1886601d2a1f1d60d4f094b53f475ceaec88da3`;
+`comparison.json`
+`8897b3d826789baaba11ec9c1fea47569f108f82937b41978445f51aad028aeb`;
+`SHA256SUMS`
+`b2ecc0cf5c84a58448b8a1eafbb03ecda05e4f9935be193d3cd79ded87676a41`.
 
 The pinned source recovers and advances a finite iterate even when its
 configured convergence flag is false. One process-local GDB preview tested only
@@ -990,8 +1030,9 @@ evidence, not a reason to omit the run or substitute a reduced scenario.
 - Make the strict full-card trajectory finish within the paper cap and
   tolerance without fallback.
 - Preserve the source-selected Figure 6 step-35 record as a strict negative.
-  Preserve the terminal-estimate A/B as a numeric strict-prefix negative, not
-  Figure 9 residual-history evidence.
+  Preserve all six bounded strict-prefix rejects, including the
+  terminal-estimate and source-seed-values A/Bs, as numeric diagnostics rather
+  than Figure 9 residual-history evidence.
   Keep both the historical debugger preview and the reproducible
   source-continuation full run outside strict trajectory/outcome and Figure 9
   claims; only the latter is a validated, separately labeled visual attachment
