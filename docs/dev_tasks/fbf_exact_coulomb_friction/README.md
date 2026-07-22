@@ -764,11 +764,11 @@ promotable media, or Fig. 7 parity follows.
 The post-capture root-cause and reject ledger is
 [FIG08_ARCH101_DIAGNOSIS.md](FIG08_ARCH101_DIAGNOSIS.md). The standing blocker
 precedes the later exact iteration cap: the DART crown crosses the displacement
-gate in analytic free fall at step 188. Missing source-style summed proximity
-gaps are the first confirmed modeling mismatch to isolate, not a proven fix.
-All four one-factor solver trials remain strict negatives, so the next
-experiment isolates default-off contact-gap semantics instead of combining
-tuning knobs.
+gate in analytic free fall at step 188. Source-style summed proximity gaps are
+a confirmed modeling mismatch, but the isolated default-off trial is also a
+strict negative: it advances first contact from step 39 to 37, then caps at
+step 161 instead of 209 with residual `1.5168150500676777e-6`. The sealed scene
+remains unchanged. Do not combine this or the four rejected solver knobs.
 
 The independent pinned-source `--stones 101` control completes 1,600/1,600
 but only 127 substeps converge; 1,473 exhaust `max_outer=200` and continue. Its

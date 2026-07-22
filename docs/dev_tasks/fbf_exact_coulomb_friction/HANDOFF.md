@@ -691,8 +691,10 @@ Source-pinned 101-stone DART truth:
   standing displacement gate at step 188, and only then reaches the exact
   iteration cap at step 209. Step-size-scale, relaxation, serial-BGS, and
   doubled-inner-sweep trials are rejected; the last delays the cap to step 235
-  at about 2.8x cost after physical failure. Test default-off proximity gaps as
-  one factor before more solver tuning.
+  at about 2.8x cost after physical failure. The isolated source-sized gap
+  trial is also rejected: first contact moves from step 39 to 37, but the first
+  exact cap moves from step 209 to 161 at residual 1.5168150500676777e-6. Do
+  not wire it into the sealed scene or combine the rejected knobs.
 - The independent public-source control completes 1600/1600 but only 127 steps
   converge; 1473 hit `max_outer=200` and continue. The saved keystone drops
   7.2349853515625 raw units and 57/99 mobile stones exceed the local

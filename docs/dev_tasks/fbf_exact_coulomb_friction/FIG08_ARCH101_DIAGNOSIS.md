@@ -118,21 +118,35 @@ interpretation. They are diagnostics only and are not evidence packets.
 | Outer relaxation `1.1 -> 1.5` | 186 | `1.41504369e-6` | 55.00 s | Reject: earlier cap |
 | Serial block Gauss-Seidel | 205 | `1.12625911e-6`, `1.02764187e-6` | 132.97 s | Reject: both groups cap |
 | Inner sweeps `30 -> 60` | 235 | `1.65823432e-6`, `1.68193538e-6` | 433.74 s | Reject: still caps and costs about 2.8x |
+| Source-sized contact gaps (`0.005` shapes, `0.1` ground) | 161 | `1.51681505e-6` | about 30 s | Reject: contact starts earlier, but cap is 48 steps earlier |
 
 The 60-sweep trial delays the solver cap but reaches step 235 with maximum
 mobile displacement `4.722765625`; the standing oracle had already failed.
 Do not combine these rejected knobs or weaken the tolerance/cap/oracle.
 
-## Next Faithful Experiment
+## Rejected Contact-Gap Dynamics Trial
 
-Before further exact-solver tuning, isolate source-style summed proximity gaps
-as one factor. Any implementation must be default-off and leave ordinary
-Native collision bit-identical. It must expand broad-phase candidates as well
-as generate finite convex-convex and plane-convex proximity contacts; merely
-retaining negative-depth backend contacts is insufficient. The first gate is a
-collision-only comparison of pair identities, points, normals, signed
-separations, and multiplicity at matched poses. Only after that matches closely
-enough should a 1,600-substep exact/boxed dynamics run be captured.
+The default-off Native implementation expands broad-phase candidates, emits
+finite signed convex-convex and plane-convex proximity manifolds strictly
+inside the summed gap, and admits only explicitly configured negative-depth
+contacts without penetration bias. Its focused collision and solver suites
+pass 50/50 and 65/65. The sealed source-pinned scene remains unchanged.
+
+An external one-factor harness then applied the source-sized gaps: `0.005` to
+every stone/cube collision shape and `0.1` to the ground. First contact and
+first negative contact move from baseline step 39 to step 37, one step later
+than the current source's step-36 dynamic-contact onset. The trial nevertheless
+caps at step 161 instead of 209. At that state it has 135 contacts, including
+95 negative-depth contacts; one 67-contact group reaches 5,000 iterations at
+residual `1.5168150500676777e-6`, while the companion 68-contact group solves
+in 460 iterations at residual `9.989170207559752e-7`. Maximum mobile
+displacement is `2.2210453125000313`.
+
+This is a dynamics-fix reject. The shorter wall time is not a speed result
+because the harness stops 48 steps earlier. Do not wire the gaps into the
+sealed scene, combine them with rejected tuning knobs, or capture a full
+exact/boxed pair from this variant. Revisit only with a matched historical
+contact oracle or recovered historical Figure 8 invocation/backend.
 
 The complete public `--stones 101` control therefore cannot serve as a
 converged golden trajectory and does not preserve the initial configuration

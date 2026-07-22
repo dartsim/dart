@@ -745,8 +745,11 @@ stone-to-ground) are absent from the zero-gap Native adapter. The unsupported
 crown follows analytic free fall and crosses the standing displacement gate at
 step 188, before the exact solver caps at step 209. Four one-factor solver
 trials were rejected; even doubling inner sweeps only delayed the cap to step
-235 at about 2.8x cost after the physical gate had already failed. Isolate
-default-off proximity-gap semantics before any further solver tuning.
+235 at about 2.8x cost after the physical gate had already failed. The isolated
+source-sized contact-gap trial is rejected too: it advances first contact from
+step 39 to 37 but caps at step 161, 48 steps earlier, at residual
+`1.5168150500676777e-6`. Keep the sealed scene unchanged and do not combine the
+rejected knobs.
 The independent pinned-source control also completes 1,600/1,600 only by
 continuing after 1,473 capped/nonconverged substeps; its saved keystone drops
 `7.2349853515625` raw units and 57/99 mobile stones exceed the local
