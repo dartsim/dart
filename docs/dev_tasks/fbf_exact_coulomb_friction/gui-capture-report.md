@@ -38,6 +38,13 @@ preserve the prior timeline/clip-audited turntable classifications. The bundle i
 ignored local state, not repository media; PR user-attachment URLs are still
 pending browser-composer upload.
 
+The consolidated browser-upload manifest in
+`PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and five
+supplemental direct comparisons. An independent handoff audit rechecked all 14
+paths and hashes, probed H.264/yuv420p at 30 fps, and completed an
+`ffmpeg -xerror` decode for every file. This closes local upload-readiness only;
+no GitHub user-attachment URL or additional physics/parity claim follows.
+
 ## Evidence Predicates
 
 The visual workflow and this report use five separate predicates:
