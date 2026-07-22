@@ -85,6 +85,10 @@ namespace dart_demos {
 /// Research > FBF incline: exact-Coulomb paper incline threshold fixture.
 [[nodiscard]] DemoScene makeFbfPaperInclineScene();
 
+/// Research > FBF author incline: source-bound, operator-selected current
+/// sweep.
+[[nodiscard]] DemoScene makeFbfAuthorInclineSweepCurrentSourceScene();
+
 /// Research > FBF backspin: exact-Coulomb paper backspin sphere fixture.
 [[nodiscard]] DemoScene makeFbfPaperBackspinScene();
 

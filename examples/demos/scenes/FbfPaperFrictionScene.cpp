@@ -37,6 +37,7 @@
 // benchmark, and CSV trace exporter.
 
 #include "FbfAuthorCardHouseSpec.hpp"
+#include "FbfAuthorInclineSpec.hpp"
 #include "FbfAuthorMasonryArchDartAdapter.hpp"
 #include "FbfAuthorPainleveSpec.hpp"
 #include "FbfAuthorTurntableSpec.hpp"
@@ -59,11 +60,17 @@
 #include <dart/dart.hpp>
 
 #include <Eigen/Geometry>
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/StateSet>
+#include <osgText/Text>
 
 #include <algorithm>
 #include <array>
 #include <functional>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -506,6 +513,106 @@ WorldPtr createInclineWorld(SolverMode mode)
                         : Eigen::Vector4d(0.88, 0.37, 0.22, 1.0)));
   }
 
+  return world;
+}
+
+//==============================================================================
+Eigen::Vector4d authorInclineCellColor(std::size_t index, bool cube)
+{
+  static const std::array<Eigen::Vector3d, fbf_author_incline::kCellCount>
+      kColors{{
+          Eigen::Vector3d(0.86, 0.31, 0.25),
+          Eigen::Vector3d(0.91, 0.53, 0.22),
+          Eigen::Vector3d(0.86, 0.72, 0.20),
+          Eigen::Vector3d(0.35, 0.70, 0.39),
+          Eigen::Vector3d(0.22, 0.67, 0.66),
+          Eigen::Vector3d(0.27, 0.50, 0.78),
+          Eigen::Vector3d(0.52, 0.38, 0.74),
+      }};
+  if (index >= kColors.size())
+    throw std::invalid_argument("author incline color index is invalid");
+  const Eigen::Vector3d rgb
+      = cube ? kColors[index]
+             : 0.42 * kColors[index] + Eigen::Vector3d::Constant(0.34);
+  return Eigen::Vector4d(rgb.x(), rgb.y(), rgb.z(), 1.0);
+}
+
+//==============================================================================
+::osg::ref_ptr<::osg::Group> createAuthorInclineLaneLabels(double guiScale)
+{
+  ::osg::ref_ptr<::osg::Group> labels = new ::osg::Group();
+  const float characterSize = static_cast<float>(18.0 * guiScale);
+  for (const auto& cell : fbf_author_incline::kCells) {
+    const Eigen::Vector3d position
+        = fbf_author_incline::cubePose(cell).translation()
+          - 0.95 * fbf_author_incline::slopeTangent()
+          + 0.45 * fbf_author_incline::slopeNormal();
+    const Eigen::Vector4d color = authorInclineCellColor(cell.index, true);
+
+    std::ostringstream text;
+    text << "mu=" << std::setprecision(2) << cell.friction;
+    ::osg::ref_ptr<::osgText::Text> label = new ::osgText::Text();
+    label->setText(text.str());
+    label->setPosition(::osg::Vec3(position.x(), position.y(), position.z()));
+    label->setColor(::osg::Vec4(color.x(), color.y(), color.z(), 1.0));
+    label->setCharacterSizeMode(::osgText::TextBase::SCREEN_COORDS);
+    label->setCharacterSize(characterSize);
+    label->setAxisAlignment(::osgText::TextBase::SCREEN);
+    label->setAlignment(::osgText::TextBase::CENTER_CENTER);
+    label->setBackdropType(::osgText::Text::OUTLINE);
+    label->setBackdropColor(::osg::Vec4(0.05, 0.05, 0.05, 1.0));
+    label->setEnableDepthWrites(false);
+
+    ::osg::ref_ptr<::osg::Geode> geode = new ::osg::Geode();
+    geode->addDrawable(label);
+    geode->getOrCreateStateSet()->setMode(
+        GL_DEPTH_TEST, ::osg::StateAttribute::OFF);
+    labels->addChild(geode);
+  }
+  return labels;
+}
+
+//==============================================================================
+fbf_author_incline::SolverLane authorInclineSolverLane(SolverMode mode)
+{
+  return mode == SolverMode::ExactFbf
+             ? fbf_author_incline::SolverLane::ExactFbf
+             : fbf_author_incline::SolverLane::BoxedLcp;
+}
+
+//==============================================================================
+void colorAuthorInclineWorld(const WorldPtr& world)
+{
+  for (const auto& cell : fbf_author_incline::kCells) {
+    const auto plane = world->getSkeleton(cell.planeSkeletonName);
+    const auto cube = world->getSkeleton(cell.cubeSkeletonName);
+    if (!plane || !cube)
+      throw std::runtime_error("author incline color target is missing");
+    auto* planeNode
+        = plane->getBodyNode(0u)->getShapeNodeWith<VisualAspect>(0u);
+    auto* cubeNode = cube->getBodyNode(0u)->getShapeNodeWith<VisualAspect>(0u);
+    if (!planeNode || !cubeNode || !planeNode->getVisualAspect()
+        || !cubeNode->getVisualAspect()) {
+      throw std::runtime_error("author incline visual shape is missing");
+    }
+    planeNode->getVisualAspect()->setRGBA(
+        authorInclineCellColor(cell.index, false));
+    cubeNode->getVisualAspect()->setRGBA(
+        authorInclineCellColor(cell.index, true));
+  }
+}
+
+//==============================================================================
+void configureAuthorInclineSolver(const WorldPtr& world, SolverMode mode)
+{
+  fbf_author_incline::installSolver(world, authorInclineSolverLane(mode));
+}
+
+//==============================================================================
+WorldPtr createAuthorInclineWorld(SolverMode mode)
+{
+  auto world = fbf_author_incline::createWorld(authorInclineSolverLane(mode));
+  colorAuthorInclineWorld(world);
   return world;
 }
 
@@ -2627,6 +2734,96 @@ DemoScene makeFbfPaperInclineScene()
       "This GUI is a visual counterpart to the implemented state/residual "
       "regression. Full paper snapshot sweeps and external baselines remain "
       "outside this scene.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorInclineSweepCurrentSourceScene()
+{
+  return makeFbfPaperScene(
+      fbf_author_incline::kSceneId,
+      "FBF Author Incline: Seven-Cell Sweep (Current Source)",
+      "Source-bound geometry and clock with an operator-selected seven-cell "
+      "mu sweep on identical exact-FBF and boxed-LCP DART lanes.",
+      CameraHome{
+          ::osg::Vec3d(18.0, -39.0, 30.0),
+          ::osg::Vec3d(1.6, 0.0, -0.5),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorInclineWorld(state->solverMode);
+      },
+      fbf_author_incline::kMaxContacts,
+      fbf_author_incline::kMaxContactsPerPair,
+      false,
+      false,
+      "Seven simultaneous DART lanes port the operator-selected Figure 1 "
+      "mu={.3,.4,.45,.5,.55,.6,.8} grid passed through the public author "
+      "runner's source-supported --mu CLI. Every lane retains the source "
+      "10 x 3 x .1 m slab, 1 m cube at density 1000 kg/m^3, tan(theta)=.5, "
+      "and initial center distance .501 m from the plane.",
+      "The dedicated evidence schedule records all seven deterministic cube "
+      "states for 120 completed 1/60 s steps, requires supported upright "
+      "in-lane contact, and compares final tangential displacement/velocity "
+      "with the retained current-source FBF run within .01 m/.01 m/s. Exact "
+      "and boxed captures use the same world and differ only by the selected "
+      "DART solver lane.",
+      "The author runs mu cells independently with Newton/Warp float32 "
+      "collision and solver code. This display translates otherwise identical "
+      "cells only along Y and uses DART float64 dynamics, Native "
+      "FourPointPlanar contact, DART exact/boxed solvers, camera, materials, "
+      "and rendering. Source cube shape gap .01 m is recorded separately "
+      "from the represented .001 m initial geometric separation and is not "
+      "implemented as equivalent DART contact semantics.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr&, const std::shared_ptr<FbfPaperState>&) {
+        ImGui::Separator();
+        ImGui::TextDisabled(
+            "Operator-selected author mu grid and clock (b3f3c5c)");
+        const float swatch = ImGui::GetFontSize();
+        for (const auto& cell : fbf_author_incline::kCells) {
+          const Eigen::Vector4d color
+              = authorInclineCellColor(cell.index, true);
+          ImGui::PushID(static_cast<int>(cell.index));
+          ImGui::ColorButton(
+              "##author_incline_mu_color",
+              ImVec4(
+                  static_cast<float>(color.x()),
+                  static_cast<float>(color.y()),
+                  static_cast<float>(color.z()),
+                  1.0f),
+              ImGuiColorEditFlags_NoTooltip,
+              ImVec2(swatch, swatch));
+          ImGui::SameLine();
+          ImGui::Text("mu=%.2g", cell.friction);
+          ImGui::PopID();
+        }
+        ImGui::TextUnformatted("dt=1/60 s; horizon=120 steps (2 s)");
+        ImGui::TextUnformatted(
+            "Seven independent-source cells shown as Y lanes");
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.onActivate = [](DemoHostContext& ctx) {
+          auto* viewer = ctx.viewer();
+          const double guiScale = viewer->getImGuiHandler()->getGuiScale();
+          ::osg::ref_ptr<::osg::Group> labels
+              = createAuthorInclineLaneLabels(guiScale);
+          viewer->getRootGroup()->addChild(labels);
+          ctx.addTeardown([viewer, labels] {
+            viewer->getRootGroup()->removeChild(labels);
+          });
+        };
+        setup.physicsContractProvider = [world] {
+          return fbf_author_incline::physicsContractJson(
+              fbf_author_incline::inspectPhysicsContract(
+                  world, DART_FBF_AUTHOR_INCLINE_IMPLEMENTATION_SHA256));
+        };
+        setup.sceneStateProvider = [world] {
+          return fbf_author_incline::sceneStateFields(world);
+        };
+      },
+      configureAuthorInclineSolver);
 }
 
 //==============================================================================

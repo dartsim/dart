@@ -175,7 +175,7 @@ VIDEO_SEGMENTS = (
 # matrix remains available as a separate diagnostic lane.
 REQUIRED_VIDEO_SCHEDULES = {
     "backspin": ("backspin",),
-    "incline": ("incline",),
+    "incline": ("incline", "incline_author_sweep_current_source"),
     "turntable": (
         "turntable_author_mu02_omega2",
         "turntable_author_mu02_omega5",
@@ -379,6 +379,77 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             "The paper comparison edit and external panels last 11 seconds; this "
             "artifact is the underlying two-second DART trajectory.",
         ),
+    ),
+    "incline_author_sweep_current_source": CaptureSchedule(
+        id="incline_author_sweep_current_source",
+        scene="fbf_author_incline_sweep_current_source",
+        title="Current-author incline seven-cell sweep",
+        source_segment="incline",
+        total_steps=120,
+        frame_stride=2,
+        panel_steps=(0, 30, 60, 90, 120),
+        panel_labels=("t=0.00s", "t=0.50s", "t=1.00s", "t=1.50s", "t=2.00s"),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("mu_cells", "0.3,0.4,0.45,0.5,0.55,0.6,0.8"),
+            (
+                "mu_grid_provenance",
+                "operator-selected Figure 1 grid via supported --mu; "
+                "source default 0.5",
+            ),
+            ("tan_theta", "0.5"),
+            ("plane_full_dimensions_m", "10,3,0.1"),
+            ("cube_full_dimensions_m", "1,1,1"),
+            ("cube_density_kg_m3", "1000"),
+            ("initial_center_normal_distance_m", "0.501"),
+            ("source_cube_shape_gap_m", "0.01 (recorded, not implemented)"),
+            ("clock", "dt=1/60 s; 120 steps; 2 s"),
+            ("display_layout", "seven Y-translated simultaneous DART lanes"),
+            (
+                "source_fbf_terminal_reference_sha256",
+                "f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12",
+            ),
+            (
+                "source_fbf_terminal_oracle_projection_sha256",
+                "e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921",
+            ),
+            (
+                "source_configured_convergence",
+                "839/840 flags true; not strict; mu=.55 step_idx=1 false",
+            ),
+            (
+                "source_mu055_history_sha256",
+                "c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f",
+            ),
+            (
+                "terminal_reference_tolerance",
+                "absolute displacement <=0.01 m; velocity <=0.01 m/s",
+            ),
+        ),
+        mismatches=COMMON_DART_MISMATCH
+        + (
+            "The source executes the seven mu cells independently. The DART "
+            "display translates otherwise-identical cells only along Y and runs "
+            "them simultaneously for inspection.",
+            "The source cube ShapeConfig gap=.01 semantics are not implemented "
+            "as an equivalent DART margin; only the published HALF+.001 initial "
+            "center separation is represented geometrically.",
+            "DART Native FourPointPlanar collision, DART exact/boxed solver "
+            "policies, float64 arithmetic, camera, materials, and rendering do "
+            "not reproduce the source Newton/Warp float32 backend.",
+            "The retained source FBF terminal oracle has 839/840 configured "
+            "convergence flags: mu=.55 step_idx=1 is false after 200/200 outer "
+            "iterations. It is not a strictly converged source sweep.",
+            "This schedule gates a narrow terminal-state and slide/stick outcome "
+            "slice against the retained current-source FBF run. It does not claim "
+            "source trajectory/backend equivalence, timing, video parity, solver "
+            "superiority, or paper parity.",
+        ),
+        boxed_comparison_gate_blockers=(),
+        width=1920,
+        height=1080,
+        collision_detector="native",
+        collision_detector_override=False,
     ),
     "backspin": CaptureSchedule(
         id="backspin",
@@ -1495,6 +1566,176 @@ AUTHOR_TURN_TABLE_VISUAL_RESOURCES = (
 )
 PAINLEVE_MEMBERS = ("painleve_mu05", "painleve_mu055")
 AUTHOR_PAINLEVE_MEMBERS = ("painleve_author_mu05", "painleve_author_mu055")
+AUTHOR_INCLINE_SCHEDULE_ID = "incline_author_sweep_current_source"
+AUTHOR_INCLINE_CONTRACT_SCHEMA_VERSION = (
+    "dart.fbf_author_incline_sweep_dynamics_adapter/v1"
+)
+AUTHOR_INCLINE_MU_CELLS = (0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.8)
+AUTHOR_INCLINE_STATE_PREFIXES = (
+    "mu_0_3",
+    "mu_0_4",
+    "mu_0_45",
+    "mu_0_5",
+    "mu_0_55",
+    "mu_0_6",
+    "mu_0_8",
+)
+AUTHOR_INCLINE_LANE_SPACING_M = 3.4
+AUTHOR_INCLINE_THETA_RAD = math.atan(0.5)
+AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M = 0.501
+AUTHOR_INCLINE_OUTCOME_SCHEMA_VERSION = (
+    "dart.fbf_author_incline_current_source_terminal_outcome_slice/v1"
+)
+AUTHOR_INCLINE_OUTCOME_CLAIM_SCOPE = "current_source_fbf_terminal_outcome_slice"
+AUTHOR_INCLINE_TERMINAL_DISPLACEMENT_ABSOLUTE_TOLERANCE_M = 0.01
+AUTHOR_INCLINE_TERMINAL_VELOCITY_ABSOLUTE_TOLERANCE_M_S = 0.01
+AUTHOR_INCLINE_MAX_LATERAL_DRIFT_M = 1e-6
+AUTHOR_INCLINE_MAX_LATERAL_SPEED_M_S = 1e-6
+AUTHOR_INCLINE_NORMAL_DISTANCE_RANGE_M = (0.495, 0.502)
+AUTHOR_INCLINE_MAX_NORMAL_SPEED_M_S = 0.25
+AUTHOR_INCLINE_MAX_TERMINAL_NORMAL_SPEED_M_S = 1e-3
+AUTHOR_INCLINE_MAX_UPRIGHT_ANGLE_RAD = 5e-3
+AUTHOR_INCLINE_MAX_ANGULAR_SPEED_RAD_S = 1e-2
+AUTHOR_INCLINE_MIN_CONTACT_SAMPLES = 118
+AUTHOR_INCLINE_MAX_CONTACTS_PER_CELL = 4
+AUTHOR_INCLINE_MIN_SLIDE_DISPLACEMENT_M = 0.5
+AUTHOR_INCLINE_MIN_SLIDE_SPEED_M_S = 0.5
+AUTHOR_INCLINE_MAX_STICK_DISPLACEMENT_M = 0.01
+AUTHOR_INCLINE_MAX_STICK_SPEED_M_S = 0.01
+AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION = {
+    "schema_version": "dart.fbf_author_incline_source_terminal_oracle/v1",
+    "source": {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+        "runner_path": "paper_examples/cube-on-incline/run.py",
+        "runner_blob": "63cfc28dca1f6c65ce4a27dbfa239cba154580c6",
+        "runner_sha256": (
+            "881d486f25d85f9ae197bf4164e110b6bc39775c498433f27ec4407ca09ebf82"
+        ),
+        "run_id": "20260719T151337Z",
+        "sweep_results_sha256": (
+            "f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12"
+        ),
+    },
+    "terminal_cells": [
+        {
+            "mu": mu,
+            "tangential_displacement_m": displacement,
+            "tangential_velocity_m_s": velocity,
+            "time_step_seconds": 1.0 / 60.0,
+            "total_steps": 120,
+        }
+        for mu, displacement, velocity in (
+            (0.3, 3.5392831695743054, 3.509733865709903),
+            (0.4, 1.7698922978656797, 1.7548666396388692),
+            (0.45, 0.8851976117115778, 0.8774342127956857),
+            (0.5, 0.0005018926371855115, 1.0305745793967667e-6),
+            (0.55, 0.0004281487924409106, 2.9176663843410226e-8),
+            (0.6, 0.00035627086822120473, 1.194988254858779e-7),
+            (0.8, 0.00006883913936487685, 2.925503089273808e-8),
+        )
+    ],
+    "configured_convergence": {
+        "metric": "coulomb_rel",
+        "comparison": "<",
+        "tolerance": 1e-6,
+        "converged_steps": 839,
+        "total_steps": 840,
+        "exceptions": [
+            {
+                "mu": 0.55,
+                "step_idx": 1,
+                "configured_converged": False,
+                "outer_iters": 200,
+                "max_outer": 200,
+                "num_contacts": 4,
+                "natural_final_residual": 3.273267262002487e-8,
+                "terminal_r_coulomb": 1.5311460572898186e-6,
+            }
+        ],
+    },
+}
+AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION_SHA256 = (
+    "e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921"
+)
+
+
+def _author_incline_oracle_projection_sha256() -> str:
+    payload = json.dumps(
+        AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+if (
+    _author_incline_oracle_projection_sha256()
+    != AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION_SHA256
+):
+    raise RuntimeError("author incline source FBF oracle projection changed")
+
+_AUTHOR_INCLINE_TERMINAL_CELLS = AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION[
+    "terminal_cells"
+]
+if tuple(cell["mu"] for cell in _AUTHOR_INCLINE_TERMINAL_CELLS) != (
+    AUTHOR_INCLINE_MU_CELLS
+):
+    raise RuntimeError("author incline source FBF oracle mu grid changed")
+AUTHOR_INCLINE_SOURCE_FBF_TERMINAL_STATE = tuple(
+    (cell["tangential_displacement_m"], cell["tangential_velocity_m_s"])
+    for cell in _AUTHOR_INCLINE_TERMINAL_CELLS
+)
+AUTHOR_INCLINE_SOURCE_REFERENCE_PROVENANCE = {
+    **AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION["source"],
+    "operator_recorded_argv": (
+        "run.py --solvers fbf --mu .3 .4 .45 .5 .55 .6 .8 " "--device cpu --profile"
+    ),
+    "source_solver": "fbf",
+    "time_step_seconds": 1.0 / 60.0,
+    "total_steps": 120,
+    "source_oracle_projection_sha256": (
+        AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION_SHA256
+    ),
+    "configured_convergence": AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION[
+        "configured_convergence"
+    ],
+    "configured_convergence_history_sha256": (
+        "c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f"
+    ),
+    "source_reference_strictly_converged": False,
+}
+AUTHOR_INCLINE_STATE_SUFFIXES = (
+    "mu",
+    "position_x_m",
+    "position_y_m",
+    "position_z_m",
+    "orientation_w",
+    "orientation_x",
+    "orientation_y",
+    "orientation_z",
+    "linear_velocity_x_m_s",
+    "linear_velocity_y_m_s",
+    "linear_velocity_z_m_s",
+    "angular_velocity_x_rad_s",
+    "angular_velocity_y_rad_s",
+    "angular_velocity_z_rad_s",
+    "tangential_displacement_m",
+    "tangential_velocity_m_s",
+    "normal_distance_m",
+    "normal_velocity_m_s",
+    "contact_count",
+)
+AUTHOR_INCLINE_SCENE_STATE_FIELDS = (
+    "world_time_seconds",
+    *(
+        f"{prefix}_{suffix}"
+        for prefix in AUTHOR_INCLINE_STATE_PREFIXES
+        for suffix in AUTHOR_INCLINE_STATE_SUFFIXES
+    ),
+)
 AUTHOR_PAINLEVE_OUTCOME_SCHEMA_VERSION = (
     "dart.fbf_author_painleve_dart_adapter_outcome/v1"
 )
@@ -2212,6 +2453,21 @@ def _validate_capture_claim_boundary(
                 "current_dart_adapter_outcome": timeline_outcome,
             }
         )
+    if _is_author_incline_schedule(schedule):
+        timeline_outcome = metadata.get("timeline_validation", {}).get(
+            "author_incline_scene_state_metrics"
+        )
+        _require_author_incline_terminal_outcome_claim(
+            timeline_outcome,
+            solver_lane=schedule.solver_lane,
+            label=str(metadata_path),
+        )
+        capture_claims.update(
+            {
+                "automated_current_source_fbf_terminal_outcome_slice_validated": True,
+                "current_source_fbf_terminal_outcome_slice": timeline_outcome,
+            }
+        )
     for key, expected in capture_claims.items():
         if not _claim_value_matches(metadata.get(key), expected):
             raise ValueError(f"{metadata_path}: capture claim boundary {key} changed")
@@ -2881,6 +3137,46 @@ def _is_author_painleve_schedule(schedule: CaptureSchedule) -> bool:
     return (schedule.source_schedule_id or schedule.id) in AUTHOR_PAINLEVE_MEMBERS
 
 
+def _is_author_incline_schedule(schedule: CaptureSchedule) -> bool:
+    return (schedule.source_schedule_id or schedule.id) == AUTHOR_INCLINE_SCHEDULE_ID
+
+
+def _require_author_incline_terminal_outcome_claim(
+    report: Any,
+    *,
+    solver_lane: str,
+    label: str,
+) -> dict[str, Any]:
+    if not isinstance(report, dict):
+        raise ValueError(f"{label}: author incline terminal outcome is unavailable")
+    expected = {
+        "schema_version": AUTHOR_INCLINE_OUTCOME_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_INCLINE_OUTCOME_CLAIM_SCOPE,
+        "solver_lane": solver_lane,
+        "complete_120_step_trace": True,
+        "source_reference_strictly_converged": False,
+        "physical_outcome_validated": True,
+        "pass": True,
+    }
+    if any(
+        not _claim_value_matches(report.get(key), value)
+        for key, value in expected.items()
+    ):
+        raise ValueError(f"{label}: author incline terminal outcome claim changed")
+    expected_boundary = {
+        "current_source_fbf_terminal_outcome_slice_valid": True,
+        "source_reference_strictly_converged": False,
+        "source_trajectory_equivalence": False,
+        "source_backend_equivalence": False,
+        "solver_equivalence": False,
+        "physical_outcome_equivalence": False,
+        "paper_parity": False,
+    }
+    if not _claim_value_matches(report.get("claim_boundary"), expected_boundary):
+        raise ValueError(f"{label}: author incline terminal claim boundary changed")
+    return report
+
+
 def _is_author_card_house_source_continuation_schedule(
     schedule: CaptureSchedule,
 ) -> bool:
@@ -2904,6 +3200,374 @@ def _is_finite_number(value: Any) -> bool:
         and isinstance(value, (int, float))
         and math.isfinite(value)
     )
+
+
+def _validate_author_incline_scene_state_trace(
+    schedule: CaptureSchedule,
+    trajectory_steps: Any,
+    *,
+    sidecar_path: Path,
+    expected_last_step: int,
+) -> dict[str, Any] | None:
+    if not _is_author_incline_schedule(schedule):
+        return None
+    if (
+        _author_incline_oracle_projection_sha256()
+        != AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION_SHA256
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author incline source oracle projection changed"
+        )
+    if (
+        schedule.total_steps != 120
+        or not math.isclose(
+            schedule.time_step_seconds, 1.0 / 60.0, rel_tol=0.0, abs_tol=0.0
+        )
+        or isinstance(expected_last_step, bool)
+        or not isinstance(expected_last_step, int)
+        or expected_last_step < 0
+        or expected_last_step > schedule.total_steps
+    ):
+        raise ValueError(f"{sidecar_path}: author incline schedule changed")
+    if not isinstance(trajectory_steps, list) or len(trajectory_steps) != (
+        expected_last_step + 1
+    ):
+        raise ValueError(
+            f"{sidecar_path}: author incline scene-state trace length changed"
+        )
+
+    sine = math.sin(AUTHOR_INCLINE_THETA_RAD)
+    cosine = math.cos(AUTHOR_INCLINE_THETA_RAD)
+    reference_orientation = (
+        math.cos(0.5 * AUTHOR_INCLINE_THETA_RAD),
+        0.0,
+        math.sin(0.5 * AUTHOR_INCLINE_THETA_RAD),
+        0.0,
+    )
+    maximum_absolute_displacement = {
+        prefix: 0.0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES
+    }
+    maximum_lateral_drift = {prefix: 0.0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES}
+    maximum_lateral_speed = {prefix: 0.0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES}
+    maximum_upright_angle = {prefix: 0.0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES}
+    maximum_angular_speed = {prefix: 0.0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES}
+    contact_sample_count = {prefix: 0 for prefix in AUTHOR_INCLINE_STATE_PREFIXES}
+    first_contact_step: dict[str, int | None] = {
+        prefix: None for prefix in AUTHOR_INCLINE_STATE_PREFIXES
+    }
+    for expected_step, item in enumerate(trajectory_steps):
+        if not isinstance(item, dict) or item.get("step") != expected_step:
+            raise ValueError(
+                f"{sidecar_path}: author incline scene-state steps are out of order"
+            )
+        expected_time = schedule.time_at_step(expected_step)
+        sim_time = item.get("sim_time")
+        if not _is_finite_number(sim_time) or not math.isclose(
+            float(sim_time), expected_time, rel_tol=0.0, abs_tol=1e-9
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author incline time mismatch at step {expected_step}"
+            )
+
+        state = item.get("scene_state")
+        label = f"{sidecar_path}: author incline scene state at step {expected_step}"
+        if not isinstance(state, dict):
+            raise ValueError(f"{label} is missing")
+        if set(state) != set(AUTHOR_INCLINE_SCENE_STATE_FIELDS) or not all(
+            _is_finite_number(state.get(name))
+            for name in AUTHOR_INCLINE_SCENE_STATE_FIELDS
+        ):
+            raise ValueError(f"{label} fields changed or are non-finite")
+        if not math.isclose(
+            float(state["world_time_seconds"]),
+            expected_time,
+            rel_tol=0.0,
+            abs_tol=1e-9,
+        ):
+            raise ValueError(f"{label} world time changed")
+
+        for index, (prefix, mu) in enumerate(
+            zip(AUTHOR_INCLINE_STATE_PREFIXES, AUTHOR_INCLINE_MU_CELLS)
+        ):
+            if not math.isclose(
+                float(state[f"{prefix}_mu"]), mu, rel_tol=0.0, abs_tol=0.0
+            ):
+                raise ValueError(f"{label} mu grid changed")
+            x = float(state[f"{prefix}_position_x_m"])
+            y = float(state[f"{prefix}_position_y_m"])
+            z = float(state[f"{prefix}_position_z_m"])
+            orientation = tuple(
+                float(state[f"{prefix}_orientation_{component}"])
+                for component in ("w", "x", "y", "z")
+            )
+            vx = float(state[f"{prefix}_linear_velocity_x_m_s"])
+            vy = float(state[f"{prefix}_linear_velocity_y_m_s"])
+            vz = float(state[f"{prefix}_linear_velocity_z_m_s"])
+            angular_velocity = tuple(
+                float(state[f"{prefix}_angular_velocity_{component}_rad_s"])
+                for component in ("x", "y", "z")
+            )
+            raw_contact_count = float(state[f"{prefix}_contact_count"])
+            initial_x = sine * AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M
+            initial_y = (index - 3) * AUTHOR_INCLINE_LANE_SPACING_M
+            initial_z = cosine * AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M
+            expected_tangential_displacement = (x - initial_x) * cosine - (
+                z - initial_z
+            ) * sine
+            expected_tangential_velocity = vx * cosine - vz * sine
+            expected_normal_distance = x * sine + z * cosine
+            expected_normal_velocity = vx * sine + vz * cosine
+            derived = (
+                (
+                    f"{prefix}_tangential_displacement_m",
+                    expected_tangential_displacement,
+                ),
+                (f"{prefix}_tangential_velocity_m_s", expected_tangential_velocity),
+                (f"{prefix}_normal_distance_m", expected_normal_distance),
+                (f"{prefix}_normal_velocity_m_s", expected_normal_velocity),
+            )
+            if any(
+                not math.isclose(
+                    float(state[name]), expected, rel_tol=1e-11, abs_tol=1e-10
+                )
+                for name, expected in derived
+            ):
+                raise ValueError(f"{label} derived incline state changed")
+
+            orientation_norm = math.sqrt(sum(value * value for value in orientation))
+            if orientation[0] < 0.0 or not math.isclose(
+                orientation_norm, 1.0, rel_tol=0.0, abs_tol=1e-10
+            ):
+                raise ValueError(f"{label} orientation quaternion changed")
+            orientation_dot = abs(
+                sum(
+                    actual * reference
+                    for actual, reference in zip(orientation, reference_orientation)
+                )
+            )
+            upright_angle = 2.0 * math.acos(min(1.0, orientation_dot))
+            angular_speed = math.sqrt(sum(value * value for value in angular_velocity))
+            lateral_drift = abs(y - initial_y)
+            lateral_speed = abs(vy)
+            if lateral_drift > AUTHOR_INCLINE_MAX_LATERAL_DRIFT_M:
+                raise ValueError(f"{label} lateral drift bound exceeded")
+            if lateral_speed > AUTHOR_INCLINE_MAX_LATERAL_SPEED_M_S:
+                raise ValueError(f"{label} lateral speed bound exceeded")
+            if (
+                not (
+                    AUTHOR_INCLINE_NORMAL_DISTANCE_RANGE_M[0]
+                    <= expected_normal_distance
+                    <= AUTHOR_INCLINE_NORMAL_DISTANCE_RANGE_M[1]
+                )
+                or abs(expected_normal_velocity) > AUTHOR_INCLINE_MAX_NORMAL_SPEED_M_S
+            ):
+                raise ValueError(f"{label} normal-motion bound exceeded")
+            if upright_angle > AUTHOR_INCLINE_MAX_UPRIGHT_ANGLE_RAD:
+                raise ValueError(f"{label} upright-orientation bound exceeded")
+            if angular_speed > AUTHOR_INCLINE_MAX_ANGULAR_SPEED_RAD_S:
+                raise ValueError(f"{label} angular-speed bound exceeded")
+            if (
+                not raw_contact_count.is_integer()
+                or raw_contact_count < 0.0
+                or raw_contact_count > AUTHOR_INCLINE_MAX_CONTACTS_PER_CELL
+            ):
+                raise ValueError(f"{label} contact participation changed")
+            contact_count = int(raw_contact_count)
+            if contact_count > 0:
+                contact_sample_count[prefix] += 1
+                if first_contact_step[prefix] is None:
+                    first_contact_step[prefix] = expected_step
+            elif first_contact_step[prefix] is not None:
+                raise ValueError(f"{label} contact participation was lost")
+
+            if expected_step == 0 and (
+                not math.isclose(x, initial_x, rel_tol=0.0, abs_tol=1e-12)
+                or not math.isclose(y, initial_y, rel_tol=0.0, abs_tol=1e-12)
+                or not math.isclose(z, initial_z, rel_tol=0.0, abs_tol=1e-12)
+                or any(abs(value) > 1e-12 for value in (vx, vy, vz))
+                or any(abs(value) > 1e-12 for value in angular_velocity)
+                or any(
+                    not math.isclose(actual, reference, rel_tol=0.0, abs_tol=1e-12)
+                    for actual, reference in zip(orientation, reference_orientation)
+                )
+                or contact_count != 0
+                or abs(expected_tangential_displacement) > 1e-12
+                or not math.isclose(
+                    expected_normal_distance,
+                    AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M,
+                    rel_tol=0.0,
+                    abs_tol=1e-12,
+                )
+            ):
+                raise ValueError(f"{label} initial cell state changed")
+            maximum_absolute_displacement[prefix] = max(
+                maximum_absolute_displacement[prefix],
+                abs(expected_tangential_displacement),
+            )
+            maximum_lateral_drift[prefix] = max(
+                maximum_lateral_drift[prefix], lateral_drift
+            )
+            maximum_lateral_speed[prefix] = max(
+                maximum_lateral_speed[prefix], lateral_speed
+            )
+            maximum_upright_angle[prefix] = max(
+                maximum_upright_angle[prefix], upright_angle
+            )
+            maximum_angular_speed[prefix] = max(
+                maximum_angular_speed[prefix], angular_speed
+            )
+
+    complete_trace = expected_last_step == schedule.total_steps
+    terminal_state: dict[str, dict[str, Any]] | None = None
+    maximum_terminal_displacement_absolute_delta_m: float | None = None
+    maximum_terminal_velocity_absolute_delta_m_s: float | None = None
+    if complete_trace:
+        oracle = AUTHOR_INCLINE_SOURCE_FBF_TERMINAL_STATE
+        if len(oracle) != len(AUTHOR_INCLINE_STATE_PREFIXES):
+            raise ValueError(f"{sidecar_path}: author incline source oracle changed")
+        final_state = trajectory_steps[-1]["scene_state"]
+        terminal_state = {}
+        maximum_terminal_displacement_absolute_delta_m = 0.0
+        maximum_terminal_velocity_absolute_delta_m_s = 0.0
+        for index, (prefix, mu, expected_terminal) in enumerate(
+            zip(AUTHOR_INCLINE_STATE_PREFIXES, AUTHOR_INCLINE_MU_CELLS, oracle)
+        ):
+            displacement = float(final_state[f"{prefix}_tangential_displacement_m"])
+            velocity = float(final_state[f"{prefix}_tangential_velocity_m_s"])
+            expected_displacement, expected_velocity = expected_terminal
+            displacement_delta = abs(displacement - expected_displacement)
+            velocity_delta = abs(velocity - expected_velocity)
+            if not math.isclose(
+                displacement,
+                expected_displacement,
+                rel_tol=0.0,
+                abs_tol=(AUTHOR_INCLINE_TERMINAL_DISPLACEMENT_ABSOLUTE_TOLERANCE_M),
+            ) or not math.isclose(
+                velocity,
+                expected_velocity,
+                rel_tol=0.0,
+                abs_tol=AUTHOR_INCLINE_TERMINAL_VELOCITY_ABSOLUTE_TOLERANCE_M_S,
+            ):
+                raise ValueError(
+                    f"{sidecar_path}: author incline current-source terminal oracle "
+                    f"changed for {prefix}"
+                )
+            if (
+                contact_sample_count[prefix] < AUTHOR_INCLINE_MIN_CONTACT_SAMPLES
+                or int(final_state[f"{prefix}_contact_count"])
+                != AUTHOR_INCLINE_MAX_CONTACTS_PER_CELL
+            ):
+                raise ValueError(
+                    f"{sidecar_path}: author incline contact participation changed "
+                    f"for {prefix}"
+                )
+            if (
+                abs(float(final_state[f"{prefix}_normal_velocity_m_s"]))
+                > AUTHOR_INCLINE_MAX_TERMINAL_NORMAL_SPEED_M_S
+            ):
+                raise ValueError(
+                    f"{sidecar_path}: author incline terminal normal motion changed "
+                    f"for {prefix}"
+                )
+            terminal_state[prefix] = {
+                "mu": mu,
+                "outcome": "slide" if index < 3 else "stick",
+                "tangential_displacement_m": displacement,
+                "tangential_velocity_m_s": velocity,
+                "contact_count": int(final_state[f"{prefix}_contact_count"]),
+                "source_fbf_tangential_displacement_m": expected_displacement,
+                "source_fbf_tangential_velocity_m_s": expected_velocity,
+                "tangential_displacement_absolute_delta_m": displacement_delta,
+                "tangential_velocity_absolute_delta_m_s": velocity_delta,
+            }
+            maximum_terminal_displacement_absolute_delta_m = max(
+                maximum_terminal_displacement_absolute_delta_m,
+                displacement_delta,
+            )
+            maximum_terminal_velocity_absolute_delta_m_s = max(
+                maximum_terminal_velocity_absolute_delta_m_s,
+                velocity_delta,
+            )
+
+        terminal_displacements = [
+            terminal_state[prefix]["tangential_displacement_m"]
+            for prefix in AUTHOR_INCLINE_STATE_PREFIXES
+        ]
+        terminal_velocities = [
+            terminal_state[prefix]["tangential_velocity_m_s"]
+            for prefix in AUTHOR_INCLINE_STATE_PREFIXES
+        ]
+        slide_displacements = terminal_displacements[:3]
+        slide_velocities = terminal_velocities[:3]
+        stick_displacements = terminal_displacements[3:]
+        stick_velocities = terminal_velocities[3:]
+        if (
+            not all(
+                left > right
+                for left, right in zip(slide_displacements, slide_displacements[1:])
+            )
+            or not all(
+                left > right
+                for left, right in zip(slide_velocities, slide_velocities[1:])
+            )
+            or min(slide_displacements)
+            <= max(abs(value) for value in stick_displacements)
+            or min(slide_velocities) <= max(abs(value) for value in stick_velocities)
+            or min(slide_displacements) < AUTHOR_INCLINE_MIN_SLIDE_DISPLACEMENT_M
+            or min(slide_velocities) < AUTHOR_INCLINE_MIN_SLIDE_SPEED_M_S
+            or max(abs(value) for value in stick_displacements)
+            > AUTHOR_INCLINE_MAX_STICK_DISPLACEMENT_M
+            or max(abs(value) for value in stick_velocities)
+            > AUTHOR_INCLINE_MAX_STICK_SPEED_M_S
+        ):
+            raise ValueError(
+                f"{sidecar_path}: author incline slide/stick outcome ordering changed"
+            )
+
+    return {
+        "schema_version": AUTHOR_INCLINE_OUTCOME_SCHEMA_VERSION,
+        "claim_scope": AUTHOR_INCLINE_OUTCOME_CLAIM_SCOPE,
+        "solver_lane": schedule.solver_lane,
+        "sample_count": len(trajectory_steps),
+        "complete_120_step_trace": complete_trace,
+        "mu_values": list(AUTHOR_INCLINE_MU_CELLS),
+        "maximum_absolute_tangential_displacement_m": (maximum_absolute_displacement),
+        "maximum_lateral_drift_m": maximum_lateral_drift,
+        "maximum_lateral_speed_m_s": maximum_lateral_speed,
+        "maximum_upright_angle_rad": maximum_upright_angle,
+        "maximum_angular_speed_rad_s": maximum_angular_speed,
+        "contact_sample_count": contact_sample_count,
+        "first_contact_step": first_contact_step,
+        "terminal_state": terminal_state,
+        "source_reference_provenance": AUTHOR_INCLINE_SOURCE_REFERENCE_PROVENANCE,
+        "source_oracle_projection_sha256": (
+            AUTHOR_INCLINE_SOURCE_FBF_ORACLE_PROJECTION_SHA256
+        ),
+        "source_reference_strictly_converged": False,
+        "terminal_displacement_absolute_tolerance_m": (
+            AUTHOR_INCLINE_TERMINAL_DISPLACEMENT_ABSOLUTE_TOLERANCE_M
+        ),
+        "terminal_velocity_absolute_tolerance_m_s": (
+            AUTHOR_INCLINE_TERMINAL_VELOCITY_ABSOLUTE_TOLERANCE_M_S
+        ),
+        "maximum_terminal_displacement_absolute_delta_m": (
+            maximum_terminal_displacement_absolute_delta_m
+        ),
+        "maximum_terminal_velocity_absolute_delta_m_s": (
+            maximum_terminal_velocity_absolute_delta_m_s
+        ),
+        "physical_outcome_validated": complete_trace,
+        "claim_boundary": {
+            "current_source_fbf_terminal_outcome_slice_valid": complete_trace,
+            "source_reference_strictly_converged": False,
+            "source_trajectory_equivalence": False,
+            "source_backend_equivalence": False,
+            "solver_equivalence": False,
+            "physical_outcome_equivalence": False,
+            "paper_parity": False,
+        },
+        "pass": True,
+    }
 
 
 def _validate_author_painleve_scene_state_trace(
@@ -3479,6 +4143,13 @@ def _is_author_painleve_solver_comparison_group(group: GroupOutputSpec) -> bool:
         and len(group.members) == 2
         and group.members[0] in AUTHOR_PAINLEVE_MEMBERS
         and group.members[1] == _boxed_schedule_id(group.members[0])
+    )
+
+
+def _is_author_incline_solver_comparison_group(group: GroupOutputSpec) -> bool:
+    return group.solver_lane == "both" and group.members == (
+        AUTHOR_INCLINE_SCHEDULE_ID,
+        _boxed_schedule_id(AUTHOR_INCLINE_SCHEDULE_ID),
     )
 
 
@@ -4590,6 +5261,225 @@ def _validate_author_card_house_adapter_contract(
     }
 
 
+def _validate_author_incline_adapter_contract(
+    schedule: CaptureSchedule,
+    data: dict[str, Any],
+    *,
+    sidecar_path: Path,
+) -> dict[str, Any] | None:
+    if not _is_author_incline_schedule(schedule):
+        return None
+
+    contract = data.get("physics_contract")
+    if not isinstance(contract, dict):
+        raise ValueError(f"{sidecar_path}: author incline adapter contract is missing")
+    if (
+        contract.get("schema_version") != AUTHOR_INCLINE_CONTRACT_SCHEMA_VERSION
+        or contract.get("kind") != "current_source_configuration_dynamics_adapter"
+    ):
+        raise ValueError(f"{sidecar_path}: unexpected author incline schema")
+
+    source_binding = contract.get("source_binding")
+    expected_binding = {
+        "repository": "https://github.com/matthcsong/fbf-sca-2026",
+        "commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+        "tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+        "runner_path": "paper_examples/cube-on-incline/run.py",
+        "runner_blob": "63cfc28dca1f6c65ce4a27dbfa239cba154580c6",
+        "runner_sha256": (
+            "881d486f25d85f9ae197bf4164e110b6bc39775c498433f27ec4407ca09ebf82"
+        ),
+        "configuration_spec_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfAuthorInclineSpec.hpp"
+        ),
+        "exact_solver_options_sha256": _sha256(
+            ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+        ),
+        "demo_implementation_sha256": _sha256(
+            ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+        ),
+    }
+    if source_binding != expected_binding:
+        raise ValueError(f"{sidecar_path}: author incline source hashes changed")
+
+    expected_source_configuration = {
+        "mu_values": list(AUTHOR_INCLINE_MU_CELLS),
+        "mu_grid_provenance": {
+            "kind": "operator_selected_figure_1_grid",
+            "source_default_mu": 0.5,
+            "selection_interface": "supported_--mu_cli",
+            "source_runs_each_mu_independently": True,
+        },
+        "tan_theta": 0.5,
+        "theta_rad": AUTHOR_INCLINE_THETA_RAD,
+        "gravity_m_s2": 9.81,
+        "plane_half_extents_m": [5.0, 1.5, 0.05],
+        "plane_full_dimensions_m": [10.0, 3.0, 0.1],
+        "cube_half_extent_m": 0.5,
+        "cube_full_dimensions_m": [1.0, 1.0, 1.0],
+        "cube_density_kg_m3": 1000.0,
+        "cube_mass_kg": 1000.0,
+        "initial_geometric_separation_m": 0.001,
+        "initial_center_normal_distance_m": 0.501,
+        "source_cube_shape_gap_m": 0.01,
+        "time_step_seconds": 1.0 / 60.0,
+        "duration_seconds": 2.0,
+        "total_steps": 120,
+    }
+    if not _contract_value_matches(
+        contract.get("source_configuration"), expected_source_configuration
+    ):
+        raise ValueError(f"{sidecar_path}: author incline source configuration changed")
+
+    adapter = contract.get("dart_adapter")
+    if not isinstance(adapter, dict) or adapter.get("scene_id") != schedule.scene:
+        raise ValueError(f"{sidecar_path}: author incline adapter identity changed")
+    if not _contract_value_matches(
+        adapter.get("world"),
+        {
+            "time_step_seconds": 1.0 / 60.0,
+            "gravity_m_s2": [0.0, 0.0, -9.81],
+            "simulation_threads": schedule.threads,
+            "deactivation_enabled": False,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author incline world policy changed")
+    if not _contract_value_matches(
+        adapter.get("layout"),
+        {
+            "kind": "simultaneous_y_translated_lanes",
+            "lane_spacing_m": AUTHOR_INCLINE_LANE_SPACING_M,
+            "source_cells_run_independently": True,
+            "translation_axis": "y",
+            "geometry_otherwise_unchanged": True,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author incline layout contract changed")
+    if not _contract_value_matches(
+        adapter.get("collision"),
+        {
+            "detector": "native",
+            "contact_manifold": "four_point_planar",
+            "max_contacts": 28,
+            "max_contacts_per_pair": 4,
+        },
+    ):
+        raise ValueError(f"{sidecar_path}: author incline collision contract changed")
+
+    exact = schedule.solver_lane == "exact"
+    expected_solver = {
+        "lane": "exact_fbf" if exact else "boxed_lcp",
+        "configuration_policy": "existing_small_fixture_exact_fbf_adapter",
+        "split_impulse_enabled": False,
+        "exact_options": (
+            {
+                "max_outer_iterations": 500,
+                "tolerance": 1e-6,
+                "inner_max_sweeps": 120,
+                "inner_local_iterations": 32,
+                "step_size_scale": 2.0,
+                "fallback_to_boxed_lcp_enabled": False,
+            }
+            if exact
+            else None
+        ),
+    }
+    if not _contract_value_matches(adapter.get("solver"), expected_solver):
+        raise ValueError(f"{sidecar_path}: author incline solver contract changed")
+
+    sine = math.sin(AUTHOR_INCLINE_THETA_RAD)
+    cosine = math.cos(AUTHOR_INCLINE_THETA_RAD)
+    rotation = [
+        [cosine, 0.0, sine],
+        [0.0, 1.0, 0.0],
+        [-sine, 0.0, cosine],
+    ]
+    moment = [
+        [1000.0 / 6.0, 0.0, 0.0],
+        [0.0, 1000.0 / 6.0, 0.0],
+        [0.0, 0.0, 1000.0 / 6.0],
+    ]
+    expected_cells = []
+    for index, (prefix, mu) in enumerate(
+        zip(AUTHOR_INCLINE_STATE_PREFIXES, AUTHOR_INCLINE_MU_CELLS)
+    ):
+        lane_y = (index - 3) * AUTHOR_INCLINE_LANE_SPACING_M
+        expected_cells.append(
+            {
+                "index": index,
+                "mu": mu,
+                "state_prefix": prefix,
+                "lane_translation_y_m": lane_y,
+                "plane": {
+                    "skeleton_name": f"author_incline_plane_{prefix}",
+                    "body_name": f"author_incline_plane_{prefix}_body",
+                    "mobile": False,
+                    "size_m": [10.0, 3.0, 0.1],
+                    "initial_pose": {
+                        "translation": [-sine * 0.05, lane_y, -cosine * 0.05],
+                        "rotation": rotation,
+                    },
+                    "friction": mu,
+                },
+                "cube": {
+                    "skeleton_name": f"author_incline_cube_{prefix}",
+                    "body_name": f"author_incline_cube_{prefix}_body",
+                    "mobile": True,
+                    "size_m": [1.0, 1.0, 1.0],
+                    "initial_pose": {
+                        "translation": [
+                            sine * AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M,
+                            lane_y,
+                            cosine * AUTHOR_INCLINE_INITIAL_CENTER_NORMAL_DISTANCE_M,
+                        ],
+                        "rotation": rotation,
+                    },
+                    "initial_linear_velocity_m_s": [0.0, 0.0, 0.0],
+                    "initial_angular_velocity_rad_s": [0.0, 0.0, 0.0],
+                    "friction": mu,
+                    "mass_kg": 1000.0,
+                    "moment_kg_m2": moment,
+                },
+            }
+        )
+    if not _contract_value_matches(adapter.get("cells"), expected_cells):
+        raise ValueError(f"{sidecar_path}: author incline cell grid or naming changed")
+
+    if contract.get("adapter_boundaries") != {
+        "source_initial_geometric_separation_represented": True,
+        "source_shape_gap_semantics_implemented": False,
+        "source_collision_backend_implemented": False,
+        "source_solver_backend_semantics_implemented": False,
+        "source_float32_semantics_implemented": False,
+        "dart_native_four_point_planar_is_adapter_choice": True,
+        "seven_cells_run_simultaneously_in_source": False,
+    }:
+        raise ValueError(f"{sidecar_path}: author incline adapter boundaries changed")
+    if contract.get("claim_boundary") != {
+        "current_source_geometry_clock_mu_grid_port": True,
+        "historical_paper_invocation_known": False,
+        "trajectory_valid": False,
+        "physical_outcome_valid": False,
+        "trajectory_equivalence": False,
+        "solver_equivalence": False,
+        "physical_outcome_equivalence": False,
+        "video_parity": False,
+        "timing_comparability": False,
+        "paper_parity": False,
+    }:
+        raise ValueError(f"{sidecar_path}: author incline claim boundary changed")
+
+    return {
+        "schema_version": contract["schema_version"],
+        "source_binding": source_binding,
+        "solver_lane": expected_solver["lane"],
+        "mu_values": list(AUTHOR_INCLINE_MU_CELLS),
+        "cell_count": len(expected_cells),
+        "physical_outcome_validated": False,
+        "pass": True,
+    }
+
+
 def _validate_author_painleve_adapter_contract(
     schedule: CaptureSchedule,
     data: dict[str, Any],
@@ -5099,6 +5989,11 @@ def _validate_schedule_physics_contract(
     )
     if report is not None:
         return report
+    report = _validate_author_incline_adapter_contract(
+        schedule, data, sidecar_path=sidecar_path
+    )
+    if report is not None:
+        return report
     report = _validate_author_painleve_adapter_contract(
         schedule, data, sidecar_path=sidecar_path
     )
@@ -5507,6 +6402,12 @@ def _validate_failed_exact_fbf_sidecar(
         diagnostics_by_step[step] = diagnostics
         reason_by_step[step] = reason
 
+    author_incline_scene_state_metrics = _validate_author_incline_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=trigger_step,
+    )
     scene_state_metrics = _validate_author_painleve_scene_state_trace(
         schedule,
         trajectory_steps,
@@ -5652,6 +6553,11 @@ def _validate_failed_exact_fbf_sidecar(
         "reason": state["reason"],
         "headless_exact_fbf_fail_fast": state,
         "physics_contract": physics_contract_report,
+        **(
+            {"author_incline_scene_state_metrics": author_incline_scene_state_metrics}
+            if author_incline_scene_state_metrics is not None
+            else {}
+        ),
         **(
             {"scene_state_metrics": scene_state_metrics}
             if scene_state_metrics is not None
@@ -6102,6 +7008,12 @@ def validate_sidecar(
                     prior_worst = float(current_worst)
         diagnostics_by_step[step] = diagnostics
 
+    author_incline_scene_state_metrics = _validate_author_incline_scene_state_trace(
+        schedule,
+        trajectory_steps,
+        sidecar_path=sidecar_path,
+        expected_last_step=schedule.total_steps,
+    )
     scene_state_metrics = _validate_author_painleve_scene_state_trace(
         schedule,
         trajectory_steps,
@@ -6262,6 +7174,11 @@ def validate_sidecar(
             else {}
         ),
         "physics_contract": physics_contract_report,
+        **(
+            {"author_incline_scene_state_metrics": author_incline_scene_state_metrics}
+            if author_incline_scene_state_metrics is not None
+            else {}
+        ),
         **(
             {"scene_state_metrics": scene_state_metrics}
             if scene_state_metrics is not None
@@ -6714,6 +7631,16 @@ def run_schedule(
             if _is_author_painleve_schedule(schedule)
             else {}
         ),
+        **(
+            {
+                "automated_current_source_fbf_terminal_outcome_slice_validated": True,
+                "current_source_fbf_terminal_outcome_slice": timeline_report[
+                    "author_incline_scene_state_metrics"
+                ],
+            }
+            if _is_author_incline_schedule(schedule)
+            else {}
+        ),
         "automated_semantic_outcome_validated": False,
         "semantic_outcome_gate": CAPTURE_SEMANTIC_OUTCOME_GATE,
         "known_mismatches": list(schedule.mismatches),
@@ -6779,6 +7706,19 @@ def _validate_group_claim_boundary(
                 f"{metadata_path}: current DART adapter comparison is unavailable"
             )
         claims["automated_current_dart_adapter_outcome_validated"] = True
+    if _is_author_incline_solver_comparison_group(group):
+        outcomes = metadata.get("current_source_fbf_terminal_outcome_slices")
+        if not isinstance(outcomes, list) or len(outcomes) != len(SOLVER_LANES):
+            raise ValueError(
+                f"{metadata_path}: author incline terminal outcomes are unavailable"
+            )
+        for report, solver_lane in zip(outcomes, SOLVER_LANES):
+            _require_author_incline_terminal_outcome_claim(
+                report,
+                solver_lane=solver_lane,
+                label=str(metadata_path),
+            )
+        claims["automated_current_source_fbf_terminal_outcome_slice_validated"] = True
     for key, expected in claims.items():
         if not _claim_value_matches(metadata.get(key), expected):
             raise ValueError(f"{metadata_path}: group claim boundary {key} changed")
@@ -6832,6 +7772,7 @@ def _group_member_contract(
 
     members: list[dict[str, Any]] = []
     outcome_reports: list[dict[str, Any]] = []
+    author_incline_outcome_reports: list[dict[str, Any]] = []
     durations: list[float] = []
     frame_counts: list[int | None] = []
     frame_rates: list[str | None] = []
@@ -6866,6 +7807,14 @@ def _group_member_contract(
                     f"{metadata_path}: current DART adapter outcome is unavailable"
                 )
             outcome_reports.append(outcome)
+        if _is_author_incline_solver_comparison_group(group):
+            author_incline_outcome_reports.append(
+                _require_author_incline_terminal_outcome_claim(
+                    metadata.get("current_source_fbf_terminal_outcome_slice"),
+                    solver_lane=schedule.solver_lane,
+                    label=str(metadata_path),
+                )
+            )
 
         runtime = metadata.get("runtime", {})
         _validate_runtime_visual_resources(
@@ -6995,6 +7944,15 @@ def _group_member_contract(
         **(
             {"dart_adapter_outcome_comparison": outcome_comparison}
             if outcome_comparison is not None
+            else {}
+        ),
+        **(
+            {
+                "current_source_fbf_terminal_outcome_slices": (
+                    author_incline_outcome_reports
+                )
+            }
+            if _is_author_incline_solver_comparison_group(group)
             else {}
         ),
     }
@@ -7344,6 +8302,16 @@ def run_group_output(
                 ],
             }
             if _is_author_painleve_solver_comparison_group(group)
+            else {}
+        ),
+        **(
+            {
+                "automated_current_source_fbf_terminal_outcome_slice_validated": True,
+                "current_source_fbf_terminal_outcome_slices": contract[
+                    "current_source_fbf_terminal_outcome_slices"
+                ],
+            }
+            if _is_author_incline_solver_comparison_group(group)
             else {}
         ),
         "panel_validation": panel_report,
@@ -7706,6 +8674,12 @@ def _verify_existing(
             raise ValueError(
                 f"{metadata_path}: current DART adapter outcome binding changed"
             )
+    if _is_author_incline_schedule(schedule):
+        current_outcome = timeline.get("author_incline_scene_state_metrics")
+        if metadata.get("current_source_fbf_terminal_outcome_slice") != current_outcome:
+            raise ValueError(
+                f"{metadata_path}: author incline terminal outcome binding changed"
+            )
 
     stored_panel = metadata.get("panel_validation", {})
     if stored_panel.get("path") != str(panel_path):
@@ -7781,6 +8755,12 @@ def _verify_existing_group(
     ) != contract.get("dart_adapter_outcome_comparison"):
         raise ValueError(
             f"{metadata_path}: current DART adapter comparison binding changed"
+        )
+    if _is_author_incline_solver_comparison_group(group) and metadata.get(
+        "current_source_fbf_terminal_outcome_slices"
+    ) != contract.get("current_source_fbf_terminal_outcome_slices"):
+        raise ValueError(
+            f"{metadata_path}: author incline terminal outcome binding changed"
         )
 
     stored_members = metadata.get("members", [])
