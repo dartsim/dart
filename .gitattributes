@@ -3,6 +3,3 @@ pixi.lock linguist-language=YAML
 
 # Wavefront OBJ permits blank records, including a trailing blank record.
 *.obj whitespace=-blank-at-eof
-
-# CSV writers use RFC-style CRLF records; treat CR as part of the line ending.
-*.csv whitespace=cr-at-eol
