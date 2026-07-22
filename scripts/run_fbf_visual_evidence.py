@@ -1138,6 +1138,78 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         solver_lane="boxed",
         supported_solver_lanes=("boxed",),
     ),
+    "card_house_author_10_impact_current_source": CaptureSchedule(
+        id="card_house_author_10_impact_current_source",
+        scene="fbf_author_card_house_10_impact_current_source",
+        title="Author-pinned ten-level card-house current-source impact",
+        source_segment="paper_tables_6_7_no_video_segment",
+        total_steps=3200,
+        # The public source advances four 240 Hz substeps for each 60 Hz display
+        # frame. One evidence frame every eight substeps gives a 30 fps video
+        # with the source-selected 800-frame duration.
+        frame_stride=8,
+        panel_steps=(0, 120, 1600, 1680, 3200),
+        panel_labels=(
+            "initial current-source configuration",
+            "pinned source-prefix endpoint t=.5s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "source frame-800 endpoint (t=13.33s)",
+        ),
+        configuration=(
+            ("author_commit", "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"),
+            ("levels", "10"),
+            ("cards", "155"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("source_frames", "800"),
+            ("release_substep", "1600"),
+            ("total_substeps", "3200"),
+            ("max_contacts", "4096"),
+            ("max_contacts_per_pair", "4"),
+            ("collision_shape_frames", "160"),
+            ("ground_contact_gap_m", "0.1 for the ground ShapeFrame"),
+            (
+                "dynamic_shape_contact_gap_m",
+                "0.005 for the 155 card and 4 cube ShapeFrames",
+            ),
+            ("negative_depth_contacts", "enabled for configured Native gaps"),
+            (
+                "capture_invocation",
+                "current public source --levels 10 --frames 800 selection",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "The public source supports --levels 10 with its 800-frame default, "
+            "but no historical Tables 6/7 invocation was recovered. This is a "
+            "supported current-source selection, not historical paper parity.",
+            "The source assigns gap=.1, stiffness=2500, and damping=100 to the "
+            "ground, versus gap=.005, stiffness=1e4, and damping=1e3 for each "
+            "of the 159 card/cube shapes. DART Native represents the two gap "
+            "values with signed contacts, but not the authors' Warp collision, "
+            "Newton/float32 solver, or stiffness/damping semantics.",
+            "In the pinned source's 30-frame CPU control, 87 of 120 substeps did "
+            "not converge and the source continued. That finite prefix supplies "
+            "no strict trajectory oracle for DART.",
+        ),
+        known_gate_blockers=(
+            "No complete strict DART exact-FBF run of this 3,200-substep release "
+            "schedule has yet passed the solver and physical-outcome gates.",
+            "No paired exact/boxed media has yet been captured and independently "
+            "validated for this current-source ten-level adapter.",
+            "The pinned source prefix itself has 87 nonconverged substeps out of "
+            "120 and provides no strict trajectory oracle.",
+        ),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        long_run=True,
+    ),
     "card_house_author_5_construction": CaptureSchedule(
         id="card_house_author_5_construction",
         scene="fbf_author_card_house_5_construction",
@@ -2574,7 +2646,50 @@ def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
     return (schedule.source_schedule_id or schedule.id) in {
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_10_impact_current_source",
     }
+
+
+def _author_card_house_dynamics_selection(
+    schedule: CaptureSchedule,
+) -> dict[str, Any]:
+    schedule_id = schedule.source_schedule_id or schedule.id
+    if schedule_id in {
+        "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
+    }:
+        return {
+            "levels": 4,
+            "frames": 600,
+            "cards": 26,
+            "leaning_cards": 20,
+            "bridge_cards": 6,
+            "cube_initial_height_m": 10.66642467908744,
+            "collision_shape_frames": 31,
+            "contact_gap_shape_frames": 0,
+            "ground_contact_gap_m": 0.0,
+            "dynamic_shape_contact_gap_m": 0.0,
+            "ground_contact_gap_shape_frames": 0,
+            "dynamic_contact_gap_shape_frames": 0,
+            "source_contact_gap_values_represented": False,
+        }
+    if schedule_id == "card_house_author_10_impact_current_source":
+        return {
+            "levels": 10,
+            "frames": 800,
+            "cards": 155,
+            "leaning_cards": 110,
+            "bridge_cards": 45,
+            "cube_initial_height_m": 25.1660616977186,
+            "collision_shape_frames": 160,
+            "contact_gap_shape_frames": 160,
+            "ground_contact_gap_m": 0.1,
+            "dynamic_shape_contact_gap_m": 0.005,
+            "ground_contact_gap_shape_frames": 1,
+            "dynamic_contact_gap_shape_frames": 159,
+            "source_contact_gap_values_represented": True,
+        }
+    raise ValueError(f"{schedule.id}: unknown author card-house dynamics selection")
 
 
 def _is_author_painleve_schedule(schedule: CaptureSchedule) -> bool:
@@ -3925,6 +4040,7 @@ def _validate_author_card_house_adapter_contract(
 ) -> dict[str, Any] | None:
     if not _is_author_card_house_impact_schedule(schedule):
         return None
+    selection = _author_card_house_dynamics_selection(schedule)
 
     contract = data.get("physics_contract")
     if not isinstance(contract, dict):
@@ -3980,8 +4096,8 @@ def _validate_author_card_house_adapter_contract(
         "historical_paper_invocation_known": False,
         "arguments": {
             "solvers": ["fbf"],
-            "levels": 4,
-            "frames": 600,
+            "levels": selection["levels"],
+            "frames": selection["frames"],
             "drop_frame": 400,
             "num_cubes": 4,
             "mu": 0.8,
@@ -3997,11 +4113,31 @@ def _validate_author_card_house_adapter_contract(
             f"{sidecar_path}: author card-house selected source invocation changed"
         )
 
+    expected_source_contact: dict[str, Any] = {
+        "friction": 0.8,
+        "gap_m": 0.005,
+        "shape_stiffness": 10000.0,
+        "shape_damping": 1000.0,
+    }
+    if selection["source_contact_gap_values_represented"]:
+        expected_source_contact = {
+            "friction": 0.8,
+            "dynamic_shape_contact": {
+                "gap_m": 0.005,
+                "shape_stiffness": 10000.0,
+                "shape_damping": 1000.0,
+            },
+            "ground_contact": {
+                "gap_m": 0.1,
+                "shape_stiffness": 2500.0,
+                "shape_damping": 100.0,
+            },
+        }
     expected_source_configuration = {
         "cards": {
-            "count": 26,
-            "leaning_count": 20,
-            "bridge_count": 6,
+            "count": selection["cards"],
+            "leaning_count": selection["leaning_cards"],
+            "bridge_count": selection["bridge_cards"],
             "lean_size_m": [0.04, 1.25, 2.5],
             "bridge_size_m": [2.5, 1.25, 0.04],
             "density_kg_m3": 200.0,
@@ -4017,24 +4153,19 @@ def _validate_author_card_house_adapter_contract(
             "edge_m": 0.8,
             "density_kg_m3": 500.0,
             "mass_kg": 256.0,
-            "initial_height_m": 10.66642467908744,
+            "initial_height_m": selection["cube_initial_height_m"],
             "initially_kinematic": True,
             "initial_velocity_m_s": [0, 0, 0],
         },
-        "contact": {
-            "friction": 0.8,
-            "gap_m": 0.005,
-            "shape_stiffness": 10000.0,
-            "shape_damping": 1000.0,
-        },
+        "contact": expected_source_contact,
         "schedule": {
             "display_time_step_seconds": 1.0 / 60.0,
             "substeps_per_frame": 4,
             "runtime_time_step_seconds": 1.0 / 240.0,
             "release_frame": 400,
             "release_substep": 1600,
-            "total_frames": 600,
-            "total_substeps": 2400,
+            "total_frames": selection["frames"],
+            "total_substeps": selection["frames"] * 4,
         },
         "solver": {
             "type": "fbf_exact_coulomb",
@@ -4083,15 +4214,35 @@ def _validate_author_card_house_adapter_contract(
         or world.get("deactivation_enabled") is not False
     ):
         raise ValueError(f"{sidecar_path}: author card-house world policy changed")
-    if adapter.get("collision") != {
+    expected_collision = {
         "detector": "native",
         "contact_manifold": "four_point_planar",
         "max_contacts": 4096,
         "max_contacts_per_pair": 4,
         "enable_contact": True,
-        "allow_negative_penetration_depth_contacts": False,
+        "allow_negative_penetration_depth_contacts": selection[
+            "source_contact_gap_values_represented"
+        ],
         "default_empty_body_node_filter": True,
-    }:
+    }
+    if selection["source_contact_gap_values_represented"]:
+        expected_collision.update(
+            {
+                "ground_contact_gap_m": selection["ground_contact_gap_m"],
+                "dynamic_shape_contact_gap_m": selection["dynamic_shape_contact_gap_m"],
+                "collision_shape_frames": selection["collision_shape_frames"],
+                "collision_shape_frames_with_contact_gap": selection[
+                    "contact_gap_shape_frames"
+                ],
+                "ground_shape_frames_with_contact_gap": selection[
+                    "ground_contact_gap_shape_frames"
+                ],
+                "dynamic_shape_frames_with_contact_gap": selection[
+                    "dynamic_contact_gap_shape_frames"
+                ],
+            }
+        )
+    if adapter.get("collision") != expected_collision:
         raise ValueError(
             f"{sidecar_path}: author card-house collision contract changed"
         )
@@ -4115,14 +4266,14 @@ def _validate_author_card_house_adapter_contract(
     if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
         raise ValueError(f"{sidecar_path}: author card-house scoped ERP is not zero")
     if adapter.get("inventory") != {
-        "cards": 26,
+        "cards": selection["cards"],
         "cubes": 4,
         "released_cubes": 0,
         "finite_state": True,
     }:
         raise ValueError(f"{sidecar_path}: author card-house inventory changed")
     if adapter.get("schedule") != {
-        "evidence_total_substeps": 2400,
+        "evidence_total_substeps": selection["frames"] * 4,
         "evidence_runner_action_completed_step": 1600,
         "release_action_key": "p",
         "interactive_action_semantics": "immediate_on_invocation",
@@ -4139,6 +4290,15 @@ def _validate_author_card_house_adapter_contract(
         "source_float32_semantics_implemented": False,
         "dart_native_four_point_planar_is_adapter_choice": True,
     }
+    if selection["source_contact_gap_values_represented"]:
+        expected_adapter_boundaries.pop("source_contact_gap_recorded_m")
+        expected_adapter_boundaries.update(
+            {
+                "source_dynamic_shape_contact_gap_recorded_m": 0.005,
+                "source_ground_contact_gap_recorded_m": 0.1,
+                "source_contact_gap_values_represented": True,
+            }
+        )
     if contract.get("adapter_boundaries") != expected_adapter_boundaries:
         raise ValueError(
             f"{sidecar_path}: author card-house adapter boundaries changed"
@@ -4160,6 +4320,8 @@ def _validate_author_card_house_adapter_contract(
         "timing_comparability": False,
         "paper_parity": False,
     }
+    if selection["source_contact_gap_values_represented"]:
+        expected_claim_boundary["historical_tables_6_7_invocation_known"] = False
     if contract.get("claim_boundary") != expected_claim_boundary:
         raise ValueError(f"{sidecar_path}: author card-house claim boundary changed")
 

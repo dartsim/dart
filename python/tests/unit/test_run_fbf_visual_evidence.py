@@ -1185,8 +1185,91 @@ def _author_masonry_arch_101_scene_state(
 
 
 def _author_card_house_adapter_contract(
-    module, *, solver_lane="exact", source_continuation=False
+    module, *, solver_lane="exact", source_continuation=False, levels=4
 ):
+    if levels not in {4, 10}:
+        raise ValueError("unsupported author card-house test level count")
+    if source_continuation and levels != 4:
+        raise ValueError("source continuation is only available for four levels")
+    ten_level = levels == 10
+    frames = 800 if ten_level else 600
+    card_count = 155 if ten_level else 26
+    leaning_count = 110 if ten_level else 20
+    bridge_count = 45 if ten_level else 6
+    claim_boundary = {
+        "current_source_parameterized_configuration_port": True,
+        "source_release_action_ported_to_dart": True,
+        "source_release_schedule_declared_for_evidence_runner": True,
+        "interactive_demo_auto_releases_at_source_step": False,
+        "historical_paper_invocation_known": False,
+        "trajectory_valid": False,
+        "physical_outcome_valid": False,
+        "trajectory_equivalence": False,
+        "solver_equivalence": False,
+        "physical_outcome_equivalence": False,
+        "fig06_parity": False,
+        "video06_parity": False,
+        "timing_comparability": False,
+        "paper_parity": False,
+    }
+    source_contact = {
+        "friction": 0.8,
+        "gap_m": 0.005,
+        "shape_stiffness": 10000.0,
+        "shape_damping": 1000.0,
+    }
+    collision = {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "max_contacts": 4096,
+        "max_contacts_per_pair": 4,
+        "enable_contact": True,
+        "allow_negative_penetration_depth_contacts": ten_level,
+        "default_empty_body_node_filter": True,
+    }
+    adapter_boundaries = {
+        "source_contact_gap_recorded_m": 0.005,
+        "source_contact_gap_semantics_implemented": False,
+        "source_shape_stiffness_semantics_implemented": False,
+        "source_shape_damping_semantics_implemented": False,
+        "source_collision_backend_implemented": False,
+        "source_solver_backend_semantics_implemented": False,
+        "source_float32_semantics_implemented": False,
+        "dart_native_four_point_planar_is_adapter_choice": True,
+    }
+    if ten_level:
+        claim_boundary["historical_tables_6_7_invocation_known"] = False
+        source_contact = {
+            "friction": 0.8,
+            "dynamic_shape_contact": {
+                "gap_m": 0.005,
+                "shape_stiffness": 10000.0,
+                "shape_damping": 1000.0,
+            },
+            "ground_contact": {
+                "gap_m": 0.1,
+                "shape_stiffness": 2500.0,
+                "shape_damping": 100.0,
+            },
+        }
+        collision.update(
+            {
+                "ground_contact_gap_m": 0.1,
+                "dynamic_shape_contact_gap_m": 0.005,
+                "collision_shape_frames": 160,
+                "collision_shape_frames_with_contact_gap": 160,
+                "ground_shape_frames_with_contact_gap": 1,
+                "dynamic_shape_frames_with_contact_gap": 159,
+            }
+        )
+        adapter_boundaries.pop("source_contact_gap_recorded_m")
+        adapter_boundaries.update(
+            {
+                "source_dynamic_shape_contact_gap_recorded_m": 0.005,
+                "source_ground_contact_gap_recorded_m": 0.1,
+                "source_contact_gap_values_represented": True,
+            }
+        )
     return {
         "schema_version": "dart.fbf_author_card_house_dynamics_adapter/v1",
         "kind": "source_configuration_dynamics_adapter",
@@ -1226,8 +1309,8 @@ def _author_card_house_adapter_contract(
             "historical_paper_invocation_known": False,
             "arguments": {
                 "solvers": ["fbf"],
-                "levels": 4,
-                "frames": 600,
+                "levels": levels,
+                "frames": frames,
                 "drop_frame": 400,
                 "num_cubes": 4,
                 "mu": 0.8,
@@ -1241,9 +1324,9 @@ def _author_card_house_adapter_contract(
         },
         "source_configuration": {
             "cards": {
-                "count": 26,
-                "leaning_count": 20,
-                "bridge_count": 6,
+                "count": card_count,
+                "leaning_count": leaning_count,
+                "bridge_count": bridge_count,
                 "lean_size_m": [0.04, 1.25, 2.5],
                 "bridge_size_m": [2.5, 1.25, 0.04],
                 "density_kg_m3": 200.0,
@@ -1259,24 +1342,19 @@ def _author_card_house_adapter_contract(
                 "edge_m": 0.8,
                 "density_kg_m3": 500.0,
                 "mass_kg": 256.0,
-                "initial_height_m": 10.66642467908744,
+                "initial_height_m": levels * 2.41660616977186 + 1.0,
                 "initially_kinematic": True,
                 "initial_velocity_m_s": [0, 0, 0],
             },
-            "contact": {
-                "friction": 0.8,
-                "gap_m": 0.005,
-                "shape_stiffness": 10000.0,
-                "shape_damping": 1000.0,
-            },
+            "contact": source_contact,
             "schedule": {
                 "display_time_step_seconds": 1.0 / 60.0,
                 "substeps_per_frame": 4,
                 "runtime_time_step_seconds": 1.0 / 240.0,
                 "release_frame": 400,
                 "release_substep": 1600,
-                "total_frames": 600,
-                "total_substeps": 2400,
+                "total_frames": frames,
+                "total_substeps": frames * 4,
             },
             "solver": {
                 "type": "fbf_exact_coulomb",
@@ -1305,9 +1383,13 @@ def _author_card_house_adapter_contract(
         },
         "dart_adapter": {
             "scene_id": (
-                "fbf_author_card_house_4_impact_source_continuation_current_source"
-                if source_continuation
-                else "fbf_author_card_house_4_impact_current_source"
+                "fbf_author_card_house_10_impact_current_source"
+                if ten_level
+                else (
+                    "fbf_author_card_house_4_impact_source_continuation_current_source"
+                    if source_continuation
+                    else "fbf_author_card_house_4_impact_current_source"
+                )
             ),
             "world": {
                 "time_step_seconds": 1.0 / 240.0,
@@ -1316,15 +1398,7 @@ def _author_card_house_adapter_contract(
                 "simulation_threads": 1,
                 "deactivation_enabled": False,
             },
-            "collision": {
-                "detector": "native",
-                "contact_manifold": "four_point_planar",
-                "max_contacts": 4096,
-                "max_contacts_per_pair": 4,
-                "enable_contact": True,
-                "allow_negative_penetration_depth_contacts": False,
-                "default_empty_body_node_filter": True,
-            },
+            "collision": collision,
             "contact_material": {
                 "primary_friction": 0.8,
                 "secondary_friction": 0.8,
@@ -1339,44 +1413,20 @@ def _author_card_house_adapter_contract(
                 solver_lane, source_continuation=source_continuation
             ),
             "inventory": {
-                "cards": 26,
+                "cards": card_count,
                 "cubes": 4,
                 "released_cubes": 0,
                 "finite_state": True,
             },
             "schedule": {
-                "evidence_total_substeps": 2400,
+                "evidence_total_substeps": frames * 4,
                 "evidence_runner_action_completed_step": 1600,
                 "release_action_key": "p",
                 "interactive_action_semantics": "immediate_on_invocation",
             },
         },
-        "adapter_boundaries": {
-            "source_contact_gap_recorded_m": 0.005,
-            "source_contact_gap_semantics_implemented": False,
-            "source_shape_stiffness_semantics_implemented": False,
-            "source_shape_damping_semantics_implemented": False,
-            "source_collision_backend_implemented": False,
-            "source_solver_backend_semantics_implemented": False,
-            "source_float32_semantics_implemented": False,
-            "dart_native_four_point_planar_is_adapter_choice": True,
-        },
-        "claim_boundary": {
-            "current_source_parameterized_configuration_port": True,
-            "source_release_action_ported_to_dart": True,
-            "source_release_schedule_declared_for_evidence_runner": True,
-            "interactive_demo_auto_releases_at_source_step": False,
-            "historical_paper_invocation_known": False,
-            "trajectory_valid": False,
-            "physical_outcome_valid": False,
-            "trajectory_equivalence": False,
-            "solver_equivalence": False,
-            "physical_outcome_equivalence": False,
-            "fig06_parity": False,
-            "video06_parity": False,
-            "timing_comparability": False,
-            "paper_parity": False,
-        },
+        "adapter_boundaries": adapter_boundaries,
+        "claim_boundary": claim_boundary,
     }
 
 
@@ -1660,6 +1710,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "masonry_arch_101",
         "masonry_arch_101_author_standing_current_source",
         "card_house_10_construction",
+        "card_house_author_10_impact_current_source",
         "card_house_author_5_construction",
         "card_house_10_dynamics",
     }
@@ -2687,6 +2738,9 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         "makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene": (
             "fbf_author_card_house_4_impact_source_continuation_current_source"
         ),
+        "makeFbfAuthorCardHouse10ImpactCurrentSourceScene": (
+            "fbf_author_card_house_10_impact_current_source"
+        ),
         "makeFbfPaperMasonryArch25LiteralStandingScene": (
             "fbf_paper_masonry_arch_25_literal_standing"
         ),
@@ -2851,6 +2905,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "painleve_author_mu05",
             "painleve_author_mu055",
             "card_house_10_construction",
+            "card_house_author_10_impact_current_source",
             "card_house_author_5_construction",
             "card_house_author_4_impact_current_source",
             "card_house_author_4_impact_source_continuation_current_source",
@@ -2873,6 +2928,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "painleve_author_mu05": "fbf_author_painleve_mu_0_5",
         "painleve_author_mu055": "fbf_author_painleve_mu_0_55",
         "card_house_10_construction": "fbf_paper_card_house_10",
+        "card_house_author_10_impact_current_source": (
+            "fbf_author_card_house_10_impact_current_source"
+        ),
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
         "card_house_author_4_impact_current_source": (
             "fbf_author_card_house_4_impact_current_source"
@@ -2910,6 +2968,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
         | set(module.AUTHOR_PAINLEVE_MEMBERS)
         | {
             "card_house_author_5_construction",
+            "card_house_author_10_impact_current_source",
             "card_house_author_4_impact_current_source",
             "card_house_author_4_impact_source_continuation_current_source",
             "masonry_arch_25_literal_standing",
@@ -3173,6 +3232,166 @@ def test_author_card_house_adapter_contract_binds_source_selection_and_lanes(
     assert exact_report["release_action_completed_step"] == 1600
     assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
     assert exact_report["physical_outcome_validated"] is False
+    legacy_contract = _author_card_house_adapter_contract(module)
+    assert set(legacy_contract["dart_adapter"]["collision"]) == {
+        "detector",
+        "contact_manifold",
+        "max_contacts",
+        "max_contacts_per_pair",
+        "enable_contact",
+        "allow_negative_penetration_depth_contacts",
+        "default_empty_body_node_filter",
+    }
+    assert legacy_contract["source_configuration"]["contact"] == {
+        "friction": 0.8,
+        "gap_m": 0.005,
+        "shape_stiffness": 10000.0,
+        "shape_damping": 1000.0,
+    }
+    assert (
+        "source_contact_gap_values_represented"
+        not in legacy_contract["adapter_boundaries"]
+    )
+    assert (
+        "historical_tables_6_7_invocation_known"
+        not in legacy_contract["claim_boundary"]
+    )
+
+
+def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
+    tmp_path,
+):
+    module = _load_module()
+    exact = module.SCHEDULES["card_house_author_10_impact_current_source"]
+    boxed = module._derive_boxed_schedule(exact)
+
+    exact_report = module._validate_author_card_house_adapter_contract(
+        exact,
+        {"physics_contract": _author_card_house_adapter_contract(module, levels=10)},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_author_card_house_adapter_contract(
+        boxed,
+        {
+            "physics_contract": _author_card_house_adapter_contract(
+                module, solver_lane="boxed", levels=10
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["card_count"] == boxed_report["card_count"] == 155
+    assert exact_report["cube_count"] == boxed_report["cube_count"] == 4
+    assert exact_report["release_action_completed_step"] == 1600
+    assert exact_report["physical_outcome_validated"] is False
+    contract = _author_card_house_adapter_contract(module, levels=10)
+    assert contract["dart_adapter"]["collision"] == {
+        "detector": "native",
+        "contact_manifold": "four_point_planar",
+        "max_contacts": 4096,
+        "max_contacts_per_pair": 4,
+        "enable_contact": True,
+        "allow_negative_penetration_depth_contacts": True,
+        "default_empty_body_node_filter": True,
+        "ground_contact_gap_m": 0.1,
+        "dynamic_shape_contact_gap_m": 0.005,
+        "collision_shape_frames": 160,
+        "collision_shape_frames_with_contact_gap": 160,
+        "ground_shape_frames_with_contact_gap": 1,
+        "dynamic_shape_frames_with_contact_gap": 159,
+    }
+    assert contract["source_configuration"]["contact"]["ground_contact"] == {
+        "gap_m": 0.1,
+        "shape_stiffness": 2500.0,
+        "shape_damping": 100.0,
+    }
+    assert (
+        contract["adapter_boundaries"]["source_contact_gap_semantics_implemented"]
+        is False
+    )
+    assert (
+        contract["adapter_boundaries"]["source_contact_gap_values_represented"] is True
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (
+            ("selected_source_invocation", "arguments", "levels"),
+            4,
+            "selected source invocation",
+        ),
+        (
+            ("source_configuration", "contact", "ground_contact", "gap_m"),
+            0.005,
+            "source configuration",
+        ),
+        (
+            (
+                "source_configuration",
+                "contact",
+                "dynamic_shape_contact",
+                "shape_stiffness",
+            ),
+            2500.0,
+            "source configuration",
+        ),
+        (
+            ("dart_adapter", "collision", "ground_contact_gap_m"),
+            0.005,
+            "collision contract",
+        ),
+        (
+            ("dart_adapter", "collision", "dynamic_shape_contact_gap_m"),
+            0.1,
+            "collision contract",
+        ),
+        (
+            (
+                "dart_adapter",
+                "collision",
+                "allow_negative_penetration_depth_contacts",
+            ),
+            False,
+            "collision contract",
+        ),
+        (
+            ("adapter_boundaries", "source_contact_gap_semantics_implemented"),
+            True,
+            "adapter boundaries",
+        ),
+        (
+            ("adapter_boundaries", "source_contact_gap_values_represented"),
+            False,
+            "adapter boundaries",
+        ),
+        (
+            ("claim_boundary", "historical_tables_6_7_invocation_known"),
+            True,
+            "claim boundary",
+        ),
+    ],
+)
+def test_author_card_house_10_adapter_contract_rejects_claim_or_gap_drift(
+    tmp_path, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_10_impact_current_source"]
+    contract = _author_card_house_adapter_contract(module, levels=10)
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_author_card_house_adapter_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
 
 
 def test_author_painleve_adapter_contract_binds_source_mass_and_lanes(tmp_path):
@@ -4478,6 +4697,74 @@ def test_author_card_house_construction_schedule_has_explicit_clock_and_boundary
     assert command.count("--headless-shot-at") == 1
     assert any("configuration" in mismatch for mismatch in schedule.mismatches)
     assert any("not the authors'" in mismatch for mismatch in schedule.mismatches)
+
+
+def test_author_card_house_10_impact_schedule_is_source_selected_and_fail_closed():
+    module = _load_module()
+    schedule = module.SCHEDULES["card_house_author_10_impact_current_source"]
+    configuration = schedule.configuration_dict()
+    plan = module.schedule_plan(schedule, Path("dart-demos"), Path("/tmp/out"))
+    command = module.build_demo_command(schedule, Path("dart-demos"), Path("/tmp/out"))
+
+    assert schedule.scene == "fbf_author_card_house_10_impact_current_source"
+    assert schedule.source_segment == "paper_tables_6_7_no_video_segment"
+    assert schedule.total_steps == 3200
+    assert schedule.time_step_seconds == pytest.approx(1.0 / 240.0)
+    assert schedule.frame_stride == 8
+    assert len(schedule.video_steps) == 401
+    assert schedule.panel_steps == (0, 120, 1600, 1680, 3200)
+    assert schedule.actions == (
+        module.ScheduledAction(1600, "p", "release the four existing source cubes"),
+    )
+    assert schedule.supported_solver_lanes == module.SOLVER_LANES
+    assert schedule.exact_fbf_required is True
+    assert schedule.long_run is True
+    assert schedule.collision_detector == "native"
+    assert schedule.collision_detector_override is False
+    assert configuration["author_commit"] == (
+        "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0"
+    )
+    assert configuration["levels"] == "10"
+    assert configuration["cards"] == "155"
+    assert configuration["source_frames"] == "800"
+    assert configuration["release_substep"] == "1600"
+    assert configuration["total_substeps"] == "3200"
+    assert configuration["max_contacts"] == "4096"
+    assert configuration["max_contacts_per_pair"] == "4"
+    assert configuration["collision_shape_frames"] == "160"
+    assert configuration["ground_contact_gap_m"] == ("0.1 for the ground ShapeFrame")
+    assert configuration["dynamic_shape_contact_gap_m"] == (
+        "0.005 for the 155 card and 4 cube ShapeFrames"
+    )
+    assert any(
+        "historical Tables 6/7 invocation" in item for item in schedule.mismatches
+    )
+    assert any(
+        "gap=.1" in item and "gap=.005" in item and "159 card/cube shapes" in item
+        for item in schedule.mismatches
+    )
+    assert any("87 of 120 substeps" in item for item in schedule.mismatches)
+    assert any("no strict trajectory oracle" in item for item in schedule.mismatches)
+    assert schedule.known_gate_blockers
+    assert plan["evidence_ready"] is False
+    assert "--collision-detector" not in command
+    assert module.HEADLESS_EXACT_FBF_FAIL_FAST_FLAG in command
+    assert command[command.index("--steps") + 1] == "3200"
+    shot_value = f"1600:{module._frame_path(Path('/tmp/out'), 1600)}"
+    assert command.index(shot_value) < command.index("1600:p")
+
+    boxed = module._derive_boxed_schedule(schedule)
+    assert boxed.source_schedule_id == schedule.id
+    assert boxed.solver_lane == "boxed"
+    assert boxed.scene == schedule.scene
+    assert boxed.actions == schedule.actions
+    assert boxed.time_step_seconds == schedule.time_step_seconds
+    assert boxed.pre_run_actions == ("e",)
+    assert boxed.exact_fbf_required is False
+
+    resolved, skips = module._resolve_solver_lanes([schedule], "both")
+    assert [item.id for item in resolved] == [schedule.id, boxed.id]
+    assert skips == []
 
 
 def test_author_card_house_impact_schedule_is_source_selected_and_fail_closed():
