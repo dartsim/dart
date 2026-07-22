@@ -70,12 +70,18 @@ namespace fbf_author_masonry_arch_adapter {
 
 inline constexpr const char* kContractSchema
     = "dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1";
+inline constexpr const char* kSourceContinuationContractSchema
+    = "dart.fbf_author_masonry_arch_crown_impact_source_continuation_dart_"
+      "adapter/v1";
 inline constexpr const char* kContractSchema101
     = "dart.fbf_author_masonry_arch_standing_dart_adapter/v1";
 inline constexpr const char* kContractKind
     = "source_configuration_dynamics_adapter";
 inline constexpr const char* kDemoSceneId
     = "fbf_author_masonry_arch_25_crown_impact_current_source";
+inline constexpr const char* kSourceContinuationDemoSceneId
+    = "fbf_author_masonry_arch_25_crown_impact_source_continuation_current_"
+      "source";
 inline constexpr const char* kDemoSceneId101
     = "fbf_author_masonry_arch_101_standing_current_source";
 inline constexpr std::size_t kEvidenceFrameCount = 500u;
@@ -101,6 +107,34 @@ inline constexpr double kDartStepSizeScale = 35.0;
 inline constexpr double kDartOuterRelaxation = 1.1;
 inline constexpr int kDartInnerMaxSweeps = 30;
 inline constexpr int kDartInnerLocalIterations = 1;
+inline constexpr int kSourceContinuationMaxOuterIterations = 200;
+inline constexpr int kSourceContinuationResidualHistorySamples = 64;
+inline constexpr int kSourceContinuationResidualHistoryRecords = 4096;
+inline constexpr int kSourceContinuationResidualCheckInterval = 5;
+inline constexpr int kSourceContinuationPlateauPatience = 5;
+inline constexpr double kSourceContinuationPlateauRelativeTolerance = 0.01;
+inline constexpr int kSourceContinuationStepSizeBacktrackLimit = 8;
+inline constexpr double kSourceContinuationCouplingVariationSkipThreshold
+    = 1e-10;
+inline constexpr double kSourceContinuationWarmStartMatchDistance = 0.02;
+inline constexpr double kSourceContinuationWarmStartNormalCosine = 0.9;
+inline constexpr int kSourceContinuationWarmStartMaxAge = 3;
+inline constexpr double kSourceContinuationPersistentStepSizeSafeBoundScale
+    = 10.0;
+inline constexpr double kSourceContinuationMinimumStepSize = 1e-6;
+inline constexpr double kSourceContinuationMaximumStepSize = 1e6;
+inline constexpr double kSourceContinuationWarmStartResidualThreshold = 1e-4;
+inline constexpr double kSourceContinuationWarmStartStepSizeCap = 1e4;
+inline constexpr const char* kSourceContinuationPolicy = "source_continuation";
+inline constexpr const char* kSourceContinuationStrictConvergenceComparison
+    = "<";
+inline constexpr const char* kSourceContinuationInitialResidual
+    = "natural_map_unscaled";
+inline constexpr const char* kSourceContinuationSampledResidual
+    = "coulomb_rel_dimensionless";
+inline constexpr const char* kSourceContinuationPlateauMetric = "natural";
+inline constexpr const char* kSourceContinuationSmallChangeAction = "accept";
+inline constexpr const char* kSourceContinuationShrinkCapAction = "shrink_cap";
 
 // The 101-stone lane has a local DART standing oracle, deliberately separate
 // from any source/paper outcome-equivalence claim. The displacement and crown
@@ -144,6 +178,12 @@ inline constexpr AdapterScenarioSpec kAdapterScenario25{
     kDemoSceneId,
     kEvidenceFrameCount,
     true};
+inline constexpr AdapterScenarioSpec kSourceContinuationAdapterScenario25{
+    fbf_author_masonry_arch::SourceScenario::Arch25,
+    kSourceContinuationContractSchema,
+    kSourceContinuationDemoSceneId,
+    kEvidenceFrameCount,
+    true};
 
 inline constexpr AdapterScenarioSpec kAdapterScenario101{
     fbf_author_masonry_arch::SourceScenario::Arch101,
@@ -164,6 +204,17 @@ inline const AdapterScenarioSpec& adapterScenarioSpec(
   }
   throw std::invalid_argument(
       "author masonry-arch adapter scenario is invalid");
+}
+
+//==============================================================================
+inline const AdapterScenarioSpec& sourceContinuationAdapterScenarioSpec(
+    fbf_author_masonry_arch::SourceScenario scenario)
+{
+  if (scenario != fbf_author_masonry_arch::SourceScenario::Arch25) {
+    throw std::invalid_argument(
+        "source continuation is only defined for the 25-stone author arch");
+  }
+  return kSourceContinuationAdapterScenario25;
 }
 
 //==============================================================================
@@ -257,6 +308,35 @@ makeExactOptions()
 }
 
 //==============================================================================
+inline dart::constraint::ExactCoulombFbfConstraintSolverOptions
+makeSourceContinuationExactOptions()
+{
+  auto options = makeExactOptions();
+  options.warmStartMatchDistance = kSourceContinuationWarmStartMatchDistance;
+  options.maxOuterIterations = kSourceContinuationMaxOuterIterations;
+  options.acceptOuterMaxIterations = false;
+  options.maxResidualHistorySamples = kSourceContinuationResidualHistorySamples;
+  options.maxResidualHistoryRecords = kSourceContinuationResidualHistoryRecords;
+  return options;
+}
+
+//==============================================================================
+inline dart::constraint::ExactCoulombFbfSourceContinuationOptions
+makeSourceContinuationOptions()
+{
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions options;
+  options.enabled = true;
+  options.residualCheckInterval = kSourceContinuationResidualCheckInterval;
+  options.plateauPatience = kSourceContinuationPlateauPatience;
+  options.plateauRelativeTolerance
+      = kSourceContinuationPlateauRelativeTolerance;
+  options.stepSizeBacktrackLimit = kSourceContinuationStepSizeBacktrackLimit;
+  options.couplingVariationSkipThreshold
+      = kSourceContinuationCouplingVariationSkipThreshold;
+  return options;
+}
+
+//==============================================================================
 inline dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
 makeExactCrossStepPolicyOptions()
 {
@@ -273,6 +353,28 @@ makeExactCrossStepPolicyOptions()
   options.warmStartStepSizeCap = std::numeric_limits<double>::quiet_NaN();
   options.persistUncappedStepSizeOnWarmStartCap = false;
   options.requireResidualImprovementForUnconvergedCacheSave = false;
+  return options;
+}
+
+//==============================================================================
+inline dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
+makeSourceContinuationCrossStepPolicyOptions()
+{
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions options;
+  options.warmStartMatchMode = dart::constraint::
+      ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature;
+  options.warmStartNormalCosine = kSourceContinuationWarmStartNormalCosine;
+  options.useStrictWarmStartMatchDistance = true;
+  options.warmStartMaxAge = kSourceContinuationWarmStartMaxAge;
+  options.persistentStepSizeSafeBoundScale
+      = kSourceContinuationPersistentStepSizeSafeBoundScale;
+  options.minimumStepSize = kSourceContinuationMinimumStepSize;
+  options.maximumStepSize = kSourceContinuationMaximumStepSize;
+  options.warmStartResidualThreshold
+      = kSourceContinuationWarmStartResidualThreshold;
+  options.warmStartStepSizeCap = kSourceContinuationWarmStartStepSizeCap;
+  options.persistUncappedStepSizeOnWarmStartCap = true;
+  options.requireResidualImprovementForUnconvergedCacheSave = true;
   return options;
 }
 
@@ -309,6 +411,49 @@ inline void installSolver(
             world->getConstraintSolver());
     installed->setExactCoulombCrossStepPolicyOptions(
         makeExactCrossStepPolicyOptions());
+    installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);
+    installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
+        true);
+  } else {
+    auto solver
+        = std::make_unique<dart::constraint::BoxedLcpConstraintSolver>();
+    solver->setCollisionDetector(detector);
+    solver->setNumSimulationThreads(simulationThreads);
+    world->setConstraintSolver(std::move(solver));
+  }
+
+  auto* installed = world->getConstraintSolver();
+  installed->setSplitImpulseEnabled(true);
+  auto& collisionOption = installed->getCollisionOption();
+  collisionOption.maxNumContacts = fbf_author_masonry_arch::kSourceMaxContacts;
+  collisionOption.maxNumContactsPerPair = kDartMaxContactsPerPair;
+}
+
+//==============================================================================
+inline void installSourceContinuationSolver(
+    const dart::simulation::WorldPtr& world,
+    SolverLane lane,
+    std::size_t simulationThreads = 1u)
+{
+  if (!world)
+    throw std::invalid_argument("cannot install author arch solver on null");
+
+  const auto detector = createCollisionDetector();
+  if (lane == SolverLane::ExactFbf) {
+    auto solver
+        = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
+            makeSourceContinuationExactOptions());
+    solver->setCollisionDetector(detector);
+    solver->setNumSimulationThreads(simulationThreads);
+    world->setConstraintSolver(std::move(solver));
+
+    auto* installed
+        = static_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+            world->getConstraintSolver());
+    installed->setExactCoulombCrossStepPolicyOptions(
+        makeSourceContinuationCrossStepPolicyOptions());
+    installed->setExactCoulombSourceContinuationOptions(
+        makeSourceContinuationOptions());
     installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);
     installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         true);
@@ -501,6 +646,35 @@ inline dart::simulation::WorldPtr createWorld(
 }
 
 //==============================================================================
+inline dart::simulation::WorldPtr createSourceContinuationWorld(
+    SolverLane lane, std::size_t simulationThreads = 1u)
+{
+  const auto sourceScenario = fbf_author_masonry_arch::SourceScenario::Arch25;
+  const auto& scenario
+      = fbf_author_masonry_arch::sourceScenarioSpec(sourceScenario);
+  const auto& adapterScenario
+      = sourceContinuationAdapterScenarioSpec(sourceScenario);
+  auto world = dart::simulation::World::create(adapterScenario.demoSceneId);
+  world->setTimeStep(fbf_author_masonry_arch::kRuntimeTimeStep);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setNumSimulationThreads(simulationThreads);
+
+  dart::simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  installSourceContinuationSolver(world, lane, simulationThreads);
+  world->addSkeleton(createGround());
+  for (const auto& stone :
+       fbf_author_masonry_arch::makeStoneSpecs(sourceScenario))
+    world->addSkeleton(createStone(stone, scenario.stoneCount));
+  for (const auto& cube :
+       fbf_author_masonry_arch::makeCubeSpecs(sourceScenario))
+    world->addSkeleton(createCube(cube));
+  return world;
+}
+
+//==============================================================================
 inline bool cubesReleased(const dart::simulation::WorldPtr& world)
 {
   if (!world)
@@ -532,6 +706,7 @@ struct AdapterContract
 {
   fbf_author_masonry_arch::SourceScenario sourceScenario
       = fbf_author_masonry_arch::SourceScenario::Arch25;
+  bool sourceContinuationScene = false;
   SolverLane solverLane = SolverLane::BoxedLcp;
   double timeStep = 0.0;
   Eigen::Vector3d gravity = Eigen::Vector3d::Zero();
@@ -547,6 +722,9 @@ struct AdapterContract
       exactOptions;
   std::optional<dart::constraint::ExactCoulombFbfCrossStepPolicyOptions>
       exactCrossStepOptions;
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions
+      exactSourceContinuationOptions;
+  bool exactSourceContinuationActive = false;
   double observedContactErrorReductionParameter = 0.0;
   bool cubesAreReleased = false;
   std::size_t stoneCount = 0u;
@@ -572,12 +750,18 @@ inline AdapterContract inspectAdapterContract(
 
   const auto& scenario
       = fbf_author_masonry_arch::sourceScenarioSpec(sourceScenario);
-  const auto& adapterScenario = adapterScenarioSpec(sourceScenario);
+  const bool sourceContinuationScene
+      = world->getName() == kSourceContinuationDemoSceneId;
+  const auto& adapterScenario
+      = sourceContinuationScene
+            ? sourceContinuationAdapterScenarioSpec(sourceScenario)
+            : adapterScenarioSpec(sourceScenario);
   if (world->getName() != adapterScenario.demoSceneId)
     throw std::runtime_error("author masonry-arch adapter scene id changed");
 
   AdapterContract contract;
   contract.sourceScenario = sourceScenario;
+  contract.sourceContinuationScene = sourceContinuationScene;
   contract.timeStep = world->getTimeStep();
   contract.gravity = world->getGravity();
   contract.simulationThreads = world->getNumSimulationThreads();
@@ -594,6 +778,10 @@ inline AdapterContract inspectAdapterContract(
     contract.exactOptions = exact->getExactCoulombOptions();
     contract.exactCrossStepOptions
         = exact->getExactCoulombCrossStepPolicyOptions();
+    contract.exactSourceContinuationOptions
+        = exact->getExactCoulombSourceContinuationOptions();
+    contract.exactSourceContinuationActive
+        = exact->getLastExactCoulombSourceContinuationActive();
     contract.exactColoredBlockGaussSeidelEnabled
         = exact->getExactCoulombColoredBlockGaussSeidelEnabled();
     contract.exactParticipantAffinityEnabled
@@ -1090,7 +1278,10 @@ inline std::string adapterContractJson(
 
   const auto& scenario
       = fbf_author_masonry_arch::sourceScenarioSpec(contract.sourceScenario);
-  const auto& adapterScenario = adapterScenarioSpec(contract.sourceScenario);
+  const auto& adapterScenario
+      = contract.sourceContinuationScene
+            ? sourceContinuationAdapterScenarioSpec(contract.sourceScenario)
+            : adapterScenarioSpec(contract.sourceScenario);
   if (contract.stoneCount != scenario.stoneCount
       || contract.mobileStoneCount
              != scenario.stoneCount
@@ -1098,6 +1289,17 @@ inline std::string adapterContractJson(
       || contract.cubeCount != fbf_author_masonry_arch::kCubeCount)
     throw std::invalid_argument(
         "author masonry-arch contract inventory does not match its scenario");
+  if (contract.exactOptions
+      && contract.exactSourceContinuationOptions.enabled
+             != contract.sourceContinuationScene) {
+    throw std::invalid_argument(
+        "author masonry-arch source-continuation request is inconsistent");
+  }
+  if (!contract.sourceContinuationScene
+      && contract.exactSourceContinuationActive) {
+    throw std::invalid_argument(
+        "author masonry-arch source continuation is unexpectedly active");
+  }
 
   const bool releaseWithinEvidenceHorizon
       = fbf_author_masonry_arch::releaseOccursWithinFrames(
@@ -1190,8 +1392,47 @@ inline std::string adapterContractJson(
       << ",\"colored_block_gauss_seidel_enabled\":"
       << (contract.exactColoredBlockGaussSeidelEnabled ? "true" : "false")
       << ",\"participant_affinity_enabled\":"
-      << (contract.exactParticipantAffinityEnabled ? "true" : "false")
-      << ",\"exact_options\":";
+      << (contract.exactParticipantAffinityEnabled ? "true" : "false");
+  if (contract.sourceContinuationScene) {
+    const auto& options = contract.exactSourceContinuationOptions;
+    out << ",\"source_continuation\":{\"policy\":";
+    writeJsonString(out, kSourceContinuationPolicy);
+    out << ",\"options_available\":"
+        << (contract.exactOptions ? "true" : "false") << ",\"requested\":"
+        << (contract.exactOptions && options.enabled ? "true" : "false")
+        << ",\"last_active\":"
+        << (contract.exactSourceContinuationActive ? "true" : "false")
+        << ",\"numeric_settings\":{\"residual_check_interval\":"
+        << (contract.exactOptions ? options.residualCheckInterval
+                                  : kSourceContinuationResidualCheckInterval)
+        << ",\"plateau_patience\":"
+        << (contract.exactOptions ? options.plateauPatience
+                                  : kSourceContinuationPlateauPatience)
+        << ",\"plateau_relative_tolerance\":"
+        << (contract.exactOptions ? options.plateauRelativeTolerance
+                                  : kSourceContinuationPlateauRelativeTolerance)
+        << ",\"step_size_backtrack_limit\":"
+        << (contract.exactOptions ? options.stepSizeBacktrackLimit
+                                  : kSourceContinuationStepSizeBacktrackLimit)
+        << ",\"coupling_variation_skip_threshold\":"
+        << (contract.exactOptions
+                ? options.couplingVariationSkipThreshold
+                : kSourceContinuationCouplingVariationSkipThreshold)
+        << "},\"fixed_semantics\":{\"strict_convergence_comparison\":";
+    writeJsonString(out, kSourceContinuationStrictConvergenceComparison);
+    out << ",\"iteration_zero_residual\":";
+    writeJsonString(out, kSourceContinuationInitialResidual);
+    out << ",\"sampled_termination_residual\":";
+    writeJsonString(out, kSourceContinuationSampledResidual);
+    out << ",\"plateau_metric\":";
+    writeJsonString(out, kSourceContinuationPlateauMetric);
+    out << ",\"small_change_armijo_action\":";
+    writeJsonString(out, kSourceContinuationSmallChangeAction);
+    out << ",\"line_search_cap_action\":";
+    writeJsonString(out, kSourceContinuationShrinkCapAction);
+    out << "}}";
+  }
+  out << ",\"exact_options\":";
   if (!contract.exactOptions) {
     out << "null";
   } else {

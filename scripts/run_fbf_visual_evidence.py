@@ -191,6 +191,7 @@ REQUIRED_VIDEO_SCHEDULES = {
     "masonry_arch_25": (
         "masonry_arch_25_literal_standing",
         "masonry_arch_25_author_crown_impact_current_source",
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source",
         "masonry_arch_25",
     ),
     "masonry_arch_101": ("masonry_arch_101_author_standing_current_source",),
@@ -981,6 +982,85 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         collision_detector="native",
         collision_detector_override=False,
         long_run=True,
+    ),
+    "masonry_arch_25_author_crown_impact_source_continuation_current_source": (
+        CaptureSchedule(
+            id=(
+                "masonry_arch_25_author_crown_impact_source_continuation_"
+                "current_source"
+            ),
+            scene=(
+                "fbf_author_masonry_arch_25_crown_impact_source_continuation_"
+                "current_source"
+            ),
+            title=("Author-pinned 25-stone arch crown-impact source-continuation lane"),
+            source_segment="masonry_arch_25",
+            total_steps=2000,
+            frame_stride=8,
+            panel_steps=(0, 1200, 1600, 1945, 2000),
+            panel_labels=(
+                "initial source configuration",
+                "pre-release source frame 300 (t=5s)",
+                "pre-release source frame 400 (t=6.67s)",
+                "post-release probe (t=8.10s)",
+                "declared frame-500 endpoint (t=8.33s)",
+            ),
+            configuration=(
+                (
+                    "author_commit",
+                    "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+                ),
+                ("stones", "25 author-pinned tapered meshes"),
+                ("mobile_stones", "23; both springers fixed"),
+                ("cubes", "3; initially kinematic"),
+                ("mu", "0.8"),
+                ("simulation_time_step_seconds", "1/240"),
+                ("display_time_step_seconds", "1/60"),
+                ("substeps_per_display_frame", "4"),
+                ("release_substep", "1600"),
+                ("total_substeps", "2000"),
+            )
+            + SOURCE_CONTINUATION_CONFIGURATION
+            + (
+                (
+                    "capture_invocation",
+                    "declared 500-frame current-source diagnostic",
+                ),
+            ),
+            mismatches=(
+                COMMON_DART_MISMATCH[0],
+                "This separate exact lane ports bounded source-continuation "
+                "decisions into the DART adapter; it does not reproduce the "
+                "authors' Warp/Newton float32 collision or linear-algebra backend.",
+                "The checked-in source default is 400 frames with drop_frame=400, "
+                "so it ends without releasing the cubes. This 500-frame invocation "
+                "is a declared current-source diagnostic, not a historical paper run.",
+                "The author repository supplies no historical paper camera, "
+                "materials, lighting, approved frame golden, trajectory oracle, or "
+                "physical-outcome oracle.",
+            ),
+            known_gate_blockers=(),
+            boxed_comparison_mismatches=(
+                COMMON_DART_MISMATCH[0],
+                "This same-physics comparison selects DART's existing boxed-LCP "
+                "solver with source continuation disabled; it is comparison media, "
+                "not exact-FBF or source/paper evidence.",
+                "The checked-in source default is 400 frames with drop_frame=400, "
+                "so the declared 500-frame release invocation is not a recovered "
+                "historical paper run.",
+                "The author repository supplies no approved camera, rendering "
+                "golden, trajectory oracle, or physical-outcome oracle.",
+            ),
+            boxed_comparison_gate_blockers=(),
+            actions=(
+                ScheduledAction(1600, "p", "release the three existing source cubes"),
+            ),
+            time_step_seconds=1.0 / 240.0,
+            collision_detector="native",
+            collision_detector_override=False,
+            source_continuation_required=True,
+            long_run=True,
+        )
     ),
     "masonry_arch_25": CaptureSchedule(
         id="masonry_arch_25",
@@ -2736,6 +2816,7 @@ def _author_masonry_arch_source_schedule_id(
     schedule_id = schedule.source_schedule_id or schedule.id
     if schedule_id in {
         "masonry_arch_25_author_crown_impact_current_source",
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source",
         "masonry_arch_101_author_standing_current_source",
     }:
         return schedule_id
@@ -2807,6 +2888,14 @@ def _is_author_card_house_source_continuation_schedule(
         "card_house_author_4_impact_source_continuation_current_source",
         "card_house_author_10_impact_source_continuation_current_source",
     }
+
+
+def _is_author_masonry_arch_source_continuation_schedule(
+    schedule: CaptureSchedule,
+) -> bool:
+    return (schedule.source_schedule_id or schedule.id) == (
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source"
+    )
 
 
 def _is_finite_number(value: Any) -> bool:
@@ -3922,11 +4011,13 @@ def _validate_literal_masonry_arch_contract(
     }
 
 
-def _expected_author_masonry_arch_solver_contract(solver_lane: str) -> dict[str, Any]:
+def _expected_author_masonry_arch_solver_contract(
+    solver_lane: str, *, source_continuation: bool = False
+) -> dict[str, Any]:
     if solver_lane not in SOLVER_LANES:
         raise ValueError(f"unsupported author arch solver lane {solver_lane!r}")
     exact = solver_lane == "exact"
-    return {
+    contract = {
         "lane": "exact_fbf" if exact else "boxed_lcp",
         "split_impulse_enabled": True,
         "colored_block_gauss_seidel_enabled": exact,
@@ -3995,6 +4086,54 @@ def _expected_author_masonry_arch_solver_contract(solver_lane: str) -> dict[str,
             else None
         ),
     }
+    if not source_continuation:
+        return contract
+
+    contract["source_continuation"] = {
+        "policy": "source_continuation",
+        "options_available": exact,
+        "requested": exact,
+        "last_active": False,
+        "numeric_settings": {
+            "residual_check_interval": 5,
+            "plateau_patience": 5,
+            "plateau_relative_tolerance": 0.01,
+            "step_size_backtrack_limit": 8,
+            "coupling_variation_skip_threshold": 1e-10,
+        },
+        "fixed_semantics": {
+            "strict_convergence_comparison": "<",
+            "iteration_zero_residual": "natural_map_unscaled",
+            "sampled_termination_residual": "coulomb_rel_dimensionless",
+            "plateau_metric": "natural",
+            "small_change_armijo_action": "accept",
+            "line_search_cap_action": "shrink_cap",
+        },
+    }
+    if exact:
+        contract["exact_options"].update(
+            {
+                "warm_start_match_distance": 0.02,
+                "max_outer_iterations": 200,
+                "accept_outer_max_iterations": False,
+                "max_residual_history_samples": 64,
+                "max_residual_history_records": 4096,
+            }
+        )
+        contract["cross_step_options"] = {
+            "warm_start_match_mode": "ordered_body_b_local_feature",
+            "warm_start_normal_cosine": 0.9,
+            "strict_warm_start_match_distance": True,
+            "warm_start_max_age": 3,
+            "persistent_step_size_safe_bound_scale": 10.0,
+            "minimum_step_size": 1e-6,
+            "maximum_step_size": 1e6,
+            "warm_start_residual_threshold": 1e-4,
+            "warm_start_step_size_cap": 1e4,
+            "persist_uncapped_step_size_on_warm_start_cap": True,
+            "require_residual_improvement_for_unconverged_cache_save": True,
+        }
+    return contract
 
 
 def _expected_author_card_house_solver_contract(
@@ -4711,6 +4850,15 @@ def _validate_author_masonry_arch_adapter_contract(
             "interactive_action_semantics": "not_registered_for_standing_lane",
         },
     }
+    scenarios[
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source"
+    ] = {
+        **scenarios["masonry_arch_25_author_crown_impact_current_source"],
+        "schema_version": (
+            "dart.fbf_author_masonry_arch_crown_impact_source_continuation_"
+            "dart_adapter/v1"
+        ),
+    }
     scenario = scenarios[source_schedule_id]
 
     contract = data.get("physics_contract")
@@ -4812,7 +4960,12 @@ def _validate_author_masonry_arch_adapter_contract(
 
     solver = adapter.get("solver")
     expected_lane = "exact_fbf" if schedule.solver_lane == "exact" else "boxed_lcp"
-    if solver != _expected_author_masonry_arch_solver_contract(schedule.solver_lane):
+    if solver != _expected_author_masonry_arch_solver_contract(
+        schedule.solver_lane,
+        source_continuation=(
+            _is_author_masonry_arch_source_continuation_schedule(schedule)
+        ),
+    ):
         raise ValueError(f"{sidecar_path}: author arch solver contract changed")
     if adapter.get("process_state") != {"observed_contact_erp": 0.0}:
         raise ValueError(f"{sidecar_path}: author arch scoped ERP is not zero")

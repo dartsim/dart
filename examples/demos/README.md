@@ -33,6 +33,7 @@ pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_cur
 pixi run demos -- --scene fbf_author_card_house_10_impact_current_source
 pixi run demos -- --scene fbf_author_card_house_10_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
+pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
 pixi run demos -- --scene fbf_author_painleve_mu_0_5
@@ -129,6 +130,16 @@ completed substep 1600. DART Native collision, split impulse, float64
 arithmetic, exact/boxed solvers, camera, and rendering remain adapter choices;
 the scene does not claim source trajectory/outcome, the paper's 100-contact
 timing row, Fig. 7/video parity, or timing comparability.
+
+`fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source`
+is a separately named policy lane over the same geometry, collision frontend,
+clock, 2,000-substep horizon, and completed-step 1,600 cube release. Its exact
+solver requests bounded source-continuation termination plus strict
+ordered-body-B cross-step matching; switching to the boxed solver disables
+continuation without changing the scene physics. This additive lane does not
+weaken the existing strict scene and does not claim strict convergence, source
+trajectory or physical-outcome equivalence, Fig. 7/video parity, timing
+comparability, or solver superiority.
 
 For a bounded off-screen GUI smoke of one scene, use the same app through the
 Pixi capture task. The final argument is the number of deterministic simulation

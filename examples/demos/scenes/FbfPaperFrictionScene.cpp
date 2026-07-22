@@ -2335,6 +2335,73 @@ DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene()
 }
 
 //==============================================================================
+DemoScene
+makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_masonry_arch_adapter;
+  return makeFbfPaperScene(
+      kSourceContinuationDemoSceneId,
+      "FBF Author Masonry Arch 25: Crown Impact (Source Continuation)",
+      "The source-pinned 25-wedge crown-impact adapter with a separately "
+      "requested exact source-continuation policy and boxed control lane.",
+      CameraHome{
+          ::osg::Vec3d(135.0, -195.0, 110.0),
+          ::osg::Vec3d(0.0, 0.0, 28.0),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createSourceContinuationWorld(
+            authorMasonryArchSolverLane(state->solverMode));
+      },
+      fbf_author_masonry_arch::kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "This additive lane preserves the strict scene's public-author 25-wedge "
+      "geometry, fixed springers, three initially kinematic cubes, Native "
+      "FourPointPlanar collision, dt=1/240 s, and completed-step 1,600 release "
+      "action.",
+      "The exact lane requests the bounded source-continuation termination and "
+      "cross-step policy. The boxed lane preserves the same scene physics with "
+      "continuation disabled.",
+      "This is continuation evidence for a DART source-configuration adapter. "
+      "It does not claim strict convergence, source trajectory/outcome "
+      "equivalence, Fig. 7/video parity, timing comparability, or solver "
+      "superiority.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorMasonryArchControls(world);
+        ImGui::TextDisabled("Exact lane policy: source_continuation");
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return adapterContractJson(
+              inspectAdapterContract(world),
+              DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_ADAPTER_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_IMPLEMENTATION_SHA256);
+        };
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, "Release 3 source-configured cubes", [world] {
+              releaseCubes(world);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installSourceContinuationSolver(
+            world,
+            authorMasonryArchSolverLane(mode),
+            world->getNumSimulationThreads());
+      });
+}
+
+//==============================================================================
 void renderFbfAuthorMasonryArch101StandingControls(const WorldPtr& world)
 {
   ImGui::Separator();
@@ -2769,6 +2836,13 @@ DemoScene makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene()
 DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene()
 {
   return makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene
+makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceScene()
+{
+  return makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceParameterizedScene();
 }
 
 //==============================================================================
