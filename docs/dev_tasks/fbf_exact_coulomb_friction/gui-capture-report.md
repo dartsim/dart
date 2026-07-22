@@ -18,7 +18,9 @@ incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
 four-cell turntable matrix. A sixth locally finalized visual bundle records the
 author five-level construction at step zero; it remains construction-only
 evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 32 schedules. The task-wide manifest remains 29
+workflow inventory declares 33 runnable schedules, 30 of which encode MP4.
+The additional schedule is a DART-only numeric diagnostic rather than a
+paper/video row. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
@@ -430,7 +432,7 @@ Author-spec/visual-OBJ/visual-MTL/manual-inspection hashes are
 `bc86f1ef1f5fae1510f23b1586ae20efe788c499373370a66af81b06818f1b14`,
 `619352b9ac14e89a4d467dde867019e0d01540b6f11852df565f23fb26a01752`,
 and `095652d3df70a144be31be49b0e25b3265df54a3815df21742333d5fdfb4529a`.
-Current visual runner/test bindings are
+The reseal-time visual runner/test bindings are
 `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`
 and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
 This is not paper-comparable, approved-golden, timing, or real-time evidence.
@@ -522,7 +524,7 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 and subdivision 4.
 
 The demo build, 13 focused headless/continuation C++ tests, five author-incline
-production-world C++ contract tests, 359 runner Python tests, and exact/boxed
+production-world C++ contract tests, 454 runner Python tests, and exact/boxed
 contract smoke pass. The strict exact request fails closed at completed step
 35 when collision contacts jump from 44 to 68. The constrained groups are 56,
 8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact

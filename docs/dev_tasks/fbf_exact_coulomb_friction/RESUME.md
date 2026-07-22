@@ -122,6 +122,13 @@ collapsed boxed endpoint, but exact requests source continuation while boxed
 does not. This is qualitative continuation-policy evidence, not a solver-only
 A/B, strict convergence, automated outcome, superiority, or parity claim.
 Manual PR-browser upload remains pending.
+The separate ten-level colored-ordering and one-global-group diagnostics are
+now completed bounded rejects. Colored ordering stops on the same step-31,
+79-contact blocker with only `1.0000000004658036x` residual improvement; the
+global candidate fails a native-slice strict-tolerance audit after completed
+step 28. The colored scene is a registered opt-in diagnostic with its solver
+path disabled by default; the detached global patch is not shipped. Neither
+authorizes a longer run or changes the strict blocker verdict.
 The pinned-author incline sweep and sealed
 author masonry-arch negative also remain current. A separate source-pinned
 101-stone DART lane now precisely fails: strict exact stops at step 209 on an
@@ -524,7 +531,7 @@ files; pruned raw capture staging is not required.
   corroborate the classifier; they are not trace-equivalent to the rendered
   demos.
 
-Verified current-source source/binary SHA-256 identity: finalizer
+Capture-time SHA-256 identity for this current-source bundle: finalizer
 `31b2b560a3a6a7f06e514a8bc3dce9f4b766b3c4e62fe520435bfaa1e3ba77a9`,
 visual runner
 `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`,
@@ -674,7 +681,7 @@ Author-spec/visual-OBJ/visual-MTL/manual-inspection hashes are
 `bc86f1ef1f5fae1510f23b1586ae20efe788c499373370a66af81b06818f1b14`,
 `619352b9ac14e89a4d467dde867019e0d01540b6f11852df565f23fb26a01752`,
 and `095652d3df70a144be31be49b0e25b3265df54a3815df21742333d5fdfb4529a`.
-Current visual runner/test bindings are
+The reseal-time visual runner/test bindings are
 `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`
 and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
 This is not paper-comparable, approved-golden, paper-timing, or real-time
@@ -782,7 +789,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 of
 the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
 `FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 359 runner Python
+The demo build, 13 focused headless/continuation C++ tests, 454 runner Python
 tests, and exact/boxed contract smoke pass. A strict exact 100-step request fails closed at completed
 step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
@@ -1099,6 +1106,55 @@ The labeled pair still needs manual browser-composer upload and a recorded
 GitHub user-attachment URL. Read the diagnosis before changing either
 ten-level lane.
 
+### Ten-Level Strict One-Factor Diagnostic Closure
+
+The 2026-07-22 manually paired, same-binary colored-BGS A/B used one solver
+thread with affinity disabled. Serial and colored members both stopped after
+completed step 31, each on a 79-contact group after 200 iterations. No stable
+group-membership fingerprint or state-prefix hash was retained, so this is a
+same-sized-group proxy rather than proof of identical group identity. Residuals were
+`1.072805023427092e-5` and `1.0728050229273756e-5`. The absolute delta was
+`4.997164045950943e-15`, only `1.0000000004658036x` improvement. Candidate
+telemetry proves 200 colored solves, one participant, 39 manifolds, five
+colors, maximum width 10, zero dispatches, disabled affinity, and no CPU IDs.
+Reject colored ordering as this blocker discriminator: the failure did not
+move later and the improvement missed the preregistered `10x` threshold. The
+ignored durable sidecar/text root is
+`assets/sealed_diagnostics/card10_colored_bgs_2026-07-22`; `RESULTS.md` and
+`SHA256SUMS` have SHA-256
+`c5eebed4feb84b5756e42a4b70404fb2ef3c24cfc88709d0d47958eeb2fc4e2a`
+and `2f20edd5cc4baca2f98f2719d0c275c3f066abecde05ac7e717529c1e05b0e9c`,
+with all five manifest entries verified.
+
+The 2026-07-22 detached one-global-group diagnostic kept contacts, native
+partition, every `mu`, `q`, post-warm-start `lambda0`, and per-island `W`
+identical through generation 27; every candidate generation had exactly zero
+off-block `W` maximum, Frobenius, and relative Frobenius norm. Clean,
+disabled, and native-observe controls exactly reproduce the step-31 failure.
+The global candidate instead stopped after completed step 28: its 264-contact
+global solve accepted `9.783085822289067e-7` after 83 iterations, but the
+independent native-slice audit found the 39-contact island at
+`2.120936044948513e-6`. Stock native scope solved the same island at
+`9.487211884987307e-7` after 38 iterations. Reject native grouping as a
+sufficient cause: global scaling/stopping masked a native-slice violation,
+and the audit invalidated the global acceptance, so later trajectory is
+unknown.
+
+The ignored durable global root is
+`assets/sealed_diagnostics/card10_global_scope_82877`.
+`RESULTS.md`, `analysis/RESULTS.json`, the final diagnostic patch, and
+`SHA256SUMS` have SHA-256
+`af3052c38594049adc3c266449e0c13f655cf92752a0ab85ac32bd82d1b3ee62`,
+`c1724ac1dfb30550ed38400e83bc59e68bbb23df6a3510fbb900fc4dbad4b160`,
+`04316087130d87558546129a36d21aef70e5930215e3cf70f56b2999bfb6ac7b`,
+and `99dff645e0d1f55e7e6519da0557d3b385afe8c554f09d34417642439b785b90`;
+all 52 manifest entries verify. Both are numerical bounded rejects only: no
+default behavior, 100-step/3,200-step extension, visual, performance,
+source/backend, trajectory, physical, Tables 6-7, superiority, or paper-parity
+claim follows. Require a new source-backed preregistered mismatch before any
+next strict A/B, without loosening tolerance, caps, fallback, fail-fast, or
+accepted-cap policy.
+
 ### Pinned-Author Masonry-Arch Scientific Negative
 
 Preserve
@@ -1361,7 +1417,9 @@ fail-closed negative, retained in the ignored local evidence cache at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six locally finalized bundles, and
-  the visual workflow declares 32 schedules. Its validator fail-closed hashes
+  the visual workflow declares 33 runnable schedules, 30 of which encode MP4.
+  The added schedule is a DART-only numeric diagnostic, not a required paper
+  or video row. Its validator fail-closed hashes
   local bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1424,32 +1482,48 @@ explicit DART reconstruction choices, not author parameters.
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level headless/continuation C++ fixtures: 13/13 passed;
-- source-supported ten-level card-house demo/test build: passed; all four
-  `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation
-  contract. The historical step-1 blocker and predictive checkpoint
-  `3647959a188`'s exact-step-1, exact-prefix-31, and boxed-prefix-40 results
-  remain explicitly separate;
+- source-supported ten-level card-house demo/test build: passed; all five
+  `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation and
+  colored-diagnostic contracts. The historical step-1 blocker and predictive
+  checkpoint `3647959a188`'s exact-step-1, exact-prefix-31, and boxed-prefix-40
+  results remain explicitly separate;
+- colored `ConstraintSolver` filter: 3/3 passed, comprising both
+  `ExactCoulombColored*` tests and the existing default-off/copy test;
 - source-default five-level demo/test build: passed; both focused strict and
-  continuation fixtures pass, and the no-cache demo SHA-256 remains
+  continuation fixtures pass. The historical capture binary at checkpoint
+  `0e3937e6294` had SHA-256
   `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
+  current-head media reuse is pending recapture/reseal or a stable archive of
+  that binary. Current `source_binding` hashes the whole monolithic
+  `FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
+  author-scene reuse check. Before the next bulk media reseal, split per-scene
+  semantic physics provenance from the broader UI/source hash. For the
+  five-level lane, archive and rebind the exact `0e3937e6294` binary or
+  recapture at current head, then rerun exact, boxed, and group reuse
+  verification before calling current reuse green;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
 - visual runner, including source-pinned 101-stone, both ten-level card-house
   schedule/oracle contracts, the source-default five-level lane, Figure 7
-  crown-impact continuation, and the seven-cell author incline: 359/359
+  crown-impact continuation, and the seven-cell author incline: 454/454
   passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
-  source-inner setter/getter without a public class-layout change;
+  source-inner setter/getter plus all 12 nonvirtual colored-diagnostic
+  accessors. Colored state remains in implementation-side maps, with no public
+  data-member or vtable change;
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
   8/8 contained tests passed;
-- demo scene documentation verifier: 33 scenes passed; exact/boxed real
+- demo scene documentation verifier: 34 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
 - deterministic colored-scheduler stress: 1,000 runs passed; and
+- ten-level colored-diagnostic post-fix reviews: two independent read-only
+  passes `CLEAN`; per-scene semantic provenance and an automated paired
+  verifier remain nonblocking follow-ups; and
 - independent post-fix re-review of `3647959a188`: `ALLOW`.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded
@@ -1487,15 +1561,17 @@ only for an explicit live-closure recheck.
    terminal spectral-estimate, and source-seed-values candidates are rejected
    only as six bounded strict-prefix discriminators. Do not add another strict
    solver
-   knob without a source-backed, preregistered mismatch. Keep the separate
-   ten-level colored/global-scope diagnostics pending one factor at a time.
+   knob without a source-backed, preregistered mismatch. Preserve the separate
+   completed ten-level colored and global-scope bounded rejects; do not rerun
+   or extend either without a new source-backed preregistered mismatch, promote
+   colored ordering to the default, or ship the detached global patch.
    Preserve the independently reverified ten-level exact and boxed
    continuation members, the same-binary presentation-only pair, and their
    summaries. Keep the superseded interrupted step-112 attempt and partial
-   frames classified as non-evidence. Keep any global-scope probe
-   one-factor-at-a-time. Preserve the source-default five-level exact-v3,
-   boxed-v3, and labeled group-v3 roots and the strict completed-step-31
-   negative. Keep v1/v2 as superseded framing probes and never upload them.
+   frames classified as non-evidence. Preserve the source-default five-level
+   exact-v3, boxed-v3, and labeled group-v3 roots and the strict
+   completed-step-31 negative. Keep v1/v2 as superseded framing probes and
+   never upload them.
    Add only group-v3 to the browser handoff as the sixth supplemental clip;
    retain both visible policy labels and every strict/parity boundary, then
    record its user-attachment URL after browser-composer upload.

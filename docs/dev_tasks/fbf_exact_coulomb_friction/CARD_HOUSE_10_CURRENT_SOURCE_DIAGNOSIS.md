@@ -329,6 +329,105 @@ force a strict pass. Neither this continuation run nor the corrected strict
 prefix establishes source, trajectory, physical, Tables 6-7, paper, or
 solver-superiority parity.
 
+## Durable One-Factor Colored-BGS Diagnostic
+
+The separately named
+`fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source`
+scene preserves the strict ten-level current-source adapter and changes only
+`colored_block_gauss_seidel_enabled=false -> true`. The interactive host keeps
+its usual solver controls, but only the exact lane qualifies for this
+diagnostic. Its evidence schedule uses one solver thread, keeps participant
+affinity disabled, and does not request source continuation, accepted outer
+caps, fallback, a different tolerance, or a different iteration budget. The
+default strict scene and every other registered card-house scene keep colored
+BGS disabled.
+
+The bounded schedule
+`card_house_author_10_impact_colored_bgs_diagnostic_current_source` requests 40
+strict fail-fast steps with no cube release and no encoded video. Its purpose is
+to discriminate the current step-31 blocker before any longer run. The sidecar
+retains the failed group's colored-path enablement/use, solve and dispatch
+counts, participants, manifold/color counts, maximum color width, and observed
+CPU IDs even if a later island succeeds in the same step. Valid one-thread
+evidence requires colored use with positive solve/manifold/color counts, color
+width greater than one, one participant, zero dispatches, disabled affinity,
+and empty CPU-residency sets.
+
+Run a fresh strict baseline from the same binary first, then the diagnostic:
+
+```bash
+xvfb-run -a -s '-screen 0 1280x1024x24' \
+  build/default/cpp/Release/bin/dart-demos \
+  --scene fbf_author_card_house_10_impact_current_source \
+  --headless --steps 40 --threads 1 --width 640 --height 480 \
+  --headless-sidecar /tmp/card10-colored-ab/serial/timeline.json \
+  --headless-exact-fbf-fail-fast \
+  --shot /tmp/card10-colored-ab/serial/final.png
+xvfb-run -a -s '-screen 0 1280x1024x24' \
+  build/default/cpp/Release/bin/dart-demos \
+  --scene fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source \
+  --headless --steps 40 --threads 1 --width 640 --height 480 \
+  --headless-sidecar /tmp/card10-colored-ab/colored/timeline.json \
+  --headless-exact-fbf-fail-fast \
+  --shot /tmp/card10-colored-ab/colored/final.png
+```
+
+Stop if the fresh baseline does not reproduce the current-head contract. A
+candidate that fails at the same step on a same-sized group without at least a
+tenfold residual improvement rejects colored ordering as the next blocker
+discriminator. A
+later failure or 40/40 strict completion permits a separately recorded 100-step
+extension. This test changes DART manifold ordering, not the source solver's
+per-contact coloring or DART's island scope; it cannot establish parallel
+performance, source/backend equivalence, trajectory or physical parity,
+Tables 6-7 reproduction, solver superiority, video parity, or paper parity.
+The sealed result below used these two commands plus a manual contract
+normalization and threshold calculation. No single repository command yet
+orchestrates the pair or enforces the `10x` decision rule, so paired-verifier
+automation remains pending.
+
+### Sealed diagnostic result (2026-07-22)
+
+The same cache-disabled experiment `dart-demos` binary
+(`sha256=82423e799c918554f830e861df4adabe6b4095f4463a4fe5ba3d74400c98e3d7`)
+ran both 40-step members on one solver thread. Both sidecars bind demo source
+SHA-256
+`e2cc2351a3043ec8301677d990adfe2c7da2b9762499b19bd81c5e3be1559337`.
+After normalizing exactly
+`dart_adapter.scene_id` and
+`dart_adapter.solver.colored_block_gauss_seidel_enabled`, the two
+`physics_contract` objects were byte-identical. Both members stopped at
+completed step 31, each on a 79-contact failed group after 200 iterations:
+
+Shared-library symbol inspection exports all 12 additive nonvirtual
+colored-diagnostic accessors. Their state remains in implementation-side maps;
+the installed header adds no public data member or virtual method.
+
+| Member | Failed residual | Completed step | Sidecar SHA-256 |
+| --- | ---: | ---: | --- |
+| Strict serial baseline | `1.072805023427092e-5` | 31 | `40866edc2054ef921a22cd80a10cc7870c21aabcf72ef62e843db3114697aa96` |
+| Colored-BGS diagnostic | `1.0728050229273756e-5` | 31 | `a692660126feecbdb1825b08590817b4d5cee9baaf3989b83c70c79ec9f64609` |
+
+The sidecars do not retain a stable failed-group membership fingerprint or
+state-prefix hash. Matching step and contact count therefore do not establish
+that these are the identical constrained group; the comparison uses a
+same-sized-group proxy.
+
+The absolute residual delta was `4.997164045950943e-15`; the colored/serial
+ratio was `0.9999999995341964`, or only a `1.0000000004658036x`
+improvement. The retained failed-attempt telemetry proves that the candidate
+actually used the requested path: 200 colored solves, one participant, 39
+manifolds, five colors, maximum color width 10, zero dispatches, disabled
+affinity, and empty CPU-residency sets. The solver-instance counter records 506
+cumulative colored solves, including the retained 200-solve failure, while the
+serial control records zero.
+
+This **rejects colored manifold ordering as the next blocker discriminator**:
+the failure did not move later and the residual improvement was far below the
+preregistered `10x` threshold. Do not promote this candidate to the 100-step or
+3,200-step schedule. Fail-fast stopped before the requested final PNG, so this
+run is sidecar/text evidence only and makes no visual-outcome or video claim.
+
 ## Sibling Figure 7 Current-Head Control Boundary
 
 Keep the unrelated literal 25-stone standing recapture out of this ten-level

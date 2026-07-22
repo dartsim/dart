@@ -83,7 +83,7 @@ them immediately; the evidence runner invokes `p` after completed substep
 1,600. The 2,400-step schedule uses `dt=1/240 s`.
 
 The demo build, 13 focused headless/continuation C++ tests, five author-incline
-production-world C++ contract tests, 359 runner Python tests, and exact/boxed
+production-world C++ contract tests, 454 runner Python tests, and exact/boxed
 contract-smoke validators pass. The exact 100-step prefix records
 103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
 worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
@@ -250,7 +250,8 @@ source-selected row.
 
 ## Supplemental Non-Paper Source-Default Five-Level Card House
 
-The visual workflow now declares 32 schedules, including distinct strict
+The visual workflow now declares 33 runnable schedules, 30 of which encode
+MP4, including distinct strict
 `card_house_author_5_impact_current_source` and continuation
 `card_house_author_5_impact_source_continuation_current_source` schedules. They
 bind the current public no-argument five-level default: 40 cards, four
@@ -260,7 +261,8 @@ release after completed step 1,600. Both use `dt=1/240 s`, Native
 ground gap, and 44 `0.005 m` dynamic-shape gaps. This is supplemental current
 source-default evidence, not a paper row, the source-selected four-level
 Figure 6 scene, a historical Tables 6-7 invocation, or a recovered paper
-command.
+command. The added ten-level colored-BGS schedule is a DART-only numeric
+diagnostic and is not a required paper/video row.
 
 Strict exact fails closed after completed step 31, before release, on a
 39-contact group at 200 iterations. Its residual is

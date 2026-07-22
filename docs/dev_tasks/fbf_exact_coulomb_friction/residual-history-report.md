@@ -53,7 +53,81 @@ seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
-and the visual workflow declares 32 schedules.
+and the visual workflow declares 33 runnable schedules, 30 of which encode
+MP4. The added schedule is a DART-only numeric diagnostic, not a required
+paper/video row.
+
+## Ten-Level Strict One-Factor Diagnostic Closure
+
+These results are separate from the four-level Figure 6 colored/global history
+above. The 2026-07-22 ten-level manually paired, same-binary colored-BGS A/B
+used one solver thread with participant affinity disabled. Serial and colored
+members both stopped after completed step 31, each on a 79-contact group after
+200 iterations. No stable group-membership fingerprint or state-prefix hash
+was retained, so this is a same-sized-group proxy rather than proof of
+identical group identity. Their residuals were `1.072805023427092e-5` and
+`1.0728050229273756e-5`; the absolute delta was
+`4.997164045950943e-15`, the colored/serial ratio was
+`0.9999999995341964`, and the improvement was only
+`1.0000000004658036x`. Retained failure telemetry proves that the candidate
+used the requested path: 200 colored solves, one participant, 39 manifolds,
+five colors, maximum color width 10, zero dispatches, disabled affinity, and
+empty CPU-residency sets.
+
+Reject colored manifold ordering only as the next ten-level blocker
+discriminator: the failure did not move later and residual improvement was far
+below the preregistered `10x` threshold. No 100-step or 3,200-step extension
+was run. Fail-fast stopped before the requested PNG, so this is sidecar/text
+evidence only. The ignored durable sealed root is
+`assets/sealed_diagnostics/card10_colored_bgs_2026-07-22`;
+`RESULTS.md` and `SHA256SUMS` have SHA-256
+`c5eebed4feb84b5756e42a4b70404fb2ef3c24cfc88709d0d47958eeb2fc4e2a`
+and `2f20edd5cc4baca2f98f2719d0c275c3f066abecde05ac7e717529c1e05b0e9c`,
+and all five manifest entries verify.
+
+The 2026-07-22 detached one-global-group diagnostic first proves its controls:
+clean, diagnostic-disabled, and native-observe runs reproduce the frozen
+step-31 failure exactly, including 558 attempts, 557 successful solves, one
+failure, zero accepted caps/fallbacks, 540 warm starts, 304 final contacts,
+and the same 79-contact residual `1.072805023427092e-5`. The global candidate
+instead stops after completed step 28. At generation 27 its one 264-contact
+production solve reports success after 83 iterations at global residual
+`9.783085822289067e-7`, but the independent audit evaluates the 39-contact
+native island at `2.120936044948513e-6`, above the frozen `1e-6` tolerance.
+Stock native scope solves the same island after 38 iterations at
+`9.487211884987307e-7`.
+
+Contact order and multiset, the complete native partition, every `mu`, `q`,
+post-warm-start `lambda0`, and every per-island `W` are identical through
+generation 27. Candidate off-block `W` maximum, Frobenius, and relative
+Frobenius norms are exactly zero in all 28 generations; reactions first differ
+at generation 27. Maximum observed contacts are 304, below capacity 4,096,
+and no solve accepts a cap, uses fallback, hits the line-search shrink cap, or
+reports nonfinite telemetry. Thus native grouping is rejected as a sufficient
+cause. Global spectral/residual scaling and stopping instead mask a strict
+native-slice violation. The audit deliberately invalidates the globally
+accepted reaction, so the ungated trajectory after step 28 is unknown; no
+longer run was performed.
+
+The sealed global evidence root is
+`assets/sealed_diagnostics/card10_global_scope_82877`. `RESULTS.md`,
+`analysis/RESULTS.json`, the final diagnostic patch, and `SHA256SUMS` have
+SHA-256
+`af3052c38594049adc3c266449e0c13f655cf92752a0ab85ac32bd82d1b3ee62`,
+`c1724ac1dfb30550ed38400e83bc59e68bbb23df6a3510fbb900fc4dbad4b160`,
+`04316087130d87558546129a36d21aef70e5930215e3cf70f56b2999bfb6ac7b`,
+and `99dff645e0d1f55e7e6519da0557d3b385afe8c554f09d34417642439b785b90`;
+all 52 manifest entries verify. In-process FNV fingerprints are diagnostic,
+not cryptographic; whole logs and outputs are sealed with SHA-256.
+
+Both ten-level results are numerical bounded rejects only. The colored scene is
+registered as an opt-in runnable diagnostic while its solver path remains
+disabled by default; the detached global patch is not shipped. Neither
+supplies a Figure 9 per-outer history or supports visual, performance,
+source/backend, trajectory, physical, Tables 6-7, superiority, or paper-parity
+claims. Any further strict A/B requires a new
+source-backed preregistered mismatch and must preserve tolerance, caps,
+fallback, fail-fast, and accepted-cap policy.
 
 ## Prior-Source Strict Full-Card Evidence
 
@@ -872,7 +946,7 @@ trace summary
 `c50ad532d1c95564c2dc7d236ebb263e83932cafcd0ec77013ed8a433336ab22`,
 verification
 `455da7686eaeeb989e0d122c4724ea66ff161e8d652230eff9fb8ad20590bacd`.
-Current visual runner/test bindings are
+The reseal-time visual runner/test bindings are
 `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`
 and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
 The six-field capture/trace projections are byte-identical for all four cells,

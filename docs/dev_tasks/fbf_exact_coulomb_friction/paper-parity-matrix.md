@@ -4,7 +4,9 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six locally finalized
-bundles, and the visual workflow declares 32 schedules.
+bundles, and the visual workflow declares 33 runnable schedules, 30 of which
+encode MP4. The additional schedule is a DART-only numeric diagnostic rather
+than a paper/video row.
 
 ## Source And Comparability Boundary
 
@@ -616,7 +618,7 @@ Author-spec/visual-OBJ/visual-MTL/manual-inspection hashes are
 `bc86f1ef1f5fae1510f23b1586ae20efe788c499373370a66af81b06818f1b14`,
 `619352b9ac14e89a4d467dde867019e0d01540b6f11852df565f23fb26a01752`,
 and `095652d3df70a144be31be49b0e25b3265df54a3815df21742333d5fdfb4529a`.
-Current visual runner/test bindings are
+The reseal-time visual runner/test bindings are
 `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`
 and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
 It is not paper-comparable, approved-golden, paper-timing, or real-time
@@ -809,8 +811,8 @@ constraint-solver tests, 66/66 `ConstraintSolver` tests, 50/50 Native-collision
 tests, 13/13 `SplitImpulse` tests, 3/3 masonry-wedge-dynamics tests, 39 passing
 paper fixtures with 3 skipped,
 9/9 focused CTests in both Release and Debug, 8/8 author-masonry adapter tests,
-5/5 author-incline production-world contract tests, 359/359 visual-runner tests,
-33/33 demo scene-doc contracts, 64/64 author-incline finalizer
+5/5 author-incline production-world contract tests, 454/454 visual-runner tests,
+34/34 demo scene-doc contracts, 64/64 author-incline finalizer
 tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. With the compact local incline bundle present,
@@ -834,10 +836,15 @@ hashes). The last live audit before five-level checkpoint `0e3937e6294` found
 PR #3377 open and draft at remote head `c5765b37a08`, targeting
 `6a1d377f616`. The five-level implementation/media is bound to
 `0e3937e6294`; the older Figures 1-5 reseal remains separately bound to
-`c95bd5fb916`. Target ancestry, topic head, divergence, merge state, checks,
-and reviews are intentionally not frozen into this matrix; fetch and query
-them live before reporting or publishing. PR #3377 remains work in progress
-and is not completion evidence.
+`c95bd5fb916`. The five-level bundle is historical capture identity rather
+than current-head reuse evidence: archive and rebind its exact capture binary
+or recapture/reseal at current head, then rerun exact, boxed, and group reuse
+verification. The current whole-file `source_binding` should be split into a
+per-scene semantic physics hash plus broader UI/source provenance before the
+next bulk media reseal. Target ancestry, topic head, divergence, merge state,
+checks, and reviews are intentionally not frozen into this matrix; fetch and
+query them live before reporting or publishing. PR #3377 remains work in
+progress and is not completion evidence.
 `PR_REPORT.md` records the live-verification policy and historical
 branch-regression versus base/workflow CI classification.
 

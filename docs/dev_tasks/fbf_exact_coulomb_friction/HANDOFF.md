@@ -135,8 +135,11 @@ PR truth:
   evidence.
 - Five-level implementation/media is bound to 0e3937e6294 and demo SHA-256
   74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067.
-  The older Figures 1-5 reseal remains separately bound to c95bd5fb916; later
-  documentation-only checkpoints change neither binary/media identity.
+  This is historical capture identity. Its metadata points at the mutable
+  build path, which now resolves to a later binary, and current-head reuse also
+  fails the source-hash gate. Reuse validation is pending a stable
+  capture-binary archive or a current-head recapture/reseal. The older Figures
+  1-5 reseal remains separately bound to c95bd5fb916.
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
 
@@ -509,7 +512,7 @@ Historical finalized Painleve proxy visual truth:
   0.03836187995520213 m before the mu=.50 rest distance.
 - Manual inspection records the mu=.50 upright return and the mu=.55
   tumble/horizontal final presentation.
-- Verified current-source source/binary SHA-256 identity:
+- Capture-time SHA-256 identity for this current-source bundle:
   - finalizer: 31b2b560a3a6a7f06e514a8bc3dce9f4b766b3c4e62fe520435bfaa1e3ba77a9
   - visual runner: d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432
   - visual runner test: 6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e
@@ -754,7 +757,7 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 13 headless/continuation C++ tests, 359 visual-runner Python
+- The demo build, 13 headless/continuation C++ tests, 454 visual-runner Python
   tests, and exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
@@ -1078,11 +1081,54 @@ Source-supported ten-level card-house truth:
   continuation while boxed does not. This is not a solver-only A/B, automated
   physical outcome, strict convergence, performance/superiority, or parity
   result.
+- The 2026-07-22 manually paired, same-binary, one-thread colored-BGS A/B is a
+  completed bounded reject. Serial and colored both stop after completed step
+  31 on a 79-contact group in each run after 200 iterations. No stable
+  group-membership fingerprint or state-prefix hash was retained, so this is a
+  same-sized-group proxy rather than proof of identical group identity. The residuals are
+  1.072805023427092e-5 and 1.0728050229273756e-5. The absolute delta is
+  4.997164045950943e-15 and the improvement is only
+  1.0000000004658036x, far below the preregistered 10x threshold. Retained
+  telemetry proves 200 colored solves, one participant, 39 manifolds, five
+  colors, maximum width 10, zero dispatches, disabled affinity, and no CPU
+  IDs. Do not extend this candidate.
+- The ignored durable colored sidecar/text root is
+  `assets/sealed_diagnostics/card10_colored_bgs_2026-07-22`.
+  `RESULTS.md` and `SHA256SUMS` have SHA-256
+  c5eebed4feb84b5756e42a4b70404fb2ef3c24cfc88709d0d47958eeb2fc4e2a
+  and 2f20edd5cc4baca2f98f2719d0c275c3f066abecde05ac7e717529c1e05b0e9c;
+  all five manifest entries verify.
+- The 2026-07-22 detached one-global-group diagnostic is also a completed
+  bounded reject. Clean, disabled, and native-observe controls reproduce the
+  step-31 failure exactly. Candidate and native inputs retain identical
+  contacts, native partition, every `mu`, `q`, post-warm-start `lambda0`, and
+  per-island `W` through generation 27; off-block `W` maximum, Frobenius, and
+  relative Frobenius norms are exactly zero in every candidate generation.
+  The global candidate instead stops after completed step 28. Its 264-contact
+  production solve accepts 9.783085822289067e-7 after 83 iterations, while
+  the independent native-slice audit finds the 39-contact island at
+  2.120936044948513e-6. Stock native solves that same island at
+  9.487211884987307e-7 after 38 iterations. Reject native grouping as a
+  sufficient cause: global scaling/stopping masked a strict native-slice
+  violation. The audit invalidated that acceptance, so later trajectory is
+  unknown.
+- The ignored durable global evidence root is
+  `assets/sealed_diagnostics/card10_global_scope_82877`.
+  `RESULTS.md`, `analysis/RESULTS.json`, the final patch, and `SHA256SUMS` have
+  SHA-256
+  af3052c38594049adc3c266449e0c13f655cf92752a0ab85ac32bd82d1b3ee62,
+  c1724ac1dfb30550ed38400e83bc59e68bbb23df6a3510fbb900fc4dbad4b160,
+  04316087130d87558546129a36d21aef70e5930215e3cf70f56b2999bfb6ac7b,
+  and 99dff645e0d1f55e7e6519da0557d3b385afe8c554f09d34417642439b785b90;
+  all 52 manifest entries verify.
 - No source/paper physical parity, Tables 6-7 parity, strict convergence,
   trajectory parity, or solver superiority follows. The labeled pair still
   requires manual PR-browser-composer upload and a recorded user-attachment
-  URL. For this ten-level lane, colored scheduling and source-global scope both
-  remain pending one-factor diagnostics; do not loosen tolerance, caps,
+  URL. Both completed diagnostics are numerical bounded rejects only: neither
+  ships default behavior, permits a 100-step/3,200-step extension, or supports
+  visual, performance, source/backend, trajectory, physical, Tables 6-7,
+  superiority, or paper-parity claims. A new strict A/B requires a new
+  source-backed preregistered mismatch; do not loosen tolerance, caps,
   fallback, accepted-cap, or fail-fast policy. See
   CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
 
@@ -1340,7 +1386,9 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six locally finalized bundles, and the visual
-  workflow declares 32 schedules; validator passes and fail-closed hashes local
+  workflow declares 33 runnable schedules, 30 of which encode MP4. The added
+  schedule is a DART-only numeric diagnostic, not a required paper/video row;
+  the validator passes and fail-closed hashes local
   bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1416,14 +1464,25 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level headless/continuation C++ fixtures passed 13/13;
-- source-supported ten-level card-house demo/test build passed; all four
-  `AuthorCardHouseTenLevel*` C++ tests now pass, including the continuation
-  contract. The older pushed checkpoint's step-1 failure remains historical.
-  Predictive checkpoint `3647959a188` clears exact step 1 and has the separate
-  completed-step-31 / boxed-step-40 evidence above;
-- source-default five-level demo/test build passed; both focused strict and
-  continuation fixtures pass, and the no-cache demo SHA-256 remains
+- source-supported ten-level card-house demo/test build passed; all five
+  `AuthorCardHouseTenLevel*` C++ tests now pass, including the continuation and
+  colored-diagnostic contracts. The older pushed checkpoint's step-1 failure
+  remains historical. Predictive checkpoint `3647959a188` clears exact step 1
+  and has the separate completed-step-31 / boxed-step-40 evidence above;
+- colored `ConstraintSolver` filter: 3/3 passed, comprising the two
+  `ExactCoulombColored*` tests and the existing default-off/copy test;
+- source-default five-level demo/test build passed and both focused strict and
+  continuation fixtures pass. The historical capture binary at checkpoint
+  `0e3937e6294` had SHA-256
   `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
+  current-head media reuse is pending recapture/reseal or a stable archive of
+  that binary. Current `source_binding` hashes the whole monolithic
+  `FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
+  author-scene reuse check. Before the next bulk media reseal, split per-scene
+  semantic physics provenance from the broader UI/source hash. For the
+  five-level lane, archive and rebind the exact `0e3937e6294` binary or
+  recapture at current head, then rerun exact, boxed, and group reuse
+  verification before calling current reuse green;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
@@ -1432,17 +1491,19 @@ Latest recorded focused gates:
   paper fixtures 36 passed with 3 explicit opt-in skips;
 - visual runner, including source-pinned 101-stone, both ten-level card-house
   schedule/oracle contracts, the source-default five-level lane, and Figure 7
-  crown-impact continuation, passed 359/359, including the seven-cell author
+  crown-impact continuation, passed 454/454, including the seven-cell author
   incline;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
-  source-inner setter/getter without a public class-layout change;
+  source-inner setter/getter plus all 12 nonvirtual colored-diagnostic
+  accessors. Colored state remains in implementation-side maps, with no public
+  data-member or vtable change;
 - four-level exact and boxed adapter contract smoke passed;
 - the earlier Clang/FreeBSD polymorphic-`typeid` compile failure was fixed
   before implementation/media head c95bd5fb916; a Clang 22 warning-as-error
   syntax check passes, while current remote confirmation must be read live;
 - author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
-- demo scene documentation verifier: 33 scenes passed; exact/boxed real
+- demo scene documentation verifier: 34 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
@@ -1450,6 +1511,9 @@ Latest recorded focused gates:
   skipped, while explicit archive mode reports zero live rechecks and 118
   skipped; and
 - deterministic colored-scheduler stress 1,000 runs passed; and
+- ten-level colored-diagnostic post-fix reviews: two independent read-only
+  passes `CLEAN`; per-scene semantic provenance and an automated paired
+  verifier remain nonblocking follow-ups; and
 - independent post-fix re-review of checkpoint `3647959a188`: `ALLOW`.
 
 That sealed live closure resolved `libdart.so.6.19` to the recorded
@@ -1494,9 +1558,11 @@ Immediate order:
    spectral-estimate, and source-seed-values results. Preserve all six bounded
    rejects. Require a new
    source-backed, preregistered mismatch
-   before another four-level strict solver A/B. Keep ten-level colored
-   scheduling and global-scope diagnostics pending one factor at a time
-   without loosening tolerance or caps. Use the ignored c95-bound
+   before another four-level strict solver A/B. Preserve the completed
+   ten-level colored and global-scope bounded rejects; do not rerun or extend
+   either without a new source-backed preregistered mismatch, promote colored
+   ordering to the default, or ship the detached global patch, and do not
+   loosen tolerance or caps. Use the ignored c95-bound
    c95bd5fb916 reseal as the retained Figures 1-2 and 4-5 upload source; use
    the source-pinned author capture for Figure 3. Upload any
    final labeled pair only through the PR browser composer and
