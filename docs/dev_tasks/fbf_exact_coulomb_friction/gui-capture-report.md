@@ -18,11 +18,11 @@ incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
 four-cell turntable matrix. A sixth locally finalized visual bundle records the
 author five-level construction at step zero; it remains construction-only
 evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 31 schedules. The task-wide manifest remains 29
+workflow inventory declares 32 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 
-The authoritative ignored Figures 1-5 browser-upload source is the
+The retained ignored Figures 1-2 and 4-5 browser-upload source is the
 implementation/media-head `assets/pr_media_current_head_c95_small_rows/`
 reseal. At
 implementation head `c95bd5fb916`, its capture summary passes with 20 member
@@ -32,15 +32,16 @@ author-turntable schedules/group; summary SHA-256 is
 Independent reuse verification passes with the same 20 members, 13 groups,
 and five expected skips; summary SHA-256 is
 `264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
-Fresh temporal panels confirm visible checker/coral-tile rotation in Figure 3
-and the Painleve `mu=.55` divergence. Byte-identical c95-bound clip hashes
+Historical c95 temporal panels confirm visible checker/coral-tile rotation in
+the reconstructed Figure 3 lane and the Painleve `mu=.55` divergence. The
+source-pinned author capture supersedes that Figure 3 media. Byte-identical c95-bound clip hashes
 preserve the prior timeline/clip-audited turntable classifications. The bundle is
 ignored local state, not repository media; PR user-attachment URLs are still
 pending browser-composer upload.
 
 The consolidated browser-upload manifest in
-`PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and six
-supplemental direct comparisons. An independent handoff audit rechecked all 15
+`PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and seven
+supplemental direct comparisons. An independent handoff audit rechecked all 16
 paths and hashes, probed H.264/yuv420p at 30 fps, and completed an
 `ffmpeg -xerror` decode for every file. This closes local upload-readiness only;
 no GitHub user-attachment URL or additional physics/parity claim follows.
@@ -212,7 +213,7 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Surface | Automated artifact/solver result | Manual observation | Claim boundary |
 | --- | --- | --- | --- |
 | Combined incline | Locally finalized 21-indexed/23-physical current-source bundle; five selected local stills, a 61-frame decoded schedule, and 240/240 exact attempts/solves with zero caps/failures/fallbacks | Reconstructed `mu=.4` slide and `mu=.5` stick-threshold separation visible | Partial: independent traces corroborate the threshold, but capture contacts 8 differ from aggregate trace contacts 6; strict `paper_cpu` `mu=.5` still fails at residual `1.439e-6`, and external/paper/golden/timing/real-time proof is missing |
-| Backspin | Locally finalized 18-indexed/20-physical current-source bundle; three selected local stills, MP4/GIF media, and 129/129 exact attempts/solves | Translational reversal, checker-cell changes, and the coral registration tile are visible | Partial: trace owns reversal; no signed angular direction, continuous contact, rest, landing, full-state equivalence, or external/paper/golden/timing/real-time parity |
+| Backspin | Source-pinned author exact/boxed 240-step capture with 121-frame member/group MP4s, complete 241-state traces, sealed numeric source oracle, explicit material/process policy, and checker OBJ/MTL/PPM hash binding | Manual inspection confirms the ivory/charcoal facets visibly change orientation; trace validation owns signed `wy`, rolling, left-edge roll-off, and terminal-source tolerances | Partial: both solvers pass, so there is no superiority claim. The visual cadence aliases initial spin; source backend/full-trajectory, solver equivalence, renderer/video/golden, timing/real-time, Figure 3, and paper parity remain false |
 | Turntable 2x2 | Finalized 58-indexed/60-physical author-pinned bundle with four outcome stills; all four 360-step current visual cells are solver-valid | Segmented disc/coral wedge are legible; three cells eject and `mu=.5, omega=2` remains on support through 6 s | Partial: finite-horizon result only; no zero-slip/co-rotation, full-state, approved-golden, paper-timing, real-time, or paper-parity claim, and the separate strict lane fails the retained cell at step 40 |
 | Source-pinned Painleve exact/boxed pair | Finalized ignored bundle passes capture summary and independent verify with four 121-sample members, four 61-frame H.264/yuv420p groups, strict exact audit, full decode, and manual panel/keyframe audit | At `mu=.5` both lanes finish upright near rest; at `mu=.55` exact finishes tumbled near rest while boxed finishes upright near rest | Current-DART-adapter divergence only; no source-backend/trajectory equivalence, paper Figure 5 parity, timing comparability, or solver-superiority claim; GitHub URLs pending |
 | Historical Painleve proxy pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; it remains separate historical diagnostic evidence and does not replace the source-pinned adapter result |
@@ -318,7 +319,36 @@ failed. Fig. 1, Fig. 2, and video.03 remain `partial` without the full friction
 sweep/plot, matched external rows, approved source golden/diff, paper contact
 count, full 11 s semantic edit, paper timing, and real-time parity.
 
-The locally finalized current-source backspin bundle is
+### Source-Pinned Author Figure 3 Backspin Capture
+
+The preferred Figure 3 visual evidence is the ignored
+`assets/pr_media_author_backspin_v2/` capture for
+`fbf_author_backspin_current_source` / `backspin_author_current_source`.
+Capture and independent reuse verification pass for two members and one group,
+with summary SHA-256 values
+`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
+`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+Exact and boxed both complete 240 steps / 241 state samples and pass the narrow
+rolling, contiguous-support, left-edge roll-off, planar-motion, airborne
+terminal, and source-terminal-tolerance gates. Exact records 205/205 solves,
+zero accepted caps, failures, or fallbacks, with worst residual
+`9.990141261260073e-7`.
+
+The 121-frame exact member is the preferred browser upload at SHA-256
+`b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
+the 121-frame labeled exact/boxed group is supplemental at SHA-256
+`e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+Manual inspection confirms visible ivory/charcoal facet-orientation changes in
+consecutive frames and across the temporal panel. The checker mesh is
+visual-only and hash-bound before/after capture. At 30 fps the initial
+`-200 rad/s` aliases, so signed direction/rate remains trace-backed. Both
+solvers pass; the capture proves no solver equivalence/superiority, source
+backend/full-trajectory or video equivalence, timing/real-time result,
+historical Figure 3 invocation, or paper parity.
+
+### Historical Reconstructed Figure 3 Capture
+
+The locally finalized historical reconstructed backspin bundle is
 `assets/paper_evidence/fig03_backspin_current_v3/`.
 Its index binds 18 artifacts in a 20-file physical directory. The MP4/GIF
 preserve the full motion schedule, three selected local stills retain steps 0,
@@ -358,7 +388,8 @@ direction. The contact-free step rules out continuous contact; neither rest
 nor an airborne landing phase is proven. The rendered demo and CSV exporter
 are separate scenes and are not full-state trace-equivalent. External-solver,
 paper, approved-golden, timing, and real-time parity remain unproven. Both
-`fig.03` and `video.02_backspin` remain `partial`.
+`fig.03` and `video.02_backspin` remain `partial`. This c95-era bundle is no
+longer the preferred PR upload.
 
 The locally finalized author-pinned turntable bundle is
 `assets/paper_evidence/fig04_turntable_author_current_v1/`.
