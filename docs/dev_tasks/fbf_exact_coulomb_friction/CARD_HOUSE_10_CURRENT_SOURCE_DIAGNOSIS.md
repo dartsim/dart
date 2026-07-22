@@ -230,10 +230,84 @@ convergence every five sweeps; the current DART strict lane is sequential and
 runs a fixed ten sweeps. The source's first later `converged=false` row remains
 `step_idx=33`, with 460 contacts and continuation after failure.
 
-The next evidence lane should therefore be a separately named
-source-continuation ten-level video plus one-factor colored-scheduling and
-global-scope diagnostics. Do not loosen tolerance, iteration caps, fallback,
-fail-fast, or accepted-cap policy to force a strict pass. The corrected DART
-prefix remains a narrower and later blocker, not source, trajectory, physical,
-paper, or solver-superiority parity. No ten-level final video is valid yet;
-raw captures and media remain ignored local state.
+### Source-continuation final exact member
+
+The separately named scene and schedule
+`fbf_author_card_house_10_impact_source_continuation_current_source` and
+`card_house_author_10_impact_source_continuation_current_source` preserve the
+same 155-card/four-cube geometry, Native `FourPointPlanar` frontend,
+3,200-step clock, and step-1,600 `p` release. Only the exact lane requests the
+explicit source-continuation policy. This lane does not alter or satisfy the
+strict gate above.
+
+The final exact reseal passes all 3,200 requested substeps. Timeline validation
+passes with 3,201 represented steps, 401 captured/unique frames, and one
+successful release action at step 1,600. The exact lane records:
+
+- 7,702 exact attempts and 7,702 exact solves;
+- zero exact failures and zero boxed-LCP fallbacks;
+- 2,427 plateau accepts and 763 max-iteration accepts;
+- zero line-search shrink caps, 310,880 total iterations, and 7,630 warm
+  starts;
+- 1,071 maximum observed contacts and 987 final contacts; and
+- final residual `7.709159985211234e-8`, with trajectory-wide worst residual
+  `0.59964511064890469`.
+
+The decoded 660x506 H.264/yuv420p clip has 401 frames at 30 fps and duration
+13.366667 s; full decode passes. Final panel/keyframe inspection confirms that
+the full house is legible, the cubes release, post-release structural evolution
+is visible, and lower structure remains at the endpoint. That inspection is
+qualitative review only. The metadata deliberately records
+`paper_comparable=false` and
+`automated_semantic_outcome_validated=false`; there is no machine physical-
+outcome oracle or source trajectory comparison.
+
+The final local artifacts remain ignored outside Git under
+`assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/`:
+
+- timeline SHA-256:
+  `7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae`;
+- clip SHA-256:
+  `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`;
+- panel SHA-256:
+  `e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6`;
+- metadata SHA-256:
+  `223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f`.
+
+The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
+`9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2`
+and reports `pass=true`. Independent reuse verification also passes in
+352.27 s. Its separate summary `/tmp/card10_exact_final_verify.json` has
+SHA-256
+`83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e`;
+it records kind `verification`, one result, no skips or groups, full-decode
+success, and the matching metadata hash. The role-separated
+`/tmp/ten-cont-final-review-verify.json` is byte-identical at the same SHA-256.
+The exact schedule's blockers are empty only within this narrow continuation-
+evidence boundary, while the boxed
+runtime blocker remains explicit.
+
+A clean boxed control completes all 80 requested steps in about 4 minutes 46
+seconds with `BoxedLcpConstraintSolver`. Its timeline SHA-256 is
+`ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d`.
+This control is a valid bounded solver-identity/completion result, not a
+full trajectory or outcome.
+
+The corresponding full boxed capture did not complete. After approximately
+the same wall-time budget as the full exact capture (about 12 minutes 35
+seconds), boxed LCP had reached only step 112 of 3,200. The process was
+interrupted; it emitted no completed timeline sidecar. Its partial frames are
+non-evidence and must not be reused for a paired clip or outcome claim. The
+full boxed trajectory, physical outcome, and paired media therefore remain
+blocked. This bounded runtime observation does not establish solver
+superiority or a general performance result.
+
+Next, resolve the full boxed-runtime gate before producing paired media. Upload
+the final exact clip only through the PR browser composer and record the
+resulting
+`github.com/user-attachments/...` URL. Separately continue the
+one-factor colored-scheduling and global-scope diagnostics. Do not loosen
+tolerance, iteration caps, fallback, fail-fast, or accepted-cap policy to
+force a strict pass. Neither this continuation run nor the corrected strict
+prefix establishes source, trajectory, physical, Tables 6-7, paper, or
+solver-superiority parity.

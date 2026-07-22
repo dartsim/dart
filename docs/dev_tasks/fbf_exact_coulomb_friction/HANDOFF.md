@@ -689,11 +689,55 @@ Source-supported ten-level card-house truth:
   colored BGS with convergence checked every five sweeps; current DART uses
   sequential BGS with ten fixed sweeps. These are not the same operator or
   contact problem.
-- No ten-level final video is justified. Add a separately labeled
-  source-continuation ten-level video lane and test colored scheduling and
-  global solve scope one factor at a time. Do not loosen tolerance, caps,
-  fallback, accepted-cap, or fail-fast policy. See
-  CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
+- A separately labeled ten-level continuation lane is now implemented:
+  `fbf_author_card_house_10_impact_source_continuation_current_source` with
+  schedule `card_house_author_10_impact_source_continuation_current_source`.
+  It preserves the same geometry, Native frontend, 3,200-step clock, and
+  step-1,600 release; only exact requests source continuation.
+- The final exact reseal passes 3,200/3,200, and its release action succeeds.
+  It records 7,702/7,702 attempts/solves, zero failures/fallbacks,
+  2,427 plateau accepts, 763 max-iteration accepts, zero shrink caps, 310,880
+  total iterations, 7,630 warm starts, 1,071 maximum/987 final contacts, final
+  residual 7.709159985211234e-8, and worst residual
+  0.59964511064890469. Timeline validation passes with 3,201 represented
+  states and 401 captured/unique frames.
+- The decoded exact member is H.264/yuv420p, 660x506, 401 frames, 30 fps,
+  13.366667 s, and full decode passes. Metadata records
+  `paper_comparable=false` and `automated_semantic_outcome_validated=false`.
+  Final panel/keyframe inspection checks only legibility, release, visible
+  post-release evolution, and lower structure remaining; it is not a physical
+  oracle.
+- Final timeline, clip, panel, and metadata SHA-256 values are
+  7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae,
+  19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d,
+  e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6,
+  and 223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f.
+  The ignored root is
+  assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/.
+- The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
+  9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2
+  and reports pass. Independent reuse verification passes in 352.27 s. Its
+  separate `/tmp/card10_exact_final_verify.json` summary has SHA-256
+  83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e,
+  kind verification, one result, no skips or groups, full-decode success, and
+  the matching metadata hash. The role-separated
+  `/tmp/ten-cont-final-review-verify.json` is byte-identical at the same
+  SHA-256. The exact schedule has no blockers only within
+  the narrow continuation-evidence boundary.
+- A clean boxed control completes 80/80 in about 4 minutes 46 seconds with
+  BoxedLcpConstraintSolver. Timeline SHA-256 is
+  ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d.
+  This is a bounded solver-identity/completion control, not a full outcome.
+- The full boxed attempt reached only step 112/3,200 in about the same wall
+  budget, was interrupted, and has no complete timeline sidecar. Partial
+  frames are non-evidence. Full boxed outcome and paired media remain blocked;
+  this bounded runtime observation is not performance or superiority evidence.
+- No source/paper physical parity, Tables 6-7 parity, strict convergence,
+  trajectory parity, or solver superiority follows. The final exact clip still
+  requires manual PR-browser-composer upload and a recorded user-attachment
+  URL. Continue colored scheduling and global solve scope one factor at a time
+  without loosening tolerance, caps, fallback, accepted-cap, or fail-fast
+  policy. See CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
 
 Pinned-author masonry-arch truth:
 
@@ -1008,16 +1052,16 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level headless/continuation C++ fixtures passed 13/13;
-- source-supported ten-level card-house demo/test build passed; its focused C++
-  fixtures passed 3/3 and both C++ lint gates passed at the pushed checkpoint.
-  That checkpoint's step-1 failure remains historical. Predictive checkpoint
-  `3647959a188` clears exact step 1 and has the separate
+- source-supported ten-level card-house demo/test build passed; all four
+  `AuthorCardHouseTenLevel*` C++ tests now pass, including the continuation
+  contract. The older pushed checkpoint's step-1 failure remains historical.
+  Predictive checkpoint `3647959a188` clears exact step 1 and has the separate
   completed-step-31 / boxed-step-40 evidence above;
 - predictive-checkpoint gates: `ConstraintSolver` 66/66, Native
   collision detector 50/50, `SplitImpulse` 13/13, exact solver 38/38, and
   paper fixtures 36 passed with 3 explicit opt-in skips;
-- visual runner, including source-pinned 101-stone and ten-level card-house
-  schedule/oracle contracts, passed 332/332;
+- visual runner, including source-pinned 101-stone and both ten-level
+  card-house schedule/oracle contracts, passed 335/335;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -1026,7 +1070,7 @@ Latest recorded focused gates:
   fixed locally; a Clang 22 warning-as-error syntax check passes, with remote
   confirmation pending the next push;
 - author masonry-arch focused CTest: 1/1 target and 7/7 contained tests passed;
-- demo scene documentation verifier: 26 scenes passed; exact/boxed real
+- demo scene documentation verifier: 28 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
@@ -1062,10 +1106,15 @@ Immediate order:
    tolerance, caps, fallback, fail-fast, or accepted-cap policy. Diagnose the
    separate ten-level lane's corrected 79-contact post-step-31 failure under
    the same strict policies. Preserve the distinction between previous
-   checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Add a separately
-   named source-continuation ten-level video lane, then test colored scheduling
-   and global solve scope one factor at a time without loosening tolerance or
-   caps.
+   checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Preserve
+   the final, independently reverified ten-level exact continuation member.
+   Preserve
+   the clean 80-step boxed control, but treat the interrupted step-112 boxed
+   run and partial frames as non-evidence; resolve full boxed
+   runtime before paired media. Continue colored scheduling and global solve
+   scope one factor at a time without loosening tolerance or caps. Upload any
+   final exact member only through the PR browser composer and
+   record the URL.
    Independently review the completed telemetry-rich source-continuation
    capture without calling accepted finite iterates strict success; publish it
    only through the PR editor after explicit approval and record the resulting

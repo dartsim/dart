@@ -40,9 +40,15 @@ Predictive checkpoint `3647959a188` clears exact step 1, then reaches completed 
 before a 79-contact, 200-iteration group fails at residual
 `1.072805023427092e-5`; boxed completes 40. The pinned source first
 nonconverges at `step_idx=33`, but backend and contact counts differ. This is a
-later precise blocker, not source/trajectory/physical equivalence or a long
-trajectory/video result. The pinned-author
-incline sweep and sealed
+later precise strict blocker, not source/trajectory/physical equivalence. A
+separate ten-level source-continuation exact member now completes 3,200/3,200
+with 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau accepts, and
+763 max-iteration accepts. It has no automated semantic-outcome validation;
+its final reseal and independent reuse verification pass. A clean boxed
+control completes 80/80, but the full boxed
+attempt reached only step 112 in about the same wall budget, was interrupted,
+and is non-evidence. Paired media and manual PR-browser upload remain pending.
+The pinned-author incline sweep and sealed
 author masonry-arch negative also remain current. A separate source-pinned
 101-stone DART lane now precisely fails: strict exact stops at step 209 on an
 iteration cap, while boxed completes 1,600 steps but collapses. Its boxed clip
@@ -683,9 +689,53 @@ at Coulomb-relative `7.59e-7`; DART completed step 31 has 304 contacts across
 18 islands and fails one 79-contact group. Source uses colored BGS and checks
 inner convergence every five sweeps; current DART uses sequential BGS and ten
 fixed sweeps. These are not the same operator/problem. There is
-no valid long trajectory, physical outcome, final video, historical Tables 6-7
-invocation, source equivalence, or paper-parity claim. Read that diagnosis
-before changing the lane.
+no valid strict long trajectory, physical outcome, historical Tables 6-7
+invocation, source equivalence, or paper-parity claim.
+
+The separately named
+`fbf_author_card_house_10_impact_source_continuation_current_source` scene and
+`card_house_author_10_impact_source_continuation_current_source` schedule now
+provide a continuation-only full-duration lane. The final exact reseal passes
+all 3,200 steps and the step-1,600 release. It records 7,702/7,702 attempts/solves,
+zero failures/fallbacks, 2,427 plateau accepts, 763 max-iteration accepts, zero
+shrink caps, 310,880 total iterations, 7,630 warm starts, 1,071 maximum/987
+final contacts, final residual `7.709159985211234e-8`, and worst residual
+`0.59964511064890469`. Timeline validation passes with 3,201 represented
+states and 401 captured/unique frames; the decoded H.264/yuv420p member is
+660x506, 401 frames, 30 fps, and 13.366667 s, and full decode passes.
+
+The exact schedule now has no gate blockers only inside this narrow
+continuation-evidence boundary. Its metadata remains
+`paper_comparable=false` and `automated_semantic_outcome_validated=false`.
+Final panel/keyframe inspection confirms legibility, release, visible
+post-release evolution, and lower structure remaining at the endpoint, not a
+physical outcome. The final timeline, clip, panel, and metadata SHA-256 values
+are
+`7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae`,
+`19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`,
+`e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6`,
+and `223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f`.
+They are under ignored
+`assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/`.
+The separate `/tmp/card10_exact_final_summary.json` has SHA-256
+`9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2`
+and reports `pass=true`. Independent reuse verification passes in 352.27 s;
+its separate `/tmp/card10_exact_final_verify.json` summary has SHA-256
+`83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e`,
+kind `verification`, one result, no skips or groups, full-decode success, and
+the matching metadata hash. The role-separated
+`/tmp/ten-cont-final-review-verify.json` is byte-identical at the same SHA-256.
+
+A clean boxed control completes 80/80 in about 4 minutes 46 seconds with
+`BoxedLcpConstraintSolver`; timeline SHA-256 is
+`ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d`.
+The attempted full boxed capture reached only step 112 in approximately the
+same wall budget as exact and was interrupted without a complete sidecar. Its
+partial frames are non-evidence. Full boxed outcome and paired media remain
+blocked, and no runtime observation supports a general performance or solver-
+superiority claim. The final exact member still needs manual browser-
+composer upload and a recorded GitHub user-attachment URL. Read the diagnosis
+before changing either ten-level lane.
 
 ### Pinned-Author Masonry-Arch Scientific Negative
 
@@ -932,7 +982,7 @@ fail-closed negative, retained in the ignored local evidence cache at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six locally finalized bundles, and
-  the visual workflow declares 25 schedules. Its validator fail-closed hashes
+  the visual workflow declares 27 schedules. Its validator fail-closed hashes
   local bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -991,21 +1041,20 @@ explicit DART reconstruction choices, not author parameters.
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level headless/continuation C++ fixtures: 13/13 passed;
-- source-supported ten-level card-house demo/test build: passed; focused C++
-  fixtures 3/3 and both C++ lint gates passed for previous checkpoint
-  `ffe23d347b0`; its
-  historical step-1 blocker and predictive checkpoint `3647959a188`'s
-  exact-step-1, exact-prefix-31, and boxed-prefix-40 results remain explicitly
-  separate;
-- visual runner, including source-pinned 101-stone and ten-level card-house
-  schedule/oracle contracts: 332/332 passed;
+- source-supported ten-level card-house demo/test build: passed; all four
+  `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation
+  contract. The historical step-1 blocker and predictive checkpoint
+  `3647959a188`'s exact-step-1, exact-prefix-31, and boxed-prefix-40 results
+  remain explicitly separate;
+- visual runner, including source-pinned 101-stone and both ten-level
+  card-house schedule/oracle contracts: 335/335 passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
   7/7 contained tests passed;
-- demo scene documentation verifier: 26 scenes passed; exact/boxed real
+- demo scene documentation verifier: 28 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
@@ -1035,14 +1084,19 @@ only for an explicit live-closure recheck.
    and record its URL. Continue one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
-   Add a separately named source-continuation ten-level video lane, then test
-   colored scheduling and global solve scope one factor at a time. Do not
-   loosen tolerance, caps, fallback, or fail-fast. Keep predictive checkpoint
-   `3647959a188` distinct from previous checkpoint `ffe23d347b0`.
+   Preserve the final, independently reverified ten-level exact continuation
+   member and both `/tmp` summaries. Preserve the
+   clean 80-step boxed control, but treat the interrupted step-112 full attempt
+   and partial frames as non-evidence; resolve full boxed runtime before paired
+   media. Test colored scheduling and global solve scope one factor at a time.
+   Do not loosen tolerance, caps, fallback, or fail-fast. Keep predictive
+   checkpoint `3647959a188` distinct from previous checkpoint `ffe23d347b0`.
    Preserve and independently review the completed telemetry-rich continuation
    capture without calling accepted finite iterates strict success, then attach
    the paired clip to PR #3377 only with explicit approval and record the
-   resulting URL. Continue strict full-duration card work, remaining
+   resulting URL. Upload the final ten-level exact member only through the PR
+   browser composer and record its URL. Continue strict
+   full-duration card work, remaining
    smaller-figure, and
    separately declared source-equivalent impact work; manually inspect decoded
    media and do not promote v2 raw timings.

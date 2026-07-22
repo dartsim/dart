@@ -18,9 +18,10 @@ claim that DART beats the paper.
 The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six locally finalized bundles. The visual
 workflow also includes separately named strict and source-continuation
-four-level card-house schedules. The continuation schedule now has validated
-local exact/boxed media but is not a finalized strict bundle and does not
-increase the six-bundle inventory.
+four-level and ten-level card-house schedules. The four-level continuation
+schedule has validated local exact/boxed media. The ten-level continuation
+schedule has a final resealed and independently reverified exact member; the
+full boxed member remains blocked. Neither increases the six-bundle inventory.
 
 The current topic tip tracks zero files under
 `docs/dev_tasks/fbf_exact_coulomb_friction/assets/`, but the topic history still
@@ -791,12 +792,59 @@ Final local gates pass: `ConstraintSolver` 66/66, Native collision detector
 3 explicit opt-in skips, visual runner 332/332, and independent post-fix
 re-review `ALLOW`.
 
-The recommended next lane is a separately named source-continuation ten-level
-video plus one-factor colored-scheduling and global-scope diagnostics, not
-tolerance or iteration-cap loosening. All timelines are ignored local
-diagnostics, not PR media. No ten-level final video is valid or justified, and
-neither result establishes source, trajectory, physical, old-versus-new solver,
-Tables 6-7, timing, or paper parity. See
+The separately named
+`fbf_author_card_house_10_impact_source_continuation_current_source` scene and
+`card_house_author_10_impact_source_continuation_current_source` schedule are
+now implemented. They preserve the strict lane's geometry, Native frontend,
+3,200-step clock, and step-1,600 release; only exact opts into source
+continuation.
+
+The final exact reseal passes 3,200/3,200 and the release action. It records
+7,702/7,702 attempts/solves, zero failures/fallbacks, 2,427 plateau
+accepts, 763 max-iteration accepts, zero shrink caps, 310,880 total iterations,
+7,630 warm starts, 1,071 maximum/987 final contacts, final residual
+`7.709159985211234e-8`, and worst residual
+`0.59964511064890469`. Timeline validation passes with 3,201 represented
+states and 401 captured/unique frames. The 660x506 H.264/yuv420p clip contains
+401 frames at 30 fps over 13.366667 s, and full decode passes. Final
+panel/keyframe inspection confirms legibility, release, visible post-release
+evolution, and lower structure remaining at the endpoint.
+
+The schedule's exact blockers are now empty only within this narrow
+continuation-evidence boundary. Metadata keeps `paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. The final run summary reports
+`pass=true`; independent reuse verification also passes.
+
+The ignored final root is
+`assets/pr_media_final/card_house_author_10_impact_source_continuation_current_source/`.
+Timeline, clip, panel, and metadata SHA-256 values are
+`7a4b7d878f73068e10c59073b8e1260444a02529db62ab42eaf5c46425a190ae`,
+`19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`,
+`e5ed0d63ca9818292c5a373f476f2841f280f3e01492e0065b2aec8eb95a74d6`,
+and `223e828a5284f9fc6aad0b7f57ef010d58db004d85759d036f47883b3753ed9f`.
+The separate run summary `/tmp/card10_exact_final_summary.json` has SHA-256
+`9a551a96176e5112fc9f1443586c8aee115e1c25c10f766d0088efe4a088e3b2`.
+Independent reuse verification passes in 352.27 s; its separate summary
+`/tmp/card10_exact_final_verify.json` has SHA-256
+`83f9e9db5d013ab8359d5ee5dfb2d05fb4a116082d090b168ec02708ea5a348e`,
+kind `verification`, one result, no skips or groups, full-decode success, and
+the matching metadata hash. The role-separated
+`/tmp/ten-cont-final-review-verify.json` is byte-identical at the same SHA-256.
+
+A clean boxed control completes 80/80 steps in about 4 minutes 46 seconds with
+`BoxedLcpConstraintSolver`; its timeline SHA-256 is
+`ccbdc322791a06d5a8858818acae63e8540ca7770e635545e3c017d84bf96d7d`.
+That bounded control is not a full outcome. The attempted 3,200-step boxed
+capture reached only step 112 in approximately the full exact run's wall-time
+budget, was interrupted, and emitted no complete sidecar. Its partial frames
+are non-evidence. Full boxed outcome and paired media remain blocked.
+
+No ten-level media has a GitHub URL; manual browser-composer upload remains
+pending. Neither the strict prefix, the exact
+continuation member, nor the bounded boxed observations establish source,
+trajectory, physical, old-versus-new solver, Tables 6-7, timing, superiority,
+or paper parity. Continue colored-scheduling and global-scope diagnostics one
+factor at a time without tolerance or iteration-cap loosening. See
 [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md).
 
 ### Pinned-Author Masonry-Arch Scientific Negative
@@ -1098,13 +1146,13 @@ boxed negatives do not close those comparison gaps.
 - Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
   the full
   paper fixture binary reports 36 passed and 3 explicit opt-in skips.
-- Source-supported ten-level card-house build: passed; focused C++ fixtures
-  3/3 passed and both C++ lint gates passed at pushed checkpoint `ffe23d347b0`.
-  Its step-1 blocker remains historical; predictive checkpoint `3647959a188`
-  has separate exact-step-1, exact-prefix-31, and boxed-prefix-40
-  evidence.
-- Visual runner, including source-pinned 101-stone and ten-level card-house
-  schedule/oracle contracts: 332/332 passed.
+- Source-supported ten-level card-house build: passed; all four
+  `AuthorCardHouseTenLevel*` C++ tests pass, including the continuation
+  contract. Its step-1 blocker remains historical; predictive checkpoint
+  `3647959a188` has separate exact-step-1, exact-prefix-31, and
+  boxed-prefix-40 evidence.
+- Visual runner, including source-pinned 101-stone and both ten-level
+  card-house schedule/oracle contracts: 335/335 passed.
 - Independent post-fix re-review of `3647959a188`: `ALLOW`.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
   `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
@@ -1124,7 +1172,7 @@ boxed negatives do not close those comparison gaps.
 - Author masonry-arch focused CTest: 1/1 target and 7/7 contained tests passed;
   all four previously sealed bundles pass verify-only. The new boxed 101-stone
   capture and independent reuse verification also pass.
-- Demo scene documentation verifier: 26 scenes passed; exact and boxed real
+- Demo scene documentation verifier: 28 scenes passed; exact and boxed real
   step-zero JSON contracts match the validator.
 - The manifest validates 29 canonical requirements with status `partial`.
   Under the local sealed producer closure, live mode performed 118 file-identity
@@ -1192,13 +1240,16 @@ cross-platform CI.
   upload it only through the PR editor and record the URL. Keep those lanes
   distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
-- Add a separately named source-continuation ten-level video lane, then test
-  colored scheduling and global solve scope one factor at a time. Do not loosen
+- Preserve the final, independently reverified exact ten-level member and its
+  summaries. Preserve the clean 80-step
+  boxed control, but treat the interrupted step-112 full attempt and partial
+  frames as non-evidence. Resolve the full boxed runtime gate before producing
+  paired media. Upload only a final accepted exact member through the PR
+  browser composer and record its URL. Keep predictive checkpoint
+  `3647959a188` distinct from previous checkpoint `ffe23d347b0`, and keep
+  continuation evidence distinct from strict convergence. Test colored
+  scheduling and global solve scope one factor at a time without loosening
   tolerance, iteration caps, fallback, fail-fast, or accepted-cap policy.
-  Keep predictive checkpoint `3647959a188` distinct from previous checkpoint
-  `ffe23d347b0`. Only after the full strict and physical gates pass should the
-  3,200-step strict trajectory and paired-media gate run; keep it distinct from
-  both the older reconstruction and the four-level continuation lane.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.
 - Keep multicore claims confined to the validated opt-in colored literal-arch
