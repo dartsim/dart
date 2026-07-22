@@ -1078,12 +1078,22 @@ std::shared_ptr<simulation::World> createAuthorTurntableWorld(
 
 std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
     std::size_t levelCount = fbf_author_card_house::kDefaultLevelCount,
-    bool exactCoulomb = true)
+    bool exactCoulomb = true,
+    const fbf_author_card_house::DynamicsScenario* scenario = nullptr)
 {
+  if (scenario != nullptr && levelCount != scenario->levelCount)
+    throw std::invalid_argument("card-house test scenario level mismatch");
+  const bool dynamicsLane
+      = scenario != nullptr
+        || levelCount == fbf_author_card_house::kFigureLevelCount;
+  const bool contactGapValuesEnabled
+      = scenario != nullptr && scenario->sourceContactGapValuesRepresented;
   auto world = simulation::World::create(
-      levelCount == fbf_author_card_house::kFigureLevelCount
-          ? fbf_author_card_house::kDynamicsDemoSceneId
-          : fbf_author_card_house::kDemoSceneId);
+      scenario != nullptr
+          ? scenario->demoSceneId
+          : (levelCount == fbf_author_card_house::kFigureLevelCount
+                 ? fbf_author_card_house::kDynamicsDemoSceneId
+                 : fbf_author_card_house::kDemoSceneId));
   world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
   world->setGravity(
       Eigen::Vector3d(0.0, 0.0, -fbf_author_card_house::kGravity));
@@ -1105,10 +1115,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
         world->getConstraintSolver());
     installed->setExactCoulombCrossStepPolicyOptions(
         fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
-    installed->setExactCoulombPostCorrectionProjectionEnabled(
-        levelCount != fbf_author_card_house::kFigureLevelCount);
-    installed->setExactCoulombSourceInnerInitializationEnabled(
-        levelCount == fbf_author_card_house::kFigureLevelCount);
+    installed->setExactCoulombPostCorrectionProjectionEnabled(!dynamicsLane);
+    installed->setExactCoulombSourceInnerInitializationEnabled(dynamicsLane);
     installed->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         false);
@@ -1122,7 +1130,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
         dynamic_cast<constraint::BoxedLcpConstraintSolver*>(solver));
   }
   auto* installedSolver = world->getConstraintSolver();
-  fbf_author_card_house::configureDartCollisionGeneration(installedSolver);
+  fbf_author_card_house::configureDartCollisionGeneration(
+      installedSolver, contactGapValuesEnabled);
   auto& collisionOption = installedSolver->getCollisionOption();
   collisionOption.maxNumContacts = fbf_author_card_house::kSourceMaxContacts;
   collisionOption.maxNumContactsPerPair = 4u;
@@ -1153,6 +1162,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
         fbf_author_card_house::kCubeDensity,
         false));
   }
+  fbf_author_card_house::configureDartContactGapValues(
+      world, contactGapValuesEnabled);
   return world;
 }
 
@@ -3057,6 +3068,264 @@ TEST(
     EXPECT_FALSE(actual.mobile);
     EXPECT_TRUE(actual.linearVelocity.isZero(0.0));
     EXPECT_TRUE(actual.angularVelocity.isZero(0.0));
+  }
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseTenLevelCurrentSourceInventoryScheduleAndGapsArePinned)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kTenLevelDynamicsDemoSceneId,
+      "fbf_author_card_house_10_impact_current_source");
+  EXPECT_STREQ(
+      kTenLevelImpactScenario.demoSceneId, kTenLevelDynamicsDemoSceneId);
+  EXPECT_EQ(kTenLevelImpactScenario.levelCount, 10u);
+  EXPECT_EQ(kTenLevelImpactScenario.selectedFrames, 800u);
+  EXPECT_EQ(kTenLevelImpactScenario.selectedSubsteps(), 3200u);
+  EXPECT_FALSE(kTenLevelImpactScenario.sourceContinuation);
+  EXPECT_TRUE(kTenLevelImpactScenario.sourceContactGapValuesRepresented);
+  EXPECT_EQ(leaningCardCount(kTenLevelCount), 110u);
+  EXPECT_EQ(bridgeCardCount(kTenLevelCount), 45u);
+  EXPECT_EQ(cardCount(kTenLevelCount), 155u);
+
+  const auto world = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, true, &kTenLevelImpactScenario);
+  EXPECT_EQ(world->getNumSkeletons(), 160u);
+  const auto contract = inspectDynamicsAdapterContract(
+      world, kTenLevelImpactScenario, "integration_fixture", true);
+  EXPECT_EQ(contract.scenario, &kTenLevelImpactScenario);
+  EXPECT_EQ(contract.levelCount, kTenLevelCount);
+  EXPECT_EQ(contract.cardCount, 155u);
+  EXPECT_EQ(contract.cubeCount, kCubeCount);
+  EXPECT_EQ(contract.releasedCubeCount, 0u);
+  EXPECT_TRUE(contract.finiteState);
+  EXPECT_DOUBLE_EQ(contract.timeStep, 1.0 / 240.0);
+  EXPECT_EQ(contract.collisionDetector, "native");
+  EXPECT_EQ(contract.contactManifold, "four_point_planar");
+  EXPECT_EQ(contract.maxContacts, 4096u);
+  EXPECT_EQ(contract.maxContactsPerPair, 4u);
+  EXPECT_TRUE(contract.contactGenerationEnabled);
+  EXPECT_TRUE(contract.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(contract.groundContactGap, 0.1);
+  EXPECT_DOUBLE_EQ(contract.dynamicShapeContactGap, 0.005);
+  EXPECT_EQ(contract.collisionShapeFrameCount, 160u);
+  EXPECT_EQ(contract.collisionShapeFramesWithContactGap, 160u);
+  EXPECT_EQ(contract.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(contract.dynamicShapeFramesWithContactGap, 159u);
+  EXPECT_TRUE(contract.exactOptionsAvailable);
+  EXPECT_EQ(contract.exactOptions.maxOuterIterations, 200);
+  EXPECT_FALSE(contract.exactOptions.acceptOuterMaxIterations);
+  EXPECT_FALSE(contract.exactOptions.fallbackToBoxedLcp);
+
+  const auto detector
+      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+          world->getConstraintSolver()->getCollisionDetector());
+  ASSERT_NE(detector, nullptr);
+  std::size_t inspectedShapes = 0u;
+  for (std::size_t skeletonIndex = 0u; skeletonIndex < world->getNumSkeletons();
+       ++skeletonIndex) {
+    const auto skeleton = world->getSkeleton(skeletonIndex);
+    ASSERT_NE(skeleton, nullptr);
+    for (std::size_t bodyIndex = 0u; bodyIndex < skeleton->getNumBodyNodes();
+         ++bodyIndex) {
+      const auto* body = skeleton->getBodyNode(bodyIndex);
+      const std::size_t shapeCount
+          = body->getNumShapeNodesWith<dynamics::CollisionAspect>();
+      for (std::size_t shapeIndex = 0u; shapeIndex < shapeCount; ++shapeIndex) {
+        const auto* shape
+            = body->getShapeNodeWith<dynamics::CollisionAspect>(shapeIndex);
+        ASSERT_NE(shape, nullptr);
+        EXPECT_DOUBLE_EQ(
+            detector->getContactGap(shape),
+            skeleton->getName() == "ground_plane" ? kSourceGroundContactGap
+                                                  : kContactGap);
+        ++inspectedShapes;
+      }
+    }
+  }
+  EXPECT_EQ(inspectedShapes, 160u);
+
+  const std::string json = dynamicsAdapterContractJson(contract);
+  EXPECT_NE(
+      json.find(
+          "\"scene_id\":\"fbf_author_card_house_10_impact_current_source\""),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"arguments\":{\"solvers\":[\"fbf\"],\"levels\":10,"
+                "\"frames\":800"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"total_frames\":800,\"total_substeps\":3200"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"ground_contact_gap_m\":0.10000000000000001"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"dynamic_shape_contact_gap_m\":0.0050000000000000001"),
+      std::string::npos);
+  EXPECT_NE(json.find("\"collision_shape_frames\":160"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"collision_shape_frames_with_contact_gap\":160"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"ground_shape_frames_with_contact_gap\":1"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"dynamic_shape_frames_with_contact_gap\":159"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"dynamic_shape_contact\":{\"gap_m\":0.0050000000000000001"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"ground_contact\":{\"gap_m\":0.10000000000000001"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_contact_gap_semantics_implemented\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_contact_gap_values_represented\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"historical_tables_6_7_invocation_known\":false"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseTenLevelExactAndBoxedLanesShareGapFrontend)
+{
+  using namespace fbf_author_card_house;
+
+  const auto exactWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, true, &kTenLevelImpactScenario);
+  const auto boxedWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, false, &kTenLevelImpactScenario);
+  const auto exact = inspectDynamicsAdapterContract(
+      exactWorld, kTenLevelImpactScenario, "integration_fixture", true);
+  const auto boxed = inspectDynamicsAdapterContract(
+      boxedWorld, kTenLevelImpactScenario, "integration_fixture", false);
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_TRUE(exact.exactOptionsAvailable);
+  EXPECT_TRUE(boxed.boxedOptionsAvailable);
+  EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_EQ(boxed.boxedPrimarySolver, "DantzigBoxedLcpSolver");
+  EXPECT_EQ(boxed.boxedSecondarySolver, "PgsBoxedLcpSolver");
+  EXPECT_FALSE(boxed.boxedMatrixFreeOptions.mEnabled);
+
+  EXPECT_DOUBLE_EQ(boxed.timeStep, exact.timeStep);
+  EXPECT_TRUE(boxed.gravity.isApprox(exact.gravity, 0.0));
+  EXPECT_EQ(boxed.simulationThreads, exact.simulationThreads);
+  EXPECT_EQ(boxed.deactivationEnabled, exact.deactivationEnabled);
+  EXPECT_EQ(boxed.collisionDetector, exact.collisionDetector);
+  EXPECT_EQ(boxed.contactManifold, exact.contactManifold);
+  EXPECT_EQ(boxed.maxContacts, exact.maxContacts);
+  EXPECT_EQ(exact.maxContacts, kSourceMaxContacts);
+  EXPECT_EQ(boxed.maxContactsPerPair, exact.maxContactsPerPair);
+  EXPECT_EQ(exact.maxContactsPerPair, kDartMaxContactsPerPair);
+  EXPECT_TRUE(exact.negativePenetrationDepthContactsAllowed);
+  EXPECT_TRUE(boxed.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(boxed.groundContactGap, exact.groundContactGap);
+  EXPECT_DOUBLE_EQ(exact.groundContactGap, kSourceGroundContactGap);
+  EXPECT_DOUBLE_EQ(boxed.dynamicShapeContactGap, exact.dynamicShapeContactGap);
+  EXPECT_DOUBLE_EQ(exact.dynamicShapeContactGap, kContactGap);
+  EXPECT_EQ(boxed.collisionShapeFrameCount, exact.collisionShapeFrameCount);
+  EXPECT_EQ(exact.collisionShapeFrameCount, 160u);
+  EXPECT_EQ(
+      boxed.collisionShapeFramesWithContactGap,
+      exact.collisionShapeFramesWithContactGap);
+  EXPECT_EQ(exact.collisionShapeFramesWithContactGap, 160u);
+  EXPECT_EQ(
+      boxed.groundShapeFramesWithContactGap,
+      exact.groundShapeFramesWithContactGap);
+  EXPECT_EQ(exact.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(
+      boxed.dynamicShapeFramesWithContactGap,
+      exact.dynamicShapeFramesWithContactGap);
+  EXPECT_EQ(exact.dynamicShapeFramesWithContactGap, 159u);
+  EXPECT_EQ(boxed.cardCount, exact.cardCount);
+  EXPECT_EQ(exact.cardCount, 155u);
+  EXPECT_EQ(boxed.cubeCount, exact.cubeCount);
+  EXPECT_EQ(boxed.releasedCubeCount, exact.releasedCubeCount);
+  EXPECT_TRUE(exact.finiteState);
+  EXPECT_TRUE(boxed.finiteState);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseTenLevelGapLaneDoesNotMutateExistingScenes)
+{
+  using namespace fbf_author_card_house;
+
+  const auto fourLevelWorld
+      = createAuthorCardHouseConstructionWorld(kFigureLevelCount, true);
+  const auto fourLevel = inspectDynamicsAdapterContract(
+      fourLevelWorld, kFigureLevelCount, "integration_fixture", true);
+  EXPECT_EQ(fourLevel.scenario, &kFourLevelImpactScenario);
+  EXPECT_FALSE(fourLevel.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(fourLevel.groundContactGap, 0.0);
+  EXPECT_DOUBLE_EQ(fourLevel.dynamicShapeContactGap, 0.0);
+  EXPECT_EQ(fourLevel.collisionShapeFrameCount, 31u);
+  EXPECT_EQ(fourLevel.collisionShapeFramesWithContactGap, 0u);
+  EXPECT_EQ(fourLevel.groundShapeFramesWithContactGap, 0u);
+  EXPECT_EQ(fourLevel.dynamicShapeFramesWithContactGap, 0u);
+  const std::string fourLevelJson = dynamicsAdapterContractJson(fourLevel);
+  EXPECT_NE(
+      fourLevelJson.find("\"levels\":4,\"frames\":600"), std::string::npos);
+  EXPECT_NE(
+      fourLevelJson.find("\"evidence_total_substeps\":2400"),
+      std::string::npos);
+  EXPECT_NE(
+      fourLevelJson.find("\"source_contact_gap_semantics_implemented\":false"),
+      std::string::npos);
+  EXPECT_EQ(fourLevelJson.find("\"ground_contact_gap_m\":"), std::string::npos);
+  EXPECT_EQ(
+      fourLevelJson.find("\"dynamic_shape_contact_gap_m\":"),
+      std::string::npos);
+  EXPECT_EQ(
+      fourLevelJson.find("\"source_contact_gap_values_represented\":"),
+      std::string::npos);
+  EXPECT_EQ(
+      fourLevelJson.find("\"historical_tables_6_7_invocation_known\":"),
+      std::string::npos);
+  EXPECT_NE(
+      fourLevelJson.find("\"contact\":{\"friction\":0.80000000000000004,"
+                         "\"gap_m\":0.0050000000000000001,"
+                         "\"shape_stiffness\":10000,\"shape_damping\":1000}"),
+      std::string::npos);
+
+  const auto constructionWorld = createAuthorCardHouseConstructionWorld();
+  const auto constructionDetector
+      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+          constructionWorld->getConstraintSolver()->getCollisionDetector());
+  ASSERT_NE(constructionDetector, nullptr);
+  EXPECT_FALSE(constructionWorld->getConstraintSolver()
+                   ->getCollisionOption()
+                   .allowNegativePenetrationDepthContacts);
+  for (std::size_t skeletonIndex = 0u;
+       skeletonIndex < constructionWorld->getNumSkeletons();
+       ++skeletonIndex) {
+    const auto skeleton = constructionWorld->getSkeleton(skeletonIndex);
+    ASSERT_NE(skeleton, nullptr);
+    for (std::size_t bodyIndex = 0u; bodyIndex < skeleton->getNumBodyNodes();
+         ++bodyIndex) {
+      const auto* body = skeleton->getBodyNode(bodyIndex);
+      const std::size_t shapeCount
+          = body->getNumShapeNodesWith<dynamics::CollisionAspect>();
+      for (std::size_t shapeIndex = 0u; shapeIndex < shapeCount; ++shapeIndex) {
+        const auto* shape
+            = body->getShapeNodeWith<dynamics::CollisionAspect>(shapeIndex);
+        ASSERT_NE(shape, nullptr);
+        EXPECT_DOUBLE_EQ(constructionDetector->getContactGap(shape), 0.0);
+      }
+    }
   }
 }
 

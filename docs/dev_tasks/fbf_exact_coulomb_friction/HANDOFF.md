@@ -634,6 +634,43 @@ Source-continuation Figure 6 capture truth:
 - This is source-continuation evidence, not strict convergence. Preserve the
   strict step-35 negative unchanged.
 
+Source-supported ten-level card-house truth:
+
+- Keep `fbf_author_card_house_10_impact_current_source` and
+  `card_house_author_10_impact_current_source` distinct from the five-level
+  construction bundle, both four-level Figure 6 lanes, and the older
+  `fbf_paper_card_house_10_dynamic` reconstruction.
+- The adapter pins author commit
+  b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 and its public `--levels 10`
+  parameterization: 155 cards, four initially kinematic cubes, 800 display
+  frames / 3,200 DART substeps, and release after completed step 1,600.
+  Historical Tables 6-7 invocation, trajectory, renderer, and source-video
+  segment are unavailable.
+- The pinned source inspection resolves one ground gap at 0.1 m and 159
+  card/cube gaps at 0.005 m. The DART Native lane represents those values and
+  configures all 160 collision ShapeFrames, but does not claim equivalent
+  Newton/Warp collision, stiffness/damping, float32, or backend semantics.
+- The one-frame pinned-source control converges all four substeps with 424
+  contacts. Its 30-frame / 120-substep control stays finite but reports only 33
+  converged and 87 non-converged entries, first false at source index 33. It is
+  continuation evidence, not a strict trajectory oracle.
+- The Release demo and focused fixtures build; the three ten-level C++ tests,
+  both C++ lint gates, and all 331 visual-runner Python tests pass.
+- Registered strict exact fails closed at completed DART step 1. It records 264
+  final contacts, 18 attempts, 17 solves, one failure, zero accepted caps, and
+  zero boxed fallbacks. The retained 39-contact group reaches 200 iterations
+  with residual 8.891154359157548e-6 and best residual
+  8.727149191711674e-6 against tolerance 1e-6. Capacity 4,096 is not the
+  immediate blocker.
+- Boxed LCP completes the same one-step registered-scene control. That is not a
+  long trajectory or physical-outcome result. Exact timeline SHA-256 is
+  c0af3c2b03d38b68bd30374394bebb83286b08e91414641796f8ff58ec202bbf;
+  boxed timeline SHA-256 is
+  059d8d8c21db86df9b8708cf0da9b8bd63e024f2a9723d5a491c0bee2d3e78b0.
+- No ten-level video is justified. Diagnose the strict 39-contact blocker
+  without changing tolerance, fallback, accepted-cap, or fail-fast policy.
+  See CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
+
 Pinned-author masonry-arch truth:
 
 - Preserve
@@ -946,8 +983,11 @@ Latest recorded focused gates:
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build passed;
 - current-source four-level headless/continuation C++ fixtures passed 13/13;
-- visual runner, including source-pinned 101-stone schedule/oracle contracts,
-  passed 320/320;
+- source-supported ten-level card-house demo/test build passed; its focused C++
+  fixtures passed 3/3, both C++ lint gates passed, and its registered strict
+  step-1 gate produced the precise failure above while boxed passed;
+- visual runner, including source-pinned 101-stone and ten-level card-house
+  schedule/oracle contracts, passed 331/331;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -988,7 +1028,9 @@ Immediate order:
    source-selected four-level card
    adapter's completed-step-35 exact failure is precisely characterized but
    not corrected. Continue one-factor-at-a-time strict work without changing
-   tolerance, caps, fallback, fail-fast, or accepted-cap policy. Preserve and
+   tolerance, caps, fallback, fail-fast, or accepted-cap policy. Diagnose the
+   separate ten-level lane's 39-contact step-1 failure under the same strict
+   policies before attempting its long run or media. Preserve and
    independently review the completed telemetry-rich source-continuation
    capture without calling accepted finite iterates strict success; publish it
    only through the PR editor after explicit approval and record the resulting

@@ -726,6 +726,42 @@ The paired clip remains outside Git and has no
 `github.com/user-attachments/...` URL. It may be uploaded only as a narrowly
 captioned continuation comparison; PR #3377 must remain draft.
 
+### Source-Supported Ten-Level Card-House Blocker
+
+The separate `fbf_author_card_house_10_impact_current_source` scene and
+`card_house_author_10_impact_current_source` schedule bind the pinned public
+source's supported `--levels 10` selection: 155 cards, four initially
+kinematic cubes, 800 display frames / 3,200 DART substeps, and release after
+completed step 1,600. This is neither the historical Tables 6-7 invocation nor
+the older `fbf_paper_card_house_10_dynamic` reconstruction.
+
+The pinned source inspection resolves one ground gap at `0.1 m` and 159
+card/cube gaps at `0.005 m`. DART represents those values on all 160 Native
+collision ShapeFrames, but does not claim equivalent Newton/Warp collision,
+stiffness/damping, float32, or backend semantics. The pinned source's
+30-display-frame control stays finite but reports 33 converged and 87
+non-converged substeps, first false at source index 33, so it is not a strict
+trajectory oracle.
+
+The Release demo/test build, three focused C++ fixtures, both C++ lint gates,
+and all 331 visual-runner Python tests pass. The registered strict DART lane
+then fails closed at completed step 1: 264 total contacts, 18 exact attempts,
+17 exact solves, one failure, zero accepted caps, and zero boxed fallbacks. The
+retained 39-contact group reaches 200 iterations with residual
+`8.891154359157548e-6` and best residual `8.727149191711674e-6`, against
+`1e-6`. Boxed LCP completes the same one-step scene control. Capacity 4,096 is
+not the immediate blocker.
+
+Exact and boxed timeline SHA-256 values are
+`c0af3c2b03d38b68bd30374394bebb83286b08e91414641796f8ff58ec202bbf`
+and
+`059d8d8c21db86df9b8708cf0da9b8bd63e024f2a9723d5a491c0bee2d3e78b0`.
+They are ignored local diagnostics, not PR media. No ten-level video is valid
+or justified, and this result establishes no strict trajectory, physical
+outcome, source equivalence, old-versus-new solver superiority, Tables 6-7
+reproduction, timing comparison, or paper parity. See
+[CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md).
+
 ### Pinned-Author Masonry-Arch Scientific Negative
 
 The locally sealed bundle is
@@ -770,7 +806,8 @@ media:
 | Full 26-card sequence | Step 6/600 | Incomplete; no valid artifact |
 | 25-stone oriented-box arch | Step 24/360; visibly collapsed at 0.4 s | Physical mismatch; no valid artifact |
 | Older oriented-box 101-stone proxy | Step 120/600; visibly collapsed at 2 s | Physical mismatch; no valid artifact; distinct from the source-pinned adapter below |
-| Dynamic 10-level card house | No completed step 1 | No valid artifact |
+| Older reconstructed dynamic 10-level card house | No completed step 1 | No valid artifact; distinct from the source-supported lane |
+| Source-supported ten-level card house | Exact fails closed at completed step 1; boxed completes the one-step control | Precise solver blocker; no valid long artifact |
 
 The local literal-wedge standing bundle at
 `assets/paper_evidence/fig07_arch25_literal/` is locally finalized as valid
@@ -1022,8 +1059,11 @@ boxed negatives do not close those comparison gaps.
 - Current-source four-level headless/continuation C++ fixtures: 13/13 passed;
   the full
   paper fixture binary reports 31 passed and 3 explicit stress skips.
-- Visual runner, including source-pinned 101-stone schedule/oracle contracts:
-  320/320 passed.
+- Source-supported ten-level card-house build: passed; focused C++ fixtures
+  3/3 passed, both C++ lint gates passed, and the registered exact/boxed
+  one-step gate produced the precise blocker/control above.
+- Visual runner, including source-pinned 101-stone and ten-level card-house
+  schedule/oracle contracts: 331/331 passed.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
   `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
   methods, and exports the additive source-inner setter/getter without changing
@@ -1110,6 +1150,11 @@ cross-platform CI.
   upload it only through the PR editor and record the URL. Keep those lanes
   distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
+- Diagnose the source-supported ten-level adapter's 39-contact step-1 exact
+  failure without changing tolerance, iteration cap, fallback, fail-fast, or
+  accepted-cap policy. Only after a strict prefix passes should the 3,200-step
+  trajectory and paired media gate run; keep it distinct from both the older
+  reconstruction and the four-level continuation lane.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.
 - Keep multicore claims confined to the validated opt-in colored literal-arch

@@ -33,7 +33,13 @@ the lanes are identical only at step 0, differ by 0.165% at impact and 11.985%
 at the endpoint. This is valid source-continuation capture evidence, not strict
 convergence, quantitative trajectory/golden/backend/timing parity, solver
 superiority, or Fig. 6 paper parity. The local paired clip is not yet uploaded
-to the PR. The pinned-author incline sweep and sealed
+to the PR. A third, separate source-supported ten-level lane now binds 155
+cards and four cubes with the pinned heterogeneous gap values. Its strict exact
+run fails closed at completed step 1 on a 39-contact, 200-iteration group at
+residual `8.891154359157548e-6` against `1e-6`; boxed completes the same
+one-step control, and 264 total contacts are far below capacity 4,096. This is
+a precise blocker, not a long trajectory or video result. The pinned-author
+incline sweep and sealed
 author masonry-arch negative also remain current. A separate source-pinned
 101-stone DART lane now precisely fails: strict exact stops at step 209 on an
 iteration cap, while boxed completes 1,600 steps but collapses. Its boxed clip
@@ -636,6 +642,28 @@ re-capture:
 The local MP4 remains outside Git and is only an attachment candidate until a
 GitHub user-attachment URL is recorded.
 
+### Source-Supported Ten-Level Card-House Blocker
+
+Keep `fbf_author_card_house_10_impact_current_source` and
+`card_house_author_10_impact_current_source` distinct from the five-level
+construction bundle, both four-level lanes, and the older reconstructed
+ten-level scene. The new lane binds the pinned source's supported `--levels 10`
+selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, and
+release after completed step 1,600. It represents one `0.1 m` ground gap and
+159 `0.005 m` card/cube gaps on all 160 Native collision ShapeFrames, while
+keeping Newton/Warp collision, stiffness/damping, float32, and backend semantic
+equivalence false.
+
+The pinned source's 120-substep control stays finite but reports 33 converged
+and 87 non-converged entries, first false at source index 33. The DART Release
+build, three focused C++ tests, both C++ lint gates, and all 331 visual-runner
+Python tests pass. Registered strict exact then fails at completed step 1: 18
+attempts, 17 solves, one failure, zero accepted caps/fallbacks, and a retained
+39-contact max-iteration residual `8.891154359157548e-6` against `1e-6`.
+Boxed completes the same one-step control. There is no valid long trajectory,
+physical outcome, video, historical Tables 6-7 invocation, or paper-parity
+claim. Read CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md before changing it.
+
 ### Pinned-Author Masonry-Arch Scientific Negative
 
 Preserve
@@ -859,7 +887,10 @@ fail-closed negative, retained in the ignored local evidence cache at
 - The 101-stone exact-inertia reconstruction is precisely blocked at step 1.
   A distinct source-pinned DART scene now exists, but its exact lane stops at
   step 209 and boxed collapses. A strict standing trajectory, matched source and
-  Kamino outcomes, parity-eligible long-run media, the 10-level card house,
+  Kamino outcomes and parity-eligible long-run media remain missing. The
+  separately named source-supported 10-level card house exists but fails
+  strict exact at completed step 1; its long trajectory and media remain
+  missing. The
   remaining smaller figures beyond the finalized incline, Painleve, backspin,
   and turntable bundles, and the full paper video/GUI matrix remain missing.
 - Card-manifold v2 is complete only as current-source non-strict sensitivity
@@ -934,8 +965,11 @@ explicit DART reconstruction choices, not author parameters.
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - current-source four-level author-card demo build: passed;
 - current-source four-level headless/continuation C++ fixtures: 13/13 passed;
-- visual runner, including source-pinned 101-stone schedule/oracle contracts:
-  320/320 passed;
+- source-supported ten-level card-house demo/test build: passed; focused C++
+  fixtures 3/3 passed, both C++ lint gates passed, and its exact/boxed one-step
+  gate produced the precise blocker/control above;
+- visual runner, including source-pinned 101-stone and ten-level card-house
+  schedule/oracle contracts: 331/331 passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
@@ -971,6 +1005,8 @@ only for an explicit live-closure recheck.
    and record its URL. Continue one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
+   Diagnose the separate ten-level lane's 39-contact step-1 failure under the
+   same strict policies before attempting a long trajectory or media.
    Preserve and independently review the completed telemetry-rich continuation
    capture without calling accepted finite iterates strict success, then attach
    the paired clip to PR #3377 only with explicit approval and record the

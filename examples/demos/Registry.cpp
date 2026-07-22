@@ -66,6 +66,7 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeFbfAuthorTurntableMu05Omega5Scene());
   scenes.push_back(makeFbfAuthorCardHouseScene());
   scenes.push_back(makeFbfAuthorCardHouse4ImpactCurrentSourceScene());
+  scenes.push_back(makeFbfAuthorCardHouse10ImpactCurrentSourceScene());
   scenes.push_back(
       makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene());
   scenes.push_back(makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene());

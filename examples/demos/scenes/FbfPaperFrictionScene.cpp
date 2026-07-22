@@ -781,8 +781,11 @@ void installAuthorCardHouseSolver(
     SolverMode mode,
     bool postCorrectionProjectionEnabled = true,
     bool sourceInnerInitializationEnabled = false,
-    bool sourceContinuationEnabled = false)
+    bool sourceContinuationEnabled = false,
+    const fbf_author_card_house::DynamicsScenario* scenario = nullptr)
 {
+  const bool contactGapValuesEnabled
+      = scenario != nullptr && scenario->sourceContactGapValuesRepresented;
   configureSolver(
       world,
       mode,
@@ -793,7 +796,8 @@ void installAuthorCardHouseSolver(
       dart::collision::NativeCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
   auto* solver = world->getConstraintSolver();
-  fbf_author_card_house::configureDartCollisionGeneration(solver);
+  fbf_author_card_house::configureDartCollisionGeneration(
+      solver, contactGapValuesEnabled);
   if (mode == SolverMode::ExactFbf) {
     auto* exactSolver
         = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
@@ -825,6 +829,8 @@ void installAuthorCardHouseSolver(
     fbf_author_card_house::configureDartBoxedBaseline(
         dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(solver));
   }
+  fbf_author_card_house::configureDartContactGapValues(
+      world, contactGapValuesEnabled);
 }
 
 //==============================================================================
@@ -834,7 +840,8 @@ WorldPtr createAuthorCardHouseWorld(
     SolverMode mode,
     bool postCorrectionProjectionEnabled = true,
     bool sourceInnerInitializationEnabled = false,
-    bool sourceContinuationEnabled = false)
+    bool sourceContinuationEnabled = false,
+    const fbf_author_card_house::DynamicsScenario* scenario = nullptr)
 {
   auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
@@ -844,7 +851,8 @@ WorldPtr createAuthorCardHouseWorld(
       mode,
       postCorrectionProjectionEnabled,
       sourceInnerInitializationEnabled,
-      sourceContinuationEnabled);
+      sourceContinuationEnabled,
+      scenario);
 
   world->addSkeleton(createAuthorCardHouseGround());
   for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
@@ -871,7 +879,27 @@ WorldPtr createAuthorCardHouseWorld(
         colors[spec.index],
         false));
   }
+  fbf_author_card_house::configureDartContactGapValues(
+      world,
+      scenario != nullptr && scenario->sourceContactGapValuesRepresented);
   return world;
+}
+
+//==============================================================================
+WorldPtr createAuthorCardHouseWorld(
+    const fbf_author_card_house::DynamicsScenario& scenario,
+    SolverMode mode,
+    bool postCorrectionProjectionEnabled,
+    bool sourceInnerInitializationEnabled)
+{
+  return createAuthorCardHouseWorld(
+      scenario.demoSceneId,
+      scenario.levelCount,
+      mode,
+      postCorrectionProjectionEnabled,
+      sourceInnerInitializationEnabled,
+      scenario.sourceContinuation,
+      &scenario);
 }
 
 //==============================================================================
@@ -1835,23 +1863,49 @@ DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
 }
 
 //==============================================================================
-void renderFbfAuthorCardHouseDynamicsControls(const WorldPtr& world)
+void renderFbfAuthorCardHouseDynamicsControls(
+    const WorldPtr& world,
+    const fbf_author_card_house::DynamicsScenario& scenario)
 {
   using namespace fbf_author_card_house;
   ImGui::Separator();
   ImGui::TextDisabled("Pinned current-source schedule (b3f3c5c)");
-  ImGui::Text("Four levels: 20 leaning + 6 bridge cards");
-  ImGui::Text("Suspended cubes: 4 x edge 0.8 m, mass 256 kg");
-  ImGui::Text("Runtime dt: 1/240 s; evidence horizon: 2,400 steps");
+  ImGui::Text(
+      "%zu levels: %zu leaning + %zu bridge cards",
+      scenario.levelCount,
+      leaningCardCount(scenario.levelCount),
+      bridgeCardCount(scenario.levelCount));
+  ImGui::Text("Suspended cubes: %zu x edge 0.8 m, mass 256 kg", kCubeCount);
+  ImGui::Text(
+      "Runtime dt: 1/240 s; horizon: %zu frames / %zu steps",
+      scenario.selectedFrames,
+      scenario.selectedSubsteps());
   ImGui::Text("Runner: p after step 1,600; interactive p/button: immediate");
-  const bool released = cubesReleased(world, kFigureLevelCount);
+  ImGui::Text(
+      "Native contact gap: %s",
+      scenario.sourceContactGapValuesRepresented
+          ? "ground 0.1 m; cards/cubes 0.005 m"
+          : "disabled");
+  const bool released = cubesReleased(world, scenario.levelCount);
   ImGui::Text("Cube state: %s", released ? "released" : "kinematic");
-  if (!released && ImGui::Button("Release 4 source-configured cubes"))
-    releaseCubes(world, kFigureLevelCount);
-  ImGui::TextWrapped(
-      "This is a current-source-parameterized DART adapter. Historical paper "
-      "invocation, source collision/contact-gap/backend/float32 semantics, "
-      "trajectory, outcome, timing, and Fig. 6 parity remain unclaimed.");
+  const std::string releaseLabel
+      = "Release " + std::to_string(kCubeCount) + " source-configured cubes";
+  if (!released && ImGui::Button(releaseLabel.c_str()))
+    releaseCubes(world, scenario.levelCount);
+  if (scenario.sourceContactGapValuesRepresented) {
+    ImGui::TextWrapped(
+        "This current-source-parameterized lane represents the pinned numeric "
+        "ground and dynamic-shape gap values through Native speculative "
+        "contacts. Historical Tables 6-7 invocation and source gap/backend/"
+        "float32 semantics, trajectory, outcome, timing, and paper parity "
+        "remain unclaimed.");
+  } else {
+    ImGui::TextWrapped(
+        "This is a current-source-parameterized DART adapter. Historical "
+        "paper invocation, source collision/contact-gap/backend/float32 "
+        "semantics, trajectory, outcome, timing, and Fig. 6 parity remain "
+        "unclaimed.");
+  }
 }
 
 //==============================================================================
@@ -1869,11 +1923,7 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
           ::osg::Vec3d(0.0, 0.0, 1.0)},
       [](const auto& state) {
         return createAuthorCardHouseWorld(
-            kDynamicsDemoSceneId,
-            kFigureLevelCount,
-            state->solverMode,
-            false,
-            true);
+            kFourLevelImpactScenario, state->solverMode, false, true);
       },
       kSourceMaxContacts,
       kDartMaxContactsPerPair,
@@ -1900,7 +1950,8 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
       true,
       SolverMode::ExactFbf,
       [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
-        renderFbfAuthorCardHouseDynamicsControls(world);
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kFourLevelImpactScenario);
       },
       [](DemoSceneSetup& setup,
          const WorldPtr& world,
@@ -1908,13 +1959,15 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
         setup.physicsContractProvider = [world, state] {
           return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
               world,
-              kFigureLevelCount,
+              kFourLevelImpactScenario,
               DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
               state->solverMode == SolverMode::ExactFbf));
         };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
         setup.keyActions.push_back(KeyAction{
-            kReleaseActionKey, "Release 4 source-configured cubes", [world] {
-              releaseCubes(world, kFigureLevelCount);
+            kReleaseActionKey, releaseLabel, [world] {
+              releaseCubes(world, kFourLevelImpactScenario.levelCount);
             }});
         setup.onActivate = [](DemoHostContext& context) {
           auto scopedErp
@@ -1923,7 +1976,83 @@ DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene()
         };
       },
       [](const WorldPtr& world, SolverMode mode) {
-        installAuthorCardHouseSolver(world, mode, false, true);
+        installAuthorCardHouseSolver(
+            world, mode, false, true, false, &kFourLevelImpactScenario);
+      });
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kTenLevelDynamicsDemoSceneId,
+      "FBF Author Card House 10: Impact (Current Source)",
+      "Current-source-supported --levels 10 configuration: 155 cards, four "
+      "kinematic cubes, and the source-default 800-frame release schedule in "
+      "DART exact/boxed lanes.",
+      CameraHome{
+          ::osg::Vec3d(42.0, -54.0, 30.0),
+          ::osg::Vec3d(0.0, 0.0, 12.0),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kTenLevelImpactScenario, state->solverMode, false, true);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c and selected "
+      "through supported current-source run.py arguments: --levels 10, 110 "
+      "leaning cards, 45 bridges, four initially kinematic 0.8 m cubes, "
+      "mu=.8, and the source-default 800 display frames. DART uses four "
+      "substeps per frame at dt=1/240 s and releases the existing cubes after "
+      "completed step 1,600.",
+      "The expected evidence is a deterministic, finite DART exact/boxed "
+      "comparison over 3,200 substeps. Exact evidence must fail closed on the "
+      "4,096-contact global cap, four-contact pair cap, residual, failure, "
+      "fallback, and finite-state gates.",
+      "This is a source-supported current CLI parameterization, not a "
+      "recovered historical Tables 6-7 invocation. The pinned 0.1 m ground "
+      "and 0.005 m card/cube gap values are represented by Native speculative "
+      "contacts, but the source collision-gap, stiffness/damping, backend, and "
+      "float32 semantics are not implemented. Native FourPointPlanar "
+      "collision, exact-FBF options, boxed LCP, camera, materials, and "
+      "rendering remain DART adapters. Historical paper invocation, backend/"
+      "trajectory/outcome equivalence, paper/video parity, solver superiority, "
+      "and timing comparability are unproven.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kTenLevelImpactScenario);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kTenLevelImpactScenario,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf));
+        };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
+        setup.keyActions.push_back(
+            KeyAction{kReleaseActionKey, releaseLabel, [world] {
+                        releaseCubes(world, kTenLevelImpactScenario.levelCount);
+                      }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(
+            world, mode, false, true, false, &kTenLevelImpactScenario);
       });
 }
 
@@ -1944,11 +2073,9 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
           ::osg::Vec3d(0.0, 0.0, 1.0)},
       [](const auto& state) {
         return createAuthorCardHouseWorld(
-            kSourceContinuationDynamicsDemoSceneId,
-            kFigureLevelCount,
+            kFourLevelSourceContinuationScenario,
             state->solverMode,
             false,
-            true,
             true);
       },
       kSourceMaxContacts,
@@ -1971,7 +2098,8 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
       true,
       SolverMode::ExactFbf,
       [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state) {
-        renderFbfAuthorCardHouseDynamicsControls(world);
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kFourLevelSourceContinuationScenario);
         ImGui::TextDisabled("Exact lane policy: source_continuation");
         ImGui::Text(
             "Requested: %s",
@@ -1993,14 +2121,16 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
         setup.physicsContractProvider = [world, state] {
           return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
               world,
-              kFigureLevelCount,
+              kFourLevelSourceContinuationScenario,
               DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
-              state->solverMode == SolverMode::ExactFbf,
-              true));
+              state->solverMode == SolverMode::ExactFbf));
         };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
         setup.keyActions.push_back(KeyAction{
-            kReleaseActionKey, "Release 4 source-configured cubes", [world] {
-              releaseCubes(world, kFigureLevelCount);
+            kReleaseActionKey, releaseLabel, [world] {
+              releaseCubes(
+                  world, kFourLevelSourceContinuationScenario.levelCount);
             }});
         setup.onActivate = [](DemoHostContext& context) {
           auto scopedErp
@@ -2009,7 +2139,13 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
         };
       },
       [](const WorldPtr& world, SolverMode mode) {
-        installAuthorCardHouseSolver(world, mode, false, true, true);
+        installAuthorCardHouseSolver(
+            world,
+            mode,
+            false,
+            true,
+            true,
+            &kFourLevelSourceContinuationScenario);
       });
 }
 
@@ -2513,6 +2649,12 @@ DemoScene makeFbfAuthorCardHouseScene()
 DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene()
 {
   return makeFbfAuthorCardHouse4ImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene();
 }
 
 //==============================================================================

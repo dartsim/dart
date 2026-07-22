@@ -82,6 +82,8 @@ inline constexpr const char* kDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_current_source";
 inline constexpr const char* kSourceContinuationDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_source_continuation_current_source";
+inline constexpr const char* kTenLevelDynamicsDemoSceneId
+    = "fbf_author_card_house_10_impact_current_source";
 inline constexpr const char* kAuthorRepository
     = "https://github.com/matthcsong/fbf-sca-2026";
 inline constexpr const char* kAuthorCommit
@@ -103,10 +105,14 @@ inline constexpr double kPi = 3.141592653589793238462643383279502884;
 inline constexpr double kGravity = 9.81;
 inline constexpr double kFriction = 0.8;
 inline constexpr double kContactGap = 0.005;
+inline constexpr double kSourceGroundContactGap = 0.1;
 inline constexpr double kSourceShapeStiffness = 1.0e4;
 inline constexpr double kSourceShapeDamping = 1.0e3;
+inline constexpr double kSourceGroundShapeStiffness = 2.5e3;
+inline constexpr double kSourceGroundShapeDamping = 1.0e2;
 inline constexpr std::size_t kDefaultLevelCount = 5u;
 inline constexpr std::size_t kFigureLevelCount = 4u;
+inline constexpr std::size_t kTenLevelCount = 10u;
 inline constexpr std::size_t kCubeCount = 4u;
 inline constexpr double kLeanFromHorizontalDegrees = 65.0;
 inline constexpr double kLeanFromVerticalDegrees = 25.0;
@@ -145,6 +151,38 @@ inline constexpr std::size_t kDartMaxContactsPerPair = 4u;
 inline constexpr double kDartContactErrorReductionParameter = 0.0;
 inline constexpr double kDartRestitution = 0.0;
 inline constexpr double kDartSlipCompliance = -1.0;
+
+/// A current-source-supported card-house dynamics invocation represented in
+/// DART. This descriptor keeps scene identity, schedule, continuation policy,
+/// and the Native contact-gap adapter choice bound together.
+struct DynamicsScenario
+{
+  const char* demoSceneId;
+  std::size_t levelCount;
+  std::size_t selectedFrames;
+  bool sourceContinuation;
+  bool sourceContactGapValuesRepresented;
+
+  constexpr std::size_t selectedSubsteps() const
+  {
+    return selectedFrames * kSubstepsPerFrame;
+  }
+};
+
+inline constexpr DynamicsScenario kFourLevelImpactScenario{
+    kDynamicsDemoSceneId,
+    kFigureLevelCount,
+    kFigureEvidenceFrames,
+    false,
+    false};
+inline constexpr DynamicsScenario kFourLevelSourceContinuationScenario{
+    kSourceContinuationDynamicsDemoSceneId,
+    kFigureLevelCount,
+    kFigureEvidenceFrames,
+    true,
+    false};
+inline constexpr DynamicsScenario kTenLevelImpactScenario{
+    kTenLevelDynamicsDemoSceneId, kTenLevelCount, kTotalFrames, false, true};
 
 inline constexpr std::size_t kSourceMaxContacts = 4096u;
 inline constexpr int kSourceMaxOuterIterations = 200;
@@ -556,16 +594,66 @@ inline void configureDartBoxedBaseline(
 
 //==============================================================================
 inline void configureDartCollisionGeneration(
-    dart::constraint::ConstraintSolver* solver)
+    dart::constraint::ConstraintSolver* solver,
+    bool allowNegativePenetrationDepthContacts = false)
 {
   if (solver == nullptr)
     throw std::invalid_argument("author card-house constraint solver is null");
 
   auto& options = solver->getCollisionOption();
   options.enableContact = true;
-  options.allowNegativePenetrationDepthContacts = false;
+  options.allowNegativePenetrationDepthContacts
+      = allowNegativePenetrationDepthContacts;
   options.collisionFilter
       = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+}
+
+//==============================================================================
+inline std::size_t configureDartContactGapValues(
+    const std::shared_ptr<dart::simulation::World>& world, bool enabled)
+{
+  if (!world || world->getConstraintSolver() == nullptr)
+    throw std::invalid_argument("author card-house contact-gap world is null");
+
+  auto* solver = world->getConstraintSolver();
+  auto detector
+      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+          solver->getCollisionDetector());
+  if (!detector)
+    throw std::runtime_error(
+        "author card-house contact gaps require Native collision");
+
+  detector->clearContactGaps();
+  solver->getCollisionOption().allowNegativePenetrationDepthContacts = enabled;
+
+  std::size_t collisionShapeCount = 0u;
+  for (std::size_t skeletonIndex = 0u; skeletonIndex < world->getNumSkeletons();
+       ++skeletonIndex) {
+    const auto skeleton = world->getSkeleton(skeletonIndex);
+    if (!skeleton)
+      continue;
+    for (std::size_t bodyIndex = 0u; bodyIndex < skeleton->getNumBodyNodes();
+         ++bodyIndex) {
+      auto* body = skeleton->getBodyNode(bodyIndex);
+      const std::size_t shapeCount
+          = body->getNumShapeNodesWith<dart::dynamics::CollisionAspect>();
+      for (std::size_t shapeIndex = 0u; shapeIndex < shapeCount; ++shapeIndex) {
+        auto* shape = body->getShapeNodeWith<dart::dynamics::CollisionAspect>(
+            shapeIndex);
+        if (shape == nullptr)
+          throw std::runtime_error(
+              "author card-house collision ShapeFrame is missing");
+        if (enabled) {
+          detector->setContactGap(
+              shape,
+              skeleton->getName() == "ground_plane" ? kSourceGroundContactGap
+                                                    : kContactGap);
+        }
+        ++collisionShapeCount;
+      }
+    }
+  }
+  return collisionShapeCount;
 }
 
 struct BodyContract
@@ -619,6 +707,7 @@ struct ConfigurationContract
 
 struct DynamicsAdapterContract
 {
+  const DynamicsScenario* scenario = nullptr;
   bool sourceContinuationScene = false;
   std::size_t levelCount = 0u;
   double timeStep = 0.0;
@@ -633,6 +722,12 @@ struct DynamicsAdapterContract
   bool contactGenerationEnabled = false;
   bool negativePenetrationDepthContactsAllowed = false;
   bool defaultEmptyBodyNodeCollisionFilter = false;
+  double groundContactGap = 0.0;
+  double dynamicShapeContactGap = 0.0;
+  std::size_t collisionShapeFrameCount = 0u;
+  std::size_t collisionShapeFramesWithContactGap = 0u;
+  std::size_t groundShapeFramesWithContactGap = 0u;
+  std::size_t dynamicShapeFramesWithContactGap = 0u;
   std::string solverLane;
   bool splitImpulseEnabled = false;
   double observedContactErrorReductionParameter = 0.0;
@@ -859,10 +954,9 @@ inline void releaseCubes(
 //==============================================================================
 inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     const std::shared_ptr<dart::simulation::World>& world,
-    std::size_t levelCount,
+    const DynamicsScenario& scenario,
     const std::string& binarySourceSha256,
-    bool sourceInnerInitializationRequested = false,
-    bool sourceContinuationScene = false)
+    bool sourceInnerInitializationRequested = false)
 {
   if (!world)
     throw std::runtime_error(
@@ -887,8 +981,8 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     throw std::runtime_error(
         "author card-house dynamics contract requires Native collision");
 
-  const auto cardSpecs = makeCardSpecs(levelCount);
-  const auto cubeSpecs = makeCubeSpecs(levelCount);
+  const auto cardSpecs = makeCardSpecs(scenario.levelCount);
+  const auto cubeSpecs = makeCubeSpecs(scenario.levelCount);
   if (world->getNumSkeletons() != 1u + cardSpecs.size() + cubeSpecs.size()) {
     throw std::runtime_error(
         "author card-house dynamics contract has an unexpected skeleton "
@@ -1004,7 +1098,7 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
         true,
         spec.name);
   }
-  const std::size_t released = releasedCubeCount(world, levelCount);
+  const std::size_t released = releasedCubeCount(world, scenario.levelCount);
   if (released != 0u && released != kCubeCount) {
     throw std::runtime_error(
         "author card-house dynamics cube release is only partially applied");
@@ -1043,8 +1137,9 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     inspectFiniteState(world->getSkeleton(spec.name));
 
   DynamicsAdapterContract contract;
-  contract.sourceContinuationScene = sourceContinuationScene;
-  contract.levelCount = levelCount;
+  contract.scenario = &scenario;
+  contract.sourceContinuationScene = scenario.sourceContinuation;
+  contract.levelCount = scenario.levelCount;
   contract.timeStep = world->getTimeStep();
   contract.worldTime = world->getTime();
   contract.gravity = world->getGravity();
@@ -1065,6 +1160,7 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
   const dart::collision::BodyNodeCollisionFilter emptyBodyNodeFilter;
   if (!collisionOption.enableContact
       || collisionOption.allowNegativePenetrationDepthContacts
+             != scenario.sourceContactGapValuesRepresented
       || !bodyNodeFilter || collisionFilter == nullptr
       || typeid(*collisionFilter)
              != typeid(dart::collision::BodyNodeCollisionFilter)
@@ -1072,12 +1168,67 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     throw std::runtime_error(
         "author card-house collision generation policy changed");
   }
+
+  const double expectedGroundContactGap
+      = scenario.sourceContactGapValuesRepresented ? kSourceGroundContactGap
+                                                   : 0.0;
+  const double expectedDynamicShapeContactGap
+      = scenario.sourceContactGapValuesRepresented ? kContactGap : 0.0;
+  std::size_t collisionShapeFrameCount = 0u;
+  std::size_t collisionShapeFramesWithContactGap = 0u;
+  std::size_t groundShapeFramesWithContactGap = 0u;
+  std::size_t dynamicShapeFramesWithContactGap = 0u;
+  for (std::size_t skeletonIndex = 0u; skeletonIndex < world->getNumSkeletons();
+       ++skeletonIndex) {
+    const auto skeleton = world->getSkeleton(skeletonIndex);
+    if (!skeleton)
+      throw std::runtime_error(
+          "author card-house collision-gap skeleton is missing");
+    const bool groundShape = skeleton->getName() == "ground_plane";
+    for (std::size_t bodyIndex = 0u; bodyIndex < skeleton->getNumBodyNodes();
+         ++bodyIndex) {
+      const auto* body = skeleton->getBodyNode(bodyIndex);
+      const std::size_t shapeCount
+          = body->getNumShapeNodesWith<dart::dynamics::CollisionAspect>();
+      for (std::size_t shapeIndex = 0u; shapeIndex < shapeCount; ++shapeIndex) {
+        const auto* shape
+            = body->getShapeNodeWith<dart::dynamics::CollisionAspect>(
+                shapeIndex);
+        if (shape == nullptr)
+          throw std::runtime_error(
+              "author card-house collision-gap ShapeFrame is missing");
+        const double expectedContactGap = groundShape
+                                              ? expectedGroundContactGap
+                                              : expectedDynamicShapeContactGap;
+        const double configuredGap = detector->getContactGap(shape);
+        if (std::abs(configuredGap - expectedContactGap) > 1e-15) {
+          throw std::runtime_error(
+              "author card-house contact-gap configuration changed");
+        }
+        ++collisionShapeFrameCount;
+        if (configuredGap > 0.0) {
+          ++collisionShapeFramesWithContactGap;
+          if (groundShape)
+            ++groundShapeFramesWithContactGap;
+          else
+            ++dynamicShapeFramesWithContactGap;
+        }
+      }
+    }
+  }
   contract.maxContacts = collisionOption.maxNumContacts;
   contract.maxContactsPerPair = collisionOption.maxNumContactsPerPair;
   contract.contactGenerationEnabled = collisionOption.enableContact;
   contract.negativePenetrationDepthContactsAllowed
       = collisionOption.allowNegativePenetrationDepthContacts;
   contract.defaultEmptyBodyNodeCollisionFilter = true;
+  contract.groundContactGap = expectedGroundContactGap;
+  contract.dynamicShapeContactGap = expectedDynamicShapeContactGap;
+  contract.collisionShapeFrameCount = collisionShapeFrameCount;
+  contract.collisionShapeFramesWithContactGap
+      = collisionShapeFramesWithContactGap;
+  contract.groundShapeFramesWithContactGap = groundShapeFramesWithContactGap;
+  contract.dynamicShapeFramesWithContactGap = dynamicShapeFramesWithContactGap;
   contract.solverLane = exact != nullptr ? "exact_fbf" : "boxed_lcp";
   contract.splitImpulseEnabled = solver->isSplitImpulseEnabled();
   contract.observedContactErrorReductionParameter
@@ -1130,6 +1281,25 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
   contract.finiteState = finiteState;
   contract.binarySourceSha256 = binarySourceSha256;
   return contract;
+}
+
+//==============================================================================
+inline DynamicsAdapterContract inspectDynamicsAdapterContract(
+    const std::shared_ptr<dart::simulation::World>& world,
+    std::size_t levelCount,
+    const std::string& binarySourceSha256,
+    bool sourceInnerInitializationRequested = false,
+    bool sourceContinuationScene = false)
+{
+  const auto& scenario = sourceContinuationScene
+                             ? kFourLevelSourceContinuationScenario
+                             : kFourLevelImpactScenario;
+  if (levelCount != scenario.levelCount) {
+    throw std::invalid_argument(
+        "author card-house dynamics scenario must be selected explicitly");
+  }
+  return inspectDynamicsAdapterContract(
+      world, scenario, binarySourceSha256, sourceInnerInitializationRequested);
 }
 
 //==============================================================================
@@ -1433,9 +1603,49 @@ inline std::string dynamicsAdapterContractJson(
   if (contract.binarySourceSha256.empty())
     throw std::invalid_argument(
         "author card-house dynamics binary source hash is empty");
-  if (contract.levelCount != kFigureLevelCount)
+  if (contract.scenario == nullptr)
     throw std::invalid_argument(
-        "author card-house dynamics contract requires four levels");
+        "author card-house dynamics scenario is missing");
+  const auto& scenario = *contract.scenario;
+  if (contract.levelCount != scenario.levelCount
+      || contract.sourceContinuationScene != scenario.sourceContinuation) {
+    throw std::invalid_argument(
+        "author card-house dynamics scenario contract is inconsistent");
+  }
+  const std::size_t expectedDynamicShapeFrames
+      = cardCount(scenario.levelCount) + kCubeCount;
+  const std::size_t expectedCollisionShapeFrames
+      = 1u + expectedDynamicShapeFrames;
+  const std::size_t expectedGappedShapeFrames
+      = scenario.sourceContactGapValuesRepresented
+            ? expectedCollisionShapeFrames
+            : 0u;
+  const std::size_t expectedGappedGroundShapeFrames
+      = scenario.sourceContactGapValuesRepresented ? 1u : 0u;
+  const std::size_t expectedGappedDynamicShapeFrames
+      = scenario.sourceContactGapValuesRepresented ? expectedDynamicShapeFrames
+                                                   : 0u;
+  const double expectedGroundContactGap
+      = scenario.sourceContactGapValuesRepresented ? kSourceGroundContactGap
+                                                   : 0.0;
+  const double expectedDynamicShapeContactGap
+      = scenario.sourceContactGapValuesRepresented ? kContactGap : 0.0;
+  if (contract.collisionShapeFrameCount != expectedCollisionShapeFrames
+      || contract.collisionShapeFramesWithContactGap
+             != expectedGappedShapeFrames
+      || contract.groundShapeFramesWithContactGap
+             != expectedGappedGroundShapeFrames
+      || contract.dynamicShapeFramesWithContactGap
+             != expectedGappedDynamicShapeFrames
+      || std::abs(contract.groundContactGap - expectedGroundContactGap) > 1e-15
+      || std::abs(
+             contract.dynamicShapeContactGap - expectedDynamicShapeContactGap)
+             > 1e-15
+      || contract.negativePenetrationDepthContactsAllowed
+             != scenario.sourceContactGapValuesRepresented) {
+    throw std::invalid_argument(
+        "author card-house dynamics contact-gap contract is inconsistent");
+  }
   if ((contract.solverLane == "exact_fbf") != contract.exactOptionsAvailable) {
     throw std::invalid_argument(
         "author card-house dynamics solver contract is inconsistent");
@@ -1496,7 +1706,7 @@ inline std::string dynamicsAdapterContractJson(
          "\"provenance\":\"source_supported_cli_parameterization\""
          ",\"historical_paper_invocation_known\":false"
          ",\"arguments\":{\"solvers\":[\"fbf\"],\"levels\":"
-      << kFigureLevelCount << ",\"frames\":" << kFigureEvidenceFrames
+      << scenario.levelCount << ",\"frames\":" << scenario.selectedFrames
       << ",\"drop_frame\":" << kReleaseFrame << ",\"num_cubes\":" << kCubeCount
       << ",\"mu\":" << kFriction << ",\"cube_half_size_m\":" << kCubeHalfSize
       << ",\"cube_density_kg_m3\":" << kCubeDensity
@@ -1523,16 +1733,26 @@ inline std::string dynamicsAdapterContractJson(
       << contract.levelCount * kTentHeight + kDropHeight
       << ",\"initially_kinematic\":true,\"initial_velocity_m_s\":[0,0,0]}"
          ",\"contact\":{\"friction\":"
-      << kFriction << ",\"gap_m\":" << kContactGap
-      << ",\"shape_stiffness\":" << kSourceShapeStiffness
-      << ",\"shape_damping\":" << kSourceShapeDamping
-      << "},\"schedule\":{\"display_time_step_seconds\":" << kDisplayTimeStep
+      << kFriction;
+  if (scenario.sourceContactGapValuesRepresented) {
+    out << ",\"dynamic_shape_contact\":{\"gap_m\":" << kContactGap
+        << ",\"shape_stiffness\":" << kSourceShapeStiffness
+        << ",\"shape_damping\":" << kSourceShapeDamping
+        << "},\"ground_contact\":{\"gap_m\":" << kSourceGroundContactGap
+        << ",\"shape_stiffness\":" << kSourceGroundShapeStiffness
+        << ",\"shape_damping\":" << kSourceGroundShapeDamping << '}';
+  } else {
+    out << ",\"gap_m\":" << kContactGap
+        << ",\"shape_stiffness\":" << kSourceShapeStiffness
+        << ",\"shape_damping\":" << kSourceShapeDamping;
+  }
+  out << "},\"schedule\":{\"display_time_step_seconds\":" << kDisplayTimeStep
       << ",\"substeps_per_frame\":" << kSubstepsPerFrame
       << ",\"runtime_time_step_seconds\":" << kRuntimeTimeStep
       << ",\"release_frame\":" << kReleaseFrame
       << ",\"release_substep\":" << kReleaseSubstep
-      << ",\"total_frames\":" << kFigureEvidenceFrames
-      << ",\"total_substeps\":" << kFigureEvidenceSubsteps
+      << ",\"total_frames\":" << scenario.selectedFrames
+      << ",\"total_substeps\":" << scenario.selectedSubsteps()
       << "},\"solver\":{\"type\":\"fbf_exact_coulomb\""
          ",\"max_contacts\":"
       << kSourceMaxContacts << ",\"max_outer\":" << kSourceMaxOuterIterations
@@ -1556,10 +1776,7 @@ inline std::string dynamicsAdapterContractJson(
   writeJsonString(out, kSourceTerminationResidual);
   out << ",\"termination_tol\":" << kSourceTerminationTolerance
       << "}},\"dart_adapter\":{\"scene_id\":";
-  writeJsonString(
-      out,
-      contract.sourceContinuationScene ? kSourceContinuationDynamicsDemoSceneId
-                                       : kDynamicsDemoSceneId);
+  writeJsonString(out, scenario.demoSceneId);
   out << ",\"world\":{\"time_step_seconds\":" << contract.timeStep
       << ",\"current_time_seconds\":" << contract.worldTime
       << ",\"gravity_m_s2\":";
@@ -1578,8 +1795,20 @@ inline std::string dynamicsAdapterContractJson(
       << ",\"allow_negative_penetration_depth_contacts\":"
       << (contract.negativePenetrationDepthContactsAllowed ? "true" : "false")
       << ",\"default_empty_body_node_filter\":"
-      << (contract.defaultEmptyBodyNodeCollisionFilter ? "true" : "false")
-      << "},\"contact_material\":{\"primary_friction\":"
+      << (contract.defaultEmptyBodyNodeCollisionFilter ? "true" : "false");
+  if (scenario.sourceContactGapValuesRepresented) {
+    out << ",\"ground_contact_gap_m\":" << contract.groundContactGap
+        << ",\"dynamic_shape_contact_gap_m\":"
+        << contract.dynamicShapeContactGap
+        << ",\"collision_shape_frames\":" << contract.collisionShapeFrameCount
+        << ",\"collision_shape_frames_with_contact_gap\":"
+        << contract.collisionShapeFramesWithContactGap
+        << ",\"ground_shape_frames_with_contact_gap\":"
+        << contract.groundShapeFramesWithContactGap
+        << ",\"dynamic_shape_frames_with_contact_gap\":"
+        << contract.dynamicShapeFramesWithContactGap;
+  }
+  out << "},\"contact_material\":{\"primary_friction\":"
       << contract.primaryFriction
       << ",\"secondary_friction\":" << contract.secondaryFriction
       << ",\"restitution\":" << contract.restitution
@@ -1774,17 +2003,24 @@ inline std::string dynamicsAdapterContractJson(
       << ",\"released_cubes\":" << contract.releasedCubeCount
       << ",\"finite_state\":" << (contract.finiteState ? "true" : "false")
       << "},\"schedule\":{\"evidence_total_substeps\":"
-      << kFigureEvidenceSubsteps
+      << scenario.selectedSubsteps()
       << ",\"evidence_runner_action_completed_step\":" << kReleaseSubstep
       << ",\"release_action_key\":";
   writeJsonString(out, std::string(1u, kReleaseActionKey));
   out << ",\"interactive_action_semantics\":";
   writeJsonString(out, "immediate_on_invocation");
-  out << "}},\"adapter_boundaries\":{"
-         "\"source_contact_gap_recorded_m\":"
-      << kContactGap
-      << ",\"source_contact_gap_semantics_implemented\":false"
-         ",\"source_shape_stiffness_semantics_implemented\":false"
+  out << "}},\"adapter_boundaries\":{";
+  if (scenario.sourceContactGapValuesRepresented) {
+    out << "\"source_dynamic_shape_contact_gap_recorded_m\":" << kContactGap
+        << ",\"source_ground_contact_gap_recorded_m\":"
+        << kSourceGroundContactGap
+        << ",\"source_contact_gap_semantics_implemented\":false"
+        << ",\"source_contact_gap_values_represented\":true";
+  } else {
+    out << "\"source_contact_gap_recorded_m\":" << kContactGap
+        << ",\"source_contact_gap_semantics_implemented\":false";
+  }
+  out << ",\"source_shape_stiffness_semantics_implemented\":false"
          ",\"source_shape_damping_semantics_implemented\":false"
          ",\"source_collision_backend_implemented\":false"
          ",\"source_solver_backend_semantics_implemented\":false"
@@ -1795,8 +2031,10 @@ inline std::string dynamicsAdapterContractJson(
          ",\"source_release_action_ported_to_dart\":true"
          ",\"source_release_schedule_declared_for_evidence_runner\":true"
          ",\"interactive_demo_auto_releases_at_source_step\":false"
-         ",\"historical_paper_invocation_known\":false"
-         ",\"trajectory_valid\":false"
+         ",\"historical_paper_invocation_known\":false";
+  if (scenario.sourceContactGapValuesRepresented)
+    out << ",\"historical_tables_6_7_invocation_known\":false";
+  out << ",\"trajectory_valid\":false"
          ",\"physical_outcome_valid\":false"
          ",\"trajectory_equivalence\":false"
          ",\"solver_equivalence\":false"
