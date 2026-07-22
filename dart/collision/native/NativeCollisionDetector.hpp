@@ -77,7 +77,11 @@ public:
   /// finite, non-negative, and no greater than half the maximum representable
   /// double so any pair sum remains finite. Setting a gap to zero removes the
   /// override. The default is zero for every ShapeFrame, which preserves
-  /// ordinary Native collision behavior.
+  /// ordinary Native collision behavior. When ConstraintSolver admits a rigid
+  /// negative-depth proximity contact, its velocity constraint permits the
+  /// current physical separation to close over one time step before generating
+  /// an impulse; the gap is not treated as penetration. Soft-body proximity
+  /// contacts remain excluded from constraint solving.
   void setContactGap(const dynamics::ShapeFrame* shapeFrame, double contactGap);
 
   /// Get the speculative contact gap for a ShapeFrame.

@@ -1317,18 +1317,21 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       bodyNode2->setColliding(true);
       DART_SUPPRESS_DEPRECATED_END
 
-      // Ordinary negative-depth backend contacts remain non-constraints. Native
-      // speculative contacts are admitted only when their detector explicitly
-      // configures per-ShapeFrame gaps and the physical separation is strictly
-      // inside the summed gap. ContactConstraint clamps their penetration error
-      // correction to zero, so they impose only the non-closing velocity cone.
+      const bool softContact = isSoftContact(bodyNode1, bodyNode2);
+      // Ordinary negative-depth backend contacts remain non-constraints. Rigid
+      // Native speculative contacts are admitted only when their detector
+      // explicitly configures per-ShapeFrame gaps and the physical separation
+      // is strictly inside the summed gap. SoftContactConstraint does not
+      // implement the corresponding predictive row, so soft proximity contacts
+      // remain excluded. ContactConstraint rechecks Native provenance and
+      // permits closure by the physical separation divided by the time step.
       if (contact.penetrationDepth < 0.0
           && (!mCollisionOption.allowNegativePenetrationDepthContacts
-              || !isConfiguredNativeProximityContact(contact))) {
+              || !isConfiguredNativeProximityContact(contact) || softContact)) {
         continue;
       }
 
-      if (isSoftContact(bodyNode1, bodyNode2)) {
+      if (softContact) {
         SoftContactConstraintPtr softContactConstraint;
         while (!mReusableSoftContactConstraints.empty()) {
           softContactConstraint

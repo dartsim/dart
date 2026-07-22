@@ -632,6 +632,11 @@ public:
   {
     return mContactConstraints.size();
   }
+
+  std::size_t getNumSoftContactConstraintsForTest() const
+  {
+    return mSoftContactConstraints.size();
+  }
 };
 
 dynamics::BodyNode* createFreeBody(
@@ -2573,7 +2578,7 @@ TEST(ConstraintSolver, SharedFixedCustomContactSupportForcesSerialAfterBuild)
 //==============================================================================
 TEST(
     ConstraintSolver,
-    NativeContactGapAdmitsOnlyConfiguredNegativeContactsWithoutBias)
+    NativeContactGapAdmitsOnlyConfiguredNegativeContactsWithPredictiveBias)
 {
   auto configuredGround = createSolverTestPlane("configured_ground");
   auto configuredBox = createSolverTestBox(
@@ -2604,37 +2609,120 @@ TEST(
   EXPECT_EQ(1u, configuredSolver.getNumActiveConstraintsForTest());
 
   auto configuredContact = configuredResult.getContact(0);
-  ExposedContactConstraint configuredConstraint(
-      configuredContact, 0.001, constraint::ContactSurfaceParams{});
-  constraint::ConstraintBase& configuredConstraintBase = configuredConstraint;
-  configuredConstraintBase.update();
-  ASSERT_TRUE(configuredConstraintBase.isActive());
+  const auto evaluateNormalBias
+      = [&](const constraint::ContactSurfaceParams& params,
+            constraint::ConstraintPhase phase) {
+          ExposedContactConstraint constraint(configuredContact, 0.001, params);
+          constraint::ConstraintBase& constraintBase = constraint;
+          constraintBase.update();
+          EXPECT_TRUE(constraintBase.isActive());
 
-  std::array<double, 3> x{};
-  std::array<double, 3> lo{};
-  std::array<double, 3> hi{};
-  std::array<double, 3> b{};
-  std::array<double, 3> w{};
-  std::array<int, 3> findex{{-1, -1, -1}};
-  constraint::ConstraintInfo info;
-  info.x = x.data();
-  info.lo = lo.data();
-  info.hi = hi.data();
-  info.b = b.data();
-  info.w = w.data();
-  info.findex = findex.data();
-  info.invTimeStep = 1000.0;
-  info.useSplitImpulse = false;
+          std::array<double, 3> x{};
+          std::array<double, 3> lo{};
+          std::array<double, 3> hi{};
+          std::array<double, 3> b{};
+          std::array<double, 3> w{};
+          std::array<int, 3> findex{{-1, -1, -1}};
+          constraint::ConstraintInfo info;
+          info.x = x.data();
+          info.lo = lo.data();
+          info.hi = hi.data();
+          info.b = b.data();
+          info.w = w.data();
+          info.findex = findex.data();
+          info.invTimeStep = 1000.0;
+          info.phase = phase;
+          info.useSplitImpulse = false;
+          constraint.getInformation(&info);
+          EXPECT_NEAR(0.0, b[1], 1e-12);
+          EXPECT_NEAR(0.0, b[2], 1e-12);
+          return b[0];
+        };
 
   const double previousErp
       = constraint::ContactConstraint::getErrorReductionParameter();
   constraint::ContactConstraint::setErrorReductionParameter(0.2);
-  configuredConstraint.getInformation(&info);
+
+  // The physical 0.05 m separation may close over the 0.001 s step. This is a
+  // speculative-contact allowance, not Baumgarte penetration correction.
+  EXPECT_NEAR(
+      -50.0,
+      evaluateNormalBias(
+          constraint::ContactSurfaceParams{},
+          constraint::ConstraintPhase::Velocity),
+      1e-12);
+
+  // Split-impulse position correction still sees no penetration error.
+  EXPECT_NEAR(
+      0.0,
+      evaluateNormalBias(
+          constraint::ContactSurfaceParams{},
+          constraint::ConstraintPhase::Position),
+      1e-12);
+
+  constraint::ContactSurfaceParams frictionlessParams;
+  frictionlessParams.mPrimaryFrictionCoeff = 0.0;
+  frictionlessParams.mSecondaryFrictionCoeff = 0.0;
+  EXPECT_NEAR(
+      -50.0,
+      evaluateNormalBias(
+          frictionlessParams, constraint::ConstraintPhase::Velocity),
+      1e-12);
   constraint::ContactConstraint::setErrorReductionParameter(previousErp);
 
-  EXPECT_NEAR(0.0, b[0], 1e-12);
-  EXPECT_NEAR(0.0, b[1], 1e-12);
-  EXPECT_NEAR(0.0, b[2], 1e-12);
+  auto exactConstraint = createContactConstraint<constraint::ContactConstraint>(
+      configuredContact);
+  constraint::detail::ExactCoulombConstraintBuildOptions exactOptions;
+  exactOptions.invTimeStep = 1000.0;
+  const auto exactProblem
+      = constraint::detail::buildExactCoulombConstraintProblem(
+          {exactConstraint.get()}, exactOptions);
+  ASSERT_EQ(
+      exactProblem.status,
+      constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+  EXPECT_NEAR(50.0, exactProblem.contactProblem.freeVelocity[0], 1e-12);
+
+  auto* configuredBoxBody = configuredBox->getBodyNode(0);
+  auto* configuredBoxJoint
+      = static_cast<dynamics::FreeJoint*>(configuredBoxBody->getParentJoint());
+  const bool boxIsObject1
+      = configuredContact.collisionObject1->getBodyNode() == configuredBoxBody;
+  const auto setClosingSpeed = [&](double speed) {
+    configuredBoxJoint->setLinearVelocity(
+        (boxIsObject1 ? -speed : speed) * configuredContact.normal);
+  };
+  constraint::ContactSurfaceParams restitutionParams;
+  restitutionParams.mRestitutionCoeff = 1.0;
+  setClosingSpeed(30.0);
+  EXPECT_NEAR(
+      -20.0,
+      evaluateNormalBias(
+          restitutionParams, constraint::ConstraintPhase::Velocity),
+      1e-12);
+  setClosingSpeed(50.0);
+  EXPECT_NEAR(
+      0.0,
+      evaluateNormalBias(
+          restitutionParams, constraint::ConstraintPhase::Velocity),
+      1e-12);
+  setClosingSpeed(60.0);
+  EXPECT_NEAR(
+      20.0,
+      evaluateNormalBias(
+          restitutionParams, constraint::ConstraintPhase::Velocity),
+      1e-12);
+
+  // Publicly constructed negative-depth constraints must recheck provenance.
+  // Clearing the detector gaps restores ordinary relative-velocity behavior.
+  configuredDetector->clearContactGaps();
+  setClosingSpeed(30.0);
+  EXPECT_NEAR(
+      30.0,
+      evaluateNormalBias(
+          constraint::ContactSurfaceParams{},
+          constraint::ConstraintPhase::Velocity),
+      1e-12);
+  configuredBoxJoint->setLinearVelocity(Eigen::Vector3d::Zero());
 
   auto unconfiguredGround = createSolverTestPlane("unconfigured_ground");
   auto unconfiguredBox = createSolverTestBox(
@@ -2658,6 +2746,42 @@ TEST(
     EXPECT_LT(unconfiguredResult.getContact(i).penetrationDepth, 0.0);
   EXPECT_EQ(0u, unconfiguredSolver.getNumContactConstraintsForTest());
   EXPECT_EQ(0u, unconfiguredSolver.getNumActiveConstraintsForTest());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, NativeContactGapRejectsSoftProximityContacts)
+{
+  auto ground = createSolverTestPlane("soft_gap_ground");
+  std::vector<dynamics::SkeletonPtr> softSkeletons;
+  auto* softBody = createSoftBody("soft_gap_body", true, softSkeletons);
+  auto* softShape = softBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  auto* softJoint
+      = static_cast<dynamics::FreeJoint*>(softBody->getParentJoint());
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = 0.55;
+  softJoint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+
+  auto* groundShape = ground->getBodyNode(0)->getShapeNode(0);
+  auto detector = collision::NativeCollisionDetector::create();
+  detector->setContactGap(groundShape, 0.1);
+  detector->setContactGap(softShape, 0.005);
+
+  ExposedBoxedLcpConstraintSolver solver;
+  solver.setCollisionDetector(detector);
+  solver.addSkeleton(ground);
+  solver.addSkeleton(softSkeletons.front());
+  solver.getCollisionOption().allowNegativePenetrationDepthContacts = true;
+  solver.updateConstraintsForTest();
+
+  const auto& result = solver.getLastCollisionResult();
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_LT(result.getContact(0).penetrationDepth, 0.0);
+  EXPECT_EQ(0u, solver.getNumContactConstraintsForTest());
+  EXPECT_EQ(0u, solver.getNumSoftContactConstraintsForTest());
+  EXPECT_EQ(0u, solver.getNumActiveConstraintsForTest());
 }
 
 //==============================================================================
