@@ -70,6 +70,25 @@ public:
   /// Get the solver-facing contact reduction policy.
   [[nodiscard]] ContactManifoldMode getContactManifoldMode() const;
 
+  /// Set the speculative contact gap for a ShapeFrame.
+  ///
+  /// A Native pair is eligible for a proximity contact when its signed surface
+  /// distance is less than the sum of the two ShapeFrame gaps. Gaps must be
+  /// finite, non-negative, and no greater than half the maximum representable
+  /// double so any pair sum remains finite. Setting a gap to zero removes the
+  /// override. The default is zero for every ShapeFrame, which preserves
+  /// ordinary Native collision behavior.
+  void setContactGap(const dynamics::ShapeFrame* shapeFrame, double contactGap);
+
+  /// Get the speculative contact gap for a ShapeFrame.
+  ///
+  /// Returns zero for a null or unconfigured ShapeFrame.
+  [[nodiscard]] double getContactGap(
+      const dynamics::ShapeFrame* shapeFrame) const;
+
+  /// Remove every speculative contact-gap override from this detector.
+  void clearContactGaps();
+
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const override;

@@ -73,6 +73,7 @@
 #include <array>
 #include <atomic>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -564,6 +565,122 @@ TEST(NativeCollisionDetector, CreatesDetectorGroupAndCollidesSphereSphere)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, ContactGapPolicyValidatesClonesAndClears)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto stone = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto ground = makeFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  EXPECT_DOUBLE_EQ(0.0, detector->getContactGap(nullptr));
+  EXPECT_DOUBLE_EQ(0.0, detector->getContactGap(stone.get()));
+  EXPECT_THROW(detector->setContactGap(nullptr, 0.005), std::invalid_argument);
+  EXPECT_THROW(
+      detector->setContactGap(stone.get(), -0.005), std::invalid_argument);
+  EXPECT_THROW(
+      detector->setContactGap(
+          stone.get(), std::numeric_limits<double>::infinity()),
+      std::invalid_argument);
+  EXPECT_THROW(
+      detector->setContactGap(
+          stone.get(), std::numeric_limits<double>::quiet_NaN()),
+      std::invalid_argument);
+  EXPECT_THROW(
+      detector->setContactGap(stone.get(), std::numeric_limits<double>::max()),
+      std::invalid_argument);
+
+  detector->setContactGap(stone.get(), 0.005);
+  detector->setContactGap(ground.get(), 0.1);
+  EXPECT_DOUBLE_EQ(0.005, detector->getContactGap(stone.get()));
+  EXPECT_DOUBLE_EQ(0.1, detector->getContactGap(ground.get()));
+
+  auto clone = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+      detector->cloneWithoutCollisionObjects());
+  ASSERT_NE(nullptr, clone);
+  EXPECT_DOUBLE_EQ(0.005, clone->getContactGap(stone.get()));
+  EXPECT_DOUBLE_EQ(0.1, clone->getContactGap(ground.get()));
+
+  detector->setContactGap(stone.get(), 0.0);
+  EXPECT_DOUBLE_EQ(0.0, detector->getContactGap(stone.get()));
+  EXPECT_DOUBLE_EQ(0.005, clone->getContactGap(stone.get()));
+
+  stone.reset();
+
+  detector->clearContactGaps();
+  clone->clearContactGaps();
+  EXPECT_DOUBLE_EQ(0.0, detector->getContactGap(ground.get()));
+  EXPECT_DOUBLE_EQ(0.0, clone->getContactGap(ground.get()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, ContactGapsAreAdditiveStrictAndOptionGated)
+{
+  const auto convexShape = std::make_shared<dynamics::ConvexMeshShape>(
+      makeCubeVertices(), makeCubeTriangles());
+  auto detector = collision::NativeCollisionDetector::create();
+  auto convex1 = makeFrame(convexShape);
+  auto convex2 = makeFrame(convexShape, Eigen::Vector3d(1.009, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(convex1.get(), convex2.get());
+
+  collision::CollisionOption allowed(true, 10u, nullptr, true);
+  collision::CollisionResult result;
+  EXPECT_FALSE(group->collide(allowed, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  detector->setContactGap(convex1.get(), 0.004);
+  detector->setContactGap(convex2.get(), 0.004);
+  EXPECT_FALSE(group->collide(allowed, &result));
+
+  detector->setContactGap(convex2.get(), 0.006);
+  collision::CollisionOption disallowed(true, 10u, nullptr, false);
+  EXPECT_FALSE(group->collide(disallowed, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+  EXPECT_FALSE(group->collide(
+      collision::CollisionOption(false, 1u, nullptr, false), nullptr));
+  EXPECT_TRUE(group->collide(
+      collision::CollisionOption(false, 1u, nullptr, true), nullptr));
+
+  ASSERT_TRUE(group->collide(allowed, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+  const auto& contact = result.getContact(0u);
+  EXPECT_EQ(convex1.get(), contact.getShapeFrame1());
+  EXPECT_EQ(convex2.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-10));
+  EXPECT_NEAR(-0.009, contact.penetrationDepth, 1e-10);
+  EXPECT_NEAR(0.5045, contact.point.x(), 1e-10);
+  EXPECT_TRUE(contact.point.allFinite());
+
+  detector->setContactGap(convex1.get(), 0.0044);
+  detector->setContactGap(convex2.get(), 0.0044);
+  EXPECT_FALSE(group->collide(allowed, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  detector->clearContactGaps();
+  EXPECT_FALSE(group->collide(allowed, &result));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, ContactGapBoundaryIsExcluded)
+{
+  const auto convexShape = std::make_shared<dynamics::ConvexMeshShape>(
+      makeCubeVertices(), makeCubeTriangles());
+  auto detector = collision::NativeCollisionDetector::create();
+  auto convex1 = makeFrame(convexShape);
+  auto convex2 = makeFrame(convexShape, Eigen::Vector3d(1.125, 0.0, 0.0));
+  detector->setContactGap(convex1.get(), 0.0625);
+  detector->setContactGap(convex2.get(), 0.0625);
+  auto group = detector->createCollisionGroup(convex1.get(), convex2.get());
+  collision::CollisionOption allowed(true, 10u, nullptr, true);
+  collision::CollisionResult result;
+  EXPECT_FALSE(group->collide(allowed, &result));
+
+  detector->setContactGap(convex2.get(), 0.062501);
+  EXPECT_TRUE(group->collide(allowed, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_NEAR(-0.125, result.getContact(0u).penetrationDepth, 1e-12);
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, BinaryCheckEmitsPairOnlyContact)
 {
   auto detector = collision::NativeCollisionDetector::create();
@@ -899,6 +1016,133 @@ TEST(NativeCollisionDetector, FourPointPlanarConvexPrismFacePatch)
   for (std::size_t i = 0u; i < tiltedResult.getNumContacts(); ++i) {
     EXPECT_GT(tiltedResult.getContact(i).penetrationDepth, 0.0);
     EXPECT_GT(tiltedResult.getContact(i).normal.dot(-faceNormal), 0.95);
+  }
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, FourPointPlanarConvexProximityFacePatch)
+{
+  const auto prismShape = std::make_shared<dynamics::ConvexMeshShape>(
+      makeTriangularPrismVertices(), makeTriangularPrismTriangles());
+  const Eigen::Vector3d faceNormal
+      = Eigen::Vector3d(1.0, 0.0, 1.0).normalized();
+  const Eigen::Vector3d faceCenter(0.5, 0.0, 0.5);
+  constexpr double separation = 0.006;
+  const Eigen::Matrix3d reversed
+      = Eigen::AngleAxisd(std::acos(-1.0), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  Eigen::Isometry3d transform2 = Eigen::Isometry3d::Identity();
+  transform2.linear() = reversed;
+  transform2.translation()
+      = faceCenter + separation * faceNormal - reversed * faceCenter;
+
+  auto detector = collision::NativeCollisionDetector::create();
+  detector->setContactManifoldMode(
+      collision::NativeCollisionDetector::ContactManifoldMode::FourPointPlanar);
+  auto prism1 = makeFrame(prismShape);
+  auto prism2 = makeFrame(prismShape);
+  prism2->setRelativeTransform(transform2);
+  detector->setContactGap(prism1.get(), 0.005);
+  detector->setContactGap(prism2.get(), 0.005);
+  auto group = detector->createCollisionGroup(prism1.get(), prism2.get());
+
+  collision::CollisionOption option(true, 10u, nullptr, true);
+  option.maxNumContactsPerPair = 10u;
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(4u, result.getNumContacts());
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_EQ(prism1.get(), contact.getShapeFrame1());
+    EXPECT_EQ(prism2.get(), contact.getShapeFrame2());
+    EXPECT_TRUE(contact.normal.isApprox(-faceNormal, 1e-10));
+    EXPECT_NEAR(-separation, contact.penetrationDepth, 1e-10);
+  }
+
+  collision::CollisionResult repeated;
+  ASSERT_TRUE(group->collide(option, &repeated));
+  ASSERT_EQ(result.getNumContacts(), repeated.getNumContacts());
+  for (std::size_t i = 0u; i < repeated.getNumContacts(); ++i) {
+    EXPECT_TRUE(repeated.getContact(i).point.isApprox(
+        result.getContact(i).point, 1e-12));
+  }
+
+  auto reverseDetector = collision::NativeCollisionDetector::create();
+  reverseDetector->setContactManifoldMode(
+      collision::NativeCollisionDetector::ContactManifoldMode::FourPointPlanar);
+  auto reversePrism2 = makeFrame(prismShape);
+  reversePrism2->setRelativeTransform(transform2);
+  auto reversePrism1 = makeFrame(prismShape);
+  reverseDetector->setContactGap(reversePrism2.get(), 0.005);
+  reverseDetector->setContactGap(reversePrism1.get(), 0.005);
+  auto reverseGroup = reverseDetector->createCollisionGroup(
+      reversePrism2.get(), reversePrism1.get());
+  collision::CollisionResult reverseResult;
+  ASSERT_TRUE(reverseGroup->collide(option, &reverseResult));
+  ASSERT_EQ(result.getNumContacts(), reverseResult.getNumContacts());
+  for (std::size_t i = 0u; i < reverseResult.getNumContacts(); ++i) {
+    const auto& contact = reverseResult.getContact(i);
+    EXPECT_TRUE(contact.normal.isApprox(faceNormal, 1e-10));
+    EXPECT_NEAR(-separation, contact.penetrationDepth, 1e-10);
+  }
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, FourPointPlanarPlaneConvexProximityUsesVertices)
+{
+  const auto convexShape = std::make_shared<dynamics::ConvexMeshShape>(
+      makeCubeVertices(), makeCubeTriangles());
+  const auto planeShape
+      = std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto detector = collision::NativeCollisionDetector::create();
+  detector->setContactManifoldMode(
+      collision::NativeCollisionDetector::ContactManifoldMode::FourPointPlanar);
+  auto convex = makeFrame(convexShape, Eigen::Vector3d(0.0, 0.0, 0.55));
+  auto plane = makeFrame(planeShape);
+  detector->setContactGap(convex.get(), 0.005);
+  detector->setContactGap(plane.get(), 0.1);
+  auto group = detector->createCollisionGroup(convex.get(), plane.get());
+
+  collision::CollisionOption option(true, 10u, nullptr, true);
+  option.maxNumContactsPerPair = 10u;
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(4u, result.getNumContacts());
+  const std::array<Eigen::Vector2d, 4u> expected{
+      Eigen::Vector2d(-0.5, -0.5),
+      Eigen::Vector2d(-0.5, 0.5),
+      Eigen::Vector2d(0.5, -0.5),
+      Eigen::Vector2d(0.5, 0.5)};
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_TRUE(contact.point.head<2>().isApprox(expected[i], 1e-12));
+    EXPECT_NEAR(0.025, contact.point.z(), 1e-12);
+    EXPECT_NEAR(-0.05, contact.penetrationDepth, 1e-12);
+    EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  }
+
+  collision::CollisionOption strictOption(true, 10u, nullptr, true);
+  strictOption.maxNumContactsPerPair = 2u;
+  collision::CollisionResult strictResult;
+  ASSERT_TRUE(group->collide(strictOption, &strictResult));
+  EXPECT_EQ(2u, strictResult.getNumContacts());
+
+  auto reverseDetector = collision::NativeCollisionDetector::create();
+  reverseDetector->setContactManifoldMode(
+      collision::NativeCollisionDetector::ContactManifoldMode::FourPointPlanar);
+  auto reversePlane = makeFrame(planeShape);
+  auto reverseConvex = makeFrame(convexShape, Eigen::Vector3d(0.0, 0.0, 0.55));
+  reverseDetector->setContactGap(reversePlane.get(), 0.1);
+  reverseDetector->setContactGap(reverseConvex.get(), 0.005);
+  auto reverseGroup = reverseDetector->createCollisionGroup(
+      reversePlane.get(), reverseConvex.get());
+  collision::CollisionResult reverseResult;
+  ASSERT_TRUE(reverseGroup->collide(option, &reverseResult));
+  ASSERT_EQ(4u, reverseResult.getNumContacts());
+  for (std::size_t i = 0u; i < reverseResult.getNumContacts(); ++i) {
+    EXPECT_TRUE(reverseResult.getContact(i).normal.isApprox(
+        -Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(-0.05, reverseResult.getContact(i).penetrationDepth, 1e-12);
   }
 }
 

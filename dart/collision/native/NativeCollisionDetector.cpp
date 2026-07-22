@@ -42,7 +42,9 @@
 #include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/collision/native/shapes/Shape.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Observer.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 #include <algorithm>
 #include <array>
@@ -50,6 +52,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
@@ -296,6 +299,187 @@ void eraseContactManifoldMode(const NativeCollisionDetector* detector)
   auto& registry = getContactManifoldModeRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
   registry.modes.erase(detector);
+}
+
+//==============================================================================
+using ContactGapMap = std::unordered_map<const dynamics::ShapeFrame*, double>;
+
+//==============================================================================
+class ContactGapOverrides final : public common::Observer
+{
+public:
+  void set(const dynamics::ShapeFrame* shapeFrame, double contactGap)
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    const auto current = std::atomic_load(&mSnapshot);
+    auto updated = current ? std::make_shared<ContactGapMap>(*current)
+                           : std::make_shared<ContactGapMap>();
+    const auto existing = updated->find(shapeFrame);
+
+    if (contactGap == 0.0) {
+      if (existing == updated->end())
+        return;
+
+      updated->erase(existing);
+      const auto* subject = static_cast<const common::Subject*>(shapeFrame);
+      mFramesBySubject.erase(subject);
+      removeSubject(subject);
+    } else {
+      if (existing == updated->end()) {
+        const auto* subject = static_cast<const common::Subject*>(shapeFrame);
+        addSubject(subject);
+        mFramesBySubject.emplace(subject, shapeFrame);
+      }
+      (*updated)[shapeFrame] = contactGap;
+    }
+
+    publish(std::move(updated));
+  }
+
+  [[nodiscard]] double get(const dynamics::ShapeFrame* shapeFrame) const
+  {
+    const auto snapshot = std::atomic_load(&mSnapshot);
+    if (!snapshot)
+      return 0.0;
+
+    const auto it = snapshot->find(shapeFrame);
+    return it == snapshot->end() ? 0.0 : it->second;
+  }
+
+  [[nodiscard]] std::shared_ptr<const ContactGapMap> snapshot() const
+  {
+    return std::atomic_load(&mSnapshot);
+  }
+
+  void clear()
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    removeAllSubjects();
+    mFramesBySubject.clear();
+    std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+  }
+
+protected:
+  void handleDestructionNotification(const common::Subject* subject) override
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    const auto frameIt = mFramesBySubject.find(subject);
+    if (frameIt == mFramesBySubject.end())
+      return;
+
+    const auto current = std::atomic_load(&mSnapshot);
+    if (current) {
+      auto updated = std::make_shared<ContactGapMap>(*current);
+      updated->erase(frameIt->second);
+      publish(std::move(updated));
+    }
+    mFramesBySubject.erase(frameIt);
+  }
+
+private:
+  void publish(std::shared_ptr<ContactGapMap> updated)
+  {
+    if (updated->empty()) {
+      std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+      return;
+    }
+
+    std::shared_ptr<const ContactGapMap> immutable = std::move(updated);
+    std::atomic_store(&mSnapshot, std::move(immutable));
+  }
+
+  mutable std::mutex mMutex;
+  std::unordered_map<const common::Subject*, const dynamics::ShapeFrame*>
+      mFramesBySubject;
+  std::shared_ptr<const ContactGapMap> mSnapshot;
+};
+
+//==============================================================================
+struct ContactGapRegistry
+{
+  std::unordered_map<
+      const NativeCollisionDetector*,
+      std::shared_ptr<ContactGapOverrides>>
+      overrides;
+  std::mutex mutex;
+};
+
+//==============================================================================
+ContactGapRegistry& getContactGapRegistry()
+{
+  static ContactGapRegistry registry;
+  return registry;
+}
+
+//==============================================================================
+std::shared_ptr<ContactGapOverrides> findContactGapOverrides(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactGapRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.overrides.find(detector);
+  return it == registry.overrides.end() ? nullptr : it->second;
+}
+
+//==============================================================================
+std::shared_ptr<ContactGapOverrides> getOrCreateContactGapOverrides(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactGapRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  auto& overrides = registry.overrides[detector];
+  if (!overrides)
+    overrides = std::make_shared<ContactGapOverrides>();
+  return overrides;
+}
+
+//==============================================================================
+std::shared_ptr<const ContactGapMap> lookupContactGaps(
+    const NativeCollisionDetector* detector)
+{
+  const auto overrides = findContactGapOverrides(detector);
+  return overrides ? overrides->snapshot() : nullptr;
+}
+
+//==============================================================================
+void eraseContactGapOverrides(const NativeCollisionDetector* detector)
+{
+  std::shared_ptr<ContactGapOverrides> removed;
+  {
+    auto& registry = getContactGapRegistry();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    const auto it = registry.overrides.find(detector);
+    if (it == registry.overrides.end())
+      return;
+    removed = std::move(it->second);
+    registry.overrides.erase(it);
+  }
+  removed->clear();
+}
+
+//==============================================================================
+double lookupContactGap(
+    const ContactGapMap* contactGaps, const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!contactGaps || !shapeFrame)
+    return 0.0;
+
+  const auto it = contactGaps->find(shapeFrame);
+  return it == contactGaps->end() ? 0.0 : it->second;
+}
+
+//==============================================================================
+double summedContactGap(
+    const ContactGapMap* contactGaps,
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2)
+{
+  if (!contactGaps)
+    return 0.0;
+
+  const double sum = lookupContactGap(contactGaps, object1->getShapeFrame())
+                     + lookupContactGap(contactGaps, object2->getShapeFrame());
+  return std::isfinite(sum) ? sum : 0.0;
 }
 
 //==============================================================================
@@ -975,7 +1159,8 @@ std::optional<ConvexFacePatchCandidate> makeConvexFacePatchCandidate(
     const ConvexWorldFace& face1,
     const ConvexWorldFace& face2,
     const native::ContactPoint& compactContact,
-    double scale)
+    double scale,
+    double proximityGap)
 {
   if (face1.normal.dot(face2.normal) > -kConvexFaceOppositionCosine)
     return std::nullopt;
@@ -1044,8 +1229,10 @@ std::optional<ConvexFacePatchCandidate> makeConvexFacePatchCandidate(
     return offset1 - offset2;
   };
 
-  const double contactTolerance
+  const double numericContactTolerance
       = std::max(1e-9, 64.0 * std::numeric_limits<double>::epsilon() * scale);
+  const double contactTolerance
+      = proximityGap > 0.0 ? proximityGap : numericContactTolerance;
   overlap = clipPolygonByContactDepth(
       overlap,
       [&](const Eigen::Vector2d& point) {
@@ -1075,20 +1262,27 @@ std::optional<ConvexFacePatchCandidate> makeConvexFacePatchCandidate(
     Eigen::Vector3d position1;
     Eigen::Vector3d position2;
     const double depth = getSurfaceData(point, &position1, &position2);
+    if (proximityGap > 0.0 && !(depth > -proximityGap))
+      continue;
     native::ContactPoint contact;
     contact.position = 0.5 * (position1 + position2);
     contact.normal = contactNormal;
-    contact.depth = std::max(0.0, depth);
+    contact.depth = proximityGap > 0.0 ? depth : std::max(0.0, depth);
     candidate.contacts.push_back(contact);
     depthSum += contact.depth;
   }
+  if (proximityGap > 0.0 && candidate.contacts.size() < 3u)
+    return std::nullopt;
   std::sort(
       candidate.contacts.begin(), candidate.contacts.end(), contactPointLess);
 
   const double meanDepth
       = depthSum / static_cast<double>(candidate.contacts.size());
-  candidate.score = std::abs(meanDepth - std::max(0.0, compactContact.depth))
-                    + (1.0 - normalAlignment) * scale;
+  const double compactDepth = proximityGap > 0.0
+                                  ? compactContact.depth
+                                  : std::max(0.0, compactContact.depth);
+  candidate.score
+      = std::abs(meanDepth - compactDepth) + (1.0 - normalAlignment) * scale;
   return candidate;
 }
 
@@ -1100,6 +1294,7 @@ bool tryBuildFourPointPlanarConvexFacePatch(
     const Eigen::Isometry3d& transform2,
     const native::CollisionOption& option,
     const native::ContactPoint& compactContact,
+    double proximityGap,
     native::CollisionResult& result)
 {
   const double scale = std::max(
@@ -1111,8 +1306,8 @@ bool tryBuildFourPointPlanarConvexFacePatch(
   std::optional<ConvexFacePatchCandidate> best;
   for (const auto& face1 : faces1) {
     for (const auto& face2 : faces2) {
-      auto candidate
-          = makeConvexFacePatchCandidate(face1, face2, compactContact, scale);
+      auto candidate = makeConvexFacePatchCandidate(
+          face1, face2, compactContact, scale, proximityGap);
       if (!candidate)
         continue;
 
@@ -1183,6 +1378,7 @@ bool collideFourPointPlanarConvexConvex(
       transform2,
       option,
       compactContact,
+      0.0,
       result);
   return true;
 }
@@ -1295,12 +1491,167 @@ bool collideFourPointPlanarPlaneBox(
 }
 
 //==============================================================================
+bool isPlaneConvexPair(const native::Shape* shape1, const native::Shape* shape2)
+{
+  return (shape1->getType() == native::ShapeType::Plane
+          && shape2->getType() == native::ShapeType::Convex)
+         || (shape1->getType() == native::ShapeType::Convex
+             && shape2->getType() == native::ShapeType::Plane);
+}
+
+//==============================================================================
+bool collideFourPointPlanarPlaneConvexProximity(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    double contactGap,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  if (!(contactGap > 0.0) || option.maxNumContacts == 0u)
+    return false;
+
+  const bool planeFirst = shape1->getType() == native::ShapeType::Plane;
+  const auto* plane
+      = static_cast<const native::PlaneShape*>(planeFirst ? shape1 : shape2);
+  const auto* convex
+      = static_cast<const native::ConvexShape*>(planeFirst ? shape2 : shape1);
+  const auto& planeTransform = planeFirst ? transform1 : transform2;
+  const auto& convexTransform = planeFirst ? transform2 : transform1;
+
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane->getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane->getOffset();
+
+  struct VertexContact
+  {
+    std::size_t vertexIndex = 0u;
+    Eigen::Vector3d vertex = Eigen::Vector3d::Zero();
+    double signedDistance = std::numeric_limits<double>::max();
+  };
+
+  std::vector<VertexContact> candidates;
+  candidates.reserve(convex->getVertices().size());
+  for (std::size_t i = 0u; i < convex->getVertices().size(); ++i) {
+    const Eigen::Vector3d vertex = convexTransform * convex->getVertices()[i];
+    const double signedDistance = worldNormal.dot(vertex - planePoint);
+    if (std::isfinite(signedDistance) && signedDistance < contactGap)
+      candidates.push_back(VertexContact{i, vertex, signedDistance});
+  }
+  if (candidates.empty())
+    return false;
+
+  if (!option.enableContact)
+    return true;
+
+  const Eigen::Vector3d contactNormal = planeFirst ? -worldNormal : worldNormal;
+  native::ContactManifold reducer;
+  for (const auto& candidate : candidates) {
+    native::ContactPoint contact;
+    contact.position
+        = candidate.vertex - 0.5 * worldNormal * candidate.signedDistance;
+    contact.normal = contactNormal;
+    contact.depth = -candidate.signedDistance;
+    const int featureIndex = static_cast<int>(candidate.vertexIndex);
+    if (planeFirst)
+      contact.featureIndex2 = featureIndex;
+    else
+      contact.featureIndex1 = featureIndex;
+    reducer.addContact(contact);
+  }
+
+  std::vector<native::ContactPoint> reduced(
+      reducer.getContacts().begin(), reducer.getContacts().end());
+  std::sort(reduced.begin(), reduced.end(), contactPointLess);
+  const std::size_t numContacts = std::min(
+      {reduced.size(), option.maxNumContacts, kFourPointPlanarContactTarget});
+  if (numContacts == 0u)
+    return false;
+
+  native::ContactManifold manifold;
+  manifold.setType(
+      numContacts >= 3u ? native::ContactType::Face
+                        : (numContacts == 2u ? native::ContactType::Edge
+                                             : native::ContactType::Point));
+  for (std::size_t i = 0u; i < numContacts; ++i)
+    manifold.addContact(reduced[i]);
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+//==============================================================================
+bool collideWithContactGap(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    double contactGap,
+    NativeCollisionDetector::ContactManifoldMode manifoldMode,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  if (!(contactGap > 0.0))
+    return false;
+
+  if (manifoldMode
+          == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+      && isPlaneConvexPair(shape1, shape2)) {
+    return collideFourPointPlanarPlaneConvexProximity(
+        shape1, transform1, shape2, transform2, contactGap, option, result);
+  }
+
+  native::DistanceOption distanceOption;
+  distanceOption.upperBound = contactGap;
+  distanceOption.enableNearestPoints = option.enableContact;
+  native::DistanceResult distanceResult;
+  const double distance = native::NarrowPhase::distance(
+      shape1, transform1, shape2, transform2, distanceOption, distanceResult);
+  if (!std::isfinite(distance) || !(distance < contactGap))
+    return false;
+
+  if (!option.enableContact)
+    return true;
+
+  if (!distanceResult.pointOnObject1.allFinite()
+      || !distanceResult.pointOnObject2.allFinite()
+      || !distanceResult.normal.allFinite()
+      || native::ContactPoint::isZeroNormal(distanceResult.normal)) {
+    return false;
+  }
+
+  native::ContactPoint compactContact;
+  compactContact.position
+      = 0.5 * (distanceResult.pointOnObject1 + distanceResult.pointOnObject2);
+  compactContact.normal = -distanceResult.normal.normalized();
+  compactContact.depth = -distance;
+  result.addContact(compactContact);
+
+  if (manifoldMode
+          == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+      && isConvexConvexPair(shape1, shape2)) {
+    (void)tryBuildFourPointPlanarConvexFacePatch(
+        static_cast<const native::ConvexShape&>(*shape1),
+        transform1,
+        static_cast<const native::ConvexShape&>(*shape2),
+        transform2,
+        option,
+        compactContact,
+        contactGap,
+        result);
+  }
+  return true;
+}
+
+//==============================================================================
 bool processNativePair(
     NativeCollisionObject* object1,
     NativeCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
     NativeCollisionDetector::ContactManifoldMode manifoldMode,
+    const ContactGapMap* contactGaps,
     bool& collisionFound)
 {
   if (shouldSkipPair(object1, object2, option))
@@ -1322,28 +1673,39 @@ bool processNativePair(
       = manifoldMode
             == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
         && isConvexConvexPair(shape1, shape2);
-  const bool hit = useFourPointPlaneBox ? collideFourPointPlanarPlaneBox(
-                       shape1,
-                       object1->getNativeTransform(),
-                       shape2,
-                       object2->getNativeTransform(),
-                       nativeOption,
-                       nativeResult)
-                   : useFourPointConvexFaces
-                       ? collideFourPointPlanarConvexConvex(
-                           shape1,
-                           object1->getNativeTransform(),
-                           shape2,
-                           object2->getNativeTransform(),
-                           nativeOption,
-                           nativeResult)
-                       : native::NarrowPhase::collide(
-                           shape1,
-                           object1->getNativeTransform(),
-                           shape2,
-                           object2->getNativeTransform(),
-                           nativeOption,
-                           nativeResult);
+  bool hit = useFourPointPlaneBox ? collideFourPointPlanarPlaneBox(
+                 shape1,
+                 object1->getNativeTransform(),
+                 shape2,
+                 object2->getNativeTransform(),
+                 nativeOption,
+                 nativeResult)
+             : useFourPointConvexFaces ? collideFourPointPlanarConvexConvex(
+                   shape1,
+                   object1->getNativeTransform(),
+                   shape2,
+                   object2->getNativeTransform(),
+                   nativeOption,
+                   nativeResult)
+                                       : native::NarrowPhase::collide(
+                                           shape1,
+                                           object1->getNativeTransform(),
+                                           shape2,
+                                           object2->getNativeTransform(),
+                                           nativeOption,
+                                           nativeResult);
+
+  if (!hit && option.allowNegativePenetrationDepthContacts) {
+    hit = collideWithContactGap(
+        shape1,
+        object1->getNativeTransform(),
+        shape2,
+        object2->getNativeTransform(),
+        summedContactGap(contactGaps, object1, object2),
+        manifoldMode,
+        nativeOption,
+        nativeResult);
+  }
 
   if (!hit)
     return false;
@@ -1382,6 +1744,7 @@ std::shared_ptr<NativeCollisionDetector> NativeCollisionDetector::create()
 NativeCollisionDetector::~NativeCollisionDetector()
 {
   eraseContactManifoldMode(this);
+  eraseContactGapOverrides(this);
   removeManifoldCache(this);
 }
 
@@ -1396,6 +1759,48 @@ NativeCollisionDetector::ContactManifoldMode
 NativeCollisionDetector::getContactManifoldMode() const
 {
   return lookupContactManifoldMode(this);
+}
+
+//==============================================================================
+void NativeCollisionDetector::setContactGap(
+    const dynamics::ShapeFrame* shapeFrame, double contactGap)
+{
+  if (!shapeFrame) {
+    throw std::invalid_argument(
+        "NativeCollisionDetector contact-gap ShapeFrame must not be null");
+  }
+  if (!std::isfinite(contactGap) || contactGap < 0.0
+      || contactGap > 0.5 * std::numeric_limits<double>::max()) {
+    throw std::invalid_argument(
+        "NativeCollisionDetector contact gap must be finite, non-negative, "
+        "and pairwise summable");
+  }
+
+  if (contactGap == 0.0) {
+    const auto overrides = findContactGapOverrides(this);
+    if (overrides)
+      overrides->set(shapeFrame, 0.0);
+    return;
+  }
+
+  getOrCreateContactGapOverrides(this)->set(shapeFrame, contactGap);
+}
+
+//==============================================================================
+double NativeCollisionDetector::getContactGap(
+    const dynamics::ShapeFrame* shapeFrame) const
+{
+  if (!shapeFrame)
+    return 0.0;
+
+  const auto overrides = findContactGapOverrides(this);
+  return overrides ? overrides->get(shapeFrame) : 0.0;
+}
+
+//==============================================================================
+void NativeCollisionDetector::clearContactGaps()
+{
+  eraseContactGapOverrides(this);
 }
 
 //==============================================================================
@@ -1446,6 +1851,11 @@ NativeCollisionDetector::cloneWithoutCollisionObjects() const
 {
   auto clone = NativeCollisionDetector::create();
   clone->setContactManifoldMode(getContactManifoldMode());
+  const auto contactGaps = lookupContactGaps(this);
+  if (contactGaps) {
+    for (const auto& entry : *contactGaps)
+      clone->setContactGap(entry.first, entry.second);
+  }
   return clone;
 }
 
@@ -1484,9 +1894,18 @@ bool NativeCollisionDetector::collide(
     return false;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
+  const auto contactGaps = lookupContactGaps(this);
   {
     DART_PROFILE_SCOPED_N("Native::updateEngineData");
     nativeGroup->updateEngineData();
+    if (contactGaps) {
+      for (const auto& entry : nativeGroup->mIdToObject) {
+        native::Aabb expanded = entry.second->getNativeAabb();
+        expanded.expand(
+            lookupContactGap(contactGaps.get(), entry.second->getShapeFrame()));
+        nativeGroup->mBroadPhase->update(entry.first, expanded);
+      }
+    }
   }
   auto& manifoldCache = getOrCreateManifoldCache(this);
   {
@@ -1502,7 +1921,13 @@ bool NativeCollisionDetector::collide(
       auto* object1 = nativeGroup->mIdToObject.at(id1);
       auto* object2 = nativeGroup->mIdToObject.at(id2);
       return !processNativePair(
-          object1, object2, option, result, manifoldMode, collisionFound);
+          object1,
+          object2,
+          option,
+          result,
+          manifoldMode,
+          contactGaps.get(),
+          collisionFound);
     };
     if (result) {
       // Result-carrying queries need the sorted, deduplicated visitation
@@ -1549,6 +1974,7 @@ bool NativeCollisionDetector::collide(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
+  const auto contactGaps = lookupContactGaps(this);
   nativeGroup1->updateEngineData();
   nativeGroup2->updateEngineData();
   auto& manifoldCache = getOrCreateManifoldCache(this);
@@ -1567,6 +1993,7 @@ bool NativeCollisionDetector::collide(
               option,
               result,
               manifoldMode,
+              contactGaps.get(),
               collisionFound)) {
         if (option.enableContact)
           attachCachedContactImpulses(result, &manifoldCache);
