@@ -32,13 +32,17 @@ two per-shape values, so the source detection thresholds are `0.010 m` for a
 card/card pair and `0.105 m` for a card/ground pair. Cards and cubes also set
 `ke=1e4` and `kd=1e3`; the ground inherits Newton's separate defaults.
 
-The new DART lane may represent those numeric gap values through DART's Native
-collision frontend and exact/boxed constraint solvers. DART's signed Native
-contact-gap approximation is not equivalent to the Warp/Newton collision
-backend or its compliant stiffness/damping semantics. The adapter therefore
-records that the values are represented while keeping broad source gap
-semantics false. Exact and boxed results compare DART solver lanes under one
-adapter; they do not prove paper, backend, trajectory, timing, renderer, or
+The DART lane represents those numeric gap values through DART's Native
+collision frontend and exact/boxed constraint solvers. Predictive checkpoint
+`3647959a188` additionally allows an admitted separated contact to
+close by its physical separation divided by `dt` before generating an impulse.
+That matches the source's scalar separation-over-one-step velocity allowance
+narrowly. It does not make DART's signed Native contact-gap approximation
+equivalent to the Warp/Newton collision backend, contact selection/manifolds,
+float32 arithmetic, or compliant stiffness/damping semantics. The adapter
+therefore records that the values are represented while keeping broad source
+gap semantics false. Exact and boxed results compare DART solver lanes under
+one adapter; they do not prove paper, backend, trajectory, timing, renderer, or
 solver-superiority parity.
 
 ## Pinned Source Controls
@@ -130,12 +134,13 @@ continuation may be attached to the draft PR with explicit cap/failure
 telemetry, but it cannot satisfy the strict zero-failure completion rule or be
 called a Tables 6-7 reproduction.
 
-### Registered-scene result
+### Pushed checkpoint result (historical)
 
-The current registered-scene gate stops at item 3. The formatted Release build,
-three focused ten-level C++ fixtures, `pixi run lint-cpp`, and
-`pixi run check-lint-cpp` pass. The strict exact lane then fails closed at
-completed DART step 1 (`t=1/240 s`):
+The registered-scene result pushed at `ffe23d347b0` remains valid historical
+checkpoint evidence. The formatted Release build, three focused ten-level C++
+fixtures, `pixi run lint-cpp`, and `pixi run check-lint-cpp` passed. Under that
+checkpoint, the strict exact lane failed closed at completed DART step 1
+(`t=1/240 s`):
 
 - 264 contacts are present in the final collision result, well below the
   configured 4,096-contact capacity;
@@ -166,6 +171,69 @@ Local generated evidence remains outside Git:
   `/tmp/card10-boxed.Q4gt2g/final.png`, SHA-256
   `3573bf9ce4fba68d46ddb4dc16967d09057918a6a6346549b7f31ada7c98c3bf`.
 
-No ten-level video is justified by this strict gate. The current result is a
-precise DART solver blocker, not a Tables 6-7 reproduction, exact-versus-boxed
-superiority result, source trajectory match, or paper-parity artifact.
+No ten-level video was justified by that strict gate. The checkpoint result is
+a precise historical DART solver blocker, not a Tables 6-7 reproduction,
+exact-versus-boxed superiority result, source trajectory match, or
+paper-parity artifact.
+
+### Predictive checkpoint
+
+Commit `3647959a188` follows previous checkpoint `ffe23d347b0`. It keeps the
+same gap activation and physical negative separation, but subtracts
+`separation / dt`
+from the velocity-phase contact right-hand side. Penetration correction remains
+zero for separated contacts. This is a predictive speculative-contact
+allowance, not Baumgarte correction or a compliant-contact port.
+
+The corrected exact one-step gate now clears completed step 1 with 264 final
+contacts, 18 exact attempts/solves, zero exact failures, zero accepted caps,
+and zero boxed fallbacks. The paired boxed one-step control also completes.
+
+A strict 40-step exact prefix then reaches completed step 31 before failing
+closed on a 79-contact island. That island reaches 200 outer iterations with
+residual and best residual `1.072805023427092e-5`, against the declared
+`1e-6` tolerance. The saved final diagnostics record 558 exact attempts, 557
+solves, one exact failure, zero accepted caps, zero boxed fallbacks, 540 warm
+starts, and 304 final contacts. The paired boxed lane completes all 40 steps.
+
+Final scoped local artifacts, all outside Git:
+
+- corrected exact step-1 timeline:
+  `/tmp/card10-predictive-scoped-exact1.0VwT5s/timeline.json`, SHA-256
+  `bb1c352a3a2e35b7ee0796899dfbffb59358790fe8871cc8a936cbf62404066f`;
+- corrected boxed step-1 timeline:
+  `/tmp/card10-predictive-scoped-boxed1.Kye74m/timeline.json`, SHA-256
+  `8947284c4719212722a67ef920d9e5e60892ae1ecf5195f4312703cb2061fbc7`;
+- corrected exact 40-step request timeline:
+  `/tmp/card10-predictive-scoped-exact40.YMlQ9q/timeline.json`, SHA-256
+  `8154d5e4eeeec934e717717f9381dd1e5f300f2691702143881a6bcf047a2495`;
+- corrected boxed 40-step timeline:
+  `/tmp/card10-predictive-scoped-boxed40.JE0tj6/timeline.json`, SHA-256
+  `b08bedc459bd0ea946c9b7a0bedf8030215c847b3377ebc3e127861ca5096b94`.
+
+Final local gates for `3647959a188` pass:
+
+- `ConstraintSolver`: 66/66;
+- Native collision detector: 50/50;
+- `SplitImpulse`: 13/13;
+- exact solver: 38/38;
+- paper fixtures: 36 passed with 3 explicit opt-in skips;
+- visual runner: 332/332; and
+- independent post-fix re-review: `ALLOW`.
+
+The source row comparable to DART completed step 31 is zero-based
+`step_idx=30`: it uses 422 contacts in one global workspace and converges at a
+Coulomb-relative residual of `7.59e-7`. DART completed step 31 has 304 contacts
+split across 18 islands and fails one 79-contact group. These are not the same
+operator or contact problem. The source also uses colored BGS and checks inner
+convergence every five sweeps; the current DART strict lane is sequential and
+runs a fixed ten sweeps. The source's first later `converged=false` row remains
+`step_idx=33`, with 460 contacts and continuation after failure.
+
+The next evidence lane should therefore be a separately named
+source-continuation ten-level video plus one-factor colored-scheduling and
+global-scope diagnostics. Do not loosen tolerance, iteration caps, fallback,
+fail-fast, or accepted-cap policy to force a strict pass. The corrected DART
+prefix remains a narrower and later blocker, not source, trajectory, physical,
+paper, or solver-superiority parity. No ten-level final video is valid yet;
+raw captures and media remain ignored local state.
