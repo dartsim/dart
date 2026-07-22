@@ -44,6 +44,12 @@ exact attempts solve, but the 5,000-iteration outer solve ends at residual
 `8.6992952e-4` with 96 contacts. This is a diagnostic solver blocker, not
 completed impact evidence or promotable media.
 
+Checkpoint `34d9b66e97c` adds a distinct bounded source-continuation lane for
+that same 2,000-step release diagnostic. Its exact/boxed capture and
+independent reuse verification pass, but this does not clear the strict
+step-142 blocker or establish strict convergence, superiority, outcome,
+timing, backend, or paper parity.
+
 A distinct source-pinned 101-stone DART adapter now executes the public
 `--stones 101`, 400-frame no-release schedule. Strict exact fails closed after
 step 209 at residual `1.2582804496066107e-6`; boxed completes 1,600 steps but
@@ -932,6 +938,29 @@ separate source-configuration crown-impact adapter remains blocked at strict
 step 142. The group clip still needs manual PR-browser-composer upload and a
 recorded GitHub user-attachment URL.
 
+The separate current-head crown-impact continuation root is ignored at
+`assets/pr_media_current_head_fig07_crown_continuation/`. Its paired capture
+summary and two-result/one-group independent reuse verification pass with
+SHA-256 values
+`f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`
+and `969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`.
+Exact and boxed complete 2,000/2,000 steps with successful release at step
+1,600. Exact records 2,122/2,122 attempts/solves, zero failures/fallbacks,
+1,940 plateau accepts, 98 max-iteration accepts, and final residual
+`0.004493046465992133`. Group metadata/panel/clip SHA-256 values are
+`4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7`,
+`f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802`,
+and `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8`.
+
+Manual inspection finds both arches standing and cubes reaching the crown,
+with nearly identical visible outcomes. All records keep
+`paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. This is bounded non-strict
+continuation evidence only, not strict convergence, solver superiority,
+physical outcome, source/paper trajectory or Figure 7 parity, timing, or
+backend evidence. Upload the group clip through the GitHub browser composer
+and record its URL; do not commit the generated bundle.
+
 The earlier trace-equivalent local literal-wedge standing bundle at
 `assets/paper_evidence/fig07_arch25_literal/` is locally finalized as valid
 current-source, non-paper reconstruction evidence. It contains five selected local
@@ -1306,9 +1335,10 @@ cross-platform CI.
 - Preserve the finalized incline, historical Painleve proxy, source-pinned
   Painleve adapter, backspin, and turntable bundles within their lane-specific
   claim boundaries. Upload the two source-pinned Painleve exact-vs-boxed clips
-  and the current-head Figure 7 literal-standing group only through the browser
-  composer and record their GitHub URLs. Keep the Figure 7 visible-standing
-  observation manual-only and preserve its separate step-142 impact blocker.
+  and both current-head Figure 7 groups (literal standing and crown-impact
+  continuation) only through the browser composer and record their GitHub
+  URLs. Keep both visible-outcome observations manual-only, label continuation
+  non-strict, and preserve the separate step-142 strict impact blocker.
   Promote only
   the remaining
   post-review small rows through validated immutable bundles; produce

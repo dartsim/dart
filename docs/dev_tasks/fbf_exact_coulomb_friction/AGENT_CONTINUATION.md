@@ -1,7 +1,7 @@
 # Agent Continuation And Truth Ledger
 
 This is the authoritative status for the active
-`fbf_exact_coulomb_friction` dev task as of 2026-07-21. It supersedes older
+`fbf_exact_coulomb_friction` dev task as of 2026-07-22. It supersedes older
 solver, performance, geometry, GUI, PR, and completion claims in this task
 folder. Do not mark the task complete or retire the folder.
 
@@ -45,6 +45,7 @@ renderer, Apple hardware, or paper timer boundary.
 | Paper timing | The current author workload and kernel are inspectable, but DART's engine, precision, host, and timer boundary are unmatched and the historical Apple/timing attestation is absent | Paper timing target and verdict remain null |
 | Current small CPU matrix | Locally finalized current-source `paper_cpu`/Native bundle binds 60 artifacts, 27 complete CPU-4 invocations, and 5,220 rows | 9/9 physical classifiers pass; 7/9 strict-solver/local-real-time contracts pass; zero warmups and unmatched paper contracts prohibit a paper timing claim |
 | Literal 25-stone visual evidence | Current-head capture and independent reuse verification pass for exact, boxed, and their synchronized group. Exact completes 600/600 with 96 contacts and zero caps/failures/fallbacks; boxed completes 600/600 | Capture/integrity and exact-telemetry pass for the reconstructed no-projectile scene; both visibly standing is manual-only because no automated semantic/physical oracle exists |
+| Figure 7 crown-impact source continuation | Checkpoint `34d9b66e97c` adds a separate bounded continuation lane. Exact and boxed complete 2,000/2,000 with cube release at step 1,600; exact has 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, and 98 max-iteration accepts | Capture/integrity and continuation telemetry pass only. Manual outcomes are nearly identical; no strict convergence, superiority, physical outcome, source/paper parity, timing, or backend claim follows, and strict remains blocked at step 142 |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source non-paper threshold evidence; capture contacts 8 versus aggregate trace contacts 6 are explicitly not compared, and Fig. 1/2 plus video.03 remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves separate current-source FBF, MuJoCo, and Kamino CPU runs on `mu=.3,.4,.45,.5,.55,.6,.8`; every lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric source-pinned scientific-negative/reference evidence only; FBF records 839/840 configured convergence flags, timing is excluded, and no DART/full-state/historical/golden/media/timing/performance/parity claim follows |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle passes capture and independent verify with four 121-sample exact/boxed traces, four 61-frame H.264/yuv420p members, four decoded groups, machine-classified outcomes, and manually audited panels/keyframes | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and no source-backend, trajectory, paper-Figure-5, timing, or solver-superiority claim follows |
@@ -212,6 +213,29 @@ not a physical oracle or superiority test. Claim no source/paper trajectory,
 outcome, timing, solver superiority, crown-impact, or Fig. 7 parity. The
 separate source-configuration crown-impact adapter remains blocked at strict
 step 142. GitHub browser-composer upload remains pending.
+
+The separate Figure 7 crown-impact continuation pair is ignored at
+`assets/pr_media_current_head_fig07_crown_continuation/`. Its paired run and
+independent two-result/one-group reuse verification pass with SHA-256 values
+`f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`
+and `969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`.
+Both lanes complete 2,000/2,000 and release the cubes at step 1,600. Exact has
+2,122/2,122 attempts/solves, zero failures/fallbacks, 1,940 plateau accepts,
+98 max-iteration accepts, and final residual `0.004493046465992133`.
+Group metadata/panel/clip hashes are
+`4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7`,
+`f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802`,
+and `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8`.
+
+Manual inspection finds both arches standing and cubes reaching the crown,
+with nearly identical visible outcomes. Metadata sets
+`paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. Keep the claim bounded to
+non-strict continuation capture/integrity and telemetry: it proves no strict
+convergence, superiority, physical outcome, source/paper trajectory or Figure
+7 parity, timing, or backend equivalence. It does not clear the strict
+step-142 blocker. Upload the group clip through the GitHub browser composer
+and record its URL.
 
 The earlier trace-equivalent current-source visual bundle is
 `assets/paper_evidence/fig07_arch25_literal/`.
@@ -1129,7 +1153,7 @@ closure check.
 | Gate | Current state | Required next evidence |
 | --- | --- | --- |
 | Literal 25-stone static arch | Exact trajectory, residual, outcome, mean-real-time, multicore, and earlier trace-equivalent visual gates pass. The current-head exact/boxed recapture and independent verification pass, but its visible-standing assessment is manual-only | Preserve both evidence roots and the narrow reconstructed no-projectile claim; upload the labeled current-head group through the PR browser composer and record its URL without promoting a physical/superiority/Fig. 7 claim |
-| Projectile impact sequences | Frozen v1 is a locally sealed scientific negative: contact order/finite/fallback gates pass, but cap/residual/global/far-field gates fail | Preserve v1 without tuning; obtain source-equivalent passing evidence and inspected impact media only from a separately declared contract |
+| Projectile impact sequences | Frozen v1 remains a scientific negative. The separate current-source continuation pair completes through release, but has accepted non-strict outcomes and only manual, nearly identical visual observations; strict source configuration remains blocked at step 142 | Preserve v1 without tuning and continuation without promotion; upload its group through the browser composer, then obtain source-equivalent strict evidence and a real outcome oracle from a separately declared contract |
 | Card house | The strict adapter still fails the 56-contact group at step 35. A separate source-continuation exact/boxed capture completes 2,400 steps through release with full acceptance telemetry and qualitative manual inspection | Continue isolated strict solver A/B work; keep colored source parity separate; independently review and publish the continuation clip only as continuation evidence, never merge it with the reconstructed manifold claim or present accepted finite iterates as strict success |
 | 101-stone arch | Source-pinned DART exact stops at step 209 on an iteration cap; boxed completes but collapses. The older literal v7 and oriented-box negatives remain distinct | Preserve the precise negative and decoded blocker media; obtain a full strict exact standing trajectory, matched Kamino outcome, approved comparison contract, and only then parity-eligible media |
 | 10-level card house | Strict remains blocked after completed step 31. The final continuation exact member passes 3,200/3,200 and independent reuse verification, but has no automated semantic-outcome validation. A clean boxed control completes 80/80; full boxed reached only step 112, was interrupted, and is non-evidence | Preserve both strict checkpoints and final hashes. Resolve boxed runtime before paired media, and manually upload only the final exact clip. Keep colored/global-scope work one-factor-at-a-time; do not loosen tolerance, caps, fallback, or accepted-cap policy |
@@ -1161,7 +1185,7 @@ closure check.
    before paired media. Run colored-scheduling and global-scope diagnostics one
    factor at a time; do not loosen tolerance or iteration caps. Upload any
    final ten-level exact clip manually through the PR browser composer and
-   record its URL. Upload the current-head Figure 7 exact-vs-boxed group and the
+   record its URL. Upload both current-head Figure 7 exact-vs-boxed groups and the
    two Painleve exact-vs-boxed clips
    through the same browser-composer path and record their URLs. Continue
    generating the remaining full card, strict 101-stone, figure, and

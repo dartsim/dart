@@ -2,7 +2,7 @@
 
 ## Current Checkpoint
 
-This task is active and incomplete as of 2026-07-21. Start with
+This task is active and incomplete as of 2026-07-22. Start with
 [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md); it is the authoritative truth
 ledger.
 
@@ -72,6 +72,7 @@ Inspect and preserve any existing worktree changes. The durable branch state is:
 ```text
 branch: research/fbf-friction-release620
 target synchronization verified through: 6a1d377f616
+Figure 7 continuation implementation checkpoint: 34d9b66e97c
 topic HEAD/divergence/PR/CI/review state: verify live
 ```
 
@@ -206,6 +207,29 @@ automated physical oracle, source/paper trajectory or outcome, timing,
 superiority, crown-impact, or Fig. 7 parity result. The separate crown-impact
 adapter remains blocked at strict step 142. The group clip still needs manual
 browser-composer upload and a recorded GitHub user-attachment URL.
+
+The separate current-head Figure 7 crown-impact continuation pair is ignored
+at `assets/pr_media_current_head_fig07_crown_continuation/`. Checkpoint
+`34d9b66e97c` supplies its distinct schedule. The paired run and independent
+reuse verification pass with SHA-256 values
+`f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`
+and `969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`;
+verification reports two results and one group. Exact and boxed complete
+2,000/2,000 steps with successful cube release at step 1,600. Exact records
+2,122/2,122 attempts/solves, zero failures/fallbacks, 1,940 plateau accepts,
+98 max-iteration accepts, and final residual `0.004493046465992133`.
+Group metadata/panel/clip hashes are
+`4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7`,
+`f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802`,
+and `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8`.
+Manual inspection finds both arches standing and cubes reaching the crown,
+with nearly identical visible outcomes. Metadata keeps
+`paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. Treat this only as bounded
+non-strict continuation evidence: no strict convergence, superiority,
+physical outcome, source/paper trajectory or Figure 7 parity, timing, or
+backend claim follows. The strict scene remains blocked at step 142. Upload
+the group clip through the GitHub browser composer and record its URL.
 
 The earlier trace-equivalent current-source visual bundle is
 `assets/paper_evidence/fig07_arch25_literal/`.
@@ -1114,10 +1138,11 @@ only for an explicit live-closure recheck.
    101-stone DART, and card-v2 blockers. Preserve the finalized source-pinned
    Painleve exact/boxed capture,
    complete state-trace outcome audit, independent replay, and manual
-   inspection; upload its two exact-vs-boxed clips and the current-head Figure 7
-   literal-standing group through the PR browser composer and record the
-   resulting URLs. Keep the Figure 7 standing assessment manual-only and its
-   source-configuration crown-impact adapter blocked at step 142. Upload the
+   inspection; upload its two exact-vs-boxed clips and both current-head Figure
+   7 groups (literal standing and crown-impact continuation) through the PR
+   browser composer and record the resulting URLs. Keep both Figure 7
+   assessments manual-only, keep continuation explicitly non-strict, and keep
+   the source-configuration crown-impact adapter blocked at step 142. Upload the
    101-stone hstack, if
    selected, only as a frozen-prefix blocker with no superiority/parity claim
    and record its URL. Continue one-factor-at-a-time

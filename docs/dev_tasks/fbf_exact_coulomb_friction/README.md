@@ -41,6 +41,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Paper timing | The recorded timing row is reconstructed float64 DART on x86-64 Linux, not the public Warp/Newton float32 workload, and the historical Apple host/timing protocol is unattested | Paper target and timing verdict remain null |
 | Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
 | Literal 25-stone visual evidence | The ignored current-head exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
+| Source-continuation Figure 7 crown-impact evidence | Checkpoint `34d9b66e97c` adds a separate bounded continuation lane. Its ignored exact/boxed pair completes 2,000/2,000 steps with successful cube release at step 1,600; exact records 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, and 98 max-iteration accepts | Valid current-DART capture/integrity and continuation telemetry only. Both arches visibly remain standing and the cubes reach the crown, but the lanes are nearly identical and the assessment is manual-only; no strict convergence, superiority, paper parity, outcome, timing, or backend claim follows |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over `mu=.3,.4,.45,.5,.55,.6,.8`; each lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric current-source scientific-negative/reference evidence only; FBF has 839/840 configured convergence flags, every timing field is diagnostic-only, and no DART, historical-paper, full-state, golden, media, timing, performance, or parity claim follows |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
@@ -239,6 +240,38 @@ The allowed claim is narrow: this reconstructed float64 x86-64 literal arch
 remains standing and visually stable for the declared 600-step no-projectile
 run. It is not a projectile-impact result, a paper or author-scene parity
 result, a 101-stone result, or an author-golden image comparison.
+
+## Current Figure 7 Crown-Impact Continuation Evidence
+
+Implementation checkpoint `34d9b66e97c` adds the separately named
+`masonry_arch_25_author_crown_impact_source_continuation_current_source`
+schedule without changing the strict source-configuration lane. The ignored
+root is `assets/pr_media_current_head_fig07_crown_continuation/`. Its paired
+capture summary passes with SHA-256
+`f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`;
+independent reuse verification also passes with two results and one group,
+SHA-256
+`969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`.
+
+Exact and boxed both complete 2,000/2,000 steps and successfully release the
+three cubes at step 1,600. Exact records 2,122/2,122 attempts/solves, zero
+failures/fallbacks, 1,940 plateau accepts, 98 max-iteration accepts, and final
+residual `0.004493046465992133`; boxed completes with
+`BoxedLcpConstraintSolver`. The synchronized group metadata, endpoint panel,
+and 1320x530 H.264/yuv420p clip SHA-256 values are
+`4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7`,
+`f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802`,
+and `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8`.
+
+Manual inspection finds both arches standing and the released cubes reaching
+the crown, with nearly identical visible outcomes. Every member/group record
+sets `paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. This is bounded non-strict
+continuation evidence, not strict convergence, solver superiority, physical
+outcome, source/paper trajectory or Figure 7 parity, timing, or backend
+evidence. The strict source scene remains blocked at step 142; this separate
+lane does not clear it. Upload the group clip through the GitHub browser
+composer and record its user-attachment URL; do not commit generated media.
 
 ## Finalized Fig. 01/02 And Video.03 Incline Evidence
 
@@ -1149,9 +1182,11 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    source-pinned Painleve adapter, and backspin bundles. Preserve its
    trace/outcome audit, independent replay, and manual inspection, upload the
    two exact-vs-boxed clips through the PR browser composer. Also preserve and
-   upload the current-head Figure 7 literal-standing exact-vs-boxed group only
-   through that browser-composer path, recording its URL and retaining the
-   manual-only standing boundary. Then continue with the other smaller-figure
+   upload the current-head Figure 7 literal-standing and crown-impact
+   continuation exact-vs-boxed groups only through that browser-composer path,
+   recording their URLs and retaining the manual-only, non-strict boundaries.
+   The continuation lane does not clear the strict step-142 blocker. Then
+   continue with the other smaller-figure
    recaptures and strict card work. Continue isolated
    one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
    fallback, or fail-fast changes. For the ten-level lane, preserve the final,

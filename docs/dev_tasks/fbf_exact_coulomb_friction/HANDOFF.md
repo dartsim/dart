@@ -180,6 +180,33 @@ Current literal-arch visual truth:
   source/paper trajectory or outcome, timing, superiority, crown-impact, or
   Fig. 7 parity result. The separate crown-impact adapter remains blocked at
   strict step 142. Upload remains pending through the PR browser composer.
+
+Current source-continuation crown-impact truth:
+
+- Implementation checkpoint 34d9b66e97c adds a separately named bounded
+  continuation schedule; its ignored root is
+  assets/pr_media_current_head_fig07_crown_continuation/.
+- The paired run and independent reuse verification pass. Their SHA-256 values
+  are f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f
+  and 969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3;
+  verification reports two results and one group.
+- Exact and boxed complete 2,000/2,000 steps and release the cubes successfully
+  at step 1,600. Exact records 2,122/2,122 attempts/solves, zero
+  failures/fallbacks, 1,940 plateau accepts, 98 max-iteration accepts, and
+  final residual 0.004493046465992133.
+- Group metadata/panel/clip hashes are
+  4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7,
+  f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802,
+  and c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8.
+- Manual inspection finds both arches standing and cubes reaching the crown,
+  with nearly identical visible outcomes. Metadata sets paper_comparable=false
+  and automated_semantic_outcome_validated=false. This is bounded non-strict
+  continuation evidence only, not strict convergence, superiority, physical
+  outcome, source/paper trajectory or Figure 7 parity, timing, or backend
+  evidence. It does not clear the strict step-142 blocker.
+- Upload the group clip through the GitHub browser composer and record its
+  user-attachment URL; do not commit the generated bundle.
+
 - Keep the earlier trace-equivalent bundle at
   assets/paper_evidence/fig07_arch25_literal/ as distinct provenance.
 - The separate session-local small visual matrix at
