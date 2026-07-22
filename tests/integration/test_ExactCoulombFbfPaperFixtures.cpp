@@ -1129,7 +1129,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
       installed->setExactCoulombSourceContinuationOptions(
           fbf_author_card_house::dartSourceContinuationOptions());
     }
-    installed->setExactCoulombColoredBlockGaussSeidelEnabled(false);
+    installed->setExactCoulombColoredBlockGaussSeidelEnabled(
+        scenario != nullptr && scenario->coloredBlockGaussSeidelDiagnostic);
     installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         false);
   } else {
@@ -3826,6 +3827,77 @@ TEST(
   EXPECT_NE(
       json.find("\"historical_tables_6_7_invocation_known\":false"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseTenLevelColoredBgsDiagnosticChangesOnlyOrderingRequest)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kTenLevelColoredBgsDiagnosticDemoSceneId,
+      "fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source");
+  EXPECT_STREQ(
+      kTenLevelColoredBgsDiagnosticScenario.demoSceneId,
+      kTenLevelColoredBgsDiagnosticDemoSceneId);
+  EXPECT_EQ(
+      kTenLevelColoredBgsDiagnosticScenario.levelCount,
+      kTenLevelImpactScenario.levelCount);
+  EXPECT_EQ(
+      kTenLevelColoredBgsDiagnosticScenario.selectedFrames,
+      kTenLevelImpactScenario.selectedFrames);
+  EXPECT_EQ(
+      kTenLevelColoredBgsDiagnosticScenario.selectedSubsteps(),
+      kTenLevelImpactScenario.selectedSubsteps());
+  EXPECT_FALSE(kTenLevelColoredBgsDiagnosticScenario.sourceContinuation);
+  EXPECT_TRUE(
+      kTenLevelColoredBgsDiagnosticScenario.coloredBlockGaussSeidelDiagnostic);
+  EXPECT_TRUE(
+      kTenLevelColoredBgsDiagnosticScenario.sourceContactGapValuesRepresented);
+  EXPECT_FALSE(kTenLevelImpactScenario.coloredBlockGaussSeidelDiagnostic);
+
+  const auto baselineWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, true, &kTenLevelImpactScenario);
+  const auto diagnosticWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, true, &kTenLevelColoredBgsDiagnosticScenario);
+  const auto baseline = inspectDynamicsAdapterContract(
+      baselineWorld, kTenLevelImpactScenario, "integration_fixture", true);
+  const auto diagnostic = inspectDynamicsAdapterContract(
+      diagnosticWorld,
+      kTenLevelColoredBgsDiagnosticScenario,
+      "integration_fixture",
+      true);
+
+  EXPECT_FALSE(baseline.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_TRUE(diagnostic.exactColoredBlockGaussSeidelEnabled);
+  EXPECT_FALSE(baseline.exactParticipantAffinityEnabled);
+  EXPECT_FALSE(diagnostic.exactParticipantAffinityEnabled);
+  EXPECT_FALSE(baseline.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(diagnostic.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(baseline.exactOptions.acceptOuterMaxIterations);
+  EXPECT_FALSE(diagnostic.exactOptions.acceptOuterMaxIterations);
+  EXPECT_FALSE(baseline.exactOptions.fallbackToBoxedLcp);
+  EXPECT_FALSE(diagnostic.exactOptions.fallbackToBoxedLcp);
+
+  const std::string baselineJson = dynamicsAdapterContractJson(baseline);
+  std::string normalizedDiagnosticJson
+      = dynamicsAdapterContractJson(diagnostic);
+  const auto normalizeOne
+      = [&normalizedDiagnosticJson](
+            const std::string& from, const std::string& to) {
+          const auto position = normalizedDiagnosticJson.find(from);
+          ASSERT_NE(position, std::string::npos);
+          normalizedDiagnosticJson.replace(position, from.size(), to);
+          EXPECT_EQ(normalizedDiagnosticJson.find(from), std::string::npos);
+        };
+  normalizeOne(
+      kTenLevelColoredBgsDiagnosticDemoSceneId, kTenLevelDynamicsDemoSceneId);
+  normalizeOne(
+      "\"colored_block_gauss_seidel_enabled\":true",
+      "\"colored_block_gauss_seidel_enabled\":false");
+  EXPECT_EQ(normalizedDiagnosticJson, baselineJson);
 }
 
 //==============================================================================

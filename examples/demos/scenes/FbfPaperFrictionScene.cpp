@@ -914,6 +914,8 @@ void installAuthorCardHouseSolver(
 {
   const bool contactGapValuesEnabled
       = scenario != nullptr && scenario->sourceContactGapValuesRepresented;
+  const bool coloredBlockGaussSeidelEnabled
+      = scenario != nullptr && scenario->coloredBlockGaussSeidelDiagnostic;
   configureSolver(
       world,
       mode,
@@ -949,7 +951,8 @@ void installAuthorCardHouseSolver(
       exactSolver->setExactCoulombSourceContinuationOptions(
           fbf_author_card_house::dartSourceContinuationOptions());
     }
-    exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(false);
+    exactSolver->setExactCoulombColoredBlockGaussSeidelEnabled(
+        coloredBlockGaussSeidelEnabled);
     exactSolver
         ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
             false);
@@ -2187,67 +2190,120 @@ DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceParameterizedScene()
 }
 
 //==============================================================================
-DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene()
+DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene(
+    const fbf_author_card_house::DynamicsScenario& scenario)
 {
   using namespace fbf_author_card_house;
+  const bool coloredDiagnostic = scenario.coloredBlockGaussSeidelDiagnostic;
+  const char* const title
+      = coloredDiagnostic ? "FBF Author Card House 10: Colored-BGS Diagnostic"
+                          : "FBF Author Card House 10: Impact (Current Source)";
+  const char* const summary
+      = coloredDiagnostic
+            ? "One-factor strict exact-FBF diagnostic for the current-source "
+              "ten-level adapter with deterministic DART manifold-colored "
+              "inner BGS enabled."
+            : "Current-source-supported --levels 10 configuration: 155 cards, "
+              "four kinematic cubes, and the source-default 800-frame release "
+              "schedule in DART exact/boxed lanes.";
+  const char* const overview
+      = coloredDiagnostic
+            ? "This diagnostic preserves the strict current-source ten-level "
+              "DART adapter and changes only the default-off manifold-colored "
+              "inner BGS request. Its qualifying evidence schedule uses one "
+              "simulation thread and keeps participant affinity disabled so "
+              "the experiment isolates ordering rather than parallel "
+              "execution."
+            : "Configuration pinned to public author commit b3f3c5c and "
+              "selected through supported current-source run.py arguments: "
+              "--levels 10, 110 leaning cards, 45 bridges, four initially "
+              "kinematic 0.8 m cubes, mu=.8, and the source-default 800 "
+              "display "
+              "frames. DART uses four substeps per frame at dt=1/240 s and "
+              "releases the existing cubes after completed step 1,600.";
+  const char* const expected
+      = coloredDiagnostic
+            ? "The preregistered probe is a 40-step strict fail-fast run. Its "
+              "sidecar must retain the failed group's colored-path use, solve, "
+              "manifold, color, width, participant, and dispatch counters even "
+              "when a later constrained group succeeds."
+            : "The expected evidence is a deterministic, finite DART exact/"
+              "boxed comparison over 3,200 substeps. Exact evidence must fail "
+              "closed on the 4,096-contact global cap, four-contact pair cap, "
+              "residual, failure, fallback, and finite-state gates.";
+  const char* const coverage
+      = coloredDiagnostic
+            ? "This is a DART manifold-ordering diagnostic, not the source's "
+              "per-contact colored block-GS implementation and not a parallel "
+              "performance lane. It does not establish global-workspace, "
+              "collision/backend, trajectory/outcome, timing, solver-"
+              "superiority, Tables 6-7, video, or paper parity."
+            : "This is a source-supported current CLI parameterization, not a "
+              "recovered historical Tables 6-7 invocation. The pinned 0.1 m "
+              "ground and 0.005 m card/cube gap values are represented by "
+              "Native speculative contacts, but the source collision-gap, "
+              "stiffness/damping, backend, and float32 semantics are not "
+              "implemented. Native FourPointPlanar collision, exact-FBF "
+              "options, boxed LCP, camera, materials, and rendering remain "
+              "DART adapters. Historical paper invocation, backend/trajectory/"
+              "outcome equivalence, paper/video parity, solver superiority, "
+              "and timing comparability are unproven.";
   return makeFbfPaperScene(
-      kTenLevelDynamicsDemoSceneId,
-      "FBF Author Card House 10: Impact (Current Source)",
-      "Current-source-supported --levels 10 configuration: 155 cards, four "
-      "kinematic cubes, and the source-default 800-frame release schedule in "
-      "DART exact/boxed lanes.",
+      scenario.demoSceneId,
+      title,
+      summary,
       CameraHome{
           ::osg::Vec3d(42.0, -54.0, 30.0),
           ::osg::Vec3d(0.0, 0.0, 12.0),
           ::osg::Vec3d(0.0, 0.0, 1.0)},
-      [](const auto& state) {
+      [scenario](const auto& state) {
         return createAuthorCardHouseWorld(
-            kTenLevelImpactScenario, state->solverMode, false, true);
+            scenario, state->solverMode, false, true);
       },
       kSourceMaxContacts,
       kDartMaxContactsPerPair,
       false,
       false,
-      "Configuration pinned to public author commit b3f3c5c and selected "
-      "through supported current-source run.py arguments: --levels 10, 110 "
-      "leaning cards, 45 bridges, four initially kinematic 0.8 m cubes, "
-      "mu=.8, and the source-default 800 display frames. DART uses four "
-      "substeps per frame at dt=1/240 s and releases the existing cubes after "
-      "completed step 1,600.",
-      "The expected evidence is a deterministic, finite DART exact/boxed "
-      "comparison over 3,200 substeps. Exact evidence must fail closed on the "
-      "4,096-contact global cap, four-contact pair cap, residual, failure, "
-      "fallback, and finite-state gates.",
-      "This is a source-supported current CLI parameterization, not a "
-      "recovered historical Tables 6-7 invocation. The pinned 0.1 m ground "
-      "and 0.005 m card/cube gap values are represented by Native speculative "
-      "contacts, but the source collision-gap, stiffness/damping, backend, and "
-      "float32 semantics are not implemented. Native FourPointPlanar "
-      "collision, exact-FBF options, boxed LCP, camera, materials, and "
-      "rendering remain DART adapters. Historical paper invocation, backend/"
-      "trajectory/outcome equivalence, paper/video parity, solver superiority, "
-      "and timing comparability are unproven.",
+      overview,
+      expected,
+      coverage,
       true,
       SolverMode::ExactFbf,
-      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
-        renderFbfAuthorCardHouseDynamicsControls(
-            world, kTenLevelImpactScenario);
+      [scenario, coloredDiagnostic](
+          const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state) {
+        renderFbfAuthorCardHouseDynamicsControls(world, scenario);
+        if (coloredDiagnostic) {
+          if (state->solverMode == SolverMode::ExactFbf) {
+            ImGui::TextDisabled("Diagnostic factor: colored inner BGS enabled");
+            ImGui::TextWrapped(
+                "Qualifying evidence schedule: one thread; participant "
+                "affinity disabled. DART colors contact manifolds, not the "
+                "source solver's individual contacts.");
+          } else {
+            ImGui::TextDisabled(
+                "Diagnostic factor: inactive in boxed LCP mode");
+            ImGui::TextWrapped(
+                "Qualifying evidence requires the exact-FBF lane; boxed mode "
+                "is an interactive control only.");
+          }
+        }
       },
-      [](DemoSceneSetup& setup,
-         const WorldPtr& world,
-         const std::shared_ptr<FbfPaperState>& state) {
-        setup.physicsContractProvider = [world, state] {
+      [scenario](
+          DemoSceneSetup& setup,
+          const WorldPtr& world,
+          const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state, scenario] {
           return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
               world,
-              kTenLevelImpactScenario,
+              scenario,
               DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
               state->solverMode == SolverMode::ExactFbf));
         };
         const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
                                          + " source-configured cubes";
         setup.keyActions.push_back(
-            KeyAction{kReleaseActionKey, releaseLabel, [world] {
-                        releaseCubes(world, kTenLevelImpactScenario.levelCount);
+            KeyAction{kReleaseActionKey, releaseLabel, [world, scenario] {
+                        releaseCubes(world, scenario.levelCount);
                       }});
         setup.onActivate = [](DemoHostContext& context) {
           auto scopedErp
@@ -2255,9 +2311,9 @@ DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene()
           context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
         };
       },
-      [](const WorldPtr& world, SolverMode mode) {
+      [scenario](const WorldPtr& world, SolverMode mode) {
         installAuthorCardHouseSolver(
-            world, mode, false, true, false, &kTenLevelImpactScenario);
+            world, mode, false, true, scenario.sourceContinuation, &scenario);
       });
 }
 
@@ -3281,7 +3337,15 @@ DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceScene()
 //==============================================================================
 DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene()
 {
-  return makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene();
+  return makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene(
+      fbf_author_card_house::kTenLevelImpactScenario);
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse10ImpactCurrentSourceParameterizedScene(
+      fbf_author_card_house::kTenLevelColoredBgsDiagnosticScenario);
 }
 
 //==============================================================================

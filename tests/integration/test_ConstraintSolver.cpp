@@ -3728,6 +3728,155 @@ TEST(
 }
 
 //==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombColoredFailureTelemetrySurvivesLaterSuccessfulGroup)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("colored_failure_fixed", false, skeletons);
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+  std::array<collision::Contact, 2> failingContacts;
+  constraint::ConstrainedGroup failingGroup;
+  for (std::size_t body = 0u; body < failingContacts.size(); ++body) {
+    auto* dynamicBody = createFreeBody(
+        "colored_failure_dynamic_" + std::to_string(body), true, skeletons);
+    auto* joint
+        = static_cast<dynamics::FreeJoint*>(dynamicBody->getParentJoint());
+    joint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -0.2));
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    dynamicObjects.push_back(
+        std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    failingContacts[body]
+        = createContact(dynamicObjects.back().get(), &fixedObject);
+    failingContacts[body].point
+        = Eigen::Vector3d(0.1 * static_cast<double>(body), 0.0, 0.0);
+    failingGroup.addConstraint(
+        createContactConstraint<constraint::ContactConstraint>(
+            failingContacts[body]));
+  }
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  options.enableWarmStart = false;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.initialStepSize = 0.1;
+  options.capInitialStepSizeAtSafeBound = false;
+  options.enableAdaptiveStepSize = false;
+  options.innerMaxSweeps = 0;
+  options.acceptInnerMaxIterations = false;
+
+  ExposedExactCoulombParallelEligibilitySolver solver;
+  solver.setExactCoulombOptions(options);
+  solver.setTimeStep(0.001);
+  solver.setNumSimulationThreads(1u);
+  solver.setExactCoulombColoredBlockGaussSeidelEnabled(true);
+  solver.setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
+      false);
+  solver.solveConstrainedGroup(failingGroup);
+
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  ASSERT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_FALSE(
+      solver
+          .getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
+  ASSERT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelUsed());
+  const std::size_t failedSolves
+      = solver.getLastFailedExactCoulombColoredBlockGaussSeidelSolves();
+  const std::size_t cumulativeColoredSolves
+      = solver.getNumExactCoulombColoredBlockGaussSeidelSolves();
+  const std::size_t failedDispatches
+      = solver.getLastFailedExactCoulombColoredBlockGaussSeidelDispatches();
+  const std::size_t failedParticipants
+      = solver.getLastFailedExactCoulombColoredBlockGaussSeidelParticipants();
+  const std::size_t failedManifolds
+      = solver.getLastFailedExactCoulombColoredBlockGaussSeidelManifolds();
+  const std::size_t failedColors
+      = solver.getLastFailedExactCoulombColoredBlockGaussSeidelColors();
+  const std::size_t failedMaxManifoldsPerColor
+      = solver
+            .getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor();
+  EXPECT_GT(failedSolves, 0u);
+  EXPECT_EQ(cumulativeColoredSolves, failedSolves);
+  EXPECT_EQ(failedDispatches, 0u);
+  EXPECT_EQ(failedParticipants, 1u);
+  EXPECT_EQ(failedManifolds, 2u);
+  EXPECT_EQ(failedColors, 1u);
+  EXPECT_EQ(failedMaxManifoldsPerColor, 2u);
+  EXPECT_TRUE(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds()
+          .empty());
+  EXPECT_TRUE(
+      solver
+          .getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds()
+          .empty());
+
+  auto* successfulBody
+      = createFreeBody("colored_later_success", true, skeletons);
+  auto* successfulShapeNode = successfulBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionObject successfulObject(&detector, successfulShapeNode);
+  auto successfulContact = createContact(&successfulObject, &fixedObject);
+  constraint::ConstrainedGroup successfulGroup;
+  successfulGroup.addConstraint(
+      createContactConstraint<constraint::ContactConstraint>(
+          successfulContact));
+  solver.solveConstrainedGroup(successfulGroup);
+
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(solver.getLastExactCoulombColoredBlockGaussSeidelUsed());
+  EXPECT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_FALSE(
+      solver
+          .getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
+  EXPECT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelUsed());
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelSolves(),
+      failedSolves);
+  EXPECT_EQ(
+      solver.getNumExactCoulombColoredBlockGaussSeidelSolves(),
+      cumulativeColoredSolves);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelDispatches(),
+      failedDispatches);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelParticipants(),
+      failedParticipants);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelManifolds(),
+      failedManifolds);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelColors(),
+      failedColors);
+  EXPECT_EQ(
+      solver
+          .getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor(),
+      failedMaxManifoldsPerColor);
+  EXPECT_TRUE(
+      solver.getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds()
+          .empty());
+  EXPECT_TRUE(
+      solver
+          .getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds()
+          .empty());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, SharedFixedContactSupportWithMixedGroupForcesSerial)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;

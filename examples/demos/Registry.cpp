@@ -71,6 +71,8 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeFbfAuthorCardHouse5ImpactCurrentSourceScene());
   scenes.push_back(makeFbfAuthorCardHouse10ImpactCurrentSourceScene());
   scenes.push_back(
+      makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene());
+  scenes.push_back(
       makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene());
   scenes.push_back(
       makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene());
