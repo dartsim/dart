@@ -3178,6 +3178,10 @@ TEST(
       json.find("\"dynamic_shape_frames_with_contact_gap\":159"),
       std::string::npos);
   EXPECT_NE(
+      json.find("\"speculative_contact_velocity_allowance\":"
+                "\"physical_separation_over_time_step\""),
+      std::string::npos);
+  EXPECT_NE(
       json.find("\"dynamic_shape_contact\":{\"gap_m\":0.0050000000000000001"),
       std::string::npos);
   EXPECT_NE(
@@ -3188,6 +3192,9 @@ TEST(
       std::string::npos);
   EXPECT_NE(
       json.find("\"source_contact_gap_values_represented\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_separation_over_dt_term_represented\":true"),
       std::string::npos);
   EXPECT_NE(
       json.find("\"historical_tables_6_7_invocation_known\":false"),
@@ -3291,6 +3298,12 @@ TEST(
       std::string::npos);
   EXPECT_EQ(
       fourLevelJson.find("\"source_contact_gap_values_represented\":"),
+      std::string::npos);
+  EXPECT_EQ(
+      fourLevelJson.find("\"speculative_contact_velocity_allowance\":"),
+      std::string::npos);
+  EXPECT_EQ(
+      fourLevelJson.find("\"source_separation_over_dt_term_represented\":"),
       std::string::npos);
   EXPECT_EQ(
       fourLevelJson.find("\"historical_tables_6_7_invocation_known\":"),

@@ -1260,6 +1260,9 @@ def _author_card_house_adapter_contract(
                 "collision_shape_frames_with_contact_gap": 160,
                 "ground_shape_frames_with_contact_gap": 1,
                 "dynamic_shape_frames_with_contact_gap": 159,
+                "speculative_contact_velocity_allowance": (
+                    "physical_separation_over_time_step"
+                ),
             }
         )
         adapter_boundaries.pop("source_contact_gap_recorded_m")
@@ -1268,6 +1271,7 @@ def _author_card_house_adapter_contract(
                 "source_dynamic_shape_contact_gap_recorded_m": 0.005,
                 "source_ground_contact_gap_recorded_m": 0.1,
                 "source_contact_gap_values_represented": True,
+                "source_separation_over_dt_term_represented": True,
             }
         )
     return {
@@ -3301,6 +3305,9 @@ def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
         "collision_shape_frames_with_contact_gap": 160,
         "ground_shape_frames_with_contact_gap": 1,
         "dynamic_shape_frames_with_contact_gap": 159,
+        "speculative_contact_velocity_allowance": (
+            "physical_separation_over_time_step"
+        ),
     }
     assert contract["source_configuration"]["contact"]["ground_contact"] == {
         "gap_m": 0.1,
@@ -3313,6 +3320,10 @@ def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
     )
     assert (
         contract["adapter_boundaries"]["source_contact_gap_values_represented"] is True
+    )
+    assert (
+        contract["adapter_boundaries"]["source_separation_over_dt_term_represented"]
+        is True
     )
 
 
@@ -3365,6 +3376,11 @@ def test_author_card_house_10_adapter_contract_binds_gap_and_source_selection(
         ),
         (
             ("adapter_boundaries", "source_contact_gap_values_represented"),
+            False,
+            "adapter boundaries",
+        ),
+        (
+            ("adapter_boundaries", "source_separation_over_dt_term_represented"),
             False,
             "adapter boundaries",
         ),

@@ -1806,7 +1806,9 @@ inline std::string dynamicsAdapterContractJson(
         << ",\"ground_shape_frames_with_contact_gap\":"
         << contract.groundShapeFramesWithContactGap
         << ",\"dynamic_shape_frames_with_contact_gap\":"
-        << contract.dynamicShapeFramesWithContactGap;
+        << contract.dynamicShapeFramesWithContactGap
+        << ",\"speculative_contact_velocity_allowance\":";
+    writeJsonString(out, "physical_separation_over_time_step");
   }
   out << "},\"contact_material\":{\"primary_friction\":"
       << contract.primaryFriction
@@ -2015,7 +2017,8 @@ inline std::string dynamicsAdapterContractJson(
         << ",\"source_ground_contact_gap_recorded_m\":"
         << kSourceGroundContactGap
         << ",\"source_contact_gap_semantics_implemented\":false"
-        << ",\"source_contact_gap_values_represented\":true";
+        << ",\"source_contact_gap_values_represented\":true"
+        << ",\"source_separation_over_dt_term_represented\":true";
   } else {
     out << "\"source_contact_gap_recorded_m\":" << kContactGap
         << ",\"source_contact_gap_semantics_implemented\":false";

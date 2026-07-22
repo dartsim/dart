@@ -4240,6 +4240,9 @@ def _validate_author_card_house_adapter_contract(
                 "dynamic_shape_frames_with_contact_gap": selection[
                     "dynamic_contact_gap_shape_frames"
                 ],
+                "speculative_contact_velocity_allowance": (
+                    "physical_separation_over_time_step"
+                ),
             }
         )
     if adapter.get("collision") != expected_collision:
@@ -4297,6 +4300,7 @@ def _validate_author_card_house_adapter_contract(
                 "source_dynamic_shape_contact_gap_recorded_m": 0.005,
                 "source_ground_contact_gap_recorded_m": 0.1,
                 "source_contact_gap_values_represented": True,
+                "source_separation_over_dt_term_represented": True,
             }
         )
     if contract.get("adapter_boundaries") != expected_adapter_boundaries:
