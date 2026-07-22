@@ -2103,6 +2103,103 @@ DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene()
 }
 
 //==============================================================================
+void renderFbfAuthorMasonryArch101StandingControls(const WorldPtr& world)
+{
+  ImGui::Separator();
+  ImGui::TextDisabled("Pinned author selection (b3f3c5c)");
+  const bool released = fbf_author_masonry_arch_adapter::cubesReleased(world);
+  ImGui::Text("Selected source CLI: --stones 101");
+  ImGui::Text("Raw-scale wedges: 101 (99 mobile)");
+  ImGui::Text("Suspended cubes: 3 x edge 3, mass 54000");
+  ImGui::Text("Runtime dt: 1/240 s");
+  ImGui::Text("Source horizon: 400 frames / 1600 substeps");
+  ImGui::Text("Cube state: %s", released ? "released" : "kinematic");
+  ImGui::TextUnformatted(
+      "DROP_FRAME == NUM_FRAMES: no release action in this standing lane.");
+  ImGui::TextWrapped(
+      "This DART adapter ports the source-supported --stones 101 numeric "
+      "geometry, masses, friction, initial state, and no-release horizon. "
+      "The historical paper invocation, collision and solver backends, "
+      "float32 trajectory and outcome, timing, and Fig. 8 parity remain "
+      "unclaimed.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorMasonryArch101StandingCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_masonry_arch_adapter;
+  using fbf_author_masonry_arch::SourceScenario;
+  return makeFbfPaperScene(
+      kDemoSceneId101,
+      "FBF Author Masonry Arch 101: Standing (Current Source)",
+      "Public-author --stones 101 raw-scale standing configuration over the "
+      "source-default 400-frame no-release horizon in DART exact/boxed "
+      "dynamics adapters.",
+      CameraHome{
+          ::osg::Vec3d(145.0, -205.0, 118.0),
+          ::osg::Vec3d(0.0, 0.0, 31.0),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createWorld(
+            authorMasonryArchSolverLane(state->solverMode),
+            SourceScenario::Arch101);
+      },
+      fbf_author_masonry_arch::kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "Configuration pinned to public author commit b3f3c5c with the "
+      "source-supported --stones 101 selection: 101 quantized literal OBJ "
+      "wedges at raw numeric scale, fixed springers, mu=.8, and three "
+      "initially kinematic cubes above the crown. The source-default horizon "
+      "is 400 display frames, or 1,600 DART substeps at dt=1/240 s; because "
+      "DROP_FRAME equals NUM_FRAMES, the cubes are never released.",
+      "A positive standing result must complete the no-release horizon with "
+      "the full finite inventory, the three cubes fixed at their pinned "
+      "poses, every mobile wedge within 3 raw units and 15 degrees of its "
+      "initial pose, and crown-height loss no greater than 3 raw units. Every "
+      "constrained exact step must also pass the strict residual, "
+      "iteration-cap, failure, and fallback gates; a complete boxed collapse "
+      "may remain comparison media but does not pass the standing oracle.",
+      "This is a DART dynamics adapter for a source-supported parameter "
+      "selection, not a recovered historical Fig. 8 invocation. Native "
+      "FourPointPlanar collision, split impulse, float64 arithmetic, "
+      "exact-FBF options, boxed LCP, camera, materials, and rendering are "
+      "DART choices. Source trajectory/outcome equivalence, Fig. 8/video "
+      "parity, and timing comparability remain unproven.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>&) {
+        renderFbfAuthorMasonryArch101StandingControls(world);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return adapterContractJson(
+              inspectAdapterContract(world, SourceScenario::Arch101),
+              DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_ADAPTER_SHA256,
+              DART_FBF_AUTHOR_MASONRY_ARCH_IMPLEMENTATION_SHA256);
+        };
+        setup.sceneStateProvider = [world] {
+          return standingSceneStateFields(world);
+        };
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installSolver(
+            world,
+            authorMasonryArchSolverLane(mode),
+            world->getNumSimulationThreads());
+      });
+}
+
+//==============================================================================
 DemoScene makeFbfPaperPainleveParameterizedScene(
     const std::string& id,
     const std::string& title,
@@ -2428,6 +2525,12 @@ DemoScene makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene()
 DemoScene makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene()
 {
   return makeFbfAuthorMasonryArch25CrownImpactCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorMasonryArch101StandingCurrentSourceScene()
+{
+  return makeFbfAuthorMasonryArch101StandingCurrentSourceParameterizedScene();
 }
 
 //==============================================================================

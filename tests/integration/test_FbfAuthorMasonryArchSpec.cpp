@@ -37,7 +37,9 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <string>
+#include <vector>
 
 #include <cmath>
 #include <cstdint>
@@ -62,6 +64,22 @@ std::uint64_t sourceObjVertexRecordHash(
     for (Eigen::Index axis = 0; axis < 3; ++axis) {
       appendSignedIntegerToFnv1a(
           hash, static_cast<std::int64_t>(std::llround(vertex[axis] * 1.0e6)));
+    }
+  }
+  return hash;
+}
+
+std::uint64_t sourceObjInventoryHash(
+    const std::vector<fbf_author_masonry_arch::StoneSpec>& stones)
+{
+  std::uint64_t hash = 14695981039346656037ULL;
+  for (const auto& stone : stones) {
+    for (const auto& vertex : stone.vertices) {
+      for (Eigen::Index axis = 0; axis < 3; ++axis) {
+        appendSignedIntegerToFnv1a(
+            hash,
+            static_cast<std::int64_t>(std::llround(vertex[axis] * 1.0e6)));
+      }
     }
   }
   return hash;
@@ -271,6 +289,76 @@ TEST(FbfAuthorMasonryArchSpec, ContractIsConstructionOnly)
   EXPECT_FALSE(kPaperParity);
 }
 
+TEST(FbfAuthorMasonryArchSpec, SourceParameterizedArch101ConstructionIsPinned)
+{
+  using namespace fbf_author_masonry_arch;
+
+  const auto& scenario = sourceScenarioSpec(SourceScenario::Arch101);
+  EXPECT_EQ(scenario.scenario, SourceScenario::Arch101);
+  EXPECT_EQ(scenario.stoneCount, 101u);
+  EXPECT_STREQ(
+      scenario.authorMeshTree, "e0c209235673d2f69c3c5de7708ab1dfadec96e3");
+  EXPECT_STREQ(
+      scenario.authorMeshTreeSha256,
+      "7198f71730d06dd70af8703065541765bd6b6f5da137f28f9befdf7acc5f96bf");
+  EXPECT_STREQ(scenario.authorMeshDirectory, "meshes/arch/num_stones=101");
+  EXPECT_STREQ(scenario.authorStoneSelection, "--stones 101");
+  EXPECT_DOUBLE_EQ(scenario.sourceObjRecordArchTopZ, 69.628159);
+  EXPECT_DOUBLE_EQ(scenario.sourceRuntimeArchTopZFloat32, 69.62815856933594);
+  EXPECT_DOUBLE_EQ(scenario.cubeInitialZ, 79.62815856933594);
+
+  const auto stones = makeStoneSpecs(SourceScenario::Arch101);
+  ASSERT_EQ(stones.size(), scenario.stoneCount);
+  // One ordered FNV-1a digest binds all 2,424 signed micro-unit coordinates
+  // from the 101 pinned source OBJ files after the author's y/z axis swap.
+  EXPECT_EQ(sourceObjInventoryHash(stones), 0x528596c9206aef89ULL);
+
+  std::size_t fixedStoneCount = 0u;
+  for (std::size_t index = 0u; index < stones.size(); ++index) {
+    const auto& stone = stones[index];
+    EXPECT_EQ(stone.index, index);
+    EXPECT_EQ(
+        stone.name,
+        "stone-" + (index < 9u ? std::string("0") : std::string())
+            + std::to_string(index + 1u));
+    EXPECT_GT(stone.volume, 0.0);
+    EXPECT_GT(stone.mass, 0.0);
+    EXPECT_TRUE(stone.localCenterOfMass.allFinite());
+    EXPECT_TRUE(stone.moment.allFinite());
+    EXPECT_TRUE(stone.moment.isApprox(stone.moment.transpose(), 1e-10));
+    fixedStoneCount += stone.mobile ? 0u : 1u;
+  }
+  EXPECT_EQ(fixedStoneCount, kFixedSpringerCount);
+  EXPECT_FALSE(stones.front().mobile);
+  EXPECT_TRUE(stones[1].mobile);
+  EXPECT_TRUE(stones[kStoneCount101 - 2u].mobile);
+  EXPECT_FALSE(stones.back().mobile);
+  EXPECT_TRUE(stones.front().vertices.front().isApprox(
+      Eigen::Vector3d(-30.115009, -5.0, 0.1), 0.0));
+  EXPECT_TRUE(stones[50].vertices.front().isApprox(
+      Eigen::Vector3d(-0.415074, -3.500692, 62.648966), 0.0));
+  EXPECT_TRUE(stones[50].vertices.back().isApprox(
+      Eigen::Vector3d(0.972056, 3.500692, 69.628159), 0.0));
+  EXPECT_TRUE(stones.back().vertices.back().isApprox(
+      Eigen::Vector3d(40.354012, 5.0, 0.1), 0.0));
+  EXPECT_DOUBLE_EQ(archTopZ(stones), scenario.sourceObjRecordArchTopZ);
+
+  const auto cubes = makeCubeSpecs(SourceScenario::Arch101);
+  ASSERT_EQ(cubes.size(), kCubeCount);
+  for (const auto& cube : cubes) {
+    EXPECT_DOUBLE_EQ(cube.transform.translation().z(), scenario.cubeInitialZ);
+    EXPECT_FALSE(cube.initiallyMobile);
+  }
+
+  EXPECT_EQ(kDefaultFrameCount, 400u);
+  EXPECT_EQ(kDefaultTotalSubsteps, 1600u);
+  EXPECT_EQ(kDropFrame, kDefaultFrameCount);
+  EXPECT_FALSE(releaseOccursWithinFrames(kDefaultFrameCount));
+  EXPECT_FALSE(kFig08Parity);
+  EXPECT_FALSE(kVideo08Arch101Parity);
+  EXPECT_FALSE(kPaperParity);
+}
+
 TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsInitialWorldAndReleaseAction)
 {
   namespace adapter = fbf_author_masonry_arch_adapter;
@@ -393,8 +481,340 @@ TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsInitialWorldAndReleaseAction)
   EXPECT_NE(
       json.find("\"interactive_demo_auto_releases_at_source_step\":false"),
       std::string::npos);
+  EXPECT_NE(json.find("\"standing_outcome_oracle\":null"), std::string::npos);
+  EXPECT_NE(
+      json.find(
+          "\"current_dart_adapter_standing_outcome_oracle_declared\":false"),
+      std::string::npos);
   EXPECT_NE(json.find("\"fig07_parity\":false"), std::string::npos);
   EXPECT_NE(json.find("\"paper_parity\":false"), std::string::npos);
+}
+
+TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsArch101StandingContract)
+{
+  namespace adapter = fbf_author_masonry_arch_adapter;
+  using namespace fbf_author_masonry_arch;
+
+  EXPECT_STREQ(
+      adapter::kDemoSceneId101,
+      "fbf_author_masonry_arch_101_standing_current_source");
+  EXPECT_STREQ(
+      adapter::kContractSchema101,
+      "dart.fbf_author_masonry_arch_standing_dart_adapter/v1");
+  EXPECT_EQ(adapter::kEvidenceFrameCount101, 400u);
+  EXPECT_EQ(adapter::kEvidenceTotalSubsteps101, 1600u);
+  EXPECT_FALSE(
+      adapter::kAdapterScenario101.evidenceRunnerReleaseActionScheduled);
+
+  const auto exactWorld = adapter::createWorld(
+      adapter::SolverLane::ExactFbf, SourceScenario::Arch101);
+  const auto boxedWorld = adapter::createWorld(
+      adapter::SolverLane::BoxedLcp, SourceScenario::Arch101);
+  EXPECT_EQ(exactWorld->getName(), adapter::kDemoSceneId101);
+  EXPECT_EQ(boxedWorld->getName(), adapter::kDemoSceneId101);
+
+  const auto exact
+      = adapter::inspectAdapterContract(exactWorld, SourceScenario::Arch101);
+  const auto boxed
+      = adapter::inspectAdapterContract(boxedWorld, SourceScenario::Arch101);
+  for (const auto* contract : {&exact, &boxed}) {
+    EXPECT_EQ(contract->sourceScenario, SourceScenario::Arch101);
+    EXPECT_DOUBLE_EQ(contract->timeStep, kRuntimeTimeStep);
+    EXPECT_TRUE(contract->gravity.isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+    EXPECT_FALSE(contract->deactivationEnabled);
+    EXPECT_EQ(contract->maxContacts, kSourceMaxContacts);
+    EXPECT_EQ(contract->maxContactsPerPair, adapter::kDartMaxContactsPerPair);
+    EXPECT_TRUE(contract->nativeFourPointPlanar);
+    EXPECT_TRUE(contract->splitImpulseEnabled);
+    EXPECT_FALSE(contract->cubesAreReleased);
+    EXPECT_EQ(contract->stoneCount, kStoneCount101);
+    EXPECT_EQ(contract->mobileStoneCount, kStoneCount101 - kFixedSpringerCount);
+    EXPECT_EQ(contract->cubeCount, kCubeCount);
+  }
+  EXPECT_EQ(exact.solverLane, adapter::SolverLane::ExactFbf);
+  EXPECT_TRUE(exact.exactOptions.has_value());
+  EXPECT_TRUE(exact.exactCrossStepOptions.has_value());
+  EXPECT_EQ(boxed.solverLane, adapter::SolverLane::BoxedLcp);
+  EXPECT_FALSE(boxed.exactOptions.has_value());
+  EXPECT_FALSE(boxed.exactCrossStepOptions.has_value());
+
+  for (const auto& cubeSpec : makeCubeSpecs(SourceScenario::Arch101)) {
+    const auto cube = exactWorld->getSkeleton(cubeSpec.name);
+    ASSERT_NE(cube, nullptr);
+    EXPECT_FALSE(cube->isMobile());
+    EXPECT_DOUBLE_EQ(
+        cube->getBodyNode(0u)->getWorldTransform().translation().z(),
+        kCubeInitialZ101);
+  }
+
+  const std::string exactJson = adapter::adapterContractJson(
+      exact, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  EXPECT_NE(exactJson.find(adapter::kContractSchema101), std::string::npos);
+  EXPECT_NE(exactJson.find(kAuthorMeshTree101), std::string::npos);
+  EXPECT_NE(exactJson.find(kAuthorMeshTreeSha256101), std::string::npos);
+  EXPECT_NE(exactJson.find(kAuthorMeshDirectory101), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"selected_cli_arguments\":\"--stones 101\""),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"selected_stones\":101"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"stones\":101"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"evidence_frames\":400"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"evidence_substeps\":1600"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_release_within_evidence_horizon\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"evidence_runner_release_action_scheduled\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"evidence_runner_action_completed_step\":null"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"release_action_key\":null"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"historical_paper_invocation_known\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_release_action_ported_to_dart\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"scene_state_schema\":\"dart.fbf_author_masonry_arch_101_"
+          "standing_scene_state/v1\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"required_completed_substeps\":1600"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"max_mobile_body_origin_displacement\":3"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"max_mobile_rotation_delta_rad\":0.261799"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"max_crown_height_loss\":3"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"requires_exact_inventory\":true"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"requires_all_bodies_finite\":true"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"requires_cubes_kinematic\":true"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"max_kinematic_cube_pose_error\":9.9999999999999998e-13"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"requires_cubes_at_pinned_poses\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"positive_standing_qualification_requires_standing_in_both_"
+          "lanes\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"comparison_capture_validity_is_runner_level\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"complete_trace_valid_is_not_positive_standing_qualification\":"
+          "true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"current_dart_adapter_outcome_only\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_outcome_equivalence\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"current_dart_adapter_standing_outcome_oracle_declared\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"physical_outcome_equivalent\":false"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"fig08_parity\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"video08_parity\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"paper_parity\":false"), std::string::npos);
+
+  const std::string boxedJson = adapter::adapterContractJson(
+      boxed, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  EXPECT_NE(boxedJson.find("\"exact_options\":null"), std::string::npos);
+  EXPECT_NE(boxedJson.find("\"cross_step_options\":null"), std::string::npos);
+}
+
+TEST(FbfAuthorMasonryArchSpec, Arch101StandingStateAndOracleFailClosed)
+{
+  namespace adapter = fbf_author_masonry_arch_adapter;
+  using fbf_author_masonry_arch::SourceScenario;
+
+  const auto world = adapter::createWorld(
+      adapter::SolverLane::BoxedLcp, SourceScenario::Arch101);
+  const auto initial = adapter::inspectStandingSceneState(world);
+  EXPECT_EQ(initial.solverLane, adapter::SolverLane::BoxedLcp);
+  EXPECT_DOUBLE_EQ(initial.worldTimeSeconds, 0.0);
+  EXPECT_EQ(initial.worldSkeletonCount, 105u);
+  EXPECT_EQ(initial.observedStoneCount, 101u);
+  EXPECT_EQ(initial.observedMobileStoneCount, 99u);
+  EXPECT_EQ(initial.mobilityMatchingStoneCount, 101u);
+  EXPECT_EQ(initial.finiteStoneCount, 101u);
+  EXPECT_EQ(initial.observedCubeCount, 3u);
+  EXPECT_EQ(initial.finiteCubeCount, 3u);
+  EXPECT_EQ(initial.kinematicCubeCount, 3u);
+  EXPECT_TRUE(initial.groundValid);
+  EXPECT_TRUE(initial.crownObserved);
+  EXPECT_NEAR(initial.crownBodyOriginZ, initial.crownBodyOriginInitialZ, 1e-12);
+  EXPECT_NEAR(initial.crownBodyOriginDisplacement, 0.0, 1e-12);
+  EXPECT_NEAR(initial.crownRotationDeltaRadians, 0.0, 1e-12);
+  EXPECT_NEAR(initial.maxMobileBodyOriginDisplacement, 0.0, 1e-12);
+  EXPECT_NEAR(initial.maxMobileRotationDeltaRadians, 0.0, 1e-12);
+  EXPECT_NEAR(initial.maxKinematicCubeBodyOriginDisplacement, 0.0, 1e-12);
+  EXPECT_NEAR(initial.maxKinematicCubeRotationDeltaRadians, 0.0, 1e-12);
+
+  const auto initialOutcome = adapter::evaluateStandingOutcome(initial);
+  EXPECT_FALSE(initialOutcome.horizonComplete);
+  EXPECT_TRUE(initialOutcome.inventoryValid);
+  EXPECT_TRUE(initialOutcome.allBodiesFinite);
+  EXPECT_TRUE(initialOutcome.cubesRemainKinematic);
+  EXPECT_TRUE(initialOutcome.cubesRemainPinned);
+  EXPECT_TRUE(initialOutcome.mobileDisplacementBounded);
+  EXPECT_TRUE(initialOutcome.mobileRotationBounded);
+  EXPECT_TRUE(initialOutcome.crownHeightPreserved);
+  EXPECT_FALSE(initialOutcome.completeTraceValid);
+  EXPECT_FALSE(initialOutcome.standingOutcomeValid);
+  EXPECT_FALSE(initialOutcome.laneEvidenceQualifies);
+
+  const std::vector<std::string> expectedKeys{
+      "solver_lane_exact_fbf",
+      "solver_lane_boxed_lcp",
+      "world_time_seconds",
+      "world_skeleton_count",
+      "observed_stone_count",
+      "observed_mobile_stone_count",
+      "mobility_matching_stone_count",
+      "finite_stone_count",
+      "observed_cube_count",
+      "finite_cube_count",
+      "kinematic_cube_count",
+      "ground_valid",
+      "crown_observed",
+      "crown_body_origin_initial_z",
+      "crown_body_origin_z",
+      "crown_body_origin_displacement",
+      "crown_rotation_delta_rad",
+      "max_mobile_body_origin_displacement",
+      "max_mobile_rotation_delta_rad",
+      "max_kinematic_cube_body_origin_displacement",
+      "max_kinematic_cube_rotation_delta_rad",
+      "standing_horizon_complete",
+      "standing_inventory_valid",
+      "standing_all_bodies_finite",
+      "standing_cubes_remain_kinematic",
+      "standing_cubes_remain_pinned",
+      "standing_mobile_displacement_bounded",
+      "standing_mobile_rotation_bounded",
+      "standing_crown_height_preserved",
+      "standing_complete_trace_valid",
+      "standing_outcome_valid",
+      "standing_lane_evidence_qualifies",
+  };
+  const auto fields = adapter::standingSceneStateFields(initial);
+  ASSERT_EQ(fields.size(), expectedKeys.size());
+  for (std::size_t index = 0u; index < fields.size(); ++index) {
+    EXPECT_EQ(fields[index].first, expectedKeys[index]);
+    EXPECT_TRUE(std::isfinite(fields[index].second));
+  }
+  EXPECT_DOUBLE_EQ(fields[0].second, 0.0);
+  EXPECT_DOUBLE_EQ(fields[1].second, 1.0);
+  EXPECT_DOUBLE_EQ(fields[21].second, 0.0);
+  EXPECT_DOUBLE_EQ(fields[30].second, 0.0);
+  EXPECT_DOUBLE_EQ(fields[31].second, 0.0);
+
+  auto complete = initial;
+  complete.worldTimeSeconds = adapter::kStandingRequiredWorldTimeSeconds;
+  complete.maxMobileBodyOriginDisplacement
+      = adapter::kStandingMaxMobileBodyOriginDisplacement;
+  complete.maxMobileRotationDeltaRadians
+      = adapter::kStandingMaxMobileRotationDeltaRadians;
+  complete.crownBodyOriginZ
+      = complete.crownBodyOriginInitialZ - adapter::kStandingMaxCrownHeightLoss;
+  const auto completeOutcome = adapter::evaluateStandingOutcome(complete);
+  EXPECT_TRUE(completeOutcome.completeTraceValid);
+  EXPECT_TRUE(completeOutcome.standingOutcomeValid);
+  EXPECT_TRUE(completeOutcome.laneEvidenceQualifies);
+  EXPECT_DOUBLE_EQ(
+      adapter::standingSceneStateFields(complete).back().second, 1.0);
+
+  auto incomplete = complete;
+  incomplete.worldTimeSeconds
+      = adapter::kStandingRequiredWorldTimeSeconds
+        - 2.0 * adapter::kStandingHorizonTimeToleranceSeconds;
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(incomplete).standingOutcomeValid);
+
+  auto displaced = complete;
+  displaced.maxMobileBodyOriginDisplacement = std::nextafter(
+      adapter::kStandingMaxMobileBodyOriginDisplacement,
+      std::numeric_limits<double>::infinity());
+  const auto displacedOutcome = adapter::evaluateStandingOutcome(displaced);
+  EXPECT_TRUE(displacedOutcome.completeTraceValid);
+  EXPECT_FALSE(displacedOutcome.standingOutcomeValid);
+  EXPECT_FALSE(displacedOutcome.laneEvidenceQualifies);
+
+  auto rotated = complete;
+  rotated.maxMobileRotationDeltaRadians = std::nextafter(
+      adapter::kStandingMaxMobileRotationDeltaRadians,
+      std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(adapter::evaluateStandingOutcome(rotated).standingOutcomeValid);
+
+  auto crownDropped = complete;
+  crownDropped.crownBodyOriginZ = std::nextafter(
+      complete.crownBodyOriginInitialZ - adapter::kStandingMaxCrownHeightLoss,
+      -std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(crownDropped).standingOutcomeValid);
+
+  auto nonfinite = complete;
+  nonfinite.maxMobileRotationDeltaRadians
+      = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(adapter::evaluateStandingOutcome(nonfinite).allBodiesFinite);
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(nonfinite).standingOutcomeValid);
+
+  auto movedCube = complete;
+  movedCube.maxKinematicCubeBodyOriginDisplacement = std::nextafter(
+      adapter::kStandingMaxKinematicCubePoseError,
+      std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(adapter::evaluateStandingOutcome(movedCube).cubesRemainPinned);
+  EXPECT_FALSE(adapter::evaluateStandingOutcome(movedCube).completeTraceValid);
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(movedCube).standingOutcomeValid);
+
+  auto missingStone = complete;
+  --missingStone.observedStoneCount;
+  EXPECT_FALSE(adapter::evaluateStandingOutcome(missingStone).inventoryValid);
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(missingStone).standingOutcomeValid);
+
+  auto releasedCube = complete;
+  --releasedCube.kinematicCubeCount;
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(releasedCube).cubesRemainKinematic);
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(releasedCube).cubesRemainPinned);
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(releasedCube).standingOutcomeValid);
+
+  auto exactComplete = complete;
+  exactComplete.solverLane = adapter::SolverLane::ExactFbf;
+  EXPECT_TRUE(
+      adapter::evaluateStandingOutcome(exactComplete).laneEvidenceQualifies);
+  exactComplete.maxMobileRotationDeltaRadians = std::nextafter(
+      adapter::kStandingMaxMobileRotationDeltaRadians,
+      std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(
+      adapter::evaluateStandingOutcome(exactComplete).laneEvidenceQualifies);
+
+  const auto wrongWorld = adapter::createWorld(adapter::SolverLane::BoxedLcp);
+  EXPECT_THROW(
+      adapter::inspectStandingSceneState(wrongWorld), std::runtime_error);
 }
 
 TEST(FbfAuthorMasonryArchSpec, DartAdapterScopesContactErp)

@@ -59,6 +59,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <cmath>
 #include <cstddef>
@@ -68,13 +70,21 @@ namespace fbf_author_masonry_arch_adapter {
 
 inline constexpr const char* kContractSchema
     = "dart.fbf_author_masonry_arch_crown_impact_dart_adapter/v1";
+inline constexpr const char* kContractSchema101
+    = "dart.fbf_author_masonry_arch_standing_dart_adapter/v1";
 inline constexpr const char* kContractKind
     = "source_configuration_dynamics_adapter";
 inline constexpr const char* kDemoSceneId
     = "fbf_author_masonry_arch_25_crown_impact_current_source";
+inline constexpr const char* kDemoSceneId101
+    = "fbf_author_masonry_arch_101_standing_current_source";
 inline constexpr std::size_t kEvidenceFrameCount = 500u;
 inline constexpr std::size_t kEvidenceTotalSubsteps
     = kEvidenceFrameCount * fbf_author_masonry_arch::kSubstepsPerFrame;
+inline constexpr std::size_t kEvidenceFrameCount101
+    = fbf_author_masonry_arch::kDefaultFrameCount;
+inline constexpr std::size_t kEvidenceTotalSubsteps101
+    = kEvidenceFrameCount101 * fbf_author_masonry_arch::kSubstepsPerFrame;
 inline constexpr std::size_t kReleaseActionCompletedStep
     = fbf_author_masonry_arch::kReleaseSubstep;
 inline constexpr int kReleaseActionKey = 'p';
@@ -92,11 +102,69 @@ inline constexpr double kDartOuterRelaxation = 1.1;
 inline constexpr int kDartInnerMaxSweeps = 30;
 inline constexpr int kDartInnerLocalIterations = 1;
 
+// The 101-stone lane has a local DART standing oracle, deliberately separate
+// from any source/paper outcome-equivalence claim. The displacement and crown
+// thresholds are one source cube edge in the author's raw coordinate units;
+// the rotation threshold is 15 degrees. A result is not classifiable until
+// the complete source-default no-release horizon has elapsed.
+inline constexpr const char* kStandingSceneStateSchema
+    = "dart.fbf_author_masonry_arch_101_standing_scene_state/v1";
+inline constexpr double kStandingRequiredWorldTimeSeconds
+    = static_cast<double>(kEvidenceTotalSubsteps101)
+      * fbf_author_masonry_arch::kRuntimeTimeStep;
+inline constexpr double kStandingHorizonTimeToleranceSeconds
+    = 0.5 * fbf_author_masonry_arch::kRuntimeTimeStep;
+inline constexpr double kStandingMaxMobileBodyOriginDisplacement
+    = fbf_author_masonry_arch::kCubeEdgeLength;
+inline constexpr double kStandingMaxMobileRotationDeltaRadians
+    = 0.26179938779914943654;
+inline constexpr double kStandingMaxCrownHeightLoss
+    = fbf_author_masonry_arch::kCubeEdgeLength;
+inline constexpr double kStandingMaxKinematicCubePoseError = 1.0e-12;
+
 enum class SolverLane
 {
   ExactFbf,
   BoxedLcp,
 };
+
+struct AdapterScenarioSpec
+{
+  fbf_author_masonry_arch::SourceScenario sourceScenario
+      = fbf_author_masonry_arch::SourceScenario::Arch25;
+  const char* contractSchema = nullptr;
+  const char* demoSceneId = nullptr;
+  std::size_t evidenceFrameCount = 0u;
+  bool evidenceRunnerReleaseActionScheduled = false;
+};
+
+inline constexpr AdapterScenarioSpec kAdapterScenario25{
+    fbf_author_masonry_arch::SourceScenario::Arch25,
+    kContractSchema,
+    kDemoSceneId,
+    kEvidenceFrameCount,
+    true};
+
+inline constexpr AdapterScenarioSpec kAdapterScenario101{
+    fbf_author_masonry_arch::SourceScenario::Arch101,
+    kContractSchema101,
+    kDemoSceneId101,
+    kEvidenceFrameCount101,
+    false};
+
+//==============================================================================
+inline const AdapterScenarioSpec& adapterScenarioSpec(
+    fbf_author_masonry_arch::SourceScenario scenario)
+{
+  switch (scenario) {
+    case fbf_author_masonry_arch::SourceScenario::Arch25:
+      return kAdapterScenario25;
+    case fbf_author_masonry_arch::SourceScenario::Arch101:
+      return kAdapterScenario101;
+  }
+  throw std::invalid_argument(
+      "author masonry-arch adapter scenario is invalid");
+}
 
 //==============================================================================
 inline const char* solverLaneLabel(SolverLane lane)
@@ -293,12 +361,18 @@ inline std::shared_ptr<dart::dynamics::ConvexMeshShape> createStoneShape(
 }
 
 //==============================================================================
-inline Eigen::Vector4d stoneColor(std::size_t index)
+inline Eigen::Vector4d stoneColor(std::size_t index, std::size_t stoneCount)
 {
-  if (index == 0u || index + 1u == fbf_author_masonry_arch::kStoneCount)
+  if (index == 0u || index + 1u == stoneCount)
     return Eigen::Vector4d(0.35, 0.23, 0.16, 1.0);
   return index % 2u == 0u ? Eigen::Vector4d(0.82, 0.54, 0.30, 1.0)
                           : Eigen::Vector4d(0.70, 0.39, 0.23, 1.0);
+}
+
+//==============================================================================
+inline Eigen::Vector4d stoneColor(std::size_t index)
+{
+  return stoneColor(index, fbf_author_masonry_arch::kStoneCount);
 }
 
 //==============================================================================
@@ -327,7 +401,7 @@ inline dart::dynamics::SkeletonPtr createGround()
 
 //==============================================================================
 inline dart::dynamics::SkeletonPtr createStone(
-    const fbf_author_masonry_arch::StoneSpec& spec)
+    const fbf_author_masonry_arch::StoneSpec& spec, std::size_t stoneCount)
 {
   auto skeleton = dart::dynamics::Skeleton::create(spec.name);
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
@@ -338,7 +412,7 @@ inline dart::dynamics::SkeletonPtr createStone(
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  node->getVisualAspect()->setRGBA(stoneColor(spec.index));
+  node->getVisualAspect()->setRGBA(stoneColor(spec.index, stoneCount));
   configureContactDynamics(node->getDynamicsAspect());
 
   dart::dynamics::Inertia inertia;
@@ -350,6 +424,13 @@ inline dart::dynamics::SkeletonPtr createStone(
       dart::dynamics::FreeJoint::convertToPositions(spec.transform));
   skeleton->setMobile(spec.mobile);
   return skeleton;
+}
+
+//==============================================================================
+inline dart::dynamics::SkeletonPtr createStone(
+    const fbf_author_masonry_arch::StoneSpec& spec)
+{
+  return createStone(spec, fbf_author_masonry_arch::kStoneCount);
 }
 
 //==============================================================================
@@ -384,9 +465,14 @@ inline dart::dynamics::SkeletonPtr createCube(
 
 //==============================================================================
 inline dart::simulation::WorldPtr createWorld(
-    SolverLane lane, std::size_t simulationThreads = 1u)
+    SolverLane lane,
+    fbf_author_masonry_arch::SourceScenario sourceScenario,
+    std::size_t simulationThreads = 1u)
 {
-  auto world = dart::simulation::World::create(kDemoSceneId);
+  const auto& scenario
+      = fbf_author_masonry_arch::sourceScenarioSpec(sourceScenario);
+  const auto& adapterScenario = adapterScenarioSpec(sourceScenario);
+  auto world = dart::simulation::World::create(adapterScenario.demoSceneId);
   world->setTimeStep(fbf_author_masonry_arch::kRuntimeTimeStep);
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setNumSimulationThreads(simulationThreads);
@@ -397,11 +483,21 @@ inline dart::simulation::WorldPtr createWorld(
 
   installSolver(world, lane, simulationThreads);
   world->addSkeleton(createGround());
-  for (const auto& stone : fbf_author_masonry_arch::makeStoneSpecs())
-    world->addSkeleton(createStone(stone));
-  for (const auto& cube : fbf_author_masonry_arch::makeCubeSpecs())
+  for (const auto& stone :
+       fbf_author_masonry_arch::makeStoneSpecs(sourceScenario))
+    world->addSkeleton(createStone(stone, scenario.stoneCount));
+  for (const auto& cube :
+       fbf_author_masonry_arch::makeCubeSpecs(sourceScenario))
     world->addSkeleton(createCube(cube));
   return world;
+}
+
+//==============================================================================
+inline dart::simulation::WorldPtr createWorld(
+    SolverLane lane, std::size_t simulationThreads = 1u)
+{
+  return createWorld(
+      lane, fbf_author_masonry_arch::SourceScenario::Arch25, simulationThreads);
 }
 
 //==============================================================================
@@ -434,6 +530,8 @@ inline void releaseCubes(const dart::simulation::WorldPtr& world)
 
 struct AdapterContract
 {
+  fbf_author_masonry_arch::SourceScenario sourceScenario
+      = fbf_author_masonry_arch::SourceScenario::Arch25;
   SolverLane solverLane = SolverLane::BoxedLcp;
   double timeStep = 0.0;
   Eigen::Vector3d gravity = Eigen::Vector3d::Zero();
@@ -466,12 +564,20 @@ inline void requireNear(double actual, double expected, const std::string& what)
 
 //==============================================================================
 inline AdapterContract inspectAdapterContract(
-    const dart::simulation::WorldPtr& world)
+    const dart::simulation::WorldPtr& world,
+    fbf_author_masonry_arch::SourceScenario sourceScenario)
 {
   if (!world || !world->getConstraintSolver())
     throw std::runtime_error("author masonry-arch adapter has no solver");
 
+  const auto& scenario
+      = fbf_author_masonry_arch::sourceScenarioSpec(sourceScenario);
+  const auto& adapterScenario = adapterScenarioSpec(sourceScenario);
+  if (world->getName() != adapterScenario.demoSceneId)
+    throw std::runtime_error("author masonry-arch adapter scene id changed");
+
   AdapterContract contract;
+  contract.sourceScenario = sourceScenario;
   contract.timeStep = world->getTimeStep();
   contract.gravity = world->getGravity();
   contract.simulationThreads = world->getNumSimulationThreads();
@@ -533,7 +639,8 @@ inline AdapterContract inspectAdapterContract(
       fbf_author_masonry_arch::kFriction,
       "ground friction");
 
-  const auto stoneSpecs = fbf_author_masonry_arch::makeStoneSpecs();
+  const auto stoneSpecs
+      = fbf_author_masonry_arch::makeStoneSpecs(sourceScenario);
   for (const auto& spec : stoneSpecs) {
     const auto stone = world->getSkeleton(spec.name);
     if (!stone || stone->getNumBodyNodes() != 1u)
@@ -573,7 +680,7 @@ inline AdapterContract inspectAdapterContract(
     contract.mobileStoneCount += stone->isMobile() ? 1u : 0u;
   }
 
-  const auto cubeSpecs = fbf_author_masonry_arch::makeCubeSpecs();
+  const auto cubeSpecs = fbf_author_masonry_arch::makeCubeSpecs(sourceScenario);
   for (const auto& spec : cubeSpecs) {
     const auto cube = world->getSkeleton(spec.name);
     if (!cube || cube->getNumBodyNodes() != 1u)
@@ -604,7 +711,307 @@ inline AdapterContract inspectAdapterContract(
 
   if (world->getNumSkeletons() != 1u + contract.stoneCount + contract.cubeCount)
     throw std::runtime_error("author masonry-arch skeleton inventory changed");
+  if (contract.stoneCount != scenario.stoneCount
+      || contract.mobileStoneCount
+             != scenario.stoneCount
+                    - fbf_author_masonry_arch::kFixedSpringerCount)
+    throw std::runtime_error("author masonry-arch stone inventory changed");
   return contract;
+}
+
+//==============================================================================
+inline AdapterContract inspectAdapterContract(
+    const dart::simulation::WorldPtr& world)
+{
+  const auto sourceScenario
+      = world && world->getName() == kDemoSceneId101
+            ? fbf_author_masonry_arch::SourceScenario::Arch101
+            : fbf_author_masonry_arch::SourceScenario::Arch25;
+  return inspectAdapterContract(world, sourceScenario);
+}
+
+/// Typed physical snapshot for the source-supported 101-stone standing lane.
+///
+/// Pose deltas are measured from the pinned initial body-frame transforms, not
+/// from a previous step, so a slow collapse cannot hide behind small per-step
+/// motion. Missing and non-finite bodies remain visible through the counts and
+/// make the outcome oracle fail closed.
+struct StandingSceneState
+{
+  SolverLane solverLane = SolverLane::BoxedLcp;
+  double worldTimeSeconds = 0.0;
+  std::size_t worldSkeletonCount = 0u;
+  std::size_t observedStoneCount = 0u;
+  std::size_t observedMobileStoneCount = 0u;
+  std::size_t mobilityMatchingStoneCount = 0u;
+  std::size_t finiteStoneCount = 0u;
+  std::size_t observedCubeCount = 0u;
+  std::size_t finiteCubeCount = 0u;
+  std::size_t kinematicCubeCount = 0u;
+  bool groundValid = false;
+  bool crownObserved = false;
+  double crownBodyOriginInitialZ = 0.0;
+  double crownBodyOriginZ = 0.0;
+  double crownBodyOriginDisplacement = 0.0;
+  double crownRotationDeltaRadians = 0.0;
+  double maxMobileBodyOriginDisplacement = 0.0;
+  double maxMobileRotationDeltaRadians = 0.0;
+  double maxKinematicCubeBodyOriginDisplacement = 0.0;
+  double maxKinematicCubeRotationDeltaRadians = 0.0;
+};
+
+/// Individual gates and aggregate verdict for the local DART standing claim.
+struct StandingOutcomeOracle
+{
+  bool horizonComplete = false;
+  bool inventoryValid = false;
+  bool allBodiesFinite = false;
+  bool cubesRemainKinematic = false;
+  bool cubesRemainPinned = false;
+  bool mobileDisplacementBounded = false;
+  bool mobileRotationBounded = false;
+  bool crownHeightPreserved = false;
+  bool completeTraceValid = false;
+  bool standingOutcomeValid = false;
+  bool laneEvidenceQualifies = false;
+};
+
+//==============================================================================
+inline double rotationDeltaRadians(
+    const Eigen::Matrix3d& initial, const Eigen::Matrix3d& observed)
+{
+  if (!initial.allFinite() || !observed.allFinite())
+    return std::numeric_limits<double>::quiet_NaN();
+  const Eigen::Matrix3d relative = initial.transpose() * observed;
+  const double cosine = std::clamp(0.5 * (relative.trace() - 1.0), -1.0, 1.0);
+  return std::acos(cosine);
+}
+
+//==============================================================================
+inline StandingSceneState inspectStandingSceneState(
+    const dart::simulation::WorldPtr& world)
+{
+  using fbf_author_masonry_arch::SourceScenario;
+  if (!world)
+    throw std::invalid_argument("author masonry-arch standing world is null");
+  if (world->getName() != kDemoSceneId101)
+    throw std::runtime_error(
+        "author masonry-arch standing scene state has the wrong world");
+
+  StandingSceneState state;
+  if (dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver())) {
+    state.solverLane = SolverLane::ExactFbf;
+  } else if (dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+                 world->getConstraintSolver())) {
+    state.solverLane = SolverLane::BoxedLcp;
+  } else {
+    throw std::runtime_error(
+        "author masonry-arch standing scene state has an unsupported solver");
+  }
+  state.worldTimeSeconds = world->getTime();
+  state.worldSkeletonCount = world->getNumSkeletons();
+
+  const auto ground = world->getSkeleton("ground_plane");
+  if (ground && !ground->isMobile() && ground->getNumBodyNodes() == 1u) {
+    const auto* body = ground->getBodyNode(0u);
+    state.groundValid = body->getWorldTransform().matrix().allFinite()
+                        && body->getLinearVelocity().allFinite()
+                        && body->getAngularVelocity().allFinite();
+  }
+
+  static const auto stoneSpecs
+      = fbf_author_masonry_arch::makeStoneSpecs(SourceScenario::Arch101);
+  const std::size_t crownIndex = stoneSpecs.size() / 2u;
+  for (const auto& spec : stoneSpecs) {
+    const auto stone = world->getSkeleton(spec.name);
+    if (!stone || stone->getNumBodyNodes() != 1u)
+      continue;
+    ++state.observedStoneCount;
+    state.observedMobileStoneCount += stone->isMobile() ? 1u : 0u;
+    state.mobilityMatchingStoneCount
+        += stone->isMobile() == spec.mobile ? 1u : 0u;
+
+    const auto* body = stone->getBodyNode(0u);
+    const Eigen::Isometry3d transform = body->getWorldTransform();
+    const bool finite = transform.matrix().allFinite()
+                        && body->getLinearVelocity().allFinite()
+                        && body->getAngularVelocity().allFinite();
+    state.finiteStoneCount += finite ? 1u : 0u;
+    if (!finite)
+      continue;
+
+    const double displacement
+        = (transform.translation() - spec.transform.translation()).norm();
+    const double rotation
+        = rotationDeltaRadians(spec.transform.linear(), transform.linear());
+    if (spec.mobile) {
+      state.maxMobileBodyOriginDisplacement
+          = std::max(state.maxMobileBodyOriginDisplacement, displacement);
+      state.maxMobileRotationDeltaRadians
+          = std::max(state.maxMobileRotationDeltaRadians, rotation);
+    }
+    if (spec.index == crownIndex) {
+      state.crownObserved = true;
+      state.crownBodyOriginInitialZ = spec.transform.translation().z();
+      state.crownBodyOriginZ = transform.translation().z();
+      state.crownBodyOriginDisplacement = displacement;
+      state.crownRotationDeltaRadians = rotation;
+    }
+  }
+
+  static const auto cubeSpecs
+      = fbf_author_masonry_arch::makeCubeSpecs(SourceScenario::Arch101);
+  for (const auto& spec : cubeSpecs) {
+    const auto cube = world->getSkeleton(spec.name);
+    if (!cube || cube->getNumBodyNodes() != 1u)
+      continue;
+    ++state.observedCubeCount;
+    state.kinematicCubeCount += cube->isMobile() ? 0u : 1u;
+    const auto* body = cube->getBodyNode(0u);
+    const bool finite = body->getWorldTransform().matrix().allFinite()
+                        && body->getLinearVelocity().allFinite()
+                        && body->getAngularVelocity().allFinite();
+    state.finiteCubeCount += finite ? 1u : 0u;
+    if (finite && !cube->isMobile()) {
+      const Eigen::Isometry3d transform = body->getWorldTransform();
+      state.maxKinematicCubeBodyOriginDisplacement = std::max(
+          state.maxKinematicCubeBodyOriginDisplacement,
+          (transform.translation() - spec.transform.translation()).norm());
+      state.maxKinematicCubeRotationDeltaRadians = std::max(
+          state.maxKinematicCubeRotationDeltaRadians,
+          rotationDeltaRadians(spec.transform.linear(), transform.linear()));
+    }
+  }
+  return state;
+}
+
+//==============================================================================
+inline StandingOutcomeOracle evaluateStandingOutcome(
+    const StandingSceneState& state)
+{
+  StandingOutcomeOracle outcome;
+  outcome.horizonComplete
+      = std::isfinite(state.worldTimeSeconds)
+        && state.worldTimeSeconds >= kStandingRequiredWorldTimeSeconds
+                                         - kStandingHorizonTimeToleranceSeconds;
+  outcome.inventoryValid
+      = state.worldSkeletonCount
+            == 1u + fbf_author_masonry_arch::kStoneCount101
+                   + fbf_author_masonry_arch::kCubeCount
+        && state.observedStoneCount == fbf_author_masonry_arch::kStoneCount101
+        && state.observedMobileStoneCount
+               == fbf_author_masonry_arch::kStoneCount101
+                      - fbf_author_masonry_arch::kFixedSpringerCount
+        && state.mobilityMatchingStoneCount
+               == fbf_author_masonry_arch::kStoneCount101
+        && state.observedCubeCount == fbf_author_masonry_arch::kCubeCount
+        && state.groundValid && state.crownObserved;
+  outcome.allBodiesFinite
+      = state.finiteStoneCount == fbf_author_masonry_arch::kStoneCount101
+        && state.finiteCubeCount == fbf_author_masonry_arch::kCubeCount
+        && std::isfinite(state.crownBodyOriginInitialZ)
+        && std::isfinite(state.crownBodyOriginZ)
+        && std::isfinite(state.crownBodyOriginDisplacement)
+        && std::isfinite(state.crownRotationDeltaRadians)
+        && std::isfinite(state.maxMobileBodyOriginDisplacement)
+        && std::isfinite(state.maxMobileRotationDeltaRadians)
+        && std::isfinite(state.maxKinematicCubeBodyOriginDisplacement)
+        && std::isfinite(state.maxKinematicCubeRotationDeltaRadians);
+  outcome.cubesRemainKinematic
+      = state.kinematicCubeCount == fbf_author_masonry_arch::kCubeCount;
+  outcome.cubesRemainPinned
+      = outcome.cubesRemainKinematic
+        && std::isfinite(state.maxKinematicCubeBodyOriginDisplacement)
+        && std::isfinite(state.maxKinematicCubeRotationDeltaRadians)
+        && state.maxKinematicCubeBodyOriginDisplacement
+               <= kStandingMaxKinematicCubePoseError
+        && state.maxKinematicCubeRotationDeltaRadians
+               <= kStandingMaxKinematicCubePoseError;
+  outcome.mobileDisplacementBounded
+      = std::isfinite(state.maxMobileBodyOriginDisplacement)
+        && state.maxMobileBodyOriginDisplacement
+               <= kStandingMaxMobileBodyOriginDisplacement;
+  outcome.mobileRotationBounded
+      = std::isfinite(state.maxMobileRotationDeltaRadians)
+        && state.maxMobileRotationDeltaRadians
+               <= kStandingMaxMobileRotationDeltaRadians;
+  outcome.crownHeightPreserved
+      = state.crownObserved && std::isfinite(state.crownBodyOriginInitialZ)
+        && std::isfinite(state.crownBodyOriginZ)
+        && state.crownBodyOriginZ
+               >= state.crownBodyOriginInitialZ - kStandingMaxCrownHeightLoss;
+  outcome.completeTraceValid = outcome.horizonComplete && outcome.inventoryValid
+                               && outcome.allBodiesFinite
+                               && outcome.cubesRemainPinned;
+  outcome.standingOutcomeValid
+      = outcome.completeTraceValid && outcome.mobileDisplacementBounded
+        && outcome.mobileRotationBounded && outcome.crownHeightPreserved;
+  outcome.laneEvidenceQualifies = outcome.standingOutcomeValid;
+  return outcome;
+}
+
+//==============================================================================
+inline std::vector<std::pair<std::string, double>> standingSceneStateFields(
+    const StandingSceneState& state)
+{
+  const StandingOutcomeOracle outcome = evaluateStandingOutcome(state);
+  const auto numeric = [](bool value) {
+    return value ? 1.0 : 0.0;
+  };
+  return {
+      {"solver_lane_exact_fbf",
+       numeric(state.solverLane == SolverLane::ExactFbf)},
+      {"solver_lane_boxed_lcp",
+       numeric(state.solverLane == SolverLane::BoxedLcp)},
+      {"world_time_seconds", state.worldTimeSeconds},
+      {"world_skeleton_count", static_cast<double>(state.worldSkeletonCount)},
+      {"observed_stone_count", static_cast<double>(state.observedStoneCount)},
+      {"observed_mobile_stone_count",
+       static_cast<double>(state.observedMobileStoneCount)},
+      {"mobility_matching_stone_count",
+       static_cast<double>(state.mobilityMatchingStoneCount)},
+      {"finite_stone_count", static_cast<double>(state.finiteStoneCount)},
+      {"observed_cube_count", static_cast<double>(state.observedCubeCount)},
+      {"finite_cube_count", static_cast<double>(state.finiteCubeCount)},
+      {"kinematic_cube_count", static_cast<double>(state.kinematicCubeCount)},
+      {"ground_valid", numeric(state.groundValid)},
+      {"crown_observed", numeric(state.crownObserved)},
+      {"crown_body_origin_initial_z", state.crownBodyOriginInitialZ},
+      {"crown_body_origin_z", state.crownBodyOriginZ},
+      {"crown_body_origin_displacement", state.crownBodyOriginDisplacement},
+      {"crown_rotation_delta_rad", state.crownRotationDeltaRadians},
+      {"max_mobile_body_origin_displacement",
+       state.maxMobileBodyOriginDisplacement},
+      {"max_mobile_rotation_delta_rad", state.maxMobileRotationDeltaRadians},
+      {"max_kinematic_cube_body_origin_displacement",
+       state.maxKinematicCubeBodyOriginDisplacement},
+      {"max_kinematic_cube_rotation_delta_rad",
+       state.maxKinematicCubeRotationDeltaRadians},
+      {"standing_horizon_complete", numeric(outcome.horizonComplete)},
+      {"standing_inventory_valid", numeric(outcome.inventoryValid)},
+      {"standing_all_bodies_finite", numeric(outcome.allBodiesFinite)},
+      {"standing_cubes_remain_kinematic",
+       numeric(outcome.cubesRemainKinematic)},
+      {"standing_cubes_remain_pinned", numeric(outcome.cubesRemainPinned)},
+      {"standing_mobile_displacement_bounded",
+       numeric(outcome.mobileDisplacementBounded)},
+      {"standing_mobile_rotation_bounded",
+       numeric(outcome.mobileRotationBounded)},
+      {"standing_crown_height_preserved",
+       numeric(outcome.crownHeightPreserved)},
+      {"standing_complete_trace_valid", numeric(outcome.completeTraceValid)},
+      {"standing_outcome_valid", numeric(outcome.standingOutcomeValid)},
+      {"standing_lane_evidence_qualifies",
+       numeric(outcome.laneEvidenceQualifies)},
+  };
+}
+
+//==============================================================================
+inline std::vector<std::pair<std::string, double>> standingSceneStateFields(
+    const dart::simulation::WorldPtr& world)
+{
+  return standingSceneStateFields(inspectStandingSceneState(world));
 }
 
 //==============================================================================
@@ -681,35 +1088,72 @@ inline std::string adapterContractJson(
       || implementationSourceSha256.empty())
     throw std::invalid_argument("author masonry-arch source hashes are empty");
 
+  const auto& scenario
+      = fbf_author_masonry_arch::sourceScenarioSpec(contract.sourceScenario);
+  const auto& adapterScenario = adapterScenarioSpec(contract.sourceScenario);
+  if (contract.stoneCount != scenario.stoneCount
+      || contract.mobileStoneCount
+             != scenario.stoneCount
+                    - fbf_author_masonry_arch::kFixedSpringerCount
+      || contract.cubeCount != fbf_author_masonry_arch::kCubeCount)
+    throw std::invalid_argument(
+        "author masonry-arch contract inventory does not match its scenario");
+
+  const bool releaseWithinEvidenceHorizon
+      = fbf_author_masonry_arch::releaseOccursWithinFrames(
+          adapterScenario.evidenceFrameCount);
+  if (releaseWithinEvidenceHorizon
+      != adapterScenario.evidenceRunnerReleaseActionScheduled)
+    throw std::logic_error(
+        "author masonry-arch adapter release schedule is inconsistent");
+
   std::ostringstream out;
   out << std::setprecision(std::numeric_limits<double>::max_digits10);
   out << "{\"schema_version\":";
-  writeJsonString(out, kContractSchema);
+  writeJsonString(out, adapterScenario.contractSchema);
   out << ",\"kind\":";
   writeJsonString(out, kContractKind);
   out << ",\"source_binding\":{\"repository\":";
   writeJsonString(out, fbf_author_masonry_arch::kAuthorRepository);
   out << ",\"commit\":";
   writeJsonString(out, fbf_author_masonry_arch::kAuthorCommit);
+  out << ",\"tree\":";
+  writeJsonString(out, fbf_author_masonry_arch::kAuthorTree);
+  out << ",\"run_py_blob\":";
+  writeJsonString(out, fbf_author_masonry_arch::kAuthorRunBlob);
   out << ",\"run_py_sha256\":";
   writeJsonString(out, fbf_author_masonry_arch::kAuthorRunSha256);
+  out << ",\"mesh_tree\":";
+  writeJsonString(out, scenario.authorMeshTree);
   out << ",\"mesh_tree_sha256\":";
-  writeJsonString(out, fbf_author_masonry_arch::kAuthorMeshTreeSha256);
+  writeJsonString(out, scenario.authorMeshTreeSha256);
+  out << ",\"mesh_directory\":";
+  writeJsonString(out, scenario.authorMeshDirectory);
   out << ",\"configuration_spec_sha256\":";
   writeJsonString(out, specSourceSha256);
   out << ",\"dart_adapter_sha256\":";
   writeJsonString(out, adapterSourceSha256);
   out << ",\"demo_implementation_sha256\":";
   writeJsonString(out, implementationSourceSha256);
-  out << "},\"source_configuration\":{\"coordinate_scale\":"
+  out << "},\"source_selection\":{\"source_default_stones\":"
+      << fbf_author_masonry_arch::kStoneCount << ",\"selected_cli_arguments\":";
+  writeJsonString(out, scenario.authorStoneSelection);
+  out << ",\"selected_stones\":" << scenario.stoneCount
+      << ",\"historical_paper_invocation_known\":false}"
+         ",\"source_configuration\":{\"coordinate_scale\":"
       << fbf_author_masonry_arch::kScale
       << ",\"coordinate_units\":\"author_raw_numeric_values\""
          ",\"stones\":"
-      << fbf_author_masonry_arch::kStoneCount
+      << scenario.stoneCount
       << ",\"fixed_springers\":" << fbf_author_masonry_arch::kFixedSpringerCount
       << ",\"cubes\":" << fbf_author_masonry_arch::kCubeCount
       << ",\"cube_edge\":" << fbf_author_masonry_arch::kCubeEdgeLength
       << ",\"cube_mass\":" << fbf_author_masonry_arch::kCubeMass
+      << ",\"source_obj_record_arch_top_z\":"
+      << scenario.sourceObjRecordArchTopZ
+      << ",\"source_runtime_arch_top_z_float32\":"
+      << scenario.sourceRuntimeArchTopZFloat32
+      << ",\"cube_initial_z\":" << scenario.cubeInitialZ
       << ",\"friction\":" << fbf_author_masonry_arch::kFriction
       << ",\"contact_gap\":" << fbf_author_masonry_arch::kContactGap
       << ",\"shape_stiffness\":" << fbf_author_masonry_arch::kShapeStiffness
@@ -721,10 +1165,12 @@ inline std::string adapterContractJson(
       << fbf_author_masonry_arch::kRuntimeTimeStep
       << ",\"release_frame\":" << fbf_author_masonry_arch::kDropFrame
       << ",\"release_substep\":" << fbf_author_masonry_arch::kReleaseSubstep
-      << ",\"evidence_frames\":" << kEvidenceFrameCount
-      << ",\"evidence_substeps\":" << kEvidenceTotalSubsteps
+      << ",\"evidence_frames\":" << adapterScenario.evidenceFrameCount
+      << ",\"evidence_substeps\":"
+      << adapterScenario.evidenceFrameCount
+             * fbf_author_masonry_arch::kSubstepsPerFrame
       << "},\"dart_adapter\":{\"scene_id\":";
-  writeJsonString(out, kDemoSceneId);
+  writeJsonString(out, adapterScenario.demoSceneId);
   out << ",\"world\":{\"time_step_seconds\":" << contract.timeStep
       << ",\"gravity_coordinate_units_per_s2\":";
   writeJsonVector(out, contract.gravity);
@@ -852,17 +1298,76 @@ inline std::string adapterContractJson(
       << ",\"mobile_stones\":" << contract.mobileStoneCount
       << ",\"cubes\":" << contract.cubeCount << ",\"cubes_released\":"
       << (contract.cubesAreReleased ? "true" : "false")
-      << "},\"schedule\":{\"evidence_runner_action_completed_step\":"
-      << kReleaseActionCompletedStep << ",\"release_action_key\":";
-  writeJsonString(out, std::string(1u, static_cast<char>(kReleaseActionKey)));
-  out << ",\"interactive_action_semantics\":";
-  writeJsonString(out, "immediate_on_invocation");
-  out << "}},\"claim_boundary\":{"
+      << "},\"schedule\":{\"evidence_frames\":"
+      << adapterScenario.evidenceFrameCount << ",\"evidence_substeps\":"
+      << adapterScenario.evidenceFrameCount
+             * fbf_author_masonry_arch::kSubstepsPerFrame
+      << ",\"source_release_frame\":" << fbf_author_masonry_arch::kDropFrame
+      << ",\"source_release_substep\":"
+      << fbf_author_masonry_arch::kReleaseSubstep
+      << ",\"source_release_within_evidence_horizon\":"
+      << (releaseWithinEvidenceHorizon ? "true" : "false")
+      << ",\"evidence_runner_release_action_scheduled\":"
+      << (adapterScenario.evidenceRunnerReleaseActionScheduled ? "true"
+                                                               : "false")
+      << ",\"evidence_runner_action_completed_step\":";
+  if (adapterScenario.evidenceRunnerReleaseActionScheduled) {
+    out << kReleaseActionCompletedStep << ",\"release_action_key\":";
+    writeJsonString(out, std::string(1u, static_cast<char>(kReleaseActionKey)));
+    out << ",\"interactive_action_semantics\":";
+    writeJsonString(out, "immediate_on_invocation");
+  } else {
+    out << "null,\"release_action_key\":null,"
+           "\"interactive_action_semantics\":\"not_registered_for_standing_"
+           "lane\"";
+  }
+  out << "},\"standing_outcome_oracle\":";
+  if (contract.sourceScenario
+      != fbf_author_masonry_arch::SourceScenario::Arch101) {
+    out << "null";
+  } else {
+    out << "{\"scene_state_schema\":";
+    writeJsonString(out, kStandingSceneStateSchema);
+    out << ",\"required_completed_substeps\":" << kEvidenceTotalSubsteps101
+        << ",\"required_world_time_seconds\":"
+        << kStandingRequiredWorldTimeSeconds
+        << ",\"horizon_time_tolerance_seconds\":"
+        << kStandingHorizonTimeToleranceSeconds
+        << ",\"max_mobile_body_origin_displacement\":"
+        << kStandingMaxMobileBodyOriginDisplacement
+        << ",\"max_mobile_rotation_delta_rad\":"
+        << kStandingMaxMobileRotationDeltaRadians
+        << ",\"max_crown_height_loss\":" << kStandingMaxCrownHeightLoss
+        << ",\"max_kinematic_cube_pose_error\":"
+        << kStandingMaxKinematicCubePoseError
+        << ",\"requires_exact_inventory\":true"
+           ",\"requires_all_bodies_finite\":true"
+           ",\"requires_cubes_kinematic\":true"
+           ",\"requires_cubes_at_pinned_poses\":true"
+           ",\"positive_standing_qualification_requires_standing_in_both_"
+           "lanes\":true"
+           ",\"comparison_capture_validity_is_runner_level\":true"
+           ",\"complete_trace_valid_is_not_positive_standing_qualification\":"
+           "true"
+           ",\"current_dart_adapter_outcome_only\":true"
+           ",\"source_outcome_equivalence\":false}";
+  }
+  out << "},\"claim_boundary\":{"
          "\"source_numeric_geometry_mass_friction_and_initial_state_ported_to_"
-         "dart\":true,"
-         "\"source_release_action_ported_to_dart\":true,"
-         "\"source_release_schedule_declared_for_evidence_runner\":true,"
-         "\"interactive_demo_auto_releases_at_source_step\":false,"
+         "dart\":true,\"source_release_action_ported_to_dart\":"
+      << (adapterScenario.evidenceRunnerReleaseActionScheduled ? "true"
+                                                               : "false")
+      << ",\"source_release_schedule_declared_for_evidence_runner\":"
+      << (adapterScenario.evidenceRunnerReleaseActionScheduled ? "true"
+                                                               : "false")
+      << ",\"interactive_demo_auto_releases_at_source_step\":false,"
+         "\"historical_paper_invocation_known\":false,"
+         "\"current_dart_adapter_standing_outcome_oracle_declared\":"
+      << (contract.sourceScenario
+                  == fbf_author_masonry_arch::SourceScenario::Arch101
+              ? "true"
+              : "false")
+      << ","
          "\"source_collision_semantics_equivalent\":false,"
          "\"source_contact_gap_semantics_equivalent\":false,"
          "\"source_solver_backend_equivalent\":false,"
@@ -870,7 +1375,9 @@ inline std::string adapterContractJson(
          "\"trajectory_equivalent\":false,"
          "\"physical_outcome_equivalent\":false,"
          "\"fig07_parity\":false,"
+         "\"fig08_parity\":false,"
          "\"video07_parity\":false,"
+         "\"video08_parity\":false,"
          "\"timing_comparable\":false,"
          "\"paper_parity\":false}}";
   return out.str();
