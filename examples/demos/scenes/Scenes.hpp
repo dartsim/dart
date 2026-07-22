@@ -139,6 +139,11 @@ makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene();
 [[nodiscard]] DemoScene
 makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();
 
+/// Research > FBF author masonry arch: additive exact source-continuation
+/// crown-impact lane with a boxed control.
+[[nodiscard]] DemoScene
+makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceScene();
+
 /// Research > FBF author masonry arch: source-supported 101-wedge standing
 /// lane over the source-default no-release horizon.
 [[nodiscard]] DemoScene makeFbfAuthorMasonryArch101StandingCurrentSourceScene();

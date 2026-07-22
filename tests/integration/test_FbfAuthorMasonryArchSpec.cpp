@@ -490,6 +490,166 @@ TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsInitialWorldAndReleaseAction)
   EXPECT_NE(json.find("\"paper_parity\":false"), std::string::npos);
 }
 
+TEST(FbfAuthorMasonryArchSpec, DartAdapterSourceContinuationLaneIsSeparate)
+{
+  namespace adapter = fbf_author_masonry_arch_adapter;
+  using namespace fbf_author_masonry_arch;
+
+  EXPECT_STREQ(
+      adapter::kSourceContinuationDemoSceneId,
+      "fbf_author_masonry_arch_25_crown_impact_source_continuation_current_"
+      "source");
+  EXPECT_STRNE(adapter::kSourceContinuationDemoSceneId, adapter::kDemoSceneId);
+  EXPECT_STREQ(
+      adapter::kSourceContinuationContractSchema,
+      "dart.fbf_author_masonry_arch_crown_impact_source_continuation_dart_"
+      "adapter/v1");
+
+  const auto strictWorld = adapter::createWorld(adapter::SolverLane::ExactFbf);
+  const auto exactWorld
+      = adapter::createSourceContinuationWorld(adapter::SolverLane::ExactFbf);
+  const auto boxedWorld
+      = adapter::createSourceContinuationWorld(adapter::SolverLane::BoxedLcp);
+  const auto strict = adapter::inspectAdapterContract(strictWorld);
+  const auto exact = adapter::inspectAdapterContract(exactWorld);
+  const auto boxed = adapter::inspectAdapterContract(boxedWorld);
+
+  EXPECT_FALSE(strict.sourceContinuationScene);
+  EXPECT_TRUE(exact.sourceContinuationScene);
+  EXPECT_TRUE(boxed.sourceContinuationScene);
+  EXPECT_FALSE(strict.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(strict.exactSourceContinuationActive);
+  EXPECT_TRUE(exact.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(exact.exactSourceContinuationActive);
+  EXPECT_FALSE(boxed.exactSourceContinuationOptions.enabled);
+  EXPECT_FALSE(boxed.exactSourceContinuationActive);
+
+  auto* strictSolver
+      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          strictWorld->getConstraintSolver());
+  auto* exactSolver
+      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          exactWorld->getConstraintSolver());
+  ASSERT_NE(strictSolver, nullptr);
+  ASSERT_NE(exactSolver, nullptr);
+  EXPECT_EQ(
+      exactSolver->getExactCoulombPostCorrectionProjectionEnabled(),
+      strictSolver->getExactCoulombPostCorrectionProjectionEnabled());
+  EXPECT_EQ(
+      exactSolver->getExactCoulombSourceInnerInitializationEnabled(),
+      strictSolver->getExactCoulombSourceInnerInitializationEnabled());
+
+  for (const auto* continuation : {&exact, &boxed}) {
+    EXPECT_DOUBLE_EQ(continuation->timeStep, strict.timeStep);
+    EXPECT_TRUE(continuation->gravity.isApprox(strict.gravity, 0.0));
+    EXPECT_EQ(continuation->simulationThreads, strict.simulationThreads);
+    EXPECT_EQ(continuation->deactivationEnabled, strict.deactivationEnabled);
+    EXPECT_EQ(continuation->maxContacts, strict.maxContacts);
+    EXPECT_EQ(continuation->maxContactsPerPair, strict.maxContactsPerPair);
+    EXPECT_EQ(
+        continuation->nativeFourPointPlanar, strict.nativeFourPointPlanar);
+    EXPECT_EQ(continuation->splitImpulseEnabled, strict.splitImpulseEnabled);
+    EXPECT_EQ(continuation->stoneCount, strict.stoneCount);
+    EXPECT_EQ(continuation->mobileStoneCount, strict.mobileStoneCount);
+    EXPECT_EQ(continuation->cubeCount, strict.cubeCount);
+    EXPECT_EQ(continuation->cubesAreReleased, strict.cubesAreReleased);
+  }
+
+  ASSERT_TRUE(exact.exactOptions.has_value());
+  ASSERT_TRUE(exact.exactCrossStepOptions.has_value());
+  const auto& options = *exact.exactOptions;
+  EXPECT_FALSE(options.fallbackToBoxedLcp);
+  EXPECT_FALSE(options.enableStepSizePersistence);
+  EXPECT_FALSE(options.seedNormalImpulseFromDiagonal);
+  EXPECT_FALSE(options.useMatrixFreeDelassusSeed);
+  EXPECT_FALSE(options.enableProjectedGradientRetry);
+  EXPECT_FALSE(options.enableDenseResidualPolish);
+  EXPECT_EQ(
+      options.maxOuterIterations,
+      adapter::kSourceContinuationMaxOuterIterations);
+  EXPECT_FALSE(options.acceptOuterMaxIterations);
+  EXPECT_DOUBLE_EQ(
+      options.warmStartMatchDistance,
+      adapter::kSourceContinuationWarmStartMatchDistance);
+  EXPECT_DOUBLE_EQ(options.stepSizeScale, adapter::kDartStepSizeScale);
+  EXPECT_DOUBLE_EQ(options.outerRelaxation, adapter::kDartOuterRelaxation);
+  EXPECT_EQ(options.innerMaxSweeps, adapter::kDartInnerMaxSweeps);
+  EXPECT_EQ(options.innerLocalIterations, adapter::kDartInnerLocalIterations);
+  EXPECT_EQ(
+      options.maxResidualHistorySamples,
+      adapter::kSourceContinuationResidualHistorySamples);
+  EXPECT_EQ(
+      options.maxResidualHistoryRecords,
+      adapter::kSourceContinuationResidualHistoryRecords);
+
+  const auto& continuation = exact.exactSourceContinuationOptions;
+  EXPECT_EQ(
+      continuation.residualCheckInterval,
+      adapter::kSourceContinuationResidualCheckInterval);
+  EXPECT_EQ(
+      continuation.plateauPatience,
+      adapter::kSourceContinuationPlateauPatience);
+  EXPECT_DOUBLE_EQ(
+      continuation.plateauRelativeTolerance,
+      adapter::kSourceContinuationPlateauRelativeTolerance);
+  EXPECT_EQ(
+      continuation.stepSizeBacktrackLimit,
+      adapter::kSourceContinuationStepSizeBacktrackLimit);
+  EXPECT_DOUBLE_EQ(
+      continuation.couplingVariationSkipThreshold,
+      adapter::kSourceContinuationCouplingVariationSkipThreshold);
+
+  const auto& crossStep = *exact.exactCrossStepOptions;
+  EXPECT_EQ(
+      crossStep.warmStartMatchMode,
+      dart::constraint::ExactCoulombFbfWarmStartMatchMode::
+          OrderedBodyBLocalFeature);
+  EXPECT_TRUE(crossStep.useStrictWarmStartMatchDistance);
+  EXPECT_DOUBLE_EQ(
+      crossStep.warmStartNormalCosine,
+      adapter::kSourceContinuationWarmStartNormalCosine);
+  EXPECT_EQ(
+      crossStep.warmStartMaxAge, adapter::kSourceContinuationWarmStartMaxAge);
+  EXPECT_DOUBLE_EQ(
+      crossStep.persistentStepSizeSafeBoundScale,
+      adapter::kSourceContinuationPersistentStepSizeSafeBoundScale);
+  EXPECT_DOUBLE_EQ(
+      crossStep.minimumStepSize, adapter::kSourceContinuationMinimumStepSize);
+  EXPECT_DOUBLE_EQ(
+      crossStep.maximumStepSize, adapter::kSourceContinuationMaximumStepSize);
+  EXPECT_DOUBLE_EQ(
+      crossStep.warmStartResidualThreshold,
+      adapter::kSourceContinuationWarmStartResidualThreshold);
+  EXPECT_DOUBLE_EQ(
+      crossStep.warmStartStepSizeCap,
+      adapter::kSourceContinuationWarmStartStepSizeCap);
+  EXPECT_TRUE(crossStep.persistUncappedStepSizeOnWarmStartCap);
+  EXPECT_TRUE(crossStep.requireResidualImprovementForUnconvergedCacheSave);
+
+  EXPECT_FALSE(boxed.exactOptions.has_value());
+  EXPECT_FALSE(boxed.exactCrossStepOptions.has_value());
+  EXPECT_EQ(boxed.solverLane, adapter::SolverLane::BoxedLcp);
+
+  const std::string strictJson = adapter::adapterContractJson(
+      strict, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  const std::string exactJson = adapter::adapterContractJson(
+      exact, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  const std::string boxedJson = adapter::adapterContractJson(
+      boxed, kSpecSourceSha256, std::string(64u, 'a'), std::string(64u, 'b'));
+  EXPECT_EQ(strictJson.find("\"source_continuation\""), std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"source_continuation\":{\"policy\":\"source_continuation\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"options_available\":true,\"requested\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      boxedJson.find("\"options_available\":false,\"requested\":false"),
+      std::string::npos);
+  EXPECT_NE(boxedJson.find("\"exact_options\":null"), std::string::npos);
+}
+
 TEST(FbfAuthorMasonryArchSpec, DartAdapterPinsArch101StandingContract)
 {
   namespace adapter = fbf_author_masonry_arch_adapter;
