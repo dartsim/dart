@@ -347,3 +347,24 @@ crown-impact result, Fig. 7 parity, or evidence about the ten-level card house.
 The separate crown-impact adapter remains blocked at strict step 142, and the
 group clip still needs manual browser-composer upload plus a recorded GitHub
 user-attachment URL.
+
+Also keep the separate checkpoint-`34d9b66e97c` Figure 7 crown-impact
+continuation pair out of this ten-level claim. Its ignored root is
+`assets/pr_media_current_head_fig07_crown_continuation/`; paired run and
+independent two-result/one-group reuse verification pass with SHA-256 values
+`f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`
+and `969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`.
+The group metadata/panel/clip hashes are
+`4229307f7d6d91f4b347fecc53db9f290061c6dc76482e684a94064f764601d7`,
+`f3bdb5a20ad57ee20e1a2cf6508a701f9bbd79bf0532ffc303d87989b4dfa802`,
+and `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8`.
+Both lanes complete 2,000/2,000 with release at step 1,600; exact has
+2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, 98
+max-iteration accepts, and final residual `0.004493046465992133`. Manual
+inspection finds both arches standing and cubes reaching the crown with nearly
+identical visible outcomes, while metadata keeps `paper_comparable=false` and
+`automated_semantic_outcome_validated=false`. This is bounded non-strict
+continuation evidence only; it clears neither Figure 7's strict step-142
+blocker nor any strict convergence, superiority, physical outcome, parity,
+timing, backend, or ten-level gate. Upload its group only through the GitHub
+browser composer and record the URL.
