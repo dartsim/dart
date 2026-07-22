@@ -8,7 +8,12 @@ authoritative paper-profile contact-rich result and fails closed at step 89. A
 separate current-source Figure 6 adapter now fails its strict exact lane at
 completed step 35 on a 56-contact island. Additive `last_failure` diagnostics
 identify outer dual/complementarity convergence as the terminal condition, but
-the tested option matrix supplies no strict correction. A historical
+the tested option matrix supplies no strict correction. A one-factor
+c95-bound probe exercises the colored ordering/path with one participant
+and zero parallel dispatches but changes the failed residual by only
+`2.19e-14` relative. Reject it only as the next Figure 6 blocker discriminator;
+source-global constrained scope versus DART per-island solves is next. This is
+not a multicore or general colored-BGS result. A historical
 debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
@@ -24,7 +29,7 @@ seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
 convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
-and the visual workflow declares 21 schedules.
+and the visual workflow declares 28 schedules.
 
 ## Prior-Source Strict Full-Card Evidence
 

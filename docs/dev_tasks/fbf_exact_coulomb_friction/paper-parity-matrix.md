@@ -4,7 +4,7 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six locally finalized
-bundles, and the visual workflow declares 25 schedules.
+bundles, and the visual workflow declares 28 schedules.
 
 ## Source And Comparability Boundary
 
@@ -38,6 +38,12 @@ bundles, and the visual workflow declares 25 schedules.
   float64 dynamics are not the author Warp/Newton float32 backend; the current
   exact step-209 cap and boxed collapse are scientific-negative evidence, not
   source or paper parity.
+- Independent full current-source FBF and Kamino controls also fail the local
+  standing criterion. Kamino completes all 400 frames with finite arrays, but
+  98/99 mobile stones cross the three-unit height-change gate and the keystone
+  drops `82.03050136566162`. It saves no convergence/contact history, full
+  poses, rotations, cube trajectory, or media, so it is not a historical
+  Figure 8 oracle.
 - The numeric `author_incline_sweep_reference_v1` packet preserves independent
   current-source FBF, MuJoCo, and Kamino CPU runs on the full Figure 1 grid
   `mu=.3,.4,.45,.5,.55,.6,.8`. Each lane contains seven 120-step cells. The
@@ -94,7 +100,7 @@ correct trajectory, and `solver_contract_valid` does not imply paper parity.
 | Requirement | Paper target | Current DART evidence | Status/gap |
 | --- | --- | --- | --- |
 | Exact reduced Coulomb law | Primal cone, augmented-velocity dual cone, complementarity | Shared cone/residual math, exact local H-metric cone-QP solve, opt-in constraint solver | Implemented locally; broader production and author equivalence remain open |
-| Exact local solve | Strongly convex 3x3 cone subproblem | Analytic H-metric solve plus KKT-certified projected-gradient recovery; 47/47 exact-math tests | Robust on tested local systems; the pinned author kernel is inspectable, but DART equivalence and matched performance are not established |
+| Exact local solve | Strongly convex 3x3 cone subproblem | Analytic H-metric solve plus KKT-certified projected-gradient recovery; 56/56 exact-math tests | Robust on tested local systems; the pinned author kernel is inspectable, but DART equivalence and matched performance are not established |
 | FBF outer loop | 200 outer iterations, `1e-6`, fixed inner sweeps, adaptive gamma | `paper_cpu` resolves and validates those knobs; current card-manifold v2 holds them fixed across two Native modes; the non-paper literal arch uses a separately declared 5,000-outer tuned profile | Small scenes mostly converge and the tuned literal reconstruction passes; the prior-source strict full card fails, and neither current v2 card trajectory is strict |
 | Residual | Dimensionless primal/dual/gap maximum | Per-outer and per-step diagnostics exist; the literal bundle has maximum per-step residual `9.999807145410957e-7` | Positive reconstructed contact-rich evidence exists, but paper-profile convergence is not established |
 | Matrix-free response | Scatter/inverse-mass/gather | Contact-row operator exists for supported groups | Complete paper workload equivalence open |
@@ -239,7 +245,7 @@ colored-inner-BGS contract validated above.
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub attachment URLs remain pending, and source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
 | Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, sealed pinned-author 500-frame scientific negative, and a newly registered 2,000-substep source-configuration DART capture schedule | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags. The new DART exact lane clears the former step-68 local failure and completes 100 strict steps, then fails closed on a distinct outer iteration cap at step 142 (`96` contacts, residual `8.6992952e-4`, zero local exact failures/fallbacks); neither lane has completed the 2,000-step physical/media gates, the 500-frame invocation is not the source default, and no source-matched DART impact or paper-timing row is established |
-| Fig. 8 | 101-stone arch remains balanced | Source-pinned current-DART 101-mesh adapter and boxed-collapse media, plus the older oriented-box bounded attempt and provenance-bound literal v7 failed-step-1 run | Partial blocker evidence; parity blocked: source-pinned exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`), and boxed completes 1,600 steps but fails the standing oracle and collapses. The diagnostic hstack freezes exact at step 208. No lane supplies standing, matched Kamino, source trajectory/backend, golden, timing, or paper-parity proof |
+| Fig. 8 | 101-stone arch remains balanced | Source-pinned current-DART 101-mesh adapter and boxed-collapse media, independent full current-source FBF/Kamino numeric negatives, plus the older oriented-box bounded attempt and provenance-bound literal v7 failed-step-1 run | Partial blocker evidence; parity blocked: source-pinned exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`), and boxed completes 1,600 steps but fails the standing oracle and collapses. Current-source FBF and Kamino also fail the local standing criterion. The diagnostic hstack freezes exact at step 208. No lane supplies standing, the historical invocation/backend, full-pose source trajectory, golden media, timing, or paper-parity proof |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
 | Fig. 10 | Gamma sweeps with physical-outcome interpretation | Sweep/trace infrastructure | Partial: the pinned recovery policy is inspectable, but DART equivalence and paper-profile contact-rich outcomes are not established |
 | GPU table | Card/arch outcomes and timing | Construction adapter and reconstructed Kamino runner | Non-comparable; dynamic 10-level capture does not complete step 1 |
@@ -266,7 +272,7 @@ releases them immediately when used interactively; the evidence runner invokes
 `p` after completed substep 1,600. The horizon is 2,400 substeps at
 `dt=1/240 s`. Exact and boxed use the same Native
 `FourPointPlanar` frontend with contact capacity 4,096 and manifold subdivision
-4. The demo build, 13 focused headless/continuation C++ tests, 259 runner Python
+4. The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
 tests, and both contract-smoke validators pass.
 
 The strict exact 100-step prefix records 103 attempts, 102 solves, one failure,
@@ -558,7 +564,7 @@ SHA-256 is
 `1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`.
 This closes only a current-DART blocker-media slice. It does not supply a
 complete exact comparison, source backend/trajectory/outcome equivalence,
-standing, matched Kamino, golden, timing, performance, Fig. 8/video.08 parity,
+standing, a historical source/Kamino golden, timing, performance, Fig. 8/video.08 parity,
 or solver-superiority evidence. Both Figure 8 GitHub media URLs remain pending
 manual browser-composer upload.
 
@@ -626,7 +632,7 @@ current-DART-adapter evidence.
 | Literal 25-stone exact dynamics | Exact-inertia wedges, `1 um` closure, Native `FourPointPlanar` | 96 contacts, 24 pairs/manifolds, 3 colors, width 8 throughout 600 steps | Non-paper standing/outcome, validated standing media, and matched 1-to-4-thread evidence only |
 | Literal crown-impact v1 | Same standing arch plus three frozen projectiles; numeric only | Contact-order and finite-state gates pass; 5 caps, residual, all-body, and far-field gates fail | Preregistered non-paper scientific negative only |
 | Pinned-author 25-stone diagnostic | Author meshes and Warp/Newton float32 pipeline; 500 frames / 2,000 substeps | Release substep has 100 contacts; 40 initial-shortcut and 117 configured-outer-gate convergences, plus 1,843 nonconverged outer solves; no contact-pair identities | Current-source author scientific negative only; no DART dynamics, trajectory, outcome, timing, repeatability, media, or paper-invocation parity |
-| Source-pinned 101-stone DART adapter | All 101 author meshes, Native `FourPointPlanar`, float64 DART; 400 frames / 1,600 no-release substeps | Exact stops after step 209 on an iteration cap at residual `1.2582804496e-6`; boxed completes but fails standing and collapses | Current-DART source-parameterized scientific negative and blocker media only; no source/backend/outcome, Kamino, timing, or Fig. 8 parity |
+| Source-pinned 101-stone DART adapter | All 101 author meshes, Native `FourPointPlanar`, float64 DART; 400 frames / 1,600 no-release substeps | Exact stops after step 209 on an iteration cap at residual `1.2582804496e-6`; boxed completes but fails standing and collapses; full current-source FBF/Kamino controls also fail standing | Current-DART/current-source scientific negatives and blocker media only; no historical source/backend/full-pose outcome, golden media, timing, or Fig. 8 parity |
 | Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure, Native `FourPointPlanar`; current v7 numeric bundle only | Failed step 1: identity-resolved 100-edge adjacent chain, 400 contacts/100 pairs, multiplicity 4, zero non-adjacent/ground pairs; 5,000 outers then `fbf_failed`, residual `0.7815364614`; companion taxonomy/affinity are not equivalent | Frozen non-paper failed-prefix scientific negative only; no source-equivalence, standing, physical, timing, media, long-run, or parity claim |
 
 The DART dynamic tiers are reconstructions. The pinned-author row is a separate
@@ -654,11 +660,12 @@ No local row may be labeled as meeting or beating these targets.
 
 ## Validation And PR State
 
-The last recorded focused gates report 47/47 exact-math tests, 29/29 exact
-constraint-solver tests, 64/64 `ConstraintSolver` tests, 42/42 Native-collision
-tests, 3/3 masonry-geometry tests, 31 passing paper fixtures with 3 skipped,
-9/9 focused CTests in both Release and Debug, 7/7 author-masonry adapter tests,
-320/320 visual-runner tests, 26/26 demo scene-doc contracts, 64/64 author-incline finalizer
+The last recorded focused gates report 56/56 exact-math tests, 38/38 exact
+constraint-solver tests, 66/66 `ConstraintSolver` tests, 50/50 Native-collision
+tests, 13/13 `SplitImpulse` tests, 3/3 masonry-wedge-dynamics tests, 36 passing
+paper fixtures with 3 skipped,
+9/9 focused CTests in both Release and Debug, 8/8 author-masonry adapter tests,
+338/338 visual-runner tests, 29/29 demo scene-doc contracts, 64/64 author-incline finalizer
 tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. With the compact local incline bundle present,
@@ -678,7 +685,8 @@ closure is explicitly recreated. Archive mode remains the clean validation
 path for the sealed local evidence.
 
 PR #3374 is merged at final head `1f816` and merge commit `fa17fad` (abbreviated
-hashes). PR #3377 was verified open and draft on 2026-07-21. Its target
+hashes). PR #3377 was verified open and draft at implementation/media head
+`c95bd5fb916` on 2026-07-22. Its target
 ancestry, topic head, divergence, merge state, checks, and reviews are
 intentionally not frozen into this matrix; fetch and query them live before
 reporting or publishing. PR #3377 remains work in progress and is not

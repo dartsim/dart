@@ -33,15 +33,16 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`; #3377 was verified open and draft on 2026-07-21, while target ancestry, topic head, merge state, checks, and reviews must be verified live | #3377 is work in progress, not completion evidence |
+| PR integration | PR #3374 is historically merged at `fa17fad`; #3377 was verified open and draft at implementation/media head `c95bd5fb916` on 2026-07-22, while target ancestry, topic head, merge state, checks, and reviews must be verified live | #3377 is work in progress, not completion evidence; later docs-only checkpoints do not change the c95 binary/media identity |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
 | Local timing | Three measured 600-step runs per thread count give 1-thread mean `6.122883343333333 ms` and 4-thread mean `4.26939745 ms`, with validated speedup `1.4341328993236115x` | Both means meet 60 Hz; neither run set meets an every-step deadline |
 | Paper timing | The recorded timing row is reconstructed float64 DART on x86-64 Linux, not the public Warp/Newton float32 workload, and the historical Apple host/timing protocol is unattested | Paper target and timing verdict remain null |
 | Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
-| Literal 25-stone visual evidence | The ignored current-head exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
+| Literal 25-stone visual evidence | The ignored c95-bound exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
 | Source-continuation Figure 7 crown-impact evidence | Checkpoint `34d9b66e97c` adds a separate bounded continuation lane. Its ignored exact/boxed pair completes 2,000/2,000 steps with successful cube release at step 1,600; exact records 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, and 98 max-iteration accepts | Valid current-DART capture/integrity and continuation telemetry only. Both arches visibly remain standing and the cubes reach the crown, but the lanes are nearly identical and the assessment is manual-only; no strict convergence, superiority, paper parity, outcome, timing, or backend claim follows |
+| C95-bound Figures 1-5 reseal | Ignored `assets/pr_media_current_head_c95_small_rows/` binds 20 members and 13 groups to demo SHA-256 `5725672a...`; capture and independent reuse verification pass with zero failures and five expected exact-only author-turntable boxed skips | Authoritative local browser-upload source only. All paper/automated-semantic flags remain false; manual DART observations do not establish paper parity or general solver superiority |
 | Incline visual evidence | Locally finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five selected local stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over `mu=.3,.4,.45,.5,.55,.6,.8`; each lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric current-source scientific-negative/reference evidence only; FBF has 839/840 configured convergence flags, every timing field is diagnostic-only, and no DART, historical-paper, full-state, golden, media, timing, performance, or parity claim follows |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
@@ -52,11 +53,11 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
 | Current-source ten-level card-house adapter | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source` bind the supported `--levels 10` selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, release after step 1,600, and the pinned heterogeneous gap values. Predictive checkpoint `3647959a188` matches only the scalar source `separation / dt` velocity allowance | Strict reaches completed step 31 before a 79-contact failure. The final exact continuation reseal and independent reuse verification pass: 3,200/3,200, 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau and 763 max-iteration accepts, and `automated_semantic_outcome_validated=false`. A clean boxed control completes 80/80, but the full attempt reached only step 112, was interrupted, and is non-evidence; paired media remains blocked. No source, trajectory, physical, Tables 6-7, paper, or solver-superiority parity follows; see [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md) |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
-| Source-pinned 101-stone DART adapter | The new author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Strict exact stops at step 209 on an iteration cap; boxed completes but fails the standing oracle and visibly collapses | Precise current-DART scientific negative only; no source-backend, float32, trajectory/outcome, Fig. 8/video.08, Kamino, golden, timing, performance, or superiority claim follows |
+| Source-pinned 101-stone DART adapter | The new author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Strict exact stops at step 209 on an iteration cap; boxed completes but fails the standing oracle and visibly collapses. Independent full current-source FBF and Kamino controls also fail the same local standing criterion | Precise current-DART and current-source scientific negatives only; no historical invocation/backend, converged golden, full trajectory/outcome, Fig. 8/video.08, timing, performance, or superiority claim follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
-| Paper-media parity | The passing literal video has no projectile. The source-pinned 101-stone lane now has boxed-collapse media and a frozen-prefix diagnostic comparison, but no complete exact clip, matched Kamino panel, or historical renderer camera/material/golden bundle | No paper impact, Fig. 8/video.08, GUI, or golden-frame parity claim |
-| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six locally finalized bundles and the visual workflow declares 27 schedules; the gate hashes local bundle artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
+| Paper-media parity | The passing literal video has no projectile. The source-pinned 101-stone lane now has boxed-collapse media and a frozen-prefix diagnostic comparison, but no complete exact clip, current-source Kamino media/full-pose trace, or historical renderer camera/material/golden bundle | No paper impact, Fig. 8/video.08, GUI, or golden-frame parity claim |
+| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six locally finalized bundles and the visual workflow declares 28 schedules; the gate hashes local bundle artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
 ## Current Small CPU Matrix
 
@@ -141,7 +142,7 @@ Authoritative bundle file SHA-256 values are:
 
 ## Current Literal-Arch Visual Evidence
 
-The current-head paired recapture is ignored outside Git at
+The c95-bound paired recapture is ignored outside Git at
 `assets/pr_media_current_head_fig07/`. Capture passes for two members and one
 group with no failures or skips; its external summary
 `/tmp/fig07_literal_standing_current_head_summary.json` has SHA-256
@@ -655,7 +656,7 @@ runner invokes `p` after completed substep 1,600. The declared horizon is
 `FourPointPlanar` collision frontend with contact capacity 4,096 and manifold
 subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 259 visual-runner
+The demo build, 13 focused headless/continuation C++ tests, 338 visual-runner
 Python tests, and exact/boxed contract-smoke validators pass. The first live strict
 exact request for 100 steps fails closed at completed step 35 when contacts
 jump from 44 to 68. Steps through 34 are clean, with prior worst residual
@@ -696,10 +697,16 @@ shrinks are all zero. The timelines are
 and
 `/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json`
 (SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`).
-The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
-colored source parity remains unproven and separate. Source shrink-cap,
-plateau, and continuation semantics are unchanged by this strict A/B and are
-exercised only by the separately labeled lane below.
+The Figure 6 adapter and strict replay disable colored block Gauss-Seidel. A
+one-factor c95-bound probe that changed only that switch to true exercised
+the colored ordering/path for 200 solves with one participant and zero
+parallel dispatches, but left the failed step-35 residual unchanged to
+numerical noise (`2.19e-14` relative). Reject that setting only as the next
+Figure 6 blocker discriminator; it is not a multicore or general colored-BGS
+result. Source shrink-cap, plateau, and continuation semantics are unchanged
+by this strict A/B and are exercised only by the separately labeled lane
+below. The next Figure 6 solver-level discriminator is source-global
+constrained scope versus DART's per-island solves.
 
 The pinned author control completes 2,400 substeps while reporting only 1,455
 converged and 945 unconverged steps: 632 caps and 313 plateau stops. Before
@@ -912,6 +919,17 @@ The public runner saves no final x/y, rotations, or media, so this is a finite
 current-source negative rather than a converged golden or visual/paper-parity
 result.
 
+The independent current-source Kamino control also completes the full 400
+frames / 1,600 substeps with finite saved arrays, but 98/99 mobile stones
+change height by more than three raw units. Maximum change is
+`87.23839569091797`; the keystone drops `82.03050136566162`. Its result and
+trajectory SHA-256 values are
+`86b351c212c0e69df371fa66c67c53d6c3421575afbafae3a6b8d339f574dfb3`
+and `63c47426019a218942afe3edae31cdf5dbbbd8d8926732ea59120e23bb6cf1a4`.
+It persists no convergence/contact history, full poses, rotations, cube
+trajectory, or media. This is a second current-source numeric negative, not a
+matched historical Figure 8 oracle.
+
 The ignored packet is
 `assets/paper_evidence/fig08_arch101_author_current_v1/`. Scene
 `fbf_author_masonry_arch_101_standing_current_source` binds the pinned author
@@ -950,8 +968,9 @@ and `a8caee71c9356a72fa65210207d7b4209d9e305363974ec07c81f19ec14bfa1e`.
 
 This is a current-DART scientific negative and a local PR-attachment candidate,
 not a complete exact/boxed comparison or evidence of source backend/float32,
-trajectory/outcome equivalence, Fig. 8/video.08 parity, matched Kamino,
-approved goldens, timing, performance, or solver superiority. GitHub URLs
+trajectory/outcome equivalence, Fig. 8/video.08 parity, a historical
+source/Kamino golden, approved goldens, timing, performance, or solver
+superiority. GitHub URLs
 remain pending. The frozen literal 101-stone v7 negative below remains a
 separate reconstruction contract.
 
@@ -1150,13 +1169,14 @@ The latest recorded focused results on the current source are:
 - source-supported ten-level demo build and all four
   `AuthorCardHouseTenLevel*` C++ tests: passed, including the continuation
   contract;
-- visual-runner Python tests, including the source-pinned 101-stone and both
-  ten-level card-house schedule/oracle contracts: 335/335;
+- visual-runner Python tests, including the source-pinned 101-stone, both
+  ten-level card-house schedule/oracle contracts, and Figure 7 crown-impact
+  continuation: 338/338;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
-  7/7 contained tests passed;
-- demo scene documentation verifier: 28 scenes passed;
+  8/8 contained tests passed;
+- demo scene documentation verifier: 29 scenes passed;
 - manifest validation: under the sealed producer closure, live mode performed
   118 file-identity rechecks with zero skipped; explicit archive mode reported
   all 118 skipped rechecks; and
@@ -1182,19 +1202,24 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    source-pinned Painleve adapter, and backspin bundles. Preserve its
    trace/outcome audit, independent replay, and manual inspection, upload the
    two exact-vs-boxed clips through the PR browser composer. Also preserve and
-   upload the current-head Figure 7 literal-standing and crown-impact
+   upload the c95-bound Figure 7 literal-standing and crown-impact
    continuation exact-vs-boxed groups only through that browser-composer path,
    recording their URLs and retaining the manual-only, non-strict boundaries.
-   The continuation lane does not clear the strict step-142 blocker. Then
-   continue with the other smaller-figure
-   recaptures and strict card work. Continue isolated
-   one-factor-at-a-time source-mismatch A/Bs without combining tolerance, cap,
-   fallback, or fail-fast changes. For the ten-level lane, preserve the final,
+   The continuation lane does not clear the strict step-142 blocker. Use the
+   implementation/media-head `c95bd5fb916` small-row reseal as the authoritative Figures
+   1-5 upload source; keep its capture and reuse-verification summaries, panel
+   audit, and browser-upload manifest hash-bound. Continue isolated strict
+   card work and one-factor-at-a-time source-mismatch A/Bs without combining
+   tolerance, cap, fallback, or fail-fast changes. For the ten-level lane,
+   preserve the final,
    independently reverified 3,200-step exact continuation member. Treat the
    interrupted step-112 boxed attempt and its partial frames as non-evidence;
    paired media remains blocked until a complete, validated boxed member
-   exists. Continue colored scheduling and global solve scope one factor at a
-   time; do not loosen tolerance or caps.
+   exists. For the four-level Figure 6 blocker, the one-participant colored
+   ordering candidate is rejected as the next discriminator; test global
+   constrained scope versus per-island solving next. For the ten-level lane,
+   colored scheduling and global scope both remain pending one-factor
+   diagnostics. Do not loosen tolerance or caps.
    Preserve and independently review the
    completed telemetry-rich source-continuation clip, do not relabel it as
    strict convergence or solver superiority, and publish it only through the PR

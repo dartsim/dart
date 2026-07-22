@@ -90,6 +90,48 @@ This proves failure of the local standing criterion by vertical displacement
 alone, but it does not support a visual-collapse, full 3D displacement, or
 rotation claim.
 
+### Full current-source Kamino run
+
+A public-source Kamino control used the same current-source 101-stone,
+400-frame, no-release selection:
+
+```text
+python -u paper_examples/masonry-arch/run.py --solvers kamino --stones 101 \
+  --frames 400 --drop-frame 400 --device cpu
+```
+
+It completed all 400 saved frames / 1,600 substeps and exited zero in 758.84
+wall seconds on the current CPU environment; that wall time is provenance, not
+a performance result. All four trajectory arrays and all JSON numeric values
+are finite. The inventory contains 101 stones, of
+which 99 are mobile; both fixed springers have exactly zero saved vertical
+displacement. The three cubes remain at their pinned height in every logged
+50-frame sample, but cube trajectories are not persisted, so this is not an
+independent full-horizon cube-state oracle.
+
+Kamino decisively fails the same local vertical-height standing criterion.
+Ninety-eight of 99 mobile stones change height by more than three raw units.
+Maximum change is
+`87.23839569091797` at stone 56. The keystone changes from
+`66.13856506347656` to `-15.891936302185059`, a drop of
+`82.03050136566162`; its first saved threshold crossing is frame 47 / substep
+188 at `t=0.7833333333333333`, with change `3.025775909423828`. Minimum final
+stone height is `-57.47398376464844`.
+
+```text
+/tmp/fbf-sca-2026-source/paper_examples/masonry-arch/results/20260722T085002Z/
+metadata.json SHA-256 1bcb0ad2d937fa2066369880dd41755962975b54127c05dea9148d2383d0008f
+kamino/result.json SHA-256 86b351c212c0e69df371fa66c67c53d6c3421575afbafae3a6b8d339f574dfb3
+kamino/trajectory.npz SHA-256 63c47426019a218942afe3edae31cdf5dbbbd8d8926732ea59120e23bb6cf1a4
+sweep_results.json SHA-256 dc98a2acb6c38fbebfda0637e2581c10ddc01de8374c08c0ed52a6abe606a659
+```
+
+This is a finite, full-horizon current-source Kamino numeric negative. It has
+no residual/contact history, full poses, rotations, persisted cube trajectory,
+or media. It does not establish convergence, a visual-collapse result, the
+historical Figure 8 invocation/backend, a golden trajectory, paper parity, or
+solver superiority.
+
 ## Step-209 Solver Diagnosis
 
 The exact run forms two chain-like contact groups. At step 209 one group
@@ -130,7 +172,7 @@ The default-off Native implementation expands broad-phase candidates, emits
 finite signed convex-convex and plane-convex proximity manifolds strictly
 inside the summed gap, and admits only explicitly configured negative-depth
 contacts without penetration bias. Its focused collision and solver suites
-pass 50/50 and 65/65. The sealed source-pinned scene remains unchanged.
+pass 50/50 and 66/66. The sealed source-pinned scene remains unchanged.
 
 An external one-factor harness then applied the source-sized gaps: `0.005` to
 every stone/cube collision shape and `0.1` to the ground. First contact and
@@ -148,8 +190,12 @@ sealed scene, combine them with rejected tuning knobs, or capture a full
 exact/boxed pair from this variant. Revisit only with a matched historical
 contact oracle or recovered historical Figure 8 invocation/backend.
 
-The complete public `--stones 101` control therefore cannot serve as a
-converged golden trajectory and does not preserve the initial configuration
-under the local standing criterion. The historical Figure 8 invocation and
-backend remain unrecovered. Do not claim source visual collapse, historical
-Figure 8 parity, or DART-versus-source solver superiority.
+Neither complete current-source `--stones 101` control preserves the initial
+configuration under the local standing criterion: FBF fails while continuing
+1,473 capped substeps, while Kamino crosses the local vertical-height gate for
+more stones and has a larger change on that metric without a saved
+convergence/contact history. Neither can serve as a converged golden
+trajectory. Stop Figure 8 parity work until the historical invocation/backend
+or a matched historical contact oracle is recovered. Do not claim source
+visual collapse, historical Figure 8 parity, or DART-versus-source solver
+superiority.

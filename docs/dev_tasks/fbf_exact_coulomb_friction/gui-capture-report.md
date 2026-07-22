@@ -18,9 +18,25 @@ incline threshold, the two-cell Painleve proxy, backspin, and the author-pinned
 four-cell turntable matrix. A sixth locally finalized visual bundle records the
 author five-level construction at step zero; it remains construction-only
 evidence. They are bounded DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 25 schedules. The task-wide manifest remains 29
+workflow inventory declares 28 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
+
+The authoritative ignored Figures 1-5 browser-upload source is the
+implementation/media-head `assets/pr_media_current_head_c95_small_rows/`
+reseal. At
+implementation head `c95bd5fb916`, its capture summary passes with 20 member
+results, 13 groups, zero failures, and five expected boxed skips for exact-only
+author-turntable schedules/group; summary SHA-256 is
+`8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af`.
+Independent reuse verification passes with the same 20 members, 13 groups,
+and five expected skips; summary SHA-256 is
+`264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
+Fresh temporal panels confirm visible checker/coral-tile rotation in Figure 3
+and the Painleve `mu=.55` divergence. Byte-identical c95-bound clip hashes
+preserve the prior timeline/clip-audited turntable classifications. The bundle is
+ignored local state, not repository media; PR user-attachment URLs are still
+pending browser-composer upload.
 
 ## Evidence Predicates
 
@@ -408,7 +424,7 @@ cubes. Interactive `p` releases them immediately; the evidence runner invokes
 `dt=1/240 s`. Exact and boxed share Native `FourPointPlanar`, capacity 4,096,
 and subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 259 runner Python
+The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
 tests, and exact/boxed contract smoke pass. The strict exact request fails closed at completed step
 35 when collision contacts jump from 44 to 68. The constrained groups are 56,
 8, and 4 contacts: attempt 101 reaches the 200-iteration cap on the 56-contact
@@ -554,8 +570,11 @@ frame while boxed continues; its 201-frame full decode has SHA-256
 The compact bundle-summary SHA-256 is
 `1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`.
 This is valid blocker presentation, not a complete exact/boxed comparison,
-standing result, matched Kamino panel, source/golden match, paper parity, or
-solver-superiority evidence. GitHub URLs remain pending.
+standing result, historical source/Kamino golden, source/golden match, paper
+parity, or solver-superiority evidence. GitHub URLs remain pending. Independent
+full current-source FBF and Kamino controls also fail the local standing
+criterion; Kamino completes all 400 frames with finite arrays but saves no
+convergence/contact history, full poses, rotations, cube trajectory, or media.
 
 The positive literal-wedge result is a separate scene contract and does not
 relabel or invalidate the oriented-box visual failure. Its standing capture
@@ -711,9 +730,11 @@ shown by `--help` and rejects hash or segment-boundary drift.
   step-1,600 release. Do not promote this bounded trajectory or create an exact
   comparison clip from it.
 - Preserve the source-pinned 101-stone boxed clip and frozen-prefix hstack only
-  as blocker media. A parity-eligible Fig. 8/video.08 row still requires a full
-  strict exact standing run, matched Kamino outcome, and approved visual
-  comparison; upload any blocker clip through the PR editor with that boundary.
+  as blocker media. Full current-source FBF and Kamino controls also fail
+  standing; a parity-eligible Fig. 8/video.08 row now requires recovery of the
+  historical invocation/backend or a matched historical oracle plus an
+  approved visual comparison. Upload any blocker clip through the PR editor
+  with that boundary.
 - Preserve card-manifold v2 as diagnostic-only sensitivity evidence; its two
   non-strict trajectories and raw wall times cannot promote media.
 - Keep the frozen crown-impact v1 negative unchanged. Any revised impact

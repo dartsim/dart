@@ -150,10 +150,12 @@ SHA-256 3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73
 ```
 
 The strict replay is serial because the Figure 6 adapter explicitly disables
-colored block Gauss-Seidel. The colored implementation accepts the same raw
-source-style seed for internal consistency, but colored source parity has not
-been demonstrated and remains a separate lane. Source shrink, cap, plateau,
-and continuation semantics also remain separate; none changed in this A/B.
+colored block Gauss-Seidel. The later one-factor colored trial exercised that
+ordering/path with one participant and zero parallel dispatches, and changed
+the failed residual only at numerical-noise scale. Reject it only as the next
+Figure 6 step-35 discriminator; it is not a multicore colored test or a
+general rejection of colored scheduling. Source shrink, cap, plateau, and
+continuation semantics remain separate; none changed in this A/B.
 The source-inner option therefore closes another pinned-source semantic
 mismatch without clearing or moving the strict blocker.
 
@@ -207,6 +209,7 @@ diagnostics only; the temporary wrappers are not evidence producers.
 | DART constraint regularization | 29 | eight failures, `5.811062e-6` |
 | Accept caps, strict fail-fast | 32 | rejected as `iteration_cap` |
 | Accept caps, no fail-fast, 100 steps | 100 | 81 accepted caps, `0.1455523` |
+| Colored BGS only, c95-bound binary `c95bd5fb916` | 35 | failed, `4.0844850280895566e-4` |
 
 Warm start off, persistence off, the fuller author-inspired cross-step policy,
 30 inner sweeps, 20 shrink attempts, projected-gradient retry, dense polish,
@@ -214,6 +217,30 @@ projected-gradient local solves, matrix-free operator, dense snapshot, seed
 ablations, step scales 1 and 5, and outer relaxation 0.8 all failed at or
 before step 35. Raising the outer budget by 100x or 250x only moved the first
 failure, so global option tuning is not a strict solution.
+
+The final colored-BGS trial changed only
+`colored_block_gauss_seidel_enabled=false -> true`; participant affinity
+remained false and the normalized physics contracts otherwise match. A
+process-local interceptor recorded actual use on failed exact attempt 101:
+200 colored solves, 17 manifolds, 9 colors, maximum 3 manifolds per color, one
+participant, and zero parallel dispatches. The same 56-contact group still reached 200 iterations at
+step 35. Its residual differs from the serial c95-bound control
+`4.0844850280896461e-4` by only `2.19e-14` relative, far below the
+preregistered 10x-improvement continuation gate. This rejects this one-factor
+setting as the next Figure 6 blocker lane; it does not test multicore colored
+execution or reject the separately validated literal-arch colored result or
+pending ten-level colored diagnostic.
+
+```text
+/tmp/fbf_fig06_colored_ab_c95_serial.4vH25H/timeline.json
+SHA-256 cf2a15fecd9071de7a9b1ce54f8f7182485f77ceb3c140e8c2c02a1174a008c9
+
+/tmp/fbf_fig06_colored_ab_c95_colored_v2.TAnBSG/timeline.json
+SHA-256 8458bfc8bc0c8b127dbd11be0c8f4f45c44383c04a5868736c9d59b61bcb890f
+
+/tmp/fbf_fig06_colored_ab_c95_colored_v2.TAnBSG/stderr.log
+SHA-256 543c35944d7c33e2b314e811af9381a9c2854274d4dadb5931d233f0ea868716
+```
 
 ## Source-Style Continuation Preview
 
@@ -326,9 +353,12 @@ may be attached only with its acceptance telemetry and narrow claim boundary.
 The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
 must isolate one remaining source mismatch without combining tolerance,
-budget, fallback, fail-fast, or accepted-cap changes. Colored source parity is
-a separate unproven lane. Source shrink-cap, plateau, and continuation
-semantics likewise require a separately labeled, telemetry-rich physical/video
-lane before producing strict outcome evidence. The continuation lane now has a
-validated local full-resolution attachment candidate, but no GitHub URL and no
-strict, quantitative-parity, or superiority verdict.
+budget, fallback, fail-fast, or accepted-cap changes. The one-participant
+colored-ordering candidate is rejected for this Figure 6 step-35 blocker; the
+next solver-level discriminator is the source's global constrained scope
+versus DART's per-island solves. Source
+shrink-cap, plateau, and continuation semantics likewise require a separately
+labeled, telemetry-rich physical/video lane before producing strict outcome
+evidence. The continuation lane now has a validated local full-resolution
+attachment candidate, but no GitHub URL and no strict, quantitative-parity, or
+superiority verdict.

@@ -1,6 +1,6 @@
 # Fresh Session Handoff Prompt
 
-This prompt reflects the 2026-07-21 checkpoint in
+This prompt reflects the 2026-07-22 checkpoint in
 [RESUME.md](RESUME.md). Copy it into a fresh session without appending an older
 cached status summary.
 
@@ -61,6 +61,11 @@ External truth:
   source-supported 400-frame no-release schedule. Exact stops at step 209 on an
   iteration cap; boxed completes but collapses. This is precise current-DART
   negative evidence, not Fig. 8/video.08 or solver-superiority evidence.
+- Full current-source FBF and Kamino controls also fail the same local standing
+  criterion. Kamino completes all 400 frames with finite arrays, but 98/99
+  mobile stones cross the height-change gate and the keystone drops
+  82.03050136566162 raw units. Neither control is a historical Figure 8
+  invocation or supplies parity-eligible media/full-pose evidence.
 - The numeric author_incline_sweep_reference_v1 packet preserves independent
   current-source FBF, MuJoCo, and Kamino CPU runs on
   mu=.3,.4,.45,.5,.55,.6,.8. Each lane has seven 120-step cells; the retained
@@ -73,11 +78,36 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- PR #3377 was verified open and draft on 2026-07-21. Its topic head, target
+- PR #3377 was verified open and draft at head c95bd5fb916 on 2026-07-22. Its topic head, target
   ancestry, merge state, checks, and reviews are mutable and must be queried
   live rather than copied from this handoff. It is not completion evidence.
+- Implementation and media evidence is bound to c95bd5fb916; a later
+  documentation-only checkpoint does not change that binary/media identity.
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
+
+C95-bound small-row media truth:
+
+- The authoritative ignored Figures 1-5 upload root is
+  assets/pr_media_current_head_c95_small_rows/ at implementation head
+  c95bd5fb916. Demo SHA-256 is
+  5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149.
+- Capture passes with 20 member results, 13 groups, zero failures, and five
+  expected boxed skips for exact-only author-turntable schedules/group. Run
+  summary SHA-256 is
+  8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af.
+- Independent reuse verification passes with the same 20 members, 13 groups,
+  and five expected skips. /tmp/fbf_small_rows_c95_verify.json SHA-256 is
+  264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e.
+- Fresh temporal panels show the Figure 3 checker texture and coral
+  registration tile rotating in both lanes; the Painleve mu=.55 group shows
+  exact-tumbled versus boxed-upright. The c95 turntable group hashes are
+  byte-identical to the previously audited clips/timelines, which retain the
+  narrow ejected/ejected/retained/ejected author classification and proxy
+  outcomes. These are manual current-DART observations, not paper parity
+  or general solver-superiority evidence.
+- No attachment URL is recorded. Upload accepted MP4s through GitHub's browser
+  composer and record the resulting user-attachment URLs.
 
 Exact-math truth:
 
@@ -148,7 +178,7 @@ Schema truth:
 
 Current literal-arch visual truth:
 
-- The ignored current-head exact/boxed root is
+- The ignored c95-bound exact/boxed root is
   assets/pr_media_current_head_fig07/. Capture and independent reuse
   verification pass for two 600-step members and one group, with external
   summary SHA-256 values
@@ -580,7 +610,7 @@ Current-source four-level Figure 6 adapter truth:
   dt=1/240 s.
 - Exact and boxed lanes share Native FourPointPlanar, contact capacity 4096,
   and manifold subdivision 4.
-- The demo build, 13 headless/continuation C++ tests, 259 visual-runner Python
+- The demo build, 13 headless/continuation C++ tests, 338 visual-runner Python
   tests, and exact/boxed contract-smoke validators pass.
 - The strict exact 100-step request fails closed at completed step 35 when
   contacts jump 44 to 68. Steps through 34 are clean with prior worst residual
@@ -616,10 +646,13 @@ Current-source four-level Figure 6 adapter truth:
   8909e915b63bb2c412a5c5289a5aa690dc1a9ef1d712fe531d12a38d626f0d2e;
   /tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json,
   3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73.
-  The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
-  colored source parity remains separate and unproven. Source shrink-cap,
-  plateau, and continuation semantics are unchanged by this strict A/B and are
-  exercised only by the separately labeled continuation lane below.
+  The Figure 6 adapter and strict replay disable colored block Gauss-Seidel. A
+  one-factor c95-bound probe exercises the colored ordering/path for 200
+  solves with one participant and zero parallel dispatches, but changes the
+  failed residual by only 2.19e-14 relative. Reject it only as the next Figure
+  6 step-35 discriminator, not as a multicore or general colored-BGS result.
+  The next Figure 6 solver discriminator is source-global constrained scope
+  versus DART per-island solves.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -795,9 +828,10 @@ Source-supported ten-level card-house truth:
 - No source/paper physical parity, Tables 6-7 parity, strict convergence,
   trajectory parity, or solver superiority follows. The final exact clip still
   requires manual PR-browser-composer upload and a recorded user-attachment
-  URL. Continue colored scheduling and global solve scope one factor at a time
-  without loosening tolerance, caps, fallback, accepted-cap, or fail-fast
-  policy. See CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
+  URL. For this ten-level lane, colored scheduling and source-global scope both
+  remain pending one-factor diagnostics; do not loosen tolerance, caps,
+  fallback, accepted-cap, or fail-fast policy. See
+  CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md.
 
 Pinned-author masonry-arch truth:
 
@@ -897,10 +931,18 @@ Source-pinned 101-stone DART truth:
   SHA-256 is
   1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481.
   GitHub URLs remain pending.
+- The current-source FBF control continues after 1,473/1,600 capped substeps
+  and 57/99 mobile stones cross the local standing threshold. The separate
+  Kamino control completes all 400 frames with finite arrays but 98/99 cross
+  the threshold; its result/trajectory SHA-256 values are
+  86b351c212c0e69df371fa66c67c53d6c3421575afbafae3a6b8d339f574dfb3 and
+  63c47426019a218942afe3edae31cdf5dbbbd8d8926732ea59120e23bb6cf1a4.
+  It saves no convergence/contact history, full poses, rotations, cube
+  trajectory, or media.
 - Keep this current-DART negative distinct from the literal v7 reconstruction
   below. Claim no source/backend/float32 trajectory or outcome equivalence,
-  matched Kamino, golden, timing, performance, Fig. 8/video.08 parity, or
-  solver superiority.
+  historical source/Kamino golden, timing, performance, Fig. 8/video.08
+  parity, or solver superiority.
 
 Current reconstructed crown-impact truth:
 
@@ -1045,7 +1087,7 @@ Evidence truth:
 
 - Current manifest audit: 29 rows = 24 partial + 5 blocked + 0 complete. The
   local visual inventory has six locally finalized bundles, and the visual
-  workflow declares 25 schedules; validator passes and fail-closed hashes local
+  workflow declares 28 schedules; validator passes and fail-closed hashes local
   bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1120,17 +1162,18 @@ Latest recorded focused gates:
 - predictive-checkpoint gates: `ConstraintSolver` 66/66, Native
   collision detector 50/50, `SplitImpulse` 13/13, exact solver 38/38, and
   paper fixtures 36 passed with 3 explicit opt-in skips;
-- visual runner, including source-pinned 101-stone and both ten-level
-  card-house schedule/oracle contracts, passed 335/335;
+- visual runner, including source-pinned 101-stone, both ten-level card-house
+  schedule/oracle contracts, and Figure 7 crown-impact continuation, passed
+  338/338;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
 - four-level exact and boxed adapter contract smoke passed;
-- the shared current-head Clang/FreeBSD polymorphic-`typeid` compile failure is
-  fixed locally; a Clang 22 warning-as-error syntax check passes, with remote
-  confirmation pending the next push;
-- author masonry-arch focused CTest: 1/1 target and 7/7 contained tests passed;
-- demo scene documentation verifier: 28 scenes passed; exact/boxed real
+- the earlier Clang/FreeBSD polymorphic-`typeid` compile failure was fixed
+  before implementation/media head c95bd5fb916; a Clang 22 warning-as-error
+  syntax check passes, while current remote confirmation must be read live;
+- author masonry-arch focused CTest: 1/1 target and 8/8 contained tests passed;
+- demo scene documentation verifier: 29 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - all four locally sealed bundles pass verify-only; under the local sealed producer
   closure, the manifest validator passes all 29 canonical requirements with
@@ -1171,8 +1214,11 @@ Immediate order:
    Preserve
    the clean 80-step boxed control, but treat the interrupted step-112 boxed
    run and partial frames as non-evidence; resolve full boxed
-   runtime before paired media. Continue colored scheduling and global solve
-   scope one factor at a time without loosening tolerance or caps. Upload any
+   runtime before paired media. The one-participant colored-ordering result is
+   rejected only for the four-level Figure 6 step-35 blocker. Keep ten-level
+   colored scheduling and global-scope diagnostics pending one factor at a
+   time without loosening tolerance or caps. Use the ignored c95-bound
+   c95bd5fb916 reseal as the authoritative Figures 1-5 upload source. Upload any
    final exact member only through the PR browser composer and
    record the URL.
    Independently review the completed telemetry-rich source-continuation

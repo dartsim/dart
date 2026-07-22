@@ -21,7 +21,12 @@ The Figure 6 implementation now has two explicitly separate lanes. The strict
 source-selected four-level/26-card adapter still fails closed at completed step
 35 before release on the retained 56-contact island, with residual
 `4.0844850280896461e-4`, primal `3.9375947649884479e-6`, complementarity
-`2.3815426453852184e-4`, and zero accepted caps, fallbacks, or shrinks. A new
+`2.3815426453852184e-4`, and zero accepted caps, fallbacks, or shrinks. A
+one-factor colored-BGS probe exercises the colored ordering/path for 200 solves
+with one participant and zero parallel dispatches, but changes the failed
+residual by only `2.19e-14` relative. Reject it only as the next Figure 6
+step-35 discriminator; the next Figure 6 solver discriminator is source-global
+constrained scope versus DART's per-island solves. A new
 telemetry-rich source-continuation adapter completes exact and boxed through all
 2,400 steps and the successful step-1,600 cube release. Exact records
 3,351/3,351 attempts/solves, zero failures/fallbacks, 2,605 successes, 113
@@ -53,8 +58,16 @@ author masonry-arch negative also remain current. A separate source-pinned
 101-stone DART lane now precisely fails: strict exact stops at step 209 on an
 iteration cap, while boxed completes 1,600 steps but collapses. Its boxed clip
 and frozen-prefix hstack are verified local blocker media with GitHub URLs
-pending. The overall 29-row audit is still 24 partial, 5 blocked, 0 complete,
-and the finalized visual bundle count remains six.
+pending. Independent full current-source FBF and Kamino controls also fail the
+same local standing criterion; neither is a historical invocation or supplies
+parity-eligible media/full-pose evidence. The overall 29-row audit is still 24
+partial, 5 blocked, 0 complete, and the finalized visual bundle count remains
+six. The ignored `assets/pr_media_current_head_c95_small_rows/` reseal is the
+authoritative Figures 1-5 upload source: capture and independent reuse
+verification pass with 20 members, 13 groups, zero failures, and five expected
+exact-only author-turntable boxed skips. Run/verify summary SHA-256 values are
+`8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af` and
+`264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
 
 ## Read First
 
@@ -172,7 +185,7 @@ Bundle SHA-256 values are:
 - `summary.json`: `304736d6b871c4498a6c0de4c4448635e712fb3a8a455dd54d9ffefeef2ec170`; and
 - `REPORT.md`: `4e55d7f4dc0532ab15b86cfeb72ea9526d3f9b63194dc5a25f3974186b1a7ba7`.
 
-The ignored current-head exact/boxed recapture is
+The ignored c95-bound exact/boxed recapture is
 `assets/pr_media_current_head_fig07/`. Capture and independent reuse
 verification pass for two 600-step members and one synchronized group, with
 external summary SHA-256 values
@@ -208,7 +221,7 @@ superiority, crown-impact, or Fig. 7 parity result. The separate crown-impact
 adapter remains blocked at strict step 142. The group clip still needs manual
 browser-composer upload and a recorded GitHub user-attachment URL.
 
-The separate current-head Figure 7 crown-impact continuation pair is ignored
+The separate c95-bound Figure 7 crown-impact continuation pair is ignored
 at `assets/pr_media_current_head_fig07_crown_continuation/`. Checkpoint
 `34d9b66e97c` supplies its distinct schedule. The paired run and independent
 reuse verification pass with SHA-256 values
@@ -598,7 +611,7 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 of
 the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
 `FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 259 runner Python
+The demo build, 13 focused headless/continuation C++ tests, 338 runner Python
 tests, and exact/boxed contract smoke pass. A strict exact 100-step request fails closed at completed
 step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
@@ -634,10 +647,14 @@ accepted caps, zero boxed fallbacks, and zero line-search shrinks. Evidence:
 - `/tmp/fbf_author_card_house_4_source_inner_exact100_v3_20260721/timeline.json`,
   SHA-256 `3e379747bac636c259fe7e9bbd711bb57d5a719d5a1d8d6b9e6317e20b639f73`.
 
-The Figure 6 adapter and strict replay disable colored block Gauss-Seidel;
-colored source parity remains a separate unproven lane. Source shrink-cap,
-plateau, and continuation semantics are unchanged by this strict A/B and are
-exercised only by the separately labeled continuation lane below.
+The Figure 6 adapter and strict replay disable colored block Gauss-Seidel. A
+later one-factor c95-bound probe exercises the colored ordering/path with
+one participant and zero parallel dispatches, but changes the failed residual
+by only `2.19e-14` relative. Reject it only as the next Figure 6 blocker
+discriminator, not as a multicore or general colored-BGS result. Source
+shrink-cap, plateau, and continuation semantics are unchanged
+by this strict A/B and are exercised only by the separately labeled
+continuation lane below.
 
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
@@ -904,9 +921,20 @@ exact/boxed timeline SHA-256 values are
 `df1ed4afc9ef5aa74f7c0b6da0560ae0d1b63fca28f45051ed27c5dfb3632889`
 and `a8caee71c9356a72fa65210207d7b4209d9e305363974ec07c81f19ec14bfa1e`.
 
+Independent full current-source controls do not supply a standing golden. FBF
+continues after 1,473/1,600 capped substeps and 57/99 mobile stones cross the
+three-unit height-change gate. Kamino completes all 400 frames with finite
+arrays, but 98/99 mobile stones cross that gate, maximum height change is
+`87.23839569091797`, and the keystone drops `82.03050136566162`. Kamino result
+and trajectory SHA-256 values are
+`86b351c212c0e69df371fa66c67c53d6c3421575afbafae3a6b8d339f574dfb3`
+and `63c47426019a218942afe3edae31cdf5dbbbd8d8926732ea59120e23bb6cf1a4`.
+It has no convergence/contact history, full poses, rotations, cube trajectory,
+or media.
+
 GitHub URLs remain pending. This is a current-DART scientific negative, not a
 complete exact/boxed comparison, source backend/float32 trajectory or outcome
-equivalence, Fig. 8/video.08 parity, matched Kamino, golden, timing,
+equivalence, Fig. 8/video.08 parity, historical source/Kamino golden, timing,
 performance, or solver-superiority evidence. Keep the literal v7 reconstruction
 below separate.
 
@@ -1012,7 +1040,7 @@ fail-closed negative, retained in the ignored local evidence cache at
   scientific-negative/reference evidence. Matched DART trajectories,
   historical invocation/timing attestation, full-state external-solver
   equivalence, approved goldens, and media remain missing.
-- The source-pinned Painleve adapter has accepted local current-head
+- The source-pinned Painleve adapter has accepted local c95-bound
   exact/boxed outcome and media evidence within the current-DART-adapter
   boundary. GitHub attachment URLs, source-backend/trajectory equivalence,
   paper Figure 5 parity, timing comparability, and solver superiority remain
@@ -1042,7 +1070,7 @@ fail-closed negative, retained in the ignored local evidence cache at
   unevaluated rather than failed or passed.
 - The current manifest audit has 29 rows: 24 partial, 5 blocked, and 0
   complete. The local visual inventory has six locally finalized bundles, and
-  the visual workflow declares 27 schedules. Its validator fail-closed hashes
+  the visual workflow declares 28 schedules. Its validator fail-closed hashes
   local bundle artifacts, materializes
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
@@ -1106,15 +1134,16 @@ explicit DART reconstruction choices, not author parameters.
   contract. The historical step-1 blocker and predictive checkpoint
   `3647959a188`'s exact-step-1, exact-prefix-31, and boxed-prefix-40 results
   remain explicitly separate;
-- visual runner, including source-pinned 101-stone and both ten-level
-  card-house schedule/oracle contracts: 335/335 passed;
+- visual runner, including source-pinned 101-stone, both ten-level card-house
+  schedule/oracle contracts, and Figure 7 crown-impact continuation: 338/338
+  passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter without a public class-layout change;
 - current-source four-level exact/boxed adapter contract smoke: both passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
-  7/7 contained tests passed;
-- demo scene documentation verifier: 28 scenes passed; exact/boxed real
+  8/8 contained tests passed;
+- demo scene documentation verifier: 29 scenes passed; exact/boxed real
   step-zero JSON cross-check passed;
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
@@ -1138,21 +1167,28 @@ only for an explicit live-closure recheck.
    101-stone DART, and card-v2 blockers. Preserve the finalized source-pinned
    Painleve exact/boxed capture,
    complete state-trace outcome audit, independent replay, and manual
-   inspection; upload its two exact-vs-boxed clips and both current-head Figure
+   inspection; upload its two exact-vs-boxed clips and both c95-bound Figure
    7 groups (literal standing and crown-impact continuation) through the PR
    browser composer and record the resulting URLs. Keep both Figure 7
    assessments manual-only, keep continuation explicitly non-strict, and keep
    the source-configuration crown-impact adapter blocked at step 142. Upload the
    101-stone hstack, if
    selected, only as a frozen-prefix blocker with no superiority/parity claim
-   and record its URL. Continue one-factor-at-a-time
+   and record its URL. Use the implementation/media-head `c95bd5fb916`
+   small-row reseal as
+   the authoritative Figures 1-5 browser-upload source. Continue
+   one-factor-at-a-time
    strict work without changing
-   tolerance, caps, fallback, or fail-fast. Keep colored source parity separate.
+   tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
+   colored-ordering candidate is rejected only as the next step-35
+   discriminator; test source-global constrained scope versus DART per-island
+   solving next. Keep the separate ten-level colored/global-scope diagnostics
+   pending one factor at a time.
    Preserve the final, independently reverified ten-level exact continuation
    member and both `/tmp` summaries. Preserve the
    clean 80-step boxed control, but treat the interrupted step-112 full attempt
    and partial frames as non-evidence; resolve full boxed runtime before paired
-   media. Test colored scheduling and global solve scope one factor at a time.
+   media. Keep any global-scope probe one-factor-at-a-time.
    Do not loosen tolerance, caps, fallback, or fail-fast. Keep predictive
    checkpoint `3647959a188` distinct from previous checkpoint `ffe23d347b0`.
    Preserve and independently review the completed telemetry-rich continuation
