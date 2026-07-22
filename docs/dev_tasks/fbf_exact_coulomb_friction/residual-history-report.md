@@ -18,7 +18,12 @@ c95-bound global-scope probe also fails at completed step 35, with the failed
 the 56-contact island and exactly zero off-block operator coupling. Reject
 solve scope only as this blocker
 discriminator; it changes the within-tolerance trajectory and is not a general
-equivalence result. A historical
+equivalence result. A c95-bound source-sized-gap diagnostic also fails the
+strict 36-step gate, now after completed step 31 on a 31-contact group at
+residual `1.0006073317077885e-5`; its ancestor-bound comparison stream differs
+from step 1. Reject only that gap
+representation as the strict-prefix fix; it is not a general gap, trajectory,
+performance, superiority, or source-equivalence result. A historical
 debugger-mutated accept-cap preview reached all 2,400 steps with 1,106 capped
 solves. A separate reproducible source-continuation lane now completes exact
 and boxed with explicit plateau/cap/shrink telemetry; it remains
@@ -183,6 +188,28 @@ Figure 6, or paper parity. The sealed isolated report and manifest are
 `SHA256SUMS`, with SHA-256 values
 `633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
 `90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
+
+The subsequent isolated c95-bound source-gap diagnostic changes only the
+existing four-level scenario flag: Native predictive negative-depth closure is
+enabled with a `0.1 m` ground gap and `0.005 m` on all 30 dynamic shapes. The
+strict source-inner serial solver contract is otherwise unchanged. Fail-fast
+stops after completed step 31 with 52 aggregate contacts; the failed 31-contact
+group reaches 200 iterations, residual/dual
+`1.0006073317077885e-5`, primal `1.8622984303104533e-10`, and
+complementarity `5.456227252287576e-8`. Aggregate counts are 186 attempts, 185
+solves, one failure, zero cap accepts, and zero fallbacks.
+
+The contact stream differs from stock from step 1, while the comparison stock
+sidecar embeds ancestor `844c9c316195897cf2bf51f38eafc8ec9dcf959a` rather
+than a fresh c95 binary. This rejects only the hypothesis that this DART gap
+representation makes the first 36 strict steps complete at `1e-6`. It does not
+establish general gap harm or benefit, source contact-model equivalence,
+trajectory, outcome, backend, float32, timing, performance, superiority,
+Figure 6, video, or paper parity. Keep the checked-in scene unchanged. The
+verified package is `/tmp/fbf_fig06_gap_c95.m6bsif/`; `RESULTS.md` and
+`SHA256SUMS` hash to
+`3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a` and
+`11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
 
 The pinned source recovers and advances a finite iterate even when its
 configured convergence flag is false. One process-local GDB preview tested only
