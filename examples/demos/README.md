@@ -18,6 +18,7 @@ the source:
 pixi run demos -- --list-scenes
 pixi run demos -- --verify-fbf-scene-docs
 pixi run demos -- --scene fbf_paper_incline
+pixi run demos -- --scene fbf_author_incline_sweep_current_source
 pixi run demos -- --scene fbf_paper_backspin
 pixi run demos -- --scene fbf_paper_turntable
 pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_2
@@ -67,6 +68,29 @@ contact. Source `gap=.005`, `ke=1e4`, and `kd=1e3` are recorded but not claimed
 as equivalent DART contact semantics. The older `fbf_paper_painleve*` scenes
 remain historical proxy diagnostics with different geometry, density, pose,
 velocity, and duration.
+
+The separate `fbf_author_incline_sweep_current_source` scene preserves the
+operator-selected Figure 1 `mu={.3,.4,.45,.5,.55,.6,.8}` grid passed through
+the public runner's supported `--mu` CLI (whose source default is `.5`), 10 x 3
+x .1 m incline slab, 1 m cube at density 1000 kg/m^3, `tan(theta)=.5`, .501 m
+initial center distance from the plane, 1/60 s step, and 120-step horizon. The
+source runs each cell independently; the demo applies recorded Y-only layout
+translations so all seven otherwise-identical cells can be viewed together.
+The source cube shape gap of .01 m is recorded separately from its .001 m
+initial geometric separation and is not represented as equivalent DART gap
+semantics. Its evidence schedule requires every lane to remain supported,
+upright, and in-lane with contact participation, then compares the seven final
+tangential displacements and velocities with the retained current-source FBF
+run within absolute `.01 m` / `.01 m/s` bounds. That source reference records
+839/840 configured convergence flags; `mu=.55`, step 1 is false after 200/200
+outer iterations, so it is not a strictly converged source sweep. Exact/boxed
+DART solvers, Native FourPointPlanar collision, float64 arithmetic, camera,
+materials, and rendering remain adapter choices, and exact fallback is
+disabled. This is only a terminal-state/slide-stick outcome slice: it
+establishes no source
+trajectory/backend or full physical equivalence, solver superiority, float32,
+video, timing, or paper-parity claim. The older `fbf_paper_incline` two-cell
+`.4/.5` fixture is unchanged and remains the paper-threshold regression lane.
 
 The unsuffixed ten-level card scene remains a static construction inspector.
 `fbf_paper_card_house_10_dynamic` is a separate 155-mobile-card exact-FBF

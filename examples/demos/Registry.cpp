@@ -55,6 +55,7 @@ std::vector<DemoScene> makeDemoScenes()
 
   // Research (new category; first appearance here).
   scenes.push_back(makeFbfPaperInclineScene());
+  scenes.push_back(makeFbfAuthorInclineSweepCurrentSourceScene());
   scenes.push_back(makeFbfPaperBackspinScene());
   scenes.push_back(makeFbfPaperTurntableScene());
   scenes.push_back(makeFbfPaperTurntableMu02Omega2Scene());

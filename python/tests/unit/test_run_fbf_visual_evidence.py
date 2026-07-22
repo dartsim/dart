@@ -1712,6 +1712,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
 
     assert set(module.SCHEDULES) == {
         "incline",
+        "incline_author_sweep_current_source",
         "backspin",
         "turntable_mu02_omega2",
         "turntable_mu02_omega5",
@@ -3021,6 +3022,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
         set(module.AUTHOR_TURN_TABLE_MEMBERS)
         | set(module.AUTHOR_PAINLEVE_MEMBERS)
         | {
+            "incline_author_sweep_current_source",
             "card_house_author_5_construction",
             "card_house_author_10_impact_current_source",
             "card_house_author_10_impact_source_continuation_current_source",
@@ -5363,14 +5365,38 @@ def test_solver_comparison_group_rejects_mixed_or_reversed_lanes(tmp_path, lane_
         )
 
 
-def _write_group_member_artifacts(module, group, output_root, durations):
+def _author_incline_outcome_report(module, schedule):
+    return {
+        "schema_version": module.AUTHOR_INCLINE_OUTCOME_SCHEMA_VERSION,
+        "claim_scope": module.AUTHOR_INCLINE_OUTCOME_CLAIM_SCOPE,
+        "solver_lane": schedule.solver_lane,
+        "complete_120_step_trace": True,
+        "source_reference_strictly_converged": False,
+        "physical_outcome_validated": True,
+        "claim_boundary": {
+            "current_source_fbf_terminal_outcome_slice_valid": True,
+            "source_reference_strictly_converged": False,
+            "source_trajectory_equivalence": False,
+            "source_backend_equivalence": False,
+            "solver_equivalence": False,
+            "physical_outcome_equivalence": False,
+            "paper_parity": False,
+        },
+        "pass": True,
+    }
+
+
+def _write_group_member_artifacts(
+    module, group, output_root, durations, schedules=None
+):
     probes = {}
     demo = output_root / "dart-demos"
     demo.write_bytes(b"demo")
-    for member, panel_step, duration in zip(
-        group.members, group.resolved_panel_steps, durations
+    schedules = schedules or [module.SCHEDULES[member] for member in group.members]
+    for schedule, panel_step, duration in zip(
+        schedules, group.resolved_panel_steps, durations
     ):
-        schedule = module.SCHEDULES[member]
+        member = schedule.id
         output_dir = output_root / member
         frame_path = module._frame_path(output_dir, panel_step)
         frame_path.parent.mkdir(parents=True, exist_ok=True)
@@ -5421,6 +5447,15 @@ def _write_group_member_artifacts(module, group, output_root, durations):
             "known_mismatches": list(schedule.mismatches),
             "pass": True,
         }
+        if module._is_author_incline_schedule(schedule):
+            outcome = _author_incline_outcome_report(module, schedule)
+            metadata["timeline_validation"][
+                "author_incline_scene_state_metrics"
+            ] = outcome
+            metadata[
+                "automated_current_source_fbf_terminal_outcome_slice_validated"
+            ] = True
+            metadata["current_source_fbf_terminal_outcome_slice"] = outcome
         metadata_path = output_dir / "metadata.json"
         metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
         expected_stream = module._expected_media_stream(schedule, "mp4")
@@ -5473,6 +5508,52 @@ def test_group_member_contract_enforces_source_order_and_synchronized_duration(
     with pytest.raises(ValueError, match="duration .* differs from the schedule"):
         module._group_member_contract(
             group, schedules, output_root=tmp_path, ffprobe=Path("ffprobe")
+        )
+
+
+def test_author_incline_group_members_bind_scoped_terminal_outcomes(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_INCLINE_SCHEDULE_ID]
+    schedules = [exact, module._derive_boxed_schedule(exact)]
+    group = module._derive_solver_comparison_group(exact)
+    expected_duration = len(exact.video_steps) / exact.output_fps
+    probes = _write_group_member_artifacts(
+        module,
+        group,
+        tmp_path,
+        [expected_duration, expected_duration],
+        schedules=schedules,
+    )
+    monkeypatch.setattr(module, "_probe_media", lambda path, _ffprobe: probes[path])
+
+    contract = module._group_member_contract(
+        group,
+        schedules,
+        output_root=tmp_path,
+        ffprobe=Path("ffprobe"),
+    )
+
+    outcomes = contract["current_source_fbf_terminal_outcome_slices"]
+    assert [report["solver_lane"] for report in outcomes] == ["exact", "boxed"]
+
+    metadata_path = tmp_path / exact.id / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["automated_current_source_fbf_terminal_outcome_slice_validated"] = False
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    with pytest.raises(
+        ValueError,
+        match=(
+            "capture claim boundary "
+            "automated_current_source_fbf_terminal_outcome_slice_validated changed"
+        ),
+    ):
+        module._group_member_contract(
+            group,
+            schedules,
+            output_root=tmp_path,
+            ffprobe=Path("ffprobe"),
         )
 
 
@@ -6200,6 +6281,56 @@ def test_existing_group_verification_rejects_claim_boundary_mutations(
         module._verify_existing_group(
             group,
             [module.SCHEDULES[member] for member in group.members],
+            output_root=tmp_path,
+            ffmpeg=Path("ffmpeg"),
+            ffprobe=Path("ffprobe"),
+        )
+
+
+def test_existing_incline_group_rejects_terminal_outcome_reuse_mutation(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    exact = module.SCHEDULES[module.AUTHOR_INCLINE_SCHEDULE_ID]
+    schedules = [exact, module._derive_boxed_schedule(exact)]
+    group = module._derive_solver_comparison_group(exact)
+    outcomes = [
+        _author_incline_outcome_report(module, schedule) for schedule in schedules
+    ]
+    metadata_path = tmp_path / "groups" / group.id / "metadata.json"
+    metadata_path.parent.mkdir(parents=True)
+    metadata = {
+        "schema_version": module.SCHEMA_VERSION,
+        "kind": "group_capture_result",
+        "group_id": group.id,
+        "source_segment": group.source_segment,
+        "solver_lane": group.solver_lane,
+        "source_group_id": group.source_group_id,
+        "layout": group.layout,
+        "member_order": list(group.members),
+        "labels": list(group.labels),
+        "actual_simulator": True,
+        "generated_imagery": False,
+        "paper_comparable": False,
+        "automated_current_source_fbf_terminal_outcome_slice_validated": True,
+        "current_source_fbf_terminal_outcome_slices": outcomes,
+        "automated_semantic_outcome_validated": False,
+        "semantic_outcome_gate": module._group_semantic_outcome_gate(group),
+        "pass": True,
+    }
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    monkeypatch.setattr(
+        module,
+        "_group_member_contract",
+        lambda *_args, **_kwargs: {
+            "current_source_fbf_terminal_outcome_slices": list(reversed(outcomes))
+        },
+    )
+
+    with pytest.raises(ValueError, match="terminal outcome binding changed"):
+        module._verify_existing_group(
+            group,
+            schedules,
             output_root=tmp_path,
             ffmpeg=Path("ffmpeg"),
             ffprobe=Path("ffprobe"),
@@ -7033,7 +7164,7 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
         in report["known_gate_blocked_schedules"]
     )
     assert "masonry_arch_101" not in report["known_gate_blocked_schedules"]
-    assert report["required_schedule_count"] == 16
+    assert report["required_schedule_count"] == 17
 
 
 def test_audited_local_source_hashes_are_pinned():

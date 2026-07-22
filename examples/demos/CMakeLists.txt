@@ -48,11 +48,11 @@ set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 # rather than a dependency on that example.
 add_subdirectory(scenes/wam_ikfast/ikfast)
 
-# DynamicJointConstraintsScene.cpp draws its on-screen catalog labels with
-# osgText::Text directly (ported from examples/dynamic_joint_constraints,
-# which links osgText the same way -- dart-gui-osg only links the core
-# osg::osg component, not osgText). Mirrors that example's own CMake pattern
-# for locating/wrapping the osgText library as an imported target.
+# DynamicJointConstraintsScene.cpp and FbfPaperFrictionScene.cpp draw
+# world-anchored labels with osgText::Text directly. The former is ported from
+# examples/dynamic_joint_constraints, which links osgText the same way;
+# dart-gui-osg only links the core osg::osg component. Mirror that example's
+# CMake pattern for locating/wrapping osgText as an imported target.
 find_package(OpenSceneGraph 3.0.0 REQUIRED COMPONENTS osgText)
 set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY})
 if(NOT dart_demos_osg_text_library)
@@ -133,11 +133,16 @@ if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)
 endif()
 
-# Bind the queryable author-turntable, author-Painleve, author-card-house,
-# author-masonry-arch, and literal-masonry-arch contracts in dart-demos to
-# their exact shared specs and production scene source. CMAKE_CONFIGURE_DEPENDS
+# Bind the queryable author-incline, author-turntable, author-Painleve,
+# author-card-house, author-masonry-arch, and literal-masonry-arch contracts in
+# dart-demos to their exact shared specs and production scene source.
+# CMAKE_CONFIGURE_DEPENDS
 # refreshes the embedded hashes before any bound source is rebuilt, so a stale
 # binary cannot satisfy an evidence finalizer.
+set(
+  fbf_author_incline_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorInclineSpec.hpp"
+)
 set(
   fbf_author_turntable_spec_source
   "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorTurntableSpec.hpp"
@@ -180,6 +185,7 @@ set_property(
   APPEND
   PROPERTY
     CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_incline_spec_source}"
       "${fbf_author_turntable_spec_source}"
       "${fbf_author_painleve_spec_source}"
       "${fbf_author_card_house_spec_source}"
@@ -190,6 +196,7 @@ set_property(
       "${fbf_exact_solver_options_source}"
       "${fbf_paper_friction_demo_source}"
 )
+file(SHA256 "${fbf_author_incline_spec_source}" fbf_author_incline_spec_sha256)
 file(
   SHA256 "${fbf_author_turntable_spec_source}"
   fbf_author_turntable_spec_sha256
@@ -228,6 +235,8 @@ set_property(
   APPEND
   PROPERTY
     COMPILE_DEFINITIONS
+      DART_FBF_AUTHOR_INCLINE_SPEC_SHA256="${fbf_author_incline_spec_sha256}"
+      DART_FBF_AUTHOR_INCLINE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
       DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
       DART_FBF_AUTHOR_PAINLEVE_SPEC_SHA256="${fbf_author_painleve_spec_sha256}"
