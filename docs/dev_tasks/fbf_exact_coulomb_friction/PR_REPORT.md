@@ -707,6 +707,29 @@ paper-parity claim. The isolated report and hash manifest are under
 `633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
 `90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
+A separate c95-bound one-factor source-gap diagnostic enables only the
+four-level scenario's existing source-gap flag. Native then admits predictive
+negative-depth contacts with `0.1 m` on the ground and `0.005 m` on all 30
+dynamic shapes; the strict source-inner serial-BGS, no-projection,
+no-cap-acceptance, no-fallback contract remains unchanged. The preregistered
+36-step gate fails after completed step 31 on a 31-contact group at 200
+iterations and residual `1.0006073317077885e-5`: 186 attempts, 185 solves,
+one failure, zero accepted caps, and zero fallbacks.
+
+The compared contact streams differ from step 1, and the existing stock
+sidecar embeds ancestor `844c9c316195897cf2bf51f38eafc8ec9dcf959a` rather than a
+fresh c95 binary. This rejects only the hypothesis that the DART gap
+representation alone clears the strict prefix. It proves no general gap harm
+or benefit, source-contact equivalence, trajectory, outcome, backend, float32,
+timing, performance, superiority, video, Figure 6, or paper parity; keep the
+checked-in scene unchanged. The verified package is
+`/tmp/fbf_fig06_gap_c95.m6bsif/`: `RESULTS.md`
+`3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a`,
+one-factor patch
+`a5269addaae4bb2864ad2b9fa3768cc99bd41e22758af5950d78eae163ab6695`, and
+`SHA256SUMS`
+`11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
+
 The pinned author control completes all 2,400 substeps but reports 1,455
 converged and 945 unconverged flags: 632 caps and 313 plateaus. The pre-release
 split is 1,332/268 and the release-and-after split is 123/677; first false and
@@ -737,8 +760,9 @@ does not reach release and boxed remains bounded to 100 steps. This does not
 establish a valid strict trajectory, physical outcome, source-backend or timing
 equivalence, final media or PR attachment, Fig. 6/paper parity, or solver
 superiority. It remains an adapter-only lane. Any next strict A/B must isolate
-one remaining source mismatch; colored ordering and one-global-group scope are
-now rejected as this blocker discriminator, while source shrink-cap or
+one remaining source mismatch; colored ordering, one-global-group scope, and
+source-sized gaps are now rejected as strict-prefix discriminators, while
+source shrink-cap or
 continuation semantics remain separate work. The older reconstructed
 `fbf_paper_card_house_26` lane remains distinct.
 
@@ -1370,8 +1394,8 @@ cross-platform CI.
   failure and complete its strict 2,400-step exact and boxed trajectories
   through the step-1,600 release. Keep any next strict A/B isolated from
   tolerance, iteration-cap, fallback, fail-fast, or accepted-cap changes.
-  The one-participant colored-ordering and one-global-group candidates are
-  ineffective for this Figure 6 blocker. Require a new source-backed,
+  The one-participant colored-ordering, one-global-group, and source-sized-gap
+  candidates are ineffective for this Figure 6 blocker. Require a new source-backed,
   preregistered mismatch before another strict solver A/B. Preserve and
   independently review the separately labeled telemetry-rich continuation
   capture without presenting accepted finite iterates as strict exact success;

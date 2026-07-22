@@ -30,7 +30,12 @@ step-35 discriminator. An isolated one-global-group probe also fails at step
 56-contact-native-island residual is `4.0848243204472058e-4`, and every
 off-block `W` coefficient is zero. Reject native-island scope only as this
 blocker hypothesis; the global run changes the within-tolerance trajectory and
-does not prove general equivalence. A new
+does not prove general equivalence. A c95-bound source-sized-gap diagnostic also
+fails closed, now after completed step 31 on a 31-contact group at residual
+`1.0006073317077885e-5`; because its ancestor-bound comparison contact stream
+differs from step 1, reject only the hypothesis that
+this gap representation clears the strict 36-step prefix. Keep the scene
+unchanged. A new
 telemetry-rich source-continuation adapter completes exact and boxed through all
 2,400 steps and the successful step-1,600 cube release. Exact records
 3,351/3,351 attempts/solves, zero failures/fallbacks, 2,605 successes, 113
@@ -679,6 +684,24 @@ claim. The isolated report and manifest under
 `633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9` and
 `90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
+The isolated c95-bound source-gap A/B enables only the four-level scenario's
+existing source-gap flag: ground `0.1 m`, 30 dynamic shapes at `0.005 m`, and
+Native negative-depth predictive closure. The strict source-inner serial
+contract otherwise remains unchanged. It stops after completed step 31 with
+52 aggregate contacts; the failed 31-contact group reaches 200 iterations and
+residual `1.0006073317077885e-5`. Aggregate telemetry is 186 attempts, 185
+solves, one failure, zero accepted caps, and zero fallback. The contacts differ
+from stock from step 1, and the comparison sidecar's source hashes identify
+ancestor `844c9c316195897cf2bf51f38eafc8ec9dcf959a`, so this is not a
+same-binary trajectory, performance, or superiority comparison. It rejects
+only gap representation alone as the strict 36-step fix and establishes no
+general gap, source-contact, outcome, backend, float32, video, Figure 6, or
+paper-parity claim. Preserve the checked-in scene. Verified package:
+`/tmp/fbf_fig06_gap_c95.m6bsif/`; `RESULTS.md`
+`3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a`;
+`SHA256SUMS`
+`11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
+
 The pinned author run completes 2,400 steps with 1,455 converged and 945
 unconverged flags (632 caps, 313 plateaus): 1,332/268 before release and
 123/677 from release onward. First false/cap indices are 33/35; worst natural
@@ -1203,8 +1226,9 @@ only for an explicit live-closure recheck.
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
-   colored-ordering candidate and the one-global-group candidate are both
-   rejected only as step-35 discriminators. Do not add another strict solver
+   colored-ordering candidate, the one-global-group candidate, and the
+   source-sized-gap candidate are rejected only as strict-prefix
+   discriminators. Do not add another strict solver
    knob without a source-backed, preregistered mismatch. Keep the separate
    ten-level colored/global-scope diagnostics pending one factor at a time.
    Preserve the final, independently reverified ten-level exact continuation

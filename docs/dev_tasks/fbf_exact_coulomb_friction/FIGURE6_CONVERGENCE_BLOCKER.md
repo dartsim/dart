@@ -297,6 +297,44 @@ The isolated evidence package is
 - complete `SHA256SUMS` manifest SHA-256
   `90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3`.
 
+## Source-Sized Contact-Gap Diagnostic
+
+An isolated c95-bound one-factor diagnostic enabled only the existing
+four-level scenario's source-gap flag. Native predictive closure then admitted
+negative-depth contacts, the ground shape carried a `0.1 m` gap, and all 30
+dynamic shapes carried `0.005 m`; the strict source-inner, serial-BGS,
+no-projection, no-cap-acceptance, no-fallback contract was otherwise preserved.
+The preregistered 36-step gate still failed closed, now after completed step 31
+on a 31-contact group at 200 iterations and residual
+`1.0006073317077885e-5`. The run recorded 186 attempts, 185 solves, one
+failure, zero accepted caps, and zero fallbacks. Contacts were 36 through steps
+1-29, 44 at step 30, and 52 at step 31.
+
+This rejects only the hypothesis that representing the recorded source-sized
+gaps with DART's predictive contact allowance makes this strict lane complete
+the first 36 steps at `1e-6`. The existing stock sidecar stops after step 35 on
+a 56-contact group at residual `4.0844850280896461e-4`, but its embedded source
+hashes identify ancestor `844c9c316195897cf2bf51f38eafc8ec9dcf959a`, not a
+fresh c95 control. Because the compared contact streams differ from step 1, the
+residual magnitudes and attempt counts are not performance or superiority
+comparisons. The result establishes no general benefit or harm, source contact
+model, trajectory, outcome, backend, float32, timing, video, Figure 6, or paper
+parity. Keep the checked-in four-level scenario unchanged.
+
+The verified isolated package is `/tmp/fbf_fig06_gap_c95.m6bsif/`:
+
+- `RESULTS.md` SHA-256
+  `3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a`;
+- one-factor patch SHA-256
+  `a5269addaae4bb2864ad2b9fa3768cc99bd41e22758af5950d78eae163ab6695`;
+- gap-run sidecar SHA-256
+  `8683ca69a72ef29ca089fc31647f070d0b5e3e583af028375586ff4d1e3c66b9`;
+- analysis SHA-256
+  `3a0017fdfa16e9fd3556d4e336ae2c9bd660a715eab644b04255cb764b098e22`;
+  and
+- complete `SHA256SUMS` manifest SHA-256
+  `11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119`.
+
 ## Source-Style Continuation Preview
 
 The pinned author runtime recovers and advances a finite iterate even when its
@@ -409,9 +447,9 @@ The row remains blocked until the strict scientific lane completes all 2,400
 steps with zero accepted caps, failures, and fallbacks. Any next strict A/B
 must isolate one remaining source mismatch without combining tolerance,
 budget, fallback, fail-fast, or accepted-cap changes. The one-participant
-colored-ordering candidate and the one-global-group candidate are both rejected
-for this Figure 6 step-35 blocker. Do not promote another solver knob without a
-new source-backed, preregistered mismatch. Source
+colored-ordering, one-global-group, and source-sized-gap candidates are all
+rejected for this Figure 6 strict-prefix blocker. Do not promote another solver
+knob without a new source-backed, preregistered mismatch. Source
 shrink-cap, plateau, and continuation semantics likewise require a separately
 labeled, telemetry-rich physical/video lane before producing strict outcome
 evidence. The continuation lane now has a validated local full-resolution

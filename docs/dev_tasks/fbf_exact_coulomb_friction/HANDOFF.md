@@ -668,6 +668,21 @@ Current-source four-level Figure 6 adapter truth:
   report and manifest under /tmp/fbf_fig06_global_scope_c95.TSfONI/ hash to
   633828adbe08577b6d0973ca817194530ed8a08cbe27e85d2bcb004689919fe9 and
   90d72452c6b3ed09e0bc1e408b56e70092557784fd2089e6895d7a31a0c809d3.
+- A c95-bound one-factor source-gap diagnostic enables Native predictive
+  negative-depth closure with 0.1 m on the ground and 0.005 m on all 30 dynamic
+  shapes while preserving the strict source-inner serial contract. It fails
+  earlier, after completed step 31 on a 31-contact group at 200 iterations and
+  residual 1.0006073317077885e-5: 186 attempts, 185 solves, one failure, zero
+  accepted caps, and zero fallback. The compared contact streams differ from
+  step 1, and the stock sidecar embeds ancestor 844c9c3 rather than a fresh
+  c95 binary. Reject only this gap representation as the strict 36-step fix;
+  do not infer general harm/benefit, trajectory, outcome, source-backend,
+  float32, performance, superiority, video, Figure 6, or paper parity. Keep
+  the checked-in scene unchanged. Package /tmp/fbf_fig06_gap_c95.m6bsif/ has
+  RESULTS.md SHA-256
+  3b0948c80871d19cbe29495a8abc57ac4f3e92dc518a9ae6551238a9aad9b17a and
+  SHA256SUMS SHA-256
+  11888f98a24175f50c09ce95509d754d0bbc1963e5d2294ad982ece280292119.
 - The pinned author control completes all 2,400 substeps but marks only 1,455
   converged and 945 unconverged: 632 caps and 313 plateaus. Pre-release is
   1,332/268; release-and-after is 123/677. First false/cap indices are 33/35;
@@ -1231,7 +1246,8 @@ Immediate order:
    run and partial frames as non-evidence; resolve full boxed
    runtime before paired media. The one-participant colored-ordering result is
    rejected only for the four-level Figure 6 step-35 blocker, as is the
-   one-global-group result. Require a new source-backed, preregistered mismatch
+   one-global-group result, as is the source-sized-gap result. Require a new
+   source-backed, preregistered mismatch
    before another four-level strict solver A/B. Keep ten-level colored
    scheduling and global-scope diagnostics pending one factor at a time
    without loosening tolerance or caps. Use the ignored c95-bound
