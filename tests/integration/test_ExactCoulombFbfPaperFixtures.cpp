@@ -1088,6 +1088,8 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
         || levelCount == fbf_author_card_house::kFigureLevelCount;
   const bool contactGapValuesEnabled
       = scenario != nullptr && scenario->sourceContactGapValuesRepresented;
+  const bool sourceContinuationEnabled
+      = scenario != nullptr && scenario->sourceContinuation;
   auto world = simulation::World::create(
       scenario != nullptr
           ? scenario->demoSceneId
@@ -1105,7 +1107,9 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
 
   if (exactCoulomb) {
     auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
-        fbf_author_card_house::dartConstructionSolverOptions());
+        sourceContinuationEnabled
+            ? fbf_author_card_house::dartSourceContinuationSolverOptions()
+            : fbf_author_card_house::dartConstructionSolverOptions());
     solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
         collision::NativeCollisionDetector::ContactManifoldMode::
             FourPointPlanar));
@@ -1114,9 +1118,16 @@ std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld(
     auto* installed = static_cast<constraint::ExactCoulombFbfConstraintSolver*>(
         world->getConstraintSolver());
     installed->setExactCoulombCrossStepPolicyOptions(
-        fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
+        sourceContinuationEnabled
+            ? fbf_author_card_house::
+                dartSourceContinuationCrossStepPolicyOptions()
+            : fbf_author_card_house::dartConstructionCrossStepPolicyOptions());
     installed->setExactCoulombPostCorrectionProjectionEnabled(!dynamicsLane);
     installed->setExactCoulombSourceInnerInitializationEnabled(dynamicsLane);
+    if (sourceContinuationEnabled) {
+      installed->setExactCoulombSourceContinuationOptions(
+          fbf_author_card_house::dartSourceContinuationOptions());
+    }
     installed->setExactCoulombColoredBlockGaussSeidelEnabled(false);
     installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(
         false);
@@ -3262,6 +3273,149 @@ TEST(
   EXPECT_EQ(boxed.releasedCubeCount, exact.releasedCubeCount);
   EXPECT_TRUE(exact.finiteState);
   EXPECT_TRUE(boxed.finiteState);
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorCardHouseTenLevelSourceContinuationLaneIsSeparateAndFailClosed)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(
+      kTenLevelSourceContinuationDynamicsDemoSceneId,
+      "fbf_author_card_house_10_impact_source_continuation_current_source");
+  EXPECT_STREQ(
+      kTenLevelSourceContinuationScenario.demoSceneId,
+      kTenLevelSourceContinuationDynamicsDemoSceneId);
+  EXPECT_EQ(kTenLevelSourceContinuationScenario.levelCount, kTenLevelCount);
+  EXPECT_EQ(kTenLevelSourceContinuationScenario.selectedFrames, kTotalFrames);
+  EXPECT_EQ(
+      kTenLevelSourceContinuationScenario.selectedSubsteps(), kTotalSubsteps);
+  EXPECT_TRUE(kTenLevelSourceContinuationScenario.sourceContinuation);
+  EXPECT_TRUE(
+      kTenLevelSourceContinuationScenario.sourceContactGapValuesRepresented);
+  EXPECT_STREQ(
+      kTenLevelImpactScenario.demoSceneId, kTenLevelDynamicsDemoSceneId);
+  EXPECT_FALSE(kTenLevelImpactScenario.sourceContinuation);
+  EXPECT_STRNE(
+      kTenLevelSourceContinuationScenario.demoSceneId,
+      kTenLevelImpactScenario.demoSceneId);
+
+  const auto exactWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, true, &kTenLevelSourceContinuationScenario);
+  const auto boxedWorld = createAuthorCardHouseConstructionWorld(
+      kTenLevelCount, false, &kTenLevelSourceContinuationScenario);
+  const auto exact = inspectDynamicsAdapterContract(
+      exactWorld,
+      kTenLevelSourceContinuationScenario,
+      "integration_fixture",
+      true);
+  const auto boxed = inspectDynamicsAdapterContract(
+      boxedWorld,
+      kTenLevelSourceContinuationScenario,
+      "integration_fixture",
+      false);
+
+  EXPECT_EQ(exact.scenario, &kTenLevelSourceContinuationScenario);
+  EXPECT_EQ(boxed.scenario, &kTenLevelSourceContinuationScenario);
+  EXPECT_TRUE(exact.sourceContinuationScene);
+  EXPECT_TRUE(boxed.sourceContinuationScene);
+  EXPECT_EQ(exact.levelCount, kTenLevelCount);
+  EXPECT_EQ(boxed.levelCount, exact.levelCount);
+  EXPECT_EQ(exact.cardCount, 155u);
+  EXPECT_EQ(boxed.cardCount, exact.cardCount);
+  EXPECT_EQ(exact.cubeCount, kCubeCount);
+  EXPECT_EQ(boxed.cubeCount, exact.cubeCount);
+  EXPECT_TRUE(exact.finiteState);
+  EXPECT_TRUE(boxed.finiteState);
+
+  EXPECT_EQ(exact.solverLane, "exact_fbf");
+  EXPECT_TRUE(exact.exactOptionsAvailable);
+  EXPECT_FALSE(exact.boxedOptionsAvailable);
+  EXPECT_FALSE(exact.exactOptions.fallbackToBoxedLcp);
+  EXPECT_EQ(
+      exact.exactOptions.maxResidualHistorySamples,
+      kSourceContinuationResidualHistorySamples);
+  EXPECT_EQ(
+      exact.exactOptions.maxResidualHistoryRecords,
+      kSourceContinuationResidualHistoryRecords);
+  EXPECT_TRUE(exact.exactSourceContinuationOptions.enabled);
+  EXPECT_EQ(
+      exact.exactSourceContinuationOptions.residualCheckInterval,
+      kSourceResidualCheckInterval);
+  EXPECT_EQ(
+      exact.exactSourceContinuationOptions.plateauPatience,
+      kSourcePlateauPatience);
+  EXPECT_DOUBLE_EQ(
+      exact.exactSourceContinuationOptions.plateauRelativeTolerance,
+      kSourcePlateauRelativeTolerance);
+  EXPECT_FALSE(exact.exactSourceContinuationActive);
+  EXPECT_EQ(
+      exact.exactCrossStepOptions.warmStartMatchMode,
+      constraint::ExactCoulombFbfWarmStartMatchMode::OrderedBodyBLocalFeature);
+  EXPECT_TRUE(exact.exactCrossStepOptions.useStrictWarmStartMatchDistance);
+  EXPECT_EQ(
+      exact.exactCrossStepOptions.warmStartMaxAge, kSourceWarmStartMaxAge);
+
+  EXPECT_EQ(boxed.solverLane, "boxed_lcp");
+  EXPECT_FALSE(boxed.exactOptionsAvailable);
+  EXPECT_TRUE(boxed.boxedOptionsAvailable);
+  EXPECT_EQ(boxed.boxedPrimarySolver, "DantzigBoxedLcpSolver");
+  EXPECT_EQ(boxed.boxedSecondarySolver, "PgsBoxedLcpSolver");
+  EXPECT_FALSE(boxed.boxedMatrixFreeOptions.mEnabled);
+
+  EXPECT_TRUE(exact.negativePenetrationDepthContactsAllowed);
+  EXPECT_TRUE(boxed.negativePenetrationDepthContactsAllowed);
+  EXPECT_DOUBLE_EQ(exact.groundContactGap, kSourceGroundContactGap);
+  EXPECT_DOUBLE_EQ(boxed.groundContactGap, exact.groundContactGap);
+  EXPECT_DOUBLE_EQ(exact.dynamicShapeContactGap, kContactGap);
+  EXPECT_DOUBLE_EQ(boxed.dynamicShapeContactGap, exact.dynamicShapeContactGap);
+  EXPECT_EQ(exact.collisionShapeFrameCount, 160u);
+  EXPECT_EQ(boxed.collisionShapeFrameCount, exact.collisionShapeFrameCount);
+  EXPECT_EQ(exact.collisionShapeFramesWithContactGap, 160u);
+  EXPECT_EQ(
+      boxed.collisionShapeFramesWithContactGap,
+      exact.collisionShapeFramesWithContactGap);
+  EXPECT_EQ(exact.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(boxed.groundShapeFramesWithContactGap, 1u);
+  EXPECT_EQ(exact.dynamicShapeFramesWithContactGap, 159u);
+  EXPECT_EQ(boxed.dynamicShapeFramesWithContactGap, 159u);
+
+  const std::string exactJson = dynamicsAdapterContractJson(exact);
+  EXPECT_NE(
+      exactJson.find("\"scene_id\":\"fbf_author_card_house_10_impact_source_"
+                     "continuation_current_source\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find(
+          "\"source_continuation\":{\"policy\":\"source_continuation\""),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"options_available\":true,\"requested\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"source_contact_gap_values_represented\":true"),
+      std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"historical_tables_6_7_invocation_known\":false"),
+      std::string::npos);
+  EXPECT_NE(exactJson.find("\"trajectory_valid\":false"), std::string::npos);
+  EXPECT_NE(
+      exactJson.find("\"physical_outcome_valid\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"solver_equivalence\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"video06_parity\":false"), std::string::npos);
+  EXPECT_NE(exactJson.find("\"paper_parity\":false"), std::string::npos);
+
+  const std::string boxedJson = dynamicsAdapterContractJson(boxed);
+  EXPECT_NE(
+      boxedJson.find("\"options_available\":false,\"requested\":false"),
+      std::string::npos);
+  EXPECT_NE(boxedJson.find("\"exact_options\":null"), std::string::npos);
+  EXPECT_NE(
+      boxedJson.find("\"primary_solver\":\"DantzigBoxedLcpSolver\""),
+      std::string::npos);
+  EXPECT_NE(boxedJson.find("\"paper_parity\":false"), std::string::npos);
 }
 
 //==============================================================================

@@ -345,6 +345,18 @@ COMMON_DART_MISMATCH = (
     "evidence.",
 )
 
+SOURCE_CONTINUATION_CONFIGURATION = (
+    ("exact_policy", "source_continuation"),
+    ("residual_check_interval", "5"),
+    ("plateau_patience", "5"),
+    ("plateau_relative_tolerance", "0.01"),
+    ("step_size_backtrack_limit", "8"),
+    ("coupling_variation_skip_threshold", "1e-10"),
+)
+SOURCE_CONTINUATION_CONFIGURATION_KEYS = frozenset(
+    key for key, _ in SOURCE_CONTINUATION_CONFIGURATION
+)
+
 
 SCHEDULES: dict[str, CaptureSchedule] = {
     "incline": CaptureSchedule(
@@ -800,12 +812,9 @@ SCHEDULES: dict[str, CaptureSchedule] = {
             ("substeps_per_display_frame", "4"),
             ("release_substep", "1600"),
             ("total_substeps", "2400"),
-            ("exact_policy", "source_continuation"),
-            ("residual_check_interval", "5"),
-            ("plateau_patience", "5"),
-            ("plateau_relative_tolerance", "0.01"),
-            ("step_size_backtrack_limit", "8"),
-            ("coupling_variation_skip_threshold", "1e-10"),
+        )
+        + SOURCE_CONTINUATION_CONFIGURATION
+        + (
             (
                 "capture_invocation",
                 "source-supported levels=4 frames=600 drop_frame=400 selection",
@@ -1210,6 +1219,103 @@ SCHEDULES: dict[str, CaptureSchedule] = {
         collision_detector_override=False,
         long_run=True,
     ),
+    "card_house_author_10_impact_source_continuation_current_source": CaptureSchedule(
+        id="card_house_author_10_impact_source_continuation_current_source",
+        scene=("fbf_author_card_house_10_impact_source_continuation_current_source"),
+        title="Author-pinned ten-level card-house source-continuation lane",
+        source_segment="paper_tables_6_7_no_video_segment",
+        total_steps=3200,
+        frame_stride=8,
+        panel_steps=(0, 120, 1600, 1680, 3200),
+        panel_labels=(
+            "initial current-source configuration",
+            "pinned source-prefix endpoint t=.5s",
+            "pre-frame-400 release boundary (t=6.67s)",
+            "post-release probe t=7s",
+            "source frame-800 endpoint (t=13.33s)",
+        ),
+        configuration=(
+            (
+                "author_commit",
+                "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            ),
+            ("levels", "10"),
+            ("cards", "155"),
+            ("cubes", "4; initially kinematic"),
+            ("mu", "0.8"),
+            ("simulation_time_step_seconds", "1/240"),
+            ("display_time_step_seconds", "1/60"),
+            ("substeps_per_display_frame", "4"),
+            ("source_frames", "800"),
+            ("release_substep", "1600"),
+            ("total_substeps", "3200"),
+            ("max_contacts", "4096"),
+            ("max_contacts_per_pair", "4"),
+            ("collision_shape_frames", "160"),
+            ("ground_contact_gap_m", "0.1 for the ground ShapeFrame"),
+            (
+                "dynamic_shape_contact_gap_m",
+                "0.005 for the 155 card and 4 cube ShapeFrames",
+            ),
+            ("negative_depth_contacts", "enabled for configured Native gaps"),
+        )
+        + SOURCE_CONTINUATION_CONFIGURATION
+        + (
+            (
+                "capture_invocation",
+                "current public source --levels 10 --frames 800 selection",
+            ),
+        ),
+        mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This separate exact lane ports source continuation decisions "
+            "into the DART adapter; it does not reproduce the authors' "
+            "Warp/Newton float32 collision or linear-algebra backend.",
+            "The public source supports --levels 10 with its 800-frame "
+            "default, but no historical Tables 6/7 invocation was recovered. "
+            "This is a supported current-source selection, not historical "
+            "paper parity.",
+            "DART Native represents the source's 0.1 m ground and 0.005 m "
+            "dynamic-shape gap values with signed contacts, but not its "
+            "collision backend or stiffness/damping semantics.",
+            "The pinned source's finite CPU prefix contains nonconverged "
+            "substeps and supplies no source trajectory or physical-outcome "
+            "oracle for this DART continuation lane.",
+            "The paper video has no ten-level card-house segment, and no "
+            "approved source rendering golden is available.",
+        ),
+        known_gate_blockers=(),
+        boxed_comparison_mismatches=(
+            COMMON_DART_MISMATCH[0],
+            "This same-physics comparison selects DART's existing boxed-LCP "
+            "solver with source continuation disabled; it is comparison "
+            "media, not exact-FBF or source/paper evidence.",
+            "The public source supports --levels 10 with its 800-frame "
+            "default, but no historical Tables 6/7 invocation was recovered. "
+            "This is a supported current-source selection, not historical "
+            "paper parity.",
+            "DART Native represents the source's two gap values with signed "
+            "contacts, but not its collision backend or stiffness/damping "
+            "semantics.",
+            "The paper video has no ten-level card-house segment, and no "
+            "approved source rendering golden is available.",
+        ),
+        boxed_comparison_gate_blockers=(
+            "A clean bounded boxed control completed 80 substeps, but the "
+            "attempted 3,200-substep capture reached only step 112 within the "
+            "wall-clock budget used by the complete exact run and was "
+            "interrupted. The interrupted capture is non-evidence, so no "
+            "complete boxed trajectory exists.",
+            "No paired exact/boxed composite can be produced or manually "
+            "reviewed until the boxed capture completes.",
+        ),
+        actions=(ScheduledAction(1600, "p", "release the four existing source cubes"),),
+        time_step_seconds=1.0 / 240.0,
+        collision_detector="native",
+        collision_detector_override=False,
+        source_continuation_required=True,
+        long_run=True,
+    ),
     "card_house_author_5_construction": CaptureSchedule(
         id="card_house_author_5_construction",
         scene="fbf_author_card_house_5_construction",
@@ -1555,16 +1661,10 @@ def _derive_boxed_schedule(schedule: CaptureSchedule) -> CaptureSchedule:
         raise ValueError(f"{schedule.id}: a boxed comparison cannot be derived")
     configuration = schedule.configuration
     if schedule.source_continuation_required:
-        exact_only_keys = {
-            "exact_policy",
-            "residual_check_interval",
-            "plateau_patience",
-            "plateau_relative_tolerance",
-            "step_size_backtrack_limit",
-            "coupling_variation_skip_threshold",
-        }
         configuration = tuple(
-            item for item in configuration if item[0] not in exact_only_keys
+            item
+            for item in configuration
+            if item[0] not in SOURCE_CONTINUATION_CONFIGURATION_KEYS
         ) + (
             ("comparison_counterpart", "same_physics_boxed_lcp"),
             ("source_exact_policy", "source_continuation"),
@@ -2647,6 +2747,7 @@ def _is_author_card_house_impact_schedule(schedule: CaptureSchedule) -> bool:
         "card_house_author_4_impact_current_source",
         "card_house_author_4_impact_source_continuation_current_source",
         "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_source_continuation_current_source",
     }
 
 
@@ -2673,7 +2774,10 @@ def _author_card_house_dynamics_selection(
             "dynamic_contact_gap_shape_frames": 0,
             "source_contact_gap_values_represented": False,
         }
-    if schedule_id == "card_house_author_10_impact_current_source":
+    if schedule_id in {
+        "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_source_continuation_current_source",
+    }:
         return {
             "levels": 10,
             "frames": 800,
@@ -2699,9 +2803,10 @@ def _is_author_painleve_schedule(schedule: CaptureSchedule) -> bool:
 def _is_author_card_house_source_continuation_schedule(
     schedule: CaptureSchedule,
 ) -> bool:
-    return (
-        schedule.source_schedule_id or schedule.id
-    ) == "card_house_author_4_impact_source_continuation_current_source"
+    return (schedule.source_schedule_id or schedule.id) in {
+        "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_author_10_impact_source_continuation_current_source",
+    }
 
 
 def _is_finite_number(value: Any) -> bool:

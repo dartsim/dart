@@ -84,6 +84,8 @@ inline constexpr const char* kSourceContinuationDynamicsDemoSceneId
     = "fbf_author_card_house_4_impact_source_continuation_current_source";
 inline constexpr const char* kTenLevelDynamicsDemoSceneId
     = "fbf_author_card_house_10_impact_current_source";
+inline constexpr const char* kTenLevelSourceContinuationDynamicsDemoSceneId
+    = "fbf_author_card_house_10_impact_source_continuation_current_source";
 inline constexpr const char* kAuthorRepository
     = "https://github.com/matthcsong/fbf-sca-2026";
 inline constexpr const char* kAuthorCommit
@@ -183,6 +185,12 @@ inline constexpr DynamicsScenario kFourLevelSourceContinuationScenario{
     false};
 inline constexpr DynamicsScenario kTenLevelImpactScenario{
     kTenLevelDynamicsDemoSceneId, kTenLevelCount, kTotalFrames, false, true};
+inline constexpr DynamicsScenario kTenLevelSourceContinuationScenario{
+    kTenLevelSourceContinuationDynamicsDemoSceneId,
+    kTenLevelCount,
+    kTotalFrames,
+    true,
+    true};
 
 inline constexpr std::size_t kSourceMaxContacts = 4096u;
 inline constexpr int kSourceMaxOuterIterations = 200;

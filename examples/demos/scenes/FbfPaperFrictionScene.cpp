@@ -2150,6 +2150,102 @@ makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene()
 }
 
 //==============================================================================
+DemoScene
+makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceParameterizedScene()
+{
+  using namespace fbf_author_card_house;
+  return makeFbfPaperScene(
+      kTenLevelSourceContinuationDynamicsDemoSceneId,
+      "FBF Author Card House 10: Source Continuation",
+      "The ten-level current-source card-house adapter in a separate exact "
+      "lane that requests the pinned source continuation policy. The boxed "
+      "comparison keeps the same 155 cards, four cubes, contacts, clock, and "
+      "release action.",
+      CameraHome{
+          ::osg::Vec3d(42.0, -54.0, 30.0),
+          ::osg::Vec3d(0.0, 0.0, 12.0),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createAuthorCardHouseWorld(
+            kTenLevelSourceContinuationScenario,
+            state->solverMode,
+            false,
+            true);
+      },
+      kSourceMaxContacts,
+      kDartMaxContactsPerPair,
+      false,
+      false,
+      "This lane preserves the strict ten-level current-source geometry, "
+      "Native contact-gap values, and 1/240 s DART schedule. Exact FBF "
+      "additionally requests the four-level lane's source-style natural-"
+      "residual plateau, finite max-budget, and line-search shrink-cap "
+      "continuation policy. The action `p` releases the four cubes after "
+      "completed step 1,600 in the evidence schedule.",
+      "Headless capture may advance only when every exact contact group is "
+      "reported as a finite success, plateau acceptance, or max-iteration "
+      "acceptance. Solver failures, boxed fallback in the exact lane, "
+      "nonfinite state, and missing per-group telemetry stop the run.",
+      "This is a DART continuation experiment on a source-supported "
+      "parameterization. It does not establish the historical Tables 6-7 "
+      "invocation, source collision/backend equivalence, trajectory parity, "
+      "physical-outcome parity, solver superiority, paper/video parity, or "
+      "timing comparability.",
+      true,
+      SolverMode::ExactFbf,
+      [](const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state) {
+        renderFbfAuthorCardHouseDynamicsControls(
+            world, kTenLevelSourceContinuationScenario);
+        ImGui::TextDisabled("Exact lane policy: source_continuation");
+        ImGui::Text(
+            "Requested: %s",
+            state->solverMode == SolverMode::ExactFbf ? "yes"
+                                                      : "not applicable");
+        ImGui::Text(
+            "Natural plateau: interval %d, patience %d, rtol %.3g",
+            kSourceResidualCheckInterval,
+            kSourcePlateauPatience,
+            kSourcePlateauRelativeTolerance);
+        ImGui::Text(
+            "Armijo: %d inner trials; small-change threshold %.1e",
+            kSourceArmijoMaxBacktracks,
+            kSourceCouplingVariationSkipThreshold);
+      },
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>& state) {
+        setup.physicsContractProvider = [world, state] {
+          return dynamicsAdapterContractJson(inspectDynamicsAdapterContract(
+              world,
+              kTenLevelSourceContinuationScenario,
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256,
+              state->solverMode == SolverMode::ExactFbf));
+        };
+        const std::string releaseLabel = "Release " + std::to_string(kCubeCount)
+                                         + " source-configured cubes";
+        setup.keyActions.push_back(KeyAction{
+            kReleaseActionKey, releaseLabel, [world] {
+              releaseCubes(
+                  world, kTenLevelSourceContinuationScenario.levelCount);
+            }});
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp
+              = std::make_shared<ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        installAuthorCardHouseSolver(
+            world,
+            mode,
+            false,
+            true,
+            true,
+            &kTenLevelSourceContinuationScenario);
+      });
+}
+
+//==============================================================================
 void renderFbfAuthorMasonryArchControls(const WorldPtr& world)
 {
   ImGui::Separator();
@@ -2661,6 +2757,12 @@ DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene()
 DemoScene makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene()
 {
   return makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceParameterizedScene();
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene()
+{
+  return makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceParameterizedScene();
 }
 
 //==============================================================================
