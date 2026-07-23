@@ -127,6 +127,57 @@ Use Tracy to locate and understand hot regions. Do not use a Tracy-connected
 run as the acceptance timing for a performance PR; run the normal Release
 before/after matrix separately.
 
+## Interactive Memory Inspection
+
+Memory inspection is compiled out of `dart-demos` by default. After the normal
+`pixi run config`, opt in by reconfiguring the same build with
+`-DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. The default-OFF build excludes the
+diagnostics sources, link dependencies, host state, environment probe, Memory
+tab, and frame-path calls; its post-link check rejects any diagnostics marker in
+the demo executable.
+
+When compiled in, the consolidated `dart-demos` Memory tab is a diagnostic lead
+generator, not a heap or cache profiler. Its shared
+`examples/demos/memory_diagnostics_model.*` owns opt-in cadence, process probes,
+bounded history, reset, and compatible snapshot comparisons. The branch-local
+`memory_diagnostics.*` collector/view owns DART 6 World traversal and raw-ImGui
+presentation inside `DemoHost`.
+
+Within a diagnostics-enabled build, keep the collection-disabled path before
+every OS probe, World walk, address collection, history mutation, and
+value-formatting pass. This runtime checkbox prevents collection work but does
+not make the compiled-in UI integration zero-cost. Each metric needs an exact
+scope, source, limitation, unit, and measured/estimate/proxy classification;
+use an absent value for unavailable instrumentation rather than zero.
+
+The exact allocator map and the classic-object atlas answer different
+questions. Free-list/frame region maps can show allocator metadata, allocated,
+free, reserved, and padding byte ranges because their backing allocations and
+bookkeeping are observed directly. The classic graph is separately allocated,
+so its typed atlas uses exact object addresses plus explicitly shallow
+`sizeof` lower bounds, grouped only into host-page runs from a runtime page-size
+query. Atlas gaps are unobserved address space, not fragmentation or free
+memory. Raw addresses stay inside collection; the UI uses relative offsets.
+
+Never describe virtual-address adjacency, gaps, or page buckets as physical
+placement, cache misses, or a performance improvement without separate
+hardware-counter/access-sampling and benchmark evidence. Hue identifies data
+category, while hatch, border, opacity, and text also identify storage state so
+the map is not color-only. Region maps retain up to 48 logical rows in an inner
+scroll area, but render only the roughly eight visible rows into a bounded
+per-region draw list so the 16-bit-index OpenGL2 backend stays below its vertex
+limit. The current runtime page-size observation groups the object atlas into
+virtual-page runs but does not place page or cache-line separators: the snapshot
+intentionally lacks raw bases and does not yet capture the scrubbed base
+remainders and host cache-line size required for those guides.
+
+The DART 6 World `MemoryManager` rows and exact maps cover reservation arenas.
+The World reserves and resets the frame arena, but current classic solver paths
+do not allocate their scratch through it. Do not present those rows as legacy
+solver scratch usage or color the arena as though it owns the classic object
+graph; use a solver-specific profiler or instrumentation point for that
+question.
+
 ## Reporting
 
 Every performance PR should match the #3307-style comparison and report bar,

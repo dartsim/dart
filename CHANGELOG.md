@@ -541,6 +541,14 @@
 
 * Examples
 
+  * Add opt-in memory diagnostics to `dart-demos` with exact World
+    `MemoryManager` region maps, a typed virtual-address atlas for classic graph
+    objects, process RSS/history/baselines, and explicit evidence limits. The
+    feature is compiled out by default and can be enabled with
+    `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, leaving the ordinary demo runtime
+    path free of diagnostics state, branches, probes, and link dependencies.
+    ([#3379](https://github.com/dartsim/dart/pull/3379))
+
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
     scene navigator that switches between 31 demo scenes at runtime without
