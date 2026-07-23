@@ -10,13 +10,29 @@ That is historical capture identity, not the current build: the metadata's
 recorded mutable build path now resolves to a later binary, and live
 current-head reuse also fails the source-hash gate. Reuse validation remains
 pending a stable capture-binary archive or a current-head recapture/reseal.
-Current `source_binding` hashes the whole monolithic
-`FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
-author-scene reuse check. Before the next bulk media reseal, split per-scene
-semantic physics provenance from the broader UI/source hash. For the five-level
-lane, archive and rebind the exact `0e3937e6294` binary or recapture at current
-head, then rerun exact, boxed, and group reuse verification before calling
-current reuse green.
+Checkpoint `67073f4f575` adds a generic no-render
+`dart-demos --scene-physics-contract <scene-id>` query and fail-closed semantic
+physics provenance for 10 provider schemas. Provider-backed captures use result
+schema v2 only after exact canonical live/sidecar contract equality. Their
+semantic digest removes exactly one schema-declared monolithic implementation
+hash, while the full demo-binary and broad source gates remain mandatory and
+the demo binary is hashed before and after capture. Card-house construction and
+author-turntable consumers validate v2; legacy and no-provider captures remain
+v1. This enabling checkpoint does not make historical v1 media reusable at the
+current head. For the five-level lane, archive and rebind the exact
+`0e3937e6294` binary or recapture at current head, then rerun exact, boxed, and
+group reuse verification before calling current reuse green.
+Checkpoint `c0364afd390` separately updates the backspin finalizer's source
+contract for the current two-argument checker helper and call site, fixing the
+observed macOS CI failure caused by the old one-argument expectation.
+The first current-head v2 reseal now passes under ignored
+`assets/pr_media_current_head_67073/` for both source-pinned Figure 3 lanes and
+their synchronized checker-texture group. Capture and independent verification
+bind demo SHA-256 `69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`;
+exact/group media SHA-256 values remain `b2c268aa...` / `e321c711...`, matching
+the already audited upload-staging copies. Both 240-step outcomes pass, so no
+solver-superiority claim follows, and the browser attachment URLs remain
+pending.
 The live PR body/head/check state must still be queried and synchronized after
 each push.
 
@@ -51,16 +67,13 @@ base. PR #3377 must use a true squash merge so the 492 topic-added blobs do not
 enter `release-6.20`, unless the topic history is explicitly rewritten first.
 A merge commit or rebase merge does not satisfy this history-size gate.
 
-A fresh pre-push audit against `6a1d377f616` classifies a 260-path intended
-base-to-tip/worktree union: it finds zero changed or tracked task-asset paths
-and zero generated-capture/log/media suffix matches. The only three visible
-untracked paths are the intended new backspin specification, finalizer, and
-finalizer test; they become ordinary tracked source in this checkpoint. The
-intentional P3 checker PPM is a runtime input, not generated evidence. The
-role-based `docs/dev_tasks/.gitignore` rule keeps all 13,480 present generated
-evidence files totaling 999,659,711 bytes out of Git. The current remote PR
-snapshot contains 257 changed paths, zero task-asset paths, and zero media/raw-
-evidence suffix matches. Generators must keep writing task evidence below an
+A current ancestry check finds target `6a1d377f616` already reachable from
+checkpoint `67073f4f575`, so no target merge was needed. The role-based
+`docs/dev_tasks/.gitignore` rule keeps generated evidence out of Git. In
+particular, ignored `assets/pr_upload_3377/` contains 16 independently audited
+H.264/yuv420p MP4 staging copies plus `SHA256SUMS`; none has a GitHub
+user-attachment URL yet. The intentional P3 checker PPM is a runtime input, not
+generated evidence. Generators must keep writing task evidence below an
 `assets/` output root;
 global extension ignores would also hide intentional runtime inputs such as
 the Figure 3 checker texture.
@@ -599,7 +612,7 @@ golden/diff, paper timing, or real-time evidence.
 ### Source-Pinned Author Figure 3 Backspin
 
 The preferred PR media is now the ignored
-`assets/pr_media_author_backspin_v2/` capture of
+`assets/pr_media_current_head_67073/` v2 capture of
 `fbf_author_backspin_current_source` under schedule
 `backspin_author_current_source`, not the reconstructed c95 bundle below. It
 binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, the sealed
@@ -611,8 +624,8 @@ before and after capture. The source's configured terminal flag is true for all
 240 steps, but 183 projected natural residuals exceed `1e-6`; this is not
 strict natural-residual convergence. Capture and independent reuse verification
 pass for two members and one group; their summary SHA-256 values are
-`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+`e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
+`f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
 
 Exact and boxed each complete 240 steps / 241 states and pass prompt contact,
 contiguous support through step 206, a five-sample rolling tail, zero measured
@@ -828,8 +841,9 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 in
 the declared 2,400-step, `dt=1/240 s` run. Exact and boxed lanes share the same
 Native `FourPointPlanar` frontend, 4,096-contact capacity, and manifold
 subdivision 4.
-The demo build, 13 focused headless/continuation C++ fixtures, 454 runner Python
-tests, and both adapter-contract smoke validators pass.
+The demo build, 13 focused headless/continuation C++ fixtures, 665 focused
+semantic-provenance/runner/consumer Python tests, and both adapter-contract
+smoke validators pass.
 
 The strict exact 100-step request fails closed at completed step 35 when the
 contact count jumps from 44 to 68. Steps through 34 are clean, with prior worst
@@ -1685,10 +1699,10 @@ boxed negatives do not close those comparison gaps.
 - Author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory.
-- Visual runner, including source-pinned 101-stone, both ten-level card-house
-  schedule/oracle contracts, Figure 7 crown-impact continuation, and the
-  seven-cell author incline: 454/454
-  passed.
+- Semantic-provenance, visual-runner, card-house-construction consumer,
+  author-turntable consumer, and backspin-finalizer suites, including the
+  source-pinned 101-stone, card-house schedule/oracle contracts, Figure 7
+  crown-impact continuation, and seven-cell author incline: 665/665 passed.
 - Independent post-fix re-review of `3647959a188`: `ALLOW`.
 - Shared-library ABI symbol inspection retains the pre-existing nine-argument
   `recordLastFailedExactCoulombAttempt` symbol and the post-correction policy
@@ -1714,9 +1728,9 @@ boxed negatives do not close those comparison gaps.
   Under the local sealed producer closure, live mode performed 118 file-identity
   rechecks with zero skipped; explicit archive mode reported zero live
   rechecks and 118 skipped.
-- Ten-level colored-diagnostic post-fix review: two independent read-only
-  passes are `CLEAN`; per-scene semantic provenance and an automated paired
-  verifier remain nonblocking follow-ups.
+- Semantic-provenance/current-implementation post-fix review: two independent
+  read-only passes are `CLEAN`; future provider schemas and consumers remain a
+  fail-closed review watch rather than a current finding.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded
 `libdart.so.6.19.3`. The normal development symlink is restored to
@@ -1731,10 +1745,10 @@ PR #3374 is merged. Its historical final head is abbreviated `1f816` and its
 merge commit is abbreviated `fa17fad`; the relevant visual-evidence changes
 are integrated in this worktree.
 
-The last live audit before five-level checkpoint `0e3937e6294` found PR #3377
-open and draft at remote head `c5765b37a08`, targeting `6a1d377f616`. Topic
-head, target ancestry, merge state, checks, and reviews are mutable and are
-deliberately not frozen into this report. Before reporting or publishing, run:
+The current checkpoint for PR #3377 is `67073f4f575`; the PR remains open and
+draft against `6a1d377f616`. That target is already an ancestor, so no merge was
+needed. Check and review state remain mutable and must be queried live. Before
+reporting or publishing, run:
 
 ```bash
 git fetch origin
@@ -1744,6 +1758,12 @@ gh pr view 3377 --json state,isDraft,headRefOid,baseRefName,mergeable,mergeState
 
 Merge the target only when the ancestry check fails. PR #3377 remains work in
 progress and is not completion evidence.
+
+The observed macOS failure in `test_finalize_fbf_backspin_visual.py` came from
+the finalizer's obsolete one-argument checker-helper source contract.
+Checkpoint `c0364afd390` updates that contract for the current two-argument
+helper and call site. This local/current-head fix still requires fresh CI
+confirmation; it is not a substitute for current-head cross-platform results.
 
 The historical failed-check audit separated branch regressions from
 base/workflow issues; these observations must not be reported as current-head

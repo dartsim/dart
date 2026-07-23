@@ -25,7 +25,9 @@ AGENT_CONTINUATION.md as the authoritative truth ledger.
 Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  target synchronization must be verified live before the next push
+  current checkpoint 67073f4f575
+  backspin source-contract CI fix c0364afd390
+  target 6a1d377f616 is an ancestor; verify again before the next push
   topic HEAD/divergence/PR/CI/review state must be verified live
 
 The topic tip tracks zero files under
@@ -36,17 +38,13 @@ docs/dev_tasks/fbf_exact_coulomb_friction/assets/, but topic history still has
 release-6.20, unless the topic history is explicitly rewritten first. Do not
 use a merge commit or rebase merge.
 
-The pre-push audit against `6a1d377f616` finds a 260-path intended base-to-tip/
-worktree union, zero changed or tracked task assets, and zero generated media/
-raw-evidence suffix matches. The only three visible untracked paths are the
-intended new backspin specification, finalizer, and finalizer test; the
-checkpoint commits them as ordinary source. The role-based task ignore keeps
-all 13,480 present local evidence files totaling 999,659,711 bytes out of Git.
-The current remote PR snapshot has 257 changed paths, zero task assets, and zero
-media/raw-evidence suffix matches. The intentional P3 checker PPM is a runtime
-input, not generated evidence. Keep all generated task evidence under an
-`assets/` output root; do not replace that contract with global extension
-ignores that can hide runtime inputs.
+The role-based task ignore keeps generated evidence out of Git. Ignored
+`assets/pr_upload_3377/` stages 16 independently audited H.264/yuv420p MP4s and
+`SHA256SUMS`; all browser-composer uploads and resulting user-attachment URLs
+remain pending. The intentional P3 checker PPM is a runtime input, not generated
+evidence. Keep all generated task evidence under an `assets/` output root; do
+not replace that contract with global extension ignores that can hide runtime
+inputs.
 
 Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
 Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
@@ -128,11 +126,28 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- The last live audit before five-level checkpoint 0e3937e6294 found PR #3377
-  open and draft at remote head c5765b37a08, targeting 6a1d377f616. Topic head,
-  target ancestry, merge state, checks, and reviews are mutable and must be
-  queried live rather than copied from this handoff. It is not completion
+- PR #3377 remains open and draft at checkpoint 67073f4f575, targeting
+  6a1d377f616. That base is an ancestor, so no merge was needed. Checks and
+  reviews remain mutable and must be queried live. It is not completion
   evidence.
+- Checkpoint c0364afd390 fixes the observed macOS backspin-finalizer failure by
+  updating the obsolete one-argument checker-helper contract to the current
+  two-argument helper and call site; fresh current-head CI is still required.
+- Checkpoint 67073f4f575 adds a generic no-render scene-physics query and
+  fail-closed semantic provenance for 10 provider schemas. Provider-backed
+  captures use v2 only after exact canonical live/sidecar equality; one broad
+  implementation hash is separated into its own field, while full binary and
+  source gates remain mandatory. Card-house construction and author-turntable
+  consumers validate v2, the binary is hashed before and after capture, and
+  legacy/no-provider v1 remains supported. Historical v1 media is not made
+  current-head-reusable.
+- Ignored `assets/pr_media_current_head_67073/` is the first current-head v2
+  reseal: exact, boxed, and the synchronized checker-texture Figure 3 group all
+  pass capture and independent verification against demo SHA-256 `69879e77...`.
+  Exact/group clip SHA-256 values are `b2c268aa...` / `e321c711...`, matching
+  the audited upload-staging copies. Both lanes pass the bounded 240-step
+  outcome, so retain the no-superiority/no-paper-parity boundary; browser URLs
+  remain pending.
 - Five-level implementation/media is bound to 0e3937e6294 and demo SHA-256
   74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067.
   This is historical capture identity. Its metadata points at the mutable
@@ -540,14 +555,14 @@ Source-pinned author Fig. 03 backspin truth:
 
 - Prefer `fbf_author_backspin_current_source` with schedule
   `backspin_author_current_source` and ignored capture root
-  `assets/pr_media_author_backspin_v2/`. They bind author commit
+  `assets/pr_media_current_head_67073/`. They bind author commit
   `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and sealed source-reference
   manifest SHA-256
   `7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`.
 - Capture and independent reuse verification pass for two members and one
   group; summary SHA-256 values are
-  `f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-  `390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+  `e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
+  `f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
 - Exact and boxed both complete 240 steps / 241 states and pass the bounded
   rolling, contiguous-support, left-edge roll-off, planar-motion, airborne
   terminal, and source-terminal-tolerance slice. Exact records 205/205 solves,
@@ -1476,23 +1491,18 @@ Latest recorded focused gates:
   `0e3937e6294` had SHA-256
   `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
   current-head media reuse is pending recapture/reseal or a stable archive of
-  that binary. Current `source_binding` hashes the whole monolithic
-  `FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
-  author-scene reuse check. Before the next bulk media reseal, split per-scene
-  semantic physics provenance from the broader UI/source hash. For the
-  five-level lane, archive and rebind the exact `0e3937e6294` binary or
-  recapture at current head, then rerun exact, boxed, and group reuse
-  verification before calling current reuse green;
+  that binary. V2 semantic provenance now separates one broad implementation
+  identity, but full source/binary gates remain mandatory; archive and rebind
+  the exact `0e3937e6294` binary or recapture at current head, then rerun exact,
+  boxed, and group reuse verification before calling current reuse green;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
 - predictive-checkpoint gates: `ConstraintSolver` 66/66, Native
   collision detector 50/50, `SplitImpulse` 13/13, exact solver 38/38, and
   paper fixtures 36 passed with 3 explicit opt-in skips;
-- visual runner, including source-pinned 101-stone, both ten-level card-house
-  schedule/oracle contracts, the source-default five-level lane, and Figure 7
-  crown-impact continuation, passed 454/454, including the seven-cell author
-  incline;
+- semantic-provenance, visual-runner, card-house-construction consumer,
+  author-turntable consumer, and backspin-finalizer suites passed 665/665;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter plus all 12 nonvirtual colored-diagnostic
@@ -1511,9 +1521,9 @@ Latest recorded focused gates:
   skipped, while explicit archive mode reports zero live rechecks and 118
   skipped; and
 - deterministic colored-scheduler stress 1,000 runs passed; and
-- ten-level colored-diagnostic post-fix reviews: two independent read-only
-  passes `CLEAN`; per-scene semantic provenance and an automated paired
-  verifier remain nonblocking follow-ups; and
+- semantic-provenance/current-implementation reviews: two independent
+  read-only passes `CLEAN`; future provider schemas and consumers remain a
+  fail-closed review watch; and
 - independent post-fix re-review of checkpoint `3647959a188`: `ALLOW`.
 
 That sealed live closure resolved `libdart.so.6.19` to the recorded

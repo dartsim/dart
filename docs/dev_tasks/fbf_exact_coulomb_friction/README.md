@@ -33,7 +33,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`. The last live audit before five-level checkpoint `0e3937e6294` found #3377 open and draft at remote head `c5765b37a08`, targeting `6a1d377f616`; mutable PR state must be verified live | #3377 is work in progress, not completion evidence. The new five-level implementation/media checkpoint is `0e3937e6294`; the older Figures 1-5 reseal remains separately bound to `c95bd5fb916` |
+| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 remains open and draft at checkpoint `67073f4f575`, targeting `6a1d377f616`; that base is an ancestor, so no merge was needed for this checkpoint. Mutable checks and reviews must still be verified live | #3377 is work in progress, not completion evidence. Checkpoint `c0364afd390` fixes the current backspin finalizer source contract, and `67073f4f575` adds generic scene-physics provenance. Historical media remains bound to its recorded capture builds |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
@@ -43,7 +43,9 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Literal 25-stone visual evidence | The ignored c95-bound exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
 | Source-continuation Figure 7 crown-impact evidence | Checkpoint `34d9b66e97c` adds a separate bounded continuation lane. Its ignored exact/boxed pair completes 2,000/2,000 steps with successful cube release at step 1,600; exact records 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, and 98 max-iteration accepts | Valid current-DART capture/integrity and continuation telemetry only. Both arches visibly remain standing and the cubes reach the crown, but the lanes are nearly identical and the assessment is manual-only; no strict convergence, superiority, paper parity, outcome, timing, or backend claim follows |
 | C95-bound small-row reseal | Ignored `assets/pr_media_current_head_c95_small_rows/` binds 20 members and 13 groups to demo SHA-256 `5725672a...`; capture and independent reuse verification pass with zero failures and five expected exact-only author-turntable boxed skips | Retained browser-upload source for Figures 1-2 and 4-5 only. Its reconstructed Figure 3 media is historical and superseded by the source-pinned author backspin. All paper/automated-semantic flags remain false |
-| Browser-upload handoff | `PAPER_DEMO_VIDEO_MATRIX.md` lists 16 independently audited clips: nine minimum source-row clips plus seven supplemental comparisons, including the source-pinned Figure 3 exact member and its labeled exact/boxed supplement | Locally upload-ready only; browser-composer upload and the resulting GitHub user-attachment URLs remain pending. Mandatory exact-only, proxy, non-strict, frozen-prefix, visual-sampling, and continuation-policy caption boundaries remain in force |
+| Browser-upload handoff | `PAPER_DEMO_VIDEO_MATRIX.md` lists 16 independently audited clips: nine minimum source-row clips plus seven supplemental comparisons, including the source-pinned Figure 3 exact member and its labeled exact/boxed supplement. Ignored `assets/pr_upload_3377/` stages all 16 as audited H.264/yuv420p MP4s with `SHA256SUMS` | Locally upload-ready only; every browser-composer upload and resulting GitHub user-attachment URL remains pending. Mandatory exact-only, proxy, non-strict, frozen-prefix, visual-sampling, and continuation-policy caption boundaries remain in force |
+| Semantic physics provenance | Checkpoint `67073f4f575` adds generic no-render `dart-demos --scene-physics-contract <scene-id>` queries and fail-closed support for 10 provider schemas. Provider-backed captures use result schema v2 only after exact canonical live/sidecar contract equality; the semantic digest removes exactly one schema-declared monolithic implementation hash while retaining every other contract field | This separates scene semantics from one broad source identity without weakening integrity. Full demo-binary and broad source gates remain mandatory, the binary is hashed before and after capture, card-house construction and author-turntable consumers validate v2, and legacy/no-provider v1 remains supported. Historical v1 media is not thereby reusable at current head |
+| Current-head Figure 3 v2 reseal | Ignored `assets/pr_media_current_head_67073/` passes capture and independent verification for exact, boxed, and their synchronized checker-texture group. Both 240-step outcomes pass; exact and boxed semantic digests are `e8589021...` and `55b4244d...`, bound to demo SHA-256 `69879e77...`. Exact/group MP4 SHA-256 values are `b2c268aa...` and `e321c711...` | The media bytes match the already audited Figure 3 upload-staging copies, so the staged files need no replacement. Browser upload remains pending. Both solvers pass; this is not superiority, source-backend/full-trajectory, historical Figure 3, or paper-parity evidence |
 | Incline visual evidence | Implementation checkpoint `952a97caf49` adds the `fbf_author_incline_sweep_current_source` demo and `incline_author_sweep_current_source` schedule for the full operator-selected `mu=.3,.4,.45,.5,.55,.6,.8` grid in seven labeled lanes. The ignored paired exact/boxed bundle under `assets/pr_media_author_incline_final_candidate_v6/` independently verifies both 120-step traces, the 61-frame H.264/yuv420p group, solver identities, stream contracts, full decodes, and the narrow `automated_current_source_fbf_terminal_outcome_slice_validated=true` contract; generic automated semantic validation remains false. The stable demo binary and verification summary SHA-256 values are `67d399eee85ffd286984a877b8f4181b9ce3030acf5f9b2bc03886e54e7a5f20` and `02305f4faeeb792198dc7e85cf4348ffa3f3d52a742fa4e63f8b01e52bd27b4c`; clip SHA-256 is `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` | Valid current-DART current-source terminal/outcome-slice evidence only. Both lanes remain supported, upright, in-lane, and contact-participating; `.3/.4/.45` slide and `.5/.55/.6/.8` stick. Exact/boxed maximum source-FBF endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s` and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. No source trajectory/backend/solver/full-physical/timing/video/paper equivalence or superiority follows, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over the same seven-cell grid. The new DART schedule binds the retained FBF terminal oracle to raw `sweep_results.json` SHA-256 `f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12`, canonical projection `e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921`, and `mu=.55` history `c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f` | Numeric current-source reference plus bounded DART terminal/outcome evidence only. Source FBF has 839/840 configured convergence flags (`mu=.55`, step 1 reaches 200/200), so `source_reference_strictly_converged=false`; timing, historical-paper, full-state, golden, and parity claims remain false |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
@@ -515,11 +517,11 @@ The source's configured terminal Coulomb flag is true for all 240 steps, while
 183 projected natural residuals exceed `1e-6`; this is not strict
 natural-residual convergence.
 
-The ignored `assets/pr_media_author_backspin_v2/` capture and independent
+The ignored `assets/pr_media_current_head_67073/` v2 capture and independent
 reuse verification pass for exact, boxed, and the synchronized group. Their
 summary SHA-256 values are
-`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+`e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
+`f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
 Both members complete 240 steps / 241 state
 samples, first support at step 2, remain supported contiguously through step
 206, pass the five-sample rolling tail and planar-motion gates, leave the slab
@@ -1425,6 +1427,10 @@ The latest recorded focused results on the current source are:
 - masonry wedge dynamics: 3/3;
 - default paper fixtures: 42 passed, 3 explicit opt-in skips;
 - source-pinned author-backspin visual-runner/finalizer Python suites: 463/463;
+- backspin finalizer source contract: checkpoint `c0364afd390` recognizes the
+  current two-argument checker helper and call site, fixing the macOS CI
+  failure caused by the obsolete one-argument expectation; current-head CI
+  confirmation remains required;
 - author-backspin numeric reference verify-only: 240 configured convergence
   flags, 240 trajectory states, four sealed artifacts, status
   `valid_current_source_numeric_reference`;
@@ -1455,20 +1461,20 @@ The latest recorded focused results on the current source are:
   `0e3937e6294` had SHA-256
   `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
   current-head media reuse is pending recapture/reseal or a stable archive of
-  that binary. Current `source_binding` hashes the whole monolithic
-  `FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
-  author-scene reuse check. Before the next bulk media reseal, split per-scene
-  semantic physics provenance from the broader UI/source hash. For the
-  five-level lane, archive and rebind the exact `0e3937e6294` binary or
-  recapture at current head, then rerun exact, boxed, and group reuse
-  verification before calling current reuse green;
+  that binary. Checkpoint `67073f4f575` now records a fail-closed semantic
+  physics digest separately from one schema-declared monolithic implementation
+  hash, but the full demo-binary and broad source gates remain mandatory. This
+  does not make the historical v1 capture reusable: archive and rebind the
+  exact `0e3937e6294` binary or recapture at current head, then rerun exact,
+  boxed, and group reuse verification before calling current reuse green;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
-- visual-runner Python tests, including the source-pinned 101-stone, both
-  ten-level card-house schedule/oracle contracts, and Figure 7 crown-impact
-  continuation, the source-default five-level lane, and the seven-cell author
-  incline: 454/454;
+- semantic-provenance, visual-runner, card-house-construction consumer,
+  author-turntable consumer, and backspin-finalizer Python tests, including the
+  source-pinned 101-stone, card-house schedule/oracle contracts, Figure 7
+  crown-impact continuation, source-default five-level lane, and seven-cell
+  author incline: 665/665;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
@@ -1478,9 +1484,9 @@ The latest recorded focused results on the current source are:
   118 file-identity rechecks with zero skipped; explicit archive mode reported
   all 118 skipped rechecks; and
 - deterministic colored-scheduler stress: 1,000 runs passed; and
-- ten-level colored-diagnostic post-fix reviews: two independent read-only
-  passes `CLEAN`; per-scene semantic provenance and an automated paired
-  verifier remain nonblocking follow-ups; and
+- semantic-provenance/current-implementation post-fix reviews: two independent
+  read-only passes `CLEAN`; future provider schemas and consumers remain a
+  fail-closed review watch rather than a current finding; and
 - independent post-fix re-review of checkpoint `3647959a188`: `ALLOW`.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded

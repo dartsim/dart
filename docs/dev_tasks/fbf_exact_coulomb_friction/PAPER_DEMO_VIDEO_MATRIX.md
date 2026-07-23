@@ -11,6 +11,31 @@ H.264/yuv420p MP4 files produced and decoded by
 editor. Record the resulting `github.com/user-attachments/...` URL here and in
 the PR description.
 
+Checkpoint `67073f4f575` adds generic no-render
+`dart-demos --scene-physics-contract <scene-id>` queries and fail-closed
+semantic physics provenance for 10 provider schemas. Provider-backed captures
+use result schema v2 only after exact canonical live/sidecar equality. The
+semantic digest separates exactly one schema-declared monolithic implementation
+hash, but full demo-binary and broad source gates remain mandatory, and the
+binary is hashed before and after capture. Card-house construction and
+author-turntable consumers validate v2; legacy/no-provider captures remain v1.
+This does not make any historical v1 clip current-head-reusable: each still
+requires current-head recapture/reseal or its archived original binary.
+Checkpoint `c0364afd390` separately updates the backspin finalizer's checker
+source contract for the current two-argument helper and call site, fixing the
+observed macOS CI failure caused by the old one-argument expectation. The
+no-cache `dart-demos` build and 665 focused provenance/runner/consumer tests
+pass; two independent current-implementation reviews are clean, while fresh CI
+and future provider/consumer changes remain explicit watches.
+
+The first current-head v2 reseal is complete under ignored
+`assets/pr_media_current_head_67073/`: both source-pinned Figure 3 lanes and
+their labeled group pass capture and independent verification. Exact and boxed
+metadata bind demo SHA-256 `69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`
+to distinct exact-canonical physics contracts and semantic digests. The three
+MP4 hashes are byte-identical to the already audited Figure 3 upload-staging
+copies, so no replacement media file is needed; browser upload remains pending.
+
 ## Completion Rule
 
 A row is complete only when all of the following are true:
@@ -83,8 +108,9 @@ them immediately; the evidence runner invokes `p` after completed substep
 1,600. The 2,400-step schedule uses `dt=1/240 s`.
 
 The demo build, 13 focused headless/continuation C++ tests, five author-incline
-production-world C++ contract tests, 454 runner Python tests, and exact/boxed
-contract-smoke validators pass. The exact 100-step prefix records
+production-world C++ contract tests, 665 focused semantic-provenance/runner/
+consumer Python tests, and exact/boxed contract-smoke validators pass. The
+exact 100-step prefix records
 103 attempts, 102 solves, one failure, zero fallbacks, zero accepted caps, and
 worst residual `4.1039190451256334e-4`; steps through 34 were clean with prior
 worst residual `9.826274595482653e-7`. At step 35, attempt 101 is the failed
@@ -351,12 +377,15 @@ Every file exists under ignored task assets, matches the listed SHA-256, probes
 as H.264/yuv420p at 30 fps, and passes a complete `ffmpeg -xerror` decode. None
 is tracked. The first nine clips are the minimum one-per-source-row set; the
 last seven retain promised direct comparisons that the minimum set would hide.
-Upload order does not change any row's scientific status.
+Ignored `assets/pr_upload_3377/` contains independently audited staging copies
+of all 16 MP4s plus `SHA256SUMS`. Every browser-composer upload and resulting
+GitHub user-attachment URL remains pending. Upload order does not change any
+row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
 | --- | --- | --- | --- |
 | Minimum | Figs. 1-2 seven-cell current-source incline exact vs boxed | `assets/pr_media_author_incline_final_candidate_v6/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` |
-| Minimum | Fig. 3 source-pinned checker backspin exact | `assets/pr_media_author_backspin_v2/backspin_author_current_source/clip.mp4` | `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30` |
+| Minimum | Fig. 3 source-pinned checker backspin exact | `assets/pr_media_current_head_67073/backspin_author_current_source/clip.mp4` | `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30` |
 | Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
 | Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
 | Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
@@ -370,7 +399,7 @@ Upload order does not change any row's scientific status.
 | Supplemental | Fig. 4 proxy `mu=.5, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4` | `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8` |
 | Supplemental | Fig. 7 literal-standing baseline exact vs boxed | `assets/pr_media_current_head_fig07/groups/masonry_arch_25_literal_standing__exact_vs_boxed/clip.mp4` | `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e` |
 | Supplemental | Non-paper five-level source-default exact-with-continuation vs boxed-without-continuation | `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4` | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
-| Supplemental | Fig. 3 source-pinned checker backspin exact vs boxed | `assets/pr_media_author_backspin_v2/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4` | `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b` |
+| Supplemental | Fig. 3 source-pinned checker backspin exact vs boxed | `assets/pr_media_current_head_67073/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4` | `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b` |
 
 The mandatory caption boundaries remain: Figure 3's checker is a visual-only
 rotation cue and its 30 fps sampling does not establish signed angular
@@ -666,15 +695,22 @@ tolerances. Exact finishes at `vx=-11.4796920141 m/s`,
 `z=-1.3714094162 m`. Exact records 205/205 solves, zero accepted caps,
 failures, or boxed fallbacks, and worst residual
 `9.990141261260073e-7`; the boxed lane exposes no exact-FBF diagnostics.
-The capture summary and independent reuse-verification summary pass for two
-members and one group at SHA-256
-`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+The current-head capture summary and independent reuse-verification summary
+pass for two members and one group at SHA-256
+`e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
+`f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
 The demo binary SHA-256 is
-`ee513a684857509d587f8fb69b27492c7fe847f1e3a0130fbbe6031afae60606`;
+`69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`;
 the bound configuration spec / demo implementation SHA-256 values are
 `bd8ff3660f05d63fb4be699389166f04c8887e9d6285bf0e68b851fb4126bd64`
-and `065383b24eecceb597f6d66e84748d6aaef3bf390531b10ab5882515b29dc76f`.
+and `e2cc2351a3043ec8301677d990adfe2c7da2b9762499b19bd81c5e3be1559337`.
+Exact v2 metadata binds contract/semantic SHA-256 values
+`fd64d02e50d90c1a3571bf575c97c379718c177a13a5141894d902aff2123252`
+and `e8589021edba1504d84046b2a975c0f38598dec54195dcac93a95393bb9f627d`;
+boxed v2 metadata binds
+`c38242d5949204e06c0fb8ded191496127c3e0510e40308e036d40bb2593a58e`
+and `55b4244df4e0d416d7c9a5f2a87bead887a900bf177c0956e46efeae2c5ace40`.
+Both record `sidecar_contract_match=true`.
 
 The renderer attaches a high-contrast ivory/charcoal checker mesh as
 `VisualAspect` only; the physical sphere remains the collision, inertia,
@@ -690,15 +726,15 @@ is only a rotation-visibility check: 30 fps sampling aliases the initial
 than video-backed.
 
 - Preferred exact attachment candidate:
-  `assets/pr_media_author_backspin_v2/backspin_author_current_source/clip.mp4`,
+  `assets/pr_media_current_head_67073/backspin_author_current_source/clip.mp4`,
   SHA-256
   `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`.
 - Boxed member candidate:
-  `assets/pr_media_author_backspin_v2/backspin_author_current_source__boxed/clip.mp4`,
+  `assets/pr_media_current_head_67073/backspin_author_current_source__boxed/clip.mp4`,
   SHA-256
   `dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`.
 - Supplemental labeled comparison candidate:
-  `assets/pr_media_author_backspin_v2/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4`,
+  `assets/pr_media_current_head_67073/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4`,
   SHA-256
   `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
 

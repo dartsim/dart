@@ -17,6 +17,34 @@ Do not retire the task folder. Do not commit, push, update a PR, rerun remote
 CI, or mutate GitHub without explicit user approval. Never add AI or tool
 attribution to a commit or PR.
 
+Current implementation checkpoints are `c0364afd390` and `67073f4f575`.
+The first fixes the backspin finalizer's obsolete one-argument checker-helper
+source contract that caused the observed macOS CI failure. The second adds
+generic no-render `dart-demos --scene-physics-contract <scene-id>` queries and
+fail-closed semantic physics provenance for 10 provider schemas. Provider-backed
+captures use v2 only after exact canonical live/sidecar contract equality; the
+semantic digest separates exactly one schema-declared monolithic implementation
+hash, but full demo-binary and broad source gates remain mandatory. The binary
+is hashed before and after capture, card-house construction and author-turntable
+consumers validate v2, and legacy/no-provider captures remain v1. Historical v1
+media is not current-head-reusable without recapture/reseal or its archived
+original binary. The 665 focused provenance/runner/consumer tests and no-cache
+`dart-demos` build pass; two independent current-implementation reviews are
+clean, with future provider schemas and consumers still a fail-closed watch.
+
+PR #3377 remains draft at checkpoint `67073f4f575`. Base `6a1d377f616` is an
+ancestor, so no merge was needed. Ignored `assets/pr_upload_3377/` stages 16
+independently audited H.264/yuv420p MP4s plus `SHA256SUMS`; all browser-composer
+uploads and resulting user-attachment URLs remain pending.
+
+The first current-head v2 media reseal also passes under ignored
+`assets/pr_media_current_head_67073/`: exact, boxed, and the synchronized
+checker-texture Figure 3 group pass capture plus independent verification.
+Their demo SHA-256 is `69879e77...`; the exact/group MP4 SHA-256 values remain
+`b2c268aa...` / `e321c711...`, byte-identical to the staged upload candidates.
+Both 240-step bounded outcomes pass; claim no solver superiority or paper
+parity. The attachment URLs are still pending.
+
 Implementation checkpoint `952a97caf49` adds the source-bound
 `fbf_author_incline_sweep_current_source` demo and
 `incline_author_sweep_current_source` exact/boxed schedule for the full
@@ -166,6 +194,8 @@ Inspect and preserve any existing worktree changes. The durable branch state is:
 ```text
 branch: research/fbf-friction-release620
 target synchronization verified through: 6a1d377f616
+current semantic-provenance checkpoint: 67073f4f575
+backspin source-contract CI fix: c0364afd390
 Figure 7 continuation implementation checkpoint: 34d9b66e97c
 topic HEAD/divergence/PR/CI/review state: verify live
 ```
@@ -574,15 +604,15 @@ or real-time performance.
 
 ### Source-Pinned Author Fig. 03 Backspin Evidence
 
-Resume Figure 3 from the ignored `assets/pr_media_author_backspin_v2/` root,
+Resume Figure 3 from ignored `assets/pr_media_current_head_67073/`,
 not the older reconstructed bundle. The
 `fbf_author_backspin_current_source` / `backspin_author_current_source` pair
 binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and the sealed
 `author_backspin_reference_v1` manifest SHA-256
 `7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`.
 Capture and independent reuse verification pass with summary SHA-256 values
-`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+`e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
+`f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
 Exact and boxed each complete 240 steps / 241 state samples and pass the narrow
 supported-rolling, left-edge roll-off, planar-motion, airborne-terminal, and
 source-terminal-tolerance gates. Exact records 205/205 solves, zero accepted
@@ -789,8 +819,9 @@ immediately; the evidence runner invokes `p` after completed substep 1,600 of
 the 2,400-step, `dt=1/240 s` schedule. Exact and boxed use the same Native
 `FourPointPlanar` frontend, 4,096-contact capacity, and manifold subdivision 4.
 
-The demo build, 13 focused headless/continuation C++ tests, 454 runner Python
-tests, and exact/boxed contract smoke pass. A strict exact 100-step request fails closed at completed
+The demo build, 13 focused headless/continuation C++ tests, 665 focused
+semantic-provenance/runner/consumer Python tests, and exact/boxed contract smoke
+pass. A strict exact 100-step request fails closed at completed
 step 35 when contacts jump 44 to 68: 103 attempts, 102 solves, one failure,
 zero fallbacks, zero accepted caps, and worst residual
 `4.1039190451256334e-4`; steps through 34 were clean with prior worst residual
@@ -1494,20 +1525,16 @@ explicit DART reconstruction choices, not author parameters.
   `0e3937e6294` had SHA-256
   `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
   current-head media reuse is pending recapture/reseal or a stable archive of
-  that binary. Current `source_binding` hashes the whole monolithic
-  `FbfPaperFrictionScene.cpp`, so unrelated UI or text edits stale every
-  author-scene reuse check. Before the next bulk media reseal, split per-scene
-  semantic physics provenance from the broader UI/source hash. For the
-  five-level lane, archive and rebind the exact `0e3937e6294` binary or
-  recapture at current head, then rerun exact, boxed, and group reuse
-  verification before calling current reuse green;
+  that binary. The v2 semantic digest now separates one schema-declared broad
+  implementation identity, but the full source/binary gates remain mandatory;
+  archive and rebind the exact `0e3937e6294` binary or recapture at current
+  head, then rerun exact, boxed, and group reuse verification before calling
+  current reuse green;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
-- visual runner, including source-pinned 101-stone, both ten-level card-house
-  schedule/oracle contracts, the source-default five-level lane, Figure 7
-  crown-impact continuation, and the seven-cell author incline: 454/454
-  passed;
+- semantic-provenance, visual-runner, card-house-construction consumer,
+  author-turntable consumer, and backspin-finalizer suites: 665/665 passed;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter plus all 12 nonvirtual colored-diagnostic
@@ -1521,9 +1548,9 @@ explicit DART reconstruction choices, not author parameters.
 - manifest sealed-closure live mode: 118 file-identity rechecks, zero skipped;
   explicit archive mode: zero live rechecks, 118 skipped; and
 - deterministic colored-scheduler stress: 1,000 runs passed; and
-- ten-level colored-diagnostic post-fix reviews: two independent read-only
-  passes `CLEAN`; per-scene semantic provenance and an automated paired
-  verifier remain nonblocking follow-ups; and
+- semantic-provenance/current-implementation reviews: two independent
+  read-only passes `CLEAN`; future provider schemas and consumers remain a
+  fail-closed review watch; and
 - independent post-fix re-review of `3647959a188`: `ALLOW`.
 
 The sealed live closure resolved `libdart.so.6.19` to the recorded
