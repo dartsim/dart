@@ -13,17 +13,22 @@ published real-time or near-real-time targets from the reference papers on CPU.
 
 The representative release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. Published head `05d9de6e3fb`
-contains the base merge, Windows calibration, and evidence refresh. Its fresh
-Codex review identified an inherited but real ABI regression in
-`DARTCollisionDetector`; local commit `9a6796596bc` addresses it. At the last
-refresh, API docs, Windows Release, gz-physics, AVX, and both Read the Docs
-checks had passed on `05d9de6e3fb`; additional hosted matrix jobs were still
-running or queued, with no CI failure reported.
+`wp-db-native-soft-fallback` into `release-6.20`. Published head `e973a75fb96`
+includes the Windows calibration, detector ABI repair, direct soft-cache fix,
+and clean merge of `origin/release-6.20@6a1d377f616`. Its exact-head snapshot
+has 18 passing GitHub Actions jobs, one expected deploy skip, two successful
+Read the Docs checks, and a clean Codex review.
 
-The local publication candidate includes test calibration `50a254e7e56`, ABI
-repair `9a6796596bc`, and the clean merge of
-`origin/release-6.20@75306efe770` at `834a2548fd9`.
+The local unpublished follow-up removes an unintended
+`ConstraintSolverClearStateRegistry` mutex/hash lookup from every simulation
+step. Previous-step clear work now comes from solver state already retained for
+the next update, and newly inserted skeletons are sanitized outside the step
+path. The default gz-physics `GzOdeCollisionDetector` path cannot reach the
+PR's optional native/FCL/Bullet soft lanes or changed soft inverse-matrix
+fallback. A production plugin-boundary A/B measured the falling/contact world
+flat-to-faster (-0.074% mean across 20 interleaved pairs) and the empty world
+24.999% faster; the complete gz-physics 199/199 + 4/4 and gz-sim 1/1 gates pass.
+See `06-pr-evidence.md` for the structural and timing proof.
 
 The only product signal from the earlier `b172b2ee1db` suite was a Windows
 failure in `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`:
@@ -33,17 +38,11 @@ test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
 `0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
 all force, support, spike, finite-state, and per-step guards.
 
-The calibrated runtime candidate passes 20/20 focused repeats, the complete
-25/25 `test_SoftDynamics` binary, a 292/292 no-cache Release build, the full
-154/154 C++ suite, gz-physics 199/199 functional and 4/4 performance checks,
-and gz-sim's 1/1 source-built-DART integration test. The ABI follow-up passes a
-fresh no-cache focused build, 22/22 detector tests, 52/52 collision integration
-tests, 4/4 derived-detector tests, a 20/20 exact-v6.19.4-header ABI canary, lint,
-`git diff --check`, and two clean independent reviews. The canary reports both
-legacy and current detector size as 32 bytes and verifies thread/soft-option
-configuration, cloning, and active-pool destruction without corrupting a
-legacy-layout derived object. Exact new-head hosted CI remains required after
-publication.
+The local correction also passes a focused 6/6 constraint/world/collision
+gate, 14/14 native-soft zero-allocation cases, the full no-cache 154/154 C++
+suite, lint, and `git diff --check`. Earlier calibration and ABI evidence
+remains recorded in `06-pr-evidence.md`; exact new-head hosted CI and review
+remain required after publication.
 
 No valid final paired timing artifact exists: every attempted directory lacks
 `COMPLETE.json` because this shared host never passed the runner's admission
