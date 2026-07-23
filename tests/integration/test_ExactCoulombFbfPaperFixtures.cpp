@@ -4958,8 +4958,13 @@ TEST(ExactCoulombFbfPaperFixtures, CardHouseTenLevelSceneBuilds)
 TEST(ExactCoulombFbfPaperFixtures, CardHouseFourLevelOneStepReducedContactProbe)
 {
   if (!areFbfPaperStressTestsEnabled()) {
-    GTEST_SKIP() << "Scientific stress fixture is opt-in; set "
-                 << kFbfPaperStressTestEnv << "=1 to run all stress fixtures.";
+    GTEST_SKIP()
+        << "Opt-in scientific stress fixture; set " << kFbfPaperStressTestEnv
+        << "=1 to run. Currently EXPECTED-FAILING: the exact solve does "
+           "not converge on the four-level 96-contact one-step (hits the "
+           "inner-iteration cap and falls back). This is the documented "
+           "card-house convergence hardness, not a silent regression; "
+           "see FIGURE6_CONVERGENCE_BLOCKER.md.";
   }
 
   const auto exact = runCardHouseFourLevelOneStep(
@@ -5077,8 +5082,14 @@ TEST(
     CardHouseFourLevelFullManifoldSplitImpulseSettleProbe)
 {
   if (!areFbfPaperStressTestsEnabled()) {
-    GTEST_SKIP() << "Scientific stress fixture is opt-in; set "
-                 << kFbfPaperStressTestEnv << "=1 to run all stress fixtures.";
+    GTEST_SKIP()
+        << "Opt-in scientific stress fixture; set " << kFbfPaperStressTestEnv
+        << "=1 to run. Currently EXPECTED-FAILING on the contact-count "
+           "bound only: the exact solve succeeds every settle step (zero "
+           "fallbacks, residual <= 1e-6), but the >100-contact bar "
+           "predates the 26-card reconstruction repair in commit "
+           "369808583e8; the current deterministic manifold is 98. The "
+           "threshold needs maintainer reconciliation, not a solver fix.";
   }
 
   // Multi-step full-natural-manifold settle regression. DART's ERP
