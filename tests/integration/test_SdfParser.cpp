@@ -182,8 +182,8 @@ TEST(SdfParser, SoftShapeLinkLoadsAsSoftBodyNode)
   EXPECT_NE(nullptr, softAtlas->getBodyNode("l_foot")->asSoftBodyNode());
 
   // Control: the rigid variant of the same model stays fully rigid.
-  auto rigidAtlas = SdfParser::readSkeleton(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  auto rigidAtlas
+      = SdfParser::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
   ASSERT_NE(nullptr, rigidAtlas);
   EXPECT_EQ(0u, rigidAtlas->getNumSoftBodyNodes());
 }
