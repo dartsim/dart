@@ -1970,6 +1970,69 @@ int DemoHost::verifyFbfSceneDocs() const
 }
 
 //==============================================================================
+int DemoHost::printScenePhysicsContract(const std::string& sceneId)
+{
+  if (sceneId.empty()) {
+    std::cerr << "[scene-physics-contract] scene id must not be empty.\n";
+    return 1;
+  }
+
+  if (!findScene(sceneId)) {
+    std::cerr << "[scene-physics-contract] unknown demo id '" << sceneId
+              << "'.\n";
+    return 1;
+  }
+
+  // This follows the normal scene-installation lifecycle so runtime options
+  // and activation-scoped physics settings are reflected in the contract. It
+  // deliberately does not call ensureViewerConfigured(), realize(), frame(),
+  // or any capture path.
+  requestSceneSwitch(sceneId);
+  processPendingSwitch();
+  if (mLastSwitchFailed || mCurrentSceneId != sceneId) {
+    std::cerr << "[scene-physics-contract] demo '" << sceneId
+              << "' failed to start.\n";
+    return 1;
+  }
+
+  for (const int key : mHeadlessActionKeys) {
+    if (!invokeHeadlessActionKey(key)) {
+      std::cerr << "[scene-physics-contract] action key "
+                << formatKeyForMessage(key) << " failed for demo '" << sceneId
+                << "'.\n";
+      return 1;
+    }
+  }
+
+  if (!mCurrentPhysicsContractProvider) {
+    std::cerr << "[scene-physics-contract] demo '" << sceneId
+              << "' has no physics contract provider.\n";
+    return 1;
+  }
+
+  try {
+    const std::string contract = mCurrentPhysicsContractProvider();
+    if (contract.empty()) {
+      std::cerr
+          << "[scene-physics-contract] physics contract provider for demo '"
+          << sceneId << "' returned empty output.\n";
+      return 1;
+    }
+    std::cout << contract << '\n';
+  } catch (const std::exception& error) {
+    std::cerr << "[scene-physics-contract] physics contract failed for demo '"
+              << sceneId << "': " << error.what() << '\n';
+    return 1;
+  } catch (...) {
+    std::cerr << "[scene-physics-contract] physics contract failed for demo '"
+              << sceneId << "': unknown error\n";
+    return 1;
+  }
+
+  return 0;
+}
+
+//==============================================================================
 int DemoHost::cycleScenes(int framesPerScene)
 {
   bool anyFailure = false;

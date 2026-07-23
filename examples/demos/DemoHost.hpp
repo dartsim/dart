@@ -205,6 +205,12 @@ public:
   /// Verifies every FBF research scene has self-contained Scene-tab metadata.
   int verifyFbfSceneDocs() const;
 
+  /// Builds `sceneId`, applies each legacy pre-run headless action, prints the
+  /// scene's physics contract JSON verbatim, and exits without realizing or
+  /// rendering the viewer. Returns nonzero for an unknown scene, factory or
+  /// action failure, a missing provider, or a provider failure.
+  int printScenePhysicsContract(const std::string& sceneId);
+
   /// Advances through every scene in the catalog, `framesPerScene` steps
   /// each, twice in a row (the repeat proves rapid re-switching does not leak
   /// world nodes). No window or GPU context is required. Returns 0 if every

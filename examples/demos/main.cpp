@@ -75,6 +75,8 @@ struct Options
   double guiScale = 1.0;
   bool listScenes = false;
   bool verifyFbfSceneDocs = false;
+  bool scenePhysicsContractRequested = false;
+  std::string scenePhysicsContractScene;
   std::string fbfAuthorTurntableContractScene;
   std::string fbfAuthorCardHouseContractScene;
   bool cycleScenes = false;
@@ -109,6 +111,9 @@ void printUsage(const char* prog)
       << "  --verify-fbf-scene-docs\n"
          "                  Verify FBF research scenes have self-contained "
          "Scene-tab text and exit.\n"
+      << "  --scene-physics-contract <scene-id>\n"
+         "                  Print a scene's runtime physics contract and "
+         "exit without rendering.\n"
       << "  --fbf-author-turntable-contract <scene-id>\n"
          "                  Print the runtime-inspected author-turntable "
          "physics/control contract and exit.\n"
@@ -274,6 +279,11 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       opt.listScenes = true;
     } else if (std::strcmp(a, "--verify-fbf-scene-docs") == 0) {
       opt.verifyFbfSceneDocs = true;
+    } else if (std::strcmp(a, "--scene-physics-contract") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.scenePhysicsContractRequested = true;
+      opt.scenePhysicsContractScene = argv[++i];
     } else if (std::strcmp(a, "--fbf-author-turntable-contract") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -499,6 +509,9 @@ int main(int argc, char** argv)
     host.setDebugRecordProfile(true);
   for (const int key : opt.headlessActionKeys)
     host.addHeadlessActionKey(key);
+
+  if (opt.scenePhysicsContractRequested)
+    return host.printScenePhysicsContract(opt.scenePhysicsContractScene);
 
   if (opt.listScenes)
     return host.listScenes();

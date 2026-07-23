@@ -1450,6 +1450,57 @@ def test_current_source_contract_rejects_queried_parameter_swap(monkeypatch):
         )
 
 
+def test_author_turntable_capture_accepts_and_revalidates_v2_provenance():
+    module = _load_module()
+    scenario = next(iter(module.SCENARIOS))
+    scene = module.SCENARIOS[scenario]["scene"]
+    capture_id = module.SCENARIOS[scenario]["capture_id"]
+    contract = _physics_contract_matrix(module)["demo"][scenario]
+    binding = module._expected_scene_physics_provenance(
+        contract,
+        demo=SCRIPT,
+        scene=scene,
+    )
+
+    module._validate_scene_physics_provenance(
+        capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+        runtime={"scene_physics_provenance": binding},
+        contract=contract,
+        demo=SCRIPT,
+        scene=scene,
+        capture_id=capture_id,
+    )
+    module._validate_scene_physics_provenance(
+        capture_schema_version=module.RUNNER_SCHEMA_VERSION,
+        runtime={},
+        contract=contract,
+        demo=SCRIPT,
+        scene=scene,
+        capture_id=capture_id,
+    )
+
+    with pytest.raises(ValueError, match="semantic physics provenance changed"):
+        module._validate_scene_physics_provenance(
+            capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={},
+            contract=contract,
+            demo=SCRIPT,
+            scene=scene,
+            capture_id=capture_id,
+        )
+    changed = copy.deepcopy(binding)
+    changed["semantic_physics_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="semantic physics provenance changed"):
+        module._validate_scene_physics_provenance(
+            capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={"scene_physics_provenance": changed},
+            contract=contract,
+            demo=SCRIPT,
+            scene=scene,
+            capture_id=capture_id,
+        )
+
+
 def test_author_turntable_contract_is_deferred_and_solver_is_locked():
     module = _load_module()
     source = module.DEMO_SOURCE.read_text(encoding="utf-8")
