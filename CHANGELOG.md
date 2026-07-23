@@ -500,6 +500,12 @@ compatibility remains on the active DART 6 LTS branch._
   regressions, numerical drift) are reproduced as the smallest failing case and
   fixed at the cause with regression coverage, rather than silenced or patched
   around, plus a matching principle-audit item.
+- Skip MSVC whole-program optimization (`/GL` plus link-time `/LTCG`) in the
+  Windows CI C++/dartpy test build so the MSVC Release build avoids the expensive
+  link-time codegen pass that dominates its wall-clock; published wheels keep it
+  and are still tested. Controlled by the new
+  `DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION` CMake option, also honored
+  through the environment.
 
 #### Tests, Benchmarks, and Quality Gates
 
