@@ -459,7 +459,7 @@ function(dart_configure_msvc_toolchain)
       $<$<COMPILE_LANGUAGE:CXX>:/W1>
       $<$<COMPILE_LANGUAGE:CXX>:/Zi>
       $<$<COMPILE_LANGUAGE:CXX>:/Gy>
-      $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Release>>:/GL>
+      $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Release>,$<NOT:$<BOOL:${DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION}>>>:/GL>
     )
     add_link_options($<$<CONFIG:Release>:/INCREMENTAL:NO>)
   endif()
