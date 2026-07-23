@@ -472,17 +472,31 @@ Next actions:
    demonstrated infrastructure failures and investigate product failures from
    their own exact-head logs. The non-required AppVeyor red is spurious (see the
    2026-07-23 section) and is not a rerun target.
-3. **Research and propose the full-parity milestone plan** (maintainer directive
-   2026-07-23): ABI-safe additive on `release-6.20`, ~3-PR structure (#3382
-   performance slice, then one PR per paper). Cover the volumetric-FEM backend
-   scope (Kim/Pollard), controller + soft-foot + hand-scene infra (Jain/Liu),
-   per-row correctness and CPU-performance acceptance, the competitive-envelope
-   definition, and the zero-rigid-overhead audit. Present for review before
-   building subsystems. The 2026-07-11 deferral list is retracted.
-4. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
+3. **Full-parity plan: committed** as
+   `10-full-parity-execution-plan.md` (accepted 2026-07-23; ABI-safe additive on
+   `release-6.20`, ~3-PR structure; PLAN-622 points at it). The 2026-07-11
+   deferral list is retracted.
+4. **M2.0 FEM integration seam: validated** — see `11-fem-integration-seam.md`.
+   A custom `constraint::ConstraintBase` whose `update()` DART calls every
+   `solve()` (`ConstraintSolver.cpp:1077`, before the `isActive()` LCP gate) is
+   the ABI-safe per-step FEM integration hook; a throwaway prototype proved the
+   hook runs 200/200, integrates deterministically, and leaves the rigid
+   trajectory bit-identical (zero perturbation), touching no production code.
+   Two-way FEM→rigid coupling must use LCP participation (`isActive()==true`) or
+   caller-driven force before `step()` (mid-solve `addExtForce` is cleared at
+   `World.cpp:1378`); one-way skeleton→FEM drive is immediate. Additive-on-
+   `release-6.20` is confirmed feasible; the branch decision holds pending a
+   later milestone showing otherwise.
+5. **Next build steps** (per plan §11): PR-2 **M2.1** — the tet-volume/embedded-
+   surface `Shape` + FEM node state (new additive types), then FEM dynamics; and
+   in parallel PR-3a **soft-foot SIMBICON** (reuse `examples/demos/scenes/
+   atlas_simbicon/` + `atlas_v3_no_head_soft_feet.sdf`). Confirm the
+   competitive-envelope definition (decisions.md item 2) before the
+   performance-acceptance stage.
+6. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
    WP-DB.08 native-owned/default coverage, flexible-foot, and the separate
    `main` zero-DoF assertion PR remain open and now fold into the parity plan.
-5. After #3382 merges, promote remaining durable facts to owners; remove this
+7. After #3382 merges, promote remaining durable facts to owners; remove this
    temporary task folder only when its open work has durable owners, and clean
    branches only with explicit approval.
 
