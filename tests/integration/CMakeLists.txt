@@ -94,6 +94,48 @@ set_tests_properties(
 )
 dart_format_add(${soft_demo_model_test_sources})
 
+# The soft-foot SIMBICON model test drives an Atlas biped loaded from SDF/URDF
+# (dart-utils / dart-utils-urdf) and balanced by the GUI-free SIMBICON
+# controller sources ported into examples/demos/scenes/atlas_simbicon/. Compiled
+# into test_ConstraintSolver alongside the other soft demo model tests, together
+# with those four controller sources -- but NOT AtlasSimbiconScene.cpp, which
+# pulls in GUI/OSG. Guarded on the loaders so a build without urdf simply omits
+# the test (mirroring the other dart-utils-urdf tests below).
+if(TARGET dart-utils AND TARGET dart-utils-urdf)
+  set(
+    soft_foot_simbicon_test_sources
+    test_SoftFootSimbiconModel.cpp
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.cpp"
+  )
+  set(
+    soft_foot_simbicon_controller_sources
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/Controller.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/State.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/StateMachine.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/TerminalCondition.cpp"
+  )
+  target_sources(
+    test_ConstraintSolver
+    PRIVATE
+      ${soft_foot_simbicon_test_sources}
+      ${soft_foot_simbicon_controller_sources}
+  )
+  target_link_libraries(test_ConstraintSolver dart-utils dart-utils-urdf)
+  add_test(
+    NAME test_SoftFootSimbiconModel
+    COMMAND
+      $<TARGET_FILE:test_ConstraintSolver>
+      --gtest_filter=SoftFootSimbiconModelTest.*
+  )
+  set_tests_properties(
+    test_SoftFootSimbiconModel
+    PROPERTIES FAIL_REGULAR_EXPRESSION "0 tests"
+  )
+  # Only the new sources are format-registered here; the controller sources are
+  # already registered by the examples/demos project.
+  dart_format_add(${soft_foot_simbicon_test_sources})
+endif()
+
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
