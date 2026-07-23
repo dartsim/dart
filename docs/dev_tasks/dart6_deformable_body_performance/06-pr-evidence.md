@@ -3,11 +3,11 @@
 ## 2026-07-22 gz-physics and gz-sim zero-overhead audit
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
-`wp-db-native-soft-fallback` to `release-6.20`. Published head `c41f273d271`
-contains the Gazebo correction described here, and the target base is
-`6a1d377f616`. The exact-head hosted gz-physics/gz-sim job passed. A fresh
-exact-head Codex review found one preparation-only state-preservation issue;
-the local review correction described below is not published yet.
+`wp-db-native-soft-fallback` to `release-6.20`. Published implementation head
+`891f43fd590` contains the Gazebo correction and its preparation-state review
+fix, and the target base is `6a1d377f616`. The preceding `c41f273d271`
+exact-head hosted gz-physics/gz-sim job passed; only checks and review on the
+current branch tip are authoritative after the evidence refresh.
 
 The downstream audit found one unconditional cost introduced by the PR:
 `ConstraintSolver::solve()` consulted a process-wide
@@ -76,7 +76,8 @@ regression failed before the fix and passed afterward. The correction preserves
 the active constraint vector and its classification flags across the
 preparation-only passes. It does not change `solve()` or the production
 gz-physics steady-state path, so the plugin-boundary A/B above remains an exact
-comparison of the affected hot-path code.
+comparison of the affected hot-path code. Commit `891f43fd590` publishes that
+fix.
 
 Verification on the published correction and local review fix:
 
