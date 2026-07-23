@@ -47,6 +47,37 @@ current branch tip are authoritative after the evidence refresh.
 
 ## 2026-07-23 exact-head review evidence and scope elevation
 
+### Session close (2026-07-23): PR-3a built + SdfParser dual-PR opened
+
+- **This branch is `wp-db-soft-foot-simbicon`** (local, unpushed — user chose
+  "keep building PR-3 locally"), 2 commits ahead of `wp-db-native-soft-fallback`
+  (#3382 @ `be16366d0b5`, untouched/merge-ready): `fa8e89b96ec` SdfParser fix,
+  `6eee177d7fe` PR-3a soft-foot SIMBICON. PR-3a validated locally:
+  `SoftFootSimbiconModelTest` 3/3 — soft biped stands finite/upright/deterministic
+  1000 steps; soft maintains more foot contacts than rigid (avg 56.4 vs 44.4, the
+  Jain/Liu headline); soft withstands >= rigid push (equality at 8000 N, honestly
+  documented — SIMBICON stepping dominates topple, so contact-count is the real
+  win). Spec: `12-pr3a-soft-foot-simbicon.md`.
+- **Discovered + fixed a real bug**: `dart::utils::SdfParser` loaded every SDF
+  `<soft_shape>` link as rigid (NodeType not forwarded). Shipped as its own
+  bugfix per maintainer choice: **PR #3399** (release-6.20, fix + regression +
+  changelog) and **PR #3400** (main, DRAFT — DART 7 restructured IO to
+  `dart/io/sdf/`, not locally built, CI-gated). Branches `fix-sdf-soft-body` /
+  `fix-sdf-soft-body-main`.
+- **Coordination flag**: a parallel worktree has UNPUSHED local branches
+  `fix/release-sdf-soft-node-parser` / `fix/main-sdf-soft-node-parser` (commit
+  `4d743cbe930`, larger +46/-40) doing the SAME SdfParser fix, plus
+  `fix/main-zero-dof-soft-bias-impulse` (the zero-DoF assertion dual-PR). Reconcile
+  the duplicate SdfParser effort before merge; the zero-DoF `main` follow-up is
+  likely already covered there. See `[[project_sdf_soft_node_parallel_fix]]`.
+- **Build-dir caveat**: `build/default/cpp/Release` was reconfigured to DART 7
+  `main` by a pre-commit hook during the #3400 push. Run `pixi run config` on the
+  deformable branch before building it again.
+- **Next**: continue PR-3 locally per plan §11 — noisy-floor biped, soft-contact
+  walk, hand/arm manipulation (models need authoring), four-link flexible-foot
+  comparison; then open PR-3. Also PR-2 M2.1 (FEM foundation). Competitive
+  envelope confirmed: in-tree backends + normalized paper metrics.
+
 ### PR #3382 is milestone-1 merge-ready
 
 Current head `351d4a04fb3` (docs-only atop validated implementation head
