@@ -5,14 +5,23 @@ It states what the current branch demonstrates and, just as importantly, what
 it does not demonstrate. The five minimum Figures 1-5 source-row uploads now
 have a current-head v2 reseal under `assets/pr_media_current_head_67073/`.
 The older `c95bd5fb916` small-row reseal remains historical and supplies only
-the four supplemental reconstructed Figure 4 proxy comparisons. The
-source-default five-level implementation/media is bound to checkpoint
-`0e3937e6294` and demo SHA-256
-`74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`.
-That is historical capture identity, not the current build: the metadata's
-recorded mutable build path now resolves to a later binary, and live
-current-head reuse also fails the source-hash gate. Reuse validation remains
-pending a stable capture-binary archive or a current-head recapture/reseal.
+the four supplemental reconstructed Figure 4 proxy comparisons. The same
+current-head root now passes capture and independent verification for the
+Figure 6, Figure 7, and supplemental source-default five-level exact/boxed
+members plus all three synchronized groups. All six members use schema v2 and
+pass the current demo, broad-source, and exact live/sidecar contract gates;
+[PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns their full paths
+and hashes. Figure 6 and Figure 7 staging slots 06/07 now contain those
+current-head groups, the five-level group is byte-identical to slot 15, and the
+updated 16-entry staging checksum manifest verifies. The ten-level current-head
+recapture is active but not finally verified. Checkpoint
+`8ad9961e56c` adds the standalone fail-closed Figure 8 failed-prefix finalizer,
+but no current-head Figure 8 bundle has completed finalize/seal/verify.
+Manual panels show more retained exact structure in Figure 6 and five-level
+than boxed, while the Figure 7 lanes remain nearly identical and standing.
+Every pair is policy-asymmetric because only exact requests source
+continuation, so no solver-only, strict-convergence, superiority, trajectory,
+source-backend, or paper-parity claim follows.
 Checkpoint `67073f4f575` adds a generic no-render
 `dart-demos --scene-physics-contract <scene-id>` query and fail-closed semantic
 physics provenance for 10 provider schemas. Provider-backed captures use result
@@ -21,10 +30,8 @@ semantic digest removes exactly one schema-declared monolithic implementation
 hash, while the full demo-binary and broad source gates remain mandatory and
 the demo binary is hashed before and after capture. Card-house construction and
 author-turntable consumers validate v2; legacy and no-provider captures remain
-v1. This enabling checkpoint does not make historical v1 media reusable at the
-current head. For the five-level lane, archive and rebind the exact
-`0e3937e6294` binary or recapture at current head, then rerun exact, boxed, and
-group reuse verification before calling current reuse green.
+v1. This enabling checkpoint does not make other historical v1 media reusable
+at the current head.
 Checkpoint `c0364afd390` separately updates the backspin finalizer's source
 contract for the current two-argument checker helper and call site, fixing the
 observed macOS CI failure caused by the old one-argument expectation.
@@ -84,8 +91,10 @@ A merge commit or rebase merge does not satisfy this history-size gate.
 A current ancestry check finds target `6a1d377f616` already reachable from
 checkpoint `67073f4f575`, so no target merge was needed. The role-based
 `docs/dev_tasks/.gitignore` rule keeps generated evidence out of Git. In
-particular, ignored `assets/pr_upload_3377/` contains 16 independently audited
-H.264/yuv420p MP4 staging copies plus `SHA256SUMS`; none has a GitHub
+particular, ignored `assets/pr_upload_3377/` contains 16 H.264/yuv420p MP4
+staging copies plus `SHA256SUMS`. Slots 06/07 contain the current-head Figure 6
+and Figure 7 groups, slot 15 is byte-identical to the current-head five-level
+group, and `sha256sum -c` passes all 16 entries. None has a GitHub
 user-attachment URL yet. The intentional P3 checker PPM is a runtime input, not
 generated evidence. Generators must keep writing task evidence below an
 `assets/` output root;
@@ -827,7 +836,7 @@ The boxed independent audit also finds every rendered foreground pixel at
 least 40 px from the right edge and 30 px from the bottom edge; its endpoint
 margins are about 41 px and 33 px.
 
-The final ignored presentation candidate is
+The historical v3 ignored presentation candidate is
 `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4`.
 It labels the lanes `EXACT COULOMB FBF + SOURCE CONTINUATION` and
 `EXISTING BOXED LCP (NO SOURCE CONTINUATION)`, making the policy asymmetry
@@ -844,9 +853,10 @@ This pair is not strict success, a solver-only A/B, solver superiority, an
 automated semantic or physical outcome, a historical Tables 6-7 invocation,
 source trajectory/backend/timing evidence, paper-video parity, or paper
 parity. The v1 and v2 captures are superseded framing probes and excluded from
-upload evidence. The v3 assets remain ignored, and the final clip has no
-GitHub user-attachment URL until it is uploaded through the PR browser
-composer.
+upload evidence. The v3 assets remain ignored historical evidence. Upload only
+the byte-identical current-head v2 group owned by
+[PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) through the PR
+browser composer; it has no GitHub user-attachment URL yet.
 
 ### Current-Source Four-Level Figure 6 Adapter
 
@@ -1128,7 +1138,7 @@ not map to the paper's solver lanes. There is no quantitative trajectory or
 physical-outcome equivalence, approved golden, source-backend equivalence,
 timing comparison, or paper parity.
 
-The ignored durable root is
+The historical v1 ignored durable root is
 `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`,
 resealed from `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`.
 Integrity anchors are:
@@ -1145,9 +1155,10 @@ Integrity anchors are:
 
 The fresh official-video download matches audited SHA-256
 `d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794`.
-The paired clip remains outside Git and has no
-`github.com/user-attachments/...` URL. It may be uploaded only as a narrowly
-captioned continuation comparison; PR #3377 must remain draft.
+Preserve the historical v1 pair outside Git. The current-head v2 group owned
+by [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) is the narrowly
+captioned upload source and has no `github.com/user-attachments/...` URL; PR
+#3377 must remain draft.
 
 ### Source-Supported Ten-Level Card-House Current Status
 
@@ -1439,8 +1450,10 @@ with nearly identical visible outcomes. All records keep
 `automated_semantic_outcome_validated=false`. This is bounded non-strict
 continuation evidence only, not strict convergence, solver superiority,
 physical outcome, source/paper trajectory or Figure 7 parity, timing, or
-backend evidence. Upload the group clip through the GitHub browser composer
-and record its URL; do not commit the generated bundle.
+backend evidence. Preserve this c95 group as historical evidence. Upload only
+the current-head v2 group owned by
+[PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) through the GitHub
+browser composer and record its URL; do not commit the generated bundle.
 
 The earlier trace-equivalent local literal-wedge standing bundle at
 `assets/paper_evidence/fig07_arch25_literal/` is locally finalized as valid
@@ -1770,8 +1783,8 @@ PR #3374 is merged. Its historical final head is abbreviated `1f816` and its
 merge commit is abbreviated `fa17fad`; the relevant visual-evidence changes
 are integrated in this worktree.
 
-The current implementation checkpoint for PR #3377 is `67073f4f575`, with
-documentation checkpoint `967e961421c` published before this update. The PR
+The inspected published branch checkpoint for PR #3377 is `8ad9961e56c`, after
+documentation checkpoint `fcafedbd17d`. The PR
 remains open and draft against `6a1d377f616`. That target is already an
 ancestor, so no merge was needed. The exact live head and check state remain
 mutable and must be queried. Before
@@ -1843,13 +1856,16 @@ cross-platform CI.
   colored ordering to the default, or ship the detached global patch, and do
   not loosen tolerance, iteration caps, fallback, fail-fast, or accepted-cap
   policy.
-- Preserve the independently verified five-level source-default v3 members and
-  the policy-asymmetric labeled pair as supplemental non-paper diagnostics.
+- Preserve the independently verified historical five-level source-default v3
+  members and the policy-asymmetric labeled pair as supplemental non-paper
+  diagnostics.
   Keep the strict step-31 failure distinct from the exact continuation member,
-  and keep v1/v2 classified as superseded framing probes. Upload only the v3
-  pair through the PR browser composer and record its GitHub user-attachment
-  URL; do not present it as strict success, a solver-only A/B, superiority, an
-  automated physical outcome, historical Tables 6-7 evidence, or paper parity.
+  and keep v1/v2 classified as superseded framing probes. Upload only the
+  byte-identical current-head v2 group owned by
+  [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) through the PR
+  browser composer and record its GitHub user-attachment URL; do not present
+  it as strict success, a solver-only A/B, superiority, an automated physical
+  outcome, historical Tables 6-7 evidence, or paper parity.
 - Make the failed small-scene physical/residual contracts pass without
   changing the source claim.
 - Keep multicore claims confined to the validated opt-in colored literal-arch
@@ -1862,19 +1878,21 @@ cross-platform CI.
   adapter now executes current-source geometry and schedule, while full
   current-source FBF and Kamino controls also fail standing. Recover the
   historical invocation/backend or a matched historical oracle before an
-  approved visual comparison. Preserve exact DART/source differences.
+  approved visual comparison. Use the `8ad9961e56c` standalone finalizer for
+  the next current-head Figure 8 finalize/seal/verify cycle; its existence does
+  not seal a bundle. Preserve exact DART/source differences.
   Keep the unavailable historical
   renderer/goldens, Apple hardware, precision, and paper timing-attestation
   gaps explicit.
 - Preserve the finalized incline, historical Painleve proxy, source-pinned
   Painleve adapter, backspin, and turntable bundles within their lane-specific
-  claim boundaries. Upload the two source-pinned Painleve exact-vs-boxed clips
-  and both c95-bound Figure 7 groups (literal standing and crown-impact
-  continuation) only through the browser composer and record their GitHub
+  claim boundaries. Upload the two source-pinned Painleve exact-vs-boxed clips,
+  the c95-bound Figure 7 literal-standing group, and the current-head
+  crown-impact continuation group only through the browser composer and record their GitHub
   URLs. Keep both visible-outcome observations manual-only, label continuation
   non-strict, and preserve the separate step-142 strict impact blocker.
-  Use `assets/pr_media_current_head_67073/` as the retained five minimum
-  Figures 1-5 source-row upload source. Keep the older `c95bd5fb916` small-row
+  Use `assets/pr_media_current_head_67073/` as the retained current-head
+  source-row and verified long-row upload source. Keep the older `c95bd5fb916` small-row
   reseal only for the four supplemental reconstructed Figure 4 proxy
   comparisons and historical diagnostics; produce
   long-scene sidecars/media only when their solver/outcome gates pass.

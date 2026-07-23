@@ -25,8 +25,8 @@ AGENT_CONTINUATION.md as the authoritative truth ledger.
 Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  implementation checkpoint 67073f4f575
-  docs checkpoint 967e961421c was published before the latest evidence sync
+  inspected published branch checkpoint 8ad9961e56c
+  docs checkpoint fcafedbd17d precedes the Figure 8 finalizer
   backspin source-contract CI fix c0364afd390
   target 6a1d377f616 is an ancestor; verify again before the next push
   topic HEAD/divergence/PR/CI/review state must be verified live
@@ -40,12 +40,14 @@ release-6.20, unless the topic history is explicitly rewritten first. Do not
 use a merge commit or rebase merge.
 
 The role-based task ignore keeps generated evidence out of Git. Ignored
-`assets/pr_upload_3377/` stages 16 independently audited H.264/yuv420p MP4s and
-`SHA256SUMS`; all browser-composer uploads and resulting user-attachment URLs
-remain pending. The intentional P3 checker PPM is a runtime input, not generated
-evidence. Keep all generated task evidence under an `assets/` output root; do
-not replace that contract with global extension ignores that can hide runtime
-inputs.
+`assets/pr_upload_3377/` contains 16 H.264/yuv420p MP4s and `SHA256SUMS`.
+Slots 06/07 now contain the current-head Figure 6 and Figure 7 groups, slot 15
+is byte-identical to the current-head five-level group, and `sha256sum -c`
+passes all 16 entries. All browser-composer uploads and resulting
+user-attachment URLs remain pending. The intentional P3 checker PPM is a
+runtime input, not generated evidence. Keep all generated task evidence under
+an `assets/` output root; do not replace that contract with global extension
+ignores that can hide runtime inputs.
 
 Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
 Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
@@ -72,11 +74,12 @@ External truth:
   not a historical paper invocation or DART parity evidence.
 - Separate strict and source-continuation DART adapters now bind the current
   public no-argument five-level card-house default. Strict fails before
-  release after completed step 31; final exact-with-continuation and boxed
-  members complete 3,200/3,200 and their policy-labeled group-v3 clip fully
+  release after completed step 31; historical v3 exact-with-continuation and
+  boxed members complete 3,200/3,200 and their policy-labeled group fully
   decodes. This is not strict success, a solver-only A/B, superiority, or
-  historical/paper parity evidence. Upload only group-v3 through the PR
-  browser composer; v1/v2 are superseded framing probes.
+  historical/paper parity evidence. Retain v3 as historical evidence and
+  upload only the byte-identical current-head v2 group owned by
+  PAPER_DEMO_VIDEO_MATRIX.md; v1/v2 are superseded framing probes.
 - A separate source-pinned 101-stone DART adapter now runs the current
   source-supported 400-frame no-release schedule. Exact stops at step 209 on an
   iteration cap; boxed completes but collapses. This is precise current-DART
@@ -127,9 +130,9 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- PR #3377 remains open and draft. Its implementation checkpoint is
-  67073f4f575 and docs checkpoint 967e961421c was published before the latest
-  evidence sync. It targets 6a1d377f616. That base is an ancestor, so no merge
+- PR #3377 remains open and draft. Its inspected published branch checkpoint is
+  8ad9961e56c, after docs checkpoint fcafedbd17d. It targets 6a1d377f616. That
+  base is an ancestor, so no merge
   was needed. Checks and
   reviews remain mutable and must be queried live. It is not completion
   evidence.
@@ -161,14 +164,21 @@ PR truth:
   lanes, author turntable 2x2, and Painleve mu=.5 agreement / mu=.55
   exact-fallen versus boxed-upright observation. Keep every non-parity and
   no-superiority boundary.
-- Five-level implementation/media is bound to 0e3937e6294 and demo SHA-256
-  74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067.
-  This is historical capture identity. Its metadata points at the mutable
-  build path, which now resolves to a later binary, and current-head reuse also
-  fails the source-hash gate. Reuse validation is pending a stable
-  capture-binary archive or a current-head recapture/reseal. The older small-row
-  reseal remains separately bound to c95bd5fb916 and is superseded for the five
-  minimum source-row uploads.
+- The same current-head root now passes v2 capture and independent verification
+  for Figure 6, Figure 7, and supplemental source-default five-level exact and
+  boxed members plus all three synchronized groups. All six members bind the
+  current demo and broad-source identities and pass exact live/sidecar equality.
+  PAPER_DEMO_VIDEO_MATRIX.md owns the full paths and hashes. Figure 6 and
+  five-level panels show more retained exact structure than boxed; Figure 7 is
+  nearly identical and standing. These are policy-asymmetric presentation
+  artifacts, not solver-only, strict, superiority, trajectory, backend, or
+  paper-parity evidence. Staging slots 06/07 are refreshed and hash-verified;
+  five-level slot 15 is byte-identical. The ten-level current-head recapture is
+  active but not finally verified. Checkpoint 8ad9961e56c adds the standalone
+  fail-closed Figure 8
+  failed-prefix finalizer, but no current-head Figure 8 bundle has completed
+  finalize/seal/verify. The older small-row reseal remains separately bound to
+  c95bd5fb916 and is superseded for the five minimum source-row uploads.
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
 
@@ -307,11 +317,13 @@ Current literal-arch visual truth:
   Fig. 7 parity result. The separate crown-impact adapter remains blocked at
   strict step 142. Upload remains pending through the PR browser composer.
 
-Current source-continuation crown-impact truth:
+Historical c95 source-continuation crown-impact truth:
 
 - Implementation checkpoint 34d9b66e97c adds a separately named bounded
-  continuation schedule; its ignored root is
+  continuation schedule; its historical ignored root is
   assets/pr_media_current_head_fig07_crown_continuation/.
+- The current-head v2 capture owned by PAPER_DEMO_VIDEO_MATRIX.md supersedes
+  this c95 root as the upload source.
 - The paired run and independent reuse verification pass. Their SHA-256 values
   are f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f
   and 969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3;
@@ -330,8 +342,10 @@ Current source-continuation crown-impact truth:
   continuation evidence only, not strict convergence, superiority, physical
   outcome, source/paper trajectory or Figure 7 parity, timing, or backend
   evidence. It does not clear the strict step-142 blocker.
-- Upload the group clip through the GitHub browser composer and record its
-  user-attachment URL; do not commit the generated bundle.
+- Preserve this c95 group as historical evidence. Upload only the current-head
+  v2 group owned by PAPER_DEMO_VIDEO_MATRIX.md through the GitHub browser
+  composer and record its user-attachment URL; do not commit the generated
+  bundle.
 
 - Keep the earlier trace-equivalent bundle at
   assets/paper_evidence/fig07_arch25_literal/ as distinct provenance.
@@ -728,13 +742,14 @@ Source-default five-level card-house truth:
   residual 9.022404720646783e-6 against tolerance 1e-6. Aggregate telemetry is
   248 attempts, 247 solves, one failure, zero accepted caps, and zero boxed
   fallbacks.
-- Final exact-with-continuation and boxed members both complete 3,200/3,200,
-  and both release actions succeed at step 1,600. Exact records 7,337/7,337
+- Historical v3 exact-with-continuation and boxed members both complete
+  3,200/3,200, and both release actions succeed at step 1,600. Exact records
+  7,337/7,337
   attempts/solves, zero failures/fallbacks, 2,245 plateau accepts, 836
   max-iteration accepts, zero shrink caps, 7,298 warm starts, 303,900 total
   iterations, 266 maximum and 248 final contacts, final residual
   1.2757511844995566e-7, and worst residual 0.6378480998790657.
-- Final ignored roots are
+- The historical v3 ignored roots are
   assets/pr_media_card5_source_default_exact_v3/,
   assets/pr_media_card5_source_default_boxed_v3/, and
   assets/pr_media_card5_source_default_group_v3/.
@@ -765,9 +780,11 @@ Source-default five-level card-house truth:
   timing parity, or paper parity. Automated semantic-outcome validation stays
   false.
 - Preserve v1/v2 only as superseded framing probes and never upload them.
-  Upload only final group-v3 through the PR browser composer and record the
-  user-attachment URL; none exists. It is the sixth supplemental clip and does
-  not change the six formally finalized visual-bundle count.
+  Retain v3 as historical evidence. Upload only the byte-identical
+  current-head v2 group owned by PAPER_DEMO_VIDEO_MATRIX.md through the PR
+  browser composer and record the user-attachment URL; none exists. It is the
+  sixth supplemental clip and does not change the six formally finalized
+  visual-bundle count.
 
 Current-source four-level Figure 6 adapter truth:
 
@@ -982,9 +999,9 @@ Source-continuation Figure 6 capture truth:
   map the DART lanes to paper lanes or infer a mechanism. This is not
   quantitative trajectory/outcome parity, an approved golden, source-backend
   equivalence, timing evidence, solver superiority, or paper parity.
-- Ignored durable bundle:
+- Historical v1 ignored durable bundle:
   assets/paper_evidence/fig06_card_house_source_continuation_current_v1/.
-  Current-contract reseal source:
+  Historical current-contract reseal source:
   /tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/.
   Summary SHA-256:
   6888f4729c99d41753c9c8ec9a1ec2ec9e2367c71da76aab973f8f8c5e8674cc.
@@ -997,8 +1014,10 @@ Source-continuation Figure 6 capture truth:
 - Fresh official-video SHA-256 is
   d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794,
   exactly the audited value.
-- Generated capture assets stay outside Git. The clip is only a local
-  attachment candidate until its GitHub user-attachment URL is recorded.
+- Generated capture assets stay outside Git. Preserve this v1 clip as
+  historical evidence. The current-head v2 group owned by
+  PAPER_DEMO_VIDEO_MATRIX.md is the upload source and has no GitHub
+  user-attachment URL yet.
 - This is source-continuation evidence, not strict convergence. Preserve the
   strict step-35 negative unchanged.
 
@@ -1504,14 +1523,12 @@ Latest recorded focused gates:
 - colored `ConstraintSolver` filter: 3/3 passed, comprising the two
   `ExactCoulombColored*` tests and the existing default-off/copy test;
 - source-default five-level demo/test build passed and both focused strict and
-  continuation fixtures pass. The historical capture binary at checkpoint
-  `0e3937e6294` had SHA-256
-  `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`;
-  current-head media reuse is pending recapture/reseal or a stable archive of
-  that binary. V2 semantic provenance now separates one broad implementation
-  identity, but full source/binary gates remain mandatory; archive and rebind
-  the exact `0e3937e6294` binary or recapture at current head, then rerun exact,
-  boxed, and group reuse verification before calling current reuse green;
+  continuation fixtures pass. Current-head v2 capture and independent
+  verification now also pass for exact, boxed, and their synchronized group
+  under `assets/pr_media_current_head_67073/`. Both member records retain the
+  full source/binary gates and exact live/sidecar equality. The older
+  `0e3937e6294` v1 capture remains historical; the video matrix owns the current
+  paths and hashes;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
@@ -1562,7 +1579,9 @@ Immediate order:
    replay, and manual inspection; upload its two exact-vs-boxed clips only
    through the PR browser composer and record the resulting URLs. Upload the
    101-stone hstack, if selected, only as a frozen-prefix blocker with no
-   superiority/parity claim and record its URL. The
+   superiority/parity claim and record its URL. Use the `8ad9961e56c`
+   standalone finalizer for the next current-head Figure 8 seal; the committed
+   tool is not itself a sealed bundle. The
    source-selected four-level card
    adapter's completed-step-35 exact failure is precisely characterized but
    not corrected. Continue one-factor-at-a-time strict work without changing
@@ -1572,10 +1591,11 @@ Immediate order:
    checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Preserve
    the independently reverified ten-level exact and boxed continuation members
    and their same-binary presentation-only labeled pair. Keep the superseded
-   interrupted step-112 boxed run and partial frames as non-evidence. Preserve
-   the source-default five-level exact-v3, boxed-v3, and labeled group-v3 roots
-   plus the strict completed-step-31 failure. Keep v1/v2 as superseded framing
-   probes and never upload them. Add only group-v3 to the browser handoff as
+   interrupted step-112 boxed run and partial frames as non-evidence. Finish
+   and independently verify the active current-head ten-level recapture before
+   replacing its historical c95 upload identity. Preserve the historical
+   source-default five-level v3 roots plus the strict completed-step-31
+   failure. Use the byte-identical current-head group in the browser handoff as
    the sixth supplemental clip, preserve both policy labels and all claim
    boundaries, and record its user-attachment URL after browser-composer
    upload. The
@@ -1590,7 +1610,8 @@ Immediate order:
    either without a new source-backed preregistered mismatch, promote colored
    ordering to the default, or ship the detached global patch, and do not
    loosen tolerance or caps. Use `assets/pr_media_current_head_67073/` as the
-   retained five minimum Figures 1-5 source-row upload source. Keep the ignored
+   retained current-head source-row and verified long-row upload source. Keep
+   the ignored
    c95-bound c95bd5fb916 reseal only for the four supplemental reconstructed
    Figure 4 proxy comparisons and historical diagnostics. Upload any
    final labeled pair only through the PR browser composer and

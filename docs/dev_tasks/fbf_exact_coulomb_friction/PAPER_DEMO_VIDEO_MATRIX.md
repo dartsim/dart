@@ -42,6 +42,41 @@ and have exact live/sidecar contract matches. All six intended upload hashes
 including the Figure 3 supplement are byte-identical to the audited staging
 copies. Browser upload remains pending.
 
+The same ignored root now contains current-head v2 reseals for the Figure 6
+and Figure 7 continuation pairs and the supplemental source-default five-level
+pair. Capture and independent verification pass for all six members and all
+three synchronized groups. Every member uses schema v2, binds demo SHA-256
+`69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`
+and broad-source SHA-256
+`e2cc2351a3043ec8301677d990adfe2c7da2b9762499b19bd81c5e3be1559337`,
+and has exact canonical live/sidecar contract equality. Group provenance is
+transitive through the bound member metadata; the group records do not claim
+their own live/sidecar scene-contract query.
+
+| Current-head row | Run summary | Independent verification | Synchronized group |
+| --- | --- | --- | --- |
+| Figure 6 source continuation | `assets/pr_media_current_head_67073/fig06_current_head_run_summary.json`, SHA-256 `cac41831322fcc58fcd9be405c7f7b15de45f88c21ca12a8e0f1007483bebfbd` | `assets/pr_media_current_head_67073/fig06_current_head_verify_summary.json`, SHA-256 `88890d3efba87432836ec9854a7415c8a7b2c07ba506adda1bac9aa3744360ef` | `assets/pr_media_current_head_67073/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4`, SHA-256 `7e87661d4b3bf34cdae192af069f159ead8407b4408b42cc6d15788ab6683b9e` |
+| Figure 7 crown continuation | `assets/pr_media_current_head_67073/fig07_current_head_run_summary.json`, SHA-256 `ad1684d2c9917da6905a96b981ecdd8b50174b175f6af567127d6fa861c25e36` | `assets/pr_media_current_head_67073/fig07_current_head_verify_summary.json`, SHA-256 `fd0e0bef586425358d5613764c7878054e6895aee9b13de4310ad3b1edc96ec8` | `assets/pr_media_current_head_67073/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4`, SHA-256 `9a9a68229faeb1958cb8ed0449387ca310b0f41e692434ed58bcd39988792177` |
+| Supplemental source-default five-level card house | `assets/pr_media_current_head_67073/card5_current_head_run_summary.json`, SHA-256 `155479cb42ddb90472b4816e9b65a63a788d78f5deeee78a6f219b2964130a65` | `assets/pr_media_current_head_67073/card5_current_head_verify_summary.json`, SHA-256 `22ba0e733695c1759dee8338d9d58e41975d0af02ed9be5796ede703baff918f` | `assets/pr_media_current_head_67073/groups/card_house_author_5_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4`, SHA-256 `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
+
+Manual endpoint panels show more retained multi-level structure in Figure 6
+exact than boxed, nearly identical standing arches in Figure 7, and retained
+upright multi-level structure in the five-level exact lane versus a collapsed
+boxed endpoint. These are presentation-only observations: each exact lane
+requests source continuation while boxed does not, automated semantic outcome
+validation remains false, and no solver-only, strict-convergence, superiority,
+source-backend, trajectory, or paper-parity claim follows. The ten-level
+current-head recapture is active under the same root but has no final
+current-head capture/verification result yet.
+
+Checkpoint `8ad9961e56c` adds the standalone fail-closed Figure 8 failed-prefix
+finalizer and verifier. It owns the expected strict failure after completed
+step 209, freezes imagery only after the last rendered step 208, and requires a
+complete boxed member plus an explicit manual seal. No current-head Figure 8
+bundle has completed finalize/seal/verify yet, so the historical v1
+frozen-prefix diagnostic remains the only local attachment candidate and must
+not be called current-head v2 evidence.
+
 ## Completion Rule
 
 A row is complete only when all of the following are true:
@@ -309,8 +344,8 @@ are duplicates; boxed has 401. Exact records 7,337/7,337 attempts/solves, zero
 failures/fallbacks, 2,245 plateau accepts, 836 max-iteration accepts, zero
 shrink-cap accepts, 7,298 warm starts, and 303,900 iterations. Its final/worst
 residuals are `1.2757511844995566e-7` / `0.6378480998790657`, with 266 maximum
-and 248 final contacts. Independent exact and boxed reuse audits pass; their
-summary SHA-256 values are
+and 248 final contacts. The historical v3 exact and boxed reuse audits pass;
+their summary SHA-256 values are
 `1b7c42c0836aa17fd55f952e6335167a5786d37e54236f9088fa5d1a6a1885fd`
 and `078212b68ae07e234c94b2537d41158cd5c944492e930de7e1fc2b329f5a6453`.
 The boxed audit measures all-frame right/bottom margins of at least 40/30 px
@@ -325,7 +360,7 @@ Boxed values are
 `319747d1a24a8a735ab4b4485b44a39905e3f6d40fe00257f78ba9b9451fcaa7`,
 and `f77af90deac3f740d06ba0bec2eca17d837cf83974b253c35f3b76dbca35113e`.
 
-The ignored labeled candidate is
+The historical ignored labeled candidate is
 `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4`.
 Its labels are `EXACT COULOMB FBF + SOURCE CONTINUATION` and
 `EXISTING BOXED LCP (NO SOURCE CONTINUATION)`, so the policy asymmetry is
@@ -342,7 +377,9 @@ This clip is not strict success, a solver-only A/B, solver superiority, an
 automated semantic or physical outcome, source trajectory/backend/timing
 evidence, historical Tables 6-7 evidence, paper-video parity, or paper parity.
 The v1 and v2 captures are superseded framing probes and excluded. The v3
-assets remain ignored and the browser-upload URL is pending.
+assets remain ignored historical evidence. The current-head v2 group listed
+in the attachment table is byte-identical and is now the upload source; its
+browser-upload URL is pending.
 
 ## Current Local Attachment Candidates
 
@@ -377,14 +414,18 @@ claiming that a visible outcome is numerically or paper-valid.
 ### Browser-upload manifest
 
 An independent handoff audit verified the following 16 recommended files.
-Every file exists under ignored task assets, matches the listed SHA-256, probes
-as H.264/yuv420p at 30 fps, and passes a complete `ffmpeg -xerror` decode. None
-is tracked. The first nine clips are the minimum one-per-source-row set; the
-last seven retain promised direct comparisons that the minimum set would hide.
-Ignored `assets/pr_upload_3377/` contains independently audited staging copies
-of all 16 MP4s plus `SHA256SUMS`. Every browser-composer upload and resulting
-GitHub user-attachment URL remains pending. Upload order does not change any
-row's scientific status.
+Ignored `assets/pr_upload_3377/` now contains the current-head Figure 6 and
+Figure 7 groups in staging slots 06 and 07 with SHA-256 values
+`7e87661d4b3bf34cdae192af069f159ead8407b4408b42cc6d15788ab6683b9e`
+and `9a9a68229faeb1958cb8ed0449387ca310b0f41e692434ed58bcd39988792177`.
+Slot 15 remains byte-identical to the current-head five-level group, and the
+updated `SHA256SUMS` passes `sha256sum -c` for all 16 H.264/yuv420p MP4 staging
+copies. The ten-level recapture and Figure 8 standalone finalization remain
+pending, so their audited entries stay explicitly historical. None of the
+files is tracked. The first nine clips are the minimum one-per-source-row set;
+the last seven retain promised direct comparisons that the minimum set would
+hide. Every browser-composer upload and resulting GitHub user-attachment URL
+remains pending. Upload order does not change any row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
 | --- | --- | --- | --- |
@@ -393,16 +434,16 @@ row's scientific status.
 | Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_67073/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
 | Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_67073/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
 | Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_67073/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
-| Minimum | Fig. 6 source continuation exact vs boxed | `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
-| Minimum | Fig. 7 crown continuation exact vs boxed | `assets/pr_media_current_head_fig07_crown_continuation/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8` |
-| Minimum | Fig. 8 frozen-prefix diagnostic | `assets/paper_evidence/fig08_arch101_author_current_v1/groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4` | `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94` |
-| Minimum | Tables 6-7 same-binary qualitative continuation-policy pair | `assets/pr_media_current_head_c95_card10_same_binary_exact_v2/groups/card_house_author_10_impact_source_continuation_current_source__exact_vs_boxed_same_binary_qualitative/clip.mp4` | `d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2` |
+| Minimum | Fig. 6 current-head source continuation exact vs boxed | `assets/pr_media_current_head_67073/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `7e87661d4b3bf34cdae192af069f159ead8407b4408b42cc6d15788ab6683b9e` |
+| Minimum | Fig. 7 current-head crown continuation exact vs boxed | `assets/pr_media_current_head_67073/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `9a9a68229faeb1958cb8ed0449387ca310b0f41e692434ed58bcd39988792177` |
+| Minimum | Fig. 8 historical v1 frozen-prefix diagnostic; current-head finalization pending | `assets/paper_evidence/fig08_arch101_author_current_v1/groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4` | `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94` |
+| Minimum | Tables 6-7 historical c95 qualitative continuation-policy pair; current-head recapture active | `assets/pr_media_current_head_c95_card10_same_binary_exact_v2/groups/card_house_author_10_impact_source_continuation_current_source__exact_vs_boxed_same_binary_qualitative/clip.mp4` | `d09d8a4b6c962eef84620f5fc4aebd709c8631f4c274a302217c56e9163547b2` |
 | Supplemental | Fig. 4 proxy `mu=.2, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega2__exact_vs_boxed/clip.mp4` | `56f2a7ee598dffd6716cdf4a7b6b8560e7587ec9bc871f74d0d6e28c4d00daf3` |
 | Supplemental | Fig. 4 proxy `mu=.2, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu02_omega5__exact_vs_boxed/clip.mp4` | `2cab4896f79a116949e360871ac319b6193849fd04ad7bf1bfd43cdec16814e3` |
 | Supplemental | Fig. 4 proxy `mu=.5, omega=2` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega2__exact_vs_boxed/clip.mp4` | `5d16450c622dd21ae1144ce66df3c04419f0bf88448fe3ccd32f90f170fc6b62` |
 | Supplemental | Fig. 4 proxy `mu=.5, omega=5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/turntable_mu05_omega5__exact_vs_boxed/clip.mp4` | `83bd9494cca0968fd18b23a68d02c9bc19d66e4b7559cb3f893b6b3891229ad8` |
 | Supplemental | Fig. 7 literal-standing baseline exact vs boxed | `assets/pr_media_current_head_fig07/groups/masonry_arch_25_literal_standing__exact_vs_boxed/clip.mp4` | `89c4d7372f68c6c9ad1a5d0e0e0388ffa1f198c2446e04fe30b9bc66325d8f9e` |
-| Supplemental | Non-paper five-level source-default exact-with-continuation vs boxed-without-continuation | `assets/pr_media_card5_source_default_group_v3/card_house_author_5_impact_source_continuation_current_source__exact_plus_continuation_vs_boxed_no_continuation/clip.mp4` | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
+| Supplemental | Non-paper five-level current-head source-default exact-with-continuation vs boxed-without-continuation | `assets/pr_media_current_head_67073/groups/card_house_author_5_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `b46aeb3d9f09e95151e26fef4838432b6b071a5d3c39c3c9a489c6f1d42e875b` |
 | Supplemental | Fig. 3 source-pinned checker backspin exact vs boxed | `assets/pr_media_current_head_67073/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4` | `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b` |
 
 The mandatory caption boundaries remain: Figure 3's checker is a visual-only
@@ -417,6 +458,8 @@ manifest remains a browser-composer handoff rather than published PR media.
 
 ### Figure 6: source-continuation card house
 
+The current-head v2 Figure 6 capture and verification identities are listed in
+the table above and supersede the older bundle below as the upload source.
 The local exact/boxed pair uses the same 26-card/four-cube scene, 2,400-step
 clock, and successful step-1,600 `p` release. It is a continuation-policy review
 artifact and does not satisfy the strict zero-accept rule above. The 301-frame
@@ -424,11 +467,11 @@ paired H.264/yuv420p clip is 1320x530, 30 fps, 10.033333 s, and passes full
 decode. The summary records `paper_comparable=false` and no automated
 semantic-outcome validation.
 
-- Ignored durable bundle:
+- Historical ignored durable bundle:
   `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/`
   (resealed from
   `/tmp/fbf_fig6_source_continuation_pair_20260721T1414_v2/`).
-- Direct comparison candidate:
+- Historical direct comparison:
   `groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4`,
   SHA-256
   `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786`.
@@ -448,7 +491,11 @@ Git until uploaded through the PR editor.
 
 ### Tables 6-7: ten-level same-binary continuation-policy presentation pair
 
-The exact member is locally resealed and independently reverified. The
+The current-head ten-level recapture is active under
+`assets/pr_media_current_head_67073/`, but no final current-head capture or
+independent-verification result is recorded yet. The c95-bound evidence below
+therefore remains the historical local attachment identity. Its exact member
+is locally resealed and independently reverified. The
 separately named continuation schedule passes all 3,200 steps and the
 step-1,600 release with 7,702/7,702 exact solves, zero
 failures/fallbacks, 2,427 plateau accepts, 763 max-iteration accepts, zero
@@ -550,7 +597,9 @@ the PR browser composer and record the resulting URL; do not commit the bundle.
 ### Figure 7: c95-bound crown-impact continuation pair
 
 Checkpoint `34d9b66e97c` adds a separately named bounded continuation schedule.
-The ignored root is `assets/pr_media_current_head_fig07_crown_continuation/`.
+The current-head v2 capture and verification identities listed above supersede
+the following c95-bound root as the upload source. The historical ignored root
+is `assets/pr_media_current_head_fig07_crown_continuation/`.
 Paired capture and independent reuse verification pass; their SHA-256 values
 are `f0e45526d648d7c8d6052c3a4f32ec47a29033e4ed687b89fecc52c1ce04396f`
 and `969ef6143185716e8441704829d4643a1d804fc5580288dae28fe47257fce0f3`,
@@ -574,6 +623,14 @@ through the GitHub browser composer, record its URL, and keep the bundle out
 of Git.
 
 ### Figure 8: source-pinned 101-stone standing blocker
+
+Checkpoint `8ad9961e56c` adds a standalone finalizer with distinct
+`finalize`, `seal`, and reuse-only `verify` phases for this expected-failure
+comparison. It requires the strict failure after completed step 209, binds the
+last rendered exact frame at step 208, labels and freezes only the remaining
+exact display interval, and compares it with the complete boxed capture. No
+current-head bundle has completed all three phases, so the packet below remains
+historical v1 evidence rather than a current-head sealed result.
 
 The ignored packet is
 `assets/paper_evidence/fig08_arch101_author_current_v1/`. It binds the public
