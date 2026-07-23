@@ -1529,10 +1529,11 @@ def _validate_visual_only_source() -> dict[str, Any]:
     scene_end = source.index("//================================", scene_start)
     scene = source[scene_start:scene_end]
     required_helper_fragments = (
+        "void addBackspinCheckerTexture(BodyNode* body, double radius)",
         '"dart://sample/obj/fbf_backspin_checker_sphere.obj"',
         "DartResourceRetriever::create()",
         "MeshShape::loadMesh(meshUri, retriever)",
-        "Eigen::Vector3d::Constant(kBackspinRadius)",
+        "Eigen::Vector3d::Constant(radius)",
         "createShapeNodeWith<VisualAspect>(checker)",
     )
     if any(fragment not in helper for fragment in required_helper_fragments):
@@ -1543,7 +1544,7 @@ def _validate_visual_only_source() -> dict[str, Any]:
     if physical_node not in sphere or "VisualAspect>(shape)" in sphere:
         raise ValueError("backspin physical sphere aspect contract changed")
     inertia = "setShapeInertia(body, shape);"
-    call = "addBackspinCheckerTexture(body);"
+    call = "addBackspinCheckerTexture(body, kBackspinRadius);"
     if (
         inertia not in sphere
         or call not in sphere
