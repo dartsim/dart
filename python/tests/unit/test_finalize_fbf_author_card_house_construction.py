@@ -599,6 +599,38 @@ def test_capture_bundle_accepts_exact_step_zero_fixture(tmp_path):
     assert summary["panel"]["strict_nonblank_contrast_verdict"]["pass"]
 
 
+def test_capture_bundle_accepts_v2_semantic_provenance_metadata(tmp_path):
+    module = _load_module()
+    demo, verification = _capture_fixture(module, tmp_path)
+    metadata_path = tmp_path / module.CAPTURE_DIR / "metadata.json"
+    metadata = module.read_json(metadata_path)
+    metadata["schema_version"] = module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION
+    contract = module.read_json(tmp_path / "contract.json")
+    provenance = module.build_semantic_physics_provenance(contract)
+    metadata["runtime"]["scene_physics_provenance"] = {
+        "schema_version": module.SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+        "contract_schema_version": provenance.schema_version,
+        "family": provenance.family,
+        "query_argv": module._runner_contract_argv(demo),
+        "contract_sha256": module._payload_sha256(contract),
+        "semantic_physics_sha256": provenance.semantic_sha256,
+        "broad_implementation_sha256": (provenance.broad_implementation_sha256),
+        "sidecar_contract_match": True,
+    }
+    module.write_json(metadata_path, metadata)
+
+    run_summary = module.read_json(tmp_path / "run-summary.json")
+    run_summary["results"] = [metadata]
+    module.write_json(tmp_path / "run-summary.json", run_summary)
+    verification["results"][0]["metadata_sha256"] = module.sha256(metadata_path)
+
+    summary = module.validate_capture_bundle(
+        tmp_path, demo=demo, verification=verification
+    )
+
+    assert summary["capture_step"] == 0
+
+
 def test_pruned_capture_uses_durable_still_and_rejects_missing_or_tampered(
     tmp_path,
 ):

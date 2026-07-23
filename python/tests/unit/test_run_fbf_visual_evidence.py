@@ -40,6 +40,25 @@ def _test_schedule(module, *, action=False, exact_required=False):
     )
 
 
+def _literal_physics_contract(*, lane="exact_fbf"):
+    return {
+        "schema_version": "dart.fbf_literal_masonry_arch_physics_contract/v1",
+        "kind": "physics_control",
+        "source_binding": {
+            "spec_sha256": "1" * 64,
+            "implementation_sha256": "2" * 64,
+            "geometry_sha256": "3" * 64,
+            "solver_options_sha256": "4" * 64,
+        },
+        "solver": {
+            "lane": lane,
+            "fallback_to_boxed_lcp_enabled": lane == "boxed_lcp",
+            "gravity_m_s2": -9.81,
+        },
+        "claim_boundary": {"paper_parity": False},
+    }
+
+
 def _write_frames(module, schedule, output_dir):
     sys.path.insert(0, str(ROOT / "scripts"))
     from _image_tools import write_png
@@ -47,15 +66,12 @@ def _write_frames(module, schedule, output_dir):
     for step in schedule.capture_steps:
         path = module._frame_path(output_dir, step)
         pixels = bytearray(
-            [20 + step, 40 + step, 60 + step]
-            * (schedule.width * schedule.height)
+            [20 + step, 40 + step, 60 + step] * (schedule.width * schedule.height)
         )
         pixels[0:3] = bytes((200 - step, 100 + step, 30 + step))
         viewport_row = min(100, schedule.height - 1)
         viewport_column = min(270, schedule.width - 1)
-        viewport_pixel = (
-            viewport_row * schedule.width + viewport_column
-        ) * 3
+        viewport_pixel = (viewport_row * schedule.width + viewport_column) * 3
         pixels[viewport_pixel : viewport_pixel + 3] = bytes(
             (180 - step, 90 + step, 20 + step)
         )
@@ -2140,6 +2156,230 @@ def test_boxed_schedule_command_and_plan_bind_pre_run_toggle(tmp_path):
     assert plan["comparison_capture"] is True
     assert plan["evidence_ready"] is False
     assert plan["output"]["directory"].endswith("backspin__boxed")
+
+
+def test_scene_physics_contract_query_replays_initial_capture_controls():
+    module = _load_module()
+    schedule = dataclasses.replace(
+        _test_schedule(module),
+        scene="contract_scene",
+        threads=3,
+        pre_run_actions=("e", "p"),
+    )
+
+    assert module.build_scene_physics_contract_query_command(
+        schedule, Path("dart-demos")
+    ) == [
+        "dart-demos",
+        "--collision-detector",
+        "dart",
+        "--threads",
+        "3",
+        "--scene-physics-contract",
+        "contract_scene",
+        "--headless-action",
+        "e",
+        "--headless-action",
+        "p",
+    ]
+
+
+def test_scene_physics_provenance_binds_live_contract_and_semantic_digest(
+    monkeypatch,
+):
+    module = _load_module()
+    schedule = dataclasses.replace(_test_schedule(module), pre_run_actions=("e",))
+    contract = _literal_physics_contract(lane="boxed_lcp")
+
+    def query(argv, **kwargs):
+        assert argv == module.build_scene_physics_contract_query_command(
+            schedule, Path("dart-demos")
+        )
+        assert kwargs == {"cwd": module.ROOT, "capture_output": True}
+        return module.subprocess.CompletedProcess(
+            argv,
+            returncode=0,
+            stdout=json.dumps(contract),
+            stderr="",
+        )
+
+    monkeypatch.setattr(module, "_run", query)
+    binding = module._query_scene_physics_provenance(
+        schedule,
+        Path("dart-demos"),
+        expected_contract=contract,
+    )
+
+    assert binding["schema_version"] == (module.SEMANTIC_PROVENANCE_SCHEMA_VERSION)
+    assert binding["family"] == "literal_masonry_arch"
+    assert binding["contract_schema_version"] == contract["schema_version"]
+    assert binding["broad_implementation_sha256"] == "2" * 64
+    assert len(binding["contract_sha256"]) == 64
+    assert len(binding["semantic_physics_sha256"]) == 64
+    assert binding["sidecar_contract_match"] is True
+
+
+@pytest.mark.parametrize(
+    ("stdout", "message"),
+    (("not-json", "invalid JSON"), ("[]", "must return an object")),
+)
+def test_scene_physics_provenance_rejects_malformed_query_output(
+    monkeypatch, stdout, message
+):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda argv, **_kwargs: module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout=stdout, stderr=""
+        ),
+    )
+
+    with pytest.raises(ValueError, match=message):
+        module._query_scene_physics_provenance(
+            schedule,
+            Path("dart-demos"),
+            expected_contract=_literal_physics_contract(),
+        )
+
+
+def test_scene_physics_provenance_rejects_live_sidecar_drift(monkeypatch):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    live = _literal_physics_contract()
+    expected = json.loads(json.dumps(live))
+    expected["solver"]["lane"] = "boxed_lcp"
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda argv, **_kwargs: module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout=json.dumps(live), stderr=""
+        ),
+    )
+
+    with pytest.raises(ValueError, match="differs from the sidecar"):
+        module._query_scene_physics_provenance(
+            schedule,
+            Path("dart-demos"),
+            expected_contract=expected,
+        )
+
+
+def test_scene_physics_provenance_rejects_tolerance_close_numeric_drift(
+    monkeypatch,
+):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    live = _literal_physics_contract()
+    expected = json.loads(json.dumps(live))
+    expected["solver"]["gravity_m_s2"] = -9.810000000005
+    assert module._contract_value_matches(live, expected) is True
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda argv, **_kwargs: module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout=json.dumps(live), stderr=""
+        ),
+    )
+
+    with pytest.raises(ValueError, match="differs from the sidecar"):
+        module._query_scene_physics_provenance(
+            schedule,
+            Path("dart-demos"),
+            expected_contract=expected,
+        )
+
+
+def test_v2_scene_physics_provenance_is_required_and_revalidated(monkeypatch):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    contract = _literal_physics_contract()
+    completed = module.subprocess.CompletedProcess(
+        [], returncode=0, stdout=json.dumps(contract), stderr=""
+    )
+    monkeypatch.setattr(module, "_run", lambda *_args, **_kwargs: completed)
+    binding = module._query_scene_physics_provenance(
+        schedule,
+        Path("dart-demos"),
+        expected_contract=contract,
+    )
+    metadata_path = Path("metadata.json")
+
+    module._validate_scene_physics_provenance_binding(
+        schedule,
+        Path("dart-demos"),
+        capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+        runtime={"scene_physics_provenance": binding},
+        sidecar_contract=contract,
+        metadata_path=metadata_path,
+    )
+    with pytest.raises(ValueError, match="binding is missing"):
+        module._validate_scene_physics_provenance_binding(
+            schedule,
+            Path("dart-demos"),
+            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={},
+            sidecar_contract=contract,
+            metadata_path=metadata_path,
+        )
+
+    changed = dict(binding)
+    changed["semantic_physics_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="binding changed"):
+        module._validate_scene_physics_provenance_binding(
+            schedule,
+            Path("dart-demos"),
+            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={"scene_physics_provenance": changed},
+            sidecar_contract=contract,
+            metadata_path=metadata_path,
+        )
+
+
+def test_v1_capture_without_scene_physics_provenance_remains_legacy(monkeypatch):
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda *_args, **_kwargs: pytest.fail("legacy absence must not run a query"),
+    )
+
+    module._validate_scene_physics_provenance_binding(
+        _test_schedule(module),
+        Path("dart-demos"),
+        capture_schema_version=module.SCHEMA_VERSION,
+        runtime={},
+        sidecar_contract=_literal_physics_contract(),
+        metadata_path=Path("metadata.json"),
+    )
+
+
+def test_capture_rejects_demo_binary_replacement(tmp_path, monkeypatch):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    demo = tmp_path / "dart-demos"
+    ffmpeg = tmp_path / "ffmpeg"
+    ffprobe = tmp_path / "ffprobe"
+    python = tmp_path / "python"
+    for executable in (demo, ffmpeg, ffprobe, python):
+        executable.write_bytes(b"executable-v1")
+
+    def replace_demo(_argv, **_kwargs):
+        demo.write_bytes(b"executable-v2")
+        return module.subprocess.CompletedProcess([], returncode=0)
+
+    monkeypatch.setattr(module, "_run", replace_demo)
+    with pytest.raises(ValueError, match="demo binary changed during capture"):
+        module.run_schedule(
+            schedule,
+            demo=demo,
+            output_root=tmp_path / "captures",
+            ffmpeg=ffmpeg,
+            ffprobe=ffprobe,
+            python=python,
+            allow_long=False,
+        )
 
 
 def test_fail_fast_flag_is_routed_only_to_required_exact_schedules(tmp_path):

@@ -31,6 +31,15 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from fbf_scene_provenance import (  # noqa: E402
+    SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+    build_semantic_physics_provenance,
+)
+
 BUILD_RUNTIME_ROOT = ROOT / "build/default/cpp/Release"
 DEFAULT_BUNDLE = (
     ROOT
@@ -86,6 +95,11 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_turntable_manual_inspection/v1"
 TRACE_SUMMARY_SCHEMA_VERSION = "dart.fbf_turntable_trace_summary/v1"
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_turntable_invocations/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
+    RUNNER_SCHEMA_VERSION,
+    RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+)
 
 TRACE_COLUMNS = (
     "step",
@@ -339,6 +353,49 @@ def _payload_sha256(payload: Any) -> str:
         allow_nan=False,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _expected_scene_physics_provenance(
+    contract: dict[str, Any], *, demo: Path, scene: str
+) -> dict[str, Any]:
+    provenance = build_semantic_physics_provenance(contract)
+    return {
+        "schema_version": SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+        "contract_schema_version": provenance.schema_version,
+        "family": provenance.family,
+        "query_argv": [
+            str(demo),
+            "--threads",
+            "1",
+            "--scene-physics-contract",
+            scene,
+        ],
+        "contract_sha256": _payload_sha256(contract),
+        "semantic_physics_sha256": provenance.semantic_sha256,
+        "broad_implementation_sha256": provenance.broad_implementation_sha256,
+        "sidecar_contract_match": True,
+    }
+
+
+def _validate_scene_physics_provenance(
+    *,
+    capture_schema_version: str,
+    runtime: dict[str, Any],
+    contract: dict[str, Any],
+    demo: Path,
+    scene: str,
+    capture_id: str,
+) -> None:
+    stored = runtime.get("scene_physics_provenance")
+    if (
+        capture_schema_version == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION
+        or stored is not None
+    ) and stored != _expected_scene_physics_provenance(
+        contract,
+        demo=demo,
+        scene=scene,
+    ):
+        raise ValueError(f"{capture_id}: semantic physics provenance changed")
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -1292,7 +1349,7 @@ def _validate_member_capture(
     member_root = root / capture_id
     metadata_path = member_root / "metadata.json"
     if (
-        metadata.get("schema_version") != RUNNER_SCHEMA_VERSION
+        metadata.get("schema_version") not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS
         or metadata.get("kind") != "capture_result"
         or metadata.get("pass") is not True
         or metadata.get("actual_simulator") is not True
@@ -1382,6 +1439,14 @@ def _validate_member_capture(
     sidecar_path = member_root / "timeline.json"
     sidecar_physics_contract = _validate_capture_sidecar_physics_contract(
         sidecar_path, demo=demo, scenario=scenario
+    )
+    _validate_scene_physics_provenance(
+        capture_schema_version=metadata["schema_version"],
+        runtime=runtime,
+        contract=sidecar_physics_contract,
+        demo=demo,
+        scene=contract["scene"],
+        capture_id=capture_id,
     )
     for step in FRAME_STEPS:
         _timeline_frame_record(

@@ -35,9 +35,19 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from _image_tools import ImageData, read_image  # noqa: E402
+from fbf_scene_provenance import (  # noqa: E402
+    SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+    SemanticProvenanceError,
+    build_semantic_physics_provenance,
+)
 from image_verdict import analyze_non_blank, build_verdict  # noqa: E402
 
 SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
+CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+CAPTURE_RESULT_SCHEMA_VERSIONS = (
+    SCHEMA_VERSION,
+    CAPTURE_RESULT_SCHEMA_VERSION,
+)
 SOURCE_AUDIT_SCHEMA_VERSION = "dart.fbf_visual_source_audit/v1"
 SIDECAR_SCHEMA_VERSION = "dart.demos_headless_timeline/v1"
 SOLVER_LANES = ("exact", "boxed")
@@ -2747,6 +2757,125 @@ def build_demo_command(
     return command
 
 
+def build_scene_physics_contract_query_command(
+    schedule: CaptureSchedule, demo: Path
+) -> list[str]:
+    """Build the no-render query matching a capture's initial physics state."""
+
+    if not schedule.runnable:
+        raise ValueError(f"{schedule.id}: {schedule.adapter_gap}")
+    command = [str(demo)]
+    if schedule.collision_detector_override:
+        command.extend(("--collision-detector", schedule.collision_detector))
+    command.extend(
+        (
+            "--threads",
+            str(schedule.threads),
+            "--scene-physics-contract",
+            schedule.scene,
+        )
+    )
+    for key in schedule.pre_run_actions:
+        command.extend(("--headless-action", key))
+    return command
+
+
+def _canonical_json_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _query_scene_physics_provenance(
+    schedule: CaptureSchedule,
+    demo: Path,
+    *,
+    expected_contract: dict[str, Any],
+) -> dict[str, Any]:
+    command = build_scene_physics_contract_query_command(schedule, demo)
+    try:
+        completed = _run(command, cwd=ROOT, capture_output=True)
+    except subprocess.CalledProcessError as error:
+        detail = (error.stderr or error.stdout or "").strip()
+        suffix = f": {detail}" if detail else ""
+        raise ValueError(
+            f"{schedule.id}: scene physics-contract query failed{suffix}"
+        ) from error
+
+    stdout = getattr(completed, "stdout", None)
+    if not isinstance(stdout, str) or not stdout.strip():
+        raise ValueError(
+            f"{schedule.id}: scene physics-contract query returned no JSON"
+        )
+    try:
+        contract = json.loads(stdout)
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            f"{schedule.id}: scene physics-contract query returned invalid JSON"
+        ) from error
+    if not isinstance(contract, dict):
+        raise ValueError(
+            f"{schedule.id}: scene physics-contract query must return an object"
+        )
+    if _canonical_json_sha256(contract) != _canonical_json_sha256(expected_contract):
+        raise ValueError(
+            f"{schedule.id}: live scene physics contract differs from the sidecar"
+        )
+    try:
+        provenance = build_semantic_physics_provenance(contract)
+    except SemanticProvenanceError as error:
+        raise ValueError(
+            f"{schedule.id}: unsupported scene physics-contract provenance: {error}"
+        ) from error
+    return {
+        "schema_version": SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+        "contract_schema_version": provenance.schema_version,
+        "family": provenance.family,
+        "query_argv": command,
+        "contract_sha256": _canonical_json_sha256(contract),
+        "semantic_physics_sha256": provenance.semantic_sha256,
+        "broad_implementation_sha256": (provenance.broad_implementation_sha256),
+        "sidecar_contract_match": True,
+    }
+
+
+def _validate_scene_physics_provenance_binding(
+    schedule: CaptureSchedule,
+    demo: Path,
+    *,
+    capture_schema_version: str,
+    runtime: dict[str, Any],
+    sidecar_contract: Any,
+    metadata_path: Path,
+) -> None:
+    stored = runtime.get("scene_physics_provenance")
+    required = capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+    if required and stored is None:
+        raise ValueError(
+            f"{metadata_path}: scene physics provenance binding is missing"
+        )
+    if stored is None:
+        return
+    if not isinstance(stored, dict):
+        raise ValueError(f"{metadata_path}: scene physics provenance is not an object")
+    if not isinstance(sidecar_contract, dict):
+        raise ValueError(
+            f"{metadata_path}: scene physics provenance has no sidecar contract"
+        )
+    current = _query_scene_physics_provenance(
+        schedule,
+        demo,
+        expected_contract=sidecar_contract,
+    )
+    if stored != current:
+        raise ValueError(f"{metadata_path}: scene physics provenance binding changed")
+
+
 def _shell_command(argv: Sequence[str]) -> str:
     return shlex.join(str(item) for item in argv)
 
@@ -3633,9 +3762,9 @@ def _validate_last_failure_diagnostics(
             raise ValueError(
                 f"{label}: last_failure colored-BGS colors exceed manifolds"
             )
-        minimum_width = (
-            colored["manifolds"] + colored["colors"] - 1
-        ) // colored["colors"]
+        minimum_width = (colored["manifolds"] + colored["colors"] - 1) // colored[
+            "colors"
+        ]
         maximum_width = colored["manifolds"] - colored["colors"] + 1
         if not minimum_width <= colored["max_manifolds_per_color"] <= maximum_width:
             raise ValueError(
@@ -3651,11 +3780,12 @@ def _validate_last_failure_diagnostics(
         colored["used"]
         or any(colored[name] != 0 for name in counter_fields)
         or any(
-            colored[name]
-            for name in ("logical_cpu_ids", "max_phase_logical_cpu_ids")
+            colored[name] for name in ("logical_cpu_ids", "max_phase_logical_cpu_ids")
         )
     ):
-        raise ValueError(f"{label}: disabled last_failure colored-BGS state is nonempty")
+        raise ValueError(
+            f"{label}: disabled last_failure colored-BGS state is nonempty"
+        )
     if colored["used"]:
         if (
             not colored["enabled"]
@@ -8826,10 +8956,8 @@ def validate_sidecar(
         raise ValueError(f"{sidecar_path}: exact FBF never attempted a contact group")
     colored_bgs_cumulative_solves = None
     if _is_author_card_house_colored_bgs_diagnostic_schedule(schedule):
-        colored_bgs_cumulative_solves = (
-            _require_author_card_house_colored_bgs_usage(
-                final_diagnostics, label=str(sidecar_path)
-            )
+        colored_bgs_cumulative_solves = _require_author_card_house_colored_bgs_usage(
+            final_diagnostics, label=str(sidecar_path)
         )
     return {
         "sidecar": str(sidecar_path),
@@ -9275,6 +9403,7 @@ def run_schedule(
 
     (output_dir / "frames").mkdir(exist_ok=True)
     command = build_demo_command(schedule, demo, output_dir)
+    demo_sha256_before_capture = _sha256(demo)
     visual_resources_before = _visual_resource_snapshot(schedule)
     try:
         _run(command, cwd=ROOT)
@@ -9304,24 +9433,48 @@ def run_schedule(
             f"{schedule.id}: {gate_label} triggered at completed step "
             f"{failure['completed_steps']}: {failure['reason']}"
         ) from error
+    demo_sha256_after_capture = _sha256(demo)
+    if demo_sha256_after_capture != demo_sha256_before_capture:
+        raise ValueError(f"{schedule.id}: demo binary changed during capture")
     visual_resources_after = _visual_resource_snapshot(schedule)
     visual_resources = _bind_visual_resource_snapshots(
         visual_resources_before, visual_resources_after
     )
     timeline_report = validate_sidecar(schedule, output_dir, expected_demo=demo)
+    sidecar_contract = _read_json(output_dir / "timeline.json").get("physics_contract")
+    scene_physics_provenance = None
+    if sidecar_contract is not None:
+        if not isinstance(sidecar_contract, dict):
+            raise ValueError(
+                f"{output_dir / 'timeline.json'}: physics contract is not an object"
+            )
+        scene_physics_provenance = _query_scene_physics_provenance(
+            schedule,
+            demo,
+            expected_contract=sidecar_contract,
+        )
     panel_paths = _prepare_panel_frames(schedule, output_dir, ffmpeg)
     panel_report = _compose_panel(schedule, output_dir, panel_paths, python)
     media_items = _encode_media(schedule, output_dir, ffmpeg)
     media_report = _validate_media(schedule, media_items, ffmpeg, ffprobe)
 
     report = {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": (
+            CAPTURE_RESULT_SCHEMA_VERSION
+            if scene_physics_provenance is not None
+            else SCHEMA_VERSION
+        ),
         "kind": "capture_result",
         "schedule": schedule_plan(schedule, demo, output_root),
         "runtime": {
             "demo_argv": command,
             "demo_path": str(demo),
-            "demo_sha256": _sha256(demo),
+            "demo_sha256": demo_sha256_before_capture,
+            **(
+                {"scene_physics_provenance": scene_physics_provenance}
+                if scene_physics_provenance is not None
+                else {}
+            ),
             "ffmpeg": str(ffmpeg),
             "ffprobe": str(ffprobe),
             **(
@@ -9534,7 +9687,7 @@ def _group_member_contract(
         output_dir = output_root / schedule.id
         metadata_path = output_dir / "metadata.json"
         metadata = _read_json(metadata_path)
-        if metadata.get("schema_version") != SCHEMA_VERSION:
+        if metadata.get("schema_version") not in CAPTURE_RESULT_SCHEMA_VERSIONS:
             raise ValueError(f"{metadata_path}: unexpected schema")
         if metadata.get("kind") != "capture_result" or not metadata.get("pass"):
             raise ValueError(f"{metadata_path}: member capture is not successful")
@@ -10428,7 +10581,8 @@ def _verify_existing(
     media_report = _validate_media(schedule, media, ffmpeg, ffprobe)
     metadata_path = output_dir / "metadata.json"
     metadata = _read_json(metadata_path)
-    if metadata.get("schema_version") != SCHEMA_VERSION:
+    capture_schema_version = metadata.get("schema_version")
+    if capture_schema_version not in CAPTURE_RESULT_SCHEMA_VERSIONS:
         raise ValueError(f"{metadata_path}: unexpected schema")
     if metadata.get("kind") != "capture_result" or not metadata.get("pass"):
         raise ValueError(f"{metadata_path}: capture metadata is not successful")
@@ -10449,6 +10603,24 @@ def _verify_existing(
         raise ValueError(f"{metadata_path}: runtime demo command is stale")
     if runtime.get("demo_sha256") != _sha256(demo):
         raise ValueError(f"{metadata_path}: requested demo hash changed")
+
+    stored_scene_provenance = runtime.get("scene_physics_provenance")
+    sidecar_contract = None
+    if (
+        capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+        or stored_scene_provenance is not None
+    ):
+        sidecar_contract = _read_json(output_dir / "timeline.json").get(
+            "physics_contract"
+        )
+    _validate_scene_physics_provenance_binding(
+        schedule,
+        demo,
+        capture_schema_version=capture_schema_version,
+        runtime=runtime,
+        sidecar_contract=sidecar_contract,
+        metadata_path=metadata_path,
+    )
 
     stored_timeline = metadata.get("timeline_validation", {})
     if stored_timeline != timeline:

@@ -29,6 +29,10 @@ SCRIPTS_DIR = ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from fbf_scene_provenance import (  # noqa: E402
+    SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+    build_semantic_physics_provenance,
+)
 from image_verdict import build_verdict  # noqa: E402
 
 DEFAULT_BUNDLE = (
@@ -67,6 +71,11 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_author_card_house_construction_manual_inspecti
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_author_card_house_construction_invocations/v1"
 CONTRACT_SCHEMA_VERSION = "dart.fbf_author_card_house_configuration_contract/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
+    RUNNER_SCHEMA_VERSION,
+    RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+)
 
 SCHEDULE_ID = "card_house_author_5_construction"
 SCENE_ID = "fbf_author_card_house_5_construction"
@@ -685,6 +694,16 @@ def _contract_argv(demo: Path) -> list[str]:
     ]
 
 
+def _runner_contract_argv(demo: Path) -> list[str]:
+    return [
+        str(demo),
+        "--threads",
+        "1",
+        "--scene-physics-contract",
+        SCENE_ID,
+    ]
+
+
 def _parse_ldd_in_tree_paths(output: str, *, build_root: Path) -> list[Path]:
     paths: set[Path] = set()
     resolved_build_root = build_root.resolve(strict=True)
@@ -1219,9 +1238,10 @@ def validate_capture_bundle(
         "pass",
     }:
         raise ValueError("card-house capture result exact keys changed")
+    if result.get("schema_version") not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS:
+        raise ValueError("card-house capture result schema changed")
     plan = _validate_schedule(result.get("schedule"), demo=demo, bundle=root)
     expected_claims = {
-        "schema_version": RUNNER_SCHEMA_VERSION,
         "kind": "capture_result",
         "actual_simulator": True,
         "generated_imagery": False,
@@ -1240,10 +1260,18 @@ def validate_capture_bundle(
     if stored_metadata != result:
         raise ValueError("card-house capture metadata differs from run summary")
     runtime = result.get("runtime")
+    expected_runtime_keys = {
+        "demo_argv",
+        "demo_path",
+        "demo_sha256",
+        "ffmpeg",
+        "ffprobe",
+    }
+    if result.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+        expected_runtime_keys.add("scene_physics_provenance")
     if (
         not isinstance(runtime, dict)
-        or set(runtime)
-        != {"demo_argv", "demo_path", "demo_sha256", "ffmpeg", "ffprobe"}
+        or set(runtime) != expected_runtime_keys
         or runtime.get("demo_argv") != _expected_demo_argv(demo, root)
         or runtime.get("demo_path") != str(demo)
         or runtime.get("demo_sha256") != sha256(demo)
@@ -1252,6 +1280,20 @@ def validate_capture_bundle(
 
     queried_contract = read_json(root / "contract.json")
     validate_configuration_contract(queried_contract)
+    if result.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+        provenance = build_semantic_physics_provenance(queried_contract)
+        expected_provenance = {
+            "schema_version": SEMANTIC_PROVENANCE_SCHEMA_VERSION,
+            "contract_schema_version": provenance.schema_version,
+            "family": provenance.family,
+            "query_argv": _runner_contract_argv(demo),
+            "contract_sha256": _payload_sha256(queried_contract),
+            "semantic_physics_sha256": provenance.semantic_sha256,
+            "broad_implementation_sha256": (provenance.broad_implementation_sha256),
+            "sidecar_contract_match": True,
+        }
+        if runtime.get("scene_physics_provenance") != expected_provenance:
+            raise ValueError("card-house semantic physics provenance changed")
     timeline = _validate_timeline(root, demo=demo, queried_contract=queried_contract)
     stored_timeline = result.get("timeline_validation")
     if (
