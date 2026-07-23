@@ -38,6 +38,89 @@ target_sources(test_ConstraintSolver PRIVATE AllocationCounting.cpp)
 if(DART_CODECOV)
   target_compile_definitions(test_ConstraintSolver PRIVATE DART_CODECOV=1)
 endif()
+set(
+  fbf_author_backspin_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorBackspinSpec.hpp"
+)
+set(
+  fbf_author_turntable_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
+)
+set(
+  fbf_author_painleve_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorPainleveSpec.hpp"
+)
+set(
+  fbf_author_card_house_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+)
+set(
+  fbf_author_masonry_arch_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+)
+set(
+  fbf_exact_solver_options_source
+  "${DART_SOURCE_DIR}/dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+)
+set(
+  fbf_paper_friction_demo_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfPaperFrictionScene.cpp"
+)
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY
+    CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_backspin_spec_source}"
+      "${fbf_author_turntable_spec_source}"
+      "${fbf_author_painleve_spec_source}"
+      "${fbf_author_card_house_spec_source}"
+      "${fbf_author_masonry_arch_spec_source}"
+      "${fbf_exact_solver_options_source}"
+      "${fbf_paper_friction_demo_source}"
+)
+file(
+  SHA256 "${fbf_author_backspin_spec_source}"
+  fbf_author_backspin_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_turntable_spec_source}"
+  fbf_author_turntable_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_painleve_spec_source}"
+  fbf_author_painleve_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_card_house_spec_source}"
+  fbf_author_card_house_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_masonry_arch_spec_source}"
+  fbf_author_masonry_arch_spec_sha256
+)
+file(
+  SHA256 "${fbf_exact_solver_options_source}"
+  fbf_exact_solver_options_sha256
+)
+file(SHA256 "${fbf_paper_friction_demo_source}" fbf_paper_friction_demo_sha256)
+dart_add_test("integration" test_ExactCoulombFbfPaperFixtures)
+target_compile_definitions(
+  test_ExactCoulombFbfPaperFixtures
+  PRIVATE
+    DART_FBF_AUTHOR_BACKSPIN_SPEC_SHA256="${fbf_author_backspin_spec_sha256}"
+    DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
+    DART_FBF_AUTHOR_PAINLEVE_SPEC_SHA256="${fbf_author_painleve_spec_sha256}"
+    DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
+    DART_FBF_EXACT_SOLVER_OPTIONS_SHA256="${fbf_exact_solver_options_sha256}"
+    DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+)
+dart_add_test("integration" test_FbfAuthorMasonryArchSpec)
+target_compile_definitions(
+  test_FbfAuthorMasonryArchSpec
+  PRIVATE
+    DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256="${fbf_author_masonry_arch_spec_sha256}"
+)
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
 if(TARGET dart-collision-bullet)

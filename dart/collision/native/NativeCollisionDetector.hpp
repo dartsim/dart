@@ -46,11 +46,52 @@ class NativeCollisionObject;
 class NativeCollisionDetector : public CollisionDetector
 {
 public:
+  /// Solver-facing contact reduction policy for Native collision queries.
+  enum class ContactManifoldMode
+  {
+    /// Preserve the default compact manifold: at most three contacts per pair.
+    Compact,
+
+    /// Allow four-point box, plane-box, and planar convex-face manifolds.
+    FourPointPlanar
+  };
+
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<NativeCollisionDetector> create();
 
   ~NativeCollisionDetector() override;
+
+  /// Set the solver-facing contact reduction policy.
+  ///
+  /// The default is ContactManifoldMode::Compact.
+  void setContactManifoldMode(ContactManifoldMode mode);
+
+  /// Get the solver-facing contact reduction policy.
+  [[nodiscard]] ContactManifoldMode getContactManifoldMode() const;
+
+  /// Set the speculative contact gap for a ShapeFrame.
+  ///
+  /// A Native pair is eligible for a proximity contact when its signed surface
+  /// distance is less than the sum of the two ShapeFrame gaps. Gaps must be
+  /// finite, non-negative, and no greater than half the maximum representable
+  /// double so any pair sum remains finite. Setting a gap to zero removes the
+  /// override. The default is zero for every ShapeFrame, which preserves
+  /// ordinary Native collision behavior. When ConstraintSolver admits a rigid
+  /// negative-depth proximity contact, its velocity constraint permits the
+  /// current physical separation to close over one time step before generating
+  /// an impulse; the gap is not treated as penetration. Soft-body proximity
+  /// contacts remain excluded from constraint solving.
+  void setContactGap(const dynamics::ShapeFrame* shapeFrame, double contactGap);
+
+  /// Get the speculative contact gap for a ShapeFrame.
+  ///
+  /// Returns zero for a null or unconfigured ShapeFrame.
+  [[nodiscard]] double getContactGap(
+      const dynamics::ShapeFrame* shapeFrame) const;
+
+  /// Remove every speculative contact-gap override from this detector.
+  void clearContactGaps();
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

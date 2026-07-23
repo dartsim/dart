@@ -37,6 +37,8 @@
 
 #include <dart/config.hpp>
 
+#include <string>
+
 namespace dart_demos {
 
 /// Getting Started > empty: minimal world with an InteractiveFrame gizmo
@@ -79,6 +81,130 @@ namespace dart_demos {
 /// Rigid Body > sleeping: automatic body deactivation across four
 /// independent box-stack solver islands, ported from examples/sleeping.
 [[nodiscard]] DemoScene makeSleepingScene();
+
+/// Research > FBF incline: exact-Coulomb paper incline threshold fixture.
+[[nodiscard]] DemoScene makeFbfPaperInclineScene();
+
+/// Research > FBF author incline: source-bound, operator-selected current
+/// sweep.
+[[nodiscard]] DemoScene makeFbfAuthorInclineSweepCurrentSourceScene();
+
+/// Research > FBF backspin: exact-Coulomb paper backspin sphere fixture.
+[[nodiscard]] DemoScene makeFbfPaperBackspinScene();
+
+/// Research > FBF author backspin: source-pinned full-horizon adapter.
+[[nodiscard]] DemoScene makeFbfAuthorBackspinCurrentSourceScene();
+
+/// Research > FBF turntable: exact-Coulomb paper turntable capture/ejection.
+[[nodiscard]] DemoScene makeFbfPaperTurntableScene();
+
+/// Research > FBF turntable: fixed mu=.2, omega=2 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu02Omega2Scene();
+
+/// Research > FBF turntable: fixed mu=.2, omega=5 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu02Omega5Scene();
+
+/// Research > FBF turntable: fixed mu=.5, omega=5 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu05Omega5Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.2, omega=2 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu02Omega2Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.2, omega=5 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu02Omega5Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.5, omega=2 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu05Omega2Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.5, omega=5 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu05Omega5Scene();
+
+/// Returns the canonical runtime-inspected physics/control contract for one
+/// fbf_author_turntable_* scene. Renderer assets are intentionally excluded.
+/// Throws std::invalid_argument for any other scene id.
+[[nodiscard]] std::string fbfAuthorTurntablePhysicsContractJson(
+    const std::string& sceneId);
+
+/// Research > FBF author card house: source-pinned five-level construction.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouseScene();
+
+/// Research > FBF author card house: source-parameterized four-level impact.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouse4ImpactCurrentSourceScene();
+
+/// Research > FBF author card house: source-default five-level impact.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouse5ImpactCurrentSourceScene();
+
+/// Research > FBF author card house: source-parameterized ten-level impact.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouse10ImpactCurrentSourceScene();
+
+/// Research > FBF author card house: one-factor colored-BGS diagnostic.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene();
+
+/// Research > FBF author card house: exact source-continuation impact lane.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene();
+
+/// Research > FBF author card house: five-level source-continuation impact.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene();
+
+/// Research > FBF author card house: ten-level source-continuation impact lane.
+[[nodiscard]] DemoScene
+makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene();
+
+/// Research > FBF author masonry arch: source-pinned 25-wedge crown impact.
+[[nodiscard]] DemoScene
+makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene();
+
+/// Research > FBF author masonry arch: additive exact source-continuation
+/// crown-impact lane with a boxed control.
+[[nodiscard]] DemoScene
+makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceScene();
+
+/// Research > FBF author masonry arch: source-supported 101-wedge standing
+/// lane over the source-default no-release horizon.
+[[nodiscard]] DemoScene makeFbfAuthorMasonryArch101StandingCurrentSourceScene();
+
+/// Returns the canonical runtime-inspected configuration-only contract for
+/// fbf_author_card_house_5_construction. Renderer styling is disclosed but
+/// intentionally excluded from source parity. Throws std::invalid_argument
+/// for any other scene id.
+[[nodiscard]] std::string fbfAuthorCardHouseConfigurationContractJson(
+    const std::string& sceneId);
+
+/// Research > FBF Painleve proxy: headless paper-proxy fixture as a GUI scene.
+[[nodiscard]] DemoScene makeFbfPaperPainleveScene();
+
+/// Research > FBF Painleve proxy: fixed mu=.55 outcome cell.
+[[nodiscard]] DemoScene makeFbfPaperPainleveMu055Scene();
+
+/// Research > FBF author Painleve: source-pinned mu=.5 adapter cell.
+[[nodiscard]] DemoScene makeFbfAuthorPainleveMu05Scene();
+
+/// Research > FBF author Painleve: source-pinned mu=.55 adapter cell.
+[[nodiscard]] DemoScene makeFbfAuthorPainleveMu055Scene();
+
+/// Research > FBF card A-frame: two-card Fig. 6 precursor.
+[[nodiscard]] DemoScene makeFbfPaperCardAFrameScene();
+
+/// Research > FBF card house: reduced-contact dynamic 26-card Fig. 6 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse26Scene();
+
+/// Research > FBF card house: construction-only 10-level GPU-table scaffold.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse10Scene();
+
+/// Research > FBF card house: dynamic exact-FBF 10-level capped adapter.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse10DynamicScene();
+
+/// Research > FBF masonry arch: reduced-contact 25-stone Fig. 7 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch25Scene();
+
+/// Research > FBF masonry arch: literal-wedge 25-stone standing contract.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch25LiteralStandingScene();
+
+/// Research > FBF masonry arch: reduced-contact 101-stone Fig. 8 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch101Scene();
 
 /// Constraints & Joints > hardcoded_design: a hand-built revolute chain
 /// driven from the keyboard, ported from examples/hardcoded_design.

@@ -1,3 +1,5 @@
 # GitHub syntax highlighting
 pixi.lock linguist-language=YAML
 
+# Wavefront OBJ permits blank records, including a trailing blank record.
+*.obj whitespace=-blank-at-eof

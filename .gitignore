@@ -1,5 +1,5 @@
 # Coverage files
-*.info
+/coverage.info
 *.gcda
 *.gcno
 *.gcov
@@ -11,10 +11,10 @@ coverage_html/
 build/
 .build/
 
-# Vim swap files
 # Stray compiled gettext catalogs at repo root
 /*.mo
 
+# Vim swap files
 *.swp
 *.swo
 
@@ -42,6 +42,7 @@ TAGS
 # Backup & temporary files
 *.orig
 *.bak
+*.tmp
 *~
 *.temp
 
@@ -52,7 +53,6 @@ TAGS
 *.suo
 *.user
 *.dep
-*.manifest
 *.rsp
 
 # Python bytecode
@@ -60,9 +60,6 @@ TAGS
 __pycache__/
 .pytest_cache/
 .ruff_cache/
-
-# Web files
-*.htm
 
 # JetBrains IDE
 .idea/*
@@ -82,13 +79,13 @@ docs/python_api/_build/
 
 # Data files
 data/screencap/*
-*.ppm
+!data/screencap/.KEEP
 
 # Headless rendering artifacts
 /*.png
+/*.ppm
 headless_frames*/
 rigid_frames/
-*_frames/
 
 # Temporary directory for dependencies
 .deps/
@@ -133,7 +130,6 @@ compile_flags.txt
 .omc/
 .omo/
 .omx/
-.omo/
 .sisyphus/
 
 # AI agent project files

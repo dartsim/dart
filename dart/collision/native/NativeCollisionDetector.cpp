@@ -40,8 +40,11 @@
 #include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/collision/native/PersistentManifoldCache.hpp"
 #include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
+#include "dart/collision/native/shapes/Shape.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Observer.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 #include <algorithm>
 #include <array>
@@ -49,9 +52,11 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart {
@@ -60,9 +65,24 @@ namespace collision {
 namespace {
 
 //==============================================================================
-// Three non-collinear contacts define a stable planar patch while avoiding a
-// fourth redundant solver row on contact-rich native scenes.
-constexpr std::size_t kSolverFacingManifoldContactTarget = 3u;
+constexpr std::size_t kCompactManifoldContactTarget = 3u;
+constexpr std::size_t kFourPointPlanarContactTarget = 4u;
+constexpr std::size_t kPlaneBoxManifoldContactTarget = 4u;
+constexpr double kConvexFaceOppositionCosine = 0.995;
+constexpr double kConvexFaceContactNormalCosine = 0.95;
+constexpr double kConvexFacePlaneToleranceScale = 1e-8;
+constexpr double kConvexFacePolygonToleranceScale = 1e-10;
+constexpr double kConvexFacePatchAreaToleranceScale = 1e-12;
+constexpr double kConvexFacePatchAreaFractionTolerance = 1e-4;
+
+//==============================================================================
+std::size_t getSolverFacingManifoldContactTarget(
+    NativeCollisionDetector::ContactManifoldMode mode)
+{
+  return mode == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+             ? kFourPointPlanarContactTarget
+             : kCompactManifoldContactTarget;
+}
 
 //==============================================================================
 bool checkGroupValidity(
@@ -87,14 +107,16 @@ bool checkGroupValidity(
 
 //==============================================================================
 native::CollisionOption makeNativeOption(
-    const CollisionOption& option, const CollisionResult* result)
+    const CollisionOption& option,
+    const CollisionResult* result,
+    NativeCollisionDetector::ContactManifoldMode mode)
 {
   native::CollisionOption nativeOption;
   nativeOption.enableContact = option.enableContact && result != nullptr;
   if (nativeOption.enableContact) {
     nativeOption.maxNumContacts = std::min(
         option.getEffectiveMaxNumContactsPerPair(),
-        kSolverFacingManifoldContactTarget);
+        getSolverFacingManifoldContactTarget(mode));
   } else {
     nativeOption.maxNumContacts = 1u;
   }
@@ -222,6 +244,242 @@ void removeManifoldCache(const NativeCollisionDetector* detector)
   auto& registry = getManifoldCacheRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
   registry.caches.erase(detector);
+}
+
+//==============================================================================
+using ContactManifoldModeMap = std::unordered_map<
+    const NativeCollisionDetector*,
+    NativeCollisionDetector::ContactManifoldMode>;
+
+//==============================================================================
+struct ContactManifoldModeRegistry
+{
+  ContactManifoldModeMap modes;
+  std::mutex mutex;
+};
+
+//==============================================================================
+ContactManifoldModeRegistry& getContactManifoldModeRegistry()
+{
+  static ContactManifoldModeRegistry registry;
+  return registry;
+}
+
+//==============================================================================
+NativeCollisionDetector::ContactManifoldMode lookupContactManifoldMode(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactManifoldModeRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.modes.find(detector);
+  if (it == registry.modes.end())
+    return NativeCollisionDetector::ContactManifoldMode::Compact;
+
+  return it->second;
+}
+
+//==============================================================================
+void storeContactManifoldMode(
+    const NativeCollisionDetector* detector,
+    NativeCollisionDetector::ContactManifoldMode mode)
+{
+  auto& registry = getContactManifoldModeRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  if (mode == NativeCollisionDetector::ContactManifoldMode::Compact) {
+    registry.modes.erase(detector);
+    return;
+  }
+
+  registry.modes[detector] = mode;
+}
+
+//==============================================================================
+void eraseContactManifoldMode(const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactManifoldModeRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.modes.erase(detector);
+}
+
+//==============================================================================
+using ContactGapMap = std::unordered_map<const dynamics::ShapeFrame*, double>;
+
+//==============================================================================
+class ContactGapOverrides final : public common::Observer
+{
+public:
+  void set(const dynamics::ShapeFrame* shapeFrame, double contactGap)
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    const auto current = std::atomic_load(&mSnapshot);
+    auto updated = current ? std::make_shared<ContactGapMap>(*current)
+                           : std::make_shared<ContactGapMap>();
+    const auto existing = updated->find(shapeFrame);
+
+    if (contactGap == 0.0) {
+      if (existing == updated->end())
+        return;
+
+      updated->erase(existing);
+      const auto* subject = static_cast<const common::Subject*>(shapeFrame);
+      mFramesBySubject.erase(subject);
+      removeSubject(subject);
+    } else {
+      if (existing == updated->end()) {
+        const auto* subject = static_cast<const common::Subject*>(shapeFrame);
+        addSubject(subject);
+        mFramesBySubject.emplace(subject, shapeFrame);
+      }
+      (*updated)[shapeFrame] = contactGap;
+    }
+
+    publish(std::move(updated));
+  }
+
+  [[nodiscard]] double get(const dynamics::ShapeFrame* shapeFrame) const
+  {
+    const auto snapshot = std::atomic_load(&mSnapshot);
+    if (!snapshot)
+      return 0.0;
+
+    const auto it = snapshot->find(shapeFrame);
+    return it == snapshot->end() ? 0.0 : it->second;
+  }
+
+  [[nodiscard]] std::shared_ptr<const ContactGapMap> snapshot() const
+  {
+    return std::atomic_load(&mSnapshot);
+  }
+
+  void clear()
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    removeAllSubjects();
+    mFramesBySubject.clear();
+    std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+  }
+
+protected:
+  void handleDestructionNotification(const common::Subject* subject) override
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    const auto frameIt = mFramesBySubject.find(subject);
+    if (frameIt == mFramesBySubject.end())
+      return;
+
+    const auto current = std::atomic_load(&mSnapshot);
+    if (current) {
+      auto updated = std::make_shared<ContactGapMap>(*current);
+      updated->erase(frameIt->second);
+      publish(std::move(updated));
+    }
+    mFramesBySubject.erase(frameIt);
+  }
+
+private:
+  void publish(std::shared_ptr<ContactGapMap> updated)
+  {
+    if (updated->empty()) {
+      std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+      return;
+    }
+
+    std::shared_ptr<const ContactGapMap> immutable = std::move(updated);
+    std::atomic_store(&mSnapshot, std::move(immutable));
+  }
+
+  mutable std::mutex mMutex;
+  std::unordered_map<const common::Subject*, const dynamics::ShapeFrame*>
+      mFramesBySubject;
+  std::shared_ptr<const ContactGapMap> mSnapshot;
+};
+
+//==============================================================================
+struct ContactGapRegistry
+{
+  std::unordered_map<
+      const NativeCollisionDetector*,
+      std::shared_ptr<ContactGapOverrides>>
+      overrides;
+  std::mutex mutex;
+};
+
+//==============================================================================
+ContactGapRegistry& getContactGapRegistry()
+{
+  static ContactGapRegistry registry;
+  return registry;
+}
+
+//==============================================================================
+std::shared_ptr<ContactGapOverrides> findContactGapOverrides(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactGapRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.overrides.find(detector);
+  return it == registry.overrides.end() ? nullptr : it->second;
+}
+
+//==============================================================================
+std::shared_ptr<ContactGapOverrides> getOrCreateContactGapOverrides(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getContactGapRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  auto& overrides = registry.overrides[detector];
+  if (!overrides)
+    overrides = std::make_shared<ContactGapOverrides>();
+  return overrides;
+}
+
+//==============================================================================
+std::shared_ptr<const ContactGapMap> lookupContactGaps(
+    const NativeCollisionDetector* detector)
+{
+  const auto overrides = findContactGapOverrides(detector);
+  return overrides ? overrides->snapshot() : nullptr;
+}
+
+//==============================================================================
+void eraseContactGapOverrides(const NativeCollisionDetector* detector)
+{
+  std::shared_ptr<ContactGapOverrides> removed;
+  {
+    auto& registry = getContactGapRegistry();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    const auto it = registry.overrides.find(detector);
+    if (it == registry.overrides.end())
+      return;
+    removed = std::move(it->second);
+    registry.overrides.erase(it);
+  }
+  removed->clear();
+}
+
+//==============================================================================
+double lookupContactGap(
+    const ContactGapMap* contactGaps, const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!contactGaps || !shapeFrame)
+    return 0.0;
+
+  const auto it = contactGaps->find(shapeFrame);
+  return it == contactGaps->end() ? 0.0 : it->second;
+}
+
+//==============================================================================
+double summedContactGap(
+    const ContactGapMap* contactGaps,
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2)
+{
+  if (!contactGaps)
+    return 0.0;
+
+  const double sum = lookupContactGap(contactGaps, object1->getShapeFrame())
+                     + lookupContactGap(contactGaps, object2->getShapeFrame());
+  return std::isfinite(sum) ? sum : 0.0;
 }
 
 //==============================================================================
@@ -640,11 +898,760 @@ bool emitContacts(
 }
 
 //==============================================================================
+struct ConvexWorldFace
+{
+  std::size_t index = 0u;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+  std::vector<Eigen::Vector3d> vertices;
+};
+
+//==============================================================================
+double cross2d(const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs)
+{
+  return lhs.x() * rhs.y() - lhs.y() * rhs.x();
+}
+
+//==============================================================================
+double signedPolygonArea(const std::vector<Eigen::Vector2d>& polygon)
+{
+  double twiceArea = 0.0;
+  for (std::size_t i = 0u; i < polygon.size(); ++i) {
+    twiceArea += cross2d(polygon[i], polygon[(i + 1u) % polygon.size()]);
+  }
+  return 0.5 * twiceArea;
+}
+
+//==============================================================================
+void removeAdjacentDuplicatePoints(
+    std::vector<Eigen::Vector2d>& polygon, double tolerance)
+{
+  if (polygon.empty())
+    return;
+
+  const double toleranceSquared = tolerance * tolerance;
+  std::vector<Eigen::Vector2d> unique;
+  unique.reserve(polygon.size());
+  for (const auto& point : polygon) {
+    if (unique.empty()
+        || (point - unique.back()).squaredNorm() > toleranceSquared) {
+      unique.push_back(point);
+    }
+  }
+  if (unique.size() > 1u
+      && (unique.front() - unique.back()).squaredNorm() <= toleranceSquared) {
+    unique.pop_back();
+  }
+  polygon = std::move(unique);
+}
+
+//==============================================================================
+void orderConvexPolygon(std::vector<Eigen::Vector2d>& polygon, double tolerance)
+{
+  removeAdjacentDuplicatePoints(polygon, tolerance);
+  if (polygon.size() < 3u)
+    return;
+
+  Eigen::Vector2d centroid = Eigen::Vector2d::Zero();
+  for (const auto& point : polygon)
+    centroid += point;
+  centroid /= static_cast<double>(polygon.size());
+
+  std::sort(
+      polygon.begin(),
+      polygon.end(),
+      [&](const Eigen::Vector2d& lhs, const Eigen::Vector2d& rhs) {
+        const Eigen::Vector2d lhsDelta = lhs - centroid;
+        const Eigen::Vector2d rhsDelta = rhs - centroid;
+        const double lhsAngle = std::atan2(lhsDelta.y(), lhsDelta.x());
+        const double rhsAngle = std::atan2(rhsDelta.y(), rhsDelta.x());
+        if (lhsAngle != rhsAngle)
+          return lhsAngle < rhsAngle;
+        if (lhsDelta.squaredNorm() != rhsDelta.squaredNorm())
+          return lhsDelta.squaredNorm() < rhsDelta.squaredNorm();
+        if (lhs.x() != rhs.x())
+          return lhs.x() < rhs.x();
+        return lhs.y() < rhs.y();
+      });
+  removeAdjacentDuplicatePoints(polygon, tolerance);
+  if (polygon.size() >= 3u && signedPolygonArea(polygon) < 0.0)
+    std::reverse(polygon.begin(), polygon.end());
+}
+
+//==============================================================================
+std::vector<Eigen::Vector2d> clipConvexPolygon(
+    std::vector<Eigen::Vector2d> subject,
+    const std::vector<Eigen::Vector2d>& clip,
+    double tolerance)
+{
+  for (std::size_t clipIndex = 0u; clipIndex < clip.size(); ++clipIndex) {
+    if (subject.empty())
+      break;
+
+    const Eigen::Vector2d& edgeStart = clip[clipIndex];
+    const Eigen::Vector2d& edgeEnd = clip[(clipIndex + 1u) % clip.size()];
+    const Eigen::Vector2d edge = edgeEnd - edgeStart;
+    std::vector<Eigen::Vector2d> output;
+    output.reserve(subject.size() + 1u);
+
+    Eigen::Vector2d previous = subject.back();
+    double previousDistance = cross2d(edge, previous - edgeStart);
+    bool previousInside = previousDistance >= -tolerance;
+    for (const auto& current : subject) {
+      const double currentDistance = cross2d(edge, current - edgeStart);
+      const bool currentInside = currentDistance >= -tolerance;
+      if (currentInside != previousInside) {
+        const double denominator = previousDistance - currentDistance;
+        if (std::abs(denominator) > std::numeric_limits<double>::epsilon()) {
+          const double ratio = previousDistance / denominator;
+          output.push_back(previous + ratio * (current - previous));
+        }
+      }
+      if (currentInside)
+        output.push_back(current);
+
+      previous = current;
+      previousDistance = currentDistance;
+      previousInside = currentInside;
+    }
+    removeAdjacentDuplicatePoints(output, tolerance);
+    subject = std::move(output);
+  }
+  return subject;
+}
+
+//==============================================================================
+template <typename DepthFunction>
+std::vector<Eigen::Vector2d> clipPolygonByContactDepth(
+    const std::vector<Eigen::Vector2d>& polygon,
+    const DepthFunction& getDepth,
+    double contactTolerance,
+    double polygonTolerance)
+{
+  if (polygon.empty())
+    return {};
+
+  std::vector<Eigen::Vector2d> output;
+  output.reserve(polygon.size() + 1u);
+  Eigen::Vector2d previous = polygon.back();
+  double previousValue = getDepth(previous) + contactTolerance;
+  bool previousInside = previousValue >= 0.0;
+  for (const auto& current : polygon) {
+    const double currentValue = getDepth(current) + contactTolerance;
+    const bool currentInside = currentValue >= 0.0;
+    if (currentInside != previousInside) {
+      const double denominator = previousValue - currentValue;
+      if (std::abs(denominator) > std::numeric_limits<double>::epsilon()) {
+        const double ratio = previousValue / denominator;
+        output.push_back(previous + ratio * (current - previous));
+      }
+    }
+    if (currentInside)
+      output.push_back(current);
+
+    previous = current;
+    previousValue = currentValue;
+    previousInside = currentInside;
+  }
+  removeAdjacentDuplicatePoints(output, polygonTolerance);
+  return output;
+}
+
+//==============================================================================
+double computeConvexWorldScale(
+    const native::ConvexShape& shape, const Eigen::Isometry3d& transform)
+{
+  if (shape.getVertices().empty())
+    return 1.0;
+
+  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+  for (const auto& vertex : shape.getVertices())
+    centroid += transform * vertex;
+  centroid /= static_cast<double>(shape.getVertices().size());
+
+  double scale = 0.0;
+  for (const auto& vertex : shape.getVertices())
+    scale = std::max(scale, (transform * vertex - centroid).norm());
+  return std::max(1.0, scale);
+}
+
+//==============================================================================
+std::vector<ConvexWorldFace> makeConvexWorldFaces(
+    const native::ConvexShape& shape,
+    const Eigen::Isometry3d& transform,
+    double scale)
+{
+  std::vector<Eigen::Vector3d> worldVertices;
+  worldVertices.reserve(shape.getVertices().size());
+  for (const auto& vertex : shape.getVertices())
+    worldVertices.push_back(transform * vertex);
+
+  const double planeTolerance = kConvexFacePlaneToleranceScale * scale;
+  const double duplicateToleranceSquared = planeTolerance * planeTolerance;
+  std::vector<ConvexWorldFace> result;
+  result.reserve(shape.getFaces().size());
+  for (std::size_t faceIndex = 0u; faceIndex < shape.getFaces().size();
+       ++faceIndex) {
+    const auto& localFace = shape.getFaces()[faceIndex];
+    ConvexWorldFace face;
+    face.index = faceIndex;
+    face.point = transform * localFace.point;
+    face.normal = transform.linear() * localFace.normal;
+    const double normalNorm = face.normal.norm();
+    if (!(normalNorm > 0.0) || !std::isfinite(normalNorm))
+      continue;
+    face.normal /= normalNorm;
+
+    for (const auto& vertex : worldVertices) {
+      if (std::abs(face.normal.dot(vertex - face.point)) > planeTolerance)
+        continue;
+
+      bool duplicate = false;
+      for (const auto& existing : face.vertices) {
+        if ((vertex - existing).squaredNorm() <= duplicateToleranceSquared) {
+          duplicate = true;
+          break;
+        }
+      }
+      if (!duplicate)
+        face.vertices.push_back(vertex);
+    }
+    if (face.vertices.size() >= 3u)
+      result.push_back(std::move(face));
+  }
+  return result;
+}
+
+//==============================================================================
+void makePlanarBasis(
+    const Eigen::Vector3d& normal,
+    Eigen::Vector3d& tangent1,
+    Eigen::Vector3d& tangent2)
+{
+  int axis = 0;
+  normal.cwiseAbs().minCoeff(&axis);
+  tangent1 = normal.cross(Eigen::Vector3d::Unit(axis)).normalized();
+  tangent2 = normal.cross(tangent1);
+}
+
+//==============================================================================
+bool contactPointLess(
+    const native::ContactPoint& lhs, const native::ContactPoint& rhs)
+{
+  for (Eigen::Index i = 0; i < 3; ++i) {
+    if (lhs.position[i] != rhs.position[i])
+      return lhs.position[i] < rhs.position[i];
+  }
+  return lhs.depth > rhs.depth;
+}
+
+//==============================================================================
+struct ConvexFacePatchCandidate
+{
+  std::size_t faceIndex1 = 0u;
+  std::size_t faceIndex2 = 0u;
+  double score = std::numeric_limits<double>::max();
+  std::vector<native::ContactPoint> contacts;
+};
+
+//==============================================================================
+std::optional<ConvexFacePatchCandidate> makeConvexFacePatchCandidate(
+    const ConvexWorldFace& face1,
+    const ConvexWorldFace& face2,
+    const native::ContactPoint& compactContact,
+    double scale,
+    double proximityGap)
+{
+  if (face1.normal.dot(face2.normal) > -kConvexFaceOppositionCosine)
+    return std::nullopt;
+
+  Eigen::Vector3d outwardNormal = face1.normal - face2.normal;
+  const double outwardNormalNorm = outwardNormal.norm();
+  if (!(outwardNormalNorm > 0.0))
+    return std::nullopt;
+  outwardNormal /= outwardNormalNorm;
+  const Eigen::Vector3d contactNormal = -outwardNormal;
+  const double normalAlignment = contactNormal.dot(compactContact.normal);
+  if (normalAlignment < kConvexFaceContactNormalCosine)
+    return std::nullopt;
+
+  const double denominator1 = face1.normal.dot(outwardNormal);
+  const double denominator2 = face2.normal.dot(outwardNormal);
+  if (denominator1 < kConvexFaceOppositionCosine
+      || denominator2 > -kConvexFaceOppositionCosine) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d origin = 0.5 * (face1.point + face2.point);
+  Eigen::Vector3d tangent1;
+  Eigen::Vector3d tangent2;
+  makePlanarBasis(outwardNormal, tangent1, tangent2);
+  const auto project = [&](const Eigen::Vector3d& point) {
+    const Eigen::Vector3d delta = point - origin;
+    return Eigen::Vector2d(delta.dot(tangent1), delta.dot(tangent2));
+  };
+  const auto unproject = [&](const Eigen::Vector2d& point) {
+    return origin + point.x() * tangent1 + point.y() * tangent2;
+  };
+
+  const double polygonTolerance = kConvexFacePolygonToleranceScale * scale;
+  std::vector<Eigen::Vector2d> polygon1;
+  polygon1.reserve(face1.vertices.size());
+  for (const auto& vertex : face1.vertices)
+    polygon1.push_back(project(vertex));
+  orderConvexPolygon(polygon1, polygonTolerance);
+
+  std::vector<Eigen::Vector2d> polygon2;
+  polygon2.reserve(face2.vertices.size());
+  for (const auto& vertex : face2.vertices)
+    polygon2.push_back(project(vertex));
+  orderConvexPolygon(polygon2, polygonTolerance);
+  if (polygon1.size() < 3u || polygon2.size() < 3u)
+    return std::nullopt;
+
+  auto overlap = clipConvexPolygon(polygon1, polygon2, polygonTolerance);
+  if (overlap.size() < 3u)
+    return std::nullopt;
+  orderConvexPolygon(overlap, polygonTolerance);
+
+  const auto getSurfaceData = [&](const Eigen::Vector2d& point,
+                                  Eigen::Vector3d* position1,
+                                  Eigen::Vector3d* position2) {
+    const Eigen::Vector3d planePoint = unproject(point);
+    const double offset1
+        = face1.normal.dot(face1.point - planePoint) / denominator1;
+    const double offset2
+        = face2.normal.dot(face2.point - planePoint) / denominator2;
+    if (position1)
+      *position1 = planePoint + offset1 * outwardNormal;
+    if (position2)
+      *position2 = planePoint + offset2 * outwardNormal;
+    return offset1 - offset2;
+  };
+
+  const double numericContactTolerance
+      = std::max(1e-9, 64.0 * std::numeric_limits<double>::epsilon() * scale);
+  const double contactTolerance
+      = proximityGap > 0.0 ? proximityGap : numericContactTolerance;
+  overlap = clipPolygonByContactDepth(
+      overlap,
+      [&](const Eigen::Vector2d& point) {
+        return getSurfaceData(point, nullptr, nullptr);
+      },
+      contactTolerance,
+      polygonTolerance);
+  if (overlap.size() < 3u)
+    return std::nullopt;
+  orderConvexPolygon(overlap, polygonTolerance);
+
+  const double patchArea = std::abs(signedPolygonArea(overlap));
+  const double faceArea1 = std::abs(signedPolygonArea(polygon1));
+  const double faceArea2 = std::abs(signedPolygonArea(polygon2));
+  const double areaTolerance = std::max(
+      kConvexFacePatchAreaToleranceScale * scale * scale,
+      kConvexFacePatchAreaFractionTolerance * std::min(faceArea1, faceArea2));
+  if (patchArea <= areaTolerance)
+    return std::nullopt;
+
+  ConvexFacePatchCandidate candidate;
+  candidate.faceIndex1 = face1.index;
+  candidate.faceIndex2 = face2.index;
+  candidate.contacts.reserve(overlap.size());
+  double depthSum = 0.0;
+  for (const auto& point : overlap) {
+    Eigen::Vector3d position1;
+    Eigen::Vector3d position2;
+    const double depth = getSurfaceData(point, &position1, &position2);
+    if (proximityGap > 0.0 && !(depth > -proximityGap))
+      continue;
+    native::ContactPoint contact;
+    contact.position = 0.5 * (position1 + position2);
+    contact.normal = contactNormal;
+    contact.depth = proximityGap > 0.0 ? depth : std::max(0.0, depth);
+    candidate.contacts.push_back(contact);
+    depthSum += contact.depth;
+  }
+  if (proximityGap > 0.0 && candidate.contacts.size() < 3u)
+    return std::nullopt;
+  std::sort(
+      candidate.contacts.begin(), candidate.contacts.end(), contactPointLess);
+
+  const double meanDepth
+      = depthSum / static_cast<double>(candidate.contacts.size());
+  const double compactDepth = proximityGap > 0.0
+                                  ? compactContact.depth
+                                  : std::max(0.0, compactContact.depth);
+  candidate.score
+      = std::abs(meanDepth - compactDepth) + (1.0 - normalAlignment) * scale;
+  return candidate;
+}
+
+//==============================================================================
+bool tryBuildFourPointPlanarConvexFacePatch(
+    const native::ConvexShape& shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::ConvexShape& shape2,
+    const Eigen::Isometry3d& transform2,
+    const native::CollisionOption& option,
+    const native::ContactPoint& compactContact,
+    double proximityGap,
+    native::CollisionResult& result)
+{
+  const double scale = std::max(
+      computeConvexWorldScale(shape1, transform1),
+      computeConvexWorldScale(shape2, transform2));
+  const auto faces1 = makeConvexWorldFaces(shape1, transform1, scale);
+  const auto faces2 = makeConvexWorldFaces(shape2, transform2, scale);
+
+  std::optional<ConvexFacePatchCandidate> best;
+  for (const auto& face1 : faces1) {
+    for (const auto& face2 : faces2) {
+      auto candidate = makeConvexFacePatchCandidate(
+          face1, face2, compactContact, scale, proximityGap);
+      if (!candidate)
+        continue;
+
+      const bool betterScore = !best || candidate->score < best->score;
+      const bool deterministicTie
+          = best && candidate->score == best->score
+            && (candidate->faceIndex1 < best->faceIndex1
+                || (candidate->faceIndex1 == best->faceIndex1
+                    && candidate->faceIndex2 < best->faceIndex2));
+      if (betterScore || deterministicTie)
+        best = std::move(candidate);
+    }
+  }
+  if (!best || best->contacts.size() < 3u)
+    return false;
+
+  native::ContactManifold reducer;
+  for (const auto& contact : best->contacts)
+    reducer.addContact(contact);
+  std::vector<native::ContactPoint> reduced(
+      reducer.getContacts().begin(), reducer.getContacts().end());
+  std::sort(reduced.begin(), reduced.end(), contactPointLess);
+
+  const std::size_t numContacts = std::min(
+      {reduced.size(), option.maxNumContacts, kFourPointPlanarContactTarget});
+  if (numContacts == 0u)
+    return false;
+
+  native::ContactManifold manifold;
+  manifold.setType(
+      numContacts >= 3u ? native::ContactType::Face
+                        : (numContacts == 2u ? native::ContactType::Edge
+                                             : native::ContactType::Point));
+  for (std::size_t i = 0u; i < numContacts; ++i)
+    manifold.addContact(reduced[i]);
+  result.clear();
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+//==============================================================================
+bool isConvexConvexPair(
+    const native::Shape* shape1, const native::Shape* shape2)
+{
+  return shape1->getType() == native::ShapeType::Convex
+         && shape2->getType() == native::ShapeType::Convex;
+}
+
+//==============================================================================
+bool collideFourPointPlanarConvexConvex(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  const bool hit = native::NarrowPhase::collide(
+      shape1, transform1, shape2, transform2, option, result);
+  if (!hit || !option.enableContact || result.numContacts() == 0u)
+    return hit;
+
+  const native::ContactPoint compactContact = result.getContact(0u);
+  (void)tryBuildFourPointPlanarConvexFacePatch(
+      static_cast<const native::ConvexShape&>(*shape1),
+      transform1,
+      static_cast<const native::ConvexShape&>(*shape2),
+      transform2,
+      option,
+      compactContact,
+      0.0,
+      result);
+  return true;
+}
+
+//==============================================================================
+bool isPlaneBoxPair(const native::Shape* shape1, const native::Shape* shape2)
+{
+  return (shape1->getType() == native::ShapeType::Plane
+          && shape2->getType() == native::ShapeType::Box)
+         || (shape1->getType() == native::ShapeType::Box
+             && shape2->getType() == native::ShapeType::Plane);
+}
+
+//==============================================================================
+bool collideFourPointPlanarPlaneBox(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  if (option.maxNumContacts == 0u)
+    return false;
+
+  const bool planeFirst = shape1->getType() == native::ShapeType::Plane;
+  const auto* plane
+      = static_cast<const native::PlaneShape*>(planeFirst ? shape1 : shape2);
+  const auto* box
+      = static_cast<const native::BoxShape*>(planeFirst ? shape2 : shape1);
+  const auto& planeTransform = planeFirst ? transform1 : transform2;
+  const auto& boxTransform = planeFirst ? transform2 : transform1;
+
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane->getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane->getOffset();
+  const Eigen::Vector3d& halfExtents = box->getHalfExtents();
+
+  struct Corner
+  {
+    Eigen::Vector3d position;
+    double signedDistance;
+  };
+
+  std::array<Corner, 8u> corners;
+  double minDistance = std::numeric_limits<double>::max();
+  for (std::size_t i = 0u; i < corners.size(); ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1u) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2u) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4u) ? halfExtents.z() : -halfExtents.z());
+    const Eigen::Vector3d worldCorner = boxTransform * localCorner;
+    const double signedDistance = worldNormal.dot(worldCorner - planePoint);
+    corners[i] = Corner{worldCorner, signedDistance};
+    minDistance = std::min(minDistance, signedDistance);
+  }
+
+  if (minDistance > 0.0)
+    return false;
+
+  if (!option.enableContact)
+    return true;
+
+  const double scale = std::max(
+      {1.0,
+       halfExtents.cwiseAbs().maxCoeff(),
+       boxTransform.translation().cwiseAbs().maxCoeff(),
+       planePoint.cwiseAbs().maxCoeff(),
+       std::abs(minDistance)});
+  const double contactTolerance
+      = std::max(1e-9, 64.0 * std::numeric_limits<double>::epsilon() * scale);
+  const Eigen::Vector3d contactNormal = planeFirst ? -worldNormal : worldNormal;
+
+  std::array<std::size_t, 8u> candidateIndices{};
+  std::size_t numCandidates = 0u;
+  for (std::size_t i = 0u; i < corners.size(); ++i) {
+    if (corners[i].signedDistance <= contactTolerance)
+      candidateIndices[numCandidates++] = i;
+  }
+  std::sort(
+      candidateIndices.begin(),
+      candidateIndices.begin() + numCandidates,
+      [&](std::size_t lhs, std::size_t rhs) {
+        if (corners[lhs].signedDistance != corners[rhs].signedDistance)
+          return corners[lhs].signedDistance < corners[rhs].signedDistance;
+        return lhs < rhs;
+      });
+
+  const std::size_t maxContacts = std::min(
+      {numCandidates, option.maxNumContacts, kPlaneBoxManifoldContactTarget});
+  native::ContactManifold manifold;
+  for (std::size_t i = 0u; i < maxContacts; ++i) {
+    const Corner& corner = corners[candidateIndices[i]];
+    native::ContactPoint contact;
+    contact.position = corner.position - worldNormal * corner.signedDistance;
+    contact.normal = contactNormal;
+    contact.depth = std::max(0.0, -corner.signedDistance);
+    manifold.addContact(contact);
+  }
+
+  if (manifold.numContacts() >= 3u)
+    manifold.setType(native::ContactType::Face);
+  else if (manifold.numContacts() == 2u)
+    manifold.setType(native::ContactType::Edge);
+  else
+    manifold.setType(native::ContactType::Point);
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+//==============================================================================
+bool isPlaneConvexPair(const native::Shape* shape1, const native::Shape* shape2)
+{
+  return (shape1->getType() == native::ShapeType::Plane
+          && shape2->getType() == native::ShapeType::Convex)
+         || (shape1->getType() == native::ShapeType::Convex
+             && shape2->getType() == native::ShapeType::Plane);
+}
+
+//==============================================================================
+bool collideFourPointPlanarPlaneConvexProximity(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    double contactGap,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  if (!(contactGap > 0.0) || option.maxNumContacts == 0u)
+    return false;
+
+  const bool planeFirst = shape1->getType() == native::ShapeType::Plane;
+  const auto* plane
+      = static_cast<const native::PlaneShape*>(planeFirst ? shape1 : shape2);
+  const auto* convex
+      = static_cast<const native::ConvexShape*>(planeFirst ? shape2 : shape1);
+  const auto& planeTransform = planeFirst ? transform1 : transform2;
+  const auto& convexTransform = planeFirst ? transform2 : transform1;
+
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane->getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane->getOffset();
+
+  struct VertexContact
+  {
+    std::size_t vertexIndex = 0u;
+    Eigen::Vector3d vertex = Eigen::Vector3d::Zero();
+    double signedDistance = std::numeric_limits<double>::max();
+  };
+
+  std::vector<VertexContact> candidates;
+  candidates.reserve(convex->getVertices().size());
+  for (std::size_t i = 0u; i < convex->getVertices().size(); ++i) {
+    const Eigen::Vector3d vertex = convexTransform * convex->getVertices()[i];
+    const double signedDistance = worldNormal.dot(vertex - planePoint);
+    if (std::isfinite(signedDistance) && signedDistance < contactGap)
+      candidates.push_back(VertexContact{i, vertex, signedDistance});
+  }
+  if (candidates.empty())
+    return false;
+
+  if (!option.enableContact)
+    return true;
+
+  const Eigen::Vector3d contactNormal = planeFirst ? -worldNormal : worldNormal;
+  native::ContactManifold reducer;
+  for (const auto& candidate : candidates) {
+    native::ContactPoint contact;
+    contact.position
+        = candidate.vertex - 0.5 * worldNormal * candidate.signedDistance;
+    contact.normal = contactNormal;
+    contact.depth = -candidate.signedDistance;
+    const int featureIndex = static_cast<int>(candidate.vertexIndex);
+    if (planeFirst)
+      contact.featureIndex2 = featureIndex;
+    else
+      contact.featureIndex1 = featureIndex;
+    reducer.addContact(contact);
+  }
+
+  std::vector<native::ContactPoint> reduced(
+      reducer.getContacts().begin(), reducer.getContacts().end());
+  std::sort(reduced.begin(), reduced.end(), contactPointLess);
+  const std::size_t numContacts = std::min(
+      {reduced.size(), option.maxNumContacts, kFourPointPlanarContactTarget});
+  if (numContacts == 0u)
+    return false;
+
+  native::ContactManifold manifold;
+  manifold.setType(
+      numContacts >= 3u ? native::ContactType::Face
+                        : (numContacts == 2u ? native::ContactType::Edge
+                                             : native::ContactType::Point));
+  for (std::size_t i = 0u; i < numContacts; ++i)
+    manifold.addContact(reduced[i]);
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+//==============================================================================
+bool collideWithContactGap(
+    const native::Shape* shape1,
+    const Eigen::Isometry3d& transform1,
+    const native::Shape* shape2,
+    const Eigen::Isometry3d& transform2,
+    double contactGap,
+    NativeCollisionDetector::ContactManifoldMode manifoldMode,
+    const native::CollisionOption& option,
+    native::CollisionResult& result)
+{
+  if (!(contactGap > 0.0))
+    return false;
+
+  if (manifoldMode
+          == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+      && isPlaneConvexPair(shape1, shape2)) {
+    return collideFourPointPlanarPlaneConvexProximity(
+        shape1, transform1, shape2, transform2, contactGap, option, result);
+  }
+
+  native::DistanceOption distanceOption;
+  distanceOption.upperBound = contactGap;
+  distanceOption.enableNearestPoints = option.enableContact;
+  native::DistanceResult distanceResult;
+  const double distance = native::NarrowPhase::distance(
+      shape1, transform1, shape2, transform2, distanceOption, distanceResult);
+  if (!std::isfinite(distance) || !(distance < contactGap))
+    return false;
+
+  if (!option.enableContact)
+    return true;
+
+  if (!distanceResult.pointOnObject1.allFinite()
+      || !distanceResult.pointOnObject2.allFinite()
+      || !distanceResult.normal.allFinite()
+      || native::ContactPoint::isZeroNormal(distanceResult.normal)) {
+    return false;
+  }
+
+  native::ContactPoint compactContact;
+  compactContact.position
+      = 0.5 * (distanceResult.pointOnObject1 + distanceResult.pointOnObject2);
+  compactContact.normal = -distanceResult.normal.normalized();
+  compactContact.depth = -distance;
+  result.addContact(compactContact);
+
+  if (manifoldMode
+          == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+      && isConvexConvexPair(shape1, shape2)) {
+    (void)tryBuildFourPointPlanarConvexFacePatch(
+        static_cast<const native::ConvexShape&>(*shape1),
+        transform1,
+        static_cast<const native::ConvexShape&>(*shape2),
+        transform2,
+        option,
+        compactContact,
+        contactGap,
+        result);
+  }
+  return true;
+}
+
+//==============================================================================
 bool processNativePair(
     NativeCollisionObject* object1,
     NativeCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
+    NativeCollisionDetector::ContactManifoldMode manifoldMode,
+    const ContactGapMap* contactGaps,
     bool& collisionFound)
 {
   if (shouldSkipPair(object1, object2, option))
@@ -654,14 +1661,51 @@ bool processNativePair(
     return true;
 
   native::CollisionResult nativeResult;
-  const native::CollisionOption nativeOption = makeNativeOption(option, result);
-  const bool hit = native::NarrowPhase::collide(
-      object1->getNativeShape(),
-      object1->getNativeTransform(),
-      object2->getNativeShape(),
-      object2->getNativeTransform(),
-      nativeOption,
-      nativeResult);
+  const native::CollisionOption nativeOption
+      = makeNativeOption(option, result, manifoldMode);
+  const auto* shape1 = object1->getNativeShape();
+  const auto* shape2 = object2->getNativeShape();
+  const bool useFourPointPlaneBox
+      = manifoldMode
+            == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+        && isPlaneBoxPair(shape1, shape2);
+  const bool useFourPointConvexFaces
+      = manifoldMode
+            == NativeCollisionDetector::ContactManifoldMode::FourPointPlanar
+        && isConvexConvexPair(shape1, shape2);
+  bool hit = useFourPointPlaneBox ? collideFourPointPlanarPlaneBox(
+                 shape1,
+                 object1->getNativeTransform(),
+                 shape2,
+                 object2->getNativeTransform(),
+                 nativeOption,
+                 nativeResult)
+             : useFourPointConvexFaces ? collideFourPointPlanarConvexConvex(
+                   shape1,
+                   object1->getNativeTransform(),
+                   shape2,
+                   object2->getNativeTransform(),
+                   nativeOption,
+                   nativeResult)
+                                       : native::NarrowPhase::collide(
+                                           shape1,
+                                           object1->getNativeTransform(),
+                                           shape2,
+                                           object2->getNativeTransform(),
+                                           nativeOption,
+                                           nativeResult);
+
+  if (!hit && option.allowNegativePenetrationDepthContacts) {
+    hit = collideWithContactGap(
+        shape1,
+        object1->getNativeTransform(),
+        shape2,
+        object2->getNativeTransform(),
+        summedContactGap(contactGaps, object1, object2),
+        manifoldMode,
+        nativeOption,
+        nativeResult);
+  }
 
   if (!hit)
     return false;
@@ -699,7 +1743,64 @@ std::shared_ptr<NativeCollisionDetector> NativeCollisionDetector::create()
 //==============================================================================
 NativeCollisionDetector::~NativeCollisionDetector()
 {
+  eraseContactManifoldMode(this);
+  eraseContactGapOverrides(this);
   removeManifoldCache(this);
+}
+
+//==============================================================================
+void NativeCollisionDetector::setContactManifoldMode(ContactManifoldMode mode)
+{
+  storeContactManifoldMode(this, mode);
+}
+
+//==============================================================================
+NativeCollisionDetector::ContactManifoldMode
+NativeCollisionDetector::getContactManifoldMode() const
+{
+  return lookupContactManifoldMode(this);
+}
+
+//==============================================================================
+void NativeCollisionDetector::setContactGap(
+    const dynamics::ShapeFrame* shapeFrame, double contactGap)
+{
+  if (!shapeFrame) {
+    throw std::invalid_argument(
+        "NativeCollisionDetector contact-gap ShapeFrame must not be null");
+  }
+  if (!std::isfinite(contactGap) || contactGap < 0.0
+      || contactGap > 0.5 * std::numeric_limits<double>::max()) {
+    throw std::invalid_argument(
+        "NativeCollisionDetector contact gap must be finite, non-negative, "
+        "and pairwise summable");
+  }
+
+  if (contactGap == 0.0) {
+    const auto overrides = findContactGapOverrides(this);
+    if (overrides)
+      overrides->set(shapeFrame, 0.0);
+    return;
+  }
+
+  getOrCreateContactGapOverrides(this)->set(shapeFrame, contactGap);
+}
+
+//==============================================================================
+double NativeCollisionDetector::getContactGap(
+    const dynamics::ShapeFrame* shapeFrame) const
+{
+  if (!shapeFrame)
+    return 0.0;
+
+  const auto overrides = findContactGapOverrides(this);
+  return overrides ? overrides->get(shapeFrame) : 0.0;
+}
+
+//==============================================================================
+void NativeCollisionDetector::clearContactGaps()
+{
+  eraseContactGapOverrides(this);
 }
 
 //==============================================================================
@@ -748,7 +1849,14 @@ void NativeCollisionDetector::notifyCollisionObjectDestroying(
 std::shared_ptr<CollisionDetector>
 NativeCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return NativeCollisionDetector::create();
+  auto clone = NativeCollisionDetector::create();
+  clone->setContactManifoldMode(getContactManifoldMode());
+  const auto contactGaps = lookupContactGaps(this);
+  if (contactGaps) {
+    for (const auto& entry : *contactGaps)
+      clone->setContactGap(entry.first, entry.second);
+  }
+  return clone;
 }
 
 //==============================================================================
@@ -786,9 +1894,18 @@ bool NativeCollisionDetector::collide(
     return false;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
+  const auto contactGaps = lookupContactGaps(this);
   {
     DART_PROFILE_SCOPED_N("Native::updateEngineData");
     nativeGroup->updateEngineData();
+    if (contactGaps) {
+      for (const auto& entry : nativeGroup->mIdToObject) {
+        native::Aabb expanded = entry.second->getNativeAabb();
+        expanded.expand(
+            lookupContactGap(contactGaps.get(), entry.second->getShapeFrame()));
+        nativeGroup->mBroadPhase->update(entry.first, expanded);
+      }
+    }
   }
   auto& manifoldCache = getOrCreateManifoldCache(this);
   {
@@ -797,13 +1914,20 @@ bool NativeCollisionDetector::collide(
   }
 
   bool collisionFound = false;
+  const auto manifoldMode = getContactManifoldMode();
   {
     DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
     const auto pairVisitor = [&](std::size_t id1, std::size_t id2) {
       auto* object1 = nativeGroup->mIdToObject.at(id1);
       auto* object2 = nativeGroup->mIdToObject.at(id2);
       return !processNativePair(
-          object1, object2, option, result, collisionFound);
+          object1,
+          object2,
+          option,
+          result,
+          manifoldMode,
+          contactGaps.get(),
+          collisionFound);
     };
     if (result) {
       // Result-carrying queries need the sorted, deduplicated visitation
@@ -850,6 +1974,7 @@ bool NativeCollisionDetector::collide(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
+  const auto contactGaps = lookupContactGaps(this);
   nativeGroup1->updateEngineData();
   nativeGroup2->updateEngineData();
   auto& manifoldCache = getOrCreateManifoldCache(this);
@@ -859,6 +1984,7 @@ bool NativeCollisionDetector::collide(
       &manifoldCache);
 
   bool collisionFound = false;
+  const auto manifoldMode = getContactManifoldMode();
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
       if (processNativePair(
@@ -866,6 +1992,8 @@ bool NativeCollisionDetector::collide(
               static_cast<NativeCollisionObject*>(object2),
               option,
               result,
+              manifoldMode,
+              contactGaps.get(),
               collisionFound)) {
         if (option.enableContact)
           attachCachedContactImpulses(result, &manifoldCache);

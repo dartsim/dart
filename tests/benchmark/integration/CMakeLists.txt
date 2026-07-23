@@ -42,6 +42,89 @@ dart_benchmarks(
     dart
 )
 
+dart_benchmarks(
+  TYPE BM_INTEGRATION
+  SOURCES
+    bm_exact_coulomb_fbf_paper.cpp
+  LINK_LIBRARIES
+    dart
+)
+
+set(
+  fbf_author_turntable_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
+)
+set(
+  fbf_author_turntable_trace_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/fbf_paper_trace.cpp"
+)
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY
+    CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_turntable_spec_source}"
+      "${fbf_author_turntable_trace_source}"
+)
+file(
+  SHA256 "${fbf_author_turntable_spec_source}"
+  fbf_author_turntable_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_turntable_trace_source}"
+  fbf_author_turntable_trace_sha256
+)
+
+add_executable(fbf_paper_trace fbf_paper_trace.cpp)
+target_link_libraries(fbf_paper_trace PRIVATE dart)
+target_compile_definitions(
+  fbf_paper_trace
+  PRIVATE
+    DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
+    DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_author_turntable_trace_sha256}"
+)
+
+add_executable(fbf_paper_gamma_sweep fbf_paper_gamma_sweep.cpp)
+target_link_libraries(fbf_paper_gamma_sweep PRIVATE dart)
+
+add_executable(fbf_paper_card_house_probe fbf_paper_card_house_probe.cpp)
+target_link_libraries(fbf_paper_card_house_probe PRIVATE dart)
+
+add_executable(fbf_paper_arch_probe fbf_paper_arch_probe.cpp)
+target_link_libraries(fbf_paper_arch_probe PRIVATE dart)
+
+add_executable(
+  fbf_paper_arch_wedge_collision_probe
+  fbf_paper_arch_wedge_collision_probe.cpp
+)
+target_link_libraries(fbf_paper_arch_wedge_collision_probe PRIVATE dart)
+if(TARGET dart-collision-bullet)
+  target_link_libraries(
+    fbf_paper_arch_wedge_collision_probe
+    PRIVATE dart-collision-bullet
+  )
+endif()
+
+add_executable(
+  fbf_paper_arch_wedge_dynamics_probe
+  fbf_paper_arch_wedge_dynamics_probe.cpp
+)
+target_link_libraries(fbf_paper_arch_wedge_dynamics_probe PRIVATE dart)
+
+# Standalone, current-source visual evidence for the reconstructed literal
+# 25-stone wedge arch. This stays separate from the oriented-box demo scene and
+# is only available when the OSG viewer component is present.
+if(TARGET dart-gui-osg)
+  add_executable(
+    fbf_literal_wedge_visual_capture
+    fbf_literal_wedge_visual_capture.cpp
+  )
+  target_link_libraries(
+    fbf_literal_wedge_visual_capture
+    PRIVATE dart dart-gui-osg
+  )
+endif()
+
 if(TARGET dart-collision-bullet)
   dart_benchmarks(
     TYPE BM_INTEGRATION

@@ -444,14 +444,15 @@ bm-boxes-headless = { cmd = """
 # Off-screen still capture of a dart-demos scene via the dart-gui-osg
 # OffscreenViewer helper. On a headless host (no X server) prefix with
 # xvfb-run, e.g. `xvfb-run -a -s '-screen 0 1280x1024x24' pixi run capture`.
-# width/height set the off-screen render size.
+# width/height set the off-screen render size, and steps controls how many
+# deterministic simulation steps are taken before the shot.
 capture = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target dart-demos \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos \
-        --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }}
+        --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }} --steps {{ steps }}
 """, depends-on = [
   "config",
 ], args = [
@@ -459,6 +460,28 @@ capture = { cmd = """
   { arg = "out", default = "capture.png" },
   { arg = "width", default = "640" },
   { arg = "height", default = "480" },
+  { arg = "steps", default = "150" },
+], env = { BUILD_TYPE = "Release" } }
+
+# Off-screen capture after invoking one scene key action. This is useful for
+# scene states that are exposed through the GUI/key-action path rather than by
+# plain deterministic stepping.
+capture-action = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos \
+        --scene {{ scene }} --headless --headless-action {{ action }} --shot {{ out }} --width {{ width }} --height {{ height }} --steps {{ steps }}
+""", depends-on = [
+  "config",
+], args = [
+  { arg = "scene", default = "sleeping" },
+  { arg = "action", default = "e" },
+  { arg = "out", default = "capture.png" },
+  { arg = "width", default = "640" },
+  { arg = "height", default = "480" },
+  { arg = "steps", default = "150" },
 ], env = { BUILD_TYPE = "Release" } }
 
 # Agent-time image verification for headless captures (pair with `capture`).
@@ -476,6 +499,11 @@ image-compose = { cmd = ["python", "scripts/image_compose.py"] }
 evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
 
 evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
+
+# Exact-Coulomb paper evidence runner. It accepts its full CLI after
+# `pixi run fbf-cpu-evidence -- ...`; it intentionally does not choose cases,
+# durations, or output paths implicitly.
+fbf-cpu-evidence = { cmd = ["python", "scripts/run_fbf_cpu_evidence.py"] }
 
 # Deterministic headless capture with active camera control (view-quality
 # scored auto viewpoints, focus framing, turntable/motion) and engine-rendered
@@ -1432,6 +1460,36 @@ wheel-verify = { depends-on = [
 ] }
 wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
 
+#==============================
+# FBF external-baseline feature
+#==============================
+# Optional benchmark/example-only external comparison baselines for the
+# exact-Coulomb FBF paper-parity work (MuJoCo, and NVIDIA Warp/Newton for the
+# Kamino availability probe). This is deliberately NOT part of the default
+# environment: the dependencies exist only under `pixi run -e fbf-baselines`,
+# so the core DART dependency surface and default CI are unchanged. NOTE:
+# this is the first use of pypi-dependencies in this file; flagged for
+# maintainer sign-off before any broader adoption.
+
+[feature.fbf-baselines]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.fbf-baselines.dependencies]
+python = ">=3.10,<3.13"
+pip = "*"
+
+[feature.fbf-baselines.pypi-dependencies]
+mujoco = "*"
+warp-lang = "*"
+newton = "*"
+
+[feature.fbf-baselines.tasks]
+fbf-baseline-mujoco = "python tests/benchmark/integration/fbf_paper_mujoco_baseline.py"
+fbf-baseline-kamino = "python tests/benchmark/integration/fbf_paper_kamino_baseline.py"
+fbf-kamino-evidence = "python scripts/run_fbf_kamino_evidence.py"
+fbf-mujoco-evidence = "python scripts/run_fbf_mujoco_evidence.py"
+
 #==============
 # Environments
 #==============
@@ -1445,3 +1503,4 @@ py311-wheel = ["assimp6", "py311-wheel"]
 py312-wheel = ["assimp6", "py312-wheel"]
 py313-wheel = ["assimp6", "py313-wheel"]
 profile = ["profile", "assimp6"]
+fbf-baselines = ["fbf-baselines"]

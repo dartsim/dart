@@ -68,6 +68,33 @@ constexpr double kCachedFrictionBasisToleranceSquared
     = kCachedFrictionBasisTolerance * kCachedFrictionBasisTolerance;
 
 //==============================================================================
+bool isConfiguredNativeProximityContact(const collision::Contact* contact)
+{
+  if (contact == nullptr || !(contact->penetrationDepth < 0.0)
+      || !std::isfinite(contact->penetrationDepth)) {
+    return false;
+  }
+
+  const auto* object1 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact->collisionObject1);
+  const auto* object2 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact->collisionObject2);
+  if (!object1 || !object2)
+    return false;
+
+  const auto* detector
+      = dynamic_cast<const collision::NativeCollisionDetector*>(
+          object1->getCollisionDetector());
+  if (!detector || object2->getCollisionDetector() != detector)
+    return false;
+
+  const double summedGap = detector->getContactGap(object1->getShapeFrame())
+                           + detector->getContactGap(object2->getShapeFrame());
+  const double separation = -contact->penetrationDepth;
+  return std::isfinite(summedGap) && summedGap > 0.0 && separation < summedGap;
+}
+
+//==============================================================================
 dynamics::BodyNode* getContactBodyNode(
     const collision::CollisionObject* collisionObject)
 {
@@ -676,6 +703,19 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     }
     return errorReductionVelocity;
   };
+  const auto computeSpeculativeSeparationVelocity = [&]() {
+    if (isPositionPhase || !(mContact->penetrationDepth < 0.0)
+        || !isConfiguredNativeProximityContact(mContact)) {
+      return 0.0;
+    }
+
+    // A configured proximity contact is separated by -penetrationDepth.
+    // Permit that separation to close over the current step; only a faster
+    // approach should generate an impulse. Recheck Native gap provenance here
+    // because ContactConstraint is publicly constructible and can bypass
+    // ConstraintSolver admission.
+    return -mContact->penetrationDepth * info->invTimeStep;
+  };
 
   // Fill w, where the LCP form is Ax = b + w (x >= 0, w >= 0, x^T w = 0)
   if (isPositionPhase) {
@@ -684,6 +724,11 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   } else {
     getRelVelocity(info->b);
   }
+  // ConstraintInfo stores the negative physical relative velocity. Apply the
+  // closure allowance before restitution so a separated contact that cannot
+  // close this step cannot bounce prematurely. The exact adapter later negates
+  // b back to free contact velocity.
+  info->b[0] -= computeSpeculativeSeparationVelocity();
 
   //----------------------------------------------------------------------------
   // Friction case

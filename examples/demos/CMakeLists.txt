@@ -48,11 +48,11 @@ set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 # rather than a dependency on that example.
 add_subdirectory(scenes/wam_ikfast/ikfast)
 
-# DynamicJointConstraintsScene.cpp draws its on-screen catalog labels with
-# osgText::Text directly (ported from examples/dynamic_joint_constraints,
-# which links osgText the same way -- dart-gui-osg only links the core
-# osg::osg component, not osgText). Mirrors that example's own CMake pattern
-# for locating/wrapping the osgText library as an imported target.
+# DynamicJointConstraintsScene.cpp and FbfPaperFrictionScene.cpp draw
+# world-anchored labels with osgText::Text directly. The former is ported from
+# examples/dynamic_joint_constraints, which links osgText the same way;
+# dart-gui-osg only links the core osg::osg component. Mirror that example's
+# CMake pattern for locating/wrapping osgText as an imported target.
 find_package(OpenSceneGraph 3.0.0 REQUIRED COMPONENTS osgText)
 set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY})
 if(NOT dart_demos_osg_text_library)
@@ -132,6 +132,137 @@ set(DART_DEMOS_HAVE_PYTHON FALSE)
 if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)
 endif()
+
+# Bind the queryable author-incline, author-backspin, author-turntable,
+# author-Painleve, author-card-house, author-masonry-arch, and
+# literal-masonry-arch contracts in dart-demos to their exact shared specs and
+# production scene source.
+# CMAKE_CONFIGURE_DEPENDS
+# refreshes the embedded hashes before any bound source is rebuilt, so a stale
+# binary cannot satisfy an evidence finalizer.
+set(
+  fbf_author_incline_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorInclineSpec.hpp"
+)
+set(
+  fbf_author_backspin_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorBackspinSpec.hpp"
+)
+set(
+  fbf_author_turntable_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorTurntableSpec.hpp"
+)
+set(
+  fbf_paper_friction_demo_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfPaperFrictionScene.cpp"
+)
+set(
+  fbf_author_painleve_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorPainleveSpec.hpp"
+)
+set(
+  fbf_author_card_house_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorCardHouseSpec.hpp"
+)
+set(
+  fbf_author_masonry_arch_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorMasonryArchSpec.hpp"
+)
+set(
+  fbf_author_masonry_arch_adapter_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorMasonryArchDartAdapter.hpp"
+)
+set(
+  fbf_literal_masonry_arch_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfLiteralMasonryArchSpec.hpp"
+)
+set(
+  fbf_literal_masonry_arch_geometry_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/math/detail/MasonryArchGeometry.hpp"
+)
+get_filename_component(
+  fbf_exact_solver_options_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+  ABSOLUTE
+)
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY
+    CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_incline_spec_source}"
+      "${fbf_author_backspin_spec_source}"
+      "${fbf_author_turntable_spec_source}"
+      "${fbf_author_painleve_spec_source}"
+      "${fbf_author_card_house_spec_source}"
+      "${fbf_author_masonry_arch_spec_source}"
+      "${fbf_author_masonry_arch_adapter_source}"
+      "${fbf_literal_masonry_arch_spec_source}"
+      "${fbf_literal_masonry_arch_geometry_source}"
+      "${fbf_exact_solver_options_source}"
+      "${fbf_paper_friction_demo_source}"
+)
+file(SHA256 "${fbf_author_incline_spec_source}" fbf_author_incline_spec_sha256)
+file(
+  SHA256 "${fbf_author_backspin_spec_source}"
+  fbf_author_backspin_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_turntable_spec_source}"
+  fbf_author_turntable_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_painleve_spec_source}"
+  fbf_author_painleve_spec_sha256
+)
+file(SHA256 "${fbf_paper_friction_demo_source}" fbf_paper_friction_demo_sha256)
+file(
+  SHA256 "${fbf_author_card_house_spec_source}"
+  fbf_author_card_house_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_masonry_arch_spec_source}"
+  fbf_author_masonry_arch_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_masonry_arch_adapter_source}"
+  fbf_author_masonry_arch_adapter_sha256
+)
+file(
+  SHA256 "${fbf_literal_masonry_arch_spec_source}"
+  fbf_literal_masonry_arch_spec_sha256
+)
+file(
+  SHA256 "${fbf_literal_masonry_arch_geometry_source}"
+  fbf_literal_masonry_arch_geometry_sha256
+)
+file(
+  SHA256 "${fbf_exact_solver_options_source}"
+  fbf_exact_solver_options_sha256
+)
+set_property(
+  SOURCE "${fbf_paper_friction_demo_source}"
+  APPEND
+  PROPERTY
+    COMPILE_DEFINITIONS
+      DART_FBF_AUTHOR_INCLINE_SPEC_SHA256="${fbf_author_incline_spec_sha256}"
+      DART_FBF_AUTHOR_INCLINE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_BACKSPIN_SPEC_SHA256="${fbf_author_backspin_spec_sha256}"
+      DART_FBF_AUTHOR_BACKSPIN_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
+      DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_PAINLEVE_SPEC_SHA256="${fbf_author_painleve_spec_sha256}"
+      DART_FBF_AUTHOR_PAINLEVE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
+      DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256="${fbf_author_masonry_arch_spec_sha256}"
+      DART_FBF_AUTHOR_MASONRY_ARCH_ADAPTER_SHA256="${fbf_author_masonry_arch_adapter_sha256}"
+      DART_FBF_AUTHOR_MASONRY_ARCH_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_SPEC_SHA256="${fbf_literal_masonry_arch_spec_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_LITERAL_MASONRY_ARCH_GEOMETRY_SHA256="${fbf_literal_masonry_arch_geometry_sha256}"
+      DART_FBF_EXACT_SOLVER_OPTIONS_SHA256="${fbf_exact_solver_options_sha256}"
+)
 
 # Globs every scene source, including one level of scene subdirectories (for
 # multi-file scenes, e.g. scenes/tinkertoy/), and conditionally adds

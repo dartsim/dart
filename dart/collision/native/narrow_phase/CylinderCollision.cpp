@@ -35,6 +35,7 @@
 #include <dart/collision/native/shapes/Shape.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -180,6 +181,169 @@ bool addAxialCylinderBoxPatchContacts(
 
   if (manifold.numContacts() == 1) {
     manifold.setType(ContactType::Point);
+  }
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+bool addNearlyAxialCylinderBoxFaceContacts(
+    double cylinderRadius,
+    double cylinderHalfHeight,
+    const Eigen::Isometry3d& cylinderTransform,
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Isometry3d& boxInCylinder,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  // Match the face-alignment threshold used by the detector's generic convex
+  // face-patch path. Yaw about the cylinder axis is unrestricted; only the
+  // supporting box face must remain nearly parallel to the cylinder cap.
+  constexpr double faceAlignmentCosine = 0.995;
+
+  if (contactBudgetExhausted(result.numContacts(), option)) {
+    return false;
+  }
+
+  const Eigen::Matrix3d& boxRotation = boxInCylinder.linear();
+  int faceAxis = 0;
+  double faceAlignment = std::abs(boxRotation(2, 0));
+  for (int axis = 1; axis < 3; ++axis) {
+    const double candidateAlignment = std::abs(boxRotation(2, axis));
+    if (candidateAlignment > faceAlignment) {
+      faceAlignment = candidateAlignment;
+      faceAxis = axis;
+    }
+  }
+  if (faceAlignment < faceAlignmentCosine) {
+    return false;
+  }
+
+  const Eigen::Vector3d center = boxInCylinder.translation();
+  double projectedHalfExtent = 0.0;
+  for (int axis = 0; axis < 3; ++axis) {
+    projectedHalfExtent
+        += boxHalfExtents[axis] * std::abs(boxRotation(2, axis));
+  }
+
+  const double minZ = center.z() - projectedHalfExtent;
+  const double maxZ = center.z() + projectedHalfExtent;
+  if (minZ > cylinderHalfHeight || maxZ < -cylinderHalfHeight) {
+    return false;
+  }
+
+  const double topPenetration = cylinderHalfHeight - minZ;
+  const double bottomPenetration = maxZ + cylinderHalfHeight;
+  const bool topContact = topPenetration <= bottomPenetration;
+  const double axialPenetration
+      = topContact ? topPenetration : bottomPenetration;
+  const Eigen::Vector3d normalLocal
+      = Eigen::Vector3d(0.0, 0.0, topContact ? -1.0 : 1.0);
+
+  const double radialTolerance = 1e-12 * std::max(1.0, cylinderRadius);
+  double maxVertexRadius = 0.0;
+  for (double xSign : {-1.0, 1.0}) {
+    for (double ySign : {-1.0, 1.0}) {
+      for (double zSign : {-1.0, 1.0}) {
+        const Eigen::Vector3d vertexInCylinder
+            = boxInCylinder
+              * Eigen::Vector3d(
+                  xSign * boxHalfExtents.x(),
+                  ySign * boxHalfExtents.y(),
+                  zSign * boxHalfExtents.z());
+        maxVertexRadius
+            = std::max(maxVertexRadius, vertexInCylinder.head<2>().norm());
+      }
+    }
+  }
+  if (maxVertexRadius > cylinderRadius + radialTolerance
+      || axialPenetration
+             > cylinderRadius - maxVertexRadius + radialTolerance) {
+    return false;
+  }
+
+  std::array<int, 2> tangentAxes{};
+  std::size_t tangentIndex = 0u;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (axis != faceAxis) {
+      tangentAxes[tangentIndex++] = axis;
+    }
+  }
+
+  Eigen::Vector3d faceCenterLocal = Eigen::Vector3d::Zero();
+  const double faceAxisDirection = boxRotation(2, faceAxis);
+  const double faceSign = topContact ? (faceAxisDirection >= 0.0 ? -1.0 : 1.0)
+                                     : (faceAxisDirection >= 0.0 ? 1.0 : -1.0);
+  faceCenterLocal[faceAxis] = faceSign * boxHalfExtents[faceAxis];
+
+  struct Candidate
+  {
+    Eigen::Vector3d localPosition;
+    ContactPoint contact;
+  };
+
+  std::array<Candidate, 4> candidates{};
+  std::size_t numCandidates = 0u;
+  const double axialTolerance = 1e-12 * std::max(1.0, cylinderHalfHeight);
+  for (double firstSign : {-1.0, 1.0}) {
+    for (double secondSign : {-1.0, 1.0}) {
+      Eigen::Vector3d vertexLocal = faceCenterLocal;
+      vertexLocal[tangentAxes[0]] = firstSign * boxHalfExtents[tangentAxes[0]];
+      vertexLocal[tangentAxes[1]] = secondSign * boxHalfExtents[tangentAxes[1]];
+      const Eigen::Vector3d vertexInCylinder = boxInCylinder * vertexLocal;
+
+      // This helper is deliberately conservative. A face fully over the cap
+      // receives a stable axial patch; partially supported faces continue to
+      // the existing side/edge and generic convex fallbacks below.
+      if (vertexInCylinder.head<2>().squaredNorm()
+          > (cylinderRadius + radialTolerance)
+                * (cylinderRadius + radialTolerance)) {
+        return false;
+      }
+
+      const double signedPenetration
+          = topContact ? cylinderHalfHeight - vertexInCylinder.z()
+                       : vertexInCylinder.z() + cylinderHalfHeight;
+      if (signedPenetration < -axialTolerance) {
+        continue;
+      }
+
+      const double penetration = std::max(0.0, signedPenetration);
+      const Eigen::Vector3d contactLocal
+          = vertexInCylinder - normalLocal * (0.5 * penetration);
+      auto& candidate = candidates[numCandidates++];
+      candidate.localPosition = contactLocal;
+      candidate.contact.position = cylinderTransform * contactLocal;
+      candidate.contact.normal = cylinderTransform.rotation() * normalLocal;
+      candidate.contact.depth = penetration;
+    }
+  }
+
+  if (numCandidates < 2u) {
+    return false;
+  }
+  if (!option.enableContact) {
+    return true;
+  }
+
+  std::sort(
+      candidates.begin(),
+      candidates.begin() + numCandidates,
+      [](const Candidate& lhs, const Candidate& rhs) {
+        if (lhs.localPosition.x() != rhs.localPosition.x()) {
+          return lhs.localPosition.x() < rhs.localPosition.x();
+        }
+        if (lhs.localPosition.y() != rhs.localPosition.y()) {
+          return lhs.localPosition.y() < rhs.localPosition.y();
+        }
+        return lhs.localPosition.z() < rhs.localPosition.z();
+      });
+
+  const std::size_t remaining = option.maxNumContacts - result.numContacts();
+  const std::size_t numContacts = std::min(numCandidates, remaining);
+  ContactManifold manifold;
+  manifold.setType(numContacts == 1u ? ContactType::Point : ContactType::Patch);
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    manifold.addContact(candidates[i].contact);
   }
   result.addManifold(std::move(manifold));
   return true;
@@ -679,6 +843,17 @@ bool collideCylinderBox(
     contact.depth = penetration;
 
     result.addContact(contact);
+    return true;
+  }
+
+  if (addNearlyAxialCylinderBoxFaceContacts(
+          cylRadius,
+          cylHalfHeight,
+          cylinderTransform,
+          boxHalf,
+          boxInCyl,
+          result,
+          option)) {
     return true;
   }
 

@@ -40,6 +40,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dart_demos {
@@ -72,6 +73,11 @@ struct CameraHome
   ::osg::Vec3d center;
   ::osg::Vec3d up;
 };
+
+//==============================================================================
+/// Flat numeric state fields captured by a deterministic headless timeline.
+/// The host validates the keys and values, then owns JSON serialization.
+using SceneStateFields = std::vector<std::pair<std::string, double>>;
 
 //==============================================================================
 /// Context handed to DemoSceneSetup::onActivate so a scene can register extra
@@ -142,6 +148,25 @@ struct DemoSceneSetup
   /// Camera pose to apply when this scene becomes active. Optional.
   std::optional<CameraHome> cameraHome;
 
+  /// Optional canonical JSON contract for the scene's physics and controls.
+  /// The headless timeline evaluates this provider after host runtime options
+  /// and legacy pre-run actions, immediately before timeline step 0, then
+  /// writes the result as a structured object. This keeps the contract bound
+  /// to the world that actually ran instead of the scene factory's initial
+  /// snapshot.
+  /// Renderer-only meshes, materials, and textures belong to separate visual
+  /// provenance and must not be represented here.
+  std::function<std::string()> physicsContractProvider;
+
+  /// Optional numeric snapshot of scene-specific dynamic state. The
+  /// deterministic headless timeline evaluates this provider at every
+  /// completed step, including step zero and the final (or fail-fast) step,
+  /// and embeds a structured JSON object in that step's sidecar record. Empty
+  /// snapshots, empty or duplicate keys, non-finite values, and provider
+  /// exceptions fail the headless run closed. Interactive and other scenes
+  /// are unaffected when this provider is empty.
+  std::function<SceneStateFields()> sceneStateProvider;
+
   /// Whether the host should attach its default shadow technique.
   bool enableShadows = true;
 
@@ -162,6 +187,22 @@ struct DemoSceneSetup
 };
 
 //==============================================================================
+/// Text that must make a scene self-contained in the Scene tab. Most examples
+/// leave this empty; paper/research examples should fill all fields so the
+/// catalog can verify their in-app explanation coverage.
+struct ScenePanelDocumentation
+{
+  std::string overview;
+  std::string expectedResult;
+  std::string coverage;
+
+  bool isComplete() const
+  {
+    return !overview.empty() && !expectedResult.empty() && !coverage.empty();
+  }
+};
+
+//==============================================================================
 /// One entry in the demo catalog. `factory` is only invoked lazily -- the
 /// first time the demo is selected (and again on Rebuild/Reset) -- and may
 /// throw to signal a startup failure; the host will surface the reason and
@@ -179,6 +220,9 @@ struct DemoScene
 
   /// One-line summary shown as a row tooltip.
   std::string summary;
+
+  /// Optional Scene-tab documentation metadata used by catalog checks.
+  ScenePanelDocumentation scenePanelDocumentation;
 
   /// Builds (or rebuilds) the scene. May throw.
   std::function<DemoSceneSetup()> factory;

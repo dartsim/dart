@@ -143,6 +143,34 @@ struct LogEntry
 };
 
 //==============================================================================
+/// One screenshot requested at a completed deterministic simulation step.
+struct HeadlessShotSchedule
+{
+  std::size_t step = 0u;
+  std::string path;
+};
+
+//==============================================================================
+/// One scene key action requested at a completed deterministic simulation step.
+struct HeadlessActionSchedule
+{
+  std::size_t step = 0u;
+  int key = 0;
+};
+
+//==============================================================================
+/// Deterministic multi-shot/action schedule for one headless world run.
+struct HeadlessTimeline
+{
+  std::vector<HeadlessShotSchedule> shots;
+  std::vector<HeadlessActionSchedule> actions;
+  std::string sidecarPath;
+  std::string runtimeCommand;
+  bool exactFbfFailFast = false;
+  bool exactFbfSourceContinuation = false;
+};
+
+//==============================================================================
 /// Owns the single ImGuiViewer window, the scene registry, and the safe
 /// runtime scene-switching machinery described in examples/demos/README.md.
 /// Persistent host chrome (window, theme, panel layout) survives scene
@@ -174,6 +202,15 @@ public:
   /// returns 0.
   int listScenes() const;
 
+  /// Verifies every FBF research scene has self-contained Scene-tab metadata.
+  int verifyFbfSceneDocs() const;
+
+  /// Builds `sceneId`, applies each legacy pre-run headless action, prints the
+  /// scene's physics contract JSON verbatim, and exits without realizing or
+  /// rendering the viewer. Returns nonzero for an unknown scene, factory or
+  /// action failure, a missing provider, or a provider failure.
+  int printScenePhysicsContract(const std::string& sceneId);
+
   /// Advances through every scene in the catalog, `framesPerScene` steps
   /// each, twice in a row (the repeat proves rapid re-switching does not leak
   /// world nodes). No window or GPU context is required. Returns 0 if every
@@ -191,6 +228,18 @@ public:
       int width,
       int height);
 
+  /// Runs one deterministic headless world timeline. At each completed step,
+  /// the opt-in exact-FBF gate is evaluated before any same-step events, then
+  /// all requested shots are captured before all scheduled actions. Step zero
+  /// is the freshly installed scene. The optional JSON sidecar records ordered
+  /// events and solver diagnostics.
+  int runHeadlessTimeline(
+      const HeadlessTimeline& timeline,
+      int totalSteps,
+      const std::string& sceneId,
+      int width,
+      int height);
+
   /// Selects which scene id run()/cycleScenes()/runHeadlessShot() should
   /// start on. An empty id (the default) means "the first scene in the
   /// catalog".
@@ -202,6 +251,12 @@ public:
   /// Applied by runHeadlessShot() right after the scene installs.
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
+
+  /// Adds a scene key action to invoke after a headless scene installs and
+  /// before deterministic capture steps are taken. This lets visual smoke
+  /// tests exercise scene actions without hardcoding scene-specific hooks in
+  /// the host.
+  void addHeadlessActionKey(int key);
 
   /// Number of world nodes currently registered with the viewer. Exactly one
   /// whenever a scene is active; used by cycleScenes() as a leak audit.
@@ -275,6 +330,13 @@ private:
 
   void ensureViewerConfigured();
   bool prepareOffscreenContext(int width, int height, const CameraHome& home);
+  bool prepareHeadlessRun(
+      const std::string& sceneId,
+      int width,
+      int height,
+      CameraHome& home,
+      bool& sceneFailed);
+  bool captureHeadlessShot(const std::string& shotPath, const CameraHome& home);
 
   void renderToolbar();
   void renderNavigator();
@@ -286,7 +348,9 @@ private:
   void renderLogSection(float height);
   void renderViewMenu();
   void renderRuntimeControls();
-  void invokeKeyAction(KeyAction& action);
+  KeyAction* findKeyAction(int key);
+  bool invokeKeyAction(KeyAction& action);
+  bool invokeHeadlessActionKey(int key);
   void requestScenePanelTab(ScenePanelTab tab);
   void applyShadowState();
   void fitCameraToWorld();
@@ -304,6 +368,9 @@ private:
   std::function<void()> mCurrentRenderPanel;
   std::vector<KeyAction> mCurrentKeyActions;
   std::optional<CameraHome> mCurrentCameraHome;
+  ScenePanelDocumentation mCurrentSceneDocumentation;
+  std::function<std::string()> mCurrentPhysicsContractProvider;
+  std::function<SceneStateFields()> mCurrentSceneStateProvider;
   std::vector<std::function<void()>> mExtraTeardowns;
 
   std::string mCurrentSceneId;
@@ -351,6 +418,7 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+  std::vector<int> mHeadlessActionKeys;
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;

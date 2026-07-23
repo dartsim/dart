@@ -74,6 +74,11 @@ public:
   /// Renders the Diagnostics toggle checkbox.
   void renderToggle();
 
+  /// Enables or disables contact-force arrows. Disabling hides any arrows
+  /// synchronously so paused/headless renders cannot retain stale debug
+  /// geometry.
+  void setEnabled(bool enabled);
+
   /// Number of contacts visualized on the last applyPostStep() call (0 if
   /// disabled), for the Diagnostics stats line.
   std::size_t getVisualizedContactCount() const

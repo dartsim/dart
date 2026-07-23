@@ -8,6 +8,244 @@ the scattered per-example programs that used to live under `examples/*`.
 Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
 counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
+The FBF exact-Coulomb paper inspection scenes live under the `Research`
+category. Each FBF scene's `Scene` panel includes a self-contained overview,
+expected result, coverage-limit note, solver-mode controls, contact count, and
+available exact-FBF diagnostics so the example can be understood without reading
+the source:
+
+```bash
+pixi run demos -- --list-scenes
+pixi run demos -- --verify-fbf-scene-docs
+pixi run demos -- --scene fbf_paper_incline
+pixi run demos -- --scene fbf_author_incline_sweep_current_source
+pixi run demos -- --scene fbf_paper_backspin
+pixi run demos -- --scene fbf_author_backspin_current_source
+pixi run demos -- --scene fbf_paper_turntable
+pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_2
+pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_5
+pixi run demos -- --scene fbf_paper_turntable_mu_0_5_omega_5
+pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_2
+pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_5
+pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_2
+pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
+pixi run demos -- --scene fbf_author_card_house_5_construction
+pixi run demos -- --scene fbf_author_card_house_4_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_4_impact_source_continuation_current_source
+pixi run demos -- --scene fbf_author_card_house_5_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_5_impact_source_continuation_current_source
+pixi run demos -- --scene fbf_author_card_house_10_impact_current_source
+pixi run demos -- --scene fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source
+pixi run demos -- --scene fbf_author_card_house_10_impact_source_continuation_current_source
+pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_current_source
+pixi run demos -- --scene fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source
+pixi run demos -- --scene fbf_paper_painleve
+pixi run demos -- --scene fbf_paper_painleve_mu_0_55
+pixi run demos -- --scene fbf_author_painleve_mu_0_5
+pixi run demos -- --scene fbf_author_painleve_mu_0_55
+pixi run demos -- --scene fbf_paper_card_aframe
+pixi run demos -- --scene fbf_paper_card_house_26
+pixi run demos -- --scene fbf_paper_card_house_10
+pixi run demos -- --scene fbf_paper_card_house_10_dynamic
+pixi run demos -- --scene fbf_paper_masonry_arch_25_literal_standing
+pixi run demos -- --scene fbf_paper_masonry_arch_25
+pixi run demos -- --scene fbf_paper_masonry_arch_101
+```
+
+The generic turntable scene starts at `mu=.5`, `omega=2 rad/s` and keeps its
+interactive angular-speed slider. The three parameter-suffixed turntable scenes
+are fixed capture targets; together with the generic default they cover the
+paper's four parameter cells. Likewise, the generic Painleve proxy is the
+`mu=.5` cell and the suffixed scene fixes `mu=.55`.
+
+The separate `fbf_author_painleve_mu_0_5` and
+`fbf_author_painleve_mu_0_55` scenes preserve the current public author's
+0.3 x 1.2 x 0.6 m box, 200 kg/m^3 density (43.2 kg mass), upright pose,
+4 m/s launch speed, finite 10 x 3 x .1 m ground, 1/60 s step, and two-second
+horizon. The `.55` value is the source default; the `.5/.55` pair is a
+source-supported CLI sweep selected for the paper-video cells, not a recovered
+historical invocation. The exact scene maps the public CLI's `gamma_c=5` onto
+DART's adaptive safe-step convention (scale ten), retains strict `1e-6`
+convergence, and allows up to 1,000 DART outer iterations; this is an adapter
+policy, not solver-backend equivalence. Both lanes use Native FourPointPlanar
+contact. Source `gap=.005`, `ke=1e4`, and `kd=1e3` are recorded but not claimed
+as equivalent DART contact semantics. The older `fbf_paper_painleve*` scenes
+remain historical proxy diagnostics with different geometry, density, pose,
+velocity, and duration.
+
+`fbf_author_backspin_current_source` preserves the current public author's
+1 kg, .25 m-radius sphere; `mu=.5`; `vx=4 m/s`; `wy=-200 rad/s`; finite
+30 x 1 x .1 m slab; 1/60 s step; and complete four-second horizon. Its
+high-contrast checker mesh is rendering-only: the analytical sphere remains
+the sole collision, inertia, mass, and friction shape. The strict exact-FBF
+lane is checked against a sealed source terminal projection after supported
+slip convergence and later slab roll-off; the boxed lane reports its observed
+outcome without requiring failure. This is a current-source DART adapter, not
+source-backend, renderer, timing, historical-paper, or full-trajectory parity.
+
+Capture and independently revalidate the exact/boxed evidence with:
+
+```bash
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py run \
+  --scenario backspin_author_current_source --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root /tmp/fbf-author-backspin
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py verify \
+  --scenario backspin_author_current_source --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root /tmp/fbf-author-backspin
+```
+
+The separate `fbf_author_incline_sweep_current_source` scene preserves the
+operator-selected Figure 1 `mu={.3,.4,.45,.5,.55,.6,.8}` grid passed through
+the public runner's supported `--mu` CLI (whose source default is `.5`), 10 x 3
+x .1 m incline slab, 1 m cube at density 1000 kg/m^3, `tan(theta)=.5`, .501 m
+initial center distance from the plane, 1/60 s step, and 120-step horizon. The
+source runs each cell independently; the demo applies recorded Y-only layout
+translations so all seven otherwise-identical cells can be viewed together.
+The source cube shape gap of .01 m is recorded separately from its .001 m
+initial geometric separation and is not represented as equivalent DART gap
+semantics. Its evidence schedule requires every lane to remain supported,
+upright, and in-lane with contact participation, then compares the seven final
+tangential displacements and velocities with the retained current-source FBF
+run within absolute `.01 m` / `.01 m/s` bounds. That source reference records
+839/840 configured convergence flags; `mu=.55`, step 1 is false after 200/200
+outer iterations, so it is not a strictly converged source sweep. Exact/boxed
+DART solvers, Native FourPointPlanar collision, float64 arithmetic, camera,
+materials, and rendering remain adapter choices, and exact fallback is
+disabled. This is only a terminal-state/slide-stick outcome slice: it
+establishes no source
+trajectory/backend or full physical equivalence, solver superiority, float32,
+video, timing, or paper-parity claim. The older `fbf_paper_incline` two-cell
+`.4/.5` fixture is unchanged and remains the paper-threshold regression lane.
+
+The unsuffixed ten-level card scene remains a static construction inspector.
+`fbf_paper_card_house_10_dynamic` is a separate 155-mobile-card exact-FBF
+adapter. Its 512-contact, eight-per-pair budget is already known to saturate in
+the boxed-LCP construction probe, so the dynamic scene is not full-natural-
+manifold or performance evidence. Accept a timed capture only when its sidecar
+reports exact-FBF solves with zero exact failures and zero boxed-LCP fallbacks.
+
+The literal 25-stone masonry scene is a separate no-projectile standing
+contract using convex voussoir wedges, exact prism inertia, Native
+FourPointPlanar contacts, and scoped ERP restoration; the older
+`fbf_paper_masonry_arch_25` scene remains the reduced oriented-box projectile
+proxy.
+
+`fbf_author_card_house_4_impact_current_source` is the dynamic counterpart to
+the five-level construction still. It selects the public author's supported
+CLI arguments `--solvers fbf --levels 4 --frames 600 --drop-frame 400
+--num-cubes 4 --mu 0.8 --cube-size 0.4 --cube-density 500 --drop-height 1.0
+--device cpu --profile --usd`: 26 source-sized cards and four initially
+kinematic 0.8 m cubes. Interactive `p` releases those existing cubes
+immediately; the evidence runner invokes it after completed substep 1600 in a
+2400-substep, 10-second schedule. Source `ke=1e4`, `kd=1e3`, and `gap=.005`
+are recorded source semantics, not contact semantics implemented equivalently
+by the DART adapter. The older `fbf_paper_card_house_26` remains a distinct
+reconstructed diagnostic with different card and projectile parameters. The
+new adapter does not claim that its selected CLI arguments were the historical
+paper invocation, nor source-backend, trajectory, outcome, or timing
+equivalence, Fig. 6/video parity, or final media. It remains an adapter-only
+lane.
+
+`fbf_author_card_house_4_impact_source_continuation_current_source` reuses the
+same card-house bodies, release action, time step, capture schedule, and
+source-style inner initialization while additionally requesting the separate
+source-continuation termination and gamma policy. Its headless gate is
+deliberately separate from the strict exact-FBF fail-fast gate: it accepts only
+finite `success`, `plateau_accepted`, or
+`max_iterations_accepted` group outcomes with complete per-group telemetry and
+no boxed-LCP fallback. The strict scene and its residual/cap gate remain
+unchanged, so the two policies produce distinct evidence lanes rather than
+silently weakening the existing one.
+
+The source-default five-level pair makes the public no-argument configuration
+dynamic without changing the construction-only scene.
+`fbf_author_card_house_5_impact_current_source` contains exactly 40 cards and
+the four existing cubes, represents the pinned 0.1 m ground and 0.005 m
+dynamic-shape gap values through the same Native FourPointPlanar frontend, and
+uses the source-default 800-frame/3,200-substep clock with release after
+completed step 1,600. The separately named
+`fbf_author_card_house_5_impact_source_continuation_current_source` keeps the
+same bodies, gaps, frontend, clock, and release action while requesting the
+source-continuation policy only for exact FBF. Both remain current-source DART
+adapters: source contact/backend semantics, historical-paper provenance,
+trajectory/outcome parity, Fig. 6/video parity, solver superiority, and timing
+comparability are unclaimed.
+
+The separate ten-level current-source pair follows the same boundary.
+`fbf_author_card_house_10_impact_current_source` binds the supported
+`--levels 10 --frames 800` selection to 155 cards, four existing cubes, the
+source's heterogeneous per-shape gap values, 3,200 DART substeps, and a
+runner-scheduled release after completed step 1,600. The separately named
+`fbf_author_card_house_10_impact_colored_bgs_diagnostic_current_source` exposes
+a one-factor blocker diagnostic over that strict scene: it enables DART's
+deterministic manifold-colored inner BGS. Its qualifying 40-step evidence
+schedule retains one solver thread, disabled participant affinity, strict
+tolerance and iteration caps, no
+accepted outer cap, no fallback, no source continuation, and the same contact
+frontend and state. The interactive host retains its usual solver controls,
+but only the exact lane qualifies for this diagnostic. Its bounded exact-only
+evidence schedule runs 40 fail-fast steps and retains failed-group colored-path
+counters in the sidecar.
+It tests DART ordering only—not the source solver's per-contact coloring,
+parallel performance, global-workspace scope, trajectory/outcome parity,
+Tables 6-7, video, or paper parity. The additive
+`fbf_author_card_house_10_impact_source_continuation_current_source` scene
+keeps that geometry, contact frontend, clock, camera, and release action while
+requesting continuation only in its exact-FBF lane. The paper video contains
+no ten-level segment, and the available source output has no post-release
+physical oracle, so successful synchronized media remains DART continuation
+evidence rather than strict convergence, Tables 6-7 reproduction, trajectory
+or physical parity, or solver superiority.
+
+`fbf_author_masonry_arch_25_crown_impact_current_source` preserves the public
+author repository's raw numeric 25-wedge geometry, mass/friction values, three
+initially kinematic cubes, and the declared 500-frame diagnostic schedule. Its
+`p` action releases those existing cubes immediately without respawning,
+moving, or accelerating them; the evidence runner invokes that action after
+completed substep 1600. DART Native collision, split impulse, float64
+arithmetic, exact/boxed solvers, camera, and rendering remain adapter choices;
+the scene does not claim source trajectory/outcome, the paper's 100-contact
+timing row, Fig. 7/video parity, or timing comparability.
+
+`fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source`
+is a separately named policy lane over the same geometry, collision frontend,
+clock, 2,000-substep horizon, and completed-step 1,600 cube release. Its exact
+solver requests bounded source-continuation termination plus strict
+ordered-body-B cross-step matching; switching to the boxed solver disables
+continuation without changing the scene physics. This additive lane does not
+weaken the existing strict scene and does not claim strict convergence, source
+trajectory or physical-outcome equivalence, Fig. 7/video parity, timing
+comparability, or solver superiority.
+
+For a bounded off-screen GUI smoke of one scene, use the same app through the
+Pixi capture task. The final argument is the number of deterministic simulation
+steps before the screenshot:
+
+```bash
+pixi run capture fbf_paper_backspin /tmp/fbf_paper_backspin.png 640 480 1
+pixi run image-verdict /tmp/fbf_paper_backspin.png
+```
+
+For a bounded capture of a scene state exposed through a GUI/key action, use
+the action-aware capture task. The 26-card FBF paper scene binds `p` to a
+reconstructed vertical drop of four projectile cubes, and the 25-stone arch
+scene binds `p` to a reconstructed row of small cubes dropped over the crown:
+
+```bash
+pixi run capture-action fbf_paper_card_house_26 p /tmp/fbf_card_house_projectiles.png 640 480 0
+pixi run image-verdict /tmp/fbf_card_house_projectiles.png
+pixi run capture-action fbf_paper_masonry_arch_25 p /tmp/fbf_arch_projectile.png 640 480 0
+pixi run image-verdict /tmp/fbf_arch_projectile.png
+```
+
+FBF paper-parity scenes may extend the reusable OSG renderer, `dart-demos`
+host, or ImGui widgets when a fixture needs better overlays, camera/snapshot
+capture, inspection controls, or in-GUI explanation. A GUI scene is not enough
+for this task unless its `Scene` panel explains the example's overview,
+expected result, and coverage limits without requiring source-code context.
+
 ## Architecture
 
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
@@ -17,7 +255,9 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked
-  `std::function` that builds the scene only when it is first selected.
+  `std::function` that builds the scene only when it is first selected. Research
+  scenes that need to be self-contained also fill `scenePanelDocumentation`,
+  which can be checked with `pixi run demos -- --verify-fbf-scene-docs`.
   Categories render in first-appearance order; scenes in registry order
   within a category.
 - **Scenes** (`scenes/*.cpp`, one factory each; multi-file scenes in
@@ -83,6 +323,8 @@ whatever the user changes at runtime:
   each, twice (a leak/robustness audit); exit nonzero on any factory failure.
 - `--headless --shot <path> [--steps N]` — off-screen pbuffer capture
   (requires a DISPLAY/GPU; a local self-verification tool, not a CI gate).
+- `--headless-action <key>` — invoke a scene key action before an off-screen
+  capture step sequence; may be repeated.
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
   scene with a specific registered backend (`fcl`, `dart`, `native`, `bullet`,
   or `ode` when available). The toolbar can switch backends while the scene is

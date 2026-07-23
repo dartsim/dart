@@ -38,6 +38,8 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -48,6 +50,7 @@
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -88,6 +91,34 @@ constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
+
+//==============================================================================
+static bool isConfiguredNativeProximityContact(
+    const collision::Contact& contact)
+{
+  if (!(contact.penetrationDepth < 0.0)
+      || !std::isfinite(contact.penetrationDepth)) {
+    return false;
+  }
+
+  const auto* object1 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact.collisionObject1);
+  const auto* object2 = dynamic_cast<const collision::NativeCollisionObject*>(
+      contact.collisionObject2);
+  if (!object1 || !object2)
+    return false;
+
+  const auto* detector
+      = dynamic_cast<const collision::NativeCollisionDetector*>(
+          object1->getCollisionDetector());
+  if (!detector || object2->getCollisionDetector() != detector)
+    return false;
+
+  const double summedGap = detector->getContactGap(object1->getShapeFrame())
+                           + detector->getContactGap(object2->getShapeFrame());
+  const double separation = -contact.penetrationDepth;
+  return std::isfinite(summedGap) && summedGap > 0.0 && separation < summedGap;
+}
 
 bool contactTouchesPlaneShape(const collision::Contact& collisionContact)
 {
@@ -214,6 +245,11 @@ bool isParallelSafeBuiltInBoxedSolver(const ConstBoxedLcpSolverPtr& solver)
 //==============================================================================
 bool canUseParallelBuiltInBoxedSolvers(const ConstraintSolver& solver)
 {
+  // Exact-Coulomb diagnostics, counters, and manifold warm starts are shared
+  // across group solves. Keep that solver serial without adding a
+  // release-branch virtual to ConstraintSolver's ABI.
+  if (dynamic_cast<const ExactCoulombFbfConstraintSolver*>(&solver) != nullptr)
+    return false;
   const auto* boxedSolver
       = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
   if (boxedSolver == nullptr)
@@ -271,21 +307,26 @@ public:
   }
 
   template <typename Func>
-  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  std::size_t parallelFor(
+      std::size_t count, std::size_t numThreads, Func&& func)
   {
     if (count == 0u)
-      return;
+      return 0u;
 
-    const std::size_t totalParticipants = std::min<std::size_t>(
+    const std::size_t requestedParticipants = std::min<std::size_t>(
         std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
-    if (totalParticipants <= 1u) {
+    if (requestedParticipants <= 1u) {
       for (std::size_t i = 0; i < count; ++i)
         func(i);
-      return;
+      return 1u;
     }
 
     const std::size_t chunkSize
-        = (count + totalParticipants - 1u) / totalParticipants;
+        = (count + requestedParticipants - 1u) / requestedParticipants;
+    // Ceiling-sized chunks can leave the final requested participant with no
+    // indices (for example, five indices split four ways). Dispatch and report
+    // only participants whose chunks are nonempty.
+    const std::size_t totalParticipants = (count + chunkSize - 1u) / chunkSize;
     const std::size_t workerCount = totalParticipants - 1u;
     using Function = typename std::remove_reference<Func>::type;
 
@@ -321,6 +362,8 @@ public:
       mTaskInvoker = nullptr;
       mWorkerLimit = 1u;
     }
+
+    return totalParticipants;
   }
 
 private:
@@ -1274,14 +1317,21 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       bodyNode2->setColliding(true);
       DART_SUPPRESS_DEPRECATED_END
 
-      // If penetration depth is negative, then the collision isn't really
-      // happening and the contact point should be ignored.
-      // TODO(MXG): Investigate ways to leverage the proximity information of a
-      //            negative penetration to improve collision handling.
-      if (contact.penetrationDepth < 0.0)
+      const bool softContact = isSoftContact(bodyNode1, bodyNode2);
+      // Ordinary negative-depth backend contacts remain non-constraints. Rigid
+      // Native speculative contacts are admitted only when their detector
+      // explicitly configures per-ShapeFrame gaps and the physical separation
+      // is strictly inside the summed gap. SoftContactConstraint does not
+      // implement the corresponding predictive row, so soft proximity contacts
+      // remain excluded. ContactConstraint rechecks Native provenance and
+      // permits closure by the physical separation divided by the time step.
+      if (contact.penetrationDepth < 0.0
+          && (!mCollisionOption.allowNegativePenetrationDepthContacts
+              || !isConfiguredNativeProximityContact(contact) || softContact)) {
         continue;
+      }
 
-      if (isSoftContact(bodyNode1, bodyNode2)) {
+      if (softContact) {
         SoftContactConstraintPtr softContactConstraint;
         while (!mReusableSoftContactConstraints.empty()) {
           softContactConstraint
@@ -2592,6 +2642,30 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     impulseAppliedStates.push_back(skeleton->isImpulseApplied());
   }
 
+  // Preserve the velocity-phase constraint impulses themselves as well: the
+  // position pass assembles its LCP with the same unit-impulse tests as the
+  // velocity pass, and ConstraintBase::applyUnitImpulse clears each touched
+  // skeleton's accumulated constraint impulses. World::step integrates the
+  // velocity-phase impulses only after this function returns, so without
+  // this snapshot every velocity-phase contact response would be silently
+  // discarded (resting bodies free-fall and tunnel while their contacts
+  // persist).
+  std::vector<Eigen::Vector6d> savedBodyConstraintImpulses;
+  std::vector<double> savedJointConstraintImpulses;
+  for (const auto& skeleton : mSkeletons) {
+    for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+      savedBodyConstraintImpulses.push_back(
+          skeleton->getBodyNode(i)->getConstraintImpulse());
+    }
+    for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
+      const auto* joint = skeleton->getJoint(i);
+      for (std::size_t dof = 0; dof < joint->getNumDofs(); ++dof) {
+        savedJointConstraintImpulses.push_back(
+            joint->getConstraintImpulse(dof));
+      }
+    }
+  }
+
   for (auto& constraintGroup : mConstrainedGroups) {
     solvePositionConstrainedGroup(constraintGroup);
   }
@@ -2599,6 +2673,22 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   for (auto& skeleton : mSkeletons) {
     if (skeleton->isPositionImpulseApplied()) {
       skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  std::size_t bodyImpulseIndex = 0u;
+  std::size_t jointImpulseIndex = 0u;
+  for (const auto& skeleton : mSkeletons) {
+    for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+      skeleton->getBodyNode(i)->setConstraintImpulse(
+          savedBodyConstraintImpulses[bodyImpulseIndex++]);
+    }
+    for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
+      auto* joint = skeleton->getJoint(i);
+      for (std::size_t dof = 0; dof < joint->getNumDofs(); ++dof) {
+        joint->setConstraintImpulse(
+            dof, savedJointConstraintImpulses[jointImpulseIndex++]);
+      }
     }
   }
 
@@ -2781,6 +2871,35 @@ bool ConstraintSolver::canSolveConstrainedGroupsInParallel() const
   };
 
   return canSolveGroupsInParallel();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::parallelForConstraintWork(
+    std::size_t count, void* context, ConstraintParallelTask task)
+{
+  if (count == 0u)
+    return 0u;
+
+  if (task == nullptr) {
+    DART_ASSERT(false && "Null constraint parallel-work callback.");
+    return 0u;
+  }
+
+  auto runAt = [context, task](std::size_t index) {
+    task(context, index);
+  };
+  if (mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u) {
+    for (std::size_t i = 0u; i < count; ++i)
+      runAt(i);
+    return 1u;
+  }
+
+  // Exact-Coulomb constrained groups remain excluded from the outer parallel
+  // group loop, so an exact solver can use this pool internally without nested
+  // dispatch. Keep this bridge synchronous: callers rely on completion as the
+  // phase barrier before consuming callback output.
+  return mConstraintThreadPool->parallelFor(
+      count, mNumSimulationThreads, runAt);
 }
 
 //==============================================================================

@@ -7,9 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import dartpy as dart
+import pytest
 
 ROOT = Path(__file__).resolve().parents[4]
 SCRIPTS = ROOT / "scripts"
@@ -67,10 +66,7 @@ def _changed_pixel_count(first, second, tolerance=8):
     assert first.height == second.height
     return sum(
         any(
-            abs(
-                first.pixels[pixel * 3 + channel]
-                - second.pixels[pixel * 3 + channel]
-            )
+            abs(first.pixels[pixel * 3 + channel] - second.pixels[pixel * 3 + channel])
             > tolerance
             for channel in range(3)
         )
@@ -88,9 +84,7 @@ def test_reproduce_command_records_focus_framing_margin():
 
 
 def test_reproduce_command_records_claim_specific_factory():
-    command = agent_capture._reproduce_command(
-        _args(factory="claim_scene:make_world")
-    )
+    command = agent_capture._reproduce_command(_args(factory="claim_scene:make_world"))
     assert "--factory claim_scene:make_world" in command
     assert "--scene" not in command
 
@@ -160,9 +154,7 @@ def test_main_reports_invalid_factory_without_traceback(
 
 
 def test_reproduce_command_prefers_explicit_distance():
-    command = agent_capture._reproduce_command(
-        _args(focus="box", camera_distance=2.5)
-    )
+    command = agent_capture._reproduce_command(_args(focus="box", camera_distance=2.5))
     assert "--camera-distance 2.5" in command
     assert "--frame-margin" not in command
 
@@ -174,6 +166,52 @@ def test_reproduce_command_records_custom_warmup():
     assert "--warmup-frames 25" in command
     default = agent_capture._reproduce_command(_args())
     assert "--warmup-frames" not in default
+
+
+@pytest.mark.parametrize(
+    "prefix", ["../victim/x", "/tmp/escape", "nested/name", "nested\\name", ""]
+)
+def test_prefix_must_be_a_safe_single_basename(prefix):
+    with pytest.raises(ValueError, match="safe basename"):
+        agent_capture._validate_prefix(prefix)
+
+
+def test_prepare_owned_output_cannot_delete_outside_sentinel(tmp_path):
+    out_dir = tmp_path / "out"
+    outside = tmp_path / "victim"
+    outside.mkdir()
+    sentinel = outside / "turn0000.png"
+    sentinel.write_bytes(b"keep")
+
+    with pytest.raises(ValueError, match="safe basename"):
+        agent_capture._prepare_owned_output(out_dir, "../victim")
+
+    assert sentinel.read_bytes() == b"keep"
+
+
+def test_prepare_owned_output_invalidates_complete_owned_bundle(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    for name in (
+        "capture_capture.json",
+        "capture_capture.json.tmp",
+        "capture_main.png",
+        "capture_turntable.mp4",
+        "capture_motion.mp4",
+    ):
+        (out_dir / name).write_bytes(b"stale")
+    for name in ("capture_turntable", "capture_motion"):
+        directory = out_dir / name
+        directory.mkdir()
+        (directory / "frame.png").write_bytes(b"stale")
+    unrelated = out_dir / "other_main.png"
+    unrelated.write_bytes(b"keep")
+
+    resolved = agent_capture._prepare_owned_output(out_dir, "capture")
+
+    assert resolved == out_dir.resolve()
+    assert unrelated.read_bytes() == b"keep"
+    assert sorted(path.name for path in out_dir.iterdir()) == ["other_main.png"]
 
 
 def test_failed_view_report_rejects_capture():
@@ -294,9 +332,7 @@ def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
     combined_artifact = combined["artifacts"][0]
     assert combined["layers"] == debug_layers
     assert plain_artifact["camera"] == combined_artifact["camera"]
-    combined_image = read_image(
-        tmp_path / "combined" / combined_artifact["path"]
-    )
+    combined_image = read_image(tmp_path / "combined" / combined_artifact["path"])
     assert _changed_pixel_count(plain_image, combined_image) >= 128
     contact_pixels = sum(
         tuple(combined_image.pixels[pixel * 3 : pixel * 3 + 3])

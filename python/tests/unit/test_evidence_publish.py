@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -34,7 +35,7 @@ def _selection(tmp_path: Path) -> Path:
                 "observe": "yellow cross at interface",
                 "quality": 0.9,
                 "bytes": 3,
-                "sha256": "0" * 64,
+                "sha256": hashlib.sha256(b"png").hexdigest(),
                 "rationale": "covers claim(s) C1; quality=0.900",
             },
             {
@@ -45,7 +46,7 @@ def _selection(tmp_path: Path) -> Path:
                 "observe": "",
                 "quality": 0.7,
                 "bytes": 3,
-                "sha256": "1" * 64,
+                "sha256": hashlib.sha256(b"mp4").hexdigest(),
                 "rationale": "covers claim(s) C1; quality=0.700",
             },
         ],
@@ -116,16 +117,28 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["uploaded"] is False
+    assert manifest["operation_succeeded"] is True
+    assert manifest["publication_complete"] is False
+    assert manifest["selection_pass"] is False
+    assert manifest["pass"] is False
     assert "dry-run" in manifest["note"]
+    expected_tag = evidence_publish._content_addressed_tag(
+        "verification-media", manifest["artifact_set_sha256"]
+    )
+    assert manifest["release_tag"] == expected_tag
+    assert len(manifest["source"]["revision"]) == 40
+    assert isinstance(manifest["source"]["dirty"], bool)
+    assert len(manifest["source"]["publisher_sha256"]) == 64
+    assert len(manifest["source"]["dirty_content_sha256"]) == 64
     text = out.read_text(encoding="utf-8")
     # Images embed inline; videos fall back to plain links.
     assert (
         "![contact markers at rest](https://github.com/dartsim/dart/releases/"
-        "download/verification-media/shot.png)" in text
+        f"download/{expected_tag}/shot.png)" in text
     )
     assert (
         "[settling clip](https://github.com/dartsim/dart/releases/download/"
-        "verification-media/clip.mp4)" in text
+        f"{expected_tag}/clip.mp4)" in text
     )
     assert "UPLOAD-PLACEHOLDER" not in text
 
@@ -173,18 +186,68 @@ def test_gh_release_yes_uploads_each_artifact(
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["uploaded"] is True
+    assert manifest["publication_complete"] is True
+    assert manifest["selection_pass"] is False
+    assert manifest["pass"] is False
     assert "note" not in manifest
     verbs = [call[:2] for call in calls]
     assert verbs[0] == ["release", "view"]
     assert verbs[1] == ["release", "create"]
     uploads = [call for call in calls if call[:2] == ["release", "upload"]]
     assert len(uploads) == 2  # one per selected artifact
-    # Uploads clobber so regenerated evidence keeps a stable download URL.
+    # Re-upload is idempotent within a content-addressed release. Changed
+    # bytes produce a new tag instead of mutating evidence embedded in a PR.
     assert all("--clobber" in call for call in uploads)
-    assert manifest["urls"]["shot.png"] == (
-        "https://github.com/dartsim/dart/releases/download/"
-        "verification-media/shot.png"
+    expected_tag = evidence_publish._content_addressed_tag(
+        "verification-media", manifest["artifact_set_sha256"]
     )
+    assert all(expected_tag in call for call in calls[:2])
+    assert manifest["urls"]["shot.png"] == (
+        "https://github.com/dartsim/dart/releases/download/" f"{expected_tag}/shot.png"
+    )
+    assert manifest["artifacts"][0]["sha256"] == hashlib.sha256(b"png").hexdigest()
+
+
+def test_upload_uses_verified_staged_bytes_when_source_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    uploaded_bytes: list[bytes] = []
+
+    class _Completed:
+        def __init__(self, returncode: int) -> None:
+            self.returncode = returncode
+            self.stdout = ""
+            self.stderr = ""
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        if args[:2] == ["release", "view"]:
+            # Mutating the live selection directory after staging must not alter
+            # the bytes uploaded under the content-addressed tag.
+            (tmp_path / "shot.png").write_bytes(b"changed after staging")
+            return _Completed(1)
+        if args[:2] == ["release", "upload"]:
+            uploaded_bytes.append(Path(args[3]).read_bytes())
+        return _Completed(0)
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 0
+    assert sorted(uploaded_bytes) == [b"mp4", b"png"]
 
 
 def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
@@ -204,7 +267,7 @@ def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
                 "observe": "",
                 "quality": 0.5,
                 "bytes": 1,
-                "sha256": "0" * 64,
+                "sha256": hashlib.sha256(b"x").hexdigest(),
                 "rationale": "r",
             },
             {
@@ -215,7 +278,7 @@ def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
                 "observe": "",
                 "quality": 0.5,
                 "bytes": 1,
-                "sha256": "1" * 64,
+                "sha256": hashlib.sha256(b"y").hexdigest(),
                 "rationale": "r",
             },
         ],
@@ -252,3 +315,43 @@ def test_gh_release_requires_repo(tmp_path: Path) -> None:
         ]
     )
     assert code == 2
+
+
+def test_changed_artifact_is_rejected_before_render_or_upload(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    (tmp_path / "shot.png").write_bytes(b"changed")
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            "--out",
+            str(tmp_path / "x.md"),
+        ]
+    )
+
+    assert code == 2
+    assert not (tmp_path / "x.md").exists()
+
+
+def test_changed_selection_uses_a_new_release_tag(tmp_path: Path) -> None:
+    first = _selection(tmp_path)
+    first_manifest = evidence_publish._load_selection(first)
+    first_tag = evidence_publish._content_addressed_tag(
+        "verification-media",
+        evidence_publish._artifact_set_digest(first_manifest),
+    )
+
+    (tmp_path / "shot.png").write_bytes(b"new png")
+    data = json.loads(first.read_text(encoding="utf-8"))
+    data["selected"][0]["bytes"] = len(b"new png")
+    data["selected"][0]["sha256"] = hashlib.sha256(b"new png").hexdigest()
+    first.write_text(json.dumps(data), encoding="utf-8")
+    second_manifest = evidence_publish._load_selection(first)
+    second_tag = evidence_publish._content_addressed_tag(
+        "verification-media",
+        evidence_publish._artifact_set_digest(second_manifest),
+    )
+
+    assert second_tag != first_tag

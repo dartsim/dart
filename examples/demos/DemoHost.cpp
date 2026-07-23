@@ -32,7 +32,13 @@
 
 #include "DemoHost.hpp"
 
+#include "HeadlessExactFbfFailFast.hpp"
 #include "Theme.hpp"
+
+#include <dart/config.hpp>
+
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
+#include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
 #include <dart/collision/CollisionDetector.hpp>
 
@@ -46,13 +52,16 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <thread>
+#include <unordered_set>
 
 #include <cctype>
 #include <cerrno>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 
@@ -87,6 +96,14 @@ bool matchesFilter(const DemoScene& scene, const std::string& filterLower)
 }
 
 //==============================================================================
+bool startsWith(const std::string& value, const char* prefix)
+{
+  const std::string prefixString(prefix);
+  return value.size() >= prefixString.size()
+         && value.compare(0, prefixString.size(), prefixString) == 0;
+}
+
+//==============================================================================
 /// Renders "f - Shoot sphere" when the key is a plain printable character, or
 /// just the label otherwise (e.g. arrow keys).
 std::string formatKeyActionLabel(const KeyAction& action)
@@ -94,6 +111,956 @@ std::string formatKeyActionLabel(const KeyAction& action)
   if (action.key >= 32 && action.key < 127)
     return std::string(1, static_cast<char>(action.key)) + " - " + action.label;
   return action.label;
+}
+
+//==============================================================================
+std::string formatKeyForMessage(int key)
+{
+  if (key >= 32 && key < 127)
+    return std::string("'") + static_cast<char>(key) + "'";
+  return std::to_string(key);
+}
+
+//==============================================================================
+const char* exactSolverStatusLabel(
+    dart::constraint::ExactCoulombFbfConstraintSolverStatus status)
+{
+  using dart::constraint::ExactCoulombFbfConstraintSolverStatus;
+  switch (status) {
+    case ExactCoulombFbfConstraintSolverStatus::NotRun:
+      return "not_run";
+    case ExactCoulombFbfConstraintSolverStatus::Success:
+      return "success";
+    case ExactCoulombFbfConstraintSolverStatus::MaxIterationsAccepted:
+      return "max_iterations_accepted";
+    case ExactCoulombFbfConstraintSolverStatus::PlateauAccepted:
+      return "plateau_accepted";
+    case ExactCoulombFbfConstraintSolverStatus::InvalidOptions:
+      return "invalid_options";
+    case ExactCoulombFbfConstraintSolverStatus::UnsupportedProblem:
+      return "unsupported_problem";
+    case ExactCoulombFbfConstraintSolverStatus::FbfFailed:
+      return "fbf_failed";
+    case ExactCoulombFbfConstraintSolverStatus::BoxedLcpFallback:
+      return "boxed_lcp_fallback";
+  }
+  return "unknown";
+}
+
+//==============================================================================
+const char* exactFbfStatusLabel(
+    dart::math::detail::ExactCoulombFbfStatus status)
+{
+  using dart::math::detail::ExactCoulombFbfStatus;
+  switch (status) {
+    case ExactCoulombFbfStatus::Success:
+      return "success";
+    case ExactCoulombFbfStatus::MaxIterations:
+      return "max_iterations";
+    case ExactCoulombFbfStatus::InvalidInput:
+      return "invalid_input";
+    case ExactCoulombFbfStatus::InnerSolverFailed:
+      return "inner_solver_failed";
+    case ExactCoulombFbfStatus::StepSizeUnderflow:
+      return "step_size_underflow";
+    case ExactCoulombFbfStatus::Plateau:
+      return "plateau";
+    case ExactCoulombFbfStatus::NonFiniteValue:
+      return "non_finite_value";
+  }
+  return "unknown";
+}
+
+//==============================================================================
+const char* exactBuildStatusLabel(
+    dart::constraint::detail::ExactCoulombConstraintBuildStatus status)
+{
+  using dart::constraint::detail::ExactCoulombConstraintBuildStatus;
+  switch (status) {
+    case ExactCoulombConstraintBuildStatus::Success:
+      return "success";
+    case ExactCoulombConstraintBuildStatus::EmptyInput:
+      return "empty_input";
+    case ExactCoulombConstraintBuildStatus::NullConstraint:
+      return "null_constraint";
+    case ExactCoulombConstraintBuildStatus::InvalidOptions:
+      return "invalid_options";
+    case ExactCoulombConstraintBuildStatus::UnsupportedDimension:
+      return "unsupported_dimension";
+    case ExactCoulombConstraintBuildStatus::UnsupportedBounds:
+      return "unsupported_bounds";
+    case ExactCoulombConstraintBuildStatus::UnsupportedFrictionCoupling:
+      return "unsupported_friction_coupling";
+    case ExactCoulombConstraintBuildStatus::UnsupportedAnisotropicFriction:
+      return "unsupported_anisotropic_friction";
+    case ExactCoulombConstraintBuildStatus::NonFiniteData:
+      return "non_finite_data";
+  }
+  return "unknown";
+}
+
+//==============================================================================
+void writeJsonString(std::ostream& out, const std::string& value)
+{
+  static constexpr char kHex[] = "0123456789abcdef";
+  out << '"';
+  for (const unsigned char c : value) {
+    switch (c) {
+      case '"':
+        out << "\\\"";
+        break;
+      case '\\':
+        out << "\\\\";
+        break;
+      case '\b':
+        out << "\\b";
+        break;
+      case '\f':
+        out << "\\f";
+        break;
+      case '\n':
+        out << "\\n";
+        break;
+      case '\r':
+        out << "\\r";
+        break;
+      case '\t':
+        out << "\\t";
+        break;
+      default:
+        if (c < 0x20u) {
+          out << "\\u00" << kHex[(c >> 4u) & 0x0fu] << kHex[c & 0x0fu];
+        } else {
+          out << static_cast<char>(c);
+        }
+        break;
+    }
+  }
+  out << '"';
+}
+
+//==============================================================================
+void writeJsonNumber(std::ostream& out, double value)
+{
+  if (std::isfinite(value))
+    out << std::setprecision(17) << value;
+  else
+    out << "null";
+}
+
+//==============================================================================
+void writeJsonIntArray(std::ostream& out, const std::vector<int>& values)
+{
+  out << '[';
+  for (std::size_t index = 0u; index < values.size(); ++index) {
+    if (index > 0u)
+      out << ',';
+    out << values[index];
+  }
+  out << ']';
+}
+
+//==============================================================================
+struct SolverDiagnosticsSnapshot
+{
+  struct LastFailure
+  {
+    struct ColoredBlockGaussSeidel
+    {
+      bool enabled = false;
+      bool participantAffinityEnabled = false;
+      bool used = false;
+      std::size_t solves = 0u;
+      std::size_t dispatches = 0u;
+      std::size_t participants = 0u;
+      std::size_t manifolds = 0u;
+      std::size_t colors = 0u;
+      std::size_t maxManifoldsPerColor = 0u;
+      std::vector<int> logicalCpuIds;
+      std::vector<int> maxPhaseLogicalCpuIds;
+    };
+
+    bool available = false;
+    std::size_t contacts = 0u;
+    std::string status;
+    std::string buildStatus;
+    std::string fbfStatus;
+    double residual = std::numeric_limits<double>::quiet_NaN();
+    double primalFeasibility = std::numeric_limits<double>::quiet_NaN();
+    double dualFeasibility = std::numeric_limits<double>::quiet_NaN();
+    double complementarity = std::numeric_limits<double>::quiet_NaN();
+    std::ptrdiff_t worstPrimalContact = -1;
+    std::ptrdiff_t worstDualContact = -1;
+    std::ptrdiff_t worstComplementarityContact = -1;
+    double bestResidual = std::numeric_limits<double>::quiet_NaN();
+    int bestIteration = 0;
+    int iterations = 0;
+    double stepSize = std::numeric_limits<double>::quiet_NaN();
+    double safeStepSize = std::numeric_limits<double>::quiet_NaN();
+    double couplingVariationRatio = std::numeric_limits<double>::quiet_NaN();
+    int shrinkIterations = 0;
+    ColoredBlockGaussSeidel coloredBlockGaussSeidel;
+  };
+
+  struct GroupOutcome
+  {
+    std::size_t solveIndex = 0u;
+    std::size_t contacts = 0u;
+    std::string status;
+    std::string fbfStatus;
+    int iterations = 0;
+    int shrinkIterations = 0;
+    double finalResidual = std::numeric_limits<double>::quiet_NaN();
+    double finalNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+    double plateauReferenceNaturalMapResidual
+        = std::numeric_limits<double>::quiet_NaN();
+    double plateauRelativeImprovement
+        = std::numeric_limits<double>::quiet_NaN();
+    int lineSearchShrinkCapCount = 0;
+    double correctionStepSize = std::numeric_limits<double>::quiet_NaN();
+    double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+    bool sourceContinuationActive = false;
+  };
+
+  std::string solver = "UnknownConstraintSolver";
+  bool available = false;
+  std::string gap;
+  std::string status;
+  std::string fbfStatus;
+  double residual = std::numeric_limits<double>::quiet_NaN();
+  double bestResidual = std::numeric_limits<double>::quiet_NaN();
+  int iterations = 0;
+  std::size_t totalIterations = 0u;
+  std::size_t exactSolves = 0u;
+  std::size_t exactAttempts = 0u;
+  std::size_t maxIterationsAccepted = 0u;
+  double worstResidual = std::numeric_limits<double>::quiet_NaN();
+  std::size_t exactFailures = 0u;
+  std::size_t boxedLcpFallbacks = 0u;
+  std::size_t warmStarts = 0u;
+  std::size_t coloredBlockGaussSeidelSolves = 0u;
+  std::size_t contacts = 0u;
+  bool sourceContinuationRequested = false;
+  bool sourceContinuationLastActive = false;
+  bool worldStateFinite = false;
+  bool groupHistoryTruncated = false;
+  bool lastLineSearchShrinkCapReached = false;
+  int lastLineSearchShrinkCapCount = 0;
+  double lastCorrectionStepSize = std::numeric_limits<double>::quiet_NaN();
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
+  std::size_t plateausAccepted = 0u;
+  std::size_t lineSearchShrinkCaps = 0u;
+  std::size_t stepExactAttempts = 0u;
+  std::size_t stepExactSolves = 0u;
+  std::size_t stepPlateausAccepted = 0u;
+  std::size_t stepMaxIterationsAccepted = 0u;
+  std::size_t stepLineSearchShrinks = 0u;
+  std::size_t stepLineSearchShrinkCaps = 0u;
+  std::vector<GroupOutcome> groupOutcomes;
+  LastFailure lastFailure;
+};
+
+//==============================================================================
+struct SolverDiagnosticsCursor
+{
+  std::size_t nextGroupSolveIndex = 0u;
+  std::size_t exactAttempts = 0u;
+  std::size_t exactSolves = 0u;
+  std::size_t plateausAccepted = 0u;
+  std::size_t maxIterationsAccepted = 0u;
+  std::size_t lineSearchShrinkCaps = 0u;
+};
+
+//==============================================================================
+bool isWorldStateFinite(const dart::simulation::WorldPtr& world)
+{
+  if (!world || !std::isfinite(world->getTime())
+      || !std::isfinite(world->getTimeStep())
+      || !world->getGravity().allFinite()) {
+    return false;
+  }
+  for (std::size_t index = 0u; index < world->getNumSkeletons(); ++index) {
+    const auto skeleton = world->getSkeleton(index);
+    if (!skeleton || !skeleton->getPositions().allFinite()
+        || !skeleton->getVelocities().allFinite()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+SolverDiagnosticsSnapshot captureSolverDiagnostics(
+    const dart::simulation::WorldPtr& world,
+    SolverDiagnosticsCursor* cursor = nullptr)
+{
+  SolverDiagnosticsSnapshot snapshot;
+  if (!world || !world->getConstraintSolver()) {
+    snapshot.solver = "UnavailableConstraintSolver";
+    snapshot.gap = "active world has no constraint solver";
+    return snapshot;
+  }
+
+  const auto* solver
+      = dynamic_cast<const dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  if (!solver) {
+    if (dynamic_cast<const dart::constraint::BoxedLcpConstraintSolver*>(
+            world->getConstraintSolver())) {
+      snapshot.solver = "BoxedLcpConstraintSolver";
+    }
+    snapshot.gap
+        = "active solver does not expose exact-Coulomb FBF diagnostics";
+    return snapshot;
+  }
+
+  snapshot.solver = "ExactCoulombFbfConstraintSolver";
+  snapshot.available = true;
+  snapshot.contacts
+      = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
+  const auto solverStatus = solver->getLastExactCoulombStatus();
+  snapshot.status = exactSolverStatusLabel(solverStatus);
+  snapshot.fbfStatus
+      = solverStatus
+                == dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+                    NotRun
+            ? "not_run"
+            : exactFbfStatusLabel(solver->getLastExactCoulombFbfStatus());
+  snapshot.residual = solver->getLastExactCoulombResidual();
+  snapshot.bestResidual = solver->getLastExactCoulombBestResidual();
+  snapshot.iterations = solver->getLastExactCoulombIterations();
+  snapshot.totalIterations = solver->getTotalExactCoulombIterations();
+  snapshot.exactSolves = solver->getNumExactCoulombSolves();
+  snapshot.exactAttempts = solver->getNumExactCoulombAttempts();
+  snapshot.maxIterationsAccepted
+      = solver->getNumExactCoulombMaxIterationsAccepted();
+  snapshot.worstResidual = solver->getWorstExactCoulombResidual();
+  snapshot.exactFailures = solver->getNumExactCoulombFailures();
+  snapshot.boxedLcpFallbacks = solver->getNumBoxedLcpFallbacks();
+  snapshot.warmStarts = solver->getNumExactCoulombWarmStarts();
+  snapshot.coloredBlockGaussSeidelSolves
+      = solver->getNumExactCoulombColoredBlockGaussSeidelSolves();
+  const auto continuationOptions
+      = solver->getExactCoulombSourceContinuationOptions();
+  snapshot.sourceContinuationRequested = continuationOptions.enabled;
+  snapshot.sourceContinuationLastActive
+      = solver->getLastExactCoulombSourceContinuationActive();
+  snapshot.worldStateFinite = isWorldStateFinite(world);
+  snapshot.lastLineSearchShrinkCapReached
+      = solver->getLastExactCoulombLineSearchShrinkCapReached();
+  snapshot.lastLineSearchShrinkCapCount
+      = solver->getLastExactCoulombLineSearchShrinkCapCount();
+  snapshot.lastCorrectionStepSize = solver->getLastExactCoulombStepSize();
+  snapshot.lastInnerSolveStepSize
+      = solver->getLastExactCoulombInnerSolveStepSize();
+  snapshot.plateausAccepted = solver->getNumExactCoulombPlateausAccepted();
+  snapshot.lineSearchShrinkCaps
+      = solver->getNumExactCoulombLineSearchShrinkCaps();
+
+  if (cursor != nullptr) {
+    const auto delta =
+        [&snapshot](std::size_t current, std::size_t previous) -> std::size_t {
+      if (current < previous) {
+        snapshot.groupHistoryTruncated = true;
+        return 0u;
+      }
+      return current - previous;
+    };
+    snapshot.stepExactAttempts
+        = delta(snapshot.exactAttempts, cursor->exactAttempts);
+    snapshot.stepExactSolves = delta(snapshot.exactSolves, cursor->exactSolves);
+    snapshot.stepPlateausAccepted
+        = delta(snapshot.plateausAccepted, cursor->plateausAccepted);
+    snapshot.stepMaxIterationsAccepted
+        = delta(snapshot.maxIterationsAccepted, cursor->maxIterationsAccepted);
+    snapshot.stepLineSearchShrinkCaps
+        = delta(snapshot.lineSearchShrinkCaps, cursor->lineSearchShrinkCaps);
+
+    const std::size_t expectedFirstSolveIndex = cursor->nextGroupSolveIndex;
+    const auto& records = solver->getExactCoulombResidualHistoryRecords();
+    if (!records.empty()
+        && records.front().solveIndex > cursor->nextGroupSolveIndex) {
+      snapshot.groupHistoryTruncated = true;
+    }
+    for (const auto& record : records) {
+      if (record.solveIndex < cursor->nextGroupSolveIndex)
+        continue;
+      SolverDiagnosticsSnapshot::GroupOutcome outcome;
+      outcome.solveIndex = record.solveIndex;
+      outcome.contacts = record.contactCount;
+      outcome.status = exactSolverStatusLabel(record.status);
+      outcome.fbfStatus = exactFbfStatusLabel(record.fbfStatus);
+      outcome.iterations = record.iterations;
+      outcome.shrinkIterations = record.shrinkIterations;
+      outcome.finalResidual = record.finalResidual;
+      outcome.finalNaturalMapResidual = record.finalNaturalMapResidual;
+      outcome.plateauReferenceNaturalMapResidual
+          = record.plateauReferenceNaturalMapResidual;
+      outcome.plateauRelativeImprovement = record.plateauRelativeImprovement;
+      outcome.lineSearchShrinkCapCount = record.lineSearchShrinkCapCount;
+      outcome.lastInnerSolveStepSize = record.lastInnerSolveStepSize;
+      if (!record.samples.empty())
+        outcome.correctionStepSize = record.samples.back().stepSize;
+      outcome.sourceContinuationActive = record.sourceContinuationActive;
+      snapshot.groupOutcomes.push_back(std::move(outcome));
+    }
+    for (const auto& outcome : snapshot.groupOutcomes) {
+      if (outcome.shrinkIterations >= 0) {
+        snapshot.stepLineSearchShrinks
+            += static_cast<std::size_t>(outcome.shrinkIterations);
+      }
+    }
+    if (!snapshot.groupOutcomes.empty()
+        && snapshot.groupOutcomes.front().solveIndex
+               != expectedFirstSolveIndex) {
+      snapshot.groupHistoryTruncated = true;
+    }
+    if (!records.empty())
+      cursor->nextGroupSolveIndex = records.back().solveIndex + 1u;
+    cursor->exactAttempts = snapshot.exactAttempts;
+    cursor->exactSolves = snapshot.exactSolves;
+    cursor->plateausAccepted = snapshot.plateausAccepted;
+    cursor->maxIterationsAccepted = snapshot.maxIterationsAccepted;
+    cursor->lineSearchShrinkCaps = snapshot.lineSearchShrinkCaps;
+  }
+  if (snapshot.exactFailures > 0u) {
+    const auto& residual = solver->getLastFailedExactCoulombResidualDetails();
+    snapshot.lastFailure.available = true;
+    snapshot.lastFailure.contacts
+        = solver->getLastFailedExactCoulombContactCount();
+    snapshot.lastFailure.status
+        = exactSolverStatusLabel(solver->getLastFailedExactCoulombStatus());
+    snapshot.lastFailure.buildStatus
+        = exactBuildStatusLabel(solver->getLastFailedExactCoulombBuildStatus());
+    snapshot.lastFailure.fbfStatus
+        = exactFbfStatusLabel(solver->getLastFailedExactCoulombFbfStatus());
+    snapshot.lastFailure.residual = solver->getLastFailedExactCoulombResidual();
+    snapshot.lastFailure.primalFeasibility = residual.primalFeasibility;
+    snapshot.lastFailure.dualFeasibility = residual.dualFeasibility;
+    snapshot.lastFailure.complementarity = residual.complementarity;
+    snapshot.lastFailure.worstPrimalContact = residual.worstPrimalContact;
+    snapshot.lastFailure.worstDualContact = residual.worstDualContact;
+    snapshot.lastFailure.worstComplementarityContact
+        = residual.worstComplementarityContact;
+    snapshot.lastFailure.bestResidual
+        = solver->getLastFailedExactCoulombBestResidual();
+    snapshot.lastFailure.bestIteration
+        = solver->getLastFailedExactCoulombBestIteration();
+    snapshot.lastFailure.iterations
+        = solver->getLastFailedExactCoulombIterations();
+    snapshot.lastFailure.stepSize = solver->getLastFailedExactCoulombStepSize();
+    snapshot.lastFailure.safeStepSize
+        = solver->getLastFailedExactCoulombSafeStepSize();
+    snapshot.lastFailure.couplingVariationRatio
+        = solver->getLastFailedExactCoulombCouplingVariationRatio();
+    snapshot.lastFailure.shrinkIterations
+        = solver->getLastFailedExactCoulombShrinkIterations();
+    auto& colored = snapshot.lastFailure.coloredBlockGaussSeidel;
+    colored.enabled
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelEnabled();
+    colored.participantAffinityEnabled
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled();
+    colored.used
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelUsed();
+    colored.solves
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelSolves();
+    colored.dispatches
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelDispatches();
+    colored.participants
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelParticipants();
+    colored.manifolds
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelManifolds();
+    colored.colors
+        = solver->getLastFailedExactCoulombColoredBlockGaussSeidelColors();
+    colored.maxManifoldsPerColor
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor();
+    colored.logicalCpuIds
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelLogicalCpuIds();
+    colored.maxPhaseLogicalCpuIds
+        = solver
+              ->getLastFailedExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds();
+  }
+  return snapshot;
+}
+
+//==============================================================================
+void writeSolverDiagnosticsJson(
+    std::ostream& out, const SolverDiagnosticsSnapshot& snapshot)
+{
+  out << "{\n      \"solver\": ";
+  writeJsonString(out, snapshot.solver);
+  out << ",\n      \"available\": " << (snapshot.available ? "true" : "false");
+  if (!snapshot.available) {
+    out << ",\n      \"gap\": ";
+    writeJsonString(out, snapshot.gap);
+    out << "\n    }";
+    return;
+  }
+
+  out << ",\n      \"status\": ";
+  writeJsonString(out, snapshot.status);
+  out << ",\n      \"fbf_status\": ";
+  writeJsonString(out, snapshot.fbfStatus);
+  out << ",\n      \"residual\": ";
+  writeJsonNumber(out, snapshot.residual);
+  out << ",\n      \"best_residual\": ";
+  writeJsonNumber(out, snapshot.bestResidual);
+  out << ",\n      \"iterations\": " << snapshot.iterations
+      << ",\n      \"total_iterations\": " << snapshot.totalIterations
+      << ",\n      \"exact_solves\": " << snapshot.exactSolves
+      << ",\n      \"exact_attempts\": " << snapshot.exactAttempts
+      << ",\n      \"accepted_at_cap\": " << snapshot.maxIterationsAccepted
+      << ",\n      \"worst_residual\": ";
+  writeJsonNumber(out, snapshot.worstResidual);
+  out << ",\n      \"exact_failures\": " << snapshot.exactFailures
+      << ",\n      \"boxed_lcp_fallbacks\": " << snapshot.boxedLcpFallbacks
+      << ",\n      \"warm_starts\": " << snapshot.warmStarts
+      << ",\n      \"colored_block_gauss_seidel\": {\"solves\": "
+      << snapshot.coloredBlockGaussSeidelSolves << "}"
+      << ",\n      \"contacts\": " << snapshot.contacts;
+  if (snapshot.sourceContinuationRequested) {
+    out << ",\n      \"source_continuation\": {"
+        << "\n        \"requested\": true"
+        << ",\n        \"last_active\": "
+        << (snapshot.sourceContinuationLastActive ? "true" : "false")
+        << ",\n        \"world_state_finite\": "
+        << (snapshot.worldStateFinite ? "true" : "false")
+        << ",\n        \"group_history_truncated\": "
+        << (snapshot.groupHistoryTruncated ? "true" : "false")
+        << ",\n        \"cumulative\": {\"plateaus_accepted\": "
+        << snapshot.plateausAccepted
+        << ", \"max_iterations_accepted\": " << snapshot.maxIterationsAccepted
+        << ", \"line_search_shrink_caps\": " << snapshot.lineSearchShrinkCaps
+        << "}"
+        << ",\n        \"step\": {\"exact_attempts\": "
+        << snapshot.stepExactAttempts
+        << ", \"exact_solves\": " << snapshot.stepExactSolves
+        << ", \"plateaus_accepted\": " << snapshot.stepPlateausAccepted
+        << ", \"max_iterations_accepted\": "
+        << snapshot.stepMaxIterationsAccepted
+        << ", \"line_search_shrinks\": " << snapshot.stepLineSearchShrinks
+        << ", \"line_search_shrink_caps\": "
+        << snapshot.stepLineSearchShrinkCaps << "}"
+        << ",\n        \"last_attempt\": {"
+           "\"line_search_shrink_cap_reached\": "
+        << (snapshot.lastLineSearchShrinkCapReached ? "true" : "false")
+        << ", \"line_search_shrink_cap_count\": "
+        << snapshot.lastLineSearchShrinkCapCount
+        << ", \"correction_step_size\": ";
+    writeJsonNumber(out, snapshot.lastCorrectionStepSize);
+    out << ", \"last_inner_solve_step_size\": ";
+    writeJsonNumber(out, snapshot.lastInnerSolveStepSize);
+    out << "}"
+        << ",\n        \"group_outcomes\": [";
+    for (std::size_t index = 0u; index < snapshot.groupOutcomes.size();
+         ++index) {
+      const auto& group = snapshot.groupOutcomes[index];
+      out << (index == 0u ? "\n" : ",\n")
+          << "          {\"solve_index\": " << group.solveIndex
+          << ", \"contact_count\": " << group.contacts << ", \"status\": ";
+      writeJsonString(out, group.status);
+      out << ", \"fbf_status\": ";
+      writeJsonString(out, group.fbfStatus);
+      out << ", \"iterations\": " << group.iterations
+          << ", \"line_search_shrinks\": " << group.shrinkIterations
+          << ", \"final_residual\": ";
+      writeJsonNumber(out, group.finalResidual);
+      out << ", \"final_natural_map_residual\": ";
+      writeJsonNumber(out, group.finalNaturalMapResidual);
+      out << ", \"plateau_reference_natural_map_residual\": ";
+      writeJsonNumber(out, group.plateauReferenceNaturalMapResidual);
+      out << ", \"plateau_relative_improvement\": ";
+      writeJsonNumber(out, group.plateauRelativeImprovement);
+      out << ", \"line_search_shrink_cap_count\": "
+          << group.lineSearchShrinkCapCount << ", \"correction_step_size\": ";
+      writeJsonNumber(out, group.correctionStepSize);
+      out << ", \"last_inner_solve_step_size\": ";
+      writeJsonNumber(out, group.lastInnerSolveStepSize);
+      out << ", \"source_continuation_active\": "
+          << (group.sourceContinuationActive ? "true" : "false") << '}';
+    }
+    if (!snapshot.groupOutcomes.empty())
+      out << '\n';
+    out << "        ]\n      }";
+  }
+  out << ",\n      \"last_failure\": ";
+  if (!snapshot.lastFailure.available) {
+    out << "null\n    }";
+    return;
+  }
+
+  const auto& failure = snapshot.lastFailure;
+  out << "{\n        \"contact_count\": " << failure.contacts
+      << ",\n        \"status\": ";
+  writeJsonString(out, failure.status);
+  out << ",\n        \"build_status\": ";
+  writeJsonString(out, failure.buildStatus);
+  out << ",\n        \"fbf_status\": ";
+  writeJsonString(out, failure.fbfStatus);
+  out << ",\n        \"residual\": ";
+  writeJsonNumber(out, failure.residual);
+  out << ",\n        \"primal_feasibility\": ";
+  writeJsonNumber(out, failure.primalFeasibility);
+  out << ",\n        \"dual_feasibility\": ";
+  writeJsonNumber(out, failure.dualFeasibility);
+  out << ",\n        \"complementarity\": ";
+  writeJsonNumber(out, failure.complementarity);
+  out << ",\n        \"worst_primal_contact\": " << failure.worstPrimalContact
+      << ",\n        \"worst_dual_contact\": " << failure.worstDualContact
+      << ",\n        \"worst_complementarity_contact\": "
+      << failure.worstComplementarityContact
+      << ",\n        \"best_residual\": ";
+  writeJsonNumber(out, failure.bestResidual);
+  out << ",\n        \"best_iteration\": " << failure.bestIteration
+      << ",\n        \"iterations\": " << failure.iterations
+      << ",\n        \"step_size\": ";
+  writeJsonNumber(out, failure.stepSize);
+  out << ",\n        \"safe_step_size\": ";
+  writeJsonNumber(out, failure.safeStepSize);
+  out << ",\n        \"coupling_variation_ratio\": ";
+  writeJsonNumber(out, failure.couplingVariationRatio);
+  out << ",\n        \"shrink_iterations\": " << failure.shrinkIterations;
+  const auto& colored = failure.coloredBlockGaussSeidel;
+  out << ",\n        \"colored_block_gauss_seidel\": {"
+      << "\n          \"enabled\": " << (colored.enabled ? "true" : "false")
+      << ",\n          \"participant_affinity_enabled\": "
+      << (colored.participantAffinityEnabled ? "true" : "false")
+      << ",\n          \"used\": " << (colored.used ? "true" : "false")
+      << ",\n          \"solves\": " << colored.solves
+      << ",\n          \"dispatches\": " << colored.dispatches
+      << ",\n          \"participants\": " << colored.participants
+      << ",\n          \"manifolds\": " << colored.manifolds
+      << ",\n          \"colors\": " << colored.colors
+      << ",\n          \"max_manifolds_per_color\": "
+      << colored.maxManifoldsPerColor << ",\n          \"logical_cpu_ids\": ";
+  writeJsonIntArray(out, colored.logicalCpuIds);
+  out << ",\n          \"max_phase_logical_cpu_ids\": ";
+  writeJsonIntArray(out, colored.maxPhaseLogicalCpuIds);
+  out << "\n        }\n      }\n    }";
+}
+
+//==============================================================================
+struct HeadlessShotResult
+{
+  std::size_t sequence = 0u;
+  std::size_t step = 0u;
+  std::string path;
+  double simTime = 0.0;
+  bool success = false;
+  SolverDiagnosticsSnapshot diagnostics;
+};
+
+//==============================================================================
+struct HeadlessStepResult
+{
+  std::size_t step = 0u;
+  double simTime = 0.0;
+  std::optional<SceneStateFields> sceneState;
+  SolverDiagnosticsSnapshot diagnostics;
+};
+
+//==============================================================================
+struct HeadlessActionResult
+{
+  std::size_t sequence = 0u;
+  std::size_t step = 0u;
+  int key = 0;
+  bool success = false;
+};
+
+//==============================================================================
+struct HeadlessExactFbfFailFastState
+{
+  bool triggered = false;
+  std::size_t step = 0u;
+  const char* reason = nullptr;
+};
+
+//==============================================================================
+detail::HeadlessExactFbfSourceContinuationDiagnostics
+makeSourceContinuationGateDiagnostics(const SolverDiagnosticsSnapshot& snapshot)
+{
+  detail::HeadlessExactFbfSourceContinuationDiagnostics diagnostics;
+  diagnostics.requested = snapshot.sourceContinuationRequested;
+  diagnostics.lastActive = snapshot.sourceContinuationLastActive;
+  diagnostics.worldStateFinite = snapshot.worldStateFinite;
+  diagnostics.groupHistoryTruncated = snapshot.groupHistoryTruncated;
+  diagnostics.lastLineSearchShrinkCapReached
+      = snapshot.lastLineSearchShrinkCapReached;
+  diagnostics.lastLineSearchShrinkCapCount
+      = snapshot.lastLineSearchShrinkCapCount;
+  diagnostics.lastCorrectionStepSize = snapshot.lastCorrectionStepSize;
+  diagnostics.lastInnerSolveStepSize = snapshot.lastInnerSolveStepSize;
+  diagnostics.exactAttempts = snapshot.exactAttempts;
+  diagnostics.exactSolves = snapshot.exactSolves;
+  diagnostics.exactFailures = snapshot.exactFailures;
+  diagnostics.boxedFallbacks = snapshot.boxedLcpFallbacks;
+  diagnostics.stepExactAttempts = snapshot.stepExactAttempts;
+  diagnostics.stepExactSolves = snapshot.stepExactSolves;
+  diagnostics.stepPlateausAccepted = snapshot.stepPlateausAccepted;
+  diagnostics.stepMaxIterationsAccepted = snapshot.stepMaxIterationsAccepted;
+  diagnostics.stepLineSearchShrinks = snapshot.stepLineSearchShrinks;
+  diagnostics.stepLineSearchShrinkCaps = snapshot.stepLineSearchShrinkCaps;
+  diagnostics.groups.reserve(snapshot.groupOutcomes.size());
+  for (const auto& group : snapshot.groupOutcomes) {
+    detail::HeadlessExactFbfSourceContinuationGroupDiagnostics item;
+    item.solveIndex = group.solveIndex;
+    item.contactCount = group.contacts;
+    item.sourceContinuationActive = group.sourceContinuationActive;
+    item.iterations = group.iterations;
+    item.shrinkIterations = group.shrinkIterations;
+    item.lineSearchShrinkCapCount = group.lineSearchShrinkCapCount;
+    item.finalResidual = group.finalResidual;
+    item.finalNaturalMapResidual = group.finalNaturalMapResidual;
+    item.plateauReferenceNaturalMapResidual
+        = group.plateauReferenceNaturalMapResidual;
+    item.plateauRelativeImprovement = group.plateauRelativeImprovement;
+    item.correctionStepSize = group.correctionStepSize;
+    item.lastInnerSolveStepSize = group.lastInnerSolveStepSize;
+    if (group.status == "success" && group.fbfStatus == "success") {
+      item.outcome = detail::HeadlessExactFbfSourceContinuationOutcome::Success;
+    } else if (
+        group.status == "plateau_accepted" && group.fbfStatus == "plateau") {
+      item.outcome
+          = detail::HeadlessExactFbfSourceContinuationOutcome::PlateauAccepted;
+    } else if (
+        group.status == "max_iterations_accepted"
+        && group.fbfStatus == "max_iterations") {
+      item.outcome = detail::HeadlessExactFbfSourceContinuationOutcome::
+          MaxIterationsAccepted;
+    }
+    diagnostics.groups.push_back(item);
+  }
+  return diagnostics;
+}
+
+//==============================================================================
+const char* buildModeLabel()
+{
+#if DART_BUILD_MODE_DEBUG
+  return "Debug";
+#elif DART_BUILD_MODE_RELEASE
+  return "Release";
+#else
+  return "Unknown";
+#endif
+}
+
+//==============================================================================
+bool writeHeadlessSidecar(
+    const std::string& path,
+    const std::string& scene,
+    const std::string& activeScene,
+    const std::string& runtimeCommand,
+    std::size_t totalSteps,
+    std::size_t completedSteps,
+    int width,
+    int height,
+    const std::string& collisionDetector,
+    const std::string& physicsContractJson,
+    const std::vector<HeadlessStepResult>& steps,
+    const std::vector<HeadlessShotResult>& shots,
+    const std::vector<HeadlessActionResult>& actions,
+    const SolverDiagnosticsSnapshot& finalDiagnostics,
+    const HeadlessExactFbfFailFastState* failFast,
+    const HeadlessExactFbfFailFastState* sourceContinuation)
+{
+  std::ofstream out(path);
+  if (!out) {
+    std::cerr << "[headless] failed to open sidecar '" << path
+              << "' for writing.\n";
+    return false;
+  }
+
+  out << "{\n  \"schema_version\": ";
+  writeJsonString(out, "dart.demos_headless_timeline/v1");
+  out << ",\n  \"scene\": ";
+  writeJsonString(out, scene);
+  out << ",\n  \"active_scene\": ";
+  writeJsonString(out, activeScene);
+  out << ",\n  \"runtime_command\": ";
+  writeJsonString(out, runtimeCommand);
+  out << ",\n  \"build\": {\n    \"dart_version\": ";
+  writeJsonString(out, DART_VERSION);
+  out << ",\n    \"mode\": ";
+  writeJsonString(out, buildModeLabel());
+  out << "\n  },\n  \"total_steps\": " << totalSteps
+      << ",\n  \"completed_steps\": " << completedSteps
+      << ",\n  \"width\": " << width << ",\n  \"height\": " << height
+      << ",\n  \"collision_detector\": ";
+  writeJsonString(out, collisionDetector);
+  out << ",\n  \"physics_contract\": ";
+  if (physicsContractJson.empty())
+    out << "null";
+  else
+    out << physicsContractJson;
+  out << ",\n  \"event_order\": ";
+  writeJsonString(out, "captures_before_actions_at_each_completed_step");
+  if (failFast) {
+    out << ",\n  \"headless_exact_fbf_fail_fast\": {\n"
+        << "    \"enabled\": true,\n    \"residual_tolerance\": ";
+    writeJsonNumber(out, detail::kHeadlessExactFbfResidualTolerance);
+    out << ",\n    \"triggered\": " << (failFast->triggered ? "true" : "false")
+        << ",\n    \"step\": ";
+    if (failFast->triggered)
+      out << failFast->step;
+    else
+      out << "null";
+    out << ",\n    \"reason\": ";
+    if (failFast->triggered)
+      writeJsonString(out, failFast->reason);
+    else
+      out << "null";
+    out << "\n  }";
+  }
+  if (sourceContinuation) {
+    out << ",\n  \"headless_exact_fbf_source_continuation\": {\n"
+        << "    \"enabled\": true,\n    \"requested\": ";
+    writeJsonString(out, "source_continuation");
+    out << ",\n    \"allowed_outcomes\": [\"success\", "
+           "\"plateau_accepted\", \"max_iterations_accepted\"]"
+        << ",\n    \"line_search_cap_action\": \"shrink_cap\""
+        << ",\n    \"triggered\": "
+        << (sourceContinuation->triggered ? "true" : "false")
+        << ",\n    \"step\": ";
+    if (sourceContinuation->triggered)
+      out << sourceContinuation->step;
+    else
+      out << "null";
+    out << ",\n    \"reason\": ";
+    if (sourceContinuation->triggered)
+      writeJsonString(out, sourceContinuation->reason);
+    else
+      out << "null";
+    out << "\n  }";
+  }
+
+  out << ",\n  \"steps\": [";
+  for (std::size_t i = 0u; i < steps.size(); ++i) {
+    const auto& step = steps[i];
+    out << (i == 0u ? "\n" : ",\n") << "    {\"step\": " << step.step
+        << ", \"sim_time\": ";
+    writeJsonNumber(out, step.simTime);
+    if (step.sceneState.has_value()) {
+      out << ", \"scene_state\": {";
+      for (std::size_t fieldIndex = 0u; fieldIndex < step.sceneState->size();
+           ++fieldIndex) {
+        const auto& field = (*step.sceneState)[fieldIndex];
+        if (fieldIndex != 0u)
+          out << ',';
+        writeJsonString(out, field.first);
+        out << ':';
+        writeJsonNumber(out, field.second);
+      }
+      out << '}';
+    }
+    out << ", \"solver_diagnostics\": ";
+    writeSolverDiagnosticsJson(out, step.diagnostics);
+    out << '}';
+  }
+  if (!steps.empty())
+    out << '\n';
+  out << "  ]";
+
+  out << ",\n  \"shots\": [";
+  for (std::size_t i = 0u; i < shots.size(); ++i) {
+    const auto& shot = shots[i];
+    out << (i == 0u ? "\n" : ",\n") << "    {\"sequence\": " << shot.sequence
+        << ", \"step\": " << shot.step << ", \"path\": ";
+    writeJsonString(out, shot.path);
+    out << ", \"sim_time\": ";
+    writeJsonNumber(out, shot.simTime);
+    out << ", \"success\": " << (shot.success ? "true" : "false")
+        << ", \"solver_diagnostics\": ";
+    writeSolverDiagnosticsJson(out, shot.diagnostics);
+    out << '}';
+  }
+  if (!shots.empty())
+    out << '\n';
+  out << "  ],\n  \"actions\": [";
+  for (std::size_t i = 0u; i < actions.size(); ++i) {
+    const auto& action = actions[i];
+    out << (i == 0u ? "\n" : ",\n") << "    {\"sequence\": " << action.sequence
+        << ", \"step\": " << action.step << ", \"key\": ";
+    writeJsonString(out, std::string(1, static_cast<char>(action.key)));
+    out << ", \"key_code\": " << action.key
+        << ", \"success\": " << (action.success ? "true" : "false") << '}';
+  }
+  if (!actions.empty())
+    out << '\n';
+  out << "  ],\n  \"events\": [";
+
+  std::size_t shotIndex = 0u;
+  std::size_t actionIndex = 0u;
+  bool firstEvent = true;
+  while (shotIndex < shots.size() || actionIndex < actions.size()) {
+    const bool takeShot
+        = actionIndex >= actions.size()
+          || (shotIndex < shots.size()
+              && shots[shotIndex].sequence < actions[actionIndex].sequence);
+    out << (firstEvent ? "\n" : ",\n") << "    {";
+    firstEvent = false;
+    if (takeShot) {
+      const auto& shot = shots[shotIndex++];
+      out << "\"sequence\": " << shot.sequence
+          << ", \"type\": \"shot\", \"step\": " << shot.step << ", \"path\": ";
+      writeJsonString(out, shot.path);
+      out << ", \"success\": " << (shot.success ? "true" : "false");
+    } else {
+      const auto& action = actions[actionIndex++];
+      out << "\"sequence\": " << action.sequence
+          << ", \"type\": \"action\", \"step\": " << action.step
+          << ", \"key\": ";
+      writeJsonString(out, std::string(1, static_cast<char>(action.key)));
+      out << ", \"success\": " << (action.success ? "true" : "false");
+    }
+    out << '}';
+  }
+  if (!firstEvent)
+    out << '\n';
+  out << "  ],\n  \"solver_diagnostics\": ";
+  writeSolverDiagnosticsJson(out, finalDiagnostics);
+  out << "\n}\n";
+
+  if (!out.good()) {
+    std::cerr << "[headless] failed while writing sidecar '" << path << "'.\n";
+    return false;
+  }
+  return true;
+}
+
+//==============================================================================
+bool renderDocumentationSection(
+    const char* label, const std::string& text, bool hasPrevious)
+{
+  if (text.empty())
+    return false;
+
+  if (hasPrevious)
+    ImGui::Spacing();
+  ImGui::TextDisabled("%s", label);
+  ImGui::TextWrapped("%s", text.c_str());
+  return true;
+}
+
+//==============================================================================
+bool renderScenePanelDocumentation(const ScenePanelDocumentation& documentation)
+{
+  bool rendered = false;
+  rendered |= renderDocumentationSection(
+      "Overview", documentation.overview, rendered);
+  rendered |= renderDocumentationSection(
+      "Expected Result", documentation.expectedResult, rendered);
+  rendered |= renderDocumentationSection(
+      "Coverage", documentation.coverage, rendered);
+
+  if (rendered)
+    ImGui::Separator();
+  return rendered;
 }
 
 //==============================================================================
@@ -539,6 +1506,12 @@ void DemoHost::setDebugRecordProfile(bool on)
 }
 
 //==============================================================================
+void DemoHost::addHeadlessActionKey(int key)
+{
+  mHeadlessActionKeys.push_back(key);
+}
+
+//==============================================================================
 void DemoHost::requestScenePanelTab(ScenePanelTab tab)
 {
   mRequestedScenePanelTab = tab;
@@ -794,6 +1767,9 @@ void DemoHost::teardownCurrentScene()
   mCurrentRenderPanel = nullptr;
   mCurrentKeyActions.clear();
   mCurrentCameraHome.reset();
+  mCurrentSceneDocumentation = ScenePanelDocumentation{};
+  mCurrentPhysicsContractProvider = nullptr;
+  mCurrentSceneStateProvider = nullptr;
   mCurrentSceneId.clear();
   mCurrentSceneTitle.clear();
 }
@@ -861,6 +1837,9 @@ void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
   mCurrentRenderPanel = setup.renderPanel;
   mCurrentKeyActions = std::move(setup.keyActions);
   mCurrentCameraHome = setup.cameraHome;
+  mCurrentSceneDocumentation = scene.scenePanelDocumentation;
+  mCurrentPhysicsContractProvider = std::move(setup.physicsContractProvider);
+  mCurrentSceneStateProvider = std::move(setup.sceneStateProvider);
 
   for (const auto& frame : setup.dragFrames) {
     if (!frame)
@@ -944,6 +1923,112 @@ int DemoHost::listScenes() const
       std::cout << "\n";
     }
   }
+  return 0;
+}
+
+//==============================================================================
+int DemoHost::verifyFbfSceneDocs() const
+{
+  bool ok = true;
+  std::size_t checked = 0u;
+  for (const auto& scene : mScenes) {
+    if (!startsWith(scene.id, "fbf_"))
+      continue;
+
+    ++checked;
+    if (scene.category != "Research") {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " is not in the Research category.\n";
+      ok = false;
+    }
+    if (scene.summary.empty()) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " has an empty catalog summary.\n";
+      ok = false;
+    }
+    if (!scene.scenePanelDocumentation.isComplete()) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " is missing Scene-tab overview, expected result, or "
+                   "coverage text.\n";
+      ok = false;
+    }
+    if (!scene.factory) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " has no scene factory.\n";
+      ok = false;
+    }
+  }
+
+  if (checked == 0u) {
+    std::cerr << "[verify-fbf-scene-docs] no fbf_* scenes found.\n";
+    return 1;
+  }
+
+  std::cout << "[verify-fbf-scene-docs] checked " << checked
+            << " FBF research scene(s): " << (ok ? "OK" : "FAILED") << "\n";
+  return ok ? 0 : 1;
+}
+
+//==============================================================================
+int DemoHost::printScenePhysicsContract(const std::string& sceneId)
+{
+  if (sceneId.empty()) {
+    std::cerr << "[scene-physics-contract] scene id must not be empty.\n";
+    return 1;
+  }
+
+  if (!findScene(sceneId)) {
+    std::cerr << "[scene-physics-contract] unknown demo id '" << sceneId
+              << "'.\n";
+    return 1;
+  }
+
+  // This follows the normal scene-installation lifecycle so runtime options
+  // and activation-scoped physics settings are reflected in the contract. It
+  // deliberately does not call ensureViewerConfigured(), realize(), frame(),
+  // or any capture path.
+  requestSceneSwitch(sceneId);
+  processPendingSwitch();
+  if (mLastSwitchFailed || mCurrentSceneId != sceneId) {
+    std::cerr << "[scene-physics-contract] demo '" << sceneId
+              << "' failed to start.\n";
+    return 1;
+  }
+
+  for (const int key : mHeadlessActionKeys) {
+    if (!invokeHeadlessActionKey(key)) {
+      std::cerr << "[scene-physics-contract] action key "
+                << formatKeyForMessage(key) << " failed for demo '" << sceneId
+                << "'.\n";
+      return 1;
+    }
+  }
+
+  if (!mCurrentPhysicsContractProvider) {
+    std::cerr << "[scene-physics-contract] demo '" << sceneId
+              << "' has no physics contract provider.\n";
+    return 1;
+  }
+
+  try {
+    const std::string contract = mCurrentPhysicsContractProvider();
+    if (contract.empty()) {
+      std::cerr
+          << "[scene-physics-contract] physics contract provider for demo '"
+          << sceneId << "' returned empty output.\n";
+      return 1;
+    }
+    std::cout << contract << '\n';
+  } catch (const std::exception& error) {
+    std::cerr << "[scene-physics-contract] physics contract failed for demo '"
+              << sceneId << "': " << error.what() << '\n';
+    return 1;
+  } catch (...) {
+    std::cerr << "[scene-physics-contract] physics contract failed for demo '"
+              << sceneId << "': unknown error\n";
+    return 1;
+  }
+
   return 0;
 }
 
@@ -1042,12 +2127,12 @@ bool DemoHost::prepareOffscreenContext(
 }
 
 //==============================================================================
-int DemoHost::runHeadlessShot(
-    const std::string& shotPath,
-    int steps,
+bool DemoHost::prepareHeadlessRun(
     const std::string& sceneId,
     int width,
-    int height)
+    int height,
+    CameraHome& home,
+    bool& sceneFailed)
 {
   ensureViewerConfigured();
 
@@ -1057,16 +2142,21 @@ int DemoHost::runHeadlessShot(
                                                          : std::string();
   if (initial.empty()) {
     std::cerr << "[headless] No demo scenes are registered.\n";
-    return 1;
+    return false;
   }
 
   requestSceneSwitch(initial);
   processPendingSwitch();
-  const bool sceneFailed = mLastSwitchFailed;
+  sceneFailed = mLastSwitchFailed;
   if (sceneFailed) {
     std::cerr << "[headless] demo '" << initial
               << "' failed to start; capturing the fallback state.\n";
   }
+
+  // Headless output is evidence/presentation media, so omit the interactive
+  // contact-force debug overlay. Interactive runs retain the default-on
+  // visualizer and its Diagnostics toggle.
+  mContactVisualizer.setEnabled(false);
 
   // Hidden debug/test hooks (main.cpp's --debug-select-body/
   // --debug-record-profile): let a headless capture exercise UI state that
@@ -1091,23 +2181,32 @@ int DemoHost::runHeadlessShot(
     requestScenePanelTab(ScenePanelTab::Tools);
   }
 
+  for (const int key : mHeadlessActionKeys) {
+    if (!handleKey(key)) {
+      std::cerr << "[headless] action key " << formatKeyForMessage(key)
+                << " is not registered for demo '" << initial << "'.\n";
+      return false;
+    }
+  }
+
   const CameraHome defaultHome{
       ::osg::Vec3d(6.0, 8.0, 4.0),
       ::osg::Vec3d(0.0, 0.0, 1.0),
       ::osg::Vec3d(0.0, 0.0, 1.0)};
-  const CameraHome home = mCurrentCameraHome.value_or(defaultHome);
+  home = mCurrentCameraHome.value_or(defaultHome);
 
-  if (!prepareOffscreenContext(width, height, home))
-    return 1;
+  return prepareOffscreenContext(width, height, home);
+}
 
-  for (int i = 0; i < steps && mWorldNode; ++i)
-    mWorldNode->stepOnce();
-
+//==============================================================================
+bool DemoHost::captureHeadlessShot(
+    const std::string& shotPath, const CameraHome& home)
+{
   errno = 0;
   if (std::remove(shotPath.c_str()) != 0 && errno != ENOENT) {
     std::cerr << "[headless] failed to remove stale screenshot '" << shotPath
               << "': " << std::strerror(errno) << "\n";
-    return 1;
+    return false;
   }
 
   // Re-pin the view (realize() may have reset it) and draw, then capture.
@@ -1121,13 +2220,265 @@ int DemoHost::runHeadlessShot(
   if (!captured.good()) {
     std::cerr << "[headless] failed to write screenshot '" << shotPath
               << "'.\n";
-    return 1;
+    return false;
   }
+  return true;
+}
+
+//==============================================================================
+int DemoHost::runHeadlessShot(
+    const std::string& shotPath,
+    int steps,
+    const std::string& sceneId,
+    int width,
+    int height)
+{
+  CameraHome home;
+  bool sceneFailed = false;
+  if (!prepareHeadlessRun(sceneId, width, height, home, sceneFailed))
+    return 1;
+
+  for (int i = 0; i < steps && mWorldNode; ++i)
+    mWorldNode->stepOnce();
+
+  if (!captureHeadlessShot(shotPath, home))
+    return 1;
 
   std::cout << "[headless] sim time "
             << (mCurrentWorld ? mCurrentWorld->getTime() : 0.0) << " s; wrote "
             << shotPath << "\n";
   return sceneFailed ? 1 : 0;
+}
+
+//==============================================================================
+int DemoHost::runHeadlessTimeline(
+    const HeadlessTimeline& timeline,
+    int totalSteps,
+    const std::string& sceneId,
+    int width,
+    int height)
+{
+  if (totalSteps < 0) {
+    std::cerr << "[headless] timeline total steps must be nonnegative.\n";
+    return 1;
+  }
+
+  const std::size_t requestedSteps = static_cast<std::size_t>(totalSteps);
+  for (const auto& shot : timeline.shots) {
+    if (shot.path.empty() || shot.step > requestedSteps) {
+      std::cerr << "[headless] invalid shot scheduled for step " << shot.step
+                << ".\n";
+      return 1;
+    }
+  }
+  for (const auto& action : timeline.actions) {
+    if (action.step > requestedSteps) {
+      std::cerr << "[headless] invalid action scheduled for step "
+                << action.step << ".\n";
+      return 1;
+    }
+  }
+
+  const std::string requestedScene = !sceneId.empty() ? sceneId
+                                     : !mInitialSceneId.empty()
+                                         ? mInitialSceneId
+                                     : !mScenes.empty() ? mScenes.front().id
+                                                        : std::string();
+
+  CameraHome home;
+  bool sceneFailed = false;
+  if (!prepareHeadlessRun(sceneId, width, height, home, sceneFailed))
+    return 1;
+
+  std::string physicsContractJson;
+  if (mCurrentPhysicsContractProvider) {
+    try {
+      physicsContractJson = mCurrentPhysicsContractProvider();
+    } catch (const std::exception& e) {
+      std::cerr << "[headless] physics contract failed for demo '"
+                << requestedScene << "': " << e.what() << "\n";
+      return 1;
+    } catch (...) {
+      std::cerr << "[headless] physics contract failed for demo '"
+                << requestedScene << "': unknown error\n";
+      return 1;
+    }
+  }
+
+  bool eventFailed = false;
+  std::size_t completedSteps = 0u;
+  std::size_t sequence = 0u;
+  std::vector<HeadlessShotResult> shotResults;
+  std::vector<HeadlessStepResult> stepResults;
+  std::vector<HeadlessActionResult> actionResults;
+  SolverDiagnosticsCursor diagnosticsCursor;
+  HeadlessExactFbfFailFastState failFast;
+  HeadlessExactFbfFailFastState sourceContinuation;
+  shotResults.reserve(timeline.shots.size());
+  stepResults.reserve(requestedSteps + 1u);
+  actionResults.reserve(timeline.actions.size());
+
+  for (std::size_t step = 0u; step <= requestedSteps; ++step) {
+    completedSteps = step;
+
+    HeadlessStepResult stepResult;
+    stepResult.step = step;
+    stepResult.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
+    stepResult.diagnostics
+        = captureSolverDiagnostics(mCurrentWorld, &diagnosticsCursor);
+    if (mCurrentSceneStateProvider) {
+      try {
+        stepResult.sceneState = mCurrentSceneStateProvider();
+      } catch (const std::exception& e) {
+        std::cerr << "[headless] scene-state provider failed for demo '"
+                  << requestedScene << "' at completed step " << step << ": "
+                  << e.what() << "\n";
+        return 1;
+      } catch (...) {
+        std::cerr << "[headless] scene-state provider failed for demo '"
+                  << requestedScene << "' at completed step " << step
+                  << ": unknown error\n";
+        return 1;
+      }
+      if (stepResult.sceneState->empty()) {
+        std::cerr << "[headless] scene-state provider for demo '"
+                  << requestedScene << "' returned no fields at completed step "
+                  << step << ".\n";
+        return 1;
+      }
+      std::unordered_set<std::string> keys;
+      for (const auto& field : *stepResult.sceneState) {
+        if (field.first.empty() || !keys.insert(field.first).second
+            || !std::isfinite(field.second)) {
+          std::cerr << "[headless] scene-state provider for demo '"
+                    << requestedScene
+                    << "' returned an empty/duplicate key or non-finite value "
+                    << "at completed step " << step << ".\n";
+          return 1;
+        }
+      }
+    }
+    stepResults.push_back(stepResult);
+
+    if (timeline.exactFbfFailFast) {
+      detail::HeadlessExactFbfFailFastDiagnostics diagnostics;
+      diagnostics.exactAttempts = stepResult.diagnostics.exactAttempts;
+      diagnostics.acceptedAtCap = stepResult.diagnostics.maxIterationsAccepted;
+      diagnostics.exactFailures = stepResult.diagnostics.exactFailures;
+      diagnostics.boxedFallbacks = stepResult.diagnostics.boxedLcpFallbacks;
+      diagnostics.residual = stepResult.diagnostics.residual;
+      diagnostics.worstResidual = stepResult.diagnostics.worstResidual;
+
+      const auto decision
+          = detail::evaluateHeadlessExactFbfFailFast(diagnostics);
+      if (decision.triggered) {
+        failFast.triggered = true;
+        failFast.step = step;
+        failFast.reason = decision.reason;
+        std::cerr << "[headless] exact-FBF fail-fast triggered at completed "
+                     "step "
+                  << step << ": " << decision.reason << ".\n";
+        break;
+      }
+    }
+    if (timeline.exactFbfSourceContinuation) {
+      const auto decision = detail::evaluateHeadlessExactFbfSourceContinuation(
+          makeSourceContinuationGateDiagnostics(stepResult.diagnostics));
+      if (decision.triggered) {
+        sourceContinuation.triggered = true;
+        sourceContinuation.step = step;
+        sourceContinuation.reason = decision.reason;
+        std::cerr
+            << "[headless] exact-FBF source-continuation gate triggered at "
+               "completed step "
+            << step << ": " << decision.reason << ".\n";
+        break;
+      }
+    }
+
+    // A completed-step state belongs to the simulation before any action at
+    // that step. Capture every same-step request first, in CLI order.
+    for (const auto& shot : timeline.shots) {
+      if (shot.step != step)
+        continue;
+
+      HeadlessShotResult result;
+      result.sequence = sequence++;
+      result.step = step;
+      result.path = shot.path;
+      result.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
+      result.success = captureHeadlessShot(shot.path, home);
+      result.diagnostics = stepResult.diagnostics;
+      eventFailed |= !result.success;
+      if (result.success) {
+        std::cout << "[headless] step " << step << "; sim time "
+                  << result.simTime << " s; wrote " << shot.path << "\n";
+      }
+      shotResults.push_back(std::move(result));
+    }
+
+    // Actions run after every same-step capture and before the next physics
+    // step, so a step-N action first affects the N+1 completed state.
+    for (const auto& action : timeline.actions) {
+      if (action.step != step)
+        continue;
+
+      HeadlessActionResult result;
+      result.sequence = sequence++;
+      result.step = step;
+      result.key = action.key;
+      result.success = invokeHeadlessActionKey(action.key);
+      eventFailed |= !result.success;
+      if (!result.success) {
+        std::cerr << "[headless] scheduled action key "
+                  << formatKeyForMessage(action.key) << " failed at step "
+                  << step << " for demo '" << requestedScene << "'.\n";
+      }
+      actionResults.push_back(result);
+    }
+
+    if (step == requestedSteps)
+      break;
+    if (!mWorldNode) {
+      std::cerr << "[headless] world node disappeared before timeline step "
+                << (step + 1u) << ".\n";
+      eventFailed = true;
+      break;
+    }
+    mWorldNode->stepOnce();
+  }
+
+  const SolverDiagnosticsSnapshot finalDiagnostics
+      = stepResults.empty() ? captureSolverDiagnostics(mCurrentWorld)
+                            : stepResults.back().diagnostics;
+  if (!timeline.sidecarPath.empty()) {
+    const bool sidecarWritten = writeHeadlessSidecar(
+        timeline.sidecarPath,
+        requestedScene,
+        mCurrentSceneId,
+        timeline.runtimeCommand,
+        requestedSteps,
+        completedSteps,
+        width,
+        height,
+        getWorldCollisionDetectorName(mCurrentWorld),
+        physicsContractJson,
+        stepResults,
+        shotResults,
+        actionResults,
+        finalDiagnostics,
+        timeline.exactFbfFailFast ? &failFast : nullptr,
+        timeline.exactFbfSourceContinuation ? &sourceContinuation : nullptr);
+    eventFailed |= !sidecarWritten;
+    if (sidecarWritten)
+      std::cout << "[headless] wrote timeline sidecar " << timeline.sidecarPath
+                << "\n";
+  }
+
+  return sceneFailed || eventFailed || failFast.triggered
+                 || sourceContinuation.triggered
+             ? 1
+             : 0;
 }
 
 //==============================================================================
@@ -1165,32 +2516,11 @@ int DemoHost::run()
 }
 
 //==============================================================================
-void DemoHost::invokeKeyAction(KeyAction& action)
-{
-  if (!action.callback)
-    return;
-
-  try {
-    action.callback();
-  } catch (const std::exception& e) {
-    log(LogEntry::Level::Error,
-        "Action '" + action.label + "' failed: " + e.what() + " (disabled)");
-    action.callback = nullptr;
-  } catch (...) {
-    log(LogEntry::Level::Error,
-        "Action '" + action.label + "' failed: unknown error (disabled)");
-    action.callback = nullptr;
-  }
-}
-
-//==============================================================================
-bool DemoHost::handleKey(int key)
+KeyAction* DemoHost::findKeyAction(int key)
 {
   for (auto& action : mCurrentKeyActions) {
-    if (action.key == key) {
-      invokeKeyAction(action);
-      return true;
-    }
+    if (action.key == key)
+      return &action;
   }
 
   // Case-insensitive fallback: try the opposite-case alphabetic key so a scene
@@ -1203,13 +2533,49 @@ bool DemoHost::handleKey(int key)
                         ? std::toupper(static_cast<unsigned char>(key))
                         : lower;
     for (auto& action : mCurrentKeyActions) {
-      if (action.key == alt) {
-        invokeKeyAction(action);
-        return true;
-      }
+      if (action.key == alt)
+        return &action;
     }
   }
+  return nullptr;
+}
+
+//==============================================================================
+bool DemoHost::invokeKeyAction(KeyAction& action)
+{
+  if (!action.callback)
+    return false;
+
+  try {
+    action.callback();
+    return true;
+  } catch (const std::exception& e) {
+    log(LogEntry::Level::Error,
+        "Action '" + action.label + "' failed: " + e.what() + " (disabled)");
+    action.callback = nullptr;
+  } catch (...) {
+    log(LogEntry::Level::Error,
+        "Action '" + action.label + "' failed: unknown error (disabled)");
+    action.callback = nullptr;
+  }
   return false;
+}
+
+//==============================================================================
+bool DemoHost::invokeHeadlessActionKey(int key)
+{
+  auto* action = findKeyAction(key);
+  return action && invokeKeyAction(*action);
+}
+
+//==============================================================================
+bool DemoHost::handleKey(int key)
+{
+  auto* action = findKeyAction(key);
+  if (!action)
+    return false;
+  invokeKeyAction(*action);
+  return true;
 }
 
 //==============================================================================
@@ -1578,6 +2944,8 @@ void DemoHost::renderInspectorSection()
 //==============================================================================
 void DemoHost::renderSceneControlsSection()
 {
+  renderScenePanelDocumentation(mCurrentSceneDocumentation);
+
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1639,7 +3007,13 @@ void DemoHost::renderScenePanel()
   if (ImGui::BeginTabBar("##scene_panel_tabs")) {
     if (ImGui::BeginTabItem(
             "Scene", nullptr, tabSelectionFlags(ScenePanelTab::Scene))) {
+      ImGui::BeginChild(
+          "##scene_panel_scroll",
+          ImVec2(0.0f, 0.0f),
+          false,
+          ImGuiWindowFlags_AlwaysVerticalScrollbar);
       renderSceneControlsSection();
+      ImGui::EndChild();
       ImGui::EndTabItem();
     }
 
