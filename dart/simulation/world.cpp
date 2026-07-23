@@ -54,6 +54,7 @@
 #include "dart/simulation/constraint/loop_closure.hpp"
 #include "dart/simulation/constraint/loop_closure_spec.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
+#include "dart/simulation/detail/memory_diagnostics.hpp"
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/detail/world_step_schedule.hpp"
@@ -1487,39 +1488,6 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
   diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;
   diagnostics.maxActiveContactCount = stats.maxActiveContactCount;
-  return diagnostics;
-}
-
-//==============================================================================
-template <typename Registry>
-WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
-{
-  WorldEcsDiagnostics diagnostics;
-
-  const auto* entityStorage = registry.template storage<entt::entity>();
-  if (entityStorage != nullptr) {
-    for (auto entity : *entityStorage) {
-      if (registry.valid(entity)) {
-        ++diagnostics.entityCount;
-      }
-    }
-    diagnostics.entityCapacity = entityStorage->capacity();
-  }
-
-  for (auto&& [id, storage] : registry.storage()) {
-    const auto size = storage.size();
-    const auto capacity = storage.capacity();
-    diagnostics.storages.push_back(
-        WorldEcsStorageDiagnostics{
-            static_cast<std::size_t>(id),
-            size,
-            capacity,
-        });
-    diagnostics.componentCount += size;
-    diagnostics.componentCapacity += capacity;
-  }
-
-  diagnostics.storageCount = diagnostics.storages.size();
   return diagnostics;
 }
 
@@ -3841,19 +3809,15 @@ const common::MemoryManager& World::getMemoryManager() const
 //==============================================================================
 WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 {
-  WorldMemoryDiagnostics diagnostics = m_memoryDiagnostics;
-  diagnostics.allocatorDebugDiagnostics = m_memoryManager.getDebugDiagnostics();
-  diagnostics.ecsDiagnostics
-      = makeWorldEcsDiagnostics(detail::registryOf(*this));
-  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
-  const auto overflowBytes = frameAllocator.overflowBytes();
-  diagnostics.frameScratchCapacityBytes = frameAllocator.usableCapacity();
-  diagnostics.frameScratchUsedBytes = frameAllocator.used() + overflowBytes;
-  diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
-  diagnostics.frameScratchOverflowBytes = overflowBytes;
-  diagnostics.frameScratchPeakUsedBytes = std::max(
-      diagnostics.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
-  return diagnostics;
+  return getMemoryDiagnostics(WorldMemoryDiagnosticsOptions{});
+}
+
+//==============================================================================
+WorldMemoryDiagnostics World::getMemoryDiagnostics(
+    const WorldMemoryDiagnosticsOptions& options) const
+{
+  return m_storage->memoryDiagnostics.collect(
+      m_memoryManager, detail::registryOf(*this), options);
 }
 
 void World::clear()
@@ -3886,7 +3850,6 @@ void World::clear()
   m_time = 0.0;
   m_frame = 0;
   m_memoryManager.getFrameAllocator().reset();
-  m_memoryDiagnostics = {};
 #if DART_BUILD_PROFILE
   m_stepProfilingEnabled = false;
   m_lastStepProfile.reset();
@@ -6450,28 +6413,7 @@ void World::updateKinematics(compute::ComputeExecutor& executor)
 //==============================================================================
 void World::resetFrameScratchForStep()
 {
-  m_memoryManager.getFrameAllocator().reset();
-  ++m_memoryDiagnostics.frameScratchResetCount;
-  refreshMemoryDiagnostics();
-}
-
-//==============================================================================
-void World::refreshMemoryDiagnostics()
-{
-  m_memoryDiagnostics.allocatorDebugDiagnostics
-      = m_memoryManager.getDebugDiagnostics();
-  const auto& frameAllocator = m_memoryManager.getFrameAllocator();
-  const auto overflowBytes = frameAllocator.overflowBytes();
-  m_memoryDiagnostics.frameScratchCapacityBytes
-      = frameAllocator.usableCapacity();
-  m_memoryDiagnostics.frameScratchUsedBytes
-      = frameAllocator.used() + overflowBytes;
-  m_memoryDiagnostics.frameScratchOverflowCount
-      = frameAllocator.overflowCount();
-  m_memoryDiagnostics.frameScratchOverflowBytes = overflowBytes;
-  m_memoryDiagnostics.frameScratchPeakUsedBytes = std::max(
-      m_memoryDiagnostics.frameScratchPeakUsedBytes,
-      m_memoryDiagnostics.frameScratchUsedBytes);
+  m_storage->memoryDiagnostics.resetFrameScratch(m_memoryManager);
 }
 
 //==============================================================================
@@ -6590,11 +6532,7 @@ bool World::tryStepCleanNoWorkDefaultPipeline()
     return false;
   }
 
-  m_memoryManager.getFrameAllocator().reset();
-  ++m_memoryDiagnostics.frameScratchResetCount;
-  m_memoryDiagnostics.frameScratchUsedBytes = 0;
-  m_memoryDiagnostics.frameScratchOverflowCount = 0;
-  m_memoryDiagnostics.frameScratchOverflowBytes = 0;
+  m_storage->memoryDiagnostics.resetFrameScratch(m_memoryManager);
   m_lastDeformableSolverDiagnostics = {};
   m_storage->lastStepDiagnostics = {};
   m_storage->lastContactForces.clear();
@@ -6792,7 +6730,7 @@ void World::stepPipelineOnce(
   updateDeactivationAfterStep();
   m_time += m_timeStep;
   ++m_frame;
-  refreshMemoryDiagnostics();
+  m_storage->memoryDiagnostics.recordFrameScratch(m_memoryManager);
 }
 
 //==============================================================================

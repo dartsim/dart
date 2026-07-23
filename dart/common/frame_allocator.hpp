@@ -52,6 +52,10 @@
 
 namespace dart::common {
 
+namespace detail {
+class AllocatorMemoryLayoutInspector;
+}
+
 template <typename T>
 class FrameStlAllocator;
 
@@ -190,6 +194,8 @@ public:
   [[nodiscard]] size_t overflowBytes() const noexcept;
 
 private:
+  friend class detail::AllocatorMemoryLayoutInspector;
+
   template <typename T>
   friend class FrameStlAllocator;
 

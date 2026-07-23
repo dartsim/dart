@@ -33,6 +33,14 @@ These types are stable DART concepts. They are suitable for C++ and Python
 bindings because they do not require applications to include renderer,
 windowing, or UI toolkit headers.
 
+`PanelBuilder::blockGrid()` supports renderer-neutral ordered proportional
+segments inside a display cell and a small pattern vocabulary. Use semantic hue
+for category and pattern/border/text for state when a diagnostic has multiple
+independent axes. Segment order must preserve the source geometry; do not
+replace several address ranges with one synthetic "mixed" color. Tooltips and
+labels remain required because color and hatching alone are not a numeric or
+accessible evidence surface.
+
 ## Backend Boundary
 
 The private Filament backend lives under
@@ -64,6 +72,10 @@ implementation.
   platforms when no packaged Filament install is available.
 - `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`: registers bounded headless
   screenshot smoke tests for the DART GUI executable.
+- `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`: links the opt-in memory-layout
+  diagnostics panel/session/model into `dart-demos`. It defaults to `OFF`, so
+  the app contains no diagnostic UI control path or runtime toggle. Use
+  `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE=ON` with Pixi.
 
 OpenSceneGraph and Raylib are no longer buildable renderer options.
 
@@ -147,6 +159,15 @@ that mutating a `VisualAspect` will invalidate an existing drawable when the
 refresh path is gated by shape version, first-frame initialization, or dynamic
 color flags; either mark and handle dynamic color explicitly or re-read the
 current visual aspect color and alpha in the per-frame refresh path.
+
+For memory-layout UI changes, validate the renderer-neutral range model before
+the screenshot: exact-region spans must partition their backing allocation,
+mixed display bins must preserve proportional address order, and independent
+allocations must remain separate rows. Then inspect a full application capture
+and a readable panel crop for clipping, patterns, legends, and discontinuity
+language. See
+[`../design/memory_layout_diagnostics.md`](../design/memory_layout_diagnostics.md)
+for the evidence and security boundaries.
 
 At high `--gui-scale` values, avoid long labels trailing after wide widgets.
 Put the visible label on its own line, give the control a hidden ImGui ID such
@@ -242,6 +263,37 @@ legacy scene code. The `dart/gui/detail` `ExampleScene` set is kept as the
 renderer's internal test fixtures (renderable-extraction +
 `EXAMPLE_dartsim_<scene>` smokes), distinct from the examples. Design rationale:
 `docs/design/demos_app.md`.
+
+Implemented scenes attach their memory panel with the branch-local
+`examples/demos/memory_diagnostics.*` adapter only when
+`DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`. Keep that option default `OFF` so
+ordinary `dart-demos` executables omit the panel/session/model object code,
+scene calls, process probes, and platform-specific links. Test builds may still
+compile the isolated library for coverage, but must not link it into the OFF
+app. Keep process probing, sampling, history, and comparison logic in
+`memory_diagnostics_model.*`, and keep the UI on `PanelBuilder`; renderer code
+must not learn about World or allocator diagnostics. In a diagnostic build,
+collection must remain runtime opt-in and return before every OS probe,
+World/ECS walk, history allocation, and sample-formatting path while disabled.
+New metrics need a precise scope, source, limitation, unit, and one of
+measured/estimate/proxy; represent unsupported instrumentation as unavailable
+rather than zero. Never turn address gaps, packed slots, holes, or page counts
+into cache-performance claims without separate hardware-counter evidence.
+Use the renderer-neutral PanelBuilder::blockGrid primitive for bounded
+two-dimensional diagnostic compositions. Callers own the semantic model and
+tooltips; the private ImGui implementation owns responsive sizing, drawing, and
+hover hit testing. A block grid does not by itself establish byte size, address
+order, or physical adjacency.
+
+The diagnostics-enabled Filament ImGui adapter must preserve each `ImDrawCmd`
+vertex offset, index range, clip rectangle, and blend order. Advertise
+`ImGuiBackendFlags_RendererHasVtxOffset`, flatten 16-bit draw-list indices into
+the adapter's 32-bit index buffer, and emit a scissored Filament primitive per
+visible command. Keep vertex and index buffers grow-only across frames; fence
+the asynchronous render thread before replacing a buffer whose capacity is
+exceeded. Cover this boundary with both a draw list above 64K vertices and
+multiple distinct clip rectangles so scrolling cannot regress into index-wrap
+triangles or offscreen-geometry leakage.
 
 ## Migration Notes
 

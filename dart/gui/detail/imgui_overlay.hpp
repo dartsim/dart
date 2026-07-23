@@ -35,6 +35,10 @@
 
 #include <utils/Entity.h>
 
+#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
+  #include <vector>
+#endif
+
 #include <cstddef>
 #include <cstdint>
 
@@ -62,8 +66,14 @@ struct OverlayMesh
   utils::Entity entity;
   ::filament::VertexBuffer* vertexBuffer = nullptr;
   ::filament::IndexBuffer* indexBuffer = nullptr;
+#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
+  std::vector<::filament::MaterialInstance*> clipMaterialInstances;
+  std::size_t vertexCapacity = 0;
+  std::size_t indexCapacity = 0;
+#else
   std::size_t vertexCount = 0;
   std::size_t indexCount = 0;
+#endif
 };
 
 struct ImGuiOverlay

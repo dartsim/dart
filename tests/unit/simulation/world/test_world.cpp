@@ -6017,6 +6017,7 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   sx::World world;
 
   const auto empty = world.getMemoryDiagnostics();
+  EXPECT_FALSE(empty.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(empty.ecsDiagnostics.entityCount, 0u);
   EXPECT_EQ(empty.ecsDiagnostics.componentCount, 0u);
   EXPECT_EQ(
@@ -6025,7 +6026,9 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   auto frame = world.addFreeFrame("diagnostic_frame");
   (void)frame;
 
-  const auto diagnostics = world.getMemoryDiagnostics();
+  const auto diagnostics = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeStorageLayoutDetails = true});
+  EXPECT_TRUE(diagnostics.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(diagnostics.ecsDiagnostics.entityCount, 1u);
   EXPECT_GE(
       diagnostics.ecsDiagnostics.entityCapacity,
@@ -6039,7 +6042,15 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   std::size_t componentCapacity = 0;
   bool hasLiveStorage = false;
   for (const auto& storage : diagnostics.ecsDiagnostics.storages) {
+    EXPECT_FALSE(storage.diagnosticLabel.empty());
     EXPECT_GE(storage.capacity, storage.size);
+    EXPECT_GE(storage.capacity, storage.packedSlotCount);
+    EXPECT_EQ(
+        storage.capacity, storage.packedSlotCount + storage.unusedCapacity);
+    EXPECT_EQ(storage.packedSlotCount, storage.size + storage.holeCount);
+    EXPECT_EQ(storage.packedContiguous, storage.holeCount == 0u);
+    EXPECT_LE(storage.livePackedRegionCount, storage.size);
+    EXPECT_EQ(storage.livePackedRegionCount == 0u, storage.size == 0u);
     componentCount += storage.size;
     componentCapacity += storage.capacity;
     hasLiveStorage = hasLiveStorage || storage.size > 0u;
@@ -6050,7 +6061,9 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   EXPECT_EQ(diagnostics.ecsDiagnostics.componentCapacity, componentCapacity);
 
   world.clear();
-  const auto cleared = world.getMemoryDiagnostics();
+  const auto cleared = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeStorageLayoutDetails = true});
+  EXPECT_TRUE(cleared.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(cleared.ecsDiagnostics.entityCount, 0u);
   EXPECT_EQ(cleared.ecsDiagnostics.componentCount, 0u);
   EXPECT_EQ(
@@ -6058,6 +6071,8 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
       cleared.ecsDiagnostics.storages.size());
   for (const auto& storage : cleared.ecsDiagnostics.storages) {
     EXPECT_EQ(storage.size, 0u);
+    EXPECT_EQ(storage.packedSlotCount, storage.holeCount);
+    EXPECT_EQ(storage.livePackedRegionCount, 0u);
   }
 }
 

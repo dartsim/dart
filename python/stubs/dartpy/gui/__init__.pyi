@@ -22,6 +22,8 @@ __all__: list[str] = [
     "OrbitCameraController",
     "OrbitCameraControllerInput",
     "OrbitCameraUpdate",
+    "PanelBlockPattern",
+    "PanelBlockSegment",
     "PanelBuilder",
     "PanelContext",
     "PerspectiveProjection",
@@ -1622,6 +1624,36 @@ def draw_debug_text(
     backdrop: bool = ...,
 ) -> None: ...
 
+class PanelBlockPattern(enum.Enum):
+    SOLID = 0
+
+    FORWARD_HATCH = 1
+
+    BACKWARD_HATCH = 2
+
+    CROSS_HATCH = 3
+
+    DOTS = 4
+
+class PanelBlockSegment:
+    def __init__(self) -> None: ...
+    @property
+    def rgba(
+        self,
+    ) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")]: ...
+    @rgba.setter
+    def rgba(
+        self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")], /
+    ) -> None: ...
+    @property
+    def weight(self) -> float: ...
+    @weight.setter
+    def weight(self, arg: float, /) -> None: ...
+    @property
+    def pattern(self) -> PanelBlockPattern: ...
+    @pattern.setter
+    def pattern(self, arg: PanelBlockPattern, /) -> None: ...
+
 class PanelBuilder:
     def text(self, arg: str, /) -> None: ...
     def separator(self) -> None: ...
@@ -1659,6 +1691,17 @@ class PanelBuilder:
         self,
         label: str,
         rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
+    ) -> None: ...
+    def block_grid(
+        self,
+        label: str,
+        colors: Sequence[
+            Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")]
+        ],
+        tooltips: Sequence[str] = ...,
+        preferred_columns: int = ...,
+        patterns: Sequence[PanelBlockPattern] = ...,
+        segments: Sequence[Sequence[PanelBlockSegment]] = ...,
     ) -> None: ...
     def plot_lines(self, label: str, values: Sequence[float]) -> None: ...
     def collapsing_header(self, label: str, default_open: bool = ...) -> bool: ...

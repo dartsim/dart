@@ -46,6 +46,12 @@ if(DART_BUILD_GUI)
       $<INSTALL_INTERFACE:include>
   )
   target_compile_definitions(${core_target_name} PRIVATE DART_BUILDING_DART_GUI)
+  if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+    target_compile_definitions(
+      ${core_target_name}
+      PRIVATE DART_GUI_IMGUI_LARGE_DRAW_DATA=1
+    )
+  endif()
   target_link_libraries(${core_target_name} PUBLIC dart dart-simulation)
 
   include("${CMAKE_CURRENT_LIST_DIR}/detail/backend_sources.cmake")

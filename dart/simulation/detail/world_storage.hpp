@@ -35,6 +35,7 @@
 #include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
+#include <dart/simulation/detail/memory_diagnostics.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
@@ -136,6 +137,9 @@ struct WorldStorage
 
   /// The ECS registry holding every entity and component owned by the World.
   WorldRegistry registry;
+
+  /// Cached frame-scratch counters and opt-in ECS diagnostics collector.
+  MemoryDiagnosticsTracker memoryDiagnostics;
 
   /// Registered differentiable physical parameters, in registration order. Each
   /// entry pairs the owning rigid-body entity with the parameter to

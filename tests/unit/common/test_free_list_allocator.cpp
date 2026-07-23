@@ -33,12 +33,14 @@
 #include "../../helpers/gtest_utils.hpp"
 
 #include <dart/common/callocator.hpp>
+#include <dart/common/detail/allocator_memory_layout.hpp>
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <numeric>
 #include <sstream>
 #include <string_view>
 #include <utility>
@@ -464,6 +466,84 @@ TEST(FreeListAllocatorTest, DiagnosticsTrackRequestedBytesAndPeak)
   EXPECT_EQ(allocator.getAllocatedSize(), 0u);
   EXPECT_EQ(allocator.getPeakAllocatedSize(), 50u);
   EXPECT_EQ(allocator.getAllocationCount(), 0u);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, MemoryLayoutSnapshotPreservesExactAddressOrder)
+{
+  using LayoutInspector = common::detail::AllocatorMemoryLayoutInspector;
+  using SpanState = common::detail::AllocatorMemorySpanState;
+
+  FreeListAllocator allocator(
+      MemoryAllocator::GetDefault(),
+      256,
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+  void* const first = allocator.allocate(32);
+  void* const second = allocator.allocate(48);
+  ASSERT_NE(first, nullptr);
+  ASSERT_NE(second, nullptr);
+
+  const auto regions = LayoutInspector::inspect(allocator);
+  ASSERT_EQ(regions.size(), 1u);
+  const auto& region = regions.front();
+  ASSERT_FALSE(region.spans.empty());
+
+  std::size_t coveredBytes = 0u;
+  std::uintptr_t expectedAddress = region.address;
+  std::size_t allocatedPayloadCount = 0u;
+  bool foundFirst = false;
+  bool foundSecond = false;
+  for (const auto& span : region.spans) {
+    EXPECT_EQ(span.address, expectedAddress);
+    expectedAddress += span.sizeBytes;
+    coveredBytes += span.sizeBytes;
+    if (span.state == SpanState::Allocated) {
+      ++allocatedPayloadCount;
+      foundFirst |= span.address == reinterpret_cast<std::uintptr_t>(first);
+      foundSecond |= span.address == reinterpret_cast<std::uintptr_t>(second);
+    }
+  }
+  EXPECT_EQ(coveredBytes, region.sizeBytes);
+  EXPECT_EQ(allocatedPayloadCount, 2u);
+  EXPECT_TRUE(foundFirst);
+  EXPECT_TRUE(foundSecond);
+
+  allocator.deallocate(first, 32);
+  const auto afterFree = LayoutInspector::inspect(allocator);
+  ASSERT_EQ(afterFree.size(), 1u);
+  EXPECT_TRUE(
+      std::any_of(
+          afterFree.front().spans.begin(),
+          afterFree.front().spans.end(),
+          [first](const auto& span) {
+            return span.address == reinterpret_cast<std::uintptr_t>(first)
+                   && span.state == SpanState::Free;
+          }));
+  allocator.deallocate(second, 48);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, MemoryLayoutSnapshotSeparatesBackingAllocations)
+{
+  using LayoutInspector = common::detail::AllocatorMemoryLayoutInspector;
+
+  FreeListAllocator allocator(MemoryAllocator::GetDefault(), 64);
+  void* const allocation = allocator.allocate(512);
+  ASSERT_NE(allocation, nullptr);
+
+  const auto regions = LayoutInspector::inspect(allocator);
+  ASSERT_EQ(regions.size(), 2u);
+  EXPECT_LT(regions[0].address, regions[1].address);
+  for (const auto& region : regions) {
+    const std::size_t coveredBytes = std::accumulate(
+        region.spans.begin(),
+        region.spans.end(),
+        std::size_t{0},
+        [](std::size_t sum, const auto& span) { return sum + span.sizeBytes; });
+    EXPECT_EQ(coveredBytes, region.sizeBytes);
+  }
+
+  allocator.deallocate(allocation, 512);
 }
 
 //==============================================================================

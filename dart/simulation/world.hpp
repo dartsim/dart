@@ -43,6 +43,7 @@
 #include <dart/simulation/diff/step_gradient.hpp>
 #include <dart/simulation/entity.hpp>
 #include <dart/simulation/fwd.hpp>
+#include <dart/simulation/memory_diagnostics.hpp>
 #include <dart/simulation/multibody/multibody_options.hpp>
 #include <dart/simulation/world_options.hpp>
 #include <dart/simulation/world_sync_stage.hpp>
@@ -236,65 +237,6 @@ struct DeformableSolverDiagnostics
   /// this is the largest single-iteration contact load the solver carried, the
   /// IPC "max contacts per step" statistic. Zero without active self-contact.
   std::size_t maxActiveContactCount = 0;
-};
-
-/// Per-component-storage ECS memory diagnostics. Storage IDs are internal
-/// diagnostic tokens for grouping one snapshot; callers should not persist them
-/// as stable public component identifiers.
-struct WorldEcsStorageDiagnostics
-{
-  /// Internal diagnostic ID for this component storage.
-  std::size_t storageId = 0;
-  /// Number of live components in this storage.
-  std::size_t size = 0;
-  /// Current storage capacity before another component insertion may grow it.
-  std::size_t capacity = 0;
-};
-
-/// Aggregate ECS registry storage diagnostics for profiler/debugger surfaces.
-struct WorldEcsDiagnostics
-{
-  /// Number of live entities in the World registry.
-  std::size_t entityCount = 0;
-  /// Current registry entity storage capacity.
-  std::size_t entityCapacity = 0;
-  /// Number of component storages currently materialized by the registry.
-  std::size_t storageCount = 0;
-  /// Sum of live component counts across materialized component storages.
-  std::size_t componentCount = 0;
-  /// Sum of component capacities across materialized component storages.
-  std::size_t componentCapacity = 0;
-  /// Per-storage live/capacity counters for layout debugging and UI grouping.
-  std::vector<WorldEcsStorageDiagnostics> storages;
-};
-
-/// Snapshot of the DART 7 World's CPU memory hierarchy diagnostics.
-///
-/// This snapshot reports the World-owned frame allocator used for per-step
-/// scratch, structured debug counters for direct free/pool allocations, and
-/// ECS registry storage layout counters for memory debugger/profiler tools.
-struct WorldMemoryDiagnostics
-{
-  /// Debug counters for the World-owned MemoryManager hierarchy.
-  common::MemoryManager::DebugDiagnostics allocatorDebugDiagnostics;
-
-  /// ECS registry/component storage diagnostics.
-  WorldEcsDiagnostics ecsDiagnostics;
-
-  /// Current usable frame-scratch arena capacity after alignment padding.
-  std::size_t frameScratchCapacityBytes = 0;
-  /// Bytes consumed in the current simulation frame, including overflow blocks.
-  std::size_t frameScratchUsedBytes = 0;
-  /// Maximum frame-scratch bytes observed since construction or clear().
-  std::size_t frameScratchPeakUsedBytes = 0;
-  /// Number of overflow allocations the frame allocator holds for the current
-  /// frame. Nonzero means the current step exceeded the reserved arena.
-  std::size_t frameScratchOverflowCount = 0;
-  /// Bytes currently held by overflow allocations for the current frame.
-  std::size_t frameScratchOverflowBytes = 0;
-  /// Number of times the World reset frame scratch at step boundaries since
-  /// construction or clear().
-  std::size_t frameScratchResetCount = 0;
 };
 
 class DART_SIMULATION_API World
@@ -786,8 +728,22 @@ public:
   [[nodiscard]] common::MemoryManager& getMemoryManager();
   [[nodiscard]] const common::MemoryManager& getMemoryManager() const;
 
-  /// Returns current frame-scratch diagnostics for this World.
+  /// Returns current allocator, frame-scratch, and type-erased ECS storage
+  /// diagnostics for this World.
+  ///
+  /// This is an explicit diagnostic query: collecting aggregate information
+  /// walks the materialized registry storages and scans the entity storage to
+  /// count live entities. Component-storage sizes come from type-erased
+  /// summaries and may include tombstones; packed component slots are not
+  /// scanned.
   [[nodiscard]] WorldMemoryDiagnostics getMemoryDiagnostics() const;
+
+  /// Returns memory diagnostics with the requested collection detail.
+  ///
+  /// Enabling `includeStorageLayoutDetails` scans every materialized packed
+  /// component slot to identify holes and contiguous live regions.
+  [[nodiscard]] WorldMemoryDiagnostics getMemoryDiagnostics(
+      const WorldMemoryDiagnosticsOptions& options) const;
 
   /// Diagnostics from the deformable solve on the most recent ``step`` that
   /// used the built-in pipeline (the ``step()`` / ``step(count)`` /
@@ -1049,7 +1005,6 @@ private:
   [[nodiscard]] bool captureContactFreeStepDerivativesForFirstMultibody();
   void recordReplayFrame();
   void resetFrameScratchForStep();
-  void refreshMemoryDiagnostics();
   [[nodiscard]] bool isDeactivationActiveForStep() const noexcept;
   [[nodiscard]] bool isDeactivationEntitySleeping(Entity entity) const;
   [[nodiscard]] int getDeactivationGroupIndex(Entity entity) const;
@@ -1110,7 +1065,6 @@ private:
 
   double m_time{0.0};
   DeformableSolverDiagnostics m_lastDeformableSolverDiagnostics{};
-  WorldMemoryDiagnostics m_memoryDiagnostics{};
 #if DART_BUILD_PROFILE
   bool m_stepProfilingEnabled{false};
   compute::WorldStepProfile m_lastStepProfile{};

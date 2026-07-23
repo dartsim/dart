@@ -321,6 +321,12 @@ if(
   set(_dart_build_collision_references ON)
 endif()
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
+dart_option(
+  DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  "Build the opt-in memory diagnostics panel for dart-demos"
+  OFF
+  CATEGORY diagnostics
+)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
 dart_option(DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS

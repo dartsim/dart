@@ -32,6 +32,7 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/detail/allocator_memory_layout.hpp>
 #include <dart/common/frame_allocator.hpp>
 #include <dart/common/memory_allocator.hpp>
 
@@ -42,6 +43,7 @@
 #include <array>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <type_traits>
 #include <vector>
 
@@ -150,6 +152,100 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
     EXPECT_GT(allocator.used(), previousUsed);
     previousUsed = allocator.used();
   }
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, MemoryLayoutSnapshotShowsArenaAndOverflowRegions)
+{
+  using LayoutInspector = detail::AllocatorMemoryLayoutInspector;
+  using RegionKind = detail::AllocatorMemoryRegionKind;
+  using SpanState = detail::AllocatorMemorySpanState;
+
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 256);
+  void* const arenaPointer = allocator.allocate(33);
+  void* const overflowPointer = allocator.allocate(512);
+  ASSERT_NE(arenaPointer, nullptr);
+  ASSERT_NE(overflowPointer, nullptr);
+
+  const auto regions = LayoutInspector::inspect(allocator);
+  ASSERT_EQ(regions.size(), 2u);
+  const auto arena
+      = std::find_if(regions.begin(), regions.end(), [](const auto& region) {
+          return region.kind == RegionKind::FrameArena;
+        });
+  const auto overflow
+      = std::find_if(regions.begin(), regions.end(), [](const auto& region) {
+          return region.kind == RegionKind::FrameOverflow;
+        });
+  ASSERT_NE(arena, regions.end());
+  ASSERT_NE(overflow, regions.end());
+
+  const std::size_t arenaCoveredBytes = std::accumulate(
+      arena->spans.begin(),
+      arena->spans.end(),
+      std::size_t{0},
+      [](std::size_t sum, const auto& span) { return sum + span.sizeBytes; });
+  EXPECT_EQ(arenaCoveredBytes, arena->sizeBytes);
+  const auto used = std::find_if(
+      arena->spans.begin(), arena->spans.end(), [](const auto& span) {
+        return span.state == SpanState::Allocated;
+      });
+  ASSERT_NE(used, arena->spans.end());
+  const auto arenaAddress = reinterpret_cast<std::uintptr_t>(arenaPointer);
+  EXPECT_LE(used->address, arenaAddress);
+  EXPECT_LT(arenaAddress, used->address + used->sizeBytes);
+
+  ASSERT_EQ(overflow->spans.size(), 1u);
+  EXPECT_EQ(overflow->spans.front().state, SpanState::Allocated);
+  EXPECT_EQ(overflow->spans.front().sizeBytes, overflow->sizeBytes);
+
+  allocator.reset();
+  const auto afterReset = LayoutInspector::inspect(allocator);
+  EXPECT_TRUE(
+      std::none_of(
+          afterReset.begin(), afterReset.end(), [](const auto& region) {
+            return region.kind == RegionKind::FrameOverflow;
+          }));
+  const auto resetArena = std::find_if(
+      afterReset.begin(), afterReset.end(), [](const auto& region) {
+        return region.kind == RegionKind::FrameArena;
+      });
+  ASSERT_NE(resetArena, afterReset.end());
+  EXPECT_TRUE(
+      std::none_of(
+          resetArena->spans.begin(),
+          resetArena->spans.end(),
+          [](const auto& span) { return span.state == SpanState::Allocated; }));
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, MemoryLayoutSnapshotSeparatesUnusableArenaPadding)
+{
+  using LayoutInspector = detail::AllocatorMemoryLayoutInspector;
+  using SpanState = detail::AllocatorMemorySpanState;
+
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 257);
+  const auto regions = LayoutInspector::inspect(allocator);
+  ASSERT_EQ(regions.size(), 1u);
+  const auto& arena = regions.front();
+  const std::size_t coveredBytes = std::accumulate(
+      arena.spans.begin(),
+      arena.spans.end(),
+      std::size_t{0},
+      [](std::size_t sum, const auto& span) { return sum + span.sizeBytes; });
+  EXPECT_EQ(coveredBytes, arena.sizeBytes);
+  ASSERT_FALSE(arena.spans.empty());
+  EXPECT_EQ(arena.spans.back().state, SpanState::Padding);
+  EXPECT_GT(arena.spans.back().sizeBytes, 0u);
+
+  FrameAllocator tiny(MemoryAllocator::GetDefault(), 1);
+  const auto tinyRegions = LayoutInspector::inspect(tiny);
+  ASSERT_EQ(tinyRegions.size(), 1u);
+  ASSERT_EQ(tinyRegions.front().spans.size(), 1u);
+  EXPECT_EQ(tinyRegions.front().spans.front().state, SpanState::Padding);
+  EXPECT_EQ(
+      tinyRegions.front().spans.front().sizeBytes,
+      tinyRegions.front().sizeBytes);
 }
 
 //=============================================================================

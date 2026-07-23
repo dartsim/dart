@@ -542,9 +542,18 @@ void defSimPartWorld(nb::module_& m)
           "a reset or a step with no rigid contacts.")
       .def_prop_ro(
           "memory_diagnostics",
-          &sim::World::getMemoryDiagnostics,
+          [](const sim::World& self) { return self.getMemoryDiagnostics(); },
           nb::rv_policy::copy,
-          "Snapshot of World-owned allocator and ECS storage diagnostics.")
+          "Summary of World-owned allocator and ECS storage diagnostics.")
+      .def(
+          "get_memory_diagnostics",
+          [](const sim::World& self,
+             const sim::WorldMemoryDiagnosticsOptions& options) {
+            return self.getMemoryDiagnostics(options);
+          },
+          nb::arg("options"),
+          nb::rv_policy::copy,
+          "Collect World memory diagnostics with explicit detail options.")
       .def_prop_rw(
           "step_profiling_enabled",
           &sim::World::isStepProfilingEnabled,

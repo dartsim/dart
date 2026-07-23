@@ -159,6 +159,7 @@ endif()
 set(
   dart_simulation_public_headers_toplevel
   All.hpp
+  memory_diagnostics.hpp
   world.hpp
   world_options.hpp
   world_sync_stage.hpp

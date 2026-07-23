@@ -12430,6 +12430,104 @@ def test_rigid_body_scripted_selection_force_drag_is_stable(
     assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
 
 
+def test_panel_block_grid_binding_validates_and_renders() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, ScenePanel, SceneSetup
+
+    callback_count = 0
+
+    def build_panel(builder, _context) -> None:
+        nonlocal callback_count
+        colors = [
+            np.array([0.2, 0.8, 0.4, 1.0], dtype=np.float64),
+            np.array([0.4, 0.5, 0.7, 1.0], dtype=np.float64),
+        ]
+        with pytest.raises(
+            ValueError,
+            match="block_grid tooltips must be empty or match colors",
+        ):
+            builder.block_grid("invalid", colors, ["one tooltip"])
+        with pytest.raises(
+            ValueError,
+            match="block_grid patterns must be empty or match colors",
+        ):
+            builder.block_grid(
+                "invalid patterns",
+                colors,
+                preferred_columns=2,
+                patterns=[dart.gui.PanelBlockPattern.DOTS],
+            )
+        with pytest.raises(
+            ValueError,
+            match="block_grid segments must be empty or match colors",
+        ):
+            builder.block_grid(
+                "invalid segments",
+                colors,
+                preferred_columns=2,
+                segments=[[]],
+            )
+        live = dart.gui.PanelBlockSegment()
+        live.rgba = colors[0]
+        # Exercise normalization without overflowing the sum of finite weights.
+        live.weight = sys.float_info.max
+        live.pattern = dart.gui.PanelBlockPattern.SOLID
+        spare = dart.gui.PanelBlockSegment()
+        spare.rgba = colors[1]
+        spare.weight = sys.float_info.max
+        spare.pattern = dart.gui.PanelBlockPattern.DOTS
+        builder.block_grid(
+            "Capacity map",
+            colors,
+            ["active", "reserved"],
+            preferred_columns=2,
+            patterns=[
+                dart.gui.PanelBlockPattern.FORWARD_HATCH,
+                dart.gui.PanelBlockPattern.BACKWARD_HATCH,
+            ],
+            segments=[[live, spare], [spare, live]],
+        )
+        callback_count += 1
+
+    def build_scene() -> SceneSetup:
+        setup = _make_box_scene_setup(
+            dart, SceneSetup, name="block_grid_smoke", frame_name="box"
+        )
+        setup.panels.append(ScenePanel("Memory map", build_panel))
+        return setup
+
+    rc = run(
+        [
+            "--scene",
+            "block_grid_smoke",
+            "--frames",
+            "2",
+            "--headless",
+            "--show-ui",
+            "--width",
+            "640",
+            "--height",
+            "360",
+        ],
+        [
+            PythonDemoScene(
+                id="block_grid_smoke",
+                title="Block Grid Smoke",
+                category="Test",
+                summary="Exercises the Python block-grid panel binding.",
+                build=build_scene,
+            )
+        ],
+    )
+
+    assert rc == 0
+    assert callback_count > 0
+
+
 def test_show_ui_uses_docked_workspace_regions(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
