@@ -251,6 +251,46 @@ SkeletonPtr readSkeletonFromSdfString(
 } // namespace
 
 //==============================================================================
+// Regression: an SDF <soft_shape> link must load as a SoftBodyNode. The parser
+// forwarded only the joint type to createJointAndBodyNodePair, so the body-node
+// type defaulted to a rigid BodyNode and SoftBodyNode::Properties was sliced
+// away, making every soft SDF body load rigid.
+TEST(SdfParser, SoftShapeLinkLoadsAsSoftBodyNode)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/soft_shape/model.sdf";
+  const std::string softSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="soft_box">
+    <link name="soft_link">
+      <soft_shape>
+        <total_mass>0.5</total_mass>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.2</size>
+            <frags>3 3 3</frags>
+          </box>
+        </geometry>
+        <kv>1000.0</kv>
+        <ke>10.0</ke>
+        <damp>10.0</damp>
+      </soft_shape>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  auto skeleton = readSkeletonFromSdfString(uri, softSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  EXPECT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+  auto* body = skeleton->getBodyNode("soft_link");
+  ASSERT_NE(body, nullptr);
+  EXPECT_NE(body->asSoftBodyNode(), nullptr);
+}
+
+//==============================================================================
 TEST(SdfParser, SelectsNamedWorldModel)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
