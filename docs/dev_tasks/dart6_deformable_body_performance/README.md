@@ -13,13 +13,13 @@ published real-time or near-real-time targets from the reference papers on CPU.
 
 The representative release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. Published head `e973a75fb96`
+`wp-db-native-soft-fallback` into `release-6.20`. Published head `c41f273d271`
 includes the Windows calibration, detector ABI repair, direct soft-cache fix,
-and clean merge of `origin/release-6.20@6a1d377f616`. Its exact-head snapshot
-has 18 passing GitHub Actions jobs, one expected deploy skip, two successful
-Read the Docs checks, and a clean Codex review.
+Gazebo hot-path correction, and clean merge of
+`origin/release-6.20@6a1d377f616`. Its exact-head hosted gz-physics/gz-sim job
+passed.
 
-The local unpublished follow-up removes an unintended
+The published Gazebo correction removes an unintended
 `ConstraintSolverClearStateRegistry` mutex/hash lookup from every simulation
 step. Previous-step clear work now comes from solver state already retained for
 the next update, and newly inserted skeletons are sanitized outside the step
@@ -30,6 +30,12 @@ flat-to-faster (-0.074% mean across 20 interleaved pairs) and the empty world
 24.999% faster; the complete gz-physics 199/199 + 4/4 and gz-sim 1/1 gates pass.
 See `06-pr-evidence.md` for the structural and timing proof.
 
+Fresh review of `c41f273d271` found that preparation could erase the pending
+active-set clear signal after a manual-only solve. The local unpublished review
+fix preserves the active-set bookkeeping across preparation without changing
+`solve()` or the measured gz steady-state path. Its focused regression failed
+before and passes after the fix.
+
 The only product signal from the earlier `b172b2ee1db` suite was a Windows
 failure in `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`:
 legacy FCL's `default adaptive` lane measured `0.12115883267368355` m maximum
@@ -38,11 +44,13 @@ test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
 `0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
 all force, support, spike, finite-state, and per-step guards.
 
-The local correction also passes a focused 6/6 constraint/world/collision
-gate, 14/14 native-soft zero-allocation cases, the full no-cache 154/154 C++
-suite, lint, and `git diff --check`. Earlier calibration and ABI evidence
-remains recorded in `06-pr-evidence.md`; exact new-head hosted CI and review
-remain required after publication.
+The published correction and local review fix pass the full 57/57
+`test_ConstraintSolver` target, a focused 6/6 constraint/world/collision gate,
+14/14 native-soft zero-allocation cases, the full no-cache 154/154 C++ suite,
+199/199 gz-physics functional tests, 4/4 gz-physics performance checks, and the
+gz-sim integration test. Earlier calibration and ABI evidence remains recorded
+in `06-pr-evidence.md`; after the review fix is published, only exact new-head
+hosted CI and review are authoritative.
 
 No valid final paired timing artifact exists: every attempted directory lacks
 `COMPLETE.json` because this shared host never passed the runner's admission

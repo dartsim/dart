@@ -898,6 +898,17 @@ void ConstraintSolver::solve()
 //==============================================================================
 void ConstraintSolver::prepareForSimulation()
 {
+  // solve() uses a non-empty previous active set as evidence that constraint
+  // impulses may need clearing. Preparation deliberately skips manual
+  // constraints, so preserve the active-set bookkeeping across these
+  // state-neutral preparation passes.
+  const auto activeConstraints = mActiveConstraints;
+  const bool activeConstraintsAllSingleReactiveContacts
+      = mActiveConstraintsAllSingleReactiveContacts;
+  const bool activeConstraintsHaveCustomContactConstraint
+      = mActiveConstraintsHaveCustomContactConstraint;
+  const bool activeSingleReactiveContactsNeedSharedDependencyScan
+      = mActiveSingleReactiveContactsNeedSharedDependencyScan;
   const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   const std::size_t collisionGroupContentVersion
@@ -915,6 +926,13 @@ void ConstraintSolver::prepareForSimulation()
       mCollisionResult.addContact(contact);
   }
   restoreCollidingState(collidingState);
+  mActiveConstraints = activeConstraints;
+  mActiveConstraintsAllSingleReactiveContacts
+      = activeConstraintsAllSingleReactiveContacts;
+  mActiveConstraintsHaveCustomContactConstraint
+      = activeConstraintsHaveCustomContactConstraint;
+  mActiveSingleReactiveContactsNeedSharedDependencyScan
+      = activeSingleReactiveContactsNeedSharedDependencyScan;
 }
 
 //==============================================================================

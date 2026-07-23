@@ -3,12 +3,11 @@
 ## 2026-07-22 gz-physics and gz-sim zero-overhead audit
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
-`wp-db-native-soft-fallback` to `release-6.20`. The published head and local
-parent are `e973a75fb96`, the target base is `6a1d377f616`, and the live
-published-head matrix is clean: 18 GitHub Actions jobs passed, one expected
-deploy job was skipped, both Read the Docs checks succeeded, and the exact-head
-Codex review reported no major issue. The local follow-up described here is
-not published yet.
+`wp-db-native-soft-fallback` to `release-6.20`. Published head `c41f273d271`
+contains the Gazebo correction described here, and the target base is
+`6a1d377f616`. The exact-head hosted gz-physics/gz-sim job passed. A fresh
+exact-head Codex review found one preparation-only state-preservation issue;
+the local review correction described below is not published yet.
 
 The downstream audit found one unconditional cost introduced by the PR:
 `ConstraintSolver::solve()` consulted a process-wide
@@ -69,9 +68,20 @@ but the reachability and binary audit proves that the unintended unconditional
 registry work is absent, while the production plugin-boundary A/B shows no
 runtime regression in the exercised gz paths.
 
-Verification on the local correction:
+The exact-head review of `c41f273d271` found that
+`prepareForSimulation()` temporarily rebuilds constraints without manual
+constraints and thereby erased the non-empty active-set signal used to clear a
+manual constraint's prior impulse on the next `solve()`. The retained
+regression failed before the fix and passed afterward. The correction preserves
+the active constraint vector and its classification flags across the
+preparation-only passes. It does not change `solve()` or the production
+gz-physics steady-state path, so the plugin-boundary A/B above remains an exact
+comparison of the affected hot-path code.
+
+Verification on the published correction and local review fix:
 
 ```text
+full test_ConstraintSolver target                        PASS (57/57)
 focused constraint/world/collision CTest gate           PASS (6/6)
 native soft steady-state allocation gate                PASS (14/14)
 DART_DISABLE_COMPILER_CACHE=ON pixi run test             PASS (154/154)
