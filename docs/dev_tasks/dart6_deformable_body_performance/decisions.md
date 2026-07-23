@@ -17,6 +17,41 @@ reversible.
 - GitHub mutations (push, PR creation, review threads) require explicit
   maintainer approval.
 
+## 2026-07-23 maintainer directive: full two-paper parity, deferrals retracted
+
+- Decision: The maintainer **retracted the 2026-07-11 approved-deferral list**
+  (below) and set the task's binding goal to **full replication of both
+  reference papers' demos and examples — correctness/accuracy AND performance,
+  "no compromising"** — plus **zero runtime overhead for rigid-body simulation**
+  (soft-body may still improve).
+- Context / options considered: The design owner
+  `docs/design/dart6_deformable_body.md` frames the volumetric-FEM + controller
+  work as a clean-break (`main`/DART 7) line. Offered clean-break-on-`main`,
+  additive-ABI-safe-on-`release-6.20`, or research-first. The maintainer chose
+  **additive, ABI-safe on `release-6.20`** (new opt-in types/APIs only; no
+  changes to existing public class layouts, vtables, or default semantics),
+  delivered as a **~3-PR structure**: #3382 (current performance/compat slice),
+  then one PR per paper (Kim/Pollard, Jain/Liu). If a paper's work is too large
+  for one PR, split further.
+- Next step (maintainer-directed): **research and propose a concrete milestone
+  plan first** — FEM-backend scope, controller/soft-foot/hand-scene infra,
+  per-row correctness + CPU-performance acceptance, competitive-envelope
+  definition, and the zero-rigid-overhead audit — for review before building
+  subsystems.
+- Tradeoffs / risk to surface in that plan: adding a reduced nonlinear
+  volumetric FEM backend and SIMBICON-style controllers as ABI-safe additive
+  API on a release branch is unusual and design-constrained; the plan must show
+  how each new subsystem stays opt-in and layout-neutral, and must flag where
+  ABI-safety materially limits the design so the maintainer can re-evaluate
+  branch strategy with concrete evidence.
+- Revisit trigger: maintainer changes branch strategy, or the plan shows the
+  ABI-safe-additive constraint blocks correctness/performance parity.
+
+Consequence for the sections below: the "Deferral list (maintainer-approved
+2026-07-11)" is **retracted** and retained only as historical context; every row
+in `02-paper-parity-matrix.md` is now in scope unless a fresh maintainer
+decision re-defers it.
+
 ## Orchestrator assumptions (2026-07-09)
 
 1. **`SoftBodyNode` remains the public API; internals are replaced.**
@@ -97,7 +132,12 @@ reversible.
    reason to widen this release PR. PLAN-622 now owns this cross-branch
    follow-up after the temporary task folder is retired.
 
-## Deferral list (maintainer-approved 2026-07-11)
+## Deferral list (maintainer-approved 2026-07-11) — RETRACTED 2026-07-23
+
+> **Retracted 2026-07-23.** The maintainer withdrew this approval and now
+> requires full parity for every row (see the 2026-07-23 directive above). The
+> list is kept below only as historical record of what was previously deferred
+> and why; it no longer authorizes skipping any row.
 
 Tracked in `02-paper-parity-matrix.md` rows whose acceptance requires
 infrastructure beyond the DART 6 point-mass soft-body model:

@@ -1286,3 +1286,58 @@ frame per scene. Both current captures passed the non-blank `image-verdict`;
 the adaptive capture showed its bounded ring/linger controls and 40 active /
 46 inactive point masses at frame 500, while the worm capture showed the gait
 enabled and 1.638 m displacement at frame 3000.
+
+## 2026-07-23 exact-head independent review evidence
+
+Head `351d4a04fb3` (docs-only atop validated implementation head `891f43fd590`).
+The only code delta needing review since the clean `e973a75fb96` Codex review is
+the `ConstraintSolver.cpp` registry-removal (`c41f273d271`) plus the
+preparation-state fix (`891f43fd590`). Codex code review is unavailable this
+week (maintainer-confirmed weekly limit; the 06:43Z and 07:45Z `@codex review`
+requests returned usage-limit messages), so two independent role-separated
+passes were run on the exact head and both cleared it.
+
+Pass 1 — correctness/severity review: **CLEAN / APPROVE**, no blocker or major.
+Confirmed `ConstraintSolver.hpp` is byte-for-byte unchanged (no ABI/layout/vtable
+change), the destructor stayed virtual (body became `= default`), the steady
+clear path is lock-free and allocation-free, and the dropped `if (hasContacts)`
+guard in `updateConstraints()` still reaches
+`mReusableContactConstraints.clear()` and `mReusableSoftContactConstraints.clear()`
+at zero contacts (equivalent to the removed `else`). Verified the
+`PreparationPreservesPendingConstraintImpulseClear` regression genuinely fails
+without `891f43fd590`.
+
+Pass 2 — semantic-equivalence audit: **EQUIVALENT-AND-CORRECT** for all default
+and valid-geometry simulation. Proved the new derivations
+`clearConstraintImpulses = !mActiveConstraints.empty()` and
+`clearCollidingBodies = mCollisionResult.getNumContacts() > 0u` reconstruct the
+removed registry flags for every solve-chain-reachable state (steady contact;
+contact→none cleared exactly once; add/removeSkeleton between steps; multiple
+bare `solve()`; manual-only-then-`prepareForSimulation`; split-impulse on/off),
+that `mActiveConstraints`/`mCollisionResult` are retained across steps with no
+other mutation site, and that no per-step heap allocation is added.
+
+One benign, theoretical edge was surfaced (not a blocker): a step whose contacts
+are *all* degenerate (filtered before `setColliding`) leaves `getNumContacts()>0`,
+so the next `solve()` over-clears the deprecated `isColliding()` flag versus the
+old `markedCollidingBodies` signal. It is impossible under valid geometry, only
+observable through the deprecated `setColliding`/`isColliding` surface, and in
+the safe over-clear direction (never leaves a genuine stale flag). Also noted:
+`clearLastCollisionResult()` now clears deprecated colliding flags when the prior
+result had contacts (required for equivalence; only in-tree caller is
+`World::reset()`, an improvement there).
+
+Optional, non-blocking hardening recorded as follow-ups (the fix is already
+directly regression-tested, so none is required for merge):
+
+1. an end-to-end World-level regression for the preparation fix that goes through
+   `World::addSkeleton` → `invalidateSimulationMode` → `World::step`;
+2. deriving `clearCollidingBodies` from a retained marked-body count, or a
+   one-line `ConstraintSolver.cpp:817` comment documenting the intentional
+   benign over-clear.
+
+CI on `351d4a04fb3`: all 11 required `release-6.20` checks pass on the exact SHA.
+The red `continuous-integration/appveyor/pr` is non-required and spurious (no
+`appveyor.yml` in the repo; the status exists on no other open PR or on
+`release-6.20`/`main`; empty `target_url`; posted at the push moment during
+GitHub's async mergeability recompute). It does not block merge.
