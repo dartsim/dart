@@ -20,24 +20,57 @@ covered is "No."
 Read AGENTS.md, then AGENT_CONTINUATION.md, README.md, RESUME.md,
 paper-parity-matrix.md, PR_REPORT.md, gui-capture-report.md,
 residual-history-report.md, and PAPER_DEMO_VIDEO_MATRIX.md. Treat
-AGENT_CONTINUATION.md as the authoritative truth ledger.
+AGENT_CONTINUATION.md as the authoritative evidence ledger, but treat the
+stop/handoff checkpoint at the top of RESUME.md as authoritative for current
+process state; it supersedes older "active recapture" wording.
+
+Stop checkpoint from the prior session:
+
+- The user explicitly stopped implementation and simulation work at
+  2026-07-22T23:21:36-07:00 so this handoff could be completed. No capture or
+  dart-demos process remained afterward.
+- The current-head ten-level exact member completed capture with schema v2 and
+  pass=true, but the paired run did not produce a run summary or independent
+  pair/group verification. Exact clip SHA-256 is
+  19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d.
+- The boxed member was interrupted after 166 sampled frames; step_001320.png is
+  the last present frame. It has no timeline, metadata, clip, group, or run
+  summary. Treat that entire partial directory as non-evidence.
+- Do not resume from the partial boxed directory. When the user authorizes
+  media work, follow the fresh-root paired run and verify commands at the top
+  of RESUME.md.
 
 Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  inspected published branch checkpoint 8ad9961e56c
-  docs checkpoint fcafedbd17d precedes the Figure 8 finalizer
+  inspected published branch checkpoint 7741c394fa8
+  Figure 8 finalizer checkpoint 8ad9961e56c
+  long-row docs checkpoint 7741c394fa8
   backspin source-contract CI fix c0364afd390
   target 6a1d377f616 is an ancestor; verify again before the next push
   topic HEAD/divergence/PR/CI/review state must be verified live
 
 The topic tip tracks zero files under
 docs/dev_tasks/fbf_exact_coulomb_friction/assets/, but topic history still has
-493 unique task-asset blob IDs: 492 topic-added nonempty blobs totaling
-96,573,227 bytes plus the shared empty blob already reachable from the base. PR
-#3377 must be squash-merged so the 492 topic-added blobs do not enter
-release-6.20, unless the topic history is explicitly rewritten first. Do not
-use a merge commit or rebase merge.
+492 topic-added task-asset blobs totaling 96,573,227 bytes. A true squash merge
+keeps them out of release-6.20, but it does not clean the published topic
+history. If a clean review branch is required, obtain explicit user approval,
+reconstruct the current net source/docs tree from the latest target, and update
+the existing PR branch with --force-with-lease. Do not rewrite or force-push
+without that approval, and do not use an ordinary merge commit for final
+integration.
+
+Live GitHub state at the stop checkpoint reports 264 net changed files, not the
+earlier 700+ local/raw-artifact view: 158,918 additions, 174 deletions, PR open
+and draft, merge state CLEAN, and all 19 checks non-failing (18 success, one
+skipped). The current net diff has no generated CSV/JSON/PNG/MP4/GIF/log,
+stderr/stdout, NPY, or NPZ files and no tracked task assets. File-surface
+cleanup is still open: 110 net changed files are under data/, including 101
+source-pinned masonry-arch stone OBJ inputs. Do not add a broad *.obj ignore;
+those meshes and the Figure 3/turntable visual meshes are runtime inputs.
+Before review readiness, either justify that licensed source asset set or
+replace it with a deterministic compact/generation path that preserves
+provenance, licensing, demo behavior, and clean-checkout reproducibility.
 
 The role-based task ignore keeps generated evidence out of Git. Ignored
 `assets/pr_upload_3377/` contains 16 H.264/yuv420p MP4s and `SHA256SUMS`.
@@ -131,7 +164,8 @@ PR truth:
 
 - PR #3374 is merged at fa17fad.
 - PR #3377 remains open and draft. Its inspected published branch checkpoint is
-  8ad9961e56c, after docs checkpoint fcafedbd17d. It targets 6a1d377f616. That
+  7741c394fa8, after Figure 8 finalizer checkpoint 8ad9961e56c. It targets
+  6a1d377f616. That
   base is an ancestor, so no merge
   was needed. Checks and
   reviews remain mutable and must be queried live. It is not completion
@@ -173,9 +207,10 @@ PR truth:
   nearly identical and standing. These are policy-asymmetric presentation
   artifacts, not solver-only, strict, superiority, trajectory, backend, or
   paper-parity evidence. Staging slots 06/07 are refreshed and hash-verified;
-  five-level slot 15 is byte-identical. The ten-level current-head recapture is
-  active but not finally verified. Checkpoint 8ad9961e56c adds the standalone
-  fail-closed Figure 8
+  five-level slot 15 is byte-identical. The ten-level current-head recapture
+  was stopped at boxed sampled step 1,320 and is not finally verified; the
+  partial boxed directory is non-evidence. Checkpoint 8ad9961e56c adds the
+  standalone fail-closed Figure 8
   failed-prefix finalizer, but no current-head Figure 8 bundle has completed
   finalize/seal/verify. The older small-row reseal remains separately bound to
   c95bd5fb916 and is superseded for the five minimum source-row uploads.
@@ -1570,6 +1605,13 @@ symlink for an explicit live-closure recheck.
 Immediate order:
 
 1. Inspect current diffs and active agents before taking file/build ownership.
+   First resolve the review-surface decision: verify the live PR file list,
+   preserve the scalable role-based task-assets ignore and CI guard, decide
+   whether the 492 historical task-evidence blobs require an explicitly
+   approved clean-history reconstruction, and separately audit whether the 101
+   licensed masonry OBJ runtime inputs should remain or gain a deterministic
+   compact/generation path. Do not confuse ignored local outputs, historical
+   blobs, and required runtime assets.
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
    numeric incline sweep, historical verified Painleve proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the
@@ -1591,9 +1633,11 @@ Immediate order:
    checkpoint `ffe23d347b0` and predictive checkpoint `3647959a188`. Preserve
    the independently reverified ten-level exact and boxed continuation members
    and their same-binary presentation-only labeled pair. Keep the superseded
-   interrupted step-112 boxed run and partial frames as non-evidence. Finish
-   and independently verify the active current-head ten-level recapture before
-   replacing its historical c95 upload identity. Preserve the historical
+   interrupted step-112 boxed run and partial frames as non-evidence. Also keep
+   the newly interrupted current-head boxed step-1,320 directory as
+   non-evidence. Restart the current-head ten-level pair in a fresh output root
+   and independently verify it before replacing its historical c95 upload
+   identity. Preserve the historical
    source-default five-level v3 roots plus the strict completed-step-31
    failure. Use the byte-identical current-head group in the browser handoff as
    the sixth supplemental clip, preserve both policy labels and all claim

@@ -13,6 +13,101 @@ No, the DART reconstruction does not yet cover or match every paper test,
 benchmark, GUI example, physical outcome, or performance result.
 ```
 
+## 2026-07-22 Stop/Handoff Checkpoint
+
+At `2026-07-22T23:21:36-07:00`, the user directed the current session to stop
+implementation and simulation work and leave a takeover-quality handoff. This
+section supersedes every older statement below that calls the current-head
+ten-level recapture "active."
+
+- The paired ten-level capture process was stopped cleanly; no
+  `run_fbf_visual_evidence.py` or `dart-demos` process remained afterward.
+- The current-head exact member under
+  `assets/pr_media_current_head_67073/card_house_author_10_impact_source_continuation_current_source/`
+  completed capture with schema v2 and `pass=true`. Its 401-frame clip SHA-256
+  is `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`.
+  The interrupted paired run never wrote its requested run summary and never
+  reached independent pair/group verification, so this exact member alone is
+  not a final current-head ten-level seal.
+- The boxed member stopped after writing 166 sampled frames, with
+  `step_001320.png` the last frame present. It has no timeline, metadata, clip,
+  group, or run summary. Treat the entire interrupted boxed directory as
+  **non-evidence**; do not infer completion or a physical outcome from its
+  frames.
+- The last pushed content/docs checkpoint before this handoff edit is
+  `7741c394fa80bfd1e11f128cd2492c2e64c1d72d`. Local
+  `origin/release-6.20` is
+  `6a1d377f61631f03880a88bd21f2e7e803696c1a`, remains an ancestor, and the
+  topic was `0` behind / `113` ahead.
+- Live PR state before this handoff edit: #3377 is `OPEN`, draft, merge state
+  `CLEAN`, head `7741c394fa8`, base `release-6.20`, with 264 net changed files,
+  158,918 additions, and 174 deletions. All 19 reported checks were
+  non-failing (18 success, one skipped). Requery mutable PR/CI state; do not
+  request review while it remains draft and incomplete.
+
+### Raw/generated-file cleanup is still a review-readiness blocker
+
+The current scalable policy is correct but does not rewrite history:
+`docs/dev_tasks/.gitignore` ignores the role-based `**/assets/` tree, and
+`scripts/check_ai_infrastructure.py` rejects tracked task assets or staged
+negation rules. The current PR tree tracks no
+`docs/dev_tasks/**/assets/**` paths and its net diff contains no generated
+CSV, JSON, PNG, MP4, GIF, log, stderr/stdout, NPY, or NPZ artifacts.
+
+Two separate cleanup questions remain:
+
+1. Topic history still retains 492 topic-added task-evidence blobs totaling
+   96,573,227 bytes. A true squash merge would keep those blobs out of
+   `release-6.20`, but it does not clean the published topic history. If a
+   clean review branch is required, obtain explicit user approval, reconstruct
+   the current net source/docs tree as a clean commit series from the latest
+   `origin/release-6.20`, and update the existing PR branch with
+   `--force-with-lease`. Do not rewrite or force-push without that approval.
+2. Of the 264 current net changed files, 110 are under `data/`; 101 are the
+   source-pinned masonry-arch stone OBJ inputs needed by the Figure 8 demo.
+   These are runtime/source inputs, not generated evidence, so a broad
+   `*.obj` ignore would break the north star and also hide the Figure 3 and
+   turntable visual meshes. Before review readiness, either justify the
+   licensed 101-file source asset set explicitly or replace it with a
+   deterministic compact/generation path that preserves provenance, licensing,
+   installed/demo behavior, and clean-checkout reproducibility.
+
+The earlier 700+ raw/untracked-file views should not be treated as the current
+GitHub net diff; the live PR API currently reports 264. The remaining history
+and runtime-asset work above is nevertheless real and must be resolved or
+explicitly accepted before marking the PR ready for review.
+
+When media work is authorized again, use a fresh output root rather than
+reusing the interrupted boxed directory:
+
+```bash
+CARD10_ROOT=docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_card10_retry_20260723
+
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py run \
+  --scenario card_house_author_10_impact_source_continuation_current_source \
+  --solver-lane both --allow-long --keep-going \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root "$CARD10_ROOT" \
+  --ffmpeg .pixi/envs/gazebo/bin/ffmpeg \
+  --ffprobe .pixi/envs/gazebo/bin/ffprobe \
+  --python .pixi/envs/default/bin/python \
+  --out "$CARD10_ROOT/run_summary.json"
+
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py verify \
+  --scenario card_house_author_10_impact_source_continuation_current_source \
+  --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root "$CARD10_ROOT" \
+  --ffmpeg .pixi/envs/gazebo/bin/ffmpeg \
+  --ffprobe .pixi/envs/gazebo/bin/ffprobe \
+  --out "$CARD10_ROOT/verify_summary.json"
+```
+
+Do not replace upload slot 09, update claim matrices, or promote the group
+until both commands pass, the group fully decodes, and its panel/video receive
+manual claim-tied inspection. No `CHANGELOG.md` entry is needed for this
+handoff-only documentation update because it changes no public behavior.
+
 Do not retire the task folder. Do not commit, push, update a PR, rerun remote
 CI, or mutate GitHub without explicit user approval. Never add AI or tool
 attribution to a commit or PR.
@@ -34,7 +129,8 @@ original binary. The 665 focused provenance/runner/consumer tests and no-cache
 clean, with future provider schemas and consumers still a fail-closed watch.
 
 PR #3377 remains draft. Its inspected published branch checkpoint is
-`8ad9961e56c`, after documentation checkpoint `fcafedbd17d`. Base
+`7741c394fa8`, after Figure 8 finalizer checkpoint `8ad9961e56c` and
+long-row documentation checkpoint `7741c394fa8`. Base
 `6a1d377f616` is an ancestor, so no merge was needed. Ignored
 `assets/pr_upload_3377/` contains 16 H.264/yuv420p MP4s plus `SHA256SUMS`.
 Slots 06/07 now contain the current-head Figure 6 and Figure 7 groups, slot 15
@@ -72,7 +168,8 @@ standing. All three comparisons are policy-asymmetric because only exact
 requests source continuation, so they support no solver-only, strict,
 superiority, trajectory, source-backend, or paper-parity claim. Staging slots
 06/07 are refreshed and hash-verified; the five-level slot is byte-identical.
-The ten-level current-head recapture is active but not finally verified.
+The ten-level current-head recapture was stopped at boxed sampled step 1,320
+and is not finally verified; its partial boxed directory is non-evidence.
 Checkpoint
 `8ad9961e56c` adds the standalone fail-closed Figure 8 failed-prefix finalizer,
 but no current-head Figure 8 bundle has completed finalize/seal/verify.
@@ -1653,8 +1750,9 @@ only for an explicit live-closure recheck.
    record its user-attachment URL after browser-composer upload.
    Do not loosen tolerance, caps, fallback, or fail-fast. Keep predictive
    checkpoint `3647959a188` distinct from previous checkpoint `ffe23d347b0`.
-   Finish and independently verify the active current-head ten-level recapture
-   before replacing its historical c95 upload identity. Preserve and
+   Restart the stopped current-head ten-level pair in a fresh output root and
+   independently verify it before replacing its historical c95 upload
+   identity. Preserve and
    independently review the completed telemetry-rich continuation
    capture without calling accepted finite iterates strict success, then attach
    the paired clip to PR #3377 only with explicit approval and record the
