@@ -174,6 +174,13 @@
 
 * Collision
 
+  * Make the built-in `dart` collision detector the default, consolidate the
+    experimental `native` engine behind it while preserving `native` as a
+    transition alias, and add the soft-body, ellipsoid, cone, and capsule
+    coverage needed by the default path. MJCF plane geoms are also loaded as true
+    infinite planes through their declared position instead of thin boxes:
+    [#3381](https://github.com/dartsim/dart/pull/3381)
+
   * Speed up many-object DART-native collision queries by replacing the
     quadratic brute-force broadphase with a dynamic AABB tree, while preserving
     deterministic result ordering and streaming boolean-query early exits:

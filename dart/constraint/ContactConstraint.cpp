@@ -33,9 +33,9 @@
 #include "dart/constraint/ContactConstraint.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/PersistentManifoldCache.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -122,17 +122,17 @@ collision::native::CachedContact* getNativeCachedContact(
   if (contact == nullptr || contact->userData == nullptr)
     return nullptr;
 
-  auto* object1 = dynamic_cast<collision::NativeCollisionObject*>(
+  auto* object1 = dynamic_cast<collision::DARTCollisionObject*>(
       contact->collisionObject1);
   if (object1 == nullptr)
     return nullptr;
 
-  auto* object2 = dynamic_cast<collision::NativeCollisionObject*>(
+  auto* object2 = dynamic_cast<collision::DARTCollisionObject*>(
       contact->collisionObject2);
   if (object2 == nullptr)
     return nullptr;
 
-  auto* detector = dynamic_cast<collision::NativeCollisionDetector*>(
+  auto* detector = dynamic_cast<collision::DARTCollisionDetector*>(
       object1->getCollisionDetector());
   if (detector == nullptr)
     return nullptr;

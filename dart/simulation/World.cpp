@@ -187,18 +187,16 @@ bool skeletonPositionsMatch(
 
 // Resolves a collision detector for a World constructed from a WorldConfig.
 //
-// Returns nullptr when the requested detector is the default 'fcl' backend so
+// Returns nullptr when the requested detector is the default 'dart' backend so
 // the World keeps the constraint solver's existing default detector untouched.
-// This keeps the default World construction path byte-for-byte equivalent to
-// the pre-WorldConfig behavior (FCL with PRIMITIVE shapes), which downstream
-// consumers such as gz-physics rely on. Only an explicitly non-default request
-// triggers a detector swap.
+// Only an explicitly non-default request triggers a detector swap; explicit
+// requests for every backend (including 'fcl') keep working unchanged.
 CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
 {
   const auto requestedType = config.collisionDetector;
 
   // Default request: leave the constraint solver's default detector in place.
-  if (requestedType == CollisionDetectorType::Fcl)
+  if (requestedType == CollisionDetectorType::Dart)
     return nullptr;
 
   const auto requestedKey = toCollisionDetectorKey(requestedType);

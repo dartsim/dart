@@ -37,7 +37,6 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -413,7 +412,7 @@ private:
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(collision::DARTCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
@@ -421,26 +420,18 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
 {
   DART_ASSERT(timeStep > 0.0);
-
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(collision::DARTCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>())
 {
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  // Do nothing
 }
 
 //==============================================================================

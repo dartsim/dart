@@ -5,6 +5,14 @@
 > ([05-phase0-baseline-packet.md](05-phase0-baseline-packet.md)), and the
 > 2026-07-10 current-head audit (`/tmp/audit_head_20260710T011207Z`).
 > Maintainer ratification points are listed at the end.
+>
+> **Executed (2026-07-11):** Decision 1 below was implemented in the
+> detector-consolidation branch — `dart/collision/native/` folded into
+> `dart/collision/dart/`, `NativeCollisionDetector`/`Group`/`Object` renamed
+> to `DARTCollisionDetector`/`Group`/`Object`, canonical key `"dart"`,
+> `"native"` kept as a transition alias. The legacy narrowphase-only
+> implementation (and `DARTCollide.{hpp,cpp}`) was deleted in the same
+> commit; the default flip ships on the same branch.
 
 ## Goal restated
 
@@ -47,6 +55,31 @@ Mechanics, and why this is clean now:
   `DARTCollisionDetector` binding now denote the consolidated engine, and the
   phase-6 flip simply changes the default from Fcl to Dart across the flip
   surface (`ConstraintSolver.cpp:416`/`:433`, `WorldConfig`, `SkelParser`).
+
+> **Correction recorded during execution (2026-07-11):** the "strict subset"
+> premise above does not hold for `SoftMeshShape` (deformable body) contacts.
+> The legacy narrowphase-only `DARTCollisionDetector` supported `SoftMeshShape`
+> point contacts (against Box/Plane/Sphere/Ellipsoid/SoftMesh, matching
+> FCL/Bullet/ODE); the native engine's shape conversion has no `SoftMeshShape`
+> case. Deleting the legacy engine therefore drops `SoftMeshShape` support
+> from the `"dart"`/`"native"` keys until a follow-up ports it into the native
+> shape/narrowphase layer. See the consolidation commit message for the full
+> enumeration of affected call sites.
+>
+> **Resolution (2026-07-11, same branch):** both capability gaps closed
+> before the flip PR:
+> - `SoftMeshShape` ported into the consolidated detector (`SoftCollision.*`,
+>   soft caches on `DARTCollisionObject`, soft AABBs in both broadphases;
+>   soft pairs bypass the persistent manifold cache). All eight soft
+>   StepAllocation gates report contacts with zero steady-state allocations.
+>   Parallel soft-soft batching is deferred (serial path only, TODO in
+>   source).
+> - `EllipsoidShape` support added to the native shape conversion (exact
+>   sphere for equal radii, deterministic icosphere convex hull otherwise).
+>
+> Rigid determinism guards stayed bit-identical throughout (S1
+> `0xd6736cd716faf01d`, S3 `0x6088ea0177efa6a`, S4 `0x55bf77ebc1c491b2`,
+> S5 `0x4f265a803b596035`).
 
 ## Decision 2 — facades over the dart detector, not component removal
 

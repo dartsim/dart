@@ -53,7 +53,6 @@
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -493,23 +492,18 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclPrimitive)
+TEST(World, DefaultWorldUsesDartDetector)
 {
-  auto factory = collision::CollisionDetector::getFactory();
-  ASSERT_NE(factory, nullptr);
-
-  if (!factory->canCreate("fcl"))
-    GTEST_SKIP() << "fcl collision detector is not available in this build";
-
-  // The default World construction path must remain unchanged: it keeps the
-  // constraint solver's default FCL detector configured with PRIMITIVE shapes.
+  // Since 6.20 the default World construction path keeps the constraint
+  // solver's default dart collision detector.
   auto world = World::create();
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
+  auto dartDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          world->getCollisionDetector());
+  ASSERT_TRUE(dartDetector);
   EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
+      dartDetector->getType(),
+      collision::DARTCollisionDetector::getStaticType());
 }
 
 //==============================================================================
@@ -519,7 +513,7 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   ASSERT_NE(factory, nullptr);
 
   ASSERT_TRUE(
-      factory->canCreate(collision::NativeCollisionDetector::getStaticType()));
+      factory->canCreate(collision::DARTCollisionDetector::getStaticType()));
 
   const std::string skel = R"(
 <skel version="1.0">
@@ -537,11 +531,11 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   ASSERT_NE(nullptr, world);
 
   auto nativeDetector
-      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
           world->getCollisionDetector());
   ASSERT_TRUE(nativeDetector);
   EXPECT_EQ(
-      collision::NativeCollisionDetector::getStaticType(),
+      collision::DARTCollisionDetector::getStaticType(),
       nativeDetector->getType());
 }
 
@@ -617,26 +611,26 @@ TEST(World, TypedSetterKeepsCurrentWhenDetectorUnavailable)
 //==============================================================================
 TEST(World, ConfigKeepsDefaultWhenPreferredDetectorUnavailable)
 {
-  ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+  ScopedCollisionFactoryDisabler disableFcl(
+      collision::FCLCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::FCLCollisionDetector::create();
       });
 
-  if (!disableDart.wasDisabled())
-    GTEST_SKIP() << "dart collision detector is not registered in this build";
+  if (!disableFcl.wasDisabled())
+    GTEST_SKIP() << "fcl collision detector is not registered in this build";
 
   WorldConfig config;
   config.name = "fallback-pref";
-  config.collisionDetector = CollisionDetectorType::Dart;
+  config.collisionDetector = CollisionDetectorType::Fcl;
 
   // When the preferred detector is unavailable, the World keeps the constraint
-  // solver's existing default detector (FCL), unchanged.
+  // solver's existing default detector (dart since 6.20), unchanged.
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
       world->getCollisionDetector()->getType(),
-      collision::FCLCollisionDetector::getStaticType());
+      collision::DARTCollisionDetector::getStaticType());
 }
 
 //==============================================================================

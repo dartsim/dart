@@ -8,9 +8,9 @@ pick better ones, mirroring the DART 7 `dart.gui.assess_view` /
 
 Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
 occlusion from core raycasts against the world's real collision geometry (the
-Bullet backend, DART 6's only raycast provider); projection uses the same
-look-at + vertical-FOV model the capture helper pins. No GL context is needed
-to assess a view.
+Bullet backend when available, otherwise the built-in DART backend); projection
+uses the same look-at + vertical-FOV model the capture helper pins. No GL
+context is needed to assess a view.
 """
 
 from __future__ import annotations
@@ -286,13 +286,13 @@ def _dartpy() -> Any:
 
 
 def _raycast_detector(dart: Any) -> Any:
-    """Prefer Bullet raycasts, with the core native detector as fallback."""
-    for name in ("BulletCollisionDetector", "NativeCollisionDetector"):
+    """Prefer Bullet raycasts, with the built-in DART detector as fallback."""
+    for name in ("BulletCollisionDetector", "DARTCollisionDetector"):
         factory = getattr(dart.collision, name, None)
         if factory is not None:
             return factory()
     raise RuntimeError(
-        "view-quality occlusion requires a raycast-capable Bullet or native "
+        "view-quality occlusion requires a raycast-capable Bullet or DART "
         "collision detector in dartpy"
     )
 

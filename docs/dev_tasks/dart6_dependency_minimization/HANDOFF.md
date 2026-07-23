@@ -7,6 +7,13 @@
 > plan), then [RESUME.md](RESUME.md) (exact next step). This file is the
 > transfer note: what is merged, what is open, exactly where to resume, and the
 > operational gotchas learned this session.
+>
+> **Current reality (2026-07-18):** this file predates the detector
+> consolidation. The phase-4/phase-5 framing below is historical: the native
+> engine has since been merged INTO the dart detector and the phase-6 default
+> flip is implemented on `feature/dart-detector-consolidation` (**PR #3381**,
+> green, awaiting maintainer merge). See RESUME.md "Current state
+> (2026-07-18)" and `~/dart-bench-artifacts/HANDOFF-2026-07-12-consolidation.md`.
 
 ## 1. The mission in one paragraph
 

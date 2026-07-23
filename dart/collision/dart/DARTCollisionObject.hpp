@@ -34,13 +34,13 @@
 #define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 
 #include <dart/collision/CollisionObject.hpp>
-
-#include <dart/dynamics/SmartPointer.hpp>
+#include <dart/collision/dart/Aabb.hpp>
+#include <dart/collision/dart/shapes/Shape.hpp>
 
 #include <Eigen/Dense>
 
 #include <limits>
-#include <string>
+#include <memory>
 #include <vector>
 
 #include <cstddef>
@@ -48,7 +48,8 @@
 namespace dart {
 namespace collision {
 
-class CollisionObject;
+class DARTCollisionDetector;
+class DARTCollisionGroup;
 
 class DARTCollisionObject : public CollisionObject
 {
@@ -56,17 +57,11 @@ public:
   friend class DARTCollisionDetector;
   friend class DARTCollisionGroup;
 
-  enum class CachedShapeKind
-  {
-    Unknown,
-    Sphere,
-    SphereEllipsoid,
-    Box,
-    Cylinder,
-    Capsule,
-    SoftMesh,
-    Plane,
-  };
+  const native::Shape* getNativeShape() const;
+
+  const Eigen::Isometry3d& getNativeTransform() const;
+
+  const native::Aabb& getNativeAabb() const;
 
   struct CachedSoftFace
   {
@@ -96,35 +91,7 @@ public:
     int count{0};
   };
 
-protected:
-  /// Constructor
-  DARTCollisionObject(
-      CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-public:
-  const dynamics::Shape* getCachedShape() const;
-
-  const std::string& getCachedShapeType() const;
-
-  CachedShapeKind getCachedShapeKind() const;
-
-  const Eigen::Vector3d& getCachedLocalBoundsMin() const;
-
-  const Eigen::Vector3d& getCachedLocalBoundsMax() const;
-
-  /// Returns the center of the cached local bounding box.
-  const Eigen::Vector3d& getCachedLocalBoundsCenter() const;
-
-  /// Returns the half-extents of the cached local bounding box.
-  const Eigen::Vector3d& getCachedLocalBoundsHalfExtents() const;
-
-  bool hasFiniteCachedLocalBounds() const;
-
-  bool isCachedPlaneShape() const;
-
-  /// Return the world transform path used by the DART-native collision backend.
-  const Eigen::Isometry3d& getWorldTransformForCollision() const;
+  bool isSoftMeshShape() const;
 
   const std::vector<Eigen::Vector3d>& getCachedSoftLocalVertices() const;
 
@@ -137,11 +104,15 @@ public:
   const std::vector<int>& getCachedSoftFaceBvhIndices() const;
 
 protected:
+  DARTCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
+
   // Documentation inherited
   void updateEngineData() override;
 
 private:
-  void refreshShapeCache();
+  void rebuildNativeShape();
 
   void refreshSoftMeshCache();
 
@@ -151,17 +122,17 @@ private:
 
   void refreshSoftFaceBvhBounds();
 
-  dynamics::ConstShapePtr mCachedShape;
-  const std::string* mCachedShapeType{nullptr};
-  std::size_t mCachedShapeFrameVersion{std::numeric_limits<std::size_t>::max()};
-  CachedShapeKind mCachedShapeKind{CachedShapeKind::Unknown};
-  Eigen::Vector3d mCachedLocalBoundsMin{Eigen::Vector3d::Zero()};
-  Eigen::Vector3d mCachedLocalBoundsMax{Eigen::Vector3d::Zero()};
-  Eigen::Vector3d mCachedLocalBoundsCenter{Eigen::Vector3d::Zero()};
-  Eigen::Vector3d mCachedLocalBoundsHalfExtents{Eigen::Vector3d::Zero()};
-  bool mHasFiniteCachedLocalBounds{false};
-  bool mIsCachedPlaneShape{false};
-  bool mUseBodyNodeWorldTransform{false};
+  std::unique_ptr<native::Shape> mNativeShape;
+  Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
+  /// Local-space AABB used by the broadphase. Rigid native shapes refresh this
+  /// only when the native shape is rebuilt; soft meshes refresh it from point
+  /// masses every engine update.
+  native::Aabb mNativeLocalAabb;
+  native::Aabb mNativeAabb;
+  std::size_t mLastKnownShapeId{std::numeric_limits<std::size_t>::max()};
+  std::size_t mLastKnownShapeVersion{0u};
+  bool mHasNativeAabb{false};
+  bool mIsSoftMeshShape{false};
   std::size_t mCachedSoftBodyNodeVersion{
       std::numeric_limits<std::size_t>::max()};
   std::vector<Eigen::Vector3d> mCachedSoftLocalVertices;

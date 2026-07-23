@@ -1,0 +1,110 @@
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_aabb
+  test_aabb.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_types
+  test_types.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_shapes
+  test_shapes.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_box_box
+  test_box_box.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_capsule_box
+  test_capsule_box.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_capsule_capsule
+  test_capsule_capsule.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_capsule_sphere
+  test_capsule_sphere.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_ccd
+  test_ccd.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_convex_convex
+  test_convex_convex.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_cylinder_collision
+  test_cylinder_collision.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_distance
+  test_distance.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_mesh_mesh
+  test_mesh_mesh.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_plane_sphere
+  test_plane_sphere.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_persistent_manifold_cache
+  test_persistent_manifold_cache.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_primitive_ccd
+  test_primitive_ccd.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_sphere_box
+  test_sphere_box.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_narrow_phase_dispatch
+  test_narrow_phase_dispatch.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_gjk
+  test_gjk.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_gjk_degenerate
+  test_gjk_degenerate.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_sphere_sphere
+  test_sphere_sphere.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_aabb_tree
+  test_aabb_tree.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_dart_brute_force
+  test_brute_force.cpp
+)

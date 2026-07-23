@@ -186,6 +186,45 @@ defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
 dependency/package metadata before the explicit phase that owns it; FCL remains
 the default until phase 6.
 
+**Detector consolidation executed (2026-07-11):** per maintainer direction
+2026-07-10, recorded in
+[08-phase5-facade-decision.md](08-phase5-facade-decision.md), the native
+engine merged INTO the dart detector: `dart/collision/native/` no longer
+exists (folded into `dart/collision/dart/`), and
+`dart::collision::NativeCollisionDetector`/`Group`/`Object` are gone —
+`DARTCollisionDetector`/`Group`/`Object` now denote the former native
+engine, canonical factory key `"dart"`, with `"native"` kept as a transition
+alias (remove in 6.21). This is a separate commit from the phase-6 default
+flip, which is still pending and out of scope here. The legacy
+narrowphase-only `DARTCollisionDetector` implementation (and its
+`DARTCollide.{hpp,cpp}` helpers) was deleted as part of this merge; see that
+commit's message for the enumerated behavior-change risks. The two capability
+gaps this opened were closed on the same branch before the flip PR:
+SoftMeshShape support was ported into the consolidated detector
+(`SoftCollision.*`, soft gates green with zero steady-state allocations,
+serial soft-soft only) and EllipsoidShape gained a native conversion (exact
+sphere for equal radii, icosphere convex hull otherwise).
+
+**Current state (2026-07-18):** the consolidation plus phase-6 default flip
+ships as **PR #3381** (`feature/dart-detector-consolidation`, milestone
+DART 6.20.0), which is complete and review-clean: 22 checks green at head
+`ebf33416626`, Codex re-review clean at that head, and a ready-for-merge
+comment posted 2026-07-14. The `test_MjcfParser` no-NDEBUG abort that
+briefly blocked CI was fixed on the branch (MJCF plane/stacked-axis
+semantics fix plus the soft-coverage/detector-initialization restore). On
+2026-07-18 the branch was refreshed by merging `origin/release-6.20`
+(= `75306efe770`; two non-overlapping commits, #3388 pixi lockfile and
+#3390 script formatting) because branch protection requires up-to-date
+branches; CI re-runs on the new head. Maintainer decisions recorded
+2026-07-18: the PR **merge itself stays with the maintainer** (agent keeps
+the branch green and merge-ready), and this task folder stays **ACTIVE**
+after the merge (refresh docs; do not retire yet). Post-merge next steps:
+apply the prepared post-merge doc map
+(`~/dart-bench-artifacts/pr3381-next-packet-ad97d7c-20260713/post-merge-doc-map.md`),
+then phase 7 (FCL decoupling from core) remains the pending dependency win,
+ratified for the 6.22 cycle (6.21 deprecations → 6.22 facades); the ODE
+facade-vs-coordinated-gz ratification point is still open.
+
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).
 

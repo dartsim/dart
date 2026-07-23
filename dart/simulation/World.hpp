@@ -100,7 +100,7 @@ struct WorldConfig final
   std::string name = "world";
 
   /// Preferred collision detector for the world.
-  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Dart;
 
   /// Base allocator for the World-owned MemoryManager. The allocator must
   /// outlive the World. This does not affect global operator new.

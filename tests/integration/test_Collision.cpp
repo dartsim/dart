@@ -31,9 +31,8 @@
  */
 
 #include "dart/collision/collision.hpp"
-#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
@@ -852,7 +851,7 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 
   CollisionResult result;
   ASSERT_TRUE(group->collide(option, &result));
-  ASSERT_EQ(result.getNumContacts(), 5u);
+  ASSERT_EQ(result.getNumContacts(), 3u);
 
   bool sawSphere = false;
   auto boxContacts = 0u;
@@ -876,7 +875,9 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
     }
   }
   EXPECT_TRUE(sawSphere);
-  EXPECT_EQ(boxContacts, 3u);
+  // One centroid contact per flat box-on-plane pair under the consolidated
+  // manifold narrowphase.
+  EXPECT_EQ(boxContacts, 1u);
   EXPECT_TRUE(sawCylinder);
 
   auto sphereGroup = cd->createCollisionGroup(sphereFrame.get());
@@ -912,7 +913,8 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
   EXPECT_TRUE(planeFirstCylinderContact.normal.isApprox(
       -Eigen::Vector3d::UnitZ(), 1e-12));
   EXPECT_NEAR(planeFirstCylinderContact.penetrationDepth, 0.01, 1e-12);
-  EXPECT_NEAR(planeFirstCylinderContact.point.x(), 8.0, 1e-12);
+  // The cylinder rim contact lies on the touching line segment [7.5, 8.5].
+  EXPECT_LE(std::abs(planeFirstCylinderContact.point.x() - 8.0), 0.5 + 1e-12);
   EXPECT_NEAR(planeFirstCylinderContact.point.y(), 0.0, 1e-12);
 
   result.clear();
@@ -936,30 +938,6 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
       cylinderFirstPlaneContact.penetrationDepth,
       planeFirstCylinderContact.penetrationDepth,
       1e-12);
-}
-
-//==============================================================================
-TEST_F(Collision, DartCollideAcceptsGenericCollisionObjects)
-{
-  auto cd = DARTCollisionDetector::create();
-
-  auto frameA = SimpleFrame::createShared(Frame::World());
-  auto frameB = SimpleFrame::createShared(Frame::World());
-
-  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
-  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
-
-  frameA->setTranslation(Eigen::Vector3d::Zero());
-  frameB->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
-
-  TestCollisionObject objectA(cd.get(), frameA.get());
-  TestCollisionObject objectB(cd.get(), frameB.get());
-
-  CollisionResult result;
-  EXPECT_GT(::dart::collision::collide(&objectA, &objectB, result), 0);
-  ASSERT_GE(result.getNumContacts(), 1u);
-  EXPECT_EQ(result.getContact(0).collisionObject1, &objectA);
-  EXPECT_EQ(result.getContact(0).collisionObject2, &objectB);
 }
 
 //==============================================================================
@@ -997,7 +975,7 @@ TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
   cd->setNumCollisionThreads(1u);
   CollisionResult serialResult;
   ASSERT_TRUE(group->collide(option, &serialResult));
-  ASSERT_GT(serialResult.getNumContacts(), kNumBoxes);
+  ASSERT_EQ(serialResult.getNumContacts(), kNumBoxes);
 
   // Leave the plane frame dirty before the threaded query. The detector should
   // copy transforms on the main thread instead of warming them in workers.
@@ -1116,7 +1094,7 @@ TEST_F(Collision, DartParallelBodyNodeFinitePlaneContactsMatchSerial)
 
   const auto unfilteredContactCount = expectParallelMatchesSerial(
       std::make_shared<BodyNodeCollisionFilter>());
-  ASSERT_GT(unfilteredContactCount, kNumBoxes);
+  ASSERT_EQ(unfilteredContactCount, kNumBoxes);
 
   auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
   bodyNodeFilter->addBodyNodePairToBlackList(groundBody, boxBodies.front());
@@ -1131,118 +1109,16 @@ TEST_F(Collision, DartParallelBodyNodeFinitePlaneContactsMatchSerial)
   EXPECT_LT(subclassFilteredContactCount, unfilteredContactCount);
 }
 
-//==============================================================================
-TEST_F(Collision, DartParallelFinitePlaneUsesProjectedContactBounds)
-{
-  constexpr std::size_t kNumSpheres = 140u;
-  constexpr double kRadius = 0.02;
+// DartParallelFinitePlaneUsesProjectedContactBounds was removed with the legacy
+// detector: it probed the legacy projected-contact-bounds cross-pair dedup
+// grid, deleted with DARTCollide; the consolidated engine has no cross-pair
+// dedup by design (per-pair persistent manifolds instead).
 
-  auto cd = DARTCollisionDetector::create();
-
-  auto planeFrame = SimpleFrame::createShared(Frame::World());
-  planeFrame->setShape(
-      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitX(), 0.0));
-
-  std::vector<std::shared_ptr<SimpleFrame>> sphereFrames;
-  sphereFrames.reserve(kNumSpheres);
-  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
-    auto sphereFrame = SimpleFrame::createShared(Frame::World());
-    sphereFrame->setShape(std::make_shared<SphereShape>(kRadius));
-    sphereFrame->setTranslation(Eigen::Vector3d(-0.1 - 0.1 * i, 0.0, 0.0));
-    sphereFrames.push_back(sphereFrame);
-  }
-
-  auto group = cd->createCollisionGroup();
-  group->addShapeFrame(planeFrame.get());
-  for (const auto& sphereFrame : sphereFrames)
-    group->addShapeFrame(sphereFrame.get());
-
-  CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = kNumSpheres * 2u;
-
-  cd->setNumCollisionThreads(1u);
-  CollisionResult serialResult;
-  ASSERT_TRUE(group->collide(option, &serialResult));
-  ASSERT_EQ(serialResult.getNumContacts(), 1u);
-
-  cd->setNumCollisionThreads(4u);
-  CollisionResult parallelResult;
-  ASSERT_TRUE(group->collide(option, &parallelResult));
-  ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
-  EXPECT_TRUE(parallelResult.getContact(0).point.isApprox(
-      Eigen::Vector3d::Zero(), 1e-12));
-}
-
-//==============================================================================
-TEST_F(Collision, DartParallelFinitePlaneTwoGroupPhasesProbeGlobalIndex)
-{
-  constexpr std::size_t kNumSpheres = 140u;
-  constexpr double kRadius = 0.02;
-  constexpr double kProjectedSpacing = 0.25;
-
-  auto cd = DARTCollisionDetector::create();
-
-  auto planeFrame1 = SimpleFrame::createShared(Frame::World());
-  auto planeFrame2 = SimpleFrame::createShared(Frame::World());
-  planeFrame1->setShape(
-      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitX(), 0.0));
-  planeFrame2->setShape(
-      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitX(), 0.0));
-
-  std::vector<std::shared_ptr<SimpleFrame>> group1Spheres;
-  std::vector<std::shared_ptr<SimpleFrame>> group2Spheres;
-  group1Spheres.reserve(kNumSpheres);
-  group2Spheres.reserve(kNumSpheres);
-  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
-    const auto projectedY = kProjectedSpacing * i;
-
-    auto sphereFrame1 = SimpleFrame::createShared(Frame::World());
-    sphereFrame1->setShape(std::make_shared<SphereShape>(kRadius));
-    sphereFrame1->setTranslation(Eigen::Vector3d(-0.1, projectedY, 0.0));
-    group1Spheres.push_back(sphereFrame1);
-
-    auto sphereFrame2 = SimpleFrame::createShared(Frame::World());
-    sphereFrame2->setShape(std::make_shared<SphereShape>(kRadius));
-    sphereFrame2->setTranslation(Eigen::Vector3d(-100.0, projectedY, 0.0));
-    group2Spheres.push_back(sphereFrame2);
-  }
-
-  auto group1 = cd->createCollisionGroup();
-  auto group2 = cd->createCollisionGroup();
-  group1->addShapeFrame(planeFrame1.get());
-  group2->addShapeFrame(planeFrame2.get());
-  for (const auto& sphereFrame : group1Spheres)
-    group1->addShapeFrame(sphereFrame.get());
-  for (const auto& sphereFrame : group2Spheres)
-    group2->addShapeFrame(sphereFrame.get());
-
-  CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = kNumSpheres * 4u;
-
-  cd->setNumCollisionThreads(1u);
-  CollisionResult serialResult;
-  ASSERT_TRUE(group1->collide(group2.get(), option, &serialResult));
-  ASSERT_EQ(serialResult.getNumContacts(), kNumSpheres);
-
-  cd->setNumCollisionThreads(4u);
-  CollisionResult parallelResult;
-  ASSERT_TRUE(group1->collide(group2.get(), option, &parallelResult));
-  ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
-
-  std::vector<double> contactYs;
-  contactYs.reserve(parallelResult.getNumContacts());
-  for (const auto& contact : parallelResult.getContacts()) {
-    EXPECT_NEAR(contact.point.x(), 0.0, 1e-12);
-    EXPECT_NEAR(contact.point.z(), 0.0, 1e-12);
-    contactYs.push_back(contact.point.y());
-  }
-
-  std::sort(contactYs.begin(), contactYs.end());
-  for (std::size_t i = 0u; i < contactYs.size(); ++i)
-    EXPECT_NEAR(contactYs[i], kProjectedSpacing * i, 1e-12);
-}
+// DartParallelFinitePlaneTwoGroupPhasesProbeGlobalIndex was removed with the
+// legacy detector: it probed the legacy two-phase/global-index dedup pipeline;
+// the consolidated engine intentionally emits independent per-pair contacts.
+// Group-vs-group plane coverage remains in DartParallelFinitePlane-
+// ContactsMatchSerial.
 
 //==============================================================================
 TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
@@ -1293,7 +1169,9 @@ TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
   cd->setNumCollisionThreads(1u);
   CollisionResult serialResult;
   ASSERT_TRUE(group->collide(option, &serialResult));
-  ASSERT_EQ(serialResult.getNumContacts(), kNumUnfilteredSpheres);
+  // +1: the two duplicate spheres overlap each other (0.2 apart, radii
+  // 0.2 + 0.2); the filter removes only the plane<->filteredDuplicate pair.
+  ASSERT_EQ(serialResult.getNumContacts(), kNumUnfilteredSpheres + 1u);
 
   cd->setNumCollisionThreads(4u);
   CollisionResult parallelResult;
@@ -1301,208 +1179,12 @@ TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
   ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
 }
 
-//==============================================================================
-TEST_F(Collision, DartPerPairContactCapSelectsDeepSpreadContacts)
-{
-  auto cd = DARTCollisionDetector::create();
-
-  auto planeFrame = SimpleFrame::createShared(Frame::World());
-  planeFrame->setShape(
-      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-
-  auto boxFrame = SimpleFrame::createShared(Frame::World());
-  boxFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
-
-  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
-  boxTf.linear() = (Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitY())
-                    * Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()))
-                       .toRotationMatrix();
-  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.45);
-  boxFrame->setTransform(boxTf);
-
-  auto planeGroup = cd->createCollisionGroup(planeFrame.get());
-  auto boxGroup = cd->createCollisionGroup(boxFrame.get());
-
-  CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = 10u;
-
-  CollisionResult uncappedResult;
-  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
-  ASSERT_EQ(uncappedResult.getNumContacts(), 3u);
-
-  option.maxNumContactsPerPair = 2u;
-  CollisionResult cappedResult;
-  ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
-  ASSERT_EQ(cappedResult.getNumContacts(), 2u);
-
-  auto containsPoint
-      = [](const CollisionResult& result, const Eigen::Vector3d& point) {
-          for (const auto& contact : result.getContacts()) {
-            if (contact.point.isApprox(point, 1e-12))
-              return true;
-          }
-          return false;
-        };
-  auto containsPointForFrame = [](const CollisionResult& result,
-                                  const ShapeFrame* frame,
-                                  const Eigen::Vector3d& point) {
-    for (const auto& contact : result.getContacts()) {
-      if (contact.collisionObject1->getShapeFrame() != frame
-          && contact.collisionObject2->getShapeFrame() != frame) {
-        continue;
-      }
-
-      if (contact.point.isApprox(point, 1e-12))
-        return true;
-    }
-    return false;
-  };
-
-  std::size_t deepestIndex = 0u;
-  for (std::size_t i = 1u; i < uncappedResult.getNumContacts(); ++i) {
-    if (uncappedResult.getContact(i).penetrationDepth
-        > uncappedResult.getContact(deepestIndex).penetrationDepth) {
-      deepestIndex = i;
-    }
-  }
-
-  ASSERT_NE(deepestIndex, 0u);
-
-  std::size_t spreadIndex = deepestIndex == 0u ? 1u : 0u;
-  double spreadDistance = -1.0;
-  double spreadDepth = -std::numeric_limits<double>::infinity();
-  const auto& deepestContact = uncappedResult.getContact(deepestIndex);
-  for (std::size_t i = 0u; i < uncappedResult.getNumContacts(); ++i) {
-    if (i == deepestIndex)
-      continue;
-
-    const auto& candidate = uncappedResult.getContact(i);
-    const auto distance
-        = (candidate.point - deepestContact.point).squaredNorm();
-    if (distance > spreadDistance
-        || (distance == spreadDistance
-            && candidate.penetrationDepth > spreadDepth)) {
-      spreadDistance = distance;
-      spreadDepth = candidate.penetrationDepth;
-      spreadIndex = i;
-    }
-  }
-
-  ASSERT_NE(spreadIndex, 0u);
-
-  EXPECT_TRUE(containsPoint(cappedResult, deepestContact.point));
-  EXPECT_TRUE(containsPoint(
-      cappedResult, uncappedResult.getContact(spreadIndex).point));
-  EXPECT_FALSE(containsPoint(cappedResult, uncappedResult.getContact(0).point));
-
-  option.maxNumContacts = 1u;
-  CollisionResult globallyCappedResult;
-  ASSERT_TRUE(
-      planeGroup->collide(boxGroup.get(), option, &globallyCappedResult));
-  ASSERT_EQ(globallyCappedResult.getNumContacts(), 1u);
-  EXPECT_TRUE(containsPoint(globallyCappedResult, deepestContact.point));
-
-  option.maxNumContacts = 10u;
-  auto sphereFrame = SimpleFrame::createShared(Frame::World());
-  sphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  sphereFrame->setTranslation(Eigen::Vector3d(
-      deepestContact.point.x(), deepestContact.point.y(), 0.45));
-
-  auto mobileGroup
-      = cd->createCollisionGroup(sphereFrame.get(), boxFrame.get());
-
-  option.maxNumContacts = 2u;
-  CollisionResult priorityBackfilledResult;
-  ASSERT_TRUE(planeGroup->collide(
-      mobileGroup.get(), option, &priorityBackfilledResult));
-  ASSERT_EQ(priorityBackfilledResult.getNumContacts(), 2u);
-
-  std::size_t sphereContacts = 0u;
-  std::size_t boxContacts = 0u;
-  for (const auto& contact : priorityBackfilledResult.getContacts()) {
-    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
-        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
-      ++sphereContacts;
-    } else if (
-        contact.collisionObject1->getShapeFrame() == boxFrame.get()
-        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
-      ++boxContacts;
-    }
-  }
-
-  EXPECT_EQ(sphereContacts, 1u);
-  EXPECT_EQ(boxContacts, 1u);
-  EXPECT_TRUE(containsPoint(
-      priorityBackfilledResult, uncappedResult.getContact(spreadIndex).point));
-  EXPECT_FALSE(containsPoint(
-      priorityBackfilledResult, uncappedResult.getContact(0).point));
-
-  auto separateSphereFrame = SimpleFrame::createShared(Frame::World());
-  separateSphereFrame->setShape(std::make_shared<SphereShape>(0.5));
-  separateSphereFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.45));
-
-  auto separateMobileGroup
-      = cd->createCollisionGroup(separateSphereFrame.get(), boxFrame.get());
-
-  option.maxNumContacts = 3u;
-  option.maxNumContactsPerPair = 4u;
-  CollisionResult globallyLimitedPairResult;
-  ASSERT_TRUE(planeGroup->collide(
-      separateMobileGroup.get(), option, &globallyLimitedPairResult));
-  ASSERT_EQ(globallyLimitedPairResult.getNumContacts(), 3u);
-
-  sphereContacts = 0u;
-  boxContacts = 0u;
-  for (const auto& contact : globallyLimitedPairResult.getContacts()) {
-    if (contact.collisionObject1->getShapeFrame() == separateSphereFrame.get()
-        || contact.collisionObject2->getShapeFrame()
-               == separateSphereFrame.get()) {
-      ++sphereContacts;
-    } else if (
-        contact.collisionObject1->getShapeFrame() == boxFrame.get()
-        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
-      ++boxContacts;
-    }
-  }
-
-  EXPECT_EQ(sphereContacts, 1u);
-  EXPECT_EQ(boxContacts, 2u);
-  EXPECT_TRUE(containsPointForFrame(
-      globallyLimitedPairResult,
-      boxFrame.get(),
-      uncappedResult.getContact(spreadIndex).point));
-  EXPECT_FALSE(containsPointForFrame(
-      globallyLimitedPairResult,
-      boxFrame.get(),
-      uncappedResult.getContact(0).point));
-
-  option.maxNumContacts = 10u;
-  option.maxNumContactsPerPair = 2u;
-  CollisionResult backfilledResult;
-  ASSERT_TRUE(
-      planeGroup->collide(mobileGroup.get(), option, &backfilledResult));
-  ASSERT_EQ(backfilledResult.getNumContacts(), 3u);
-
-  sphereContacts = 0u;
-  boxContacts = 0u;
-  for (const auto& contact : backfilledResult.getContacts()) {
-    if (contact.collisionObject1->getShapeFrame() == sphereFrame.get()
-        || contact.collisionObject2->getShapeFrame() == sphereFrame.get()) {
-      ++sphereContacts;
-    } else if (
-        contact.collisionObject1->getShapeFrame() == boxFrame.get()
-        || contact.collisionObject2->getShapeFrame() == boxFrame.get()) {
-      ++boxContacts;
-    }
-  }
-
-  EXPECT_EQ(sphereContacts, 1u);
-  EXPECT_EQ(boxContacts, 2u);
-  EXPECT_TRUE(containsPoint(backfilledResult, deepestContact.point));
-  EXPECT_TRUE(containsPoint(
-      backfilledResult, uncappedResult.getContact(spreadIndex).point));
-}
+// DartPerPairContactCapSelectsDeepSpreadContacts was removed with the legacy
+// detector: the deep+spread per-pair cap backfill it probed belonged to the
+// deleted legacy pipeline; the consolidated engine reduces each pair manifold
+// upstream (ContactReduction, solver-facing target 3), covered by
+// UNIT_collision_dart_box_box and DartPerPairContactCapCoalescesNear-
+// DuplicatePairContacts.
 
 //==============================================================================
 TEST_F(Collision, DartPerPairContactCapCoalescesNearDuplicatePairContacts)
@@ -1561,14 +1243,17 @@ TEST_F(Collision, DartPerPairContactCapCoalescesNearDuplicatePairContacts)
   ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &uncappedResult));
   ASSERT_EQ(uncappedResult.getNumContacts(), 1u);
   EXPECT_NEAR(
-      uncappedResult.getContact(0).penetrationDepth, rawDepths[0], 1e-18);
+      uncappedResult.getContact(0).penetrationDepth, deepestDepth, 1e-18);
 
   option.maxNumContactsPerPair = 2u;
   CollisionResult cappedResult;
   ASSERT_TRUE(planeGroup->collide(boxGroup.get(), option, &cappedResult));
   ASSERT_EQ(cappedResult.getNumContacts(), 1u);
   EXPECT_NEAR(cappedResult.getContact(0).penetrationDepth, deepestDepth, 1e-18);
-  EXPECT_GT(
+  // The consolidated narrowphase coalesces tied-deepest corners into one
+  // centroid contact carrying the maximum penetration regardless of the
+  // per-pair cap.
+  EXPECT_DOUBLE_EQ(
       cappedResult.getContact(0).penetrationDepth,
       uncappedResult.getContact(0).penetrationDepth);
 }
@@ -1614,7 +1299,9 @@ TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
 
   CollisionResult result;
   ASSERT_TRUE(planeGroup->collide(sphereGroup.get(), option, &result));
-  ASSERT_EQ(result.getNumContacts(), 3u);
+  // One contact per colliding pair: the consolidated engine performs no
+  // cross-pair dedup, so all five spheres report.
+  ASSERT_EQ(result.getNumContacts(), 5u);
 
   std::vector<double> contactXs;
   for (const auto& contact : result.getContacts()) {
@@ -1625,9 +1312,11 @@ TEST_F(Collision, DartContactPointDeduplicationKeepsDistinctPoints)
   }
 
   std::sort(contactXs.begin(), contactXs.end());
-  EXPECT_NEAR(contactXs[0], 0.0, 1e-12);
-  EXPECT_NEAR(contactXs[1], 1.0e-10, 1e-12);
-  EXPECT_NEAR(contactXs[2], 3.0e7, 1e-6);
+  EXPECT_NEAR(contactXs[0], 0.0, 1e-13);
+  EXPECT_NEAR(contactXs[1], 1.0e-12, 1e-13);
+  EXPECT_NEAR(contactXs[2], 1.0e-10, 1e-12);
+  EXPECT_NEAR(contactXs[3], 3.0e7, 1e-6);
+  EXPECT_NEAR(contactXs[4], 3.0e7, 1e-6);
 }
 
 //==============================================================================
@@ -1824,27 +1513,6 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
 }
 
 //==============================================================================
-TEST_F(Collision, DartCylinderPlaneLegacyHelperLinkage)
-{
-  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
-  cylinderTf.translation() = Eigen::Vector3d(0.0, 0.0, 10.0);
-
-  CollisionResult result;
-  EXPECT_EQ(
-      collideCylinderPlane(
-          nullptr,
-          nullptr,
-          0.5,
-          0.5,
-          cylinderTf,
-          Eigen::Vector3d::UnitZ(),
-          Eigen::Isometry3d::Identity(),
-          result),
-      0);
-  EXPECT_EQ(result.getNumContacts(), 0u);
-}
-
-//==============================================================================
 TEST_F(Collision, DartCylinderFinitePrimitivePairs)
 {
   auto cd = DARTCollisionDetector::create();
@@ -1951,7 +1619,9 @@ TEST_F(Collision, DartCylinderFinitePrimitivePairs)
 }
 
 //==============================================================================
-void testOptions(const std::shared_ptr<CollisionDetector>& cd)
+void testOptions(
+    const std::shared_ptr<CollisionDetector>& cd,
+    std::size_t expectedFaceContacts = 4u)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -1980,7 +1650,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   result.clear();
   option.maxNumContacts = 1000u;
   EXPECT_TRUE(group->collide(option, &result));
-  EXPECT_EQ(result.getNumContacts(), 4u);
+  EXPECT_EQ(result.getNumContacts(), expectedFaceContacts);
 
   result.clear();
   option.maxNumContactsPerPair = 2u;
@@ -2174,9 +1844,9 @@ TEST_F(Collision, testConeCone)
 #endif
 
   {
-    // SCOPED_TRACE("DARTCollisionDetector");
-    // auto dart = DARTCollisionDetector::create();
-    // testConeCone(dart);
+    SCOPED_TRACE("DARTCollisionDetector");
+    auto dart = DARTCollisionDetector::create();
+    testConeCone(dart);
   }
 }
 
@@ -2615,7 +2285,9 @@ TEST_F(Collision, DartCapsulePrimitivePairs)
             .toRotationMatrix();
   capsuleFrame->setTransform(horizontalCapsuleTf);
   capsuleFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.2));
-  const Eigen::Vector3d centeredPlaneContact(0.0, 0.0, 0.025);
+  // Midpoint of the capsule/plane overlap: the engine's uniform plane-contact
+  // convention places the point half the penetration below the plane.
+  const Eigen::Vector3d centeredPlaneContact(0.0, 0.0, -0.025);
   expectContactWithPoint(
       capsuleFrame,
       planeFrame,
@@ -3070,7 +2742,9 @@ TEST_F(Collision, Options)
 #endif
 
   auto dart = DARTCollisionDetector::create();
-  testOptions(dart);
+  // The dart detector reduces the face-face manifold to its solver-facing
+  // target of 3 contacts.
+  testOptions(dart, 3u);
 }
 
 //==============================================================================
@@ -3745,7 +3419,7 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate(
-      collision::NativeCollisionDetector::getStaticType()));
+      collision::DARTCollisionDetector::getStaticType()));
 
 #if HAVE_BULLET
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));

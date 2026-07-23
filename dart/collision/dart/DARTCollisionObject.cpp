@@ -32,47 +32,32 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/collision/dart/detail/NativeShapeConversion.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/math/Geometry.hpp"
 
 #include <algorithm>
+#include <limits>
 
 #include <cmath>
 
 namespace dart {
 namespace collision {
-
 namespace {
 
+constexpr std::size_t kNoShapeId = std::numeric_limits<std::size_t>::max();
 constexpr double kSoftFaceCacheEps = 1e-6;
 
 //==============================================================================
-void updateCachedBounds(
-    const Eigen::Vector3d& boundsMin,
-    const Eigen::Vector3d& boundsMax,
-    Eigen::Vector3d& cachedBoundsMin,
-    Eigen::Vector3d& cachedBoundsMax,
-    Eigen::Vector3d& cachedBoundsCenter,
-    Eigen::Vector3d& cachedBoundsHalfExtents,
-    bool& hasFiniteCachedBounds)
+native::Aabb makeSoftLocalAabb(
+    const Eigen::Vector3d& boundsMin, const Eigen::Vector3d& boundsMax)
 {
-  cachedBoundsMin = boundsMin;
-  cachedBoundsMax = boundsMax;
-  cachedBoundsCenter = 0.5 * (cachedBoundsMin + cachedBoundsMax);
-  cachedBoundsHalfExtents = 0.5 * (cachedBoundsMax - cachedBoundsMin);
-  hasFiniteCachedBounds
-      = cachedBoundsMin.allFinite() && cachedBoundsMax.allFinite();
+  if (!boundsMin.allFinite() || !boundsMax.allFinite())
+    return native::Aabb();
+
+  return native::Aabb(boundsMin, boundsMax);
 }
 
 } // namespace
@@ -83,72 +68,31 @@ DARTCollisionObject::DARTCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
   : CollisionObject(collisionDetector, shapeFrame)
 {
-  refreshShapeCache();
+  updateEngineData();
 }
 
 //==============================================================================
-const dynamics::Shape* DARTCollisionObject::getCachedShape() const
+const native::Shape* DARTCollisionObject::getNativeShape() const
 {
-  return mCachedShape.get();
+  return mNativeShape.get();
 }
 
 //==============================================================================
-const std::string& DARTCollisionObject::getCachedShapeType() const
+const Eigen::Isometry3d& DARTCollisionObject::getNativeTransform() const
 {
-  static const std::string empty;
-  return mCachedShapeType ? *mCachedShapeType : empty;
+  return mNativeTransform;
 }
 
 //==============================================================================
-DARTCollisionObject::CachedShapeKind DARTCollisionObject::getCachedShapeKind()
-    const
+const native::Aabb& DARTCollisionObject::getNativeAabb() const
 {
-  return mCachedShapeKind;
+  return mNativeAabb;
 }
 
 //==============================================================================
-const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsMin() const
+bool DARTCollisionObject::isSoftMeshShape() const
 {
-  return mCachedLocalBoundsMin;
-}
-
-//==============================================================================
-const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsMax() const
-{
-  return mCachedLocalBoundsMax;
-}
-
-//==============================================================================
-const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsCenter() const
-{
-  return mCachedLocalBoundsCenter;
-}
-
-//==============================================================================
-const Eigen::Vector3d& DARTCollisionObject::getCachedLocalBoundsHalfExtents()
-    const
-{
-  return mCachedLocalBoundsHalfExtents;
-}
-
-//==============================================================================
-bool DARTCollisionObject::hasFiniteCachedLocalBounds() const
-{
-  return mHasFiniteCachedLocalBounds;
-}
-
-//==============================================================================
-bool DARTCollisionObject::isCachedPlaneShape() const
-{
-  return mIsCachedPlaneShape;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& DARTCollisionObject::getWorldTransformForCollision()
-    const
-{
-  return mUseBodyNodeWorldTransform ? mBodyNode->getWorldTransform()
-                                    : getTransform();
+  return mIsSoftMeshShape;
 }
 
 //==============================================================================
@@ -189,82 +133,73 @@ const std::vector<int>& DARTCollisionObject::getCachedSoftFaceBvhIndices() const
 }
 
 //==============================================================================
-void DARTCollisionObject::refreshShapeCache()
+void DARTCollisionObject::updateEngineData()
 {
-  const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
-  const auto currentShape = mShapeFrame ? mShapeFrame->getShape() : nullptr;
-  const bool hasSameShape = mCachedShape == currentShape;
+  const auto shape = getShape();
+  const auto* shapePtr = shape.get();
+  const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;
+  const std::size_t shapeVersion = shapePtr ? shapePtr->getVersion() : 0u;
 
-  if (hasSameShape && mCachedShapeFrameVersion == shapeFrameVersion
-      && mCachedShapeKind != CachedShapeKind::SoftMesh) {
+  if (shapeId != mLastKnownShapeId || shapeVersion != mLastKnownShapeVersion)
+    rebuildNativeShape();
+
+  if (mIsSoftMeshShape)
+    refreshSoftMeshCache();
+
+  mNativeTransform = getTransform();
+  if (mHasNativeAabb) {
+    mNativeAabb = native::Aabb::transformed(mNativeLocalAabb, mNativeTransform);
+  } else {
+    mNativeAabb = native::Aabb();
+  }
+}
+
+//==============================================================================
+void DARTCollisionObject::rebuildNativeShape()
+{
+  const auto shape = getShape();
+  mLastKnownShapeId = shape ? shape->getID() : kNoShapeId;
+  mLastKnownShapeVersion = shape ? shape->getVersion() : 0u;
+  mHasNativeAabb = false;
+  mIsSoftMeshShape = false;
+
+  if (!shape) {
+    mNativeShape.reset();
+    mNativeLocalAabb = native::Aabb();
+    mNativeAabb = native::Aabb();
+    mCachedSoftLocalVertices.clear();
+    mCachedSoftFirstFaceByPointMass.clear();
+    mCachedSoftFaces.clear();
+    mCachedSoftFaceBvhNodes.clear();
+    mCachedSoftFaceBvhIndices.clear();
+    mCachedSoftBodyNodeVersion = std::numeric_limits<std::size_t>::max();
+    mCachedSoftFacesDirty = false;
+    mCachedSoftFaceTopologyDirty = false;
     return;
   }
 
-  if (hasSameShape && mCachedShapeFrameVersion == shapeFrameVersion
-      && mCachedShapeKind == CachedShapeKind::SoftMesh) {
+  if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
+    mIsSoftMeshShape = true;
+    mNativeShape.reset();
     refreshSoftMeshCache();
     return;
   }
 
-  mCachedShapeFrameVersion = shapeFrameVersion;
-  mCachedShape = currentShape;
-  mCachedShapeType = mCachedShape ? &mCachedShape->getType() : nullptr;
-  mCachedShapeKind = CachedShapeKind::Unknown;
-  mCachedLocalBoundsMin.setZero();
-  mCachedLocalBoundsMax.setZero();
-  mCachedLocalBoundsCenter.setZero();
-  mCachedLocalBoundsHalfExtents.setZero();
-  mHasFiniteCachedLocalBounds = false;
-  mIsCachedPlaneShape = false;
-  mUseBodyNodeWorldTransform = false;
-
-  if (mShapeNode != nullptr && mBodyNode != nullptr) {
-    mUseBodyNodeWorldTransform = mShapeNode->getRelativeTransform().matrix()
-                                 == Eigen::Isometry3d::Identity().matrix();
+  mNativeShape = detail::NativeShapeConversion::create(*shape);
+  if (mNativeShape) {
+    mNativeLocalAabb = mNativeShape->computeLocalAabb();
+    mHasNativeAabb = true;
+  } else {
+    const auto& localBox = shape->getBoundingBox();
+    const auto& boundsMin = localBox.getMin();
+    const auto& boundsMax = localBox.getMax();
+    if (boundsMin.allFinite() && boundsMax.allFinite()) {
+      mNativeLocalAabb = native::Aabb(boundsMin, boundsMax);
+      mHasNativeAabb = true;
+    } else {
+      mNativeLocalAabb = native::Aabb();
+    }
   }
-
-  if (!mCachedShape)
-    return;
-
-  const auto& shapeType = *mCachedShapeType;
-  if (shapeType == dynamics::PlaneShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::Plane;
-    mIsCachedPlaneShape = true;
-    return;
-  }
-
-  if (shapeType == dynamics::SphereShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::Sphere;
-  } else if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto* ellipsoid
-        = static_cast<const dynamics::EllipsoidShape*>(mCachedShape.get());
-    if (ellipsoid->isSphere())
-      mCachedShapeKind = CachedShapeKind::SphereEllipsoid;
-  } else if (shapeType == dynamics::BoxShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::Box;
-  } else if (shapeType == dynamics::CylinderShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::Cylinder;
-  } else if (shapeType == dynamics::CapsuleShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::Capsule;
-  } else if (shapeType == dynamics::SoftMeshShape::getStaticType()) {
-    mCachedShapeKind = CachedShapeKind::SoftMesh;
-  }
-
-  if (mCachedShapeKind == CachedShapeKind::SoftMesh) {
-    refreshSoftMeshCache();
-    return;
-  }
-
-  const auto& localBox = mCachedShape->getBoundingBox();
-  updateCachedBounds(
-      localBox.getMin(),
-      localBox.getMax(),
-      mCachedLocalBoundsMin,
-      mCachedLocalBoundsMax,
-      mCachedLocalBoundsCenter,
-      mCachedLocalBoundsHalfExtents,
-      mHasFiniteCachedLocalBounds);
-
   mCachedSoftLocalVertices.clear();
   mCachedSoftFirstFaceByPointMass.clear();
   mCachedSoftFaces.clear();
@@ -278,16 +213,16 @@ void DARTCollisionObject::refreshShapeCache()
 //==============================================================================
 void DARTCollisionObject::refreshSoftMeshCache()
 {
+  const auto shape = getShape();
   const auto* softMesh
-      = static_cast<const dynamics::SoftMeshShape*>(mCachedShape.get());
+      = shape && shape->getType() == dynamics::SoftMeshShape::getStaticType()
+            ? static_cast<const dynamics::SoftMeshShape*>(shape.get())
+            : nullptr;
   const auto* softBodyNode
       = softMesh != nullptr ? softMesh->getSoftBodyNode() : nullptr;
   if (softBodyNode == nullptr) {
-    mCachedLocalBoundsMin.setZero();
-    mCachedLocalBoundsMax.setZero();
-    mCachedLocalBoundsCenter.setZero();
-    mCachedLocalBoundsHalfExtents.setZero();
-    mHasFiniteCachedLocalBounds = false;
+    mNativeLocalAabb = native::Aabb();
+    mHasNativeAabb = false;
     mCachedSoftLocalVertices.clear();
     mCachedSoftFirstFaceByPointMass.clear();
     mCachedSoftFaces.clear();
@@ -331,19 +266,13 @@ void DARTCollisionObject::refreshSoftMeshCache()
   }
 
   const auto numFaces = softBodyNode->getNumFaces();
-  bool softTopologyChanged
+  const bool softTopologyChanged
       = pointMassCountChanged || mCachedSoftFaces.size() != numFaces
         || mCachedSoftFirstFaceByPointMass.size() != numPointMasses
         || mCachedSoftBodyNodeVersion != softBodyNodeVersion;
 
-  updateCachedBounds(
-      boundsMin,
-      boundsMax,
-      mCachedLocalBoundsMin,
-      mCachedLocalBoundsMax,
-      mCachedLocalBoundsCenter,
-      mCachedLocalBoundsHalfExtents,
-      mHasFiniteCachedLocalBounds);
+  mHasNativeAabb = boundsMin.allFinite() && boundsMax.allFinite();
+  mNativeLocalAabb = makeSoftLocalAabb(boundsMin, boundsMax);
 
   if (!softGeometryChanged && !softTopologyChanged)
     return;
@@ -617,12 +546,6 @@ void DARTCollisionObject::refreshSoftFaceBvhBounds()
   };
 
   refreshNode(refreshNode, 0);
-}
-
-//==============================================================================
-void DARTCollisionObject::updateEngineData()
-{
-  refreshShapeCache();
 }
 
 } // namespace collision

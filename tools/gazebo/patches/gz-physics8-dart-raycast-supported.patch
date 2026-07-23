@@ -1,0 +1,30 @@
+DART's "dart" collision detector supports ray intersection since the native
+engine consolidation (raycast merged in dartsim/dart#3355; the consolidated
+engine became the "dart" key and the default in 6.20). Move "dart" from the
+unsupported to the supported ray-intersection detectors; the supported test's
+analytic sphere assertions (hit point, normal, fraction 0.25) pass unchanged.
+Line numbers assume gz-physics8-changed-world-poses.patch is applied first
+(patches apply in filename order).
+
+diff --git a/test/common_test/simulation_features.cc b/test/common_test/simulation_features.cc
+index e18c8bd5..f3369267 100644
+--- a/test/common_test/simulation_features.cc
++++ b/test/common_test/simulation_features.cc
+@@ -1399,7 +1446,7 @@ TYPED_TEST_SUITE(SimulationFeaturesRayIntersectionTest,
+ 
+ TYPED_TEST(SimulationFeaturesRayIntersectionTest, SupportedRayIntersections)
+ {
+-  std::vector<std::string> supportedCollisionDetectors = {"bullet"};
++  std::vector<std::string> supportedCollisionDetectors = {"bullet", "dart"};
+ 
+   for (const std::string &name : this->pluginNames)
+   {
+@@ -1446,7 +1493,7 @@ TYPED_TEST(SimulationFeaturesRayIntersectionTest, SupportedRayIntersections)
+ 
+ TYPED_TEST(SimulationFeaturesRayIntersectionTest, UnsupportedRayIntersections)
+ {
+-  std::vector<std::string> unsupportedCollisionDetectors = {"ode", "dart", "fcl", "banana"};
++  std::vector<std::string> unsupportedCollisionDetectors = {"ode", "fcl", "banana"};
+ 
+   for (const std::string &name : this->pluginNames)
+   {

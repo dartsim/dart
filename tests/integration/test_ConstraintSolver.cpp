@@ -36,9 +36,8 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/PersistentManifoldCache.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -76,6 +75,27 @@
 using namespace dart;
 
 namespace {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
+class ConstructorProbeConstraintSolver final
+  : public constraint::ConstraintSolver
+{
+public:
+  ConstructorProbeConstraintSolver() = default;
+
+  explicit ConstructorProbeConstraintSolver(double timeStep)
+    : ConstraintSolver(timeStep)
+  {
+    // Do nothing
+  }
+
+private:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    // Do nothing
+  }
+};
+DART_SUPPRESS_DEPRECATED_END
 
 class FakeConstraint final : public constraint::ConstraintBase
 {
@@ -272,14 +292,13 @@ public:
   using ContactConstraint::getInformation;
 };
 
-class ExposedNativeCollisionObject final
-  : public collision::NativeCollisionObject
+class ExposedDARTCollisionObject final : public collision::DARTCollisionObject
 {
 public:
-  ExposedNativeCollisionObject(
+  ExposedDARTCollisionObject(
       collision::CollisionDetector* detector,
       const dynamics::ShapeFrame* shapeFrame)
-    : NativeCollisionObject(detector, shapeFrame)
+    : DARTCollisionObject(detector, shapeFrame)
   {
   }
 };
@@ -708,6 +727,28 @@ std::shared_ptr<World> createWorld()
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ConstructorsInstallDARTCollisionDetector)
+{
+  const ConstructorProbeConstraintSolver defaultSolver;
+  EXPECT_DOUBLE_EQ(0.001, defaultSolver.getTimeStep());
+  const auto defaultDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+          defaultSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, defaultDetector);
+  EXPECT_EQ(1u, defaultDetector->getNumCollisionThreads());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const ConstructorProbeConstraintSolver explicitSolver(0.002);
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_DOUBLE_EQ(0.002, explicitSolver.getTimeStep());
+  const auto explicitDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+          explicitSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, explicitDetector);
+  EXPECT_EQ(1u, explicitDetector->getNumCollisionThreads());
+}
+
+//==============================================================================
 std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
 {
   auto world = createWorld();
@@ -821,7 +862,9 @@ void expectManySingleFreeBodyContactWorldsMatch(
       = expectedWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& actualContacts
       = actualWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes * 3u);
+  // The dart detector (default since 6.20) emits one centroid contact per
+  // flat box-vs-plane pair, not a per-corner manifold.
+  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes);
   EXPECT_EQ(expectedContacts.getNumContacts(), actualContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < numBoxes; ++i) {
@@ -909,7 +952,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -956,7 +999,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -1238,7 +1281,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverSeedsCachedImpulseResidual)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1289,7 +1332,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverFallsBackWhenNotConverged)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1339,7 +1382,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverRejectsMixedFreeJointActuators)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1580,7 +1623,7 @@ TEST(ConstraintSolver, ContactConstraintCachesSolvedImpulse)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1671,7 +1714,7 @@ TEST(ConstraintSolver, ContactConstraintClearsFrictionForChangedFrictionBasis)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1738,7 +1781,7 @@ TEST(ConstraintSolver, ContactConstraintDoesNotSeedFrictionInPositionPhase)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1861,9 +1904,9 @@ TEST(ConstraintSolver, ContactConstraintIgnoresForeignNativeUserData)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
-  ExposedNativeCollisionObject fixedObject(detector.get(), fixedShapeNode);
-  ExposedNativeCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
+  auto detector = collision::DARTCollisionDetector::create();
+  ExposedDARTCollisionObject fixedObject(detector.get(), fixedShapeNode);
+  ExposedDARTCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
 
   struct ForeignPayload
   {
@@ -2615,7 +2658,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverOptInKeepsContactWorldFinite)
   common::profile::resetProfile();
 
   const auto& contacts = world->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(contacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(contacts.getNumContacts(), kNumBoxes);
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
     const auto skeleton = world->getSkeleton("box_" + std::to_string(i));

@@ -12,7 +12,7 @@
 >   names (a project convention; see the naming note in
 >   `02-default-environment-split.md`).
 >
-> _Last updated: 2026-07-09._
+> _Last updated: 2026-07-18._
 
 ## Lanes & owners
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; phase 4 closeout / remaining measured optimization is next |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — consolidation + phase-6 default flip are implemented in **PR #3381** (open, green, awaiting maintainer merge); phase 7 (FCL decoupling) pending, ratified for the 6.22 cycle |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -124,12 +124,20 @@
   **#3239** release-branch AI enforcement stack · **#3245** MSVC SIMD fix ·
   **#3233** release CI concurrency fix.
 
-### 🔄 Open — monitoring (checked 2026-07-09)
+### 🔄 Open — monitoring (checked 2026-07-18)
 
-- **Phase 4** — #3362 and #3364 are merged. The next native-collision session
-  should refresh benchmark evidence on the current base, close out Phase 4 if
-  native still clears the performance bar, or make one cohesive measured
-  follow-up PR before moving to Phase 5.
+- **PR #3381** (`feature/dart-detector-consolidation`, milestone DART 6.20.0)
+  — the consolidation PR: `dart/collision/native/` folded into
+  `dart/collision/dart/`, `DARTCollisionDetector` now denotes the consolidated
+  engine (canonical key `"dart"`, `"native"` transition alias), phase-6
+  default flip in both `ConstraintSolver` ctors, soft-body + ellipsoid support
+  ported, allocation-free steady-state stepping. 22 checks green at
+  `ebf33416626`; base-merge refresh pushed 2026-07-18 (strict up-to-date
+  protection); **merge is the maintainer's**.
+- **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
+  gaps were superseded by the consolidation and the documented S6 acceptance
+  re-scope (see RESUME.md). Remaining performance work is tracked by the
+  perf-generalization lane (WS-G), not here.
 - **#3353** is merged on `release-6.20` for the separate
   performance-generalization plan parking lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
@@ -181,9 +189,8 @@ before treating it as an open/active PR.)_
 ## Coordination flags / blockers
 
 1. **Base / conflict status**:
-   - Current planning baseline: `origin/release-6.20` =
-     `613241385ae58fed2d2a47e9ff53beb2972d4b76`; `origin/main` =
-     `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
+   - Current planning baseline (2026-07-18): `origin/release-6.20` =
+     `75306efe770decd70fe88c0e20d0cb4ca212f71a`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - Remote mutations are maintainer-owned unless the maintainer explicitly
@@ -222,8 +229,9 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-09):** no open native-collision release PRs remain after
-  #3364. Phase 4 should resume from current `origin/release-6.20`; the former
+- **Open queue (2026-07-18):** one open native-collision release PR —
+  **#3381**, the detector consolidation + default flip (green, awaiting
+  maintainer merge). The former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
   #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360/#3362/#3364
   lane milestones, main-branch dual #3283, workflow rename #3357, and MSVC
