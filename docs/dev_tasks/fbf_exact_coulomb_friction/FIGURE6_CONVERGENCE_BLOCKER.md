@@ -1,5 +1,73 @@
 # Figure 6 Strict Convergence Blocker And Continuation Evidence
 
+## 2026-07-23 Source-Grounded Resolution: the strict "blocker" is a beyond-paper aspiration, not a solver defect
+
+A direct read of the pinned author solver (`/tmp/fbf-sca-2026-source`, verified
+at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`) resolves the open framing question
+this document left dangling ("is the blocker a real defect or an acceptance-policy
+artifact?"). The answer is **acceptance-policy artifact**: the paper's own method
+never strictly converges the card house either.
+
+- **The author solver accepts unconverged iterates and always advances.**
+  `fbf_solver/config.py` defaults are `max_outer = 100`, `outer_tol = 1e-6`,
+  `plateau_patience = 5`, `plateau_rtol = 0.01`. `fbf_solver/solver_fbf.py:326-381`
+  runs at most `max_outer` outer iterations, **breaks early on a plateau**
+  (`_check_plateau`, :367), and then sets
+  `accept_unconverged = (res >= 0.0) and (init_res >= 0.0) and (res < init_res)`
+  (:375) — i.e. it keeps the best-improved-but-unconverged iterate.
+  `fbf_solver/recover.py:79-92` (`recover_state`) then integrates the bodies from
+  the current reaction **unconditionally**, with no convergence check. There is
+  **no boxed-LCP fallback and no fail-closed path**.
+- **Empirically the source does not converge this scene.** The prior pinned
+  four-level/600-frame CPU run (recorded below) completes all 2,400 substeps with
+  `converged=false` on **945** of them (**632** reach `max_outer`, 313 stop on the
+  plateau rule); its first false flag is step index 33 and first cap is index 35 —
+  mirroring DART's step-35 island. "The paper's exact method is exact in the
+  Coulomb *cone model* (De Saxce/FBF), not in strict numerical convergence."
+- **DART already replicates this policy faithfully.**
+  `dart/constraint/ExactCoulombFbfConstraintSolver.hpp` declares
+  `ExactCoulombFbfSourceContinuationOptions` "matching the pinned source solver
+  loop" with `plateauPatience = 5` and `plateauRelativeTolerance = 0.01` (identical
+  to the source), and "Save an accepted unconverged reaction only when it improves
+  residual" (identical to `res < init_res`). DART's continuation lanes therefore
+  complete the card house the same way the source does.
+- **So the strict fixtures demand beyond-paper behavior.** The strict
+  `CardHouseFourLevel*` probes assert `residual <= 1e-6`, zero fallbacks, and zero
+  accepted caps — a bar the authors' own solver never meets. The six-plus rejected
+  one-factor A/Bs below were, in effect, trying to *beat* the paper, not match it.
+  Reclassify the strict lane from "replication blocker" to **optional research
+  aspiration** (can DART strictly converge what the paper only continues?).
+- **Empirical convergence check (2026-07-23, this repo).** No tested config
+  reaches `1e-6` on the failing solve. `card_house_26_reduced_contact` step 1
+  plateaus at `residual = 3.6948728730645153e-6` (bit-identical between the
+  30000-iteration one-step probe and the trace default), while the `paper_cpu`
+  contract at 200 outer iterations reports scaled residual `31.1`
+  (`max_iterations_accepted`) and `dart_best` reports `1.22e-5` — all
+  frontend/contract dependent, none converged. Combined with the documented
+  budget sweep (250x more iterations still `> 1e-6`), the failing decoupled
+  contact islands are intrinsically ill-conditioned / sublinearly convergent for
+  this splitting; strict `1e-6` is not practically reachable and is not what the
+  source does.
+
+**Correct forward path for Figure 6 replication (North Star).** Replication
+means *continuation-fidelity*: verify DART's continuation trajectory/outcome
+matches the source's (both continue). DART's continuation lanes already complete;
+the remaining tractable work is a numerical fidelity comparison against the
+source run plus an automated physical-outcome oracle — **not** cracking strict
+convergence. Strict convergence remains a separate, open research aspiration
+(would require acceleration, e.g. Anderson/over-relaxation on the ill-conditioned
+island) and is explicitly not required to reproduce the paper's figures.
+
+**Tooling bug found.** `fbf_paper_trace ... residual_history` **segfaults** for
+the `card_house_26_reduced_contact` scenario (exit 139, no output), while
+`tracked` scope works. This blocks per-outer residual-history (Figure 9) capture
+for the card house and should be fixed (likely an unallocated residual-history
+buffer under the card-house contract).
+
+The remainder of this document is the prior strict-convergence investigation and
+the rejected one-factor A/B matrix; it is retained as-is and remains accurate,
+but should now be read through the reframing above.
+
 ## Status And Claim Boundary
 
 This record covers the source-selected four-level/26-card adapter at commit
