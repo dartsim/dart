@@ -17,7 +17,7 @@ remain open.
 - Worktree: `/home/js/dev/dartsim/dart/task_2`
 - Branch: `wp-db-native-soft-fallback`
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
-- Published remote head: `origin/wp-db-native-soft-fallback@e973a75fb96`
+- Published remote head: `origin/wp-db-native-soft-fallback@c41f273d271`
 - Current target base: `origin/release-6.20@6a1d377f616`
 - Current target-base merge: `416266f60e4`; the branch is not behind the live
   target base
@@ -28,17 +28,19 @@ remain open.
   runtime options behind the base class's existing collision-object manager
 - Published direct-collision cache fix: `e973a75fb96`; refreshes cached soft
   face vertices after topology or point-count changes
-- Local unpublished Gazebo correction: removes the global
+- Published Gazebo correction: `c41f273d271`; removes the global
   `ConstraintSolverClearStateRegistry` from every `solve()` call and derives
   clear work from retained solver state
+- Local unpublished review fix: preserves the pending active-constraint clear
+  state across `prepareForSimulation()` without changing the steady
+  `solve()` path
 - `wp-db-soft-skel-allocation-gates` is fully ancestral and incorporated; do
   not resume, merge, or cherry-pick it
 
-The `e973a75fb96` exact-head snapshot is clean: 18 GitHub Actions jobs passed,
-one expected deploy job was skipped, both Read the Docs checks succeeded, and
-the exact-head Codex review reported no major issue. Re-fetch both refs before
-acting; after publishing the local Gazebo correction, only the new exact-head
-checks and review are authoritative.
+The `c41f273d271` exact-head hosted gz-physics/gz-sim job passed. Its fresh
+Codex review found one actionable preparation-state issue, addressed by the
+local unpublished fix. Re-fetch both refs before acting; after publishing that
+fix, only the resulting exact-head checks and review are authoritative.
 
 ## 2026-07-22 Gazebo zero-overhead correction
 
@@ -79,6 +81,23 @@ changelog entry is required because #3382 already documents the user-visible
 deformable feature and ABI repair; this follow-up removes an implementation
 cost without adding an API or user-visible behavior. Full commands and timing
 details are in `06-pr-evidence.md`.
+
+### Review follow-up on `c41f273d271`
+
+Fresh exact-head review found that `prepareForSimulation()` rebuilds active
+constraints without manual constraints. That erased the retained non-empty
+active-set signal after a manual-only solve, so the next `solve()` could leave
+the old manual constraint impulse on a body. The added regression failed
+before the fix and passed afterward.
+
+The local correction preserves `mActiveConstraints` and its three
+classification flags across the preparation-only passes. The change is outside
+the simulation-step hot path and does not modify `solve()`, so it neither
+reintroduces the registry nor changes the exact gz-physics code measured by the
+production A/B. The full `test_ConstraintSolver` target passes 57/57, the
+focused constraint/world/collision gate passes 6/6, the no-cache C++ suite
+passes 154/154, gz-physics passes 199/199 functional and 4/4 performance
+checks, and the source-built-DART gz-sim integration passes 1/1.
 
 ## 2026-07-18 DART detector ABI review fix
 
@@ -353,9 +372,10 @@ the runner's gates.
 
 ## Current blockers and next actions
 
-- Published head `e973a75fb96` is clean in hosted CI and exact-head automated
-  review. The Gazebo zero-overhead correction is local and unpublished.
-- Do not carry `e973a75fb96` results forward after publication. Classify only
+- Published head `c41f273d271` contains the Gazebo zero-overhead correction;
+  its hosted gz-physics/gz-sim job passed. Its actionable automated-review
+  finding is fixed locally but not published.
+- Do not carry `c41f273d271` results forward after publication. Classify only
   the new exact-head jobs and request one fresh top-level Codex review.
 - No paired benchmark directory has `COMPLETE.json`. Interrupted and
   preflight-only directories remain explicit non-evidence and must not be
@@ -371,20 +391,18 @@ the runner's gates.
 
 Next actions:
 
-1. Re-fetch `origin/release-6.20`; if it moved past `6a1d377f616`, merge the new
-   tip (never rebase) and rerun proportionate gates.
-2. Commit and push the additive Gazebo correction under the existing
+1. Commit and push the additive review fix under the existing
    routine-maintenance approval, update the PR body with the exact head and
-   evidence, then post one fresh top-level `@codex review`. Do not reply to
-   AI-generated inline comments.
-3. Monitor exact-head CI to terminal state. Rerun only demonstrated
+   evidence, resolve the addressed review thread, then post one fresh top-level
+   `@codex review`. Do not reply to AI-generated inline comments.
+2. Monitor exact-head CI to terminal state. Rerun only demonstrated
    infrastructure failures and investigate product failures from their own
    exact-head logs.
-4. Keep PLAN-622 active after #3382 stabilization. Capture the balanced paired
+3. Keep PLAN-622 active after #3382 stabilization. Capture the balanced paired
    artifact only on a host that passes the runner's gates, or obtain explicit
    maintainer disposition; also retain the competitive-envelope,
    flexible-foot, WP-DB.07, WP-DB.08, and separate-main-PR work.
-5. After #3382 merges, promote any remaining durable facts, remove this
+4. After #3382 merges, promote any remaining durable facts, remove this
    temporary task folder only when its open work has durable owners, and clean
    branches only with explicit approval.
 

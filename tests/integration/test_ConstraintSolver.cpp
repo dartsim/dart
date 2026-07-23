@@ -1223,6 +1223,23 @@ TEST(ConstraintSolver, PreviousActiveConstraintsClearConstraintImpulses)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, PreparationPreservesPendingConstraintImpulseClear)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.addActiveConstraintForTest(std::make_shared<FakeConstraint>(1u));
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+
+  solver.prepareForSimulation();
+  solver.solve();
+
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, PreviousCollisionResultClearsCollidingState)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;
