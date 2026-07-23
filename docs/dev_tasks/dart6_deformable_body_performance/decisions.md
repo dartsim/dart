@@ -63,8 +63,10 @@ decision re-defers it.
    in-tree detector backends (FCL, Bullet, ODE vs `dart`/`native`) on identical
    scenes plus the published paper metrics normalized in
    `02-paper-parity-matrix.md`. Benchmarking external engines (e.g. MuJoCo)
-   from this branch is out of scope for the completing PR. Needs maintainer
-   sign-off as the formal definition of "competing implementations".
+   from this branch is out of scope. **Confirmed by the maintainer 2026-07-23**
+   as the formal definition of "competing implementations" (in-tree backends +
+   normalized paper metrics); this is the performance-acceptance bar for the
+   full-parity plan.
 3. **Paper demos mandatory for the first release-branch PR** are a
    representative subset: one Kim/Pollard-lane skeleton-driven deformable demo
    and one Jain/Liu-lane soft-contact demo with adaptive activation, both
