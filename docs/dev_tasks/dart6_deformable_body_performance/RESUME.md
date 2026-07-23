@@ -1,6 +1,7 @@
 # RESUME - DART 6 deformable body feature and performance
 
-Updated: 2026-07-22 (PR #3382 Gazebo zero-overhead correction)
+Updated: 2026-07-23 (exact-head independent review evidence; scope elevated to
+full two-paper parity)
 
 ## Terminal state
 
@@ -43,6 +44,76 @@ The `c41f273d271` exact-head hosted gz-physics/gz-sim job passed. Its fresh
 Codex review found one actionable preparation-state issue, addressed by
 `891f43fd590`. Re-fetch both refs before acting; only checks and review on the
 current branch tip are authoritative after the evidence refresh.
+
+## 2026-07-23 exact-head review evidence and scope elevation
+
+### PR #3382 is milestone-1 merge-ready
+
+Current head `351d4a04fb3` (docs-only atop validated implementation head
+`891f43fd590`):
+
+- All 11 required `release-6.20` status checks pass on the exact head SHA
+  (30 check-runs attached). The only red check is
+  `continuous-integration/appveyor/pr`, which is **non-required and spurious**:
+  the repo has no `appveyor.yml`, the status exists on no other open PR or on
+  `release-6.20`/`main`, and its detail has an empty `target_url` with
+  `created_at == updated_at == 2026-07-23T07:44:03Z` (the push moment) — a stale
+  "unable to build non-mergeable pull request" posted during GitHub's async
+  mergeability-recompute window. It does not block merge.
+- **Two independent, role-separated reviews on `351d4a04fb3` both cleared** the
+  registry-removal + preparation-state hot-path change (the only un-Codex-clean
+  code delta since the clean `e973a75fb96` Codex review):
+  - correctness/severity pass: CLEAN / APPROVE, no blocker or major; confirmed
+    the `PreparationPreservesPendingConstraintImpulseClear` regression genuinely
+    fails without `891f43fd590` and that `ConstraintSolver.hpp` is byte-for-byte
+    unchanged (no ABI/layout/vtable change);
+  - semantic-equivalence pass: EQUIVALENT-AND-CORRECT across every
+    solve-chain-reachable state (steady contact, contact→none single-clear,
+    add/removeSkeleton, multiple bare `solve()`, manual-only-then-prepare,
+    split-impulse on/off), no per-step allocation, registry fully removed.
+- **Codex is unavailable this week** (maintainer confirmed the weekly
+  code-review limit; the 2026-07-23 06:43Z/07:45Z `@codex review` requests
+  returned usage-limit messages). The two independent reviews above are the
+  authoritative review evidence for this head, satisfying the dev_tasks
+  "two clean independent passes" bar. Re-request a top-level Codex review when
+  the weekly quota resets; do not spam `@codex review` in the meantime.
+
+Documented **optional** hardening from the equivalence review (both reviewers
+rated these LOW / non-blocking; the fix is already regression-tested directly,
+so none is required for merge):
+
+1. Add an end-to-end World-level regression for the preparation fix "scenario 5"
+   (manual constraint impulse → `World::addSkeleton` invalidates sim mode →
+   `World::step` → assert the impulse is cleared before the second solve),
+   locking the fix against future `prepareForSimulation` refactors.
+2. Make the colliding-clear signal a provable identity rather than
+   equivalent-except-under-degenerate-contacts: either derive
+   `clearCollidingBodies` from a retained count of actually-marked bodies, or
+   add a one-line comment at `ConstraintSolver.cpp:817` noting that all-filtered
+   degenerate contacts intentionally over-clear the deprecated colliding flag
+   (benign, safe direction, impossible under valid geometry).
+
+Also record for the PR: `clearLastCollisionResult()` now additionally clears the
+deprecated `isColliding()` flags when the prior result had contacts (required
+for equivalence; its only in-tree caller is `World::reset()`, where it is an
+improvement).
+
+### Scope elevated to full two-paper parity (2026-07-23 maintainer directive)
+
+The maintainer **retracted the 2026-07-11 deferral list** and set two goals
+beyond the representative slice (see `decisions.md` 2026-07-23 entry and
+`docs/design/dart6_deformable_body.md`):
+
+1. **Zero runtime overhead for rigid-body simulation** (soft-body may improve).
+2. **Full replication of both reference papers' demos/examples — correctness/
+   accuracy AND performance, no compromise.**
+
+Chosen approach: **ABI-safe additive on `release-6.20`** (new opt-in types/APIs,
+no existing-layout changes), delivered as a **~3-PR structure** — #3382 (current
+performance/compat slice), then one PR per paper (Kim/Pollard, Jain/Liu).
+Immediate step: **research and propose a concrete milestone plan first** before
+building the FEM/controller subsystems. This is a large multi-milestone effort;
+#3382 is milestone 1, not task completion.
 
 ## 2026-07-22 Gazebo zero-overhead correction
 
@@ -392,18 +463,26 @@ the runner's gates.
 
 Next actions:
 
-1. Publish this evidence refresh under the existing routine-maintenance
-   approval, update the PR body with the exact head and evidence, resolve the
-   addressed review thread, then post one fresh top-level `@codex review`. Do
-   not reply to AI-generated inline comments.
-2. Monitor exact-head CI to terminal state. Rerun only demonstrated
-   infrastructure failures and investigate product failures from their own
-   exact-head logs.
-3. Keep PLAN-622 active after #3382 stabilization. Capture the balanced paired
-   artifact only on a host that passes the runner's gates, or obtain explicit
-   maintainer disposition; also retain the competitive-envelope,
-   flexible-foot, WP-DB.07, WP-DB.08, and separate-main-PR work.
-4. After #3382 merges, promote any remaining durable facts, remove this
+1. #3382 is milestone-1 merge-ready (green required checks + two clean
+   independent reviews on `351d4a04fb3`). Codex is weekly-limited, so do not
+   post `@codex review` until the quota resets; the independent reviews are the
+   authoritative evidence meanwhile. Merging remains the maintainer's action
+   (not authorized here).
+2. Monitor exact-head CI to terminal state after any docs push. Rerun only
+   demonstrated infrastructure failures and investigate product failures from
+   their own exact-head logs. The non-required AppVeyor red is spurious (see the
+   2026-07-23 section) and is not a rerun target.
+3. **Research and propose the full-parity milestone plan** (maintainer directive
+   2026-07-23): ABI-safe additive on `release-6.20`, ~3-PR structure (#3382
+   performance slice, then one PR per paper). Cover the volumetric-FEM backend
+   scope (Kim/Pollard), controller + soft-foot + hand-scene infra (Jain/Liu),
+   per-row correctness and CPU-performance acceptance, the competitive-envelope
+   definition, and the zero-rigid-overhead audit. Present for review before
+   building subsystems. The 2026-07-11 deferral list is retracted.
+4. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
+   WP-DB.08 native-owned/default coverage, flexible-foot, and the separate
+   `main` zero-DoF assertion PR remain open and now fold into the parity plan.
+5. After #3382 merges, promote remaining durable facts to owners; remove this
    temporary task folder only when its open work has durable owners, and clean
    branches only with explicit approval.
 
