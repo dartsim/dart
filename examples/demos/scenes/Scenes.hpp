@@ -152,6 +152,11 @@ namespace dart_demos {
 /// traveling-wave gait.
 [[nodiscard]] DemoScene makeSoftWormScene();
 
+/// Soft Bodies > soft_foot_simbicon: a SIMBICON-balanced Atlas biped comparing
+/// soft vs rigid foot contact under pelvis pushes (Jain/Liu 2011 push
+/// recovery), reusing the GUI-free atlas_simbicon controller.
+[[nodiscard]] DemoScene makeSoftFootSimbiconScene();
+
 /// Soft Bodies > soft_bodies: soft-body simulation with recorded-state
 /// playback, ported from examples/soft_bodies.
 [[nodiscard]] DemoScene makeSoftBodiesScene();
