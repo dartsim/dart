@@ -2,9 +2,12 @@
 
 This is the PR-facing status report for the DART 6.20 exact-Coulomb FBF work.
 It states what the current branch demonstrates and, just as importantly, what
-it does not demonstrate. The older Figures 1-5 reseal is bound to
-`c95bd5fb916`; the source-default five-level implementation/media is bound to
-checkpoint `0e3937e6294` and demo SHA-256
+it does not demonstrate. The five minimum Figures 1-5 source-row uploads now
+have a current-head v2 reseal under `assets/pr_media_current_head_67073/`.
+The older `c95bd5fb916` small-row reseal remains historical and supplies only
+the four supplemental reconstructed Figure 4 proxy comparisons. The
+source-default five-level implementation/media is bound to checkpoint
+`0e3937e6294` and demo SHA-256
 `74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067`.
 That is historical capture identity, not the current build: the metadata's
 recorded mutable build path now resolves to a later binary, and live
@@ -33,6 +36,17 @@ exact/group media SHA-256 values remain `b2c268aa...` / `e321c711...`, matching
 the already audited upload-staging copies. Both 240-step outcomes pass, so no
 solver-superiority claim follows, and the browser attachment URLs remain
 pending.
+The same root now contains the current-head Figures 1-2/4-5 compact source-row
+reseal. Capture and independent verification pass with 10 members, 6 groups,
+zero failures, and five expected exact-only author-turntable boxed skips; the
+run/verify summary SHA-256 values are `8a8b83bb...` / `7599ecf8...`. All ten
+member records are schema v2, bind demo SHA-256 `69879e77...`, and report exact
+live/sidecar contract matches. The incline, author-turntable, and two Painleve
+minimum clips are byte-identical to the audited upload staging. Manual panel
+inspection confirms readable seven-lane incline and 2x2 turntable views,
+Painleve `mu=.5` agreement, and `mu=.55` exact-fallen/boxed-upright divergence;
+these remain narrow current-DART observations, not source-backend, paper-parity,
+or solver-superiority evidence.
 The live PR body/head/check state must still be queried and synchronized after
 each push.
 
@@ -430,11 +444,19 @@ composer; no attachment URL is recorded yet.
 
 ## Visual Evidence
 
-The retained Figures 1-2 and 4-5 upload source is the ignored c95-bound reseal
-`assets/pr_media_current_head_c95_small_rows/`; Figure 3 uses the stronger
-source-pinned author-backspin capture documented below. The c95
-reseal was produced from committed implementation head `c95bd5fb916`. Demo
-and runner SHA-256 values are
+The five minimum Figures 1-5 source-row uploads now come from the ignored
+current-head v2 root `assets/pr_media_current_head_67073/`. Its compact
+Figures 1-2/4-5 capture and independent verification pass with 10 members, 6
+groups, zero failures, and five expected exact-only author-turntable boxed
+skips. Run and verify summary SHA-256 values are
+`8a8b83bba2d19ea9a1a03d90daa80554e909507bad9f95ccc4bc23c3ac36d0c7`
+and `7599ecf8fc5ceb5338cf97633e710da3985981557b1babd61e52a5a653dec22f`.
+All ten members use schema v2, bind demo SHA-256
+`69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`,
+and have exact live/sidecar physics-contract matches. Figure 3 uses the
+source-pinned checker capture in the same root. The older c95 reseal
+`assets/pr_media_current_head_c95_small_rows/` was produced from committed
+implementation head `c95bd5fb916`; its demo and runner SHA-256 values are
 `5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149`
 and `89f76166954d0d8cb85996980c7235b6def387dd8994de3ef001f56b99744116`.
 The capture summary passes with 20 members, 13 groups, zero failures, and five
@@ -444,6 +466,9 @@ summary SHA-256 is
 Independent reuse verification passes with the same 20 members, 13 groups,
 and five expected skips; `/tmp/fbf_small_rows_c95_verify.json` has SHA-256
 `264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
+That c95 bundle is superseded for the five minimum source rows and retained
+only for the four reconstructed Figure 4 proxy comparisons and historical
+diagnostics.
 Every member and group records `actual_simulator=true`,
 `generated_imagery=false`, `paper_comparable=false`, and
 `automated_semantic_outcome_validated=false`.
@@ -1745,9 +1770,11 @@ PR #3374 is merged. Its historical final head is abbreviated `1f816` and its
 merge commit is abbreviated `fa17fad`; the relevant visual-evidence changes
 are integrated in this worktree.
 
-The current checkpoint for PR #3377 is `67073f4f575`; the PR remains open and
-draft against `6a1d377f616`. That target is already an ancestor, so no merge was
-needed. Check and review state remain mutable and must be queried live. Before
+The current implementation checkpoint for PR #3377 is `67073f4f575`, with
+documentation checkpoint `967e961421c` published before this update. The PR
+remains open and draft against `6a1d377f616`. That target is already an
+ancestor, so no merge was needed. The exact live head and check state remain
+mutable and must be queried. Before
 reporting or publishing, run:
 
 ```bash
@@ -1846,9 +1873,10 @@ cross-platform CI.
   continuation) only through the browser composer and record their GitHub
   URLs. Keep both visible-outcome observations manual-only, label continuation
   non-strict, and preserve the separate step-142 strict impact blocker.
-  Use the validated implementation/media-head `c95bd5fb916` small-row reseal as the
-  retained Figures 1-2 and 4-5 upload source, with the source-pinned author
-  capture used for Figure 3; produce
+  Use `assets/pr_media_current_head_67073/` as the retained five minimum
+  Figures 1-5 source-row upload source. Keep the older `c95bd5fb916` small-row
+  reseal only for the four supplemental reconstructed Figure 4 proxy
+  comparisons and historical diagnostics; produce
   long-scene sidecars/media only when their solver/outcome gates pass.
 - Complete the final integrated lint, build, test, Python, docs, manifest,
   trace-schema, demo, media, and independent-review batteries.

@@ -28,13 +28,19 @@ no-cache `dart-demos` build and 665 focused provenance/runner/consumer tests
 pass; two independent current-implementation reviews are clean, while fresh CI
 and future provider/consumer changes remain explicit watches.
 
-The first current-head v2 reseal is complete under ignored
-`assets/pr_media_current_head_67073/`: both source-pinned Figure 3 lanes and
-their labeled group pass capture and independent verification. Exact and boxed
-metadata bind demo SHA-256 `69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`
-to distinct exact-canonical physics contracts and semantic digests. The three
-MP4 hashes are byte-identical to the already audited Figure 3 upload-staging
-copies, so no replacement media file is needed; browser upload remains pending.
+The current-head v2 reseal is complete under ignored
+`assets/pr_media_current_head_67073/` for the five minimum Figures 1-5 source
+rows. Both source-pinned Figure 3 lanes and their labeled group pass capture
+and independent verification. The compact Figures 1-2/4-5 run separately
+passes with 10 members, 6 groups, zero failures, and five expected exact-only
+author-turntable boxed skips; run/verify summary SHA-256 values are
+`8a8b83bba2d19ea9a1a03d90daa80554e909507bad9f95ccc4bc23c3ac36d0c7`
+and `7599ecf8fc5ceb5338cf97633e710da3985981557b1babd61e52a5a653dec22f`.
+All ten compact members use schema v2, bind demo SHA-256
+`69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`,
+and have exact live/sidecar contract matches. All six intended upload hashes
+including the Figure 3 supplement are byte-identical to the audited staging
+copies. Browser upload remains pending.
 
 ## Completion Rule
 
@@ -66,8 +72,8 @@ strict convergence nor paper or solver-superiority evidence.
 | --- | --- | --- | --- | --- |
 | Figs. 1-2 / incline segment | Source-bound `fbf_author_incline_sweep_current_source`; `incline_author_sweep_current_source`. The older `fbf_paper_incline`; `incline` pair remains a two-cell regression fixture | Paired exact/boxed capture and a solver-labeled synchronized seven-cell comparison are automated | Capture and independent reuse verification pass for both complete 120-step traces and the 61-frame group. All cells remain supported/upright/in-lane/contact-participating; `.3/.4/.45` slide and `.5/.55/.6/.8` stick. Exact/boxed maximum source-FBF endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s` and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. The retained source has 839/840 configured convergence flags, so this is a non-strict current-source terminal/outcome slice—not source trajectory/backend/full-physical/video/timing/paper parity or superiority | Local seven-cell exact-vs-boxed clip ready below; GitHub URL pending browser-composer upload |
 | Fig. 3 / backspin segment | Source-pinned `fbf_author_backspin_current_source`; `backspin_author_current_source`. The older `fbf_paper_backspin`; `backspin` pair remains a reconstructed regression | Paired exact/boxed capture and a solver-labeled synchronized comparison are automated. The exact member is the preferred primary upload because its checker remains larger than in the side-by-side group | Both complete 240 steps / 241 state samples and pass prompt-contact, contiguous support, five-sample rolling tail, planar-motion, left-edge roll-off, airborne terminal, and source-terminal tolerance gates. Both solvers pass under the same DART scene; no solver failure, superiority, or equivalence is claimed. The checker is visual-only; signed `wy` is trace-bound, while 30 fps imagery cannot establish signed direction/rate. Source backend/full-trajectory/renderer/video/timing/Figure 3/paper parity remain false | Local exact primary and exact-vs-boxed supplemental clips ready below; GitHub URLs pending browser-composer upload |
-| Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The c95-bound groups pass solver, timeline, stream, decode, and independent replay gates. Their clip hashes are byte-identical to the previously timeline/clip-audited media: author source order is ejected/ejected/retained-through-6-s/ejected, while both proxy solvers produce ejected/ejected/captured/ejected over 4 s. These remain manual current-DART classifications rather than Warp/Newton or paper trace parity. | Local author group and four exact-vs-boxed clips ready below; GitHub URLs pending |
-| Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The ignored c95-bound bundle passes capture summary, independent verify, complete state traces, strict exact audit, outcome classification, full decode, and manual panel/keyframe audit. Both lanes are upright near rest at `mu=.5`; exact tumbles near rest while boxed remains upright near rest at `mu=.55`. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
+| Fig. 4 / turntable segment | Four `fbf_author_turntable_*` scenes; four `turntable_author_*` schedules and `turntable_author` 2x2 group | Author-pinned scenes are exact-only. Paired exact/boxed capture and lane-separated groups are automated for the four `fbf_paper_turntable_*` proxies, which accompany the source-pinned group. | The current-head v2 author group passes solver, timeline, stream, decode, canonical live/sidecar contract, and independent replay gates. Its clip hash is byte-identical to staged upload media; manual source order is ejected/ejected/retained-through-6-s/ejected. The older c95 proxy groups remain supplemental and both proxy solvers classify ejected/ejected/captured/ejected over 4 s. These are manual current-DART classifications rather than Warp/Newton or paper trace parity. | Local current-head author group and four historical proxy exact-vs-boxed clips ready below; GitHub URLs pending |
+| Fig. 5 / Painleve segment | Source-pinned `fbf_author_painleve_mu_0_5` and `fbf_author_painleve_mu_0_55`; `painleve_author_mu05`, `painleve_author_mu055`, and `painleve_author` group. The older `fbf_paper_painleve*` scenes remain historical diagnostics. | Paired exact/boxed capture and lane-separated grouping pass for both source-parameterized cells | The current-head v2 bundle passes capture, independent verification, complete traces, strict exact audit, outcome classification, full decode, and canonical live/sidecar contract checks. Manual panels show both lanes upright near rest at `mu=.5`, while exact tumbles near rest and boxed remains upright near rest at `mu=.55`. Both comparison clip hashes are byte-identical to staging. This is current-DART-adapter divergence, not source-backend, trajectory, paper, timing, or superiority evidence. | Two local current-head exact-vs-boxed clips ready below; GitHub URLs pending manual browser-composer upload |
 | Fig. 6 / 26-card segment | Strict `fbf_author_card_house_4_impact_current_source` plus separate `fbf_author_card_house_4_impact_source_continuation_current_source`; the older `fbf_paper_card_house_26` reconstruction remains distinct | Both source-selected schedules support paired exact/boxed capture with Native `FourPointPlanar`, capacity 4,096, and subdivision 4 fixed. Only the continuation exact lane requests continuation policy | Strict remains blocked at step 35 on the 56-contact group. Colored ordering and global scope are bounded rejects; source-sized-gap, residual-cadence, same-binary terminal spectral-estimate, and same-binary source-seed-values candidates also fail the 36-step gate with explicit claim limits. These are six bounded strict-prefix rejects. The separate continuation pair completes 2,400/2,400 and releases at 1,600; exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection shows both standing through release and more endpoint structure in exact. This is qualitative continuation evidence, not strict convergence, trajectory/outcome/golden/backend/timing parity, superiority, or paper parity | Local source-continuation exact-vs-boxed clip ready; strict/parity gate blocked; GitHub URL pending |
 | Fig. 7 / 25-stone arch segment | Strict `fbf_author_masonry_arch_25_crown_impact_current_source` plus separate `fbf_author_masonry_arch_25_crown_impact_source_continuation_current_source`; corresponding schedules omit the `fbf_` prefix. Literal-standing and reduced-proxy lanes remain separate | Literal-standing and source-continuation exact/boxed pairs plus independent reuse verification pass | Strict source configuration remains blocked at step 142. The continuation pair completes 2,000/2,000 and releases at 1,600; exact has 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau and 98 max-iteration accepts. Both arches standing and cubes reaching the crown is a manual, nearly identical visual observation only. Metadata has false paper/semantic flags; no strict convergence, superiority, outcome, timing, backend, trajectory, or paper parity follows | Literal-standing and bounded continuation groups ready locally; strict gate blocked at step 142; GitHub URLs pending browser-composer upload |
 | Fig. 8 / 101-stone arch segment | Source-pinned `fbf_author_masonry_arch_101_standing_current_source`; `masonry_arch_101_author_standing_current_source`. The older `fbf_paper_masonry_arch_101`; `masonry_arch_101` proxy remains diagnostic-only | Exact/boxed capture is automated, but the current exact failed prefix prevents a valid full paired comparison. Boxed has a complete decoded member clip; a diagnostic hstack freezes exact at its last frame and is labeled as such | Partial blocker evidence, parity blocked: strict exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`); boxed completes 1,600/1,600 but fails the standing oracle and visibly collapses. Independent full current-source FBF and Kamino controls also fail the same local standing criterion; neither supplies a historical invocation, convergence/contact oracle, full poses, or parity-eligible media. The isolated source-sized contact-gap variant is rejected because it caps earlier at step 161. None is a converged standing result, historical source trajectory/backend match, golden, timing, or paper-parity result | Local boxed-collapse and frozen-prefix diagnostic clips ready below; GitHub URL pending |
@@ -340,31 +346,29 @@ assets remain ignored and the browser-upload URL is pending.
 
 ## Current Local Attachment Candidates
 
-The retained Figures 1-2 and 4-5 small-row upload root is the ignored c95-bound
-reseal `assets/pr_media_current_head_c95_small_rows/`, captured from committed
-head `c95bd5fb916` with demo binary SHA-256
-`5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149`
-and runner SHA-256
-`89f76166954d0d8cb85996980c7235b6def387dd8994de3ef001f56b99744116`.
-Its reconstructed Figure 3 media is historical and superseded by the
-source-pinned author-backspin candidates below.
-The run summary passes with 20 member results, 13 groups, zero failures, and
-five expected boxed skips for the exact-only author-turntable schedules/group;
-its SHA-256 is
-`8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af`.
-Independent reuse verification also passes with the same 20 members, 13
-groups, and five expected skips; `/tmp/fbf_small_rows_c95_verify.json` has
-SHA-256
-`264ac6ebdb461c99218070571900ee0b49e1a0925ffdb8101fdcf86f117b5f1e`.
-All 20 members and all 13 groups record `actual_simulator=true`,
-`generated_imagery=false`, `paper_comparable=false`, and
-`automated_semantic_outcome_validated=false`.
-All 13 group panels and start/mid/end keyframes from all 13 group MP4s were
-manually inspected for legibility, lane labels, motion continuity, and gross
-rendering failures. This qualitative audit validates no semantic outcome,
-parity, timing equivalence, or superiority.
-The direct comparisons bind those c95-bound member metadata and clips and
-use the checked-in compositor. Every member and comparison MP4 below is
+The retained five minimum Figures 1-5 source-row upload root is the ignored
+current-head v2 reseal `assets/pr_media_current_head_67073/`. Its compact
+Figures 1-2/4-5 run and independent verification pass with 10 members, 6
+groups, zero failures, and five expected boxed skips for exact-only
+author-turntable schedules/group. Run/verify summary SHA-256 values are
+`8a8b83bba2d19ea9a1a03d90daa80554e909507bad9f95ccc4bc23c3ac36d0c7`
+and `7599ecf8fc5ceb5338cf97633e710da3985981557b1babd61e52a5a653dec22f`.
+All ten members use schema v2, bind demo SHA-256
+`69879e77e55099f67c11530dfdde9dd2d4e1e4ac0d3167a1bb8b0b3945559efa`,
+and have exact live/sidecar contract matches. The Figure 3 capture in the same
+root independently passes as exact, boxed, and synchronized checker group.
+The five minimum clips and Figure 3 supplement are byte-identical to staging.
+Manual panel inspection finds no cropping or gross rendering failure and shows
+the intended seven-lane incline, author-turntable 2x2, and Painleve outcomes.
+This qualitative audit validates no source-backend equivalence, paper parity,
+timing equivalence, or solver superiority.
+
+The older c95-bound `assets/pr_media_current_head_c95_small_rows/` reseal is
+superseded for minimum source-row uploads. Retain only its four reconstructed
+Figure 4 exact-vs-boxed proxy comparisons and historical diagnostics. Its 20
+members / 13 groups and independent reuse verification remain internally
+valid under their recorded c95 binary and all record false paper/automated
+semantic claims. Every retained member and comparison MP4 below is
 H.264/yuv420p at 30 fps and passes a full decode. The direct comparison labels
 are intentionally limited to
 `EXACT COULOMB FBF` and `EXISTING BOXED LCP`; they identify lanes without
@@ -384,11 +388,11 @@ row's scientific status.
 
 | Tier | Row | Local file under `docs/dev_tasks/fbf_exact_coulomb_friction/` | SHA-256 |
 | --- | --- | --- | --- |
-| Minimum | Figs. 1-2 seven-cell current-source incline exact vs boxed | `assets/pr_media_author_incline_final_candidate_v6/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` |
+| Minimum | Figs. 1-2 seven-cell current-source incline exact vs boxed | `assets/pr_media_current_head_67073/groups/incline_author_sweep_current_source__exact_vs_boxed/clip.mp4` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` |
 | Minimum | Fig. 3 source-pinned checker backspin exact | `assets/pr_media_current_head_67073/backspin_author_current_source/clip.mp4` | `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30` |
-| Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
-| Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
-| Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_c95_small_rows/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
+| Minimum | Fig. 4 author-pinned exact 2x2 | `assets/pr_media_current_head_67073/groups/turntable_author/clip.mp4` | `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d` |
+| Minimum | Fig. 5 `mu=.5` exact vs boxed | `assets/pr_media_current_head_67073/groups/painleve_author_mu05__exact_vs_boxed/clip.mp4` | `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209` |
+| Minimum | Fig. 5 `mu=.55` exact vs boxed | `assets/pr_media_current_head_67073/groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` | `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f` |
 | Minimum | Fig. 6 source continuation exact vs boxed | `assets/paper_evidence/fig06_card_house_source_continuation_current_v1/groups/card_house_author_4_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `282aebfb9e2e38fe3741db28e2ce909fb548d7aa46d048302a3b0e0bea9e1786` |
 | Minimum | Fig. 7 crown continuation exact vs boxed | `assets/pr_media_current_head_fig07_crown_continuation/groups/masonry_arch_25_author_crown_impact_source_continuation_current_source__exact_vs_boxed/clip.mp4` | `c4ffe2488520a5c22608c9117443cf9ff5de5396f4353d4bced5d1afff6bf0c8` |
 | Minimum | Fig. 8 frozen-prefix diagnostic | `assets/paper_evidence/fig08_arch101_author_current_v1/groups/fig08_arch101_strict_exact_vs_boxed_diagnostic/clip.mp4` | `d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94` |
@@ -748,8 +752,9 @@ DART regression evidence and must not replace this upload candidate.
 
 ### Figure 4: turntable parameter matrix
 
-The source-configuration-pinned group was resealed from implementation/media head
-`c95bd5fb916` with the current demo and runner identities recorded above.
+The source-configuration-pinned group was resealed at current implementation
+checkpoint `67073f4f575` under result schema v2 with the demo and semantic
+physics identities recorded above.
 Each cell has 181 distinct frames. In source order, the exact solver reports
 139, 120, 348, and 86 successful attempts; every cell has zero accepted caps,
 failures, or boxed fallbacks, and the largest trajectory residual is
@@ -762,7 +767,7 @@ Retention through six seconds does not establish zero slip, perfect
 co-rotation, or longer-horizon stability.
 
 - Author-pinned exact 2x2 candidate:
-  `assets/pr_media_current_head_c95_small_rows/groups/turntable_author/clip.mp4`, SHA-256
+  `assets/pr_media_current_head_67073/groups/turntable_author/clip.mp4`, SHA-256
   `b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d`.
 - Author member SHA-256 values in source order:
   `ea3d8d01c843bfcf0451b2a0aec8a523f80a6bdd5e8327bdafc7729c7cd8a0ee`,
@@ -828,12 +833,14 @@ cells support exact and boxed lanes under the same DART Native
 request onto DART's adaptive safe-step convention; it remains a DART solver
 policy rather than a port of the authors' Warp/Newton backend.
 
-The authoritative ignored c95-bound bundle is
-`docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_c95_small_rows/`;
-it supersedes the older dedicated Figure 5 capture as the PR-upload source.
-Its capture summary and the independent global
-`/tmp/fbf_small_rows_c95_verify.json` both pass; the Figure 5 slice contains
-four member results and four group results. Each member and composite is a
+The authoritative ignored current-head v2 bundle is
+`docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_67073/`;
+it supersedes the older dedicated Figure 5 and c95-bound captures as the
+PR-upload source. Its capture and independent verification summaries pass; the
+Figure 5 slice contains four member results and four group results. All four
+member records have exact live/sidecar physics-contract matches, and the groups
+are transitively bound to those member metadata hashes. Each member and
+composite is a
 61-frame, 30 fps H.264/yuv420p MP4 with a passing full decode; the generated
 panels and selected keyframes were manually audited.
 

@@ -25,7 +25,8 @@ AGENT_CONTINUATION.md as the authoritative truth ledger.
 Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  current checkpoint 67073f4f575
+  implementation checkpoint 67073f4f575
+  docs checkpoint 967e961421c was published before the latest evidence sync
   backspin source-contract CI fix c0364afd390
   target 6a1d377f616 is an ancestor; verify again before the next push
   topic HEAD/divergence/PR/CI/review state must be verified live
@@ -126,8 +127,10 @@ External truth:
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- PR #3377 remains open and draft at checkpoint 67073f4f575, targeting
-  6a1d377f616. That base is an ancestor, so no merge was needed. Checks and
+- PR #3377 remains open and draft. Its implementation checkpoint is
+  67073f4f575 and docs checkpoint 967e961421c was published before the latest
+  evidence sync. It targets 6a1d377f616. That base is an ancestor, so no merge
+  was needed. Checks and
   reviews remain mutable and must be queried live. It is not completion
   evidence.
 - Checkpoint c0364afd390 fixes the observed macOS backspin-finalizer failure by
@@ -148,22 +151,36 @@ PR truth:
   the audited upload-staging copies. Both lanes pass the bounded 240-step
   outcome, so retain the no-superiority/no-paper-parity boundary; browser URLs
   remain pending.
+- The same root now contains the current-head Figures 1-2/4-5 compact source
+  rows. Capture and independent verification pass with 10 members, 6 groups,
+  zero failures, and five expected exact-only author-turntable boxed skips.
+  Run/verify summary SHA-256 values are 8a8b83bb... / 7599ecf8...; all ten
+  members use schema v2, bind demo SHA-256 69879e77..., and have exact
+  live/sidecar contract matches. The four minimum clips are byte-identical to
+  their audited staging copies. Manual panels clearly show the seven incline
+  lanes, author turntable 2x2, and Painleve mu=.5 agreement / mu=.55
+  exact-fallen versus boxed-upright observation. Keep every non-parity and
+  no-superiority boundary.
 - Five-level implementation/media is bound to 0e3937e6294 and demo SHA-256
   74d989f2419734c1767d60fedf7961935e78fbf42ed33f69b68d71699a9b4067.
   This is historical capture identity. Its metadata points at the mutable
   build path, which now resolves to a later binary, and current-head reuse also
   fails the source-hash gate. Reuse validation is pending a stable
-  capture-binary archive or a current-head recapture/reseal. The older Figures
-  1-5 reseal remains separately bound to c95bd5fb916.
+  capture-binary archive or a current-head recapture/reseal. The older small-row
+  reseal remains separately bound to c95bd5fb916 and is superseded for the five
+  minimum source-row uploads.
 - Use PR_REPORT.md as the source for truthful body updates; keep the PR draft
   until the documented completion gates are actually met.
 
-C95-bound retained small-row media truth:
+C95-bound supplemental proxy-row media truth:
 
-- The retained ignored Figures 1-2 and 4-5 upload root is
+- The historical ignored Figures 1-5 root is
   assets/pr_media_current_head_c95_small_rows/ at implementation head
   c95bd5fb916. Its reconstructed Figure 3 member/group are historical and
-  superseded by the source-pinned author capture. Demo SHA-256 is
+  superseded by the source-pinned author capture, and its minimum Figures
+  1-2/4-5 source rows are superseded by the current-head v2 reseal. Retain only
+  the four reconstructed Figure 4 proxy comparisons and historical diagnostics.
+  Demo SHA-256 is
   5725672a0305fb6e2d824533f7e28b2a779074cc88e7f24ffa164c14cdb78149.
 - Capture passes with 20 member results, 13 groups, zero failures, and five
   expected boxed skips for exact-only author-turntable schedules/group. Run
@@ -1572,9 +1589,10 @@ Immediate order:
    ten-level colored and global-scope bounded rejects; do not rerun or extend
    either without a new source-backed preregistered mismatch, promote colored
    ordering to the default, or ship the detached global patch, and do not
-   loosen tolerance or caps. Use the ignored c95-bound
-   c95bd5fb916 reseal as the retained Figures 1-2 and 4-5 upload source; use
-   the source-pinned author capture for Figure 3. Upload any
+   loosen tolerance or caps. Use `assets/pr_media_current_head_67073/` as the
+   retained five minimum Figures 1-5 source-row upload source. Keep the ignored
+   c95-bound c95bd5fb916 reseal only for the four supplemental reconstructed
+   Figure 4 proxy comparisons and historical diagnostics. Upload any
    final labeled pair only through the PR browser composer and
    record the URL.
    Independently review the completed telemetry-rich source-continuation

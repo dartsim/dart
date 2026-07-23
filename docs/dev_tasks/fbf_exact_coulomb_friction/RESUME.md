@@ -32,8 +32,10 @@ original binary. The 665 focused provenance/runner/consumer tests and no-cache
 `dart-demos` build pass; two independent current-implementation reviews are
 clean, with future provider schemas and consumers still a fail-closed watch.
 
-PR #3377 remains draft at checkpoint `67073f4f575`. Base `6a1d377f616` is an
-ancestor, so no merge was needed. Ignored `assets/pr_upload_3377/` stages 16
+PR #3377 remains draft. Its implementation checkpoint is `67073f4f575`, and
+documentation checkpoint `967e961421c` was published before this update. Base
+`6a1d377f616` is an ancestor, so no merge was needed. Ignored
+`assets/pr_upload_3377/` stages 16
 independently audited H.264/yuv420p MP4s plus `SHA256SUMS`; all browser-composer
 uploads and resulting user-attachment URLs remain pending.
 
@@ -44,6 +46,17 @@ Their demo SHA-256 is `69879e77...`; the exact/group MP4 SHA-256 values remain
 `b2c268aa...` / `e321c711...`, byte-identical to the staged upload candidates.
 Both 240-step bounded outcomes pass; claim no solver superiority or paper
 parity. The attachment URLs are still pending.
+
+The same current-head root now reseals the Figures 1-2/4-5 compact source rows.
+Capture and independent verification pass with 10 members, 6 groups, zero
+failures, and five expected exact-only author-turntable boxed skips. Run/verify
+summary SHA-256 values are `8a8b83bb...` / `7599ecf8...`; all ten members use
+schema v2, bind demo SHA-256 `69879e77...`, and have exact live/sidecar contract
+matches. The incline, author-turntable, and two Painleve minimum clips are
+byte-identical to staged uploads. Manual panels clearly show the seven incline
+lanes, author turntable 2x2, and Painleve `mu=.5` agreement / `mu=.55`
+exact-fallen versus boxed-upright observation. This is not source-backend,
+paper-parity, or solver-superiority evidence.
 
 Implementation checkpoint `952a97caf49` adds the source-bound
 `fbf_author_incline_sweep_current_source` demo and
@@ -166,9 +179,12 @@ pending. Independent full current-source FBF and Kamino controls also fail the
 same local standing criterion; neither is a historical invocation or supplies
 parity-eligible media/full-pose evidence. The overall 29-row audit is still 24
 partial, 5 blocked, 0 complete, and the finalized visual bundle count remains
-six. The ignored `assets/pr_media_current_head_c95_small_rows/` reseal is the
-retained Figures 1-2 and 4-5 upload source; the source-pinned author capture
-supersedes its reconstructed Figure 3. Capture and independent reuse
+six. The ignored `assets/pr_media_current_head_67073/` v2 reseal is the retained
+minimum Figures 1-5 source-row upload source. The older
+`assets/pr_media_current_head_c95_small_rows/` reseal is superseded for those
+minimum rows and retained only for its four supplemental reconstructed Figure
+4 proxy comparisons and historical diagnostics. That historical capture and
+independent reuse
 verification pass with 20 members, 13 groups, zero failures, and five expected
 exact-only author-turntable boxed skips. Run/verify summary SHA-256 values are
 `8f227ab567c4d4b3a871cdaf29336e40b3ebb6732aa37cf401ce8d01025a18af` and
@@ -1535,6 +1551,11 @@ explicit DART reconstruction choices, not author parameters.
   inventory;
 - semantic-provenance, visual-runner, card-house-construction consumer,
   author-turntable consumer, and backspin-finalizer suites: 665/665 passed;
+- current-head compact Figures 1-2/4-5 capture and independent verification:
+  10/10 members, 6/6 groups, zero failures, five expected exact-only
+  author-turntable boxed skips; all member records are schema v2 with exact
+  live/sidecar contract matches; run/verify summary SHA-256 values are
+  `8a8b83bb...` / `7599ecf8...`;
 - shared-library symbol inspection retained the existing nine-argument
   failure-record method and correction-policy methods, and found the additive
   source-inner setter/getter plus all 12 nonvirtual colored-diagnostic
@@ -1577,10 +1598,10 @@ only for an explicit live-closure recheck.
    the source-configuration crown-impact adapter blocked at step 142. Upload the
    101-stone hstack, if
    selected, only as a frozen-prefix blocker with no superiority/parity claim
-   and record its URL. Use the implementation/media-head `c95bd5fb916`
-   small-row reseal as
-   the retained Figures 1-2 and 4-5 browser-upload source and use the
-   source-pinned author capture for Figure 3. Continue
+   and record its URL. Use `assets/pr_media_current_head_67073/` as the retained
+   minimum Figures 1-5 browser-upload source. Keep the implementation/media-head
+   `c95bd5fb916` small-row reseal only for the four supplemental reconstructed
+   Figure 4 proxy comparisons and historical diagnostics. Continue
    one-factor-at-a-time
    strict work without changing
    tolerance, caps, fallback, or fail-fast. The one-participant Figure 6
