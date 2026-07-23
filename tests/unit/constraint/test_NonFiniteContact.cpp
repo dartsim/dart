@@ -50,6 +50,7 @@
 /// constraint creation, leaving the solve crash-free and the state finite.
 
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -58,6 +59,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
@@ -73,15 +75,49 @@ using namespace dart::constraint;
 
 namespace {
 
-/// A DART collision detector that performs a normal collision check and then
-/// corrupts the first reported contact point to NaN. This stands in for a
-/// malformed mesh or a third-party collision backend that emits a non-finite
-/// contact between otherwise valid collision objects -- the case the constraint
-/// solver must defend against now that primitive shapes validate their
-/// dimensions.
-class NonFiniteContactDetector : public collision::DARTCollisionDetector
+enum class MalformedContactType
+{
+  NON_FINITE_POINT,
+  ZERO_NORMAL,
+  NULL_COLLISION_OBJECT,
+  MISSING_BODY_NODE,
+};
+
+/// Minimal collision object backed by a ShapeFrame that is not a ShapeNode.
+/// This deterministically exercises the solver's missing ShapeNode/BodyNode
+/// guard without relying on a collision backend to produce an invalid object.
+class SimpleFrameCollisionObject final : public collision::CollisionObject
 {
 public:
+  SimpleFrameCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : CollisionObject(detector, shapeFrame)
+  {
+  }
+
+private:
+  void updateEngineData() override {}
+};
+
+/// A DART collision detector that performs a normal collision check and then
+/// corrupts the first reported contact in a controlled way. This stands in for
+/// a malformed mesh or a third-party collision backend that emits invalid
+/// contact data between otherwise valid collision objects.
+class MalformedContactDetector : public collision::DARTCollisionDetector
+{
+public:
+  explicit MalformedContactDetector(MalformedContactType type) : mType(type)
+  {
+    if (mType == MalformedContactType::MISSING_BODY_NODE) {
+      mSimpleFrame = dynamics::SimpleFrame::createShared();
+      mSimpleFrame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+      mSimpleFrameCollisionObject
+          = std::make_unique<SimpleFrameCollisionObject>(
+              this, mSimpleFrame.get());
+    }
+  }
+
   bool collide(
       collision::CollisionGroup* group,
       const collision::CollisionOption& option
@@ -91,11 +127,29 @@ public:
     const bool collided
         = collision::DARTCollisionDetector::collide(group, option, result);
     if (result != nullptr && result->getNumContacts() > 0u) {
-      result->getContact(0).point.x()
-          = std::numeric_limits<double>::quiet_NaN();
+      auto& contact = result->getContact(0);
+      switch (mType) {
+        case MalformedContactType::NON_FINITE_POINT:
+          contact.point.x() = std::numeric_limits<double>::quiet_NaN();
+          break;
+        case MalformedContactType::ZERO_NORMAL:
+          contact.normal.setZero();
+          break;
+        case MalformedContactType::NULL_COLLISION_OBJECT:
+          contact.collisionObject1 = nullptr;
+          break;
+        case MalformedContactType::MISSING_BODY_NODE:
+          contact.collisionObject1 = mSimpleFrameCollisionObject.get();
+          break;
+      }
     }
     return collided;
   }
+
+private:
+  MalformedContactType mType;
+  dynamics::SimpleFramePtr mSimpleFrame;
+  std::unique_ptr<SimpleFrameCollisionObject> mSimpleFrameCollisionObject;
 };
 
 /// Contact-surface handler that counts how many contacts reach contact
@@ -140,13 +194,7 @@ SkeletonPtr createBody(
   return skeleton;
 }
 
-} // namespace
-
-//==============================================================================
-// A non-finite contact (here from a detector that emits a NaN contact point
-// between valid shapes) must be dropped before contact-constraint creation
-// instead of corrupting the solve.
-TEST(NonFiniteContact, NonFiniteContactIsSkipped)
+void expectMalformedContactIsSkipped(MalformedContactType type)
 {
   // Two valid, overlapping spheres.
   auto baseBody = createBody(
@@ -164,37 +212,71 @@ TEST(NonFiniteContact, NonFiniteContactIsSkipped)
 
   BoxedLcpConstraintSolver solver;
   solver.setTimeStep(0.001);
-  solver.setCollisionDetector(std::make_shared<NonFiniteContactDetector>());
+  solver.setCollisionDetector(std::make_shared<MalformedContactDetector>(type));
   solver.addSkeleton(baseBody);
   solver.addSkeleton(fallingBody);
 
   auto handler = std::make_shared<CountingContactSurfaceHandler>();
   solver.addContactSurfaceHandler(handler);
 
-  // Before the fix this aborts on an assertion (asserts-enabled builds) or runs
-  // the LCP solver on a NaN system (release builds).
   ASSERT_NO_FATAL_FAILURE(solver.solve());
 
-  // Collision detection reports the overlap, and the contact it produces is
-  // non-finite: this is what the solver must defend against.
   const auto& result = solver.getLastCollisionResult();
   ASSERT_GT(result.getNumContacts(), 0u);
-  bool anyNonFinite = false;
-  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
-    const auto& contact = result.getContact(i);
-    if (!contact.point.allFinite() || !contact.normal.allFinite()
-        || !std::isfinite(contact.penetrationDepth)) {
-      anyNonFinite = true;
-    }
+  const auto& contact = result.getContact(0u);
+  switch (type) {
+    case MalformedContactType::NON_FINITE_POINT:
+      EXPECT_FALSE(contact.point.allFinite());
+      break;
+    case MalformedContactType::ZERO_NORMAL:
+      EXPECT_TRUE(collision::Contact::isZeroNormal(contact.normal));
+      break;
+    case MalformedContactType::NULL_COLLISION_OBJECT:
+      EXPECT_EQ(contact.collisionObject1, nullptr);
+      break;
+    case MalformedContactType::MISSING_BODY_NODE:
+      ASSERT_NE(contact.collisionObject1, nullptr);
+      EXPECT_EQ(contact.collisionObject1->getShapeNode(), nullptr);
+      EXPECT_EQ(contact.collisionObject1->getBodyNode(), nullptr);
+      break;
   }
-  EXPECT_TRUE(anyNonFinite) << "Test setup no longer produces a non-finite "
-                               "contact";
 
-  // The non-finite contact must be filtered before contact-constraint creation.
+  // Malformed contacts must be filtered before contact-constraint creation.
   EXPECT_EQ(handler->mNumContactsCreated, 0);
 
-  // And the solve must leave the simulation state finite.
+  // The solve must leave the simulation state finite.
   EXPECT_TRUE(fallingBody->getPositions().allFinite());
   EXPECT_TRUE(fallingBody->getVelocities().allFinite());
   EXPECT_TRUE(baseBody->getVelocities().allFinite());
+}
+
+} // namespace
+
+//==============================================================================
+// A non-finite contact (here from a detector that emits a NaN contact point
+// between valid shapes) must be dropped before contact-constraint creation
+// instead of corrupting the solve.
+TEST(NonFiniteContact, NonFiniteContactIsSkipped)
+{
+  // Before the fix this aborts on an assertion (asserts-enabled builds) or runs
+  // the LCP solver on a NaN system (release builds).
+  expectMalformedContactIsSkipped(MalformedContactType::NON_FINITE_POINT);
+}
+
+//==============================================================================
+TEST(NonFiniteContact, ZeroNormalContactIsSkipped)
+{
+  expectMalformedContactIsSkipped(MalformedContactType::ZERO_NORMAL);
+}
+
+//==============================================================================
+TEST(NonFiniteContact, NullCollisionObjectContactIsSkipped)
+{
+  expectMalformedContactIsSkipped(MalformedContactType::NULL_COLLISION_OBJECT);
+}
+
+//==============================================================================
+TEST(NonFiniteContact, MissingBodyNodeContactIsSkipped)
+{
+  expectMalformedContactIsSkipped(MalformedContactType::MISSING_BODY_NODE);
 }

@@ -67,9 +67,11 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <set>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <typeinfo>
 #include <vector>
 
@@ -306,6 +308,20 @@ public:
   mutable std::size_t mNumCreateConstraintCalls{0u};
 };
 
+class RejectingContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact&, const size_t, const double) const override
+  {
+    ++mNumCreateConstraintCalls;
+    return nullptr;
+  }
+
+  mutable std::size_t mNumCreateConstraintCalls{0u};
+};
+
 class FakeCollisionObject final : public collision::CollisionObject
 {
 public:
@@ -420,6 +436,27 @@ public:
   void addSkeletonForTest(const dynamics::SkeletonPtr& skeleton)
   {
     mSkeletons.push_back(skeleton);
+  }
+
+  void setPreviousDeactivationGroupsForTest(bool value)
+  {
+    mHadDeactivationGroups = value;
+  }
+
+  void setCollisionResultForTest(const collision::Contact& contact)
+  {
+    mCollisionResult.clear();
+    mCollisionResult.addContact(contact);
+  }
+
+  void addCollisionContactForTest(const collision::Contact& contact)
+  {
+    mCollisionResult.addContact(contact);
+  }
+
+  bool clearInactiveConstrainedGroupsForTest()
+  {
+    return clearInactiveConstrainedGroups();
   }
 
   void addActiveConstraintForTest(
@@ -1061,6 +1098,33 @@ TEST(ConstraintSolver, CustomContactSurfaceHandlerKeepsConstructingConstraints)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ContactSurfaceHandlerMayRejectContacts)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  auto defaultHandler = solver->getLastContactSurfaceHandler();
+  auto rejectingHandler = std::make_shared<RejectingContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(rejectingHandler);
+  solver->removeContactSurfaceHandler(defaultHandler);
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  ASSERT_NO_FATAL_FAILURE(world->step());
+  EXPECT_GT(rejectingHandler->mNumCreateConstraintCalls, 0u);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, RemovedCustomContactSurfaceHandlerDoesNotReuseConstraint)
 {
   CustomContactConstraint::mNumDestroyed.store(0u);
@@ -1121,6 +1185,110 @@ TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
 
   solver.solve();
   EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, AddingSkeletonClearsExistingConstraintState)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  body->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeleton(skeletons[0]);
+
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PreviousActiveConstraintsClearConstraintImpulses)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.addActiveConstraintForTest(std::make_shared<FakeConstraint>(1u));
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+
+  solver.solve();
+
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PreparationPreservesPendingConstraintImpulseClear)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.addActiveConstraintForTest(std::make_shared<FakeConstraint>(1u));
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+
+  solver.prepareForSimulation();
+  solver.solve();
+
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PreviousCollisionResultClearsCollidingState)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionDetector detector;
+  FakeCollisionObject object(&detector, shapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.setCollisionResultForTest(createContact(&object, &object));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  body->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  solver.solve();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ClearingCollisionResultClearsCollidingState)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionDetector detector;
+  FakeCollisionObject object(&detector, shapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.setCollisionResultForTest(createContact(&object, &object));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  body->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  solver.clearLastCollisionResult();
+
+  EXPECT_EQ(solver.getLastCollisionResult().getNumContacts(), 0u);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -1422,6 +1590,50 @@ TEST(ConstraintSolver, DeactivationActiveSkipsAlreadyRestingGroupsInParallel)
   EXPECT_EQ(129, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
   EXPECT_TRUE(resting->isResting());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactedRestingIslandSurvivesEmptyActiveSet)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* contactedBody = createFreeBody("contacted", true, skeletons);
+  createFreeBody("stale", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* contactedShapeNode = contactedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  FakeCollisionObject contactedObject(&detector, contactedShapeNode);
+  const auto contact = createContact(&contactedObject, &fixedObject);
+
+  const auto& contacted = skeletons[1];
+  contacted->setResting(true);
+  contacted->setIslandIndex(0);
+  const auto& stale = skeletons[2];
+  stale->setResting(true);
+  stale->setIslandIndex(1);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.setDeactivationActive(true);
+  solver.setPreviousDeactivationGroupsForTest(true);
+  solver.setCollisionResultForTest(contact);
+  solver.addCollisionContactForTest(
+      createContact(&fixedObject, &contactedObject));
+  for (const auto& skeleton : skeletons)
+    solver.addSkeletonForTest(skeleton);
+
+  EXPECT_TRUE(solver.clearInactiveConstrainedGroupsForTest());
+  EXPECT_TRUE(contacted->isResting());
+  EXPECT_EQ(contacted->getIslandIndex(), 0);
+  EXPECT_FALSE(stale->isResting());
+  EXPECT_EQ(stale->getIslandIndex(), -1);
 }
 
 //==============================================================================

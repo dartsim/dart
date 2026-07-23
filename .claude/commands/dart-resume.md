@@ -1,10 +1,10 @@
 ---
-description: continue work from a previous session
+description: continue unfinished work through its acceptance criteria, verification, and safe completion or documented blocker
 argument-hint: "[branch-or-task]"
 agent: build
 ---
 
-Resume unfinished work: $ARGUMENTS
+Resume unfinished work to its real completion contract: $ARGUMENTS
 
 ## Required Reading
 
@@ -33,10 +33,31 @@ Infer the task from branch name, commits, diffs, issue/PR description, and any
 `docs/dev_tasks/<task>/` state. If the goal is still unclear after recon, stop
 and ask.
 
-### Step 3: Continue
+For a named `docs/dev_tasks/<task>/`, reconstruct the task's actual completion
+contract before editing. Treat the dev-task folder as an execution plan and
+evidence ledger first, not as cleanup inventory:
+
+- read the task README, RESUME, dashboard, packet files, and verification notes;
+- extract every acceptance criterion, open decision, required benchmark,
+  required test, and explicit "do not complete until" condition;
+- compare those criteria against current branch code, docs, tests, PR state,
+  and available evidence; and
+- treat task completion as satisfying those criteria with verification, not as
+  merely promoting notes or deleting the temporary folder.
+
+### Step 3: Execute to completion
 
 - Propose a 3-6 step plan before editing.
-- Continue with minimal scope and preserve existing user changes.
+- Continue by executing the reconstructed plan until the task's acceptance
+  criteria and verification methods are satisfied, or until the same real
+  blocker has been proven and recorded. Preserve existing user changes.
+- Do not narrow a broad dev-task objective to documentation cleanup, folder
+  retirement, or evidence promotion unless the implementation criteria are
+  already satisfied or the maintainer has explicitly approved deferring the
+  remaining implementation work.
+- Treat dev-task retirement as the final bookkeeping step after implementation
+  completion or an explicitly approved deferral. It is never a substitute for
+  running the plan, benchmarks, tests, and review/PR evidence the task requires.
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.

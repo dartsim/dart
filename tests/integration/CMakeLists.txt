@@ -60,6 +60,40 @@ dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
 
+set(
+  soft_demo_model_test_sources
+  test_AdaptiveSoftContactModel.cpp
+  test_SoftWormModel.cpp
+  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/AdaptiveSoftContactModel.cpp"
+  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/SoftWormModel.cpp"
+)
+target_sources(test_ConstraintSolver PRIVATE ${soft_demo_model_test_sources})
+target_include_directories(
+  test_ConstraintSolver
+  PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+set_tests_properties(
+  test_ConstraintSolver
+  PROPERTIES ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+)
+add_test(
+  NAME test_AdaptiveSoftContactModel
+  COMMAND
+    $<TARGET_FILE:test_ConstraintSolver>
+    --gtest_filter=AdaptiveSoftContactModelTest.*
+)
+add_test(
+  NAME test_SoftWormModel
+  COMMAND
+    $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=SoftWormModelTest.*
+)
+set_tests_properties(
+  test_AdaptiveSoftContactModel
+  test_SoftWormModel
+  PROPERTIES FAIL_REGULAR_EXPRESSION "0 tests"
+)
+dart_format_add(${soft_demo_model_test_sources})
+
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)

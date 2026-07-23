@@ -92,6 +92,16 @@ std::atomic<std::size_t> gExternalDisturbanceVersion{0};
 std::atomic<std::size_t> gDeactivationStateVersion{0};
 std::atomic<std::size_t> gVelocityVersion{0};
 
+bool containsSoftBodyNode(const std::vector<BodyNode*>& bodyNodes)
+{
+  for (const BodyNode* bodyNode : bodyNodes) {
+    if (bodyNode != nullptr && bodyNode->asSoftBodyNode() != nullptr)
+      return true;
+  }
+
+  return false;
+}
+
 std::size_t incrementGlobal(std::atomic<std::size_t>& counter)
 {
   return counter.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -1558,10 +1568,8 @@ void Skeleton::integratePositions(double _dt)
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassPositions(_dt);
 }
 
 //==============================================================================
@@ -1598,11 +1606,8 @@ void Skeleton::integratePositions(
     joint->setPositions(q);
   }
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j) {
-      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
-    }
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassPositions(_dt);
 }
 
 //==============================================================================
@@ -1611,10 +1616,8 @@ void Skeleton::integrateVelocities(double _dt)
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integrateVelocities(_dt);
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassVelocities(_dt);
 }
 
 //==============================================================================
@@ -3013,6 +3016,14 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
     return;
   }
 
+  if (containsSoftBodyNode(cache.mBodyNodes)) {
+    const Eigen::MatrixXd& massMatrix = getMassMatrix(_treeIdx);
+    cache.mInvM = massMatrix.ldlt().solve(Eigen::MatrixXd::Identity(dof, dof));
+    DART_ASSERT(!math::isNan(cache.mInvM));
+    cache.mDirty.mInvMassMatrix = false;
+    return;
+  }
+
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // cache.mInvM.setZero();
 
@@ -3101,6 +3112,15 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
       static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
       && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
   if (dof == 0) {
+    cache.mDirty.mInvAugMassMatrix = false;
+    return;
+  }
+
+  if (containsSoftBodyNode(cache.mBodyNodes)) {
+    const Eigen::MatrixXd& augMassMatrix = getAugMassMatrix(_treeIdx);
+    cache.mInvAugM
+        = augMassMatrix.ldlt().solve(Eigen::MatrixXd::Identity(dof, dof));
+    DART_ASSERT(!math::isNan(cache.mInvAugM));
     cache.mDirty.mInvAugMassMatrix = false;
     return;
   }
@@ -3886,7 +3906,9 @@ void Skeleton::updateBiasImpulse(
 {
   // Assertions
   DART_ASSERT(_softBodyNode != nullptr);
-  DART_ASSERT(getNumDofs() > 0);
+  // Unlike the rigid-body overloads, a zero-DoF skeleton is valid here: the
+  // point-mass flesh responds to contact impulses even when the skeleton base
+  // has no generalized freedom (for example a welded soft body).
 
   // This skeleton should contain _bodyNode
   DART_ASSERT(
