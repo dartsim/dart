@@ -1,5 +1,94 @@
 # WP-DB PR evidence packet
 
+## 2026-07-22 gz-physics and gz-sim zero-overhead audit
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
+`wp-db-native-soft-fallback` to `release-6.20`. The published head and local
+parent are `e973a75fb96`, the target base is `6a1d377f616`, and the live
+published-head matrix is clean: 18 GitHub Actions jobs passed, one expected
+deploy job was skipped, both Read the Docs checks succeeded, and the exact-head
+Codex review reported no major issue. The local follow-up described here is
+not published yet.
+
+The downstream audit found one unconditional cost introduced by the PR:
+`ConstraintSolver::solve()` consulted a process-wide
+`ConstraintSolverClearStateRegistry` on every step. Each lookup took a mutex
+and performed an `unordered_map` lookup even for the default single-threaded,
+rigid-only worlds used by Gazebo. The local correction removes the registry
+and its constructor/destructor bookkeeping. Previous-step clear work is now
+derived from state already retained by the solver:
+
+- a non-empty previous `mActiveConstraints` means constraint impulses may need
+  clearing;
+- a non-empty previous `mCollisionResult` means colliding-body flags may need
+  clearing; and
+- a newly inserted skeleton is sanitized once in `addSkeleton()`, outside the
+  stepping hot path.
+
+The ordinary contact case uses a specialized combined clear loop, so it does
+not add a state-kind branch per skeleton. A first attempt to wrap all contact
+construction in `if (hasContacts)` was rejected: production-equivalent A/B
+timing showed that the changed compiler layout slowed sustained contact even
+though it helped empty steps. The wrapper was removed, retaining the
+no-registry correction and the existing empty-active-set early return.
+Mismatched-dependency and profiler-enabled exploratory timings are explicit
+non-evidence.
+
+Downstream reachability is narrow:
+
+- gz-physics 8 constructs `GzOdeCollisionDetector` by default in
+  `dartsim/src/EntityManagementFeatures.cc`; gz-sim 9 reaches DART through that
+  gz-physics plugin.
+- The PR's DART-native, FCL, and Bullet soft-mesh changes are not on this
+  default GzOde rigid-world path.
+- The changed `Skeleton` inverse-matrix fallback first checks for a
+  `SoftBodyNode`, and neither the gz-physics DART plugin nor the inspected
+  gz-sim physics path calls DART's inverse-mass-matrix APIs.
+- Production `libdart` contains no clear-state-registry symbol. The remaining
+  solver synchronization is guarded by opt-in multithreaded paths; the removed
+  registry no longer adds unconditional synchronization to a one-thread Gazebo
+  step.
+
+The timing oracle exercised the exact gz-physics plugin boundary, not a
+DART-only substitute. Base and local-head libraries were built with GCC 15.2,
+Release `-O3`, profiling disabled, and SIMD disabled against the same Gazebo
+environment. The executable was pinned to CPU 24, warmed each world for 1,000
+steps, timed only `World::Step`, and interleaved base/head order across 20
+pairs. The empty world used 1,000,000 measured steps; the falling/contact world
+used 50,000 measured steps and retained contact after settling.
+
+| gz-physics workload | Base mean | Local mean | Mean change | Pair result |
+| --- | ---: | ---: | ---: | ---: |
+| Empty world | 988.435 ms | 741.334 ms | -24.999% | local won 20/20 |
+| Falling/contact | 1113.639 ms | 1112.817 ms | -0.074% | local won 14/20 |
+
+The corresponding medians were 972.576 versus 731.635 ms for the empty world
+(-24.773%) and 1110.947 versus 1101.886 ms for falling/contact (-0.816%).
+Wall-clock timing cannot prove literal instruction-for-instruction zero cost,
+but the reachability and binary audit proves that the unintended unconditional
+registry work is absent, while the production plugin-boundary A/B shows no
+runtime regression in the exercised gz paths.
+
+Verification on the local correction:
+
+```text
+focused constraint/world/collision CTest gate           PASS (6/6)
+native soft steady-state allocation gate                PASS (14/14)
+DART_DISABLE_COMPILER_CACHE=ON pixi run test             PASS (154/154)
+pixi run -e gazebo test-gz, gz-physics functional        PASS (199/199)
+pixi run -e gazebo test-gz, gz-physics performance       PASS (4/4)
+pixi run -e gazebo test-gz, gz-sim integration           PASS (1/1)
+pixi run lint                                             PASS
+git diff --check                                          PASS
+```
+
+The source change has no visual acceptance criterion: text state regressions,
+production binary reachability, plugin-boundary timing, and downstream
+functional tests are the relevant evidence. No new changelog entry is needed;
+the user-visible deformable feature and detector ABI repair are already
+documented under #3382, while this follow-up removes an internal implementation
+cost without adding an API or behavior.
+
 ## 2026-07-19 current PR stabilization evidence
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from

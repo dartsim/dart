@@ -1188,58 +1188,90 @@ TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
 }
 
 //==============================================================================
-TEST(ConstraintSolver, OutOfLineClearStateIsIsolatedPerSolver)
+TEST(ConstraintSolver, AddingSkeletonClearsExistingConstraintState)
 {
   std::vector<dynamics::SkeletonPtr> skeletons;
-  auto* firstBody = createFreeBody("first", true, skeletons);
-  auto* secondBody = createFreeBody("second", true, skeletons);
-
-  ExposedThreadedConstraintSolver firstSolver;
-  ExposedThreadedConstraintSolver secondSolver;
-  firstSolver.addSkeletonForTest(skeletons[0]);
-  secondSolver.addSkeletonForTest(skeletons[1]);
-
-  firstSolver.addSkeleton(dynamics::Skeleton::create("marker"));
+  auto* body = createFreeBody("body", true, skeletons);
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
   DART_SUPPRESS_DEPRECATED_BEGIN
-  firstBody->setColliding(true);
-  secondBody->setColliding(true);
+  body->setColliding(true);
   DART_SUPPRESS_DEPRECATED_END
 
-  secondSolver.solve();
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_TRUE(secondBody->isColliding());
-  DART_SUPPRESS_DEPRECATED_END
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeleton(skeletons[0]);
 
-  firstSolver.solve();
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
   DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_FALSE(firstBody->isColliding());
+  EXPECT_FALSE(body->isColliding());
   DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
-TEST(ConstraintSolver, OutOfLineClearStateDoesNotSurviveAddressReuse)
+TEST(ConstraintSolver, PreviousActiveConstraintsClearConstraintImpulses)
 {
-  using Solver = ExposedThreadedConstraintSolver;
-  using Storage = std::aligned_storage_t<sizeof(Solver), alignof(Solver)>;
-  Storage storage;
-
-  auto* firstSolver = new (&storage) Solver;
-  firstSolver->addSkeleton(dynamics::Skeleton::create("stale"));
-  firstSolver->~Solver();
-
   std::vector<dynamics::SkeletonPtr> skeletons;
-  auto* probeBody = createFreeBody("probe", true, skeletons);
-  auto* secondSolver = new (&storage) Solver;
-  secondSolver->addSkeletonForTest(skeletons[0]);
+  auto* body = createFreeBody("body", true, skeletons);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.addActiveConstraintForTest(std::make_shared<FakeConstraint>(1u));
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+
+  solver.solve();
+
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PreviousCollisionResultClearsCollidingState)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionDetector detector;
+  FakeCollisionObject object(&detector, shapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.setCollisionResultForTest(createContact(&object, &object));
   DART_SUPPRESS_DEPRECATED_BEGIN
-  probeBody->setColliding(true);
+  body->setColliding(true);
   DART_SUPPRESS_DEPRECATED_END
 
-  secondSolver->solve();
+  solver.solve();
   DART_SUPPRESS_DEPRECATED_BEGIN
-  EXPECT_TRUE(probeBody->isColliding());
+  EXPECT_FALSE(body->isColliding());
   DART_SUPPRESS_DEPRECATED_END
-  secondSolver->~Solver();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ClearingCollisionResultClearsCollidingState)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* body = createFreeBody("body", true, skeletons);
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  FakeCollisionDetector detector;
+  FakeCollisionObject object(&detector, shapeNode);
+
+  ExposedThreadedConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons[0]);
+  solver.setCollisionResultForTest(createContact(&object, &object));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  body->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  solver.clearLastCollisionResult();
+
+  EXPECT_EQ(solver.getLastCollisionResult().getNumContacts(), 0u);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(body->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
