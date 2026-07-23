@@ -13,11 +13,10 @@ published real-time or near-real-time targets from the reference papers on CPU.
 
 The representative release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. Published head `c41f273d271`
-includes the Windows calibration, detector ABI repair, direct soft-cache fix,
-Gazebo hot-path correction, and clean merge of
-`origin/release-6.20@6a1d377f616`. Its exact-head hosted gz-physics/gz-sim job
-passed.
+`wp-db-native-soft-fallback` into `release-6.20`. Published implementation head
+`891f43fd590` includes the Windows calibration, detector ABI repair, direct
+soft-cache fix, Gazebo hot-path correction, preparation-state review fix, and
+clean merge of `origin/release-6.20@6a1d377f616`.
 
 The published Gazebo correction removes an unintended
 `ConstraintSolverClearStateRegistry` mutex/hash lookup from every simulation
@@ -31,8 +30,8 @@ flat-to-faster (-0.074% mean across 20 interleaved pairs) and the empty world
 See `06-pr-evidence.md` for the structural and timing proof.
 
 Fresh review of `c41f273d271` found that preparation could erase the pending
-active-set clear signal after a manual-only solve. The local unpublished review
-fix preserves the active-set bookkeeping across preparation without changing
+active-set clear signal after a manual-only solve. Commit `891f43fd590`
+preserves the active-set bookkeeping across preparation without changing
 `solve()` or the measured gz steady-state path. Its focused regression failed
 before and passes after the fix.
 
@@ -44,13 +43,13 @@ test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
 `0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
 all force, support, spike, finite-state, and per-step guards.
 
-The published correction and local review fix pass the full 57/57
+The published correction and review fix pass the full 57/57
 `test_ConstraintSolver` target, a focused 6/6 constraint/world/collision gate,
 14/14 native-soft zero-allocation cases, the full no-cache 154/154 C++ suite,
 199/199 gz-physics functional tests, 4/4 gz-physics performance checks, and the
 gz-sim integration test. Earlier calibration and ABI evidence remains recorded
-in `06-pr-evidence.md`; after the review fix is published, only exact new-head
-hosted CI and review are authoritative.
+in `06-pr-evidence.md`; only exact current branch-tip hosted CI and review are
+authoritative.
 
 No valid final paired timing artifact exists: every attempted directory lacks
 `COMPLETE.json` because this shared host never passed the runner's admission

@@ -17,7 +17,9 @@ remain open.
 - Worktree: `/home/js/dev/dartsim/dart/task_2`
 - Branch: `wp-db-native-soft-fallback`
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
-- Published remote head: `origin/wp-db-native-soft-fallback@c41f273d271`
+- Published implementation head: `891f43fd590`
+- Remote branch tip: the live `origin/wp-db-native-soft-fallback` evidence
+  refresh on top of `891f43fd590`; resolve the exact SHA from the remote
 - Current target base: `origin/release-6.20@6a1d377f616`
 - Current target-base merge: `416266f60e4`; the branch is not behind the live
   target base
@@ -31,16 +33,16 @@ remain open.
 - Published Gazebo correction: `c41f273d271`; removes the global
   `ConstraintSolverClearStateRegistry` from every `solve()` call and derives
   clear work from retained solver state
-- Local unpublished review fix: preserves the pending active-constraint clear
-  state across `prepareForSimulation()` without changing the steady
-  `solve()` path
+- Published preparation-state review fix: `891f43fd590`; preserves the pending
+  active-constraint clear state across `prepareForSimulation()` without
+  changing the steady `solve()` path
 - `wp-db-soft-skel-allocation-gates` is fully ancestral and incorporated; do
   not resume, merge, or cherry-pick it
 
 The `c41f273d271` exact-head hosted gz-physics/gz-sim job passed. Its fresh
-Codex review found one actionable preparation-state issue, addressed by the
-local unpublished fix. Re-fetch both refs before acting; after publishing that
-fix, only the resulting exact-head checks and review are authoritative.
+Codex review found one actionable preparation-state issue, addressed by
+`891f43fd590`. Re-fetch both refs before acting; only checks and review on the
+current branch tip are authoritative after the evidence refresh.
 
 ## 2026-07-22 Gazebo zero-overhead correction
 
@@ -90,7 +92,7 @@ active-set signal after a manual-only solve, so the next `solve()` could leave
 the old manual constraint impulse on a body. The added regression failed
 before the fix and passed afterward.
 
-The local correction preserves `mActiveConstraints` and its three
+The published correction preserves `mActiveConstraints` and its three
 classification flags across the preparation-only passes. The change is outside
 the simulation-step hot path and does not modify `solve()`, so it neither
 reintroduces the registry nor changes the exact gz-physics code measured by the
@@ -372,11 +374,10 @@ the runner's gates.
 
 ## Current blockers and next actions
 
-- Published head `c41f273d271` contains the Gazebo zero-overhead correction;
-  its hosted gz-physics/gz-sim job passed. Its actionable automated-review
-  finding is fixed locally but not published.
-- Do not carry `c41f273d271` results forward after publication. Classify only
-  the new exact-head jobs and request one fresh top-level Codex review.
+- Published implementation head `891f43fd590` contains the Gazebo
+  zero-overhead correction and its preparation-state review fix.
+- Do not carry `c41f273d271` results forward. Classify only the current
+  branch-tip jobs and fresh top-level Codex review.
 - No paired benchmark directory has `COMPLETE.json`. Interrupted and
   preflight-only directories remain explicit non-evidence and must not be
   resumed or reinterpreted.
@@ -391,10 +392,10 @@ the runner's gates.
 
 Next actions:
 
-1. Commit and push the additive review fix under the existing
-   routine-maintenance approval, update the PR body with the exact head and
-   evidence, resolve the addressed review thread, then post one fresh top-level
-   `@codex review`. Do not reply to AI-generated inline comments.
+1. Publish this evidence refresh under the existing routine-maintenance
+   approval, update the PR body with the exact head and evidence, resolve the
+   addressed review thread, then post one fresh top-level `@codex review`. Do
+   not reply to AI-generated inline comments.
 2. Monitor exact-head CI to terminal state. Rerun only demonstrated
    infrastructure failures and investigate product failures from their own
    exact-head logs.
