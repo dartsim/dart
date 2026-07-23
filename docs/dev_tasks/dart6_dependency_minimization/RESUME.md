@@ -225,6 +225,23 @@ then phase 7 (FCL decoupling from core) remains the pending dependency win,
 ratified for the 6.22 cycle (6.21 deprecations → 6.22 facades); the ODE
 facade-vs-coordinated-gz ratification point is still open.
 
+**Update 2026-07-23:** the maintainer directed that PR #3381 must
+**not** change the default collision detector yet. The phase-6
+default flip described above has been **reverted**: the
+`ConstraintSolver` ctors, `WorldConfig::collisionDetector`,
+`World::resolveCollisionDetector`, and `SkelParser`'s fallback are
+back to the FCL default, byte-for-byte with `origin/release-6.20`,
+and the default-driven test expectations were restored to FCL
+values. **PR #3381 now ships the consolidation only** — the native
+engine folded into `DARTCollisionDetector` (canonical key `"dart"`,
+`"native"` kept as a transition alias), soft-body + ellipsoid + cone
++ capsule coverage, and the MJCF infinite-plane fix — and the
+built-in default remains **`fcl`**. The default flip is deferred to
+a later PR, still gated on the phase-6 acceptance envelope. The
+facts above that remain true: the task folder stays **ACTIVE**, the
+PR merge stays with the maintainer, and the milestone is still
+DART 6.20.0.
+
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).
 

@@ -14,6 +14,12 @@
 > flip is implemented on `feature/dart-detector-consolidation` (**PR #3381**,
 > green, awaiting maintainer merge). See RESUME.md "Current state
 > (2026-07-18)" and `~/dart-bench-artifacts/HANDOFF-2026-07-12-consolidation.md`.
+>
+> **Update 2026-07-23:** the phase-6 default flip described above has
+> been **reverted** per maintainer direction. PR #3381 now ships the
+> detector consolidation only; the built-in default remains **`fcl`**,
+> and the flip is deferred to a later PR. See RESUME.md "Update
+> 2026-07-23" for details.
 
 ## 1. The mission in one paragraph
 

@@ -38,6 +38,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -727,25 +728,29 @@ std::shared_ptr<World> createWorld()
 }
 
 //==============================================================================
-TEST(ConstraintSolver, ConstructorsInstallDARTCollisionDetector)
+TEST(ConstraintSolver, ConstructorsInstallFCLCollisionDetector)
 {
   const ConstructorProbeConstraintSolver defaultSolver;
   EXPECT_DOUBLE_EQ(0.001, defaultSolver.getTimeStep());
   const auto defaultDetector
-      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+      = std::dynamic_pointer_cast<const collision::FCLCollisionDetector>(
           defaultSolver.getCollisionDetector());
   ASSERT_NE(nullptr, defaultDetector);
-  EXPECT_EQ(1u, defaultDetector->getNumCollisionThreads());
+  EXPECT_EQ(
+      collision::FCLCollisionDetector::PRIMITIVE,
+      defaultDetector->getPrimitiveShapeType());
 
   DART_SUPPRESS_DEPRECATED_BEGIN
   const ConstructorProbeConstraintSolver explicitSolver(0.002);
   DART_SUPPRESS_DEPRECATED_END
   EXPECT_DOUBLE_EQ(0.002, explicitSolver.getTimeStep());
   const auto explicitDetector
-      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+      = std::dynamic_pointer_cast<const collision::FCLCollisionDetector>(
           explicitSolver.getCollisionDetector());
   ASSERT_NE(nullptr, explicitDetector);
-  EXPECT_EQ(1u, explicitDetector->getNumCollisionThreads());
+  EXPECT_EQ(
+      collision::FCLCollisionDetector::PRIMITIVE,
+      explicitDetector->getPrimitiveShapeType());
 }
 
 //==============================================================================

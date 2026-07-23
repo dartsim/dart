@@ -492,18 +492,23 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesDartDetector)
+TEST(World, DefaultWorldUsesFclPrimitive)
 {
-  // Since 6.20 the default World construction path keeps the constraint
-  // solver's default dart collision detector.
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  // The default World construction path must remain unchanged: it keeps the
+  // constraint solver's default FCL detector configured with PRIMITIVE shapes.
   auto world = World::create();
-  auto dartDetector
-      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
-          world->getCollisionDetector());
-  ASSERT_TRUE(dartDetector);
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
-      dartDetector->getType(),
-      collision::DARTCollisionDetector::getStaticType());
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
@@ -611,26 +616,26 @@ TEST(World, TypedSetterKeepsCurrentWhenDetectorUnavailable)
 //==============================================================================
 TEST(World, ConfigKeepsDefaultWhenPreferredDetectorUnavailable)
 {
-  ScopedCollisionFactoryDisabler disableFcl(
-      collision::FCLCollisionDetector::getStaticType(),
+  ScopedCollisionFactoryDisabler disableDart(
+      collision::DARTCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::FCLCollisionDetector::create();
+        return collision::DARTCollisionDetector::create();
       });
 
-  if (!disableFcl.wasDisabled())
-    GTEST_SKIP() << "fcl collision detector is not registered in this build";
+  if (!disableDart.wasDisabled())
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
 
   WorldConfig config;
   config.name = "fallback-pref";
-  config.collisionDetector = CollisionDetectorType::Fcl;
+  config.collisionDetector = CollisionDetectorType::Dart;
 
   // When the preferred detector is unavailable, the World keeps the constraint
-  // solver's existing default detector (dart since 6.20), unchanged.
+  // solver's existing default detector (FCL), unchanged.
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   EXPECT_EQ(
       world->getCollisionDetector()->getType(),
-      collision::DARTCollisionDetector::getStaticType());
+      collision::FCLCollisionDetector::getStaticType());
 }
 
 //==============================================================================

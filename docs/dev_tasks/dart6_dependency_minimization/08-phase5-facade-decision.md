@@ -13,6 +13,11 @@
 > `"native"` kept as a transition alias. The legacy narrowphase-only
 > implementation (and `DARTCollide.{hpp,cpp}`) was deleted in the same
 > commit; the default flip ships on the same branch.
+>
+> **Reverted (2026-07-23):** the default flip referenced above has been
+> reverted per maintainer direction; PR #3381 now ships the
+> consolidation alone, and the built-in default remains **`fcl`**. The
+> flip is deferred to a later PR.
 
 ## Goal restated
 
