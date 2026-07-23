@@ -1482,6 +1482,94 @@ identity, so the current default live run reports five path mismatches. Archive
 mode remains clean; recreate the historical symlink only for an explicit live
 closure check.
 
+## 2026-07-23 Independent Verification Closeout
+
+A fresh session independently reproduced the local verification battery from the
+clean topic tree (HEAD `be06b10d00b`), as the "final integrated closeout run"
+this section previously deferred. Everything in the default battery is green and
+the core solver is independently re-reviewed. The mandatory answer stays `No`:
+paper parity, the strict-convergence frontiers, and every media/GitHub action
+remain blocked/research/approval-gated as documented, and this pass surfaced a
+disclosure gap (below) that must be reconciled.
+
+Reproduced green this session: `pixi run build` and `build-tests` (exit 0);
+`UNIT_math_ExactCoulombFbfSolver` 66/66; `UNIT_math_ExactCoulombContactProblem`
+8/8; `UNIT_math_CoulombCone` and `UNIT_math_MasonryArchGeometry` pass;
+`test_ExactCoulombFbfConstraintSolver` 38/38; `test_ExactCoulombConstraintAdapter`
+4/4; `test_ExactCoulombFbfPaperFixtures` 43 passed / 3 opt-in skips;
+`test_FbfAuthorMasonryArchSpec`, `test_FbfLiteralMasonryArchSpec`,
+`test_FbfAuthorInclineSpec`, `test_HeadlessExactFbfFailFast` pass;
+`test_ConstraintSolver` 67/67 including
+`SplitImpulsePreservesVelocityPhaseContactResponse` (verified first-hand at
+`dart/constraint/ConstraintSolver.cpp:2636`); native-collision unit suites 25/25;
+FBF Python suite 1,447 passed; `pixi run check-lint` clean;
+`--verify-fbf-scene-docs` 34 OK; `--scene-physics-contract` emits fail-closed
+contracts; `--cycle-scenes --frames 1` 68 demos OK;
+`audit_coverage_contract()['pass']` True (18 required schedules, 0 non-runnable,
+0 without MP4, 6 gate-blocked, `evidence_complete` False). The mark26 arch-25
+CPU evidence reproduced deterministically bit-for-bit: `max_residual`
+`9.999807145410957e-7`, 96 contacts, 0 failures, 0 fallbacks,
+`physical_outcome_valid` True; 1-thread 7.48 ms/step, 4-thread 6.29 ms/step,
+speedup 1.19x on this loaded 32-core host (timing remains non-paper-comparable).
+Count drift versus the older recorded table is test growth, all green: math
+56->66, `ConstraintSolver` 66->67, default fixtures 42->43.
+
+Two independent reviews ran. (1) Solver-source correctness: the three headline
+claims are VERIFIED (row-operator vs impulse-test `W` cross-check is two
+genuinely independent constructions; the split-impulse save/restore is real and
+its regression would fail without it; the FBF core is a genuine reduced-Coulomb
+splitting solver with an exact second-order-cone inner solve, not a boxed-LCP
+wrapper), with no stubbed, disabled, or tautological tests. (2) Adversarial
+audit: confirmed the default battery, lint, and clean tree, and independently
+cross-validated that the 101-stone and card-house negatives are honest (the
+source's own FBF and Kamino fail the same standing/step gates), but surfaced the
+disclosure gap below.
+
+### Disclosure gap: two opt-in stress fixtures fail when enabled
+
+`test_ExactCoulombFbfPaperFixtures` skips 3 fixtures by default behind
+`DART_RUN_FBF_PAPER_STRESS_TESTS`. Running with `=1` shows 1 pass and **2
+failures** (reproduced twice, independently). These are success-shaped
+assertions that are currently red, gated behind a skip message that reads as
+"opt-in / heavy" rather than "known-failing," and the "3 explicit opt-in skips"
+line above does not disclose it. This is a real honesty/coverage gap in the
+otherwise-green claim; it is not a solver-correctness defect (default battery and
+core math are verified, and neither failure is silent wrong physics):
+
+- `CardHouseFourLevelOneStepReducedContactProbe`: exact solve does not converge
+  on the 96-contact four-level one-step (30000 inner-iteration cap,
+  `residual 3.6948728730645153e-06 > 1e-6`, 1 boxed fallback, `exactFailures=1`,
+  no residual trace so `trace.maxResidual=nan`). This is the same documented
+  four-level card-house convergence hardness (see
+  [FIGURE6_CONVERGENCE_BLOCKER.md](FIGURE6_CONVERGENCE_BLOCKER.md)); the solver
+  fails-closed correctly, but the fixture asserts a success it cannot reach.
+- `CardHouseFourLevelFullManifoldSplitImpulseSettleProbe`: the solver *succeeds*
+  (all 10 settle steps `Success`, 0 fallbacks, `maxResidual <= 1e-6`); it fails
+  only `EXPECT_GT(maxContactsSeen, 100u)` with a deterministic `98` (reproduced
+  twice). Root cause is a **stale threshold, not a solver regression**: the
+  `>100` bar dates to the original fixtures commit `49693e4883b` and was never
+  reconciled when commit `369808583e8` "repaired the 26-card reconstruction" and
+  overhauled `NativeCollisionDetector.cpp` (731-line change) -- the same commit
+  that added the opt-in env gate. The repaired geometry's natural manifold is 98
+  contacts (dense: ~3.8 contacts/card across 26 cards, near the 4-per-pair cap),
+  which satisfies the assertion's stated intent ("the full natural manifold must
+  actually engage"); only the numeric bar is out of date.
+
+Remediation status (task guardrails forbid loosening thresholds/caps to fake
+green, and the user-approved action was skip-message relabeling only, so no
+assertion or threshold was changed): (a) **DONE this session** -- both opt-in
+skip messages now disclose the EXPECTED-FAILING status, the reason, and the
+cross-reference (source edit in `tests/integration/test_ExactCoulombFbfPaperFixtures.cpp`;
+default battery unchanged at 43 passed / 3 skipped, and both fixtures still fail
+identically when enabled). (b) One-step probe: still red when enabled by design
+(the documented card-house convergence hardness); leave aspirational, now clearly
+labeled, until the convergence frontier is solved. (c) Settle probe: root-caused
+above -- the `>100` bar needs a maintainer decision to reconcile to the repaired
+geometry's 98 (the solver is healthy); not changed here because it is a threshold
+edit beyond the approved relabel scope. (d) This section supersedes the "3
+explicit opt-in skips" line: 1 of the 3 opt-in fixtures passes when enabled
+(`MasonryArch101FullManifoldOneStepProbe`) and 2 fail as characterized above.
+
 ## Active Completion Gates
 
 | Gate | Current state | Required next evidence |

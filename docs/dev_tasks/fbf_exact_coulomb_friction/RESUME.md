@@ -13,6 +13,37 @@ No, the DART reconstruction does not yet cover or match every paper test,
 benchmark, GUI example, physical outcome, or performance result.
 ```
 
+## 2026-07-23 Independent Verification Closeout
+
+A fresh session independently reproduced the full local verification battery from
+the clean tree (HEAD `be06b10d00b`): build + build-tests exit 0; FBF C++ suites
+green at the case level (math 66/66 + 8/8, constraint solver 38/38, adapter 4/4,
+paper fixtures 43 passed / 3 opt-in skips, `test_ConstraintSolver` 67/67 with the
+split-impulse base regression, native collision 25/25); FBF Python 1,447 passed;
+`check-lint` clean; scene-docs 34 OK; `--scene-physics-contract` fail-closed
+contracts; `--cycle-scenes` 68 demos OK; the mark26 arch-25 CPU evidence
+reproduced deterministically (`max_residual 9.999807145410957e-7`, 96 contacts,
+0 failures/fallbacks, physical-outcome valid). Two independent reviews:
+solver-source correctness VERIFIED (three headline claims, no stub tests) and an
+adversarial audit that cross-validated the honest negatives. Details and the full
+table are in [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md) under the same-named
+section.
+
+Correction surfaced this session (must reconcile): the `test_ExactCoulombFbfPaperFixtures`
+"3 opt-in skips" are not all merely heavy. With `DART_RUN_FBF_PAPER_STRESS_TESTS=1`,
+2 of the 3 FAIL (reproduced twice): `CardHouseFourLevelOneStepReducedContactProbe`
+(genuine non-convergence, 30000-iter cap, residual `3.69e-6 > 1e-6`, boxed
+fallback — the documented card-house hardness, fails-closed correctly) and
+`CardHouseFourLevelFullManifoldSplitImpulseSettleProbe` (solver succeeds; only
+`maxContactsSeen 98 vs >100` fails). Root-caused: the `>100` bar is a stale
+threshold from `49693e4883b`, never reconciled when `369808583e8` repaired the
+26-card reconstruction + overhauled NativeCollisionDetector (98 is the healthy
+repaired-geometry manifold). Not a solver-correctness defect. Both opt-in skip
+messages were relabeled this session to disclose the EXPECTED-FAILING status
+(no assertion/threshold changed; default battery still 43/3). The `>100`->98
+threshold reconciliation is left for maintainer decision. Details in
+AGENT_CONTINUATION.md.
+
 ## 2026-07-22 Stop/Handoff Checkpoint
 
 At `2026-07-22T23:21:36-07:00`, the user directed the current session to stop
