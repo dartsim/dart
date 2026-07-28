@@ -841,7 +841,10 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_EXTRA_INPUTS "${PROJECT_SOURCE_DIR}/docs/doxygen/mainpage.dox")
   # No in-tree third-party sources to exclude: the bundled ImGui is fetched into
   # the build tree (or taken from the system package), not vendored under dart/.
-  set(DOXYGEN_EXCLUDE "")
+  # dart/dynamics/fem is staged internal-only: it compiles into libdart but
+  # installs no header, so documenting it would publish an API that consumers
+  # cannot include. Drop this entry when those headers are installed.
+  set(DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/dart/dynamics/fem")
   set(DOXYGEN_STRIP_FROM_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
   # Generate a Doxyfile. This uses the variables:
