@@ -28,12 +28,20 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+The verified and pushed post-merge checkpoint is `7ba6d8232c8`; its
+`dart-demos` SHA-256 is `3d685d2c...`. All
+`assets/pr_media_current_head_67073/` records are capture-time evidence for
+the pre-merge `69879e77...` binary, not current-binary reuse evidence. A
+separate `assets/pr_media_current_head_7ba6/` root now contains the sealed
+current-binary Figure 8 frozen-prefix blocker diagnostic. These facts
+supersede older "current-head" wording below.
+
 ## Current Reality
 
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 remains open and draft; the inspected published branch checkpoint is `8ad9961e56c`, after docs checkpoint `fcafedbd17d`. It targets `6a1d377f616`, which remains an ancestor. Mutable head/check/review state must be verified live | #3377 is work in progress, not completion evidence. Checkpoint `c0364afd390` fixes the backspin finalizer source contract, `67073f4f575` adds generic scene-physics provenance, and `8ad9961e56c` adds the standalone Figure 8 failed-prefix finalizer. Historical media remains bound to its recorded capture builds |
+| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 remains open and draft at verified pushed head `7ba6d8232c8`, which merges target `9c2f6e3b45b`. The inspected net diff has 264 files, no tracked task-asset paths, and no generated video/CSV/JSON/log paths. Mutable check/review state must be verified live | #3377 is work in progress, not completion evidence. Fresh CI was queued/running after the merge. Historical media remains bound to its recorded capture builds, while the post-merge demo SHA-256 is `3d685d2c...` |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
@@ -42,12 +50,12 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
 | Literal 25-stone visual evidence | The ignored c95-bound exact/boxed recapture passes capture and independent reuse verification for two 600-step members plus one synchronized group; exact records 600/600 solves, 96 contacts, zero accepted caps/failures/fallbacks, and worst residual `9.999807145410957e-7` | Valid capture/integrity and exact-telemetry evidence for the reconstructed no-projectile scene only; both lanes visibly standing is manual qualitative observation because no automated semantic/physical oracle exists |
 | Source-continuation Figure 7 crown-impact evidence | Checkpoint `34d9b66e97c` adds a separate bounded continuation lane. Its ignored exact/boxed pair completes 2,000/2,000 steps with successful cube release at step 1,600; exact records 2,122/2,122 solves, zero failures/fallbacks, 1,940 plateau accepts, and 98 max-iteration accepts | Valid current-DART capture/integrity and continuation telemetry only. Both arches visibly remain standing and the cubes reach the crown, but the lanes are nearly identical and the assessment is manual-only; no strict convergence, superiority, paper parity, outcome, timing, or backend claim follows |
-| Current-head compact source-row reseal | Ignored `assets/pr_media_current_head_67073/` binds the Figures 1-5 source rows to demo SHA-256 `69879e77...`. Figure 3 plus the compact Figures 1-2/4-5 run pass capture and independent verification: the latter has 10 members, 6 groups, zero failures, and five expected exact-only author-turntable boxed skips; run/verify summary SHA-256 values are `8a8b83bb...` / `7599ecf8...` | All 10 compact members use schema v2 and have exact live/sidecar contract matches. The five minimum upload clips are byte-identical to their audited staging copies. Manual panels clearly show the seven incline lanes, author turntable 2x2, and Painleve `mu=.5` agreement / `mu=.55` exact-fallen versus boxed-upright observation. Browser URLs remain pending; no source-backend, paper-parity, or superiority claim follows |
-| Current-head long-row v2 reseal | The same ignored root now passes capture and independent verification for Figure 6, Figure 7, and supplemental five-level exact/boxed members plus their synchronized groups. All six members use schema v2, bind the same current demo and broad-source identities, and have exact live/sidecar contract matches; [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns the full paths and hashes. The ten-level current-head recapture is active but not finally verified. Checkpoint `8ad9961e56c` adds a standalone fail-closed Figure 8 failed-prefix finalizer, but no current-head Figure 8 bundle has completed finalize/seal/verify | Figure 6 and five-level panels show more retained exact structure than boxed, while Figure 7 is nearly identical and standing. These are policy-asymmetric presentation artifacts because only exact requests source continuation; strict blockers and every non-superiority/parity boundary remain. Upload staging slots 06/07 are refreshed and hash-verified, the five-level slot is byte-identical, and ten-level/Figure 8 remain pending current-head seals |
+| Pre-merge compact source-row reseal | Ignored `assets/pr_media_current_head_67073/` binds the Figures 1-5 source rows to capture-time demo SHA-256 `69879e77...`. Figure 3 plus the compact Figures 1-2/4-5 run pass capture and independent verification against that binary: the latter has 10 members, 6 groups, zero failures, and five expected exact-only author-turntable boxed skips; run/verify summary SHA-256 values are `8a8b83bb...` / `7599ecf8...` | All 10 compact members use schema v2 and have exact live/sidecar contract matches against their recorded binary. The post-merge hash is `3d685d2c...`, so these records are not current-binary reuse evidence. The five minimum upload clips remain byte-identical to audited staging, browser URLs remain pending, and no source-backend, paper-parity, or superiority claim follows |
+| Pre-merge long-row reseal and post-merge Figure 8 | The `67073` root passes capture and independent verification for Figure 6, Figure 7, and supplemental five-level pairs/groups against its recorded binary. Its complete ten-level exact member fails post-merge reuse by demo hash, and its 166-frame boxed partner is partial non-evidence. A separate `assets/pr_media_current_head_7ba6/` root passes current-binary Figure 8 boxed capture, independent verification, failed-prefix finalization, manual seal, and standalone verify | Figure 8 is a valid frozen-prefix blocker diagnostic: exact stops after completed step 209, boxed completes 1,600 but fails the standing oracle, and group clip SHA-256 is `5e83527d...`. It is not a complete exact trajectory or parity/superiority result. A fresh post-merge ten-level pair remains pending |
 | Historical c95 proxy-row reseal | Ignored `assets/pr_media_current_head_c95_small_rows/` binds 20 members and 13 groups to demo SHA-256 `5725672a...`; capture and independent reuse verification passed with zero failures and five expected exact-only author-turntable boxed skips | Superseded for the five minimum Figures 1-5 source-row uploads. Retain only its four reconstructed Figure 4 exact-vs-boxed proxy groups and historical diagnostics; all paper/automated-semantic flags remain false |
-| Browser-upload handoff | `PAPER_DEMO_VIDEO_MATRIX.md` lists 16 clips: nine minimum source-row clips plus seven supplemental comparisons, including the source-pinned Figure 3 exact member and its labeled exact/boxed supplement. Ignored `assets/pr_upload_3377/` contains the current-head Figure 6 and Figure 7 groups in slots 06/07, byte-identical current-head five-level media in slot 15, and an updated `SHA256SUMS` that verifies all 16 H.264/yuv420p staging copies | Locally staged and hash-verified, but not published. Every browser-composer upload and resulting GitHub user-attachment URL remains pending. Mandatory exact-only, proxy, non-strict, frozen-prefix, visual-sampling, and continuation-policy caption boundaries remain in force |
+| Browser-upload handoff | `PAPER_DEMO_VIDEO_MATRIX.md` lists 16 clips: nine minimum source-row clips plus seven supplemental comparisons. Ignored `assets/pr_upload_3377/` contains capture-time Figure 6 and Figure 7 groups in slots 06/07, capture-time five-level media in slot 15, and an updated `SHA256SUMS` that verifies all 16 H.264/yuv420p staging copies. Slot 08 is still historical; the matrix now selects the sealed post-merge Figure 8 file directly | Locally staged and hash-verified, but not published. Every browser-composer upload and resulting GitHub user-attachment URL remains pending. Mandatory exact-only, proxy, non-strict, frozen-prefix, visual-sampling, and continuation-policy caption boundaries remain in force |
 | Semantic physics provenance | Checkpoint `67073f4f575` adds generic no-render `dart-demos --scene-physics-contract <scene-id>` queries and fail-closed support for 10 provider schemas. Provider-backed captures use result schema v2 only after exact canonical live/sidecar contract equality; the semantic digest removes exactly one schema-declared monolithic implementation hash while retaining every other contract field | This separates scene semantics from one broad source identity without weakening integrity. Full demo-binary and broad source gates remain mandatory, the binary is hashed before and after capture, card-house construction and author-turntable consumers validate v2, and legacy/no-provider v1 remains supported. Historical v1 media is not thereby reusable at current head |
-| Current-head Figure 3 v2 reseal | Ignored `assets/pr_media_current_head_67073/` passes capture and independent verification for exact, boxed, and their synchronized checker-texture group. Both 240-step outcomes pass; exact and boxed semantic digests are `e8589021...` and `55b4244d...`, bound to demo SHA-256 `69879e77...`. Exact/group MP4 SHA-256 values are `b2c268aa...` and `e321c711...` | The media bytes match the already audited Figure 3 upload-staging copies, so the staged files need no replacement. Browser upload remains pending. Both solvers pass; this is not superiority, source-backend/full-trajectory, historical Figure 3, or paper-parity evidence |
+| Capture-time Figure 3 v2 reseal | Ignored `assets/pr_media_current_head_67073/` passes capture and independent verification for exact, boxed, and their synchronized checker-texture group against the recorded binary. Both 240-step outcomes pass; exact and boxed semantic digests are `e8589021...` and `55b4244d...`, bound to demo SHA-256 `69879e77...`. Exact/group MP4 SHA-256 values are `b2c268aa...` and `e321c711...` | The post-merge demo hash differs, so this is not current-binary reuse evidence. The media bytes still match audited Figure 3 staging, browser upload remains pending, both solvers pass, and no superiority, source-backend/full-trajectory, historical Figure 3, or paper-parity claim follows |
 | Incline visual evidence | Implementation checkpoint `952a97caf49` adds the `fbf_author_incline_sweep_current_source` demo and `incline_author_sweep_current_source` schedule for the full operator-selected `mu=.3,.4,.45,.5,.55,.6,.8` grid in seven labeled lanes. The ignored paired exact/boxed bundle under `assets/pr_media_author_incline_final_candidate_v6/` independently verifies both 120-step traces, the 61-frame H.264/yuv420p group, solver identities, stream contracts, full decodes, and the narrow `automated_current_source_fbf_terminal_outcome_slice_validated=true` contract; generic automated semantic validation remains false. The stable demo binary and verification summary SHA-256 values are `67d399eee85ffd286984a877b8f4181b9ce3030acf5f9b2bc03886e54e7a5f20` and `02305f4faeeb792198dc7e85cf4348ffa3f3d52a742fa4e63f8b01e52bd27b4c`; clip SHA-256 is `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` | Valid current-DART current-source terminal/outcome-slice evidence only. Both lanes remain supported, upright, in-lane, and contact-participating; `.3/.4/.45` slide and `.5/.55/.6/.8` stick. Exact/boxed maximum source-FBF endpoint deltas are `0.002426469449185232 m` / `0.0011201728594518558 m/s` and `0.0011521317667995284 m` / `0.00030012480388411203 m/s`. No source trajectory/backend/solver/full-physical/timing/video/paper equivalence or superiority follows, and `fig.01`, `fig.02`, and `video.03` remain partial |
 | Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over the same seven-cell grid. The new DART schedule binds the retained FBF terminal oracle to raw `sweep_results.json` SHA-256 `f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12`, canonical projection `e8b3b5c93a543480bae5c2f50106ecc1b137f65337cc1e725ef8c840efdb8921`, and `mu=.55` history `c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f` | Numeric current-source reference plus bounded DART terminal/outcome evidence only. Source FBF has 839/840 configured convergence flags (`mu=.55`, step 1 reaches 200/200), so `source_reference_strictly_converged=false`; timing, historical-paper, full-state, golden, and parity claims remain false |
 | Source-pinned Painleve adapter | The ignored `fig05_painleve_author_current_v1` bundle binds the public author configuration and exact-options header hash; capture and independent verify pass for four exact/boxed members and four 61-frame decoded groups with complete traces, measured outcomes, and manual audit | Under the pinned current DART adapter, exact and boxed diverge at `mu=.55`; GitHub video URLs remain pending, and source-backend, trajectory, paper-Figure-5, timing, and solver-superiority claims remain false |
@@ -60,10 +68,10 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Current-source four-level card-house adapter | The strict `fbf_author_card_house_4_impact_current_source` lane and the separately named `fbf_author_card_house_4_impact_source_continuation_current_source` lane bind the pinned author geometry and source-supported four-level, 600-frame selection to 2,400 DART substeps; exact/boxed contracts pass | Strict source-inner replays still fail the 56-contact group at step 35. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, while c95 cadence-5, same-binary `last_norm10`, and same-binary source-seed-values candidates still fail at step 35; all six strict-prefix diagnostics retain explicit claim limits and leave the scene unchanged. The telemetry-rich continuation capture completes exact and boxed through the step-1,600 release: exact records 3,351/3,351 solves, 0 failures/fallbacks, 2,605 successes, 113 plateau accepts, 633 max-iteration accepts, and 0 shrink caps. Manual inspection shows both standing through release and more retained multi-level structure in exact at the endpoint, but the run is continuation evidence, not strict convergence, solver superiority, trajectory/golden/backend/timing parity, or Fig. 6/paper parity |
 | Current-source ten-level card-house adapter | Strict `fbf_author_card_house_10_impact_current_source` plus separate `fbf_author_card_house_10_impact_source_continuation_current_source` bind the supported `--levels 10` selection to 155 cards, four cubes, 800 frames / 3,200 DART substeps, release after step 1,600, and the pinned heterogeneous gap values. Predictive checkpoint `3647959a188` matches only the scalar source `separation / dt` velocity allowance | Strict reaches completed step 31 before a 79-contact failure. Same-binary exact and boxed continuation captures and independent reuse verifications pass for 3,200/3,200 steps and synchronized 401-frame clips. Exact records 7,702/7,702 solves, zero failures/fallbacks, 2,427 plateau and 763 max-iteration accepts; boxed exposes no exact-FBF diagnostics. Colored ordering leaves the blocker essentially unchanged, while one-global grouping fails a strict native-slice audit after completed step 28; both one-factor candidates are bounded rejects. The continuation pair is qualitative presentation evidence—not strict convergence, a solver-only A/B, source/trajectory/physical/Tables 6-7/paper parity, or solver superiority; see [CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md](CARD_HOUSE_10_CURRENT_SOURCE_DIAGNOSIS.md) |
 | Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
-| Source-pinned 101-stone DART adapter | The new author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Strict exact stops at step 209 on an iteration cap; boxed completes but fails the standing oracle and visibly collapses. Independent full current-source FBF and Kamino controls also fail the same local standing criterion | Precise current-DART and current-source scientific negatives only; no historical invocation/backend, converged golden, full trajectory/outcome, Fig. 8/video.08, timing, performance, or superiority claim follows |
+| Source-pinned 101-stone DART adapter | The author-mesh scene binds `--stones 101` and the 400-frame / 1,600-substep source-supported no-release schedule. Under post-merge demo SHA-256 `3d685d2c...`, strict exact stops after completed step 209, boxed completes 1,600 but fails the standing oracle, and the sealed diagnostic freezes exact only after step 208. Independent full current-source FBF and Kamino controls also fail the same local standing criterion | Current-binary boxed capture/reuse and frozen-prefix finalize/manual-seal/standalone-verify pass. Group clip SHA-256 is `5e83527d...`; no complete exact trajectory, historical invocation/backend, converged golden, full outcome, Fig. 8/video.08 parity, timing, performance, or superiority claim follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
-| Paper-media parity | The passing literal video has no projectile. The source-pinned 101-stone lane now has boxed-collapse media and a frozen-prefix diagnostic comparison, but no complete exact clip, current-source Kamino media/full-pose trace, or historical renderer camera/material/golden bundle | No paper impact, Fig. 8/video.08, GUI, or golden-frame parity claim |
+| Paper-media parity | The passing literal video has no projectile. The source-pinned 101-stone lane now has post-merge boxed-collapse media and a sealed frozen-prefix diagnostic, but no complete exact clip, current-source Kamino media/full-pose trace, or historical renderer camera/material/golden bundle | Better current-binary blocker evidence only; no paper impact, Fig. 8/video.08 parity, GUI parity, or golden-frame claim |
 | Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six locally finalized bundles and the visual workflow declares 33 runnable schedules, 30 of which encode MP4. The added schedule is a DART-only numeric diagnostic, not a required paper/video row; the gate hashes local bundle artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
 ## Current Small CPU Matrix
@@ -255,7 +263,7 @@ Implementation checkpoint `34d9b66e97c` adds the separately named
 `masonry_arch_25_author_crown_impact_source_continuation_current_source`
 schedule without changing the strict source-configuration lane. The ignored
 historical c95 root is
-`assets/pr_media_current_head_fig07_crown_continuation/`. The current-head v2
+`assets/pr_media_current_head_fig07_crown_continuation/`. The capture-time v2
 capture owned by [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md)
 supersedes it as the upload source. The historical paired capture summary
 passes with SHA-256
@@ -282,7 +290,7 @@ continuation evidence, not strict convergence, solver superiority, physical
 outcome, source/paper trajectory or Figure 7 parity, timing, or backend
 evidence. The strict source scene remains blocked at step 142; this separate
 lane does not clear it. Preserve this c95 group as historical evidence. Upload
-only the current-head v2 group owned by the matrix through the GitHub browser
+only the capture-time v2 group owned by the matrix through the GitHub browser
 composer and record its user-attachment URL; do not commit generated media.
 
 ## Finalized Fig. 01/02 And Video.03 Incline Evidence
@@ -749,7 +757,7 @@ recovered historical Tables 6-7 invocation or paper video, strict success, a
 solver-only A/B, solver superiority, trajectory or physical-outcome parity,
 source-backend equivalence, timing parity, or paper parity. The v1 and v2
 captures are superseded framing probes and must never be uploaded. Retain v3
-as historical evidence; upload only the byte-identical current-head v2 group
+as historical evidence; upload only the byte-identical capture-time v2 group
 owned by [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) through the
 GitHub PR browser composer and record the resulting user-attachment URL. No URL
 exists yet. This adds one supplemental clip to the browser handoff but does
@@ -1020,7 +1028,7 @@ The freshly downloaded official video at
 `/tmp/fbf_official_5THad4PAGmI_360p.mp4` has SHA-256
 `d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794`,
 exactly matching the audited source-video hash. Preserve the v1 pair as
-historical evidence. The current-head v2 group owned by
+historical evidence. The capture-time v2 group owned by
 [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) is the upload source
 and remains local until a `github.com/user-attachments/...` URL is recorded.
 The strict step-35 blocker remains open.
@@ -1466,13 +1474,14 @@ The latest recorded focused results on the current source are:
 - colored `ConstraintSolver` filter: 3/3 passed, comprising both
   `ExactCoulombColored*` tests and the existing default-off/copy test;
 - source-default five-level demo/test build: passed; both focused strict and
-  continuation fixtures pass. Current-head v2 capture and independent
+  continuation fixtures pass. Capture-time v2 capture and independent
   verification now also pass for the exact and boxed members plus their
   synchronized group under `assets/pr_media_current_head_67073/`. Both members
   retain the full demo-binary and broad-source gates and exact live/sidecar
   equality. The older `0e3937e6294` v1 capture remains historical rather than
-  current-head evidence; [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md)
-  owns the current paths and hashes;
+  evidence for that recorded binary;
+  [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns the paths and
+  hashes;
 - author-incline shared-specification and production-world C++ contract: 5/5
   passed for exact/boxed solver wiring, finite stepped state, and contact
   inventory;
@@ -1481,11 +1490,20 @@ The latest recorded focused results on the current source are:
   source-pinned 101-stone, card-house schedule/oracle contracts, Figure 7
   crown-impact continuation, source-default five-level lane, and seven-cell
   author incline: 665/665;
-- current-head compact Figures 1-2/4-5 capture and independent verification:
+- capture-time compact Figures 1-2/4-5 capture and independent verification:
   10/10 members, 6/6 groups, zero failures, five expected exact-only
   author-turntable boxed skips; all member records are schema v2 with exact
   live/sidecar contract matches; run/verify summaries hash to `8a8b83bb...` /
   `7599ecf8...`;
+- post-merge lock/build/lint gate: `pixi lock --check`, full build, lint, and
+  7/7 focused SDF/exact-FBF CTest targets passed at `7ba6d8232c8`;
+- post-merge 101-stone text oracle: 3/3 stress-opt-in tests passed, including
+  the full-manifold one-step probe;
+- post-merge Figure 8 current-binary evidence: boxed completes 1,600/1,600
+  with 201 unique frames and passes capture, independent reuse verification,
+  and full decode; exact reproduces the iteration cap after completed step
+  209; failed-prefix finalize, timestamped manual seal, and standalone
+  reuse-only verify pass with `upload_ready=true`;
 - current-source four-level exact/boxed adapter contract-smoke validators:
   passed;
 - author masonry-arch C++ specification/adapter: 1/1 focused CTest target and
@@ -1513,24 +1531,27 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    frozen 101-v1 negative bundles. The 101 reconstruction is now precisely
    blocked at step 1; preserve the separate source-pinned 101-stone DART
    step-209/collapse negative and its independently verified boxed clip without
-   relabeling the frozen-prefix hstack as a full exact comparison. Use the
-   `8ad9961e56c` standalone finalizer for the next current-head Figure 8 seal;
-   the committed tool is not itself a sealed bundle. Card-manifold
+   relabeling the frozen-prefix hstack as a full exact comparison. Preserve the
+   sealed post-merge `assets/pr_media_current_head_7ba6/` Figure 8 diagnostic;
+   finalize, timestamped manual seal, and standalone reuse verification are
+   complete. Upload it only as a frozen-prefix blocker after explicit
+   approval. Card-manifold
    v2 is complete as non-strict diagnostic evidence. Preserve the finalized incline, the pinned-author numeric
    incline sweep, historical current-source Painleve proxy, finalized
    source-pinned Painleve adapter, and backspin bundles. Preserve its
    trace/outcome audit, independent replay, and manual inspection, upload the
    two exact-vs-boxed clips through the PR browser composer. Also preserve and
-   upload the c95-bound Figure 7 literal-standing and current-head crown-impact
+   upload the c95-bound Figure 7 literal-standing and capture-time crown-impact
    continuation exact-vs-boxed groups only through that browser-composer path,
    recording their URLs and retaining the manual-only, non-strict boundaries.
    The continuation lane does not clear the strict step-142 blocker. Use
-   `assets/pr_media_current_head_67073/` as the retained five minimum Figures
-   1-5 source-row upload source. Keep the implementation/media-head
+   `assets/pr_media_current_head_67073/` only as the retained capture-time
+   source for the five minimum Figures 1-5 upload files; it is bound to
+   pre-merge demo SHA-256 `69879e77...`. Keep the implementation/media-head
    `c95bd5fb916` small-row reseal only for the four supplemental reconstructed
-   Figure 4 proxy comparisons and historical diagnostics. Keep the current-head
+   Figure 4 proxy comparisons and historical diagnostics. Keep the capture-time
    capture and reuse-verification summaries, panel
-   audit, and browser-upload manifest hash-bound. Use the current-head
+   audit, and browser-upload manifest hash-bound. Use the capture-time
    five-level group from that root as the sixth supplemental comparison; it is
    byte-identical to the historical group-v3 clip. Retain the older v1/v2/v3
    roots only as historical evidence, retaining the visible
@@ -1553,8 +1574,12 @@ recreate the recorded symlink only for an intentional live-closure recheck.
    extend either without a new source-backed preregistered mismatch, promote
    colored ordering to the default, or ship the detached global patch. Do not
    loosen tolerance or caps.
-   Finish and independently verify the active current-head ten-level recapture
-   before replacing its historical c95 upload identity. Preserve and independently review the
+   The `67073` ten-level exact member fails post-merge reuse because the
+   executable hash changed, and its 166-frame boxed partner is non-evidence.
+   Capture both lanes again in a fresh post-merge root from one unchanged
+   `3d685d2c...` executable, then independently verify, decode, and inspect the
+   synchronized group before replacing its historical c95 upload identity.
+   Preserve and independently review the
    completed telemetry-rich source-continuation clip, do not relabel it as
    strict convergence or solver superiority, and publish it only through the PR
    editor after explicit approval. Upload the final ten-level labeled pair only
