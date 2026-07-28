@@ -26,11 +26,13 @@ below.
 - Post-merge `pixi run build`, `pixi run lint`, and seven focused SDF/exact-FBF
   CTest targets passed. The opt-in 101-stone text oracle also passed 3/3,
   including `MasonryArch101FullManifoldOneStepProbe`.
-- PR #3377 remains open and draft at `7ba6d8232c8`. Its live net diff still has
-  264 files and no tracked `docs/dev_tasks/**/assets/**` or generated
+- PR #3377 remains open and draft. Its verified evidence-bearing merge
+  checkpoint is `7ba6d8232c8`; subsequent handoff-only documentation
+  checkpoints do not change the bound demo evidence. The inspected net diff
+  had 264 files and no tracked `docs/dev_tasks/**/assets/**` or generated
   video/CSV/JSON/log paths. The 104 `.obj` files are runtime inputs, primarily
-  the 101 source-pinned masonry meshes. Fresh hosted CI was queued/running when
-  inspected; requery it before reporting a final status.
+  the 101 source-pinned masonry meshes. Requery the mutable head and hosted
+  checks before reporting a final status.
 - The merge changed the `dart-demos` SHA-256 from the capture-time
   `69879e77...` to
   `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`.
