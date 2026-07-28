@@ -311,6 +311,13 @@
 
 * Dynamics
 
+  * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
+    rigid `BodyNode`: the parser forwarded only the joint type to
+    `createJointAndBodyNodePair`, so the body-node type defaulted to `BodyNode`
+    and `SoftBodyNode::Properties` was sliced away. Soft SDF links now load as
+    `SoftBodyNode`s; rigid links are unchanged and there is no API/ABI change:
+    [#3399](https://github.com/dartsim/dart/pull/3399)
+
   * Fix `BoxedLcpConstraintSolver` propagating non-finite constraint impulses:
     a near-singular contact (e.g. a thin, hard, frictionless geometry) could
     make the primary solver report success while emitting an *infinite* impulse
