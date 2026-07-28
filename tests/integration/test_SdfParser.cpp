@@ -165,6 +165,30 @@ TEST(SdfParser, ParsingSDFFiles)
 }
 
 //==============================================================================
+// Regression: an SDF <soft_shape> link must load as a SoftBodyNode. Before
+// SdfParser forwarded the NodeType template argument to
+// createJointAndBodyNodePair, every soft SDF body loaded as a rigid BodyNode
+// (SoftBodyNode::Properties sliced away), so the soft-feet Atlas reported zero
+// soft bodies.
+TEST(SdfParser, SoftShapeLinkLoadsAsSoftBodyNode)
+{
+  auto softAtlas = SdfParser::readSkeleton(
+      "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  ASSERT_NE(nullptr, softAtlas);
+  EXPECT_EQ(2u, softAtlas->getNumSoftBodyNodes());
+  EXPECT_NE(nullptr, softAtlas->getSoftBodyNode("l_foot"));
+  EXPECT_NE(nullptr, softAtlas->getSoftBodyNode("r_foot"));
+  ASSERT_NE(nullptr, softAtlas->getBodyNode("l_foot"));
+  EXPECT_NE(nullptr, softAtlas->getBodyNode("l_foot")->asSoftBodyNode());
+
+  // Control: the rigid variant of the same model stays fully rigid.
+  auto rigidAtlas
+      = SdfParser::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  ASSERT_NE(nullptr, rigidAtlas);
+  EXPECT_EQ(0u, rigidAtlas->getNumSoftBodyNodes());
+}
+
+//==============================================================================
 TEST(SdfParser, PlaneShapeOption)
 {
   const std::string sdfFilename = "dart://sample/sdf/test/plane_shape.sdf";
