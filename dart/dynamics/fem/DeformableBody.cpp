@@ -37,13 +37,12 @@
 
 #include <dart/dynamics/fem/DeformableBody.hpp>
 
+#include <dart/common/Macros.hpp>
 #include <dart/common/Memory.hpp>
 
 #include <limits>
 #include <stdexcept>
 #include <string>
-
-#include <cassert>
 
 namespace dart {
 namespace dynamics {
@@ -85,7 +84,23 @@ public:
   /// bodies: velocities first, then positions from the updated velocities.
   void integrate(double timeStep, const Eigen::Vector3d& gravity)
   {
-    const double damping = mMaterial.mLinearDamping;
+    // Damping is mass proportional and integrated implicitly, so the whole
+    // update is
+    //   v <- (v + g * dt) / (1 + c * dt).
+    //
+    // Two properties motivate that form. Dividing the damping force by the node
+    // mass, rather than scaling it by the mass, would give every node its own
+    // decay factor; lumped masses vary by more than ten times across an
+    // ordinary box mesh, so a body translating uniformly would damp faster at
+    // its corners than in its interior and tear itself apart even though no
+    // elastic force exists yet. Scaling by mass makes the factor identical for
+    // every node, which preserves rigid translation exactly. Applying it
+    // implicitly then keeps the update stable for any positive damping and time
+    // step, where an explicit factor of (1 - c * dt) would diverge past c * dt
+    // of two. The undamped case stays bit-identical, and the damped case keeps
+    // a closed form the tests check exactly.
+    const double dampingDivisor = 1.0 + mMaterial.mLinearDamping * timeStep;
+    const Eigen::Vector3d gravityStep = gravity * timeStep;
     const auto numNodes = static_cast<int>(mMasses.size());
 
     for (int i = 0; i < numNodes; ++i) {
@@ -97,8 +112,7 @@ public:
       }
 
       Eigen::Vector3d velocity = mVelocities.segment<3>(3 * i);
-      const Eigen::Vector3d force = mass * gravity - damping * velocity;
-      velocity += (force / mass) * timeStep;
+      velocity = (velocity + gravityStep) / dampingDivisor;
 
       mVelocities.segment<3>(3 * i) = velocity;
       mPositions.segment<3>(3 * i) += velocity * timeStep;
@@ -167,7 +181,7 @@ public:
 
   Eigen::Vector3d getSurfaceVertexPosition(std::size_t vertexIndex) const
   {
-    assert(vertexIndex < mSurfaceTets.size());
+    DART_ASSERT(vertexIndex < mSurfaceTets.size());
 
     const Eigen::Vector4i tet = mMesh.getTet(mSurfaceTets[vertexIndex]);
     const Eigen::Vector4d& weights = mSurfaceWeights[vertexIndex];
@@ -296,6 +310,21 @@ std::shared_ptr<DeformableBody> DeformableBody::create(
         "DeformableBody::create: mesh has no tetrahedra");
   }
 
+  // TetMesh rejects non-positive element volumes so that lumped masses stay
+  // positive; a non-positive density would defeat that from the other side,
+  // leaving every node massless or negative and the body permanently inert
+  // while still reporting itself attached and healthy. These comparisons are
+  // written so that a NaN is rejected too.
+  if (!(material.mDensity > 0.0)) {
+    throw std::invalid_argument(
+        "DeformableBody::create: material density must be positive");
+  }
+
+  if (!(material.mLinearDamping >= 0.0)) {
+    throw std::invalid_argument(
+        "DeformableBody::create: material linear damping must not be negative");
+  }
+
   return std::shared_ptr<DeformableBody>(new DeformableBody(mesh, material));
 }
 
@@ -320,7 +349,7 @@ std::size_t DeformableBody::getNumNodes() const
 //==============================================================================
 Eigen::Vector3d DeformableBody::getNodePosition(std::size_t nodeIndex) const
 {
-  assert(nodeIndex < getNumNodes());
+  DART_ASSERT(nodeIndex < getNumNodes());
   return mImpl->mPositions.segment<3>(static_cast<int>(3 * nodeIndex));
 }
 
@@ -328,14 +357,14 @@ Eigen::Vector3d DeformableBody::getNodePosition(std::size_t nodeIndex) const
 void DeformableBody::setNodePosition(
     std::size_t nodeIndex, const Eigen::Vector3d& position)
 {
-  assert(nodeIndex < getNumNodes());
+  DART_ASSERT(nodeIndex < getNumNodes());
   mImpl->mPositions.segment<3>(static_cast<int>(3 * nodeIndex)) = position;
 }
 
 //==============================================================================
 Eigen::Vector3d DeformableBody::getNodeVelocity(std::size_t nodeIndex) const
 {
-  assert(nodeIndex < getNumNodes());
+  DART_ASSERT(nodeIndex < getNumNodes());
   return mImpl->mVelocities.segment<3>(static_cast<int>(3 * nodeIndex));
 }
 
@@ -343,14 +372,14 @@ Eigen::Vector3d DeformableBody::getNodeVelocity(std::size_t nodeIndex) const
 void DeformableBody::setNodeVelocity(
     std::size_t nodeIndex, const Eigen::Vector3d& velocity)
 {
-  assert(nodeIndex < getNumNodes());
+  DART_ASSERT(nodeIndex < getNumNodes());
   mImpl->mVelocities.segment<3>(static_cast<int>(3 * nodeIndex)) = velocity;
 }
 
 //==============================================================================
 double DeformableBody::getNodeMass(std::size_t nodeIndex) const
 {
-  assert(nodeIndex < getNumNodes());
+  DART_ASSERT(nodeIndex < getNumNodes());
   return mImpl->mMasses[static_cast<int>(nodeIndex)];
 }
 
@@ -387,6 +416,21 @@ Eigen::Vector3d DeformableBody::getSurfaceVertexPosition(
 }
 
 //==============================================================================
+std::size_t DeformableBody::getSurfaceVertexTet(std::size_t vertexIndex) const
+{
+  DART_ASSERT(vertexIndex < mImpl->mSurfaceTets.size());
+  return mImpl->mSurfaceTets[vertexIndex];
+}
+
+//==============================================================================
+Eigen::Vector4d DeformableBody::getSurfaceVertexWeights(
+    std::size_t vertexIndex) const
+{
+  DART_ASSERT(vertexIndex < mImpl->mSurfaceWeights.size());
+  return mImpl->mSurfaceWeights[vertexIndex];
+}
+
+//==============================================================================
 void DeformableBody::attachTo(const std::shared_ptr<simulation::World>& world)
 {
   if (!world) {
@@ -400,6 +444,23 @@ void DeformableBody::attachTo(const std::shared_ptr<simulation::World>& world)
   }
 
   detach();
+
+  // The body advances from the constraint solver's per-step update, but
+  // World::step() returns early without solving at all when automatic
+  // deactivation decides the whole world is resting. A deformable body is not
+  // part of that resting decision, so the world could sleep while the body
+  // still had to move, and the body would silently freeze while simulated time
+  // kept advancing. Turning the feature off keeps every step solving.
+  //
+  // This only affects worlds that opt into a deformable body; worlds without
+  // one keep the resting fast path untouched. Detaching deliberately does not
+  // restore the previous setting, because another deformable body may still be
+  // attached and relying on it; re-enable it explicitly if every body is gone.
+  auto deactivation = world->getDeactivationOptions();
+  if (deactivation.mEnabled) {
+    deactivation.mEnabled = false;
+    world->setDeactivationOptions(deactivation);
+  }
 
   solver->addConstraint(mImpl->mConstraint);
   mImpl->mWorld = world;

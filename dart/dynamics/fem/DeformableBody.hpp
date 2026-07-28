@@ -71,7 +71,12 @@ struct Material
   /// Poisson's ratio. Reserved for the elastic-force work.
   double mPoissonRatio = 0.3;
 
-  /// Viscous damping applied to each node, in N*s/m.
+  /// Mass-proportional viscous damping rate, in 1/s.
+  ///
+  /// The damping force on a node is -mDensity-weighted mass times this rate
+  /// times velocity, so every node decays by the same factor and a body
+  /// translating uniformly stays undeformed. It is integrated implicitly and is
+  /// therefore stable for any non-negative rate and time step.
   double mLinearDamping = 0.0;
 };
 
@@ -129,8 +134,11 @@ public:
   ///
   /// Each surface vertex is bound to the tetrahedron that contains it using
   /// barycentric weights, so the surface follows the volume as it deforms. A
-  /// vertex that lies outside every tetrahedron is bound to the closest one and
-  /// extrapolates from it.
+  /// vertex that lies outside every tetrahedron is bound to the tetrahedron it
+  /// violates least in barycentric terms and extrapolates from it. That measure
+  /// is normalized by each tetrahedron's own dimensions rather than being a
+  /// distance, so for a vertex well outside the mesh the chosen tetrahedron is
+  /// not necessarily the nearest one and the extrapolation error is unbounded.
   void setEmbeddedSurface(const std::vector<Eigen::Vector3d>& restVertices);
 
   std::size_t getNumSurfaceVertices() const;
@@ -138,6 +146,14 @@ public:
   /// Returns the current position of one embedded surface vertex, interpolated
   /// from the current node positions.
   Eigen::Vector3d getSurfaceVertexPosition(std::size_t vertexIndex) const;
+
+  /// Returns the tetrahedron one embedded surface vertex is bound to.
+  std::size_t getSurfaceVertexTet(std::size_t vertexIndex) const;
+
+  /// Returns the barycentric weights binding one embedded surface vertex to its
+  /// tetrahedron. Weights within [0, 1] mean the vertex lies inside that
+  /// tetrahedron; a weight outside that range means it extrapolates.
+  Eigen::Vector4d getSurfaceVertexWeights(std::size_t vertexIndex) const;
 
   /// Attaches the body to a world so that it advances with every world step.
   /// Attaching to a new world detaches from the previous one.

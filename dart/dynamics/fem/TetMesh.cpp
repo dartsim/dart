@@ -32,16 +32,21 @@
 
 #include <dart/dynamics/fem/TetMesh.hpp>
 
+#include <dart/common/Macros.hpp>
+
 #include <stdexcept>
 #include <utility>
-
-#include <cassert>
 
 namespace dart {
 namespace dynamics {
 namespace fem {
 
 namespace {
+
+/// Smallest rest volume a tetrahedron may have relative to the cube of its
+/// longest edge. A regular tetrahedron sits near 0.118, so this bound rejects
+/// only elements that have collapsed to a sliver.
+constexpr double kMinVolumeToEdgeCubed = 1e-12;
 
 /// Kuhn decomposition of one grid cell into six tetrahedra, written with the
 /// cell-corner bit index i + 2 * j + 4 * k. The six tetrahedra correspond to
@@ -195,6 +200,23 @@ void TetMesh::computeRestQuantities()
           "give a positive rest volume");
     }
 
+    // A tetrahedron flattened almost to a plane still has a positive volume and
+    // would pass the check above, but its inverse rest shape is then so
+    // ill-conditioned that it amplifies any perturbation by the same factor.
+    // That is harmless while only gravity acts, and ruinous as soon as
+    // deformation gradients F = Ds * inverseRestShape are formed, so reject
+    // slivers here instead of letting them reach the elastic work. The bound is
+    // eleven orders below a regular tetrahedron's volume-to-edge ratio, so it
+    // only catches genuinely collapsed elements.
+    const double edgeScale = shape.colwise().norm().maxCoeff();
+    if (!(restVolume
+          > kMinVolumeToEdgeCubed * edgeScale * edgeScale * edgeScale)) {
+      throw std::invalid_argument(
+          "TetMesh: tetrahedron is a sliver; its rest volume is vanishing "
+          "relative to its edge lengths, which makes the inverse rest shape "
+          "numerically unusable");
+    }
+
     mRestVolumes.push_back(restVolume);
     mInverseRestShapes.push_back(shape.inverse());
     mTotalRestVolume += restVolume;
@@ -222,28 +244,28 @@ bool TetMesh::isEmpty() const
 //==============================================================================
 const Eigen::Vector3d& TetMesh::getRestPosition(std::size_t nodeIndex) const
 {
-  assert(nodeIndex < mRestPositions.size());
+  DART_ASSERT(nodeIndex < mRestPositions.size());
   return mRestPositions[nodeIndex];
 }
 
 //==============================================================================
 Eigen::Vector4i TetMesh::getTet(std::size_t tetIndex) const
 {
-  assert(tetIndex < mTets.size());
+  DART_ASSERT(tetIndex < mTets.size());
   return mTets[tetIndex];
 }
 
 //==============================================================================
 double TetMesh::getRestVolume(std::size_t tetIndex) const
 {
-  assert(tetIndex < mRestVolumes.size());
+  DART_ASSERT(tetIndex < mRestVolumes.size());
   return mRestVolumes[tetIndex];
 }
 
 //==============================================================================
 const Eigen::Matrix3d& TetMesh::getInverseRestShape(std::size_t tetIndex) const
 {
-  assert(tetIndex < mInverseRestShapes.size());
+  DART_ASSERT(tetIndex < mInverseRestShapes.size());
   return mInverseRestShapes[tetIndex];
 }
 
