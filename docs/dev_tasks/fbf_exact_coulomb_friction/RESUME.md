@@ -2,7 +2,7 @@
 
 ## Current Checkpoint
 
-This task is active and incomplete as of 2026-07-22. Start with
+This task is active and incomplete as of 2026-07-27. Start with
 [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md); it is the authoritative truth
 ledger.
 
@@ -12,6 +12,70 @@ Mandatory status answer:
 No, the DART reconstruction does not yet cover or match every paper test,
 benchmark, GUI example, physical outcome, or performance result.
 ```
+
+## 2026-07-27 Base Merge And Current-Binary Figure 8 Seal
+
+This section supersedes the older current-head and active-capture statements
+below.
+
+- The topic branch merged `origin/release-6.20` at
+  `9c2f6e3b45bd7e6486fd05990669da2c3e736a99`. The only conflict was
+  `pixi.lock`; regenerating it with `pixi lock` and checking it with
+  `pixi lock --check` passed. The verified and pushed merge checkpoint is
+  `7ba6d8232c89179ec316082522238581907449b8`.
+- Post-merge `pixi run build`, `pixi run lint`, and seven focused SDF/exact-FBF
+  CTest targets passed. The opt-in 101-stone text oracle also passed 3/3,
+  including `MasonryArch101FullManifoldOneStepProbe`.
+- PR #3377 remains open and draft at `7ba6d8232c8`. Its live net diff still has
+  264 files and no tracked `docs/dev_tasks/**/assets/**` or generated
+  video/CSV/JSON/log paths. The 104 `.obj` files are runtime inputs, primarily
+  the 101 source-pinned masonry meshes. Fresh hosted CI was queued/running when
+  inspected; requery it before reporting a final status.
+- The merge changed the `dart-demos` SHA-256 from the capture-time
+  `69879e77...` to
+  `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`.
+  Reuse verification of the complete ten-level exact member under
+  `assets/pr_media_current_head_67073/` therefore fails closed with
+  `requested demo hash changed`. Its interrupted 166-frame boxed partner
+  remains non-evidence. Do not combine either member with a post-merge capture.
+- A fresh current-binary Figure 8 bundle is sealed under ignored
+  `assets/pr_media_current_head_7ba6/`. The boxed member completes
+  1,600/1,600, passes independent reuse verification and full 201-frame
+  H.264/yuv420p decode, but fails the standing oracle with maximum mobile
+  displacement `21.21884597358274` and maximum rotation
+  `3.1415266333867753 rad`. Its clip SHA-256 is
+  `7635c2722b20fb8bcb0255054cc9172153d1dd640fd8e81df4df52c0e515d3c0`.
+- `finalize_fbf_arch101_failed_prefix.py` reproduced the strict exact
+  `iteration_cap` after completed step 209, froze only the last valid step-208
+  image, and composed
+  `groups/fig08_arch101_failed_prefix_vs_boxed/clip.mp4`. The clip/panel
+  SHA-256 values are
+  `5e83527d2ed13218fda295b1dc30143007e012b333d63e965a765790145bb1d7`
+  and
+  `d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`.
+  Manual inspection at `0.0`, `0.9`, `3.3`, and `6.6` seconds passed, and a
+  separate reuse-only `verify` pass reports
+  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Metadata and
+  manual-inspection SHA-256 values are
+  `736243b9e2334a207a29efe320432c3ab64c452e03a22d45fe84f0dce7c62b4d`
+  and
+  `ae569db468c0c96160aa47299e479f1bcefe81995c10f33b4cd4ac01722aebec`.
+  This remains a frozen-prefix blocker diagnostic, not a complete exact
+  trajectory, solver-superiority result, historical Figure 8 invocation, or
+  paper-parity result.
+
+Next:
+
+1. Preserve the sealed Figure 8 root and its exact claim boundary. Publishing
+   it or replacing upload slot 08 still requires explicit approval and a
+   recorded GitHub user-attachment URL.
+2. Recapture both ten-level continuation members into a fresh post-merge root
+   from the unchanged `3d685d2c...` executable, then independently verify,
+   decode, and manually inspect the synchronized group. Do not resume or reuse
+   the partial `__boxed` directory.
+3. Keep the task draft and the mandatory answer `No`. Historical
+   source/backend/golden recovery, strict card-house/arch convergence, matched
+   paper timing, and apples-to-apples single-/multicore evidence remain open.
 
 ## 2026-07-23 Independent Verification Closeout
 
