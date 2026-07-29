@@ -33,7 +33,10 @@ Use live upstream evidence and representative DART tasks to decide what to
 preserve, update, remove, consolidate, or add. Prefer the smallest change that
 improves the target model or tool without weakening safety, evidence, public
 paths, or cross-tool capability parity. Do not equate a larger harness with a
-better harness.
+better harness. Keep the reusable intake, comparison, verification, and
+closeout core model-agnostic. The workflow itself is an audit surface: improve
+it when a target exposes a reusable gap, and replace obsolete target-specific
+guidance instead of accumulating one branch or command per model family.
 
 ## Required Reading
 
@@ -74,7 +77,9 @@ better harness.
    migration, configuration, skills, agents, and hook guidance relevant to the
    target. Record source URLs, retrieval date, and installed-version evidence.
    Treat repository wording and remembered limits as hypotheses when upstream
-   behavior can drift.
+   behavior can drift. Separate reusable procedure from target-specific
+   evidence, and flag assumptions in this workflow that the new target
+   invalidates.
 4. **Classify every finding.** Use these verdicts:
    - **preserve** — current design is intentional and evidence-backed;
    - **update** — guidance or configuration is stale or incorrect;
@@ -83,10 +88,12 @@ better harness.
    - **add** — a missing trigger, contract, diagnostic, or gate has a distinct
      owner and representative failure it prevents.
 
-   Check model routing and effort, project and custom-agent pins, workflow
-   sources, generated adapters, `AGENTS.md` chains, skill descriptions, tool
-   descriptions, hooks, scenarios, tests, and branch-profile differences. Also
-   audit the durable context and project-state layer: the north star,
+   Check model routing and effort, project and custom-agent pins, this workflow
+   source and its generated adapters, other workflow sources, `AGENTS.md`
+   chains, skill descriptions, tool descriptions, hooks, scenarios, tests, and
+   branch-profile differences.
+
+   Audit the durable context and project-state layer: the north star,
    `docs/ai/sessions.md`, `docs/plans/dashboard.md`, active
    `docs/dev_tasks/*/RESUME.md` handoffs, and the handbook, design, or plan
    owners routed into task sessions. Treat missing discovery, stale state,
@@ -112,7 +119,9 @@ better harness.
    authorized delegation. Most tasks need neither. An explicitly requested Sol
    Max evaluation must exercise that lane, not turn it into a global default.
    For another target family, derive routing from its refreshed guidance rather
-   than carrying these names forward.
+   than carrying these names forward. Update or replace this bounded
+   target-specific example when it becomes stale; do not clone the workflow or
+   append an ever-growing section for every model family.
 7. **Implement only in `apply` mode.** In `audit-only`, skip implementation and
    continue only with non-mutating verification and the evidence report. In
    `apply`, implement the smallest supported delta. Keep outcome, success
@@ -122,7 +131,13 @@ better harness.
    sources and regenerate adapters with `pixi run sync-ai-commands`; do not
    hand-edit generated `.agents/skills/` or `.opencode/command/` files. Improve
    owner routing and progressive disclosure instead of loading every plan,
-   task, or handbook page by default.
+   task, or handbook page by default. When evidence exposes a reusable weakness
+   in the model-upgrade procedure, improve this maintained source in the same
+   `apply` change. Preserve its model-agnostic core.
+
+   Remove superseded model-specific guidance.
+   Regenerate adapters after updating the maintained source.
+
 8. **Exercise trigger and failure boundaries.** Cover direct, indirect,
    incomplete, non-trigger, and edge prompts. Include a negative case that must
    retain the existing route, plus failure-sensitive checks for model pins,

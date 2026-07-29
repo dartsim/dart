@@ -619,6 +619,9 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "skip implementation",
         "only `apply` runs auto-fixing `pixi run lint`",
         "do not perform change-oriented closeout",
+        "The workflow itself is an audit surface",
+        "do not clone the workflow",
+        "Remove superseded model-specific guidance",
     ):
         assert marker in text
 

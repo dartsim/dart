@@ -90,6 +90,12 @@ primary guidance, captures the existing harness as a control, isolates model,
 effort, prompt, configuration, and optional-agent changes, and records
 preserve/update/remove/consolidate/add verdicts.
 
+The workflow is deliberately self-evolving. Its model-agnostic intake,
+comparison, verification, and closeout core is itself part of every audit. An
+`apply` run may improve that source when a target exposes a reusable gap, while
+replacing stale target-specific guidance instead of cloning a command or
+accumulating permanent per-model branches.
+
 Do not use it for a missed already-documented rule
 (`dart-audit-agent-compliance`) or an ordinary AI-doc edit
 (`dart-docs-update`). An incomplete target starts with installed-version and
