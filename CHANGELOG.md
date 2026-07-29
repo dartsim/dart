@@ -377,13 +377,11 @@ compatibility remains on the active DART 6 LTS branch._
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
   surface. ([#3347](https://github.com/dartsim/dart/pull/3347))
-- Upgraded the AI-native contributor infrastructure for current Codex and
-  GPT-5.6 with task-shaped model/reasoning routing, a reusable controlled
-  model-upgrade audit, raw prompt/context/model-pin diagnostics, leaner
-  autonomous prompts, manifest-owned skills, bounded project agents and hooks,
-  deterministic branch-aware drift/scenario gates, and a text-first plus
-  claim-tied visual verification route, while preserving Claude Code and
-  OpenCode adapters.
+- Upgraded DART's AI-native contributor infrastructure for current Codex and
+  GPT-5.6 with task-shaped model/reasoning guidance, reusable upgrade audits,
+  machine-readable harness diagnostics, leaner prompts, bounded agents/hooks,
+  and branch-aware cross-tool verification.
+  ([#3403](https://github.com/dartsim/dart/pull/3403))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code
   and Codex pre-tool guards enforcing the same policy during agent sessions;
