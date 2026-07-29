@@ -599,12 +599,16 @@ def test_capture_bundle_accepts_exact_step_zero_fixture(tmp_path):
     assert summary["panel"]["strict_nonblank_contrast_verdict"]["pass"]
 
 
-def test_capture_bundle_accepts_v2_semantic_provenance_metadata(tmp_path):
+@pytest.mark.parametrize(
+    "capture_schema_name",
+    ("RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION", "RUNNER_CAPTURE_RESULT_SCHEMA_VERSION"),
+)
+def test_capture_bundle_accepts_provenance_metadata(tmp_path, capture_schema_name):
     module = _load_module()
     demo, verification = _capture_fixture(module, tmp_path)
     metadata_path = tmp_path / module.CAPTURE_DIR / "metadata.json"
     metadata = module.read_json(metadata_path)
-    metadata["schema_version"] = module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION
+    metadata["schema_version"] = getattr(module, capture_schema_name)
     contract = module.read_json(tmp_path / "contract.json")
     provenance = module.build_semantic_physics_provenance(contract)
     metadata["runtime"]["scene_physics_provenance"] = {
@@ -617,6 +621,15 @@ def test_capture_bundle_accepts_v2_semantic_provenance_metadata(tmp_path):
         "broad_implementation_sha256": (provenance.broad_implementation_sha256),
         "sidecar_contract_match": True,
     }
+    if metadata["schema_version"] == module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+        metadata["runtime"].update(
+            {
+                "demo_runtime_closure": {
+                    "schema_version": "dart.fbf_visual_runtime_closure/v1"
+                },
+                "demo_runtime_closure_unchanged_during_capture": True,
+            }
+        )
     module.write_json(metadata_path, metadata)
 
     run_summary = module.read_json(tmp_path / "run-summary.json")

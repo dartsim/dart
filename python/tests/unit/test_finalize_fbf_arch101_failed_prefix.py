@@ -372,9 +372,10 @@ def test_group_identity_rejects_provenance_field_mutation(field, value):
         module._validate_group_identity(metadata, schedule)
 
 
+@pytest.mark.parametrize("capture_schema", ["dart.fbf_visual_evidence/v2", "dart.fbf_visual_evidence/v3"])
 @pytest.mark.parametrize("standing_outcome", [False, True])
 def test_boxed_summary_accepts_complete_trace_regardless_of_standing_outcome(
-    tmp_path, standing_outcome
+    tmp_path, standing_outcome, capture_schema
 ):
     module = _load_module()
     boxed_dir = tmp_path / module.BOXED_SCHEDULE_ID
@@ -385,7 +386,7 @@ def test_boxed_summary_accepts_complete_trace_regardless_of_standing_outcome(
     module.write_json(
         metadata_path,
         {
-            "schema_version": "dart.fbf_visual_evidence/v2",
+            "schema_version": capture_schema,
             "runtime": {"scene_physics_provenance": {"sidecar_contract_match": True}},
         },
     )
@@ -402,7 +403,8 @@ def test_boxed_summary_accepts_complete_trace_regardless_of_standing_outcome(
     }
 
     class FakeRunner:
-        CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+        SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+        CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
 
         @staticmethod
         def _derive_boxed_schedule(_schedule):

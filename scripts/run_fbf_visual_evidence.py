@@ -22,6 +22,7 @@ import json
 import math
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -43,11 +44,14 @@ from fbf_scene_provenance import (  # noqa: E402
 from image_verdict import analyze_non_blank, build_verdict  # noqa: E402
 
 SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
-CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
 CAPTURE_RESULT_SCHEMA_VERSIONS = (
     SCHEMA_VERSION,
+    SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
     CAPTURE_RESULT_SCHEMA_VERSION,
 )
+DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION = "dart.fbf_visual_runtime_closure/v1"
 SOURCE_AUDIT_SCHEMA_VERSION = "dart.fbf_visual_source_audit/v1"
 SIDECAR_SCHEMA_VERSION = "dart.demos_headless_timeline/v1"
 SOLVER_LANES = ("exact", "boxed")
@@ -2695,6 +2699,150 @@ def _run(
     )
 
 
+def _demo_runtime_closure(demo: Path) -> dict[str, Any]:
+    """Bind the regular files selected by the demo's dynamic-link closure."""
+
+    demo = demo.resolve()
+    ldd = shutil.which("ldd")
+    if ldd is None:
+        raise ValueError("ldd is required to bind the visual-evidence runtime")
+    ldd_path = Path(ldd).resolve()
+    if not ldd_path.is_file():
+        raise ValueError(f"ldd is not a regular file: {ldd_path}")
+
+    completed = _run((str(ldd_path), str(demo)), capture_output=True)
+    dependencies: dict[str, dict[str, Any]] = {}
+    for raw_line in completed.stdout.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if "not found" in line:
+            raise ValueError(f"unresolved visual-evidence runtime dependency: {line}")
+
+        reported_name: str
+        candidate_text: str
+        if "=>" in line:
+            reported_name, remainder = (
+                part.strip() for part in line.split("=>", 1)
+            )
+            candidate_text = remainder.split(maxsplit=1)[0]
+        else:
+            candidate_text = line.split(maxsplit=1)[0]
+            reported_name = candidate_text
+
+        candidate = Path(candidate_text)
+        if not candidate.is_absolute():
+            # Entries such as linux-vdso.so are kernel-provided and have no
+            # regular file that can be hashed.
+            continue
+        try:
+            resolved = candidate.resolve(strict=True)
+        except OSError as error:
+            raise ValueError(
+                f"cannot resolve visual-evidence runtime dependency: {line}"
+            ) from error
+        if not resolved.is_file():
+            raise ValueError(
+                f"visual-evidence runtime dependency is not a regular file: "
+                f"{resolved}"
+            )
+
+        key = str(resolved)
+        entry = dependencies.setdefault(
+            key,
+            {
+                "reported_names": [],
+                "sha256": _sha256(resolved),
+                "size_bytes": resolved.stat().st_size,
+            },
+        )
+        entry["reported_names"].append(reported_name)
+
+    if not dependencies:
+        raise ValueError(f"ldd resolved no regular runtime files for {demo}")
+    for entry in dependencies.values():
+        entry["reported_names"] = sorted(set(entry["reported_names"]))
+    dependencies = dict(sorted(dependencies.items()))
+    build_root = (ROOT / "build").resolve()
+    build_dependencies = {
+        path: entry
+        for path, entry in dependencies.items()
+        if Path(path).is_relative_to(build_root)
+    }
+    build_libdart_candidates = [
+        {
+            "path": path,
+            **entry,
+        }
+        for path, entry in build_dependencies.items()
+        if any(
+            name == "libdart.so" or name.startswith("libdart.so.")
+            for name in entry["reported_names"]
+        )
+    ]
+    if len(build_libdart_candidates) != 1:
+        raise ValueError(
+            "dart-demos must resolve exactly one build-tree libdart.so, got "
+            f"{len(build_libdart_candidates)}"
+        )
+    dependencies_sha256 = hashlib.sha256(
+        json.dumps(
+            dependencies, allow_nan=False, separators=(",", ":"), sort_keys=True
+        ).encode()
+    ).hexdigest()
+    build_dependencies_sha256 = hashlib.sha256(
+        json.dumps(
+            build_dependencies,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    return {
+        "schema_version": DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION,
+        "ldd_tool": {
+            "path": str(ldd_path),
+            "sha256": _sha256(ldd_path),
+            "size_bytes": ldd_path.stat().st_size,
+        },
+        "ldd_stderr_sha256": hashlib.sha256(completed.stderr.encode()).hexdigest(),
+        "resolved_regular_file_count": len(dependencies),
+        "resolved_regular_files_sha256": dependencies_sha256,
+        "resolved_regular_files": dependencies,
+        "build_root": str(build_root),
+        "resolved_build_regular_file_count": len(build_dependencies),
+        "resolved_build_regular_files_sha256": build_dependencies_sha256,
+        "resolved_build_regular_files": build_dependencies,
+        "resolved_build_libdart": build_libdart_candidates[0],
+    }
+
+
+def _validate_demo_runtime_closure_binding(
+    demo: Path,
+    *,
+    capture_schema_version: str,
+    runtime: dict[str, Any],
+    metadata_path: Path,
+) -> None:
+    stored = runtime.get("demo_runtime_closure")
+    required = capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+    if required and stored is None:
+        raise ValueError(f"{metadata_path}: demo runtime closure binding is missing")
+    if stored is None:
+        return
+    if not isinstance(stored, dict):
+        raise ValueError(f"{metadata_path}: demo runtime closure is not an object")
+    if stored.get("schema_version") != DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION:
+        raise ValueError(f"{metadata_path}: unexpected demo runtime closure schema")
+    if runtime.get("demo_runtime_closure_unchanged_during_capture") is not True:
+        raise ValueError(
+            f"{metadata_path}: demo runtime closure capture recheck is missing"
+        )
+    current = _demo_runtime_closure(demo)
+    if stored != current:
+        raise ValueError(f"{metadata_path}: demo runtime closure binding changed")
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -2854,7 +3002,10 @@ def _validate_scene_physics_provenance_binding(
     metadata_path: Path,
 ) -> None:
     stored = runtime.get("scene_physics_provenance")
-    required = capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+    required = capture_schema_version == SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION or (
+        capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+        and sidecar_contract is not None
+    )
     if required and stored is None:
         raise ValueError(
             f"{metadata_path}: scene physics provenance binding is missing"
@@ -9404,6 +9555,7 @@ def run_schedule(
     (output_dir / "frames").mkdir(exist_ok=True)
     command = build_demo_command(schedule, demo, output_dir)
     demo_sha256_before_capture = _sha256(demo)
+    demo_runtime_closure_before_capture = _demo_runtime_closure(demo)
     visual_resources_before = _visual_resource_snapshot(schedule)
     try:
         _run(command, cwd=ROOT)
@@ -9457,19 +9609,22 @@ def run_schedule(
     panel_report = _compose_panel(schedule, output_dir, panel_paths, python)
     media_items = _encode_media(schedule, output_dir, ffmpeg)
     media_report = _validate_media(schedule, media_items, ffmpeg, ffprobe)
+    if _sha256(demo) != demo_sha256_before_capture:
+        raise ValueError(f"{schedule.id}: demo binary changed during capture")
+    demo_runtime_closure_after_capture = _demo_runtime_closure(demo)
+    if demo_runtime_closure_after_capture != demo_runtime_closure_before_capture:
+        raise ValueError(f"{schedule.id}: demo runtime closure changed during capture")
 
     report = {
-        "schema_version": (
-            CAPTURE_RESULT_SCHEMA_VERSION
-            if scene_physics_provenance is not None
-            else SCHEMA_VERSION
-        ),
+        "schema_version": CAPTURE_RESULT_SCHEMA_VERSION,
         "kind": "capture_result",
         "schedule": schedule_plan(schedule, demo, output_root),
         "runtime": {
             "demo_argv": command,
             "demo_path": str(demo),
             "demo_sha256": demo_sha256_before_capture,
+            "demo_runtime_closure": demo_runtime_closure_before_capture,
+            "demo_runtime_closure_unchanged_during_capture": True,
             **(
                 {"scene_physics_provenance": scene_physics_provenance}
                 if scene_physics_provenance is not None
@@ -9687,7 +9842,8 @@ def _group_member_contract(
         output_dir = output_root / schedule.id
         metadata_path = output_dir / "metadata.json"
         metadata = _read_json(metadata_path)
-        if metadata.get("schema_version") not in CAPTURE_RESULT_SCHEMA_VERSIONS:
+        capture_schema_version = metadata.get("schema_version")
+        if capture_schema_version not in CAPTURE_RESULT_SCHEMA_VERSIONS:
             raise ValueError(f"{metadata_path}: unexpected schema")
         if metadata.get("kind") != "capture_result" or not metadata.get("pass"):
             raise ValueError(f"{metadata_path}: member capture is not successful")
@@ -9741,6 +9897,12 @@ def _group_member_contract(
         demo_path = Path(demo_path_value)
         if not demo_path.is_file() or runtime.get("demo_sha256") != _sha256(demo_path):
             raise ValueError(f"{metadata_path}: member demo hash binding changed")
+        _validate_demo_runtime_closure_binding(
+            demo_path,
+            capture_schema_version=capture_schema_version,
+            runtime=runtime,
+            metadata_path=metadata_path,
+        )
 
         timeline_path = output_dir / "timeline.json"
         timeline_validation = metadata.get("timeline_validation", {})
@@ -9820,6 +9982,10 @@ def _group_member_contract(
             "clip_sha256": clip_hash,
             "clip_probe": probe,
         }
+        if runtime.get("demo_runtime_closure") is not None:
+            member["demo_runtime_closure_sha256"] = _canonical_json_sha256(
+                runtime["demo_runtime_closure"]
+            )
         if group.panel_steps is not None:
             member.update(
                 {
@@ -10603,11 +10769,21 @@ def _verify_existing(
         raise ValueError(f"{metadata_path}: runtime demo command is stale")
     if runtime.get("demo_sha256") != _sha256(demo):
         raise ValueError(f"{metadata_path}: requested demo hash changed")
+    _validate_demo_runtime_closure_binding(
+        demo,
+        capture_schema_version=capture_schema_version,
+        runtime=runtime,
+        metadata_path=metadata_path,
+    )
 
     stored_scene_provenance = runtime.get("scene_physics_provenance")
     sidecar_contract = None
     if (
-        capture_schema_version == CAPTURE_RESULT_SCHEMA_VERSION
+        capture_schema_version
+        in (
+            SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+            CAPTURE_RESULT_SCHEMA_VERSION,
+        )
         or stored_scene_provenance is not None
     ):
         sidecar_contract = _read_json(output_dir / "timeline.json").get(
@@ -10738,6 +10914,7 @@ def _verify_existing_group(
         "metadata_sha256",
         "demo_path",
         "demo_sha256",
+        "demo_runtime_closure_sha256",
         "timeline_path",
         "timeline_sha256",
         "panel_source_frame",

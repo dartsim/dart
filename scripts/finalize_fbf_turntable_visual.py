@@ -95,9 +95,11 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_turntable_manual_inspection/v1"
 TRACE_SUMMARY_SCHEMA_VERSION = "dart.fbf_turntable_trace_summary/v1"
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_turntable_invocations/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
-RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
 RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
     RUNNER_SCHEMA_VERSION,
+    RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
     RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
 )
 
@@ -388,7 +390,11 @@ def _validate_scene_physics_provenance(
 ) -> None:
     stored = runtime.get("scene_physics_provenance")
     if (
-        capture_schema_version == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION
+        capture_schema_version
+        in (
+            RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+            RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+        )
         or stored is not None
     ) and stored != _expected_scene_physics_provenance(
         contract,

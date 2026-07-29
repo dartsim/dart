@@ -85,6 +85,11 @@ def test_v1_defaults_and_exact_membership_are_frozen():
 
     assert module.DEFAULT_BUNDLE.name == "fig01_02_incline_current_v1"
     assert module.SCHEMA_VERSION == "dart.fbf_incline_visual_bundle/v1"
+    assert module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS == (
+        "dart.fbf_visual_evidence/v1",
+        "dart.fbf_visual_evidence/v2",
+        "dart.fbf_visual_evidence/v3",
+    )
     assert module.MANUAL_SCHEMA_VERSION == "dart.fbf_incline_manual_inspection/v1"
     assert module.SCENARIOS == ("incline_mu_0_4", "incline_mu_0_5")
     assert module.CAPTURE_STEPS == tuple(range(0, 121, 2))

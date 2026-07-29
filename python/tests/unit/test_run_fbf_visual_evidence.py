@@ -2291,8 +2291,15 @@ def test_scene_physics_provenance_rejects_tolerance_close_numeric_drift(
         )
 
 
-def test_v2_scene_physics_provenance_is_required_and_revalidated(monkeypatch):
+@pytest.mark.parametrize(
+    "capture_schema_version_name",
+    ("SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION", "CAPTURE_RESULT_SCHEMA_VERSION"),
+)
+def test_provenance_capture_schema_requires_and_revalidates_scene_binding(
+    monkeypatch, capture_schema_version_name
+):
     module = _load_module()
+    capture_schema_version = getattr(module, capture_schema_version_name)
     schedule = _test_schedule(module)
     contract = _literal_physics_contract()
     completed = module.subprocess.CompletedProcess(
@@ -2309,7 +2316,7 @@ def test_v2_scene_physics_provenance_is_required_and_revalidated(monkeypatch):
     module._validate_scene_physics_provenance_binding(
         schedule,
         Path("dart-demos"),
-        capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+        capture_schema_version=capture_schema_version,
         runtime={"scene_physics_provenance": binding},
         sidecar_contract=contract,
         metadata_path=metadata_path,
@@ -2318,7 +2325,7 @@ def test_v2_scene_physics_provenance_is_required_and_revalidated(monkeypatch):
         module._validate_scene_physics_provenance_binding(
             schedule,
             Path("dart-demos"),
-            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            capture_schema_version=capture_schema_version,
             runtime={},
             sidecar_contract=contract,
             metadata_path=metadata_path,
@@ -2330,7 +2337,7 @@ def test_v2_scene_physics_provenance_is_required_and_revalidated(monkeypatch):
         module._validate_scene_physics_provenance_binding(
             schedule,
             Path("dart-demos"),
-            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            capture_schema_version=capture_schema_version,
             runtime={"scene_physics_provenance": changed},
             sidecar_contract=contract,
             metadata_path=metadata_path,
@@ -2355,6 +2362,223 @@ def test_v1_capture_without_scene_physics_provenance_remains_legacy(monkeypatch)
     )
 
 
+def test_demo_runtime_closure_binds_all_regular_files_and_one_build_libdart(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    build_root = tmp_path / "build"
+    libdart = build_root / "default/cpp/Release/libdart.so.6.19.4"
+    plugin = build_root / "default/cpp/Release/libdart-utils.so.6.19.4"
+    libc = tmp_path / "system/libc.so.6"
+    loader = tmp_path / "system/ld-linux-x86-64.so.2"
+    demo = tmp_path / "dart-demos"
+    ldd = tmp_path / "ldd"
+    for path, payload in (
+        (libdart, b"libdart"),
+        (plugin, b"plugin"),
+        (libc, b"libc"),
+        (loader, b"loader"),
+        (demo, b"demo"),
+        (ldd, b"ldd"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    stdout = "\n".join(
+        (
+            "linux-vdso.so.1 (0x00007fff)",
+            f"libdart.so.6.19 => {libdart} (0x00001)",
+            f"libdart-utils.so.6.19 => {plugin} (0x00002)",
+            f"libc.so.6 => {libc} (0x00003)",
+            f"{loader} (0x00004)",
+        )
+    )
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module.shutil, "which", lambda _name: str(ldd))
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda argv, **_kwargs: module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout=stdout, stderr=""
+        ),
+    )
+
+    closure = module._demo_runtime_closure(demo)
+
+    assert closure["schema_version"] == module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION
+    assert closure["resolved_regular_file_count"] == 4
+    assert closure["resolved_build_regular_file_count"] == 2
+    assert closure["resolved_build_libdart"]["path"] == str(libdart)
+    assert closure["resolved_build_libdart"]["reported_names"] == [
+        "libdart.so.6.19"
+    ]
+    assert set(closure["resolved_regular_files"]) == {
+        str(libdart),
+        str(plugin),
+        str(libc),
+        str(loader),
+    }
+
+
+@pytest.mark.parametrize(
+    ("ldd_line", "message"),
+    (
+        ("libdart.so.6.19 => not found", "unresolved"),
+        ("/tmp/external/libdart.so.6.19 (0x00001)", "exactly one build-tree"),
+    ),
+)
+def test_demo_runtime_closure_rejects_incomplete_or_external_libdart(
+    tmp_path, monkeypatch, ldd_line, message
+):
+    module = _load_module()
+    ldd = tmp_path / "ldd"
+    demo = tmp_path / "dart-demos"
+    external = Path("/tmp/external/libdart.so.6.19")
+    ldd.write_bytes(b"ldd")
+    demo.write_bytes(b"demo")
+    if "external" in ldd_line:
+        external.parent.mkdir(parents=True, exist_ok=True)
+        external.write_bytes(b"external")
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module.shutil, "which", lambda _name: str(ldd))
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda argv, **_kwargs: module.subprocess.CompletedProcess(
+            argv, returncode=0, stdout=ldd_line, stderr=""
+        ),
+    )
+
+    with pytest.raises(ValueError, match=message):
+        module._demo_runtime_closure(demo)
+
+
+def test_v3_demo_runtime_closure_is_required_and_revalidated(monkeypatch):
+    module = _load_module()
+    metadata_path = Path("metadata.json")
+    current = {
+        "schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION,
+        "resolved_regular_files_sha256": "a" * 64,
+    }
+    monkeypatch.setattr(module, "_demo_runtime_closure", lambda _demo: current)
+
+    module._validate_demo_runtime_closure_binding(
+        Path("dart-demos"),
+        capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+        runtime={
+            "demo_runtime_closure": current,
+            "demo_runtime_closure_unchanged_during_capture": True,
+        },
+        metadata_path=metadata_path,
+    )
+    with pytest.raises(ValueError, match="binding is missing"):
+        module._validate_demo_runtime_closure_binding(
+            Path("dart-demos"),
+            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={},
+            metadata_path=metadata_path,
+        )
+    changed = dict(current, resolved_regular_files_sha256="b" * 64)
+    with pytest.raises(ValueError, match="binding changed"):
+        module._validate_demo_runtime_closure_binding(
+            Path("dart-demos"),
+            capture_schema_version=module.CAPTURE_RESULT_SCHEMA_VERSION,
+            runtime={
+                "demo_runtime_closure": changed,
+                "demo_runtime_closure_unchanged_during_capture": True,
+            },
+            metadata_path=metadata_path,
+        )
+
+
+@pytest.mark.parametrize(
+    "capture_schema_version_name",
+    ("SCHEMA_VERSION", "SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION"),
+)
+def test_legacy_capture_without_demo_runtime_closure_remains_verifiable(
+    monkeypatch, capture_schema_version_name
+):
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: pytest.fail("legacy absence must not query the closure"),
+    )
+
+    module._validate_demo_runtime_closure_binding(
+        Path("dart-demos"),
+        capture_schema_version=getattr(module, capture_schema_version_name),
+        runtime={},
+        metadata_path=Path("metadata.json"),
+    )
+
+
+@pytest.mark.parametrize("closure_drift", (False, True))
+def test_new_capture_emits_v3_and_rejects_runtime_closure_drift(
+    tmp_path, monkeypatch, closure_drift
+):
+    module = _load_module()
+    schedule = _test_schedule(module)
+    output_root = tmp_path / "captures"
+    output_dir = output_root / schedule.id
+    demo = tmp_path / "dart-demos"
+    ffmpeg = tmp_path / "ffmpeg"
+    ffprobe = tmp_path / "ffprobe"
+    python = tmp_path / "python"
+    for executable in (demo, ffmpeg, ffprobe, python):
+        executable.write_bytes(b"executable")
+
+    before = {
+        "schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION,
+        "resolved_regular_files_sha256": "a" * 64,
+    }
+    after = dict(
+        before,
+        resolved_regular_files_sha256=("b" if closure_drift else "a") * 64,
+    )
+    closures = iter((before, after))
+
+    def run_demo(argv, **_kwargs):
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "timeline.json").write_text("{}", encoding="utf-8")
+        return module.subprocess.CompletedProcess(argv, returncode=0)
+
+    monkeypatch.setattr(module, "_demo_runtime_closure", lambda _demo: next(closures))
+    monkeypatch.setattr(module, "_run", run_demo)
+    monkeypatch.setattr(
+        module, "validate_sidecar", lambda *_args, **_kwargs: {"pass": True}
+    )
+    monkeypatch.setattr(module, "_prepare_panel_frames", lambda *_args: [])
+    monkeypatch.setattr(module, "_compose_panel", lambda *_args: {"pass": True})
+    monkeypatch.setattr(module, "_encode_media", lambda *_args: [])
+    monkeypatch.setattr(module, "_validate_media", lambda *_args: [])
+
+    if closure_drift:
+        with pytest.raises(ValueError, match="runtime closure changed during capture"):
+            module.run_schedule(
+                schedule,
+                demo=demo,
+                output_root=output_root,
+                ffmpeg=ffmpeg,
+                ffprobe=ffprobe,
+                python=python,
+                allow_long=False,
+            )
+        return
+
+    report = module.run_schedule(
+        schedule,
+        demo=demo,
+        output_root=output_root,
+        ffmpeg=ffmpeg,
+        ffprobe=ffprobe,
+        python=python,
+        allow_long=False,
+    )
+    assert report["schema_version"] == module.CAPTURE_RESULT_SCHEMA_VERSION
+    assert report["runtime"]["demo_runtime_closure"] == before
+    assert report["runtime"]["demo_runtime_closure_unchanged_during_capture"] is True
+
+
 def test_capture_rejects_demo_binary_replacement(tmp_path, monkeypatch):
     module = _load_module()
     schedule = _test_schedule(module)
@@ -2369,6 +2593,11 @@ def test_capture_rejects_demo_binary_replacement(tmp_path, monkeypatch):
         demo.write_bytes(b"executable-v2")
         return module.subprocess.CompletedProcess([], returncode=0)
 
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: {"schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION},
+    )
     monkeypatch.setattr(module, "_run", replace_demo)
     with pytest.raises(ValueError, match="demo binary changed during capture"):
         module.run_schedule(
@@ -2722,6 +2951,11 @@ def test_failed_strict_capture_validates_partial_sidecar_and_skips_media(
     def reject_finalization(*_args, **_kwargs):
         pytest.fail("fail-fast capture must not finalize panels or media")
 
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: {"schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION},
+    )
     monkeypatch.setattr(module, "_run", fail_demo)
     monkeypatch.setattr(module, "_prepare_panel_frames", reject_finalization)
     monkeypatch.setattr(module, "_compose_panel", reject_finalization)
@@ -2787,6 +3021,11 @@ def test_failed_source_continuation_capture_stops_before_media(tmp_path, monkeyp
     def reject_finalization(*_args, **_kwargs):
         pytest.fail("source-continuation failure must not finalize media")
 
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: {"schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION},
+    )
     monkeypatch.setattr(module, "_run", fail_demo)
     monkeypatch.setattr(module, "_prepare_panel_frames", reject_finalization)
     monkeypatch.setattr(module, "_compose_panel", reject_finalization)
@@ -7379,7 +7618,12 @@ def _author_incline_outcome_report(module, schedule):
 
 
 def _write_group_member_artifacts(
-    module, group, output_root, durations, schedules=None
+    module,
+    group,
+    output_root,
+    durations,
+    schedules=None,
+    runtime_closure=None,
 ):
     probes = {}
     demo = output_root / "dart-demos"
@@ -7401,6 +7645,13 @@ def _write_group_member_artifacts(
             "demo_path": str(demo),
             "demo_sha256": module._sha256(demo),
         }
+        if runtime_closure is not None:
+            runtime.update(
+                {
+                    "demo_runtime_closure": runtime_closure,
+                    "demo_runtime_closure_unchanged_during_capture": True,
+                }
+            )
         visual_resource_snapshot = module._visual_resource_snapshot(schedule)
         visual_resources = module._bind_visual_resource_snapshots(
             visual_resource_snapshot, visual_resource_snapshot
@@ -7408,7 +7659,11 @@ def _write_group_member_artifacts(
         if visual_resources is not None:
             runtime["visual_resources"] = visual_resources
         metadata = {
-            "schema_version": module.SCHEMA_VERSION,
+            "schema_version": (
+                module.CAPTURE_RESULT_SCHEMA_VERSION
+                if runtime_closure is not None
+                else module.SCHEMA_VERSION
+            ),
             "kind": "capture_result",
             "schedule": module.schedule_plan(schedule, demo, output_root),
             "runtime": runtime,
@@ -7487,6 +7742,53 @@ def _write_group_member_artifacts(
             ],
         }
     return probes
+
+
+def test_group_member_contract_revalidates_and_binds_v3_runtime_closure(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    group = module.GROUP_OUTPUTS["turntable"]
+    runtime_closure = {
+        "schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION,
+        "resolved_regular_files_sha256": "a" * 64,
+    }
+    probes = _write_group_member_artifacts(
+        module,
+        group,
+        tmp_path,
+        [121 / 30, 121 / 30, 121 / 30, 121 / 30],
+        runtime_closure=runtime_closure,
+    )
+    monkeypatch.setattr(module, "_probe_media", lambda path, _ffprobe: probes[path])
+    monkeypatch.setattr(
+        module, "_demo_runtime_closure", lambda _demo: runtime_closure
+    )
+    schedules = [module.SCHEDULES[member] for member in group.members]
+
+    contract = module._group_member_contract(
+        group, schedules, output_root=tmp_path, ffprobe=Path("ffprobe")
+    )
+
+    expected_digest = module._canonical_json_sha256(runtime_closure)
+    assert all(
+        member["demo_runtime_closure_sha256"] == expected_digest
+        for member in contract["members"]
+    )
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: dict(
+            runtime_closure, resolved_regular_files_sha256="b" * 64
+        ),
+    )
+    with pytest.raises(ValueError, match="runtime closure binding changed"):
+        module._group_member_contract(
+            group,
+            schedules,
+            output_root=tmp_path,
+            ffprobe=Path("ffprobe"),
+        )
 
 
 def test_group_member_contract_enforces_source_order_and_synchronized_duration(
@@ -8463,6 +8765,11 @@ def test_author_capture_binds_obj_and_mtl_before_and_after_demo(tmp_path, monkey
         mtl.write_bytes(b"mtl-v2")
         return module.subprocess.CompletedProcess([], 0)
 
+    monkeypatch.setattr(
+        module,
+        "_demo_runtime_closure",
+        lambda _demo: {"schema_version": module.DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION},
+    )
     monkeypatch.setattr(module, "_run", mutate_during_capture)
     with pytest.raises(
         ValueError,
