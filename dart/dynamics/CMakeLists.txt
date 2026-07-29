@@ -37,3 +37,6 @@ install(
   DESTINATION include/dart/external/ikfast
   COMPONENT headers
 )
+
+# Add subdirectories
+add_subdirectory(fem)
