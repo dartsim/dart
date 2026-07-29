@@ -228,6 +228,41 @@ TEST(NarrowPhaseDispatch, RoutesSphereBoxInBothOrders)
       -Eigen::Vector3d::UnitZ(), 1e-12));
 }
 
+TEST(NarrowPhaseDispatch, ReversedDispatchPreservesExistingContacts)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  ContactPoint seed;
+  seed.position = Eigen::Vector3d(7.0, 8.0, 9.0);
+  seed.normal = Eigen::Vector3d::UnitX();
+  seed.featureIndex1 = 11;
+  seed.featureIndex2 = 13;
+
+  CollisionResult result;
+  result.addContact(seed);
+
+  CollisionOption option;
+  option.maxNumContacts = 2u;
+  ASSERT_TRUE(NarrowPhase::collide(
+      &sphere,
+      translated(0.0, 0.0, 1.5),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      option,
+      result));
+
+  ASSERT_EQ(2u, result.numContacts());
+  const auto& preserved = result.getContact(0u);
+  EXPECT_TRUE(preserved.position.isApprox(seed.position, 1e-12));
+  EXPECT_TRUE(preserved.normal.isApprox(seed.normal, 1e-12));
+  EXPECT_EQ(seed.featureIndex1, preserved.featureIndex1);
+  EXPECT_EQ(seed.featureIndex2, preserved.featureIndex2);
+
+  EXPECT_TRUE(
+      result.getContact(1u).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
 TEST(NarrowPhaseDispatch, SphereBoxBinaryCheckDoesNotAddContacts)
 {
   SphereShape sphere(1.0);

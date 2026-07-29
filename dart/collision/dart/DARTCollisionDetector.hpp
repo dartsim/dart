@@ -42,6 +42,7 @@ namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class CollisionThreadPool;
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -62,14 +63,11 @@ public:
   /// Get collision detector type for this class.
   static const std::string& getStaticType();
 
-  /// Sets the number of worker participants requested for this detector.
-  /// Preserved for source compatibility with the pre-consolidation
-  /// DARTCollisionDetector API (and ConstraintSolver's thread-count
-  /// propagation); the underlying engine does not yet parallelize collision
-  /// queries across threads, so this is bookkeeping only.
+  /// Sets the number of worker participants for parallel collision queries.
+  /// A value of 0 maps to hardware concurrency.
   void setNumCollisionThreads(std::size_t numThreads);
 
-  /// Returns the value most recently passed to setNumCollisionThreads().
+  /// Returns the number of worker participants for parallel collision queries.
   std::size_t getNumCollisionThreads() const;
 
   // Documentation inherited
@@ -129,12 +127,8 @@ protected:
 
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;
-  // Transition alias: "native" was the interim key for this engine before
-  // it was folded into DARTCollisionDetector as "dart". 6.20.0 is
-  // unreleased, so no in-tree caller should rely on it going forward.
-  // Remove in 6.21.
-  static Registrar<DARTCollisionDetector> mNativeAliasRegistrar;
 
+  std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
   std::size_t mNumCollisionThreads{1u};
 };
 

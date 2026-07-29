@@ -114,7 +114,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--current", default="HEAD")
     parser.add_argument("--parent", default="HEAD^1")
     parser.add_argument("--base")
-    parser.add_argument("--detectors", default="fcl,dart,native,bullet,ode")
+    parser.add_argument("--detectors", default="fcl,dart,bullet,ode")
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")

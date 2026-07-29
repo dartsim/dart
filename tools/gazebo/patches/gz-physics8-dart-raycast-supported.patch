@@ -7,24 +7,26 @@ Line numbers assume gz-physics8-changed-world-poses.patch is applied first
 (patches apply in filename order).
 
 diff --git a/test/common_test/simulation_features.cc b/test/common_test/simulation_features.cc
-index e18c8bd5..f3369267 100644
 --- a/test/common_test/simulation_features.cc
 +++ b/test/common_test/simulation_features.cc
-@@ -1399,7 +1446,7 @@ TYPED_TEST_SUITE(SimulationFeaturesRayIntersectionTest,
- 
+@@ -1444,8 +1444,8 @@ TYPED_TEST_SUITE(SimulationFeaturesRayIntersectionTest,
+                  SimulationFeaturesRayIntersectionTestTypes);
+
  TYPED_TEST(SimulationFeaturesRayIntersectionTest, SupportedRayIntersections)
  {
 -  std::vector<std::string> supportedCollisionDetectors = {"bullet"};
 +  std::vector<std::string> supportedCollisionDetectors = {"bullet", "dart"};
- 
+
    for (const std::string &name : this->pluginNames)
    {
-@@ -1446,7 +1493,7 @@ TYPED_TEST(SimulationFeaturesRayIntersectionTest, SupportedRayIntersections)
- 
+@@ -1491,8 +1491,8 @@ TYPED_TEST(SimulationFeaturesRayIntersectionTest, SupportedRayIntersections)
+   }
+ }
+
  TYPED_TEST(SimulationFeaturesRayIntersectionTest, UnsupportedRayIntersections)
  {
 -  std::vector<std::string> unsupportedCollisionDetectors = {"ode", "dart", "fcl", "banana"};
 +  std::vector<std::string> unsupportedCollisionDetectors = {"ode", "fcl", "banana"};
- 
+
    for (const std::string &name : this->pluginNames)
    {

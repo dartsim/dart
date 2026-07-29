@@ -38,16 +38,22 @@
 #include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PointMass.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
+#include <dart/common/Profile.hpp>
+
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -330,6 +336,37 @@ private:
   mutable std::size_t mNumChecks = 0u;
 };
 
+class ThreadRecordingCollisionFilter : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject*,
+      const collision::CollisionObject*) const override
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    mThreadIds.insert(std::this_thread::get_id());
+    ++mNumChecks;
+    return false;
+  }
+
+  std::size_t getNumThreads() const
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mThreadIds.size();
+  }
+
+  std::size_t getNumChecks() const
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mNumChecks;
+  }
+
+private:
+  mutable std::mutex mMutex;
+  mutable std::set<std::thread::id> mThreadIds;
+  mutable std::size_t mNumChecks{0u};
+};
+
 } // namespace
 
 // NOTE: the legacy detector's grid-hash contact deduplication (which merged
@@ -603,6 +640,164 @@ TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, ParallelQueriesSerializeCollisionFilterCallbacks)
+{
+  constexpr std::size_t kNumSpheres = 32u;
+
+  auto detector = collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  std::vector<dynamics::SimpleFramePtr> sphereFrames;
+  sphereFrames.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    sphereFrames.push_back(frame);
+    group->addShapeFrame(frame.get());
+  }
+
+  auto filter = std::make_shared<ThreadRecordingCollisionFilter>();
+  collision::CollisionOption option(true, 1000u, filter);
+  detector->setNumCollisionThreads(4u);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+  EXPECT_GT(filter->getNumChecks(), 0u);
+  EXPECT_EQ(filter->getNumThreads(), 1u);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelTwoGroupFiltersMatchSerialCartesianCoverage)
+{
+  constexpr std::size_t kGroupSize = 8u;
+  auto detector = collision::DARTCollisionDetector::create();
+  auto group1 = detector->createCollisionGroup();
+  auto group2 = detector->createCollisionGroup();
+  std::vector<dynamics::SimpleFramePtr> frames;
+  frames.reserve(2u * kGroupSize);
+  for (std::size_t i = 0u; i < kGroupSize; ++i) {
+    auto frame1 = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    auto frame2 = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame1->setShape(std::make_shared<dynamics::SphereShape>(0.25));
+    frame2->setShape(std::make_shared<dynamics::SphereShape>(0.25));
+    frame1->setTranslation(Eigen::Vector3d(2.0 * i, 0.0, 0.0));
+    frame2->setTranslation(Eigen::Vector3d(2.0 * i, 10.0, 0.0));
+    group1->addShapeFrame(frame1.get());
+    group2->addShapeFrame(frame2.get());
+    frames.push_back(frame1);
+    frames.push_back(frame2);
+  }
+
+  auto serialFilter = std::make_shared<ThreadRecordingCollisionFilter>();
+  collision::CollisionOption serialOption(true, 10u, serialFilter);
+  detector->setNumCollisionThreads(1u);
+  collision::CollisionResult serialResult;
+  EXPECT_FALSE(group1->collide(group2.get(), serialOption, &serialResult));
+
+  auto parallelFilter = std::make_shared<ThreadRecordingCollisionFilter>();
+  collision::CollisionOption parallelOption(true, 10u, parallelFilter);
+  detector->setNumCollisionThreads(4u);
+  collision::CollisionResult parallelResult;
+  EXPECT_FALSE(group1->collide(group2.get(), parallelOption, &parallelResult));
+
+  constexpr std::size_t kExpectedChecks = kGroupSize * kGroupSize;
+  EXPECT_EQ(serialFilter->getNumChecks(), kExpectedChecks);
+  EXPECT_EQ(parallelFilter->getNumChecks(), kExpectedChecks);
+  EXPECT_EQ(parallelFilter->getNumThreads(), 1u);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelRigidQueriesUseWorkerParticipants)
+{
+  if (!common::profile::isTextProfilingEnabled())
+    GTEST_SKIP() << "text profiling is unavailable in this build";
+
+  constexpr std::size_t kNumSpheres = 32u;
+  auto detector = collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  std::vector<dynamics::SimpleFramePtr> sphereFrames;
+  sphereFrames.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    sphereFrames.push_back(frame);
+    group->addShapeFrame(frame.get());
+  }
+
+  detector->setNumCollisionThreads(4u);
+  collision::CollisionOption option(true, 1000u);
+  collision::CollisionResult result;
+
+  common::profile::resetProfile();
+  const bool previousRecording
+      = common::profile::setProfileRecordingEnabled(true);
+  const bool collisionFound = group->collide(option, &result);
+  common::profile::setProfileRecordingEnabled(previousRecording);
+  ASSERT_TRUE(collisionFound);
+
+  const std::string summary = common::profile::getProfileSummaryText();
+  constexpr const char* kWorkerScope = "DARTCollisionDetector::rigidPair";
+  auto treeStart = summary.find("Per-thread breakdown");
+  if (treeStart == std::string::npos)
+    treeStart = summary.find("\n- thread ");
+  const std::string hotspots = summary.substr(0u, treeStart);
+
+  std::size_t scopeCount = 0u;
+  std::size_t searchFrom = 0u;
+  while ((searchFrom = hotspots.find(kWorkerScope, searchFrom))
+         != std::string::npos) {
+    ++scopeCount;
+    searchFrom += std::char_traits<char>::length(kWorkerScope);
+  }
+
+  // The hotspot section has one flattened entry per thread for this unique
+  // scope. Multiple entries therefore prove collision work ran on multiple
+  // participants rather than only being configured that way.
+  EXPECT_GT(scopeCount, 1u) << summary;
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelTwoGroupTraversalBoundsScratchAndHonorsCap)
+{
+  constexpr std::size_t kNumSpheres = 1024u;
+  constexpr double kSpacing = 3.0;
+
+  auto detector = collision::DARTCollisionDetector::create();
+  auto group1 = detector->createCollisionGroup();
+  auto group2 = detector->createCollisionGroup();
+  const auto sphereShape = std::make_shared<dynamics::SphereShape>(0.5);
+  std::vector<dynamics::SimpleFramePtr> frames1;
+  std::vector<dynamics::SimpleFramePtr> frames2;
+  frames1.reserve(kNumSpheres);
+  frames2.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto frame1 = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    auto frame2 = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame1->setShape(sphereShape);
+    frame2->setShape(sphereShape);
+    frame1->setTranslation(Eigen::Vector3d(kSpacing * i, 0.0, 0.0));
+    frame2->setTranslation(Eigen::Vector3d(kSpacing * i, 10.0, 0.0));
+    group1->addShapeFrame(frame1.get());
+    group2->addShapeFrame(frame2.get());
+    frames1.push_back(frame1);
+    frames2.push_back(frame2);
+  }
+
+  detector->setNumCollisionThreads(4u);
+  collision::CollisionOption option(true, 1u);
+  collision::CollisionResult result;
+  EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    frames2[i]->setTranslation(Eigen::Vector3d(kSpacing * i, 0.0, 0.0));
+  }
+
+  ASSERT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_EQ(result.getNumContacts(), 1u);
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, SoftMeshPlaneContactIsOrderSymmetric)
 {
   auto groups = makeRigidSoftMeshGroups(
@@ -615,6 +810,55 @@ TEST(DARTCollisionDetector, SoftMeshPlaneContactIsOrderSymmetric)
       groups, -Eigen::Vector3d::UnitZ(), [](const Eigen::Vector3d& point) {
         return -point.z();
       });
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ParallelMultiSoftQueriesMatchSerialAfterDeformation)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  std::vector<SoftMeshSetup> softBodies;
+  softBodies.push_back(
+      makeSoftMeshSetup("parallel_soft_0", Eigen::Vector3d::Zero()));
+  softBodies.push_back(
+      makeSoftMeshSetup("parallel_soft_1", Eigen::Vector3d(0.1, 0.0, 0.0)));
+  softBodies.push_back(
+      makeSoftMeshSetup("parallel_soft_2", Eigen::Vector3d(0.2, 0.0, 0.0)));
+  for (const auto& softBody : softBodies)
+    group->addShapeFrame(softBody.shapeNode);
+
+  collision::CollisionOption option(true, 1000u);
+  for (std::size_t iteration = 0u; iteration < 8u; ++iteration) {
+    for (std::size_t i = 0u; i < softBodies.size(); ++i) {
+      softBodies[i].body->getPointMass(0u)->setPositions(
+          Eigen::Vector3d(0.0, 0.0, 1e-6 * static_cast<double>(iteration + i)));
+    }
+
+    detector->setNumCollisionThreads(4u);
+    collision::CollisionResult parallelResult;
+    ASSERT_TRUE(group->collide(option, &parallelResult));
+
+    detector->setNumCollisionThreads(1u);
+    collision::CollisionResult serialResult;
+    ASSERT_TRUE(group->collide(option, &serialResult));
+    ASSERT_EQ(parallelResult.getNumContacts(), serialResult.getNumContacts());
+    for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+      const auto& parallelContact = parallelResult.getContact(i);
+      const auto& serialContact = serialResult.getContact(i);
+      EXPECT_EQ(
+          parallelContact.collisionObject1->getShapeFrame(),
+          serialContact.collisionObject1->getShapeFrame());
+      EXPECT_EQ(
+          parallelContact.collisionObject2->getShapeFrame(),
+          serialContact.collisionObject2->getShapeFrame());
+      EXPECT_TRUE(parallelContact.point.isApprox(serialContact.point, 1e-12));
+      EXPECT_TRUE(parallelContact.normal.isApprox(serialContact.normal, 1e-12));
+      EXPECT_NEAR(
+          parallelContact.penetrationDepth,
+          serialContact.penetrationDepth,
+          1e-12);
+    }
+  }
 }
 
 //==============================================================================

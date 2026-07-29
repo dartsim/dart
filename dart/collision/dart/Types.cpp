@@ -136,6 +136,34 @@ const ContactPoint& CollisionResult::getContact(std::size_t i) const
   return *flatContactsCache_.at(i);
 }
 
+void CollisionResult::flipContactOrderFrom(std::size_t firstManifold)
+{
+  if (firstManifold > manifoldCount_) {
+    throw std::out_of_range("CollisionResult::flipContactOrderFrom");
+  }
+
+  const auto flipContact = [](ContactPoint& contact) {
+    contact.normal = -contact.normal;
+    std::swap(contact.object1, contact.object2);
+    std::swap(contact.featureIndex1, contact.featureIndex2);
+  };
+
+  for (std::size_t i = firstManifold; i < manifoldCount_; ++i) {
+    if (i == 0u && firstEntryIsContact_) {
+      flipContact(firstContact_);
+      continue;
+    }
+
+    ContactManifold& manifold
+        = i == 0u ? *firstManifold_ : extraManifolds_[i - 1u];
+    std::swap(manifold.object1_, manifold.object2_);
+    for (std::size_t j = 0u; j < manifold.numContacts_; ++j)
+      flipContact(manifold.contacts_[j]);
+  }
+
+  invalidateCache();
+}
+
 const ContactManifold& CollisionResult::manifoldAt(std::size_t i) const
 {
   if (i == 0u) {

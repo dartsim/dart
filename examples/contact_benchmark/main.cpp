@@ -307,8 +307,6 @@ void printUsage(const std::string& programName)
          "benchmarking.\n"
       << "  --profile                 Dump DART text profiler summary.\n"
       << "  --collision default|dart|fcl|bullet|ode\n"
-      << "                            (\"native\" is accepted as an alias "
-         "for \"dart\")\n"
       << "  --lcp-solver default|dantzig|pgs\n"
       << "                            Set the boxed-LCP primary solver for "
          "measurement.\n"
@@ -461,9 +459,7 @@ CollisionEngine parseCollisionEngine(const std::string& value)
 {
   if (value == "default")
     return CollisionEngine::Default;
-  // "native" was the interim key for the engine now folded into
-  // DARTCollisionDetector (canonical key "dart"); accept it as an alias.
-  if (value == "dart" || value == "native")
+  if (value == "dart")
     return CollisionEngine::Dart;
   if (value == "fcl")
     return CollisionEngine::Fcl;

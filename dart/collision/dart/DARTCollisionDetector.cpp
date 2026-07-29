@@ -46,12 +46,15 @@
 
 #include <algorithm>
 #include <array>
+#include <condition_variable>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <cstdint>
@@ -59,12 +62,192 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
+class CollisionThreadPool
+{
+public:
+  CollisionThreadPool() = default;
+
+  ~CollisionThreadPool()
+  {
+    setWorkerCount(0u);
+  }
+
+  void setWorkerCount(std::size_t workerCount)
+  {
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
+
+    if (workerCount == mWorkers.size())
+      return;
+
+    stopWorkers();
+    if (workerCount == 0u)
+      return;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = false;
+    }
+
+    mWorkers.reserve(workerCount);
+    for (std::size_t i = 0u; i < workerCount; ++i)
+      mWorkers.emplace_back([this] { workerLoop(); });
+  }
+
+  template <typename Func>
+  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  {
+    if (count == 0u)
+      return;
+
+    std::lock_guard<std::mutex> submitLock(mSubmitMutex);
+
+    const std::size_t totalParticipants = std::min<std::size_t>(
+        std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
+    if (totalParticipants <= 1u) {
+      for (std::size_t i = 0u; i < count; ++i)
+        func(i);
+      return;
+    }
+
+    const std::size_t chunkSize
+        = (count + totalParticipants - 1u) / totalParticipants;
+    const std::size_t workerCount = totalParticipants - 1u;
+    using Function = typename std::remove_reference<Func>::type;
+
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mTaskActive = true;
+      mTaskCallable = static_cast<void*>(std::addressof(func));
+      mTaskInvoker = [](void* callable, std::size_t begin, std::size_t end) {
+        auto& task = *static_cast<Function*>(callable);
+        for (std::size_t i = begin; i < end; ++i)
+          task(i);
+      };
+      mTaskCount = count;
+      mTaskChunkSize = chunkSize;
+      mWorkerLimit = totalParticipants;
+      mNextWorkerIndex = 1u;
+      mActiveWorkerCount = workerCount;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    const std::size_t mainEnd = std::min<std::size_t>(count, chunkSize);
+    for (std::size_t i = 0u; i < mainEnd; ++i)
+      func(i);
+
+    {
+      std::unique_lock<std::mutex> lock(mMutex);
+      mDoneCv.wait(lock, [this] { return mActiveWorkerCount == 0u; });
+      mTaskActive = false;
+      mTaskCallable = nullptr;
+      mTaskInvoker = nullptr;
+      mWorkerLimit = 1u;
+    }
+  }
+
+private:
+  using TaskInvoker = void (*)(void*, std::size_t, std::size_t);
+
+  void stopWorkers()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mMutex);
+      mStop = true;
+      ++mTaskGeneration;
+    }
+
+    mTaskCv.notify_all();
+
+    for (auto& worker : mWorkers) {
+      if (worker.joinable())
+        worker.join();
+    }
+    mWorkers.clear();
+
+    std::lock_guard<std::mutex> lock(mMutex);
+    mStop = false;
+    mTaskActive = false;
+    mTaskCallable = nullptr;
+    mTaskInvoker = nullptr;
+    mActiveWorkerCount = 0u;
+    mWorkerLimit = 1u;
+    mNextWorkerIndex = 1u;
+  }
+
+  void workerLoop()
+  {
+    std::size_t observedGeneration = 0u;
+
+    while (true) {
+      void* callable = nullptr;
+      TaskInvoker invoker = nullptr;
+      std::size_t begin = 0u;
+      std::size_t end = 0u;
+
+      {
+        std::unique_lock<std::mutex> lock(mMutex);
+        mTaskCv.wait(lock, [&] {
+          return mStop || observedGeneration != mTaskGeneration;
+        });
+
+        if (mStop)
+          return;
+
+        observedGeneration = mTaskGeneration;
+        if (!mTaskActive || mNextWorkerIndex >= mWorkerLimit)
+          continue;
+
+        const std::size_t workerIndex = mNextWorkerIndex++;
+        begin = workerIndex * mTaskChunkSize;
+        end = std::min<std::size_t>(mTaskCount, begin + mTaskChunkSize);
+        callable = mTaskCallable;
+        invoker = mTaskInvoker;
+      }
+
+      if (begin < end)
+        invoker(callable, begin, end);
+
+      {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (mActiveWorkerCount > 0u)
+          --mActiveWorkerCount;
+        if (mActiveWorkerCount == 0u)
+          mDoneCv.notify_one();
+      }
+    }
+  }
+
+  std::vector<std::thread> mWorkers;
+  std::mutex mSubmitMutex;
+  std::mutex mMutex;
+  std::condition_variable mTaskCv;
+  std::condition_variable mDoneCv;
+  bool mStop{false};
+  bool mTaskActive{false};
+  std::size_t mTaskGeneration{0u};
+  std::size_t mTaskCount{0u};
+  std::size_t mTaskChunkSize{0u};
+  std::size_t mWorkerLimit{1u};
+  std::size_t mNextWorkerIndex{1u};
+  std::size_t mActiveWorkerCount{0u};
+  void* mTaskCallable{nullptr};
+  TaskInvoker mTaskInvoker{nullptr};
+};
+
 namespace {
 
 //==============================================================================
 // Three non-collinear contacts define a stable planar patch while avoiding a
 // fourth redundant solver row on contact-rich native scenes.
 constexpr std::size_t kSolverFacingManifoldContactTarget = 3u;
+
+// Bound retained parallel scratch independently of scene pair count. Batches
+// are merged before the broadphase or Cartesian traversal continues, keeping
+// contact-cap behavior deterministic and memory usage O(1) in pair count.
+constexpr std::size_t kParallelPairBatchSize = 256u;
 
 //==============================================================================
 bool checkGroupValidity(
@@ -183,6 +366,54 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
 }
 
 //==============================================================================
+class ScratchCollisionResult final : public CollisionResult
+{
+public:
+  explicit ScratchCollisionResult(std::size_t contactCapacity = 0u)
+  {
+    setCollidingObjectCacheEnabled(false);
+    mContacts.reserve(contactCapacity);
+  }
+};
+
+struct ParallelPairResult
+{
+  ParallelPairResult() : result(kSolverFacingManifoldContactTarget)
+  {
+    // Rigid narrowphase normally returns one manifold. Allocate its reusable
+    // storage with the fixed batch scratch instead of on a later contact-
+    // topology change.
+    narrowphaseScratch.addManifold(native::ContactManifold{});
+    narrowphaseScratch.clear();
+    for (std::size_t i = 0u; i < kSolverFacingManifoldContactTarget; ++i)
+      narrowphaseScratch.addContact(native::ContactPoint{});
+    DART_UNUSED(
+        narrowphaseScratch.getContact(kSolverFacingManifoldContactTarget - 1u));
+    narrowphaseScratch.clear();
+  }
+
+  native::CollisionResult narrowphaseScratch;
+  ScratchCollisionResult result;
+  bool eligible{false};
+  bool dispatchToWorker{false};
+  bool collisionFound{false};
+};
+
+struct ParallelObjectPair
+{
+  ParallelObjectPair(
+      DARTCollisionObject* object1,
+      DARTCollisionObject* object2,
+      bool eligibilityChecked = false)
+    : first(object1), second(object2), eligibilityChecked(eligibilityChecked)
+  {
+  }
+
+  DARTCollisionObject* first;
+  DARTCollisionObject* second;
+  bool eligibilityChecked;
+};
+
 // Per-detector engine state: the persistent manifold cache plus scratch
 // buffers reused across collide() calls so steady-state stepping performs no
 // heap allocations (StepAllocation gate discipline). Guarded by the registry
@@ -192,10 +423,12 @@ struct DetectorEngineState
 {
   native::PersistentManifoldCache manifoldCache;
   native::CollisionResult narrowphaseScratch;
-  CollisionResult softPairScratch;
+  ScratchCollisionResult softPairScratch;
   std::vector<std::pair<std::size_t, CollisionObject*>> objectsByIdScratch;
   std::vector<std::size_t> pendingContactIndicesScratch;
   std::vector<Eigen::Vector3d> pendingLocalPointsScratch;
+  std::vector<ParallelObjectPair> parallelObjectPairsScratch;
+  std::vector<ParallelPairResult> parallelPairResults;
 };
 
 using ManifoldCacheMap = std::unordered_map<
@@ -716,44 +949,16 @@ bool emitSoftContacts(
 }
 
 //==============================================================================
-bool processNativePair(
+bool processRigidNativePairUnchecked(
     DARTCollisionObject* object1,
     DARTCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    native::CollisionResult& nativeResult,
-    CollisionResult& softPairScratch)
+    native::CollisionResult& nativeResult)
 {
-  if (shouldSkipPair(object1, object2, option))
-    return false;
-
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
-
-  if (detail::isSoftCollisionPair(object1, object2)) {
-    softPairScratch.clear();
-    detail::collideSoftPair(object1, object2, softPairScratch);
-    if (softPairScratch.getNumContacts() == 0u)
-      return false;
-
-    collisionFound = true;
-
-    if (!result) {
-      softPairScratch.clear();
-      return true;
-    }
-
-    if (!option.enableContact) {
-      addPairOnlyContact(object1, object2, *result);
-      softPairScratch.clear();
-      return result->getNumContacts() >= option.maxNumContacts;
-    }
-
-    const bool shouldStop = emitSoftContacts(softPairScratch, option, *result);
-    softPairScratch.clear();
-    return shouldStop;
-  }
 
   // Reused across pairs by the caller so steady-state stepping stays
   // allocation-free (StepAllocation gate discipline).
@@ -783,6 +988,150 @@ bool processNativePair(
   return emitContacts(nativeResult, object1, object2, option, *result);
 }
 
+//==============================================================================
+bool processNativePairUnchecked(
+    DARTCollisionObject* object1,
+    DARTCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    native::CollisionResult& nativeResult,
+    CollisionResult& softPairScratch)
+{
+  if (result && result->getNumContacts() >= option.maxNumContacts)
+    return true;
+
+  if (!detail::isSoftCollisionPair(object1, object2)) {
+    return processRigidNativePairUnchecked(
+        object1, object2, option, result, collisionFound, nativeResult);
+  }
+
+  softPairScratch.clear();
+  detail::collideSoftPair(object1, object2, softPairScratch);
+  if (softPairScratch.getNumContacts() == 0u)
+    return false;
+
+  collisionFound = true;
+
+  if (!result) {
+    softPairScratch.clear();
+    return true;
+  }
+
+  if (!option.enableContact) {
+    addPairOnlyContact(object1, object2, *result);
+    softPairScratch.clear();
+    return result->getNumContacts() >= option.maxNumContacts;
+  }
+
+  const bool shouldStop = emitSoftContacts(softPairScratch, option, *result);
+  softPairScratch.clear();
+  return shouldStop;
+}
+
+//==============================================================================
+bool processNativePair(
+    DARTCollisionObject* object1,
+    DARTCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    native::CollisionResult& nativeResult,
+    CollisionResult& softPairScratch)
+{
+  if (shouldSkipPair(object1, object2, option))
+    return false;
+
+  return processNativePairUnchecked(
+      object1,
+      object2,
+      option,
+      result,
+      collisionFound,
+      nativeResult,
+      softPairScratch);
+}
+
+//==============================================================================
+bool processNativePairsInParallel(
+    const std::vector<ParallelObjectPair>& pairs,
+    const CollisionOption& option,
+    CollisionResult& result,
+    bool& collisionFound,
+    DetectorEngineState& engineState,
+    CollisionThreadPool& threadPool,
+    std::size_t numCollisionThreads)
+{
+  DART_ASSERT(pairs.size() <= kParallelPairBatchSize);
+  auto& pairResults = engineState.parallelPairResults;
+  if (pairResults.size() < kParallelPairBatchSize)
+    pairResults.resize(kParallelPairBatchSize);
+
+  // CollisionFilter has no thread-safety contract, and
+  // BodyNodeCollisionFilter intentionally carries solver state in
+  // thread-local storage. Soft collisions also lazily refresh per-object face
+  // caches. Preserve both operations on the submitting thread, then dispatch
+  // only immutable rigid narrowphase work.
+  for (std::size_t i = 0u; i < pairs.size(); ++i) {
+    auto& pairResult = pairResults[i];
+    pairResult.narrowphaseScratch.clear();
+    pairResult.result.clear();
+    pairResult.collisionFound = false;
+    pairResult.eligible
+        = pairs[i].eligibilityChecked
+          || !shouldSkipPair(pairs[i].first, pairs[i].second, option);
+    pairResult.dispatchToWorker
+        = pairResult.eligible
+          && !detail::isSoftCollisionPair(pairs[i].first, pairs[i].second);
+  }
+
+  const bool profileRecording
+      = dart::common::profile::isProfileRecordingEnabled();
+  auto processPairAt = [&](std::size_t index) {
+    auto& pairResult = pairResults[index];
+    if (!pairResult.dispatchToWorker)
+      return;
+
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "DARTCollisionDetector::rigidPair");
+    processRigidNativePairUnchecked(
+        pairs[index].first,
+        pairs[index].second,
+        option,
+        &pairResult.result,
+        pairResult.collisionFound,
+        pairResult.narrowphaseScratch);
+  };
+  threadPool.parallelFor(pairs.size(), numCollisionThreads, processPairAt);
+
+  for (std::size_t i = 0u; i < pairs.size(); ++i) {
+    auto& pairResult = pairResults[i];
+    if (pairResult.eligible && !pairResult.dispatchToWorker) {
+      if (processNativePairUnchecked(
+              pairs[i].first,
+              pairs[i].second,
+              option,
+              &result,
+              collisionFound,
+              engineState.narrowphaseScratch,
+              engineState.softPairScratch)) {
+        return true;
+      }
+      continue;
+    }
+
+    collisionFound = collisionFound || pairResult.collisionFound;
+    for (const auto& contact : pairResult.result.getContacts()) {
+      if (result.getNumContacts() >= option.maxNumContacts)
+        return true;
+
+      result.addContact(contact);
+    }
+  }
+
+  return result.getNumContacts() >= option.maxNumContacts;
+}
+
 } // namespace
 
 //==============================================================================
@@ -790,16 +1139,6 @@ DARTCollisionDetector::Registrar<DARTCollisionDetector>
     DARTCollisionDetector::mRegistrar{
         DARTCollisionDetector::getStaticType(),
         []() -> std::shared_ptr<DARTCollisionDetector> {
-          return DARTCollisionDetector::create();
-        }};
-
-//==============================================================================
-// Transition alias: registers this same engine under the interim "native"
-// key so in-tree and downstream callers that already select "native" keep
-// working. Remove in 6.21.
-DARTCollisionDetector::Registrar<DARTCollisionDetector>
-    DARTCollisionDetector::mNativeAliasRegistrar{
-        "native", []() -> std::shared_ptr<DARTCollisionDetector> {
           return DARTCollisionDetector::create();
         }};
 
@@ -889,6 +1228,14 @@ void DARTCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
   }
 
   mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);
+  if (mNumCollisionThreads <= 1u) {
+    mCollisionThreadPool.reset();
+    return;
+  }
+
+  if (!mCollisionThreadPool)
+    mCollisionThreadPool = std::make_unique<CollisionThreadPool>();
+  mCollisionThreadPool->setWorkerCount(mNumCollisionThreads - 1u);
 }
 
 //==============================================================================
@@ -937,47 +1284,106 @@ bool DARTCollisionDetector::collide(
   {
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "Native::visitPairs+narrowphase");
-    // Bundle the visitor state behind one pointer so the std::function
-    // conversion stays within its small-buffer optimization: a multi-capture
-    // lambda heap-allocates on every collide and trips the StepAllocation
-    // gates.
-    struct PairVisitContext
-    {
-      DARTCollisionGroup* group;
-      const CollisionOption* option;
-      CollisionResult* result;
-      bool* collisionFound;
-      native::CollisionResult* scratchResult;
-      CollisionResult* softPairScratch;
-    } context{
-        nativeGroup,
-        &option,
-        result,
-        &collisionFound,
-        &scratchResult,
-        &softPairScratch};
-    const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
-      auto* object1 = context.group->mIdToObject.at(id1);
-      auto* object2 = context.group->mIdToObject.at(id2);
-      return !processNativePair(
-          object1,
-          object2,
-          *context.option,
-          context.result,
-          *context.collisionFound,
-          *context.scratchResult,
-          *context.softPairScratch);
-    };
-    if (result) {
-      // Result-carrying queries need the sorted, deduplicated visitation
-      // order: which contacts survive a maxNumContacts cap is part of the
-      // observable behavior, and the ordered walk reproduces BruteForce
-      // bit-for-bit.
-      nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+    if (result && mCollisionThreadPool && mNumCollisionThreads > 1u) {
+      auto& objectPairs = engineState.parallelObjectPairsScratch;
+      objectPairs.clear();
+      if (objectPairs.capacity() < kParallelPairBatchSize)
+        objectPairs.reserve(kParallelPairBatchSize);
+
+      struct ParallelPairVisitContext
+      {
+        DARTCollisionGroup* group;
+        std::vector<ParallelObjectPair>* pairs;
+        const CollisionOption* option;
+        CollisionResult* result;
+        bool* collisionFound;
+        DetectorEngineState* engineState;
+        CollisionThreadPool* threadPool;
+        std::size_t numCollisionThreads;
+        bool shouldStop{false};
+      } context{
+          nativeGroup,
+          &objectPairs,
+          &option,
+          result,
+          &collisionFound,
+          &engineState,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads};
+
+      const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
+        context.pairs->emplace_back(
+            context.group->mIdToObject.at(id1),
+            context.group->mIdToObject.at(id2));
+        if (context.pairs->size() < kParallelPairBatchSize)
+          return true;
+
+        context.shouldStop = processNativePairsInParallel(
+            *context.pairs,
+            *context.option,
+            *context.result,
+            *context.collisionFound,
+            *context.engineState,
+            *context.threadPool,
+            context.numCollisionThreads);
+        context.pairs->clear();
+        return !context.shouldStop;
+      };
+      const bool visitedAll = nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+      if (visitedAll && !objectPairs.empty()) {
+        processNativePairsInParallel(
+            objectPairs,
+            option,
+            *result,
+            collisionFound,
+            engineState,
+            *mCollisionThreadPool,
+            mNumCollisionThreads);
+        objectPairs.clear();
+      }
     } else {
-      // Boolean existence queries return no per-pair data, so traversal
-      // order cannot leak; stream the tree walk and stop at the first hit.
-      nativeGroup->mBroadPhase->visitPairsAnyOrder(pairVisitor);
+      // Bundle the visitor state behind one pointer so the std::function
+      // conversion stays within its small-buffer optimization: a multi-capture
+      // lambda heap-allocates on every collide and trips the StepAllocation
+      // gates.
+      struct PairVisitContext
+      {
+        DARTCollisionGroup* group;
+        const CollisionOption* option;
+        CollisionResult* result;
+        bool* collisionFound;
+        native::CollisionResult* scratchResult;
+        CollisionResult* softPairScratch;
+      } context{
+          nativeGroup,
+          &option,
+          result,
+          &collisionFound,
+          &scratchResult,
+          &softPairScratch};
+      const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
+        auto* object1 = context.group->mIdToObject.at(id1);
+        auto* object2 = context.group->mIdToObject.at(id2);
+        return !processNativePair(
+            object1,
+            object2,
+            *context.option,
+            context.result,
+            *context.collisionFound,
+            *context.scratchResult,
+            *context.softPairScratch);
+      };
+      if (result) {
+        // Result-carrying queries need the sorted, deduplicated visitation
+        // order: which contacts survive a maxNumContacts cap is part of the
+        // observable behavior, and the ordered walk reproduces BruteForce
+        // bit-for-bit.
+        nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+      } else {
+        // Boolean existence queries return no per-pair data, so traversal
+        // order cannot leak; stream the tree walk and stop at the first hit.
+        nativeGroup->mBroadPhase->visitPairsAnyOrder(pairVisitor);
+      }
     }
   }
 
@@ -1024,6 +1430,65 @@ bool DARTCollisionDetector::collide(
   native::CollisionResult& scratchResult = engineState.narrowphaseScratch;
   CollisionResult& softPairScratch = engineState.softPairScratch;
   bool collisionFound = false;
+  if (result && mCollisionThreadPool && mNumCollisionThreads > 1u) {
+    auto& objectPairs = engineState.parallelObjectPairsScratch;
+    objectPairs.clear();
+    if (objectPairs.capacity() < kParallelPairBatchSize)
+      objectPairs.reserve(kParallelPairBatchSize);
+
+    bool shouldStop = false;
+    for (auto* object1 : nativeGroup1->mCollisionObjects) {
+      for (auto* object2 : nativeGroup2->mCollisionObjects) {
+        auto* dartObject1 = static_cast<DARTCollisionObject*>(object1);
+        auto* dartObject2 = static_cast<DARTCollisionObject*>(object2);
+        bool eligibilityChecked = false;
+        if (option.collisionFilter) {
+          if (shouldSkipPair(dartObject1, dartObject2, option))
+            continue;
+          eligibilityChecked = true;
+        }
+
+        if (!dartObject1->getNativeAabb().overlaps(
+                dartObject2->getNativeAabb())) {
+          continue;
+        }
+
+        objectPairs.emplace_back(dartObject1, dartObject2, eligibilityChecked);
+        if (objectPairs.size() < kParallelPairBatchSize)
+          continue;
+
+        shouldStop = processNativePairsInParallel(
+            objectPairs,
+            option,
+            *result,
+            collisionFound,
+            engineState,
+            *mCollisionThreadPool,
+            mNumCollisionThreads);
+        objectPairs.clear();
+        if (shouldStop)
+          break;
+      }
+      if (shouldStop)
+        break;
+    }
+
+    if (!shouldStop && !objectPairs.empty()) {
+      processNativePairsInParallel(
+          objectPairs,
+          option,
+          *result,
+          collisionFound,
+          engineState,
+          *mCollisionThreadPool,
+          mNumCollisionThreads);
+      objectPairs.clear();
+    }
+    if (option.enableContact)
+      attachCachedContactImpulses(result, engineState);
+    return collisionFound;
+  }
+
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
       if (processNativePair(

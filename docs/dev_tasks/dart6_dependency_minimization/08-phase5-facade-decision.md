@@ -9,15 +9,16 @@
 > **Executed (2026-07-11):** Decision 1 below was implemented in the
 > detector-consolidation branch — `dart/collision/native/` folded into
 > `dart/collision/dart/`, `NativeCollisionDetector`/`Group`/`Object` renamed
-> to `DARTCollisionDetector`/`Group`/`Object`, canonical key `"dart"`,
-> `"native"` kept as a transition alias. The legacy narrowphase-only
-> implementation (and `DARTCollide.{hpp,cpp}`) was deleted in the same
-> commit; the default flip ships on the same branch.
+> to `DARTCollisionDetector`/`Group`/`Object`, canonical key `"dart"`. The
+> unreleased `"native"` key is removed rather than retained as an alias. The
+> legacy narrowphase-only implementation is deleted, while the released
+> `DARTCollide.{hpp,cpp}` API remains as thin wrappers over the consolidated
+> detector.
 >
 > **Reverted (2026-07-23):** the default flip referenced above has been
 > reverted per maintainer direction; PR #3381 now ships the
 > consolidation alone, and the built-in default remains **`fcl`**. The
-> flip is deferred to a later PR.
+> flip is deferred beyond DART 6.20.
 
 ## Goal restated
 
@@ -42,9 +43,8 @@ Mechanics, and why this is clean now:
 - 6.20.0 is unreleased, so the interim `"native"` factory key, the
   `NativeCollisionDetector` class name, and its dartpy binding have never
   shipped; the consolidation PR renames/folds them with no deprecation cycle.
-  All in-tree users are updated in the same PR (`contact_benchmark
-  --collision native`, dashboard detector index 4, native unit tests, the
-  comparison harness's `--detector native`, the dartpy binding).
+  All in-tree users are updated to `"dart"` in the same PR; no `"native"`
+  selector or factory alias remains.
 - The incumbent `DARTCollisionDetector` has six primitive narrowphase pairs,
   an in-detector AABB sweep broadphase (including plane pruning and parallel
   scratch paths), a `distance()` stub, and no raycast. The consolidated engine
@@ -67,7 +67,7 @@ Mechanics, and why this is clean now:
 > point contacts (against Box/Plane/Sphere/Ellipsoid/SoftMesh, matching
 > FCL/Bullet/ODE); the native engine's shape conversion has no `SoftMeshShape`
 > case. Deleting the legacy engine therefore drops `SoftMeshShape` support
-> from the `"dart"`/`"native"` keys until a follow-up ports it into the native
+> from the `"dart"` key until a follow-up ports it into the native
 > shape/narrowphase layer. See the consolidation commit message for the full
 > enumeration of affected call sites.
 >
@@ -144,16 +144,17 @@ must pass against facades before 6.22 ships.
 
 ## Timeline
 
-- **6.20 (now, phases 4-6 of the port plan):** close the remaining native
-  performance gaps (#3368's AABB-tree broadphase is merged base-branch
-  evidence; S3 narrowphase delta and
-  small-scene overhead remain; the S6 dense-pile row was resolved by the
-  documented acceptance re-scope), then flip only the DEFAULT detector (both ctors +
-  WorldConfig/SkelParser surface). All legacy detectors stay real and
-  selectable; no deprecations on the LTS branch.
-- **6.21:** deprecation attributes with migration messages on
-  FCL/Bullet/ODE `create()`/ctors; CHANGELOG + migration guide;
-  CMake configure-time notices. Everything still functional.
+- **6.20:** ship detector consolidation only. Keep FCL as the built-in default,
+  keep FCL/Bullet/ODE implementations and package components real, and prove
+  their paths are structurally unchanged and free of runtime regression. No
+  collision-backend deprecations.
+- **Later default-flip release:** only after the full acceptance packet and
+  maintainer approval, change both `ConstraintSolver` constructors plus the
+  WorldConfig/SkelParser surface.
+- **6.21 or later, after an accepted default flip:** deprecation attributes
+  with migration messages on FCL/Bullet/ODE `create()`/ctors; CHANGELOG +
+  migration guide; CMake configure-time notices. Everything remains
+  functional.
 - **6.22:** drop external fcl/bullet/ode from the required surface; classes
   become facades over the dart detector; FCL decoupled from core
   (`phase 7`), bullet/ode components rebuilt as facade components; package/

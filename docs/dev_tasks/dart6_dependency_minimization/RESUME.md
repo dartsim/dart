@@ -23,6 +23,19 @@ Every workstream except the **native collision port** is complete:
 
 ## Next step
 
+**Current execution (2026-07-29): finish PR #3381 before later phases.**
+The consolidation keeps FCL as the DART 6.20 default, removes the unreleased
+`"native"` selector entirely, and preserves the released
+`dart/collision/dart/DARTCollide.hpp` API through thin wrappers over the
+consolidated detector. Address every current-head review finding, merge the
+latest `origin/release-6.20`, rerun no-cache C++/Python/gz and installed-header
+gates, push, request a fresh Codex review, and monitor the exact head to a
+terminal result. Do not start a 6.20 default flip or dependency removal.
+The exact-head CI evidence must include an explicit `DARTCollisionDetector`
+capture for ellipsoid/capsule/cone contacts. Use numerical parity and
+allocation tests for soft bodies, and exact hit/sort/filter tests for raycast;
+rendered pixels are not evidence for those contracts.
+
 **Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
 [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw
 evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head
@@ -130,7 +143,8 @@ fastest incumbent per row):
 engine merges INTO the dart detector (`dart/collision/native/` folds into
 `dart/collision/dart/`, `NativeCollisionDetector` merges into
 `DARTCollisionDetector`, canonical key `"dart"`; the interim `"native"` key
-never shipped and is folded in the consolidation PR). 6.21 deprecates
+never shipped and is removed in the consolidation PR). A later release may
+deprecate
 FCL/Bullet/ODE via messaged attributes on create()/ctors; 6.22 removes the
 external deps with facades over the dart detector (only
 `OdeCollisionDetector` needs subclassability for gz). Remaining ratification
@@ -173,9 +187,10 @@ Fresh-agent resume path:
    components stay real optional components or become facade-over-native
    compatibility components. Preserve gz-physics/gz-sim ABI/API expectations,
    especially subclassing of `BulletCollisionDetector` and `OdeCollisionDetector`.
-5. Phase 6 is the default flip in both `ConstraintSolver` constructors. Do not
-   flip defaults until the full A/B packet, scene-dump tolerance checks, local
-   tests, and Gazebo gate pass on the current base.
+5. Phase 6 is deferred beyond DART 6.20. A later default-flip proposal must
+   change both `ConstraintSolver` constructors and must not proceed until the
+   full A/B packet, scene-dump tolerance checks, local tests, and Gazebo gate
+   pass on its current base.
 6. Phase 7 is the actual dependency win: only after the default flip is accepted,
    decouple FCL from the core `dart` target and package dependency surface, then
    move Bullet/ODE/FCL packages out of default paths with package/export smoke
@@ -193,25 +208,23 @@ engine merged INTO the dart detector: `dart/collision/native/` no longer
 exists (folded into `dart/collision/dart/`), and
 `dart::collision::NativeCollisionDetector`/`Group`/`Object` are gone —
 `DARTCollisionDetector`/`Group`/`Object` now denote the former native
-engine, canonical factory key `"dart"`, with `"native"` kept as a transition
-alias (remove in 6.21). This is a separate commit from the phase-6 default
+engine, with `"dart"` as the only factory key; the unreleased `"native"` key
+is removed without a transition alias. This is separate from the phase-6 default
 flip, which is still pending and out of scope here. The legacy
-narrowphase-only `DARTCollisionDetector` implementation (and its
-`DARTCollide.{hpp,cpp}` helpers) was deleted as part of this merge; see that
-commit's message for the enumerated behavior-change risks. The two capability
+narrowphase-only `DARTCollisionDetector` implementation was deleted as part
+of this merge. Its released `DARTCollide.{hpp,cpp}` entry points remain as
+thin compatibility wrappers over the consolidated detector. The two capability
 gaps this opened were closed on the same branch before the flip PR:
 SoftMeshShape support was ported into the consolidated detector
 (`SoftCollision.*`, soft gates green with zero steady-state allocations,
 serial soft-soft only) and EllipsoidShape gained a native conversion (exact
 sphere for equal radii, icosphere convex hull otherwise).
 
-**Current state (2026-07-18):** the consolidation plus phase-6 default flip
-ships as **PR #3381** (`feature/dart-detector-consolidation`, milestone
-DART 6.20.0), which is complete and review-clean: 22 checks green at head
-`ebf33416626`, Codex re-review clean at that head, and a ready-for-merge
-comment posted 2026-07-14. The `test_MjcfParser` no-NDEBUG abort that
-briefly blocked CI was fixed on the branch (MJCF plane/stacked-axis
-semantics fix plus the soft-coverage/detector-initialization restore). On
+**Historical state (2026-07-18):** the consolidation plus phase-6 default flip
+was carried by **PR #3381** (`feature/dart-detector-consolidation`, milestone
+DART 6.20.0) at head `ebf33416626`. Earlier branch heads also carried MJCF
+plane/stacked-axis behavior changes; those unrelated parser changes are
+removed from the final consolidation scope. On
 2026-07-18 the branch was refreshed by merging `origin/release-6.20`
 (= `75306efe770`; two non-overlapping commits, #3388 pixi lockfile and
 #3390 script formatting) because branch protection requires up-to-date
@@ -233,9 +246,9 @@ default flip described above has been **reverted**: the
 back to the FCL default, byte-for-byte with `origin/release-6.20`,
 and the default-driven test expectations were restored to FCL
 values. **PR #3381 now ships the consolidation only** — the native
-engine folded into `DARTCollisionDetector` (canonical key `"dart"`,
-`"native"` kept as a transition alias), soft-body + ellipsoid + cone
-+ capsule coverage, and the MJCF infinite-plane fix — and the
+engine folded into `DARTCollisionDetector` (sole canonical key `"dart"`),
+soft-body + ellipsoid + cone + capsule coverage, released `DARTCollide`
+adapters, and the
 built-in default remains **`fcl`**. The default flip is deferred to
 a later PR, still gated on the phase-6 acceptance envelope. The
 facts above that remain true: the task folder stays **ACTIVE**, the

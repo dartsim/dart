@@ -512,13 +512,14 @@ TEST(World, DefaultWorldUsesFclPrimitive)
 }
 
 //==============================================================================
-TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
+TEST(World, UnreleasedNativeSkelAliasFallsBackToFcl)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
   ASSERT_TRUE(
       factory->canCreate(collision::DARTCollisionDetector::getStaticType()));
+  ASSERT_FALSE(factory->canCreate("native"));
 
   const std::string skel = R"(
 <skel version="1.0">
@@ -535,13 +536,12 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   auto world = utils::SkelParser::readWorldXML(skel);
   ASSERT_NE(nullptr, world);
 
-  auto nativeDetector
-      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
-          world->getCollisionDetector());
-  ASSERT_TRUE(nativeDetector);
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
-      collision::DARTCollisionDetector::getStaticType(),
-      nativeDetector->getType());
+      collision::FCLCollisionDetector::PRIMITIVE,
+      fclDetector->getPrimitiveShapeType());
 }
 
 //==============================================================================

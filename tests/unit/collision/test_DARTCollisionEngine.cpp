@@ -52,6 +52,7 @@
 #include <dart/dynamics/ConeShape.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/MultiSphereConvexHullShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
@@ -1539,6 +1540,16 @@ TEST(DARTCollisionDetector, ConvertsSphereAndBoxShapes)
       -0.75,
       static_cast<const native::PlaneShape*>(nativePlane.get())->getOffset());
 
+  const dynamics::EllipsoidShape ellipsoid(Eigen::Vector3d(0.5, 0.75, 1.0));
+  auto nativeEllipsoid
+      = collision::detail::NativeShapeConversion::create(ellipsoid);
+  ASSERT_NE(nullptr, nativeEllipsoid);
+  ASSERT_EQ(native::ShapeType::Convex, nativeEllipsoid->getType());
+  const auto* convexEllipsoid
+      = static_cast<const native::ConvexShape*>(nativeEllipsoid.get());
+  EXPECT_EQ(162u, convexEllipsoid->getVertices().size());
+  EXPECT_EQ(320u, convexEllipsoid->getFaces().size());
+
   const dynamics::ConvexMeshShape convexMesh(
       makeCubeVertices(), makeCubeTriangles());
   auto nativeConvexMesh
@@ -1705,6 +1716,7 @@ TEST(DARTCollisionDetector, ConeConvertsToConvex)
   ASSERT_EQ(native::ShapeType::Convex, shape->getType());
 
   const auto& convex = static_cast<const native::ConvexShape&>(*shape);
+  EXPECT_EQ(65u, convex.getFaces().size());
   double minZ = std::numeric_limits<double>::max();
   double maxZ = std::numeric_limits<double>::lowest();
   double maxRadial = 0.0;

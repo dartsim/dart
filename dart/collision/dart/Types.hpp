@@ -171,6 +171,13 @@ public:
 
   [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
 
+  /// Reverse object order, feature order, and normals for appended manifolds.
+  ///
+  /// This is used by narrowphase dispatch when the available primitive
+  /// implementation accepts the opposite shape order. Manifolds before
+  /// \p firstManifold are left unchanged.
+  void flipContactOrderFrom(std::size_t firstManifold);
+
   template <typename Callback>
   void forEachContact(Callback&& callback) const
   {

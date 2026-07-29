@@ -174,12 +174,13 @@
 
 * Collision
 
-  * Consolidate the experimental `native` collision engine into the built-in
-    `dart` detector while preserving `native` as a transition alias, and add
-    the soft-body, ellipsoid, cone, and capsule coverage the `dart` detector
-    was missing. The `dart` detector remains opt-in; the built-in default is
-    unchanged (`fcl`). MJCF plane geoms are also loaded as true infinite planes
-    through their declared position instead of thin boxes:
+  * Consolidate the experimental native collision engine into the built-in
+    `dart` detector and add the soft-body, ellipsoid, cone, and capsule
+    coverage the `dart` detector was missing. The temporary `native` factory
+    key is removed before release, leaving `dart` as the only name. The
+    released `DARTCollide` entry points remain available as thin adapters.
+    The `dart` detector remains opt-in; the built-in default is unchanged
+    (`fcl`):
     [#3381](https://github.com/dartsim/dart/pull/3381)
 
   * Speed up many-object DART-native collision queries by replacing the
@@ -539,9 +540,9 @@
 
 * Python
 
-  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
-    split-process DART-vs-MuJoCo comparison harness with deterministic
-    generated contact scenes and a pinned MuJoCo Pixi environment:
+  * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
+    deterministic generated contact scenes, selectable DART collision
+    detectors, and a pinned MuJoCo Pixi environment:
     [#3367](https://github.com/dartsim/dart/pull/3367)
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain

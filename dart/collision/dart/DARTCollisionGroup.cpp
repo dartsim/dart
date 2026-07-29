@@ -119,6 +119,12 @@ void DARTCollisionGroup::updateCollisionGroupEngineData()
 }
 
 //==============================================================================
+void DARTCollisionGroup::updateEngineDataForCollide()
+{
+  updateEngineData();
+}
+
+//==============================================================================
 std::size_t DARTCollisionGroup::assignId(DARTCollisionObject* /*object*/)
 {
   if (!mFreeIds.empty()) {

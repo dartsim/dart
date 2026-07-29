@@ -52,7 +52,6 @@
   #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 
-#include <array>
 #include <limits>
 #include <map>
 #include <set>
@@ -66,6 +65,12 @@ namespace collision {
 namespace detail {
 
 namespace {
+
+struct ConvexMeshData
+{
+  dynamics::ConvexMeshShape::Vertices vertices;
+  dynamics::ConvexMeshShape::Triangles triangles;
+};
 
 std::vector<native::ConvexShape::Face> makeConvexFacesFromTriangles(
     const std::vector<Eigen::Vector3d>& vertices,
@@ -90,13 +95,14 @@ std::vector<native::ConvexShape::Face> makeConvexFacesFromTriangles(
 }
 
 // Vertices of an icosphere (subdivided icosahedron) scaled to the ellipsoid
-// radii. Two subdivisions (162 vertices) keep GJK support queries cheap while
-// bounding the surface deviation to well under 1% of the smallest radius for
-// typical aspect ratios. Deterministic: no randomness, stable ordering.
-std::vector<Eigen::Vector3d> makeEllipsoidVertices(const Eigen::Vector3d& radii)
+// radii. Two subdivisions (162 vertices and 320 faces) balance GJK support
+// query cost and surface resolution. Deterministic: no randomness, stable
+// ordering.
+ConvexMeshData makeEllipsoidMesh(const Eigen::Vector3d& radii)
 {
   const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
-  std::vector<Eigen::Vector3d> vertices = {
+  ConvexMeshData mesh;
+  mesh.vertices = {
       {-1, phi, 0},
       {1, phi, 0},
       {-1, -phi, 0},
@@ -110,10 +116,10 @@ std::vector<Eigen::Vector3d> makeEllipsoidVertices(const Eigen::Vector3d& radii)
       {-phi, 0, -1},
       {-phi, 0, 1},
   };
-  for (auto& vertex : vertices)
+  for (auto& vertex : mesh.vertices)
     vertex.normalize();
 
-  std::vector<std::array<std::size_t, 3>> triangles = {
+  mesh.triangles = {
       {0, 11, 5}, {0, 5, 1},  {0, 1, 7},   {0, 7, 10}, {0, 10, 11},
       {1, 5, 9},  {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
       {3, 9, 4},  {3, 4, 2},  {3, 2, 6},   {3, 6, 8},  {3, 8, 9},
@@ -128,15 +134,15 @@ std::vector<Eigen::Vector3d> makeEllipsoidVertices(const Eigen::Vector3d& radii)
     if (it != midpointCache.end())
       return it->second;
 
-    vertices.push_back((vertices[a] + vertices[b]).normalized());
-    const std::size_t index = vertices.size() - 1u;
+    mesh.vertices.push_back((mesh.vertices[a] + mesh.vertices[b]).normalized());
+    const std::size_t index = mesh.vertices.size() - 1u;
     midpointCache.emplace(key, index);
     return index;
   };
   for (int level = 0; level < kSubdivisions; ++level) {
-    std::vector<std::array<std::size_t, 3>> refined;
-    refined.reserve(triangles.size() * 4u);
-    for (const auto& triangle : triangles) {
+    dynamics::ConvexMeshShape::Triangles refined;
+    refined.reserve(mesh.triangles.size() * 4u);
+    for (const auto& triangle : mesh.triangles) {
       const std::size_t ab = midpoint(triangle[0], triangle[1]);
       const std::size_t bc = midpoint(triangle[1], triangle[2]);
       const std::size_t ca = midpoint(triangle[2], triangle[0]);
@@ -145,13 +151,13 @@ std::vector<Eigen::Vector3d> makeEllipsoidVertices(const Eigen::Vector3d& radii)
       refined.push_back({triangle[2], ca, bc});
       refined.push_back({ab, bc, ca});
     }
-    triangles = std::move(refined);
+    mesh.triangles = std::move(refined);
   }
 
-  for (auto& vertex : vertices)
+  for (auto& vertex : mesh.vertices)
     vertex = vertex.cwiseProduct(radii);
 
-  return vertices;
+  return mesh;
 }
 
 std::unique_ptr<native::Shape> createConvexOrNull(
@@ -229,19 +235,29 @@ std::unique_ptr<native::Shape> createMeshOrNull(
 // under-approximation of the base circle to 1 - cos(pi/64) < 0.13% of the
 // base radius. Deterministic: fixed angular sampling, stable ordering. Same
 // local frame as fcl::Cone: base disc at z = -height/2, apex at +height/2.
-std::vector<Eigen::Vector3d> makeConeVertices(double radius, double height)
+ConvexMeshData makeConeMesh(double radius, double height)
 {
   constexpr int kSegments = 64;
-  std::vector<Eigen::Vector3d> vertices;
-  vertices.reserve(kSegments + 1u);
+  ConvexMeshData mesh;
+  mesh.vertices.reserve(kSegments + 1u);
+  mesh.triangles.reserve(2u * kSegments - 2u);
   const double baseZ = -0.5 * height;
   for (int i = 0; i < kSegments; ++i) {
     const double angle = (2.0 * math::constantsd::pi() * i) / kSegments;
-    vertices.emplace_back(
+    mesh.vertices.emplace_back(
         radius * std::cos(angle), radius * std::sin(angle), baseZ);
   }
-  vertices.emplace_back(0.0, 0.0, 0.5 * height);
-  return vertices;
+  mesh.vertices.emplace_back(0.0, 0.0, 0.5 * height);
+
+  constexpr std::size_t kApex = kSegments;
+  for (std::size_t i = 0u; i < kSegments; ++i) {
+    const std::size_t next = (i + 1u) % kSegments;
+    mesh.triangles.push_back({i, next, kApex});
+  }
+  for (std::size_t i = 1u; i + 1u < kSegments; ++i)
+    mesh.triangles.push_back({0u, i + 1u, i});
+
+  return mesh;
 }
 
 std::vector<Eigen::Vector3d> makePyramidVertices(
@@ -306,8 +322,10 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     if (ellipsoid.isSphere())
       return std::make_unique<native::SphereShape>(ellipsoid.getRadii()[0]);
 
+    auto mesh = makeEllipsoidMesh(ellipsoid.getRadii());
+    auto faces = makeConvexFacesFromTriangles(mesh.vertices, mesh.triangles);
     return createConvexOrNull(
-        makeEllipsoidVertices(ellipsoid.getRadii()), shapeType);
+        std::move(mesh.vertices), shapeType, std::move(faces));
   }
 
   if (shapeType == dynamics::BoxShape::getStaticType()) {
@@ -329,8 +347,10 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
 
   if (shapeType == dynamics::ConeShape::getStaticType()) {
     const auto& cone = static_cast<const dynamics::ConeShape&>(shape);
+    auto mesh = makeConeMesh(cone.getRadius(), cone.getHeight());
+    auto faces = makeConvexFacesFromTriangles(mesh.vertices, mesh.triangles);
     return createConvexOrNull(
-        makeConeVertices(cone.getRadius(), cone.getHeight()), shapeType);
+        std::move(mesh.vertices), shapeType, std::move(faces));
   }
 
   if (shapeType == dynamics::PlaneShape::getStaticType()) {

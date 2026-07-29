@@ -1057,6 +1057,67 @@ TEST(
       PreparationMode::Explicit, "native_dart_explicit_first_post_bake_gate");
 }
 
+TEST(StepAllocation, DartThreadedReversedRigidDispatchRetainsScratch)
+{
+  constexpr std::size_t kNumSpheres = 32u;
+  constexpr std::size_t kWarmupQueries = 20u;
+  constexpr std::size_t kMeasuredQueries = 50u;
+
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  detector->setNumCollisionThreads(4u);
+  auto group = detector->createCollisionGroup();
+
+  std::vector<dart::dynamics::SimpleFramePtr> frames;
+  frames.reserve(kNumSpheres + 1u);
+
+  auto plane = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  plane->setShape(std::make_shared<dart::dynamics::PlaneShape>(
+      Eigen::Vector3d::UnitZ(), 0.0));
+  group->addShapeFrame(plane.get());
+  frames.push_back(plane);
+
+  const auto sphereShape = std::make_shared<dart::dynamics::SphereShape>(1.0);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto sphere = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World());
+    sphere->setShape(sphereShape);
+    sphere->setTranslation(
+        Eigen::Vector3d(3.0 * static_cast<double>(i), 0.0, 0.999));
+    group->addShapeFrame(sphere.get());
+    frames.push_back(sphere);
+  }
+
+  const dart::collision::CollisionOption option(true, 1000u);
+  dart::collision::CollisionResult result;
+  for (std::size_t i = 0u; i < kWarmupQueries; ++i)
+    ASSERT_TRUE(group->collide(option, &result));
+
+  bool allQueriesCollided = true;
+  dart::test::ScopedHeapAllocationCounter globalCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  for (std::size_t i = 0u; i < kMeasuredQueries; ++i)
+    allQueriesCollided = group->collide(option, &result) && allQueriesCollided;
+  globalCounter.stop();
+  rawCounter.stop();
+
+  ASSERT_TRUE(allQueriesCollided);
+  ASSERT_EQ(kNumSpheres, result.getNumContacts());
+
+  StepAllocationMeasurement measurement;
+  measurement.globalHeap = globalCounter.snapshot();
+  measurement.rawHeap = rawCounter.snapshot();
+  measurement.measuredSteps = static_cast<int>(kMeasuredQueries);
+  measurement.lastStepContacts = result.getNumContacts();
+  reportMeasurement(
+      "dart_threaded_reversed_rigid_dispatch", measurement, "", true);
+  expectNoGlobalHeapAllocationsWhenReliable(
+      "dart_threaded_reversed_rigid_dispatch", measurement);
+  if (!measurement.rawHeap.skipped) {
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
+}
+
 TEST(StepAllocation, NativeImplicitSecondStepHasNoGlobalOrBaseAllocatorGrowth)
 {
   expectNativeGlobalAndBaseAllocatorGate(

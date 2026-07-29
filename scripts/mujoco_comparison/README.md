@@ -195,7 +195,7 @@ wins" / "DART loses" / "within noise band (1.1x)").
 
 ## DART collision detectors (`--detector`)
 
-`dart_runner.py --detector {default,dart,fcl,bullet,ode,native}` selects the
+`dart_runner.py --detector {default,dart,fcl,bullet,ode}` selects the
 collision backend via
 `world.getConstraintSolver().setCollisionDetector(...)`:
 
@@ -203,9 +203,6 @@ collision backend via
 - `dart`/`fcl`/`bullet`/`ode` construct
   `dartpy.collision.{DART,FCL,Bullet,Ode}CollisionDetector()`; `bullet`/`ode`
   exit with a clear error if the optional backend wasn't compiled in.
-- `native` is an alias for `dart`: the native engine merged into
-  `DARTCollisionDetector` (canonical key `"dart"`), so `--detector native`
-  constructs the same `dartpy.collision.DARTCollisionDetector()`.
 
 `run_comparison.py` uses `default` for every scenario in this v1 (no
 per-detector sweep yet); pass `--detector <name>` to override every
@@ -253,8 +250,8 @@ MuJoCo has no sleeping/deactivation concept, so `sleeping_bodies` is always
   validated against real settling behavior.
 - **No per-detector sweep yet.** `run_comparison.py` only exercises
   `--detector default` per scenario; comparing `fcl`/`dart`/`bullet`/`ode`/
-  `native` against MuJoCo per scene is future work (tracked as a follow-on
-  to closing the performance gap, not part of this v1).
+  against MuJoCo per scene is future work (tracked as a follow-on to closing
+  the performance gap, not part of this v1).
 - **Restitution and MuJoCo torsional/rolling friction** are left at each
   engine's own defaults (DART: 0 restitution; MuJoCo: default `solref`/
   `solimp` and torsional/rolling friction terms) since neither engine

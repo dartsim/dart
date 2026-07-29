@@ -38,7 +38,6 @@
 #include "dart/config.hpp"
 #include "dart/constraint/constraint.hpp"
 #include "dart/dynamics/dynamics.hpp"
-#include "dart/math/Geometry.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
@@ -321,7 +320,9 @@ createJointChainForStackedJoints(
     Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
     childBodyToJoint.translation() = mjcfJoint.getPos();
     childBodyToJoint.linear()
-        = math::computeRotation(mjcfJoint.getAxis(), math::AxisType::AXIS_Z);
+        = Eigen::Quaterniond::FromTwoVectors(
+              Eigen::Vector3d::UnitZ(), mjcfJoint.getAxis())
+              .toRotationMatrix();
 
     const Eigen::Isometry3d parentBodyToJoint
         = (i == 0u) ? mjcfBody.getRelativeTransform() * childBodyToJoint
@@ -581,8 +582,11 @@ dynamics::ShapePtr createShape(
 
   switch (geom.getType()) {
     case detail::GeomType::PLANE: {
-      shape = std::make_shared<dynamics::PlaneShape>(
-          Eigen::Vector3d::UnitZ(), 0.0);
+      // TODO(JS): Needs to properly parse PLANE.
+      Eigen::Vector3d size;
+      size.head<2>() = 2.0 * geom.getPlaneHalfSize();
+      size[2] = 0.01; // depth
+      shape = std::make_shared<dynamics::BoxShape>(size);
       break;
     }
     case detail::GeomType::HFIELD: {

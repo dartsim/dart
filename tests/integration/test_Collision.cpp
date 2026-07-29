@@ -31,7 +31,10 @@
  */
 
 #include "dart/collision/collision.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
@@ -79,6 +82,17 @@ private:
   void updateEngineData() override
   {
     // Do nothing
+  }
+};
+
+class InspectableDARTCollisionGroup final : public DARTCollisionGroup
+{
+public:
+  using DARTCollisionGroup::DARTCollisionGroup;
+
+  DARTCollisionObject* getDARTCollisionObject(std::size_t index)
+  {
+    return static_cast<DARTCollisionObject*>(mCollisionObjects.at(index));
   }
 };
 
@@ -941,6 +955,210 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
+TEST_F(Collision, DartCollideAcceptsGenericCollisionObjects)
+{
+  auto cd = DARTCollisionDetector::create();
+
+  auto frameA = SimpleFrame::createShared(Frame::World());
+  auto frameB = SimpleFrame::createShared(Frame::World());
+
+  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  frameA->setTranslation(Eigen::Vector3d::Zero());
+  frameB->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
+
+  TestCollisionObject objectA(cd.get(), frameA.get());
+  TestCollisionObject objectB(cd.get(), frameB.get());
+
+  CollisionResult result;
+  EXPECT_GT(::dart::collision::collide(&objectA, &objectB, result), 0);
+  ASSERT_GE(result.getNumContacts(), 1u);
+  EXPECT_EQ(result.getContact(0).collisionObject1, &objectA);
+  EXPECT_EQ(result.getContact(0).collisionObject2, &objectB);
+}
+
+//==============================================================================
+TEST_F(Collision, DartCollideCompatibilityWrappersDelegateToDartDetector)
+{
+  auto cd = DARTCollisionDetector::create();
+  auto frameA = SimpleFrame::createShared(Frame::World());
+  auto frameB = SimpleFrame::createShared(Frame::World());
+  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  TestCollisionObject objectA(cd.get(), frameA.get());
+  TestCollisionObject objectB(cd.get(), frameB.get());
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d offset = identity;
+  offset.translation().x() = 0.5;
+
+  CollisionResult result;
+  EXPECT_GT(
+      collideBoxBox(
+          &objectA,
+          &objectB,
+          Eigen::Vector3d::Ones(),
+          identity,
+          Eigen::Vector3d::Ones(),
+          offset,
+          result),
+      0);
+
+  result.clear();
+  EXPECT_GT(
+      collideBoxSphere(
+          &objectA,
+          &objectB,
+          Eigen::Vector3d::Ones(),
+          identity,
+          0.5,
+          offset,
+          result),
+      0);
+
+  result.clear();
+  EXPECT_GT(
+      collideSphereBox(
+          &objectA,
+          &objectB,
+          0.5,
+          offset,
+          Eigen::Vector3d::Ones(),
+          identity,
+          result),
+      0);
+
+  result.clear();
+  EXPECT_GT(
+      collideSphereSphere(
+          &objectA, &objectB, 0.5, identity, 0.5, offset, result),
+      0);
+
+  Eigen::Isometry3d sphereTransform = identity;
+  sphereTransform.translation().x() = 0.75;
+  result.clear();
+  EXPECT_GT(
+      collideCylinderSphere(
+          &objectA, &objectB, 0.5, 0.5, identity, 0.5, sphereTransform, result),
+      0);
+
+  Eigen::Isometry3d cylinderTransform = identity;
+  cylinderTransform.translation().z() = 0.25;
+  result.clear();
+  EXPECT_GT(
+      collideCylinderPlane(
+          &objectA,
+          &objectB,
+          0.5,
+          0.5,
+          cylinderTransform,
+          Eigen::Vector3d::UnitZ(),
+          identity,
+          result),
+      0);
+
+  using DARTObjectCollide
+      = int (*)(DARTCollisionObject*, DARTCollisionObject*, CollisionResult&);
+  using DARTPlaneShapeCollide = int (*)(
+      DARTCollisionObject*, DARTCollisionObject*, bool, CollisionResult&);
+  using DARTPlaneShapeTransformCollide = int (*)(
+      DARTCollisionObject*,
+      DARTCollisionObject*,
+      const Eigen::Isometry3d&,
+      const Eigen::Isometry3d&,
+      bool,
+      CollisionResult&);
+  EXPECT_NE(
+      nullptr, static_cast<DARTObjectCollide>(&::dart::collision::collide));
+  EXPECT_NE(
+      nullptr,
+      static_cast<DARTPlaneShapeCollide>(
+          &::dart::collision::collidePlaneShape));
+  EXPECT_NE(
+      nullptr,
+      static_cast<DARTPlaneShapeTransformCollide>(
+          &::dart::collision::collidePlaneShape));
+}
+
+//==============================================================================
+TEST_F(Collision, DartCollideTransformedPlaneSoftMeshCompatibility)
+{
+  auto detector = DARTCollisionDetector::create();
+
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto softSkeleton = Skeleton::create("dart_collide_soft");
+  const auto softProperties = SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const BodyNode::Properties bodyProperties(
+      BodyNode::AspectProperties("dart_collide_soft_body"));
+  const SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+  auto softPair
+      = softSkeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+          nullptr, FreeJoint::Properties(), softBodyProperties);
+  auto* softShapeFrame = softPair.second->getShapeNodeWith<CollisionAspect>(0);
+  ASSERT_NE(softShapeFrame, nullptr);
+
+  InspectableDARTCollisionGroup planeGroup(detector);
+  InspectableDARTCollisionGroup softGroup(detector);
+  planeGroup.addShapeFrame(planeFrame.get());
+  softGroup.addShapeFrame(softShapeFrame);
+  auto* planeObject = planeGroup.getDARTCollisionObject(0u);
+  auto* softObject = softGroup.getDARTCollisionObject(0u);
+
+  const Eigen::Isometry3d planeTransform = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = 0.45;
+
+  CollisionResult planeFirstResult;
+  Contact existingContact;
+  existingContact.point = Eigen::Vector3d(7.0, 8.0, 9.0);
+  existingContact.collisionObject1 = planeObject;
+  existingContact.collisionObject2 = softObject;
+  planeFirstResult.addContact(existingContact);
+  const auto originalContactCount = planeFirstResult.getNumContacts();
+  const int planeFirstAdded = collidePlaneShape(
+      planeObject,
+      softObject,
+      planeTransform,
+      softTransform,
+      true,
+      planeFirstResult);
+  ASSERT_GT(planeFirstAdded, 0);
+  ASSERT_EQ(
+      planeFirstResult.getNumContacts(),
+      originalContactCount + static_cast<std::size_t>(planeFirstAdded));
+  const auto& planeFirstContact
+      = planeFirstResult.getContact(originalContactCount);
+  EXPECT_EQ(planeFirstContact.collisionObject1, planeObject);
+  EXPECT_EQ(planeFirstContact.collisionObject2, softObject);
+  EXPECT_TRUE(
+      planeFirstContact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+
+  CollisionResult softFirstResult;
+  const int softFirstAdded = collidePlaneShape(
+      planeObject,
+      softObject,
+      planeTransform,
+      softTransform,
+      false,
+      softFirstResult);
+  ASSERT_GT(softFirstAdded, 0);
+  ASSERT_EQ(
+      softFirstResult.getNumContacts(),
+      static_cast<std::size_t>(softFirstAdded));
+  const auto& softFirstContact = softFirstResult.getContact(0u);
+  EXPECT_EQ(softFirstContact.collisionObject1, softObject);
+  EXPECT_EQ(softFirstContact.collisionObject2, planeObject);
+  EXPECT_TRUE(
+      softFirstContact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+//==============================================================================
 TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
 {
   constexpr std::size_t kNumBoxes = 140u;
@@ -1111,8 +1329,10 @@ TEST_F(Collision, DartParallelBodyNodeFinitePlaneContactsMatchSerial)
 
 // DartParallelFinitePlaneUsesProjectedContactBounds was removed with the legacy
 // detector: it probed the legacy projected-contact-bounds cross-pair dedup
-// grid, deleted with DARTCollide; the consolidated engine has no cross-pair
-// dedup by design (per-pair persistent manifolds instead).
+// grid, retired from the canonical detector implementation; the
+// source-compatible DARTCollide wrappers now delegate to the consolidated
+// engine, which has no cross-pair dedup by design (per-pair persistent
+// manifolds instead).
 
 // DartParallelFinitePlaneTwoGroupPhasesProbeGlobalIndex was removed with the
 // legacy detector: it probed the legacy two-phase/global-index dedup pipeline;

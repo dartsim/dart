@@ -12,7 +12,7 @@
 >   names (a project convention; see the naming note in
 >   `02-default-environment-split.md`).
 >
-> _Last updated: 2026-07-18._
+> _Last updated: 2026-07-29._
 
 ## Lanes & owners
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — the consolidation is implemented in **PR #3381** (open, green, awaiting maintainer merge); the phase-6 default flip was reverted 2026-07-23 and is deferred to a later PR (default remains `fcl`); phase 7 (FCL decoupling) pending, ratified for the 6.22 cycle |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — **PR #3381** is open and its 2026-07-29 review fixes are being validated; the phase-6 default flip was reverted 2026-07-23 and is deferred beyond 6.20 (default remains `fcl`); phase 7 (FCL decoupling) remains pending |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -124,18 +124,22 @@
   **#3239** release-branch AI enforcement stack · **#3245** MSVC SIMD fix ·
   **#3233** release CI concurrency fix.
 
-### 🔄 Open — monitoring (checked 2026-07-18)
+### 🔄 Open — monitoring (checked 2026-07-29)
 
 - **PR #3381** (`feature/dart-detector-consolidation`, milestone DART 6.20.0)
   — the consolidation PR: `dart/collision/native/` folded into
   `dart/collision/dart/`, `DARTCollisionDetector` now denotes the consolidated
-  engine (canonical key `"dart"`, `"native"` transition alias), soft-body +
-  ellipsoid + cone + capsule coverage ported, plus the MJCF infinite-plane
-  fix, allocation-free steady-state stepping. The phase-6 default flip
+  engine (sole canonical key `"dart"`; the unreleased `"native"` key is
+  removed), soft-body + ellipsoid + cone + capsule coverage ported, released
+  `DARTCollide` compatibility retained, and the warmed rigid-primitive path
+  guarded against query-time allocations. This is not a blanket
+  allocation-free claim for compound or soft-shape scenes. The
+  released `DARTCollide` header/symbols remain as thin consolidated-engine
+  adapters. The phase-6 default flip
   (previously in both `ConstraintSolver` ctors) was **reverted 2026-07-23**
-  and is deferred to a later PR; the default remains `fcl`. 22 checks green
-  at `ebf33416626`; base-merge refresh pushed 2026-07-18 (strict up-to-date
-  protection); **merge is the maintainer's**.
+  and is deferred beyond DART 6.20; the default remains `fcl`. Current-head
+  review and CI must be re-established after the 2026-07-29 review fixes;
+  **merge is the maintainer's**.
 - **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
   gaps were superseded by the consolidation and the documented S6 acceptance
   re-scope (see RESUME.md). Remaining performance work is tracked by the
@@ -156,9 +160,10 @@ due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and 
 before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
-- **Current state:** DART 6.20 now contains #3281's internal native math core,
-  phase-2 P1-P10, the DART 6 adapter, and the opt-in `"native"` factory key,
-  but it has no FCL-optional default.
+- **Current state:** DART 6.20 contains #3281's internal native math core and
+  phase-2 P1-P10. PR #3381 folds that engine into the canonical `"dart"`
+  detector and removes the unreleased `"native"` selector. It does not make
+  the default FCL-optional.
   `release-6.20` still uses FCL as the default detector — created in *both*
   `ConstraintSolver` constructors.
 - **Phase 0 (captured 2026-07-04, recaptured 2026-07-05):** all
@@ -181,8 +186,8 @@ before treating it as an open/active PR.)_
   has begun (#3362/#3364):** native dashboard rows and solver-facing manifold
   contact reduction are merged, but Phase 4 still needs closeout evidence or one
   consolidated measured follow-up before Phase 5.
-- **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
-  A/B packet and gz gate pass.
+- **Default flip:** deferred beyond DART 6.20. Do not flip defaults until
+  `03`'s full A/B packet and gz gate pass on the proposing release.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
   feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL, and
   outcome/hash/scene-dump tolerances. The FCL-optional default-flip (the actual
@@ -231,9 +236,9 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-18):** one open native-collision release PR —
+- **Open queue (2026-07-29):** one open native-collision release PR —
   **#3381**, the detector consolidation (default flip
-  reverted/deferred) (green, awaiting maintainer merge). The former
+  reverted/deferred); current-head review fixes are under validation. The former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
   #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360/#3362/#3364
   lane milestones, main-branch dual #3283, workflow rename #3357, and MSVC

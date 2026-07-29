@@ -867,8 +867,8 @@ void expectManySingleFreeBodyContactWorldsMatch(
       = expectedWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& actualContacts
       = actualWorld->getConstraintSolver()->getLastCollisionResult();
-  // The dart detector (default since 6.20) emits one centroid contact per
-  // flat box-vs-plane pair, not a per-corner manifold.
+  // The explicitly selected dart detector emits one centroid contact per flat
+  // box-vs-plane pair, not a per-corner manifold.
   EXPECT_GE(expectedContacts.getNumContacts(), numBoxes);
   EXPECT_EQ(expectedContacts.getNumContacts(), actualContacts.getNumContacts());
 

@@ -26,10 +26,6 @@ _DETECTOR_CLASS_NAMES = {
     "fcl": "FCLCollisionDetector",
     "bullet": "BulletCollisionDetector",
     "ode": "OdeCollisionDetector",
-    # "native" was the interim key for the engine now folded into
-    # DARTCollisionDetector (canonical key "dart"); kept as an alias so
-    # existing --detector native invocations keep working.
-    "native": "DARTCollisionDetector",
 }
 
 
@@ -59,7 +55,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--detector",
-        choices=("default", "dart", "fcl", "bullet", "ode", "native"),
+        choices=("default", "dart", "fcl", "bullet", "ode"),
         default="default",
         help="Collision detector to install via "
         "world.getConstraintSolver().setCollisionDetector(); 'default' "

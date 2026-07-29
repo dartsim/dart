@@ -53,9 +53,9 @@ class DARTCollisionGroup : public CollisionGroup
 public:
   friend class DARTCollisionDetector;
 
-  explicit DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
+  DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-  ~DARTCollisionGroup() override = default;
+  virtual ~DARTCollisionGroup() = default;
 
 protected:
   // Documentation inherited
@@ -77,13 +77,18 @@ protected:
   // Documentation inherited
   void updateCollisionGroupEngineData() override;
 
+  void updateEngineDataForCollide();
+
+protected:
+  /// CollisionObjects added to this DARTCollisionGroup
+  std::vector<CollisionObject*> mCollisionObjects;
+
 private:
   std::size_t assignId(DARTCollisionObject* object);
 
   // Keep the concrete type so DARTCollisionDetector can use AABB-tree-only
   // fast paths without extending the release-line BroadPhase vtable.
   std::unique_ptr<native::AabbTreeBroadPhase> mBroadPhase;
-  std::vector<CollisionObject*> mCollisionObjects;
   std::unordered_map<std::size_t, DARTCollisionObject*> mIdToObject;
   std::unordered_map<CollisionObject*, std::size_t> mObjectToId;
   std::vector<std::size_t> mFreeIds;

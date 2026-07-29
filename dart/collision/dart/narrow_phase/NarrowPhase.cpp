@@ -62,33 +62,17 @@ bool collideWithFlippedNormals(
     CollideFn&& collideFn)
 {
   const auto existingContacts = result.numContacts();
+  const auto firstNewManifold = result.numManifolds();
   if (option.enableContact && existingContacts >= option.maxNumContacts) {
     return false;
   }
 
-  CollisionOption localOption = option;
-  if (option.enableContact) {
-    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
-  }
-
-  CollisionResult localResult;
-  const bool hit = collideFn(localResult, localOption);
+  const bool hit = collideFn(result, option);
   if (!hit) {
     return false;
   }
 
-  for (const auto& manifold : localResult.getManifolds()) {
-    ContactManifold flipped;
-    flipped.setType(manifold.getType());
-    flipped.setObjects(manifold.getObject2(), manifold.getObject1());
-    for (ContactPoint contact : manifold.getContacts()) {
-      contact.normal = -contact.normal;
-      std::swap(contact.object1, contact.object2);
-      std::swap(contact.featureIndex1, contact.featureIndex2);
-      flipped.addContact(contact);
-    }
-    result.addManifold(std::move(flipped));
-  }
+  result.flipContactOrderFrom(firstNewManifold);
 
   return true;
 }
