@@ -420,8 +420,8 @@ hand-checked 2026-07
 
 ### OpenAI Codex
 
-**Tested Version**: Codex CLI 0.144.1 (local discovery/config/hook checks,
-2026-07-11)
+**Tested Version**: Codex CLI 0.146.0 (local discovery/config/hook checks,
+2026-07-29)
 
 | Feature           | Location                    | Status                                |
 | ----------------- | --------------------------- | ------------------------------------- |
@@ -450,11 +450,12 @@ commands are built-in session controls, not repository workflows. For goal
 mode, put the generated adapter in the goal text, such as
 `/goal $dart-ultrawork <task>`.
 
-For complex, high-value autonomous work, prefer Codex 5.6 Sol with Ultra
-reasoning when available. The repository does not pin a model: project agents
-inherit the active parent model, and smaller work should use the lightest
-capable choice. Keep prompts lean, state the objective/constraints/done-when
-once, and let progressively loaded skills and owner docs supply procedures.
+Use the current model and reasoning guidance in `docs/ai/README.md`; do not
+duplicate or pin it here. Project agents inherit the active parent model.
+`.codex/config.toml` bounds concurrency with
+`agents.max_concurrent_threads_per_session` and delegation depth with
+`agents.max_depth`, while progressively loaded skills and owner docs supply
+task procedures.
 
 Project hooks are trusted-project automation, not complete enforcement.
 `PreToolUse` does not intercept every possible mutation path, and a hook may be
@@ -473,7 +474,10 @@ empty or invalid JSON. Windows smoke tests should assert bridge exit semantics
 for valid, malformed, and raw-stdin payloads; nested PowerShell command output
 capture is not a reliable oracle for the child hook's stderr.
 
-Current references: [models and reasoning](https://learn.chatgpt.com/docs/models),
+Current references:
+[GPT-5.6 model guidance](https://developers.openai.com/api/docs/guides/model-guidance?model=gpt-5.6),
+[GPT-5.6 prompt guidance](https://developers.openai.com/api/docs/guides/prompt-guidance-gpt-5p6),
+[Codex models and reasoning](https://learn.chatgpt.com/docs/models),
 [Agent Skills](https://learn.chatgpt.com/docs/build-skills),
 [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents),
 [project configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml), and

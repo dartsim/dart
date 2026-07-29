@@ -85,6 +85,35 @@
       "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
     },
     {
+      "id": "model-upgrade",
+      "prompt_class": "audit or update DART AI infrastructure for a named model, reasoning mode, or coding-agent release",
+      "start_dir": "docs/ai",
+      "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-model-upgrade",
+        "path": ".agents/skills/dart-model-upgrade/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/ai/principles.md",
+        "docs/ai/components.md",
+        "docs/ai/verification.md",
+        "docs/onboarding/ai-tools.md"
+      ],
+      "permitted_scopes": [
+        "model routing owner docs",
+        "editable workflow and domain skill sources",
+        "generated adapters",
+        "maintained Codex runtime configuration",
+        "focused AI infrastructure scripts and tests"
+      ],
+      "focused_gates": ["pixi run check-ai-infra"],
+      "full_gates": ["pixi run test-ai-infra", "pixi run lint"],
+      "recovery": ".claude/commands/dart-model-upgrade.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
       "id": "component-work",
       "prompt_class": "DART 7 component work at an owned architecture boundary",
       "start_dir": "python",

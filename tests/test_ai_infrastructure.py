@@ -310,7 +310,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
     _write(
         root,
         ".codex/config.toml",
-        "[agents]\nmax_threads = 4\nmax_depth = 1\n",
+        "[agents]\n" "max_concurrent_threads_per_session = 4\n" "max_depth = 1\n",
     )
     _write(
         root,
@@ -589,6 +589,56 @@ def test_current_main_contract_passes():
     assert infra.run_checks(ROOT, "main") == []
 
 
+def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
+    path = ROOT / ".claude" / "commands" / "dart-model-upgrade.md"
+    text = path.read_text()
+    meta = sync.parse_command_frontmatter(text)
+
+    for trigger in (
+        "model or coding-agent upgrades",
+        "named models",
+        "reasoning modes",
+        "migrations",
+        "compatibility reviews",
+    ):
+        assert trigger in meta["description"]
+    for marker in (
+        "Use these verdicts",
+        "existing model with existing prompt/settings",
+        "target at the preserved effort and one lower effort",
+        "structural checks into model-quality",
+        "Max gives one difficult task more reasoning",
+        "Ultra is for independently parallelizable work",
+        "Do not silently substitute a different model",
+        "apply/adapt/omit verdict",
+    ):
+        assert marker in text
+
+    compliance = sync.parse_command_frontmatter(
+        (ROOT / ".claude" / "commands" / "dart-audit-agent-compliance.md").read_text()
+    )
+    assert "miss or cannot discover documented rules" in compliance["description"]
+
+
+def test_ultrawork_prompt_simplification_retains_critical_contracts():
+    text = (ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text()
+
+    for marker in (
+        "docs/dev_tasks/<task>/",
+        "Delegate only when the user explicitly requested it",
+        "two clean review passes",
+        "task-specific gates from `docs/ai/verification.md`",
+        "remove the folder in the completing PR",
+        "GitHub mutations",
+        "explicit maintainer/user approval",
+        "## Prompt Shape",
+        "Do not repeat this workflow's logistics",
+    ):
+        assert marker in text
+    assert "## Kickoff Prompt Template" not in text
+    assert "reuse the `Logistics` block verbatim" not in text
+
+
 @pytest.mark.parametrize(
     ("profile", "component", "failure", "release"),
     [
@@ -596,18 +646,19 @@ def test_current_main_contract_passes():
         ("release-6.20", "dart-build", "dart-release-ci-fix", "dart-backport-pr"),
     ],
 )
-def test_seven_scenarios_route_deterministically(
+def test_eight_scenarios_route_deterministically(
     tmp_path, profile, component, failure, release
 ):
     root = make_repo(tmp_path, profile)
 
     results = infra.scenario_results(root, profile)
 
-    assert len(results) == 7
+    assert len(results) == 8
     assert [result["id"] for result in results] == list(infra.SCENARIO_IDS)
     routes = {result["id"]: result["expected_route"]["name"] for result in results}
     assert routes["component-work"] == component
     assert routes["simulation-verification"] == "dart-verify-sim"
+    assert routes["model-upgrade"] == "dart-model-upgrade"
     assert routes["failure-diagnosis"] == failure
     assert routes["release-maintenance"] == release
     assert all(result["valid"] for result in results)
@@ -1246,10 +1297,10 @@ def test_config_schema_reports_non_table_agents_without_crashing(tmp_path):
 @pytest.mark.parametrize(
     "content",
     (
-        "[agents]\nmax_threads = true\nmax_depth = 1\n",
-        "[agents]\nmax_threads = 4\nmax_depth = true\n",
-        "[agents]\nmax_threads = 4.0\nmax_depth = 1\n",
-        "[agents]\nmax_threads = 4\nmax_depth = 1.0\n",
+        "[agents]\nmax_concurrent_threads_per_session = true\nmax_depth = 1\n",
+        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = true\n",
+        "[agents]\nmax_concurrent_threads_per_session = 4.0\nmax_depth = 1\n",
+        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = 1.0\n",
     ),
 )
 def test_config_schema_requires_exact_integer_limits(tmp_path, content):
@@ -1257,6 +1308,17 @@ def test_config_schema_requires_exact_integer_limits(tmp_path, content):
     (root / ".codex" / "config.toml").write_text(content)
 
     assert infra.check_codex_config(root)
+
+
+def test_config_schema_rejects_legacy_concurrency_alias(tmp_path):
+    root = make_repo(tmp_path, "main")
+    (root / ".codex" / "config.toml").write_text(
+        "[agents]\nmax_threads = 4\nmax_depth = 1\n"
+    )
+
+    errors = infra.check_codex_config(root)
+
+    assert any("max_concurrent_threads_per_session" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -1359,7 +1421,7 @@ def test_non_object_scenario_entry_is_rejected(tmp_path):
 
     errors = infra.check_scenarios(root, "main")
 
-    assert any("scenarios[7] must be an object" in error for error in errors)
+    assert any("scenarios[8] must be an object" in error for error in errors)
 
 
 def test_scenario_cli_fails_on_global_manifest_error(tmp_path):
@@ -1383,7 +1445,7 @@ def test_scenario_cli_fails_on_global_manifest_error(tmp_path):
     )
 
     assert run.returncode == 1
-    assert "scenarios[7] must be an object" in run.stdout
+    assert "scenarios[8] must be an object" in run.stdout
 
 
 def test_simulation_scenario_requires_text_and_visual_evidence_policy(tmp_path):
@@ -1558,7 +1620,7 @@ def test_simulation_consumer_routes_are_required(tmp_path, relative, marker):
     )
 
 
-def test_scenario_cli_accepts_seven_valid_routes(tmp_path):
+def test_scenario_cli_accepts_eight_valid_routes(tmp_path):
     root = make_repo(tmp_path, "main")
 
     run = subprocess.run(
@@ -1575,7 +1637,7 @@ def test_scenario_cli_accepts_seven_valid_routes(tmp_path):
     )
 
     assert run.returncode == 0, run.stdout
-    assert "Exercised 7 scenarios" in run.stdout
+    assert "Exercised 8 scenarios" in run.stdout
 
 
 def test_stale_generated_adapters_are_rejected(tmp_path):
@@ -1669,6 +1731,23 @@ def test_doctor_report_is_read_only(tmp_path):
         ".agents/skills/.dart-generated.json"
     )
     assert result["inventory"]["custom_agents"]["count"] == 3
+    model_harness = result["inventory"]["model_harness"]
+    assert model_harness["model_pins"] == {
+        "project": [],
+        "project_agents": [],
+        "custom_agents": [],
+    }
+    assert model_harness["project_agent_config"] == {
+        "max_concurrent_threads_per_session": 4,
+        "max_depth": 1,
+    }
+    assert model_harness["workflow_sources"]["longest"]["lines"] > 0
+    assert model_harness["domain_skill_sources"]["longest"]["lines"] > 0
+    assert model_harness["generated_skill_metadata_chars"] > 0
+    assert (
+        model_harness["instruction_context"]["largest_chain"]["bytes"]
+        <= model_harness["instruction_context"]["repository_limit_bytes"]
+    )
     assert result["inventory"]["setup"]["path"] == "scripts/setup_ai.py"
     assert result["inventory"]["hooks"]["windows_launcher"] == (
         ".claude/hooks/pre-commit-guard.ps1"
@@ -1680,6 +1759,71 @@ def test_doctor_report_is_read_only(tmp_path):
     assert "check-ai-infra" in result["inventory"]["tasks"]["ai_tasks"]
     assert set(result["trust"]) == {"user_config", "project", "project_hook"}
     assert _content_hashes(root) == before
+
+
+@pytest.mark.parametrize("key", ("model", "model_reasoning_effort", "review_model"))
+def test_doctor_reports_project_model_pin_for_upgrade_audit(tmp_path, key):
+    root = make_repo(tmp_path, "main")
+    (root / ".codex" / "config.toml").write_text(
+        f'{key} = "gpt-5.6"\n'
+        "[agents]\n"
+        "max_concurrent_threads_per_session = 4\n"
+        "max_depth = 1\n"
+    )
+
+    result = ai_doctor.report(root, "main")
+
+    assert not result["ok"]
+    assert result["inventory"]["model_harness"]["model_pins"]["project"] == [key]
+
+
+@pytest.mark.parametrize(
+    "key", ("default_subagent_model", "default_subagent_reasoning_effort")
+)
+def test_doctor_reports_project_subagent_model_pin_for_upgrade_audit(tmp_path, key):
+    root = make_repo(tmp_path, "main")
+    (root / ".codex" / "config.toml").write_text(
+        "[agents]\n"
+        f'{key} = "gpt-5.6-terra"\n'
+        "max_concurrent_threads_per_session = 4\n"
+        "max_depth = 1\n"
+    )
+
+    result = ai_doctor.report(root, "main")
+
+    assert not result["ok"]
+    assert result["inventory"]["model_harness"]["model_pins"]["project_agents"] == [key]
+
+
+def test_doctor_reports_custom_agent_model_pin_for_upgrade_audit(tmp_path):
+    root = make_repo(tmp_path, "main")
+    path = root / ".codex" / "agents" / "dart_scout.toml"
+    path.write_text(path.read_text() + '\nmodel = "gpt-5.6-terra"\n')
+
+    result = ai_doctor.report(root, "main")
+
+    assert not result["ok"]
+    assert result["inventory"]["model_harness"]["model_pins"]["custom_agents"] == [
+        {"path": ".codex/agents/dart_scout.toml", "keys": ["model"]}
+    ]
+
+
+def test_doctor_model_harness_inventory_stays_json_safe_on_toml_type_error(tmp_path):
+    root = make_repo(tmp_path, "main")
+    (root / ".codex" / "config.toml").write_text(
+        "[agents]\n"
+        "max_concurrent_threads_per_session = 4\n"
+        "max_depth = 2026-07-29\n"
+    )
+
+    result = ai_doctor.report(root, "main")
+
+    assert not result["ok"]
+    assert (
+        result["inventory"]["model_harness"]["project_agent_config"]["max_depth"]
+        == "2026-07-29"
+    )
+    json.dumps(result)
 
 
 def test_doctor_reports_current_managed_git_hook(tmp_path):

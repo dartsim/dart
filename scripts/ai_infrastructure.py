@@ -25,6 +25,7 @@ SCENARIO_IDS = (
     "small-change",
     "failure-diagnosis",
     "documentation-update",
+    "model-upgrade",
     "component-work",
     "simulation-verification",
     "release-maintenance",
@@ -231,15 +232,28 @@ def check_codex_config(root: Path) -> list[str]:
     if not isinstance(agents, dict):
         errors.append(".codex/config.toml: agents must be a table")
         return errors
-    if set(agents) != {"max_threads", "max_depth"}:
+    if set(agents) != {"max_concurrent_threads_per_session", "max_depth"}:
         errors.append(
-            ".codex/config.toml: agents keys must equal max_depth, max_threads"
+            ".codex/config.toml: agents keys must equal "
+            "max_concurrent_threads_per_session, max_depth"
         )
-    if type(agents.get("max_threads")) is not int or agents.get("max_threads") != 4:
-        errors.append(".codex/config.toml: agents.max_threads must equal 4")
+    if (
+        type(agents.get("max_concurrent_threads_per_session")) is not int
+        or agents.get("max_concurrent_threads_per_session") != 4
+    ):
+        errors.append(
+            ".codex/config.toml: agents.max_concurrent_threads_per_session "
+            "must equal 4"
+        )
     if type(agents.get("max_depth")) is not int or agents.get("max_depth") != 1:
         errors.append(".codex/config.toml: agents.max_depth must equal 1")
-    forbidden = {"model", "approval_policy", "sandbox_mode"} & set(data)
+    forbidden = {
+        "model",
+        "model_reasoning_effort",
+        "review_model",
+        "approval_policy",
+        "sandbox_mode",
+    } & set(data)
     if forbidden:
         errors.append(
             ".codex/config.toml: project config must not pin "

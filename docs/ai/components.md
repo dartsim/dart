@@ -17,7 +17,7 @@ source is `.claude/skills/`.
 `docs/ai/capabilities.json` owns machine-readable capability status, category,
 and gate profile; `docs/ai/workflows.md` owns the human-readable public paths
 and gate details. `docs/ai/branch-profile.json` owns branch facts and forbidden
-cross-branch surfaces; `docs/ai/agent-scenarios.json` owns the seven deterministic
+cross-branch surfaces; `docs/ai/agent-scenarios.json` owns the eight deterministic
 fresh-session scenario contracts.
 
 The Markdown files directly under `docs/ai/` use a narrow frontmatter pilot

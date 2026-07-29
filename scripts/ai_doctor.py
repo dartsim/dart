@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ai_infrastructure import (
     BRANCH_PROFILE,
+    MAX_AGENTS_BYTES,
     PROFILES,
     agents_chain_for_directory,
     detect_profile,
@@ -124,6 +125,115 @@ def _path_inventory(paths: list[Path], root: Path) -> dict[str, object]:
     return {"count": len(relative), "paths": relative}
 
 
+def _line_inventory(paths: list[Path], root: Path) -> dict[str, object]:
+    entries = [
+        {
+            "path": str(path.relative_to(root)),
+            "lines": len(path.read_text(errors="replace").splitlines()),
+        }
+        for path in paths
+    ]
+    longest = (
+        max(entries, key=lambda entry: (entry["lines"], entry["path"]))
+        if entries
+        else {"path": "", "lines": 0}
+    )
+    return {
+        "count": len(entries),
+        "total_lines": sum(entry["lines"] for entry in entries),
+        "longest": longest,
+    }
+
+
+def _instruction_context_inventory(root: Path) -> dict[str, object]:
+    chains: list[dict[str, object]] = []
+    for relative in instruction_files(root):
+        parent = str(Path(relative).parent)
+        chain = agents_chain_for_directory(root, parent)
+        size = sum((root / path).stat().st_size for path in chain)
+        chains.append({"paths": chain, "bytes": size})
+    largest = (
+        max(chains, key=lambda entry: (entry["bytes"], entry["paths"]))
+        if chains
+        else {"paths": [], "bytes": 0}
+    )
+    return {
+        "largest_chain": largest,
+        "repository_limit_bytes": MAX_AGENTS_BYTES,
+    }
+
+
+def _model_harness_inventory(
+    root: Path,
+    commands: list[Path],
+    skills: list[Path],
+    generated: list[Path],
+    agents: list[Path],
+) -> dict[str, object]:
+    import sync_ai_commands as sync
+
+    config_path = root / ".codex" / "config.toml"
+    try:
+        with config_path.open("rb") as stream:
+            config = tomllib.load(stream)
+    except TOML_READ_ERRORS:
+        config = {}
+    project_pins = sorted(
+        key
+        for key in ("model", "model_reasoning_effort", "review_model")
+        if key in config
+    )
+    agent_config = config.get("agents")
+    displayed_agent_config = (
+        {
+            str(key): (
+                value
+                if isinstance(value, (str, int, float, bool)) or value is None
+                else str(value)
+            )
+            for key, value in agent_config.items()
+        }
+        if isinstance(agent_config, dict)
+        else {}
+    )
+    project_agent_pins = sorted(
+        key
+        for key in (
+            "default_subagent_model",
+            "default_subagent_reasoning_effort",
+        )
+        if isinstance(agent_config, dict) and key in agent_config
+    )
+    custom_agent_pins: list[dict[str, object]] = []
+    for path in agents:
+        try:
+            with path.open("rb") as stream:
+                data = tomllib.load(stream)
+        except TOML_READ_ERRORS:
+            data = {}
+        pins = sorted(key for key in ("model", "model_reasoning_effort") if key in data)
+        if pins:
+            custom_agent_pins.append(
+                {"path": str(path.relative_to(root)), "keys": pins}
+            )
+    metadata_chars = 0
+    for path in generated:
+        meta = sync.parse_skill_frontmatter(path.read_text(errors="replace"))
+        metadata_chars += len(meta.get("name", "")) + len(meta.get("description", ""))
+    return {
+        "model_pins": {
+            "project": project_pins,
+            "project_agents": project_agent_pins,
+            "custom_agents": custom_agent_pins,
+        },
+        "project_agent_config": displayed_agent_config,
+        "instruction_context": _instruction_context_inventory(root),
+        "workflow_sources": _line_inventory(commands, root),
+        "domain_skill_sources": _line_inventory(skills, root),
+        "generated_skill_metadata_chars": metadata_chars,
+    }
+
+
 def _git_hook_inventory(root: Path) -> dict[str, object]:
     custom = subprocess.run(
         ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
@@ -200,6 +310,9 @@ def _inventory(root: Path, profile: str) -> dict[str, object]:
             "manifest": ".agents/skills/.dart-generated.json",
         },
         "custom_agents": _path_inventory(agents, root),
+        "model_harness": _model_harness_inventory(
+            root, commands, skills, generated, agents
+        ),
         "hooks": {
             "path": ".codex/hooks.json",
             "events": sorted(hooks) if isinstance(hooks, dict) else [],
@@ -341,6 +454,23 @@ def main() -> int:
             f"{inventory['source_skills']['count']} source skills, "
             f"{inventory['generated_skills']['count']} generated skills, "
             f"{inventory['custom_agents']['count']} custom agents"
+        )
+        model_harness = inventory["model_harness"]
+        project_pin_count = len(model_harness["model_pins"]["project"]) + len(
+            model_harness["model_pins"]["project_agents"]
+        )
+        print(
+            "  model harness: "
+            f"{project_pin_count} project pins, "
+            f"{len(model_harness['model_pins']['custom_agents'])} agent pins, "
+            f"{model_harness['workflow_sources']['longest']['lines']}/"
+            f"{model_harness['domain_skill_sources']['longest']['lines']} "
+            "lines in longest workflow/domain skill, "
+            f"{model_harness['generated_skill_metadata_chars']} skill-metadata "
+            "chars, "
+            f"{model_harness['instruction_context']['largest_chain']['bytes']}/"
+            f"{model_harness['instruction_context']['repository_limit_bytes']} "
+            "instruction bytes"
         )
         for tool, version in data["tools"].items():
             print(f"  {tool}: {version}")
