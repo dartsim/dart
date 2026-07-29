@@ -30,13 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
+#include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/math/Constants.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -44,41 +53,19 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
+#include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 using namespace std;
 using namespace Eigen;
 using namespace dart;
-
-//==============================================================================
-/// Returns true if the two matrices are equal within the given bound
-template <class MATRIX>
-bool equals(
-    const DenseBase<MATRIX>& A, const DenseBase<MATRIX>& B, double tol = 1e-5)
-{
-  // Get the matrix sizes and sanity check the call
-  const std::size_t n1 = A.cols(), m1 = A.rows();
-  const std::size_t n2 = B.cols(), m2 = B.rows();
-  if (m1 != m2 || n1 != n2)
-    return false;
-
-  // Check each index
-  for (std::size_t i = 0; i < m1; i++) {
-    for (std::size_t j = 0; j < n1; j++) {
-      if (std::isnan(A(i, j)) ^ std::isnan(B(i, j)))
-        return false;
-      else if (std::abs(A(i, j) - B(i, j)) > tol)
-        return false;
-    }
-  }
-
-  // If no problems, the two matrices are equal
-  return true;
-}
 
 namespace {
 
@@ -96,8 +83,25 @@ struct SoftSceneStats
   std::size_t pointMasses = 0u;
 };
 
+struct SoftStateSnapshot
+{
+  std::vector<double> values;
+  std::size_t dofs = 0u;
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+};
+
+struct ContactMetrics
+{
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  Eigen::Vector3d centerOfPressure = Eigen::Vector3d::Zero();
+  std::size_t contacts = 0u;
+  bool hasCenterOfPressure = false;
+};
+
 constexpr double kMaxPointMassPositionNorm = 1.0e4;
 constexpr double kMaxPointMassVelocityNorm = 1.0e6;
+constexpr double kChecksumRelativeTolerance = 1.0e-12;
 
 template <class Derived>
 void expectFinite(
@@ -132,6 +136,198 @@ SoftSceneStats collectSoftSceneStats(const simulation::WorldPtr& world)
   }
 
   return stats;
+}
+
+template <class Derived>
+void appendStateValues(
+    const Eigen::MatrixBase<Derived>& value, std::vector<double>& values)
+{
+  values.reserve(values.size() + static_cast<std::size_t>(value.size()));
+  for (Eigen::Index i = 0; i < value.size(); ++i)
+    values.push_back(value(i));
+}
+
+SoftStateSnapshot computeSoftStateSnapshot(const simulation::WorldPtr& world)
+{
+  SoftStateSnapshot snapshot;
+  if (!world)
+    return snapshot;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    const Eigen::VectorXd positions = skeleton->getPositions();
+    const Eigen::VectorXd velocities = skeleton->getVelocities();
+    appendStateValues(positions, snapshot.values);
+    appendStateValues(velocities, snapshot.values);
+    snapshot.dofs += static_cast<std::size_t>(positions.size());
+
+    snapshot.softBodies += skeleton->getNumSoftBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody == nullptr)
+        continue;
+
+      for (std::size_t k = 0; k < softBody->getNumPointMasses(); ++k) {
+        const dynamics::PointMass* pointMass = softBody->getPointMass(k);
+        if (pointMass == nullptr)
+          continue;
+
+        appendStateValues(pointMass->getPositions(), snapshot.values);
+        appendStateValues(pointMass->getVelocities(), snapshot.values);
+        appendStateValues(pointMass->getWorldPosition(), snapshot.values);
+        ++snapshot.pointMasses;
+      }
+    }
+  }
+
+  return snapshot;
+}
+
+void expectNearSnapshotValue(double lhs, double rhs, const std::string& context)
+{
+  const double scale = std::max({1.0, std::abs(lhs), std::abs(rhs)});
+  EXPECT_NEAR(lhs, rhs, kChecksumRelativeTolerance * scale) << context;
+}
+
+void expectSnapshotsNear(
+    const SoftStateSnapshot& lhs,
+    const SoftStateSnapshot& rhs,
+    const std::string& context)
+{
+  EXPECT_EQ(lhs.dofs, rhs.dofs) << context;
+  EXPECT_EQ(lhs.softBodies, rhs.softBodies) << context;
+  EXPECT_EQ(lhs.pointMasses, rhs.pointMasses) << context;
+  ASSERT_EQ(lhs.values.size(), rhs.values.size()) << context;
+
+  for (std::size_t i = 0; i < lhs.values.size(); ++i) {
+    expectNearSnapshotValue(
+        lhs.values[i],
+        rhs.values[i],
+        context + " state[" + std::to_string(i) + "]");
+  }
+}
+
+void expectVectorNear(
+    const Eigen::VectorXd& lhs,
+    const Eigen::VectorXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.size(), rhs.size()) << context;
+  for (Eigen::Index i = 0; i < lhs.size(); ++i)
+    EXPECT_NEAR(lhs[i], rhs[i], tolerance) << context << " index=" << i;
+}
+
+void expectMatrixNear(
+    const Eigen::MatrixXd& lhs,
+    const Eigen::MatrixXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.rows(), rhs.rows()) << context;
+  ASSERT_EQ(lhs.cols(), rhs.cols()) << context;
+  for (Eigen::Index row = 0; row < lhs.rows(); ++row) {
+    for (Eigen::Index col = 0; col < lhs.cols(); ++col) {
+      EXPECT_NEAR(lhs(row, col), rhs(row, col), tolerance)
+          << context << " row=" << row << " col=" << col;
+    }
+  }
+}
+
+Eigen::VectorXd projectPointMassGravity(
+    const dynamics::SoftBodyNode* softBody, const Eigen::Vector3d& gravity)
+{
+  DART_ASSERT(softBody != nullptr);
+  Eigen::Vector6d pointMassGravityWrench = Eigen::Vector6d::Zero();
+
+  if (softBody->getGravityMode()) {
+    const Eigen::Vector3d localGravity
+        = softBody->getWorldTransform().linear().transpose() * gravity;
+
+    for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+      const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+      DART_ASSERT(pointMass != nullptr);
+
+      const Eigen::Vector3d pointForce = pointMass->getMass() * localGravity;
+      pointMassGravityWrench.head<3>().noalias()
+          += pointMass->getLocalPosition().cross(pointForce);
+      pointMassGravityWrench.tail<3>().noalias() += pointForce;
+    }
+  }
+
+  return -(softBody->getJacobian().transpose() * pointMassGravityWrench);
+}
+
+Eigen::VectorXd projectPointMassExternalForces(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody,
+    const std::vector<Eigen::Vector3d>& localForces)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+  DART_ASSERT(localForces.size() == softBody->getNumPointMasses());
+
+  Eigen::Vector6d pointMassExternalWrench = Eigen::Vector6d::Zero();
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    pointMassExternalWrench.head<3>().noalias()
+        += pointMass->getLocalPosition().cross(localForces[i]);
+    pointMassExternalWrench.tail<3>().noalias() += localForces[i];
+  }
+
+  const Eigen::VectorXd localProjection
+      = softBody->getJacobian().transpose() * pointMassExternalWrench;
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  DART_ASSERT(
+      localProjection.size() == static_cast<Eigen::Index>(indices.size()));
+
+  Eigen::VectorXd projection = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  for (std::size_t i = 0; i < indices.size(); ++i)
+    projection[indices[i]] = localProjection[static_cast<Eigen::Index>(i)];
+
+  return projection;
+}
+
+Eigen::MatrixXd projectPointMassMassMatrix(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  Eigen::MatrixXd localContribution
+      = Eigen::MatrixXd::Zero(indices.size(), indices.size());
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
+    pointTransform.translation() = pointMass->getLocalPosition();
+    const Eigen::Matrix<double, 3, Eigen::Dynamic> pointJacobian
+        = math::AdInvTJac(pointTransform, softBody->getJacobian())
+              .bottomRows<3>();
+
+    localContribution.noalias()
+        += pointMass->getMass() * pointJacobian.transpose() * pointJacobian;
+  }
+
+  Eigen::MatrixXd contribution
+      = Eigen::MatrixXd::Zero(skeleton->getNumDofs(), skeleton->getNumDofs());
+  for (std::size_t row = 0; row < indices.size(); ++row) {
+    for (std::size_t col = 0; col < indices.size(); ++col)
+      contribution(indices[row], indices[col]) = localContribution(row, col);
+  }
+
+  return contribution;
 }
 
 void expectFiniteSoftBodyState(
@@ -179,12 +375,13 @@ void expectFiniteSoftBodyState(
 void expectFiniteWorldState(
     const simulation::WorldPtr& world,
     const SoftStabilityScene& scene,
+    const std::string& detectorName,
     std::size_t threads,
     std::size_t step)
 {
   ASSERT_TRUE(world != nullptr) << scene.uri;
 
-  const std::string worldContext = scene.uri
+  const std::string worldContext = scene.uri + " detector=" + detectorName
                                    + " threads=" + std::to_string(threads)
                                    + " step=" + std::to_string(step);
   expectFinite(world->getTime(), worldContext + " time");
@@ -215,15 +412,401 @@ void expectFiniteWorldState(
   }
 }
 
+dynamics::SoftBodyNode* firstSoftBody(const simulation::WorldPtr& world)
+{
+  if (!world)
+    return nullptr;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    if (skeleton->getNumSoftBodyNodes() > 0u)
+      return skeleton->getSoftBodyNode(0);
+  }
+
+  return nullptr;
+}
+
+class ScopedEnvironmentVariable
+{
+public:
+  ScopedEnvironmentVariable(const char* name, const char* value) : mName(name)
+  {
+    if (const char* original = std::getenv(name)) {
+      mHadOriginal = true;
+      mOriginal = original;
+    }
+    set(value);
+  }
+
+  ~ScopedEnvironmentVariable()
+  {
+    if (mHadOriginal)
+      set(mOriginal.c_str());
+    else
+      clear();
+  }
+
+private:
+  void set(const char* value)
+  {
+#ifdef _WIN32
+    _putenv_s(mName.c_str(), value);
+#else
+    setenv(mName.c_str(), value, 1);
+#endif
+  }
+
+  void clear()
+  {
+#ifdef _WIN32
+    _putenv_s(mName.c_str(), "");
+#else
+    unsetenv(mName.c_str());
+#endif
+  }
+
+  std::string mName;
+  std::string mOriginal;
+  bool mHadOriginal{false};
+};
+
+class CustomPointMassNotifier final : public dynamics::PointMassNotifier
+{
+public:
+  CustomPointMassNotifier(
+      dynamics::SoftBodyNode* parent, const std::string& name, bool* destroyed)
+    : PointMassNotifier(parent, name), mDestroyed(destroyed)
+  {
+    // Do nothing
+  }
+
+  ~CustomPointMassNotifier() override
+  {
+    if (mDestroyed != nullptr)
+      *mDestroyed = true;
+  }
+
+private:
+  bool* mDestroyed;
+};
+
+class CustomNotifierSoftBodyNode final : public dynamics::SoftBodyNode
+{
+public:
+  CustomNotifierSoftBodyNode(
+      dynamics::BodyNode* parentBodyNode,
+      dynamics::Joint* parentJoint,
+      const Properties& properties)
+    : dynamics::Entity(dynamics::Frame::World(), false),
+      dynamics::Frame(dynamics::Frame::World()),
+      SoftBodyNode(parentBodyNode, parentJoint, properties)
+  {
+    // Do nothing
+  }
+
+  ~CustomNotifierSoftBodyNode() override
+  {
+    restoreOriginalNotifier();
+  }
+
+  void installCustomNotifier(bool* destroyed)
+  {
+    if (!mCustomNotifier) {
+      mOriginalNotifier = mNotifier;
+      mCustomNotifier = std::make_unique<CustomPointMassNotifier>(
+          this, getName() + "_CustomPointMassNotifier", destroyed);
+    }
+
+    mNotifier = mCustomNotifier.get();
+  }
+
+  void restoreOriginalNotifier()
+  {
+    if (mOriginalNotifier != nullptr)
+      mNotifier = mOriginalNotifier;
+  }
+
+  const dynamics::PointMassNotifier* getOriginalNotifier() const
+  {
+    return mOriginalNotifier;
+  }
+
+private:
+  dynamics::PointMassNotifier* mOriginalNotifier{nullptr};
+  std::unique_ptr<CustomPointMassNotifier> mCustomNotifier;
+};
+
+struct SoftFaceRestScene
+{
+  simulation::WorldPtr world;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::BodyNode* sphereBody{nullptr};
+  double sphereRadius{0.15};
+};
+
+SoftFaceRestScene makeSoftFaceRestScene(bool enableFaceInteriorContacts)
+{
+  ScopedEnvironmentVariable environment(
+      "DART_SOFT_FACE_INTERIOR_CONTACTS",
+      enableFaceInteriorContacts ? "1" : "0");
+
+  SoftFaceRestScene scene;
+  scene.world = simulation::World::create();
+  scene.world->setTimeStep(0.001);
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+
+  auto softSkeleton = dynamics::Skeleton::create("coarse_soft_support");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(1.0, 1.0, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      1000.0,
+      1000.0,
+      10.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("coarse_soft_support_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+  auto softPair = softSkeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::WeldJoint::Properties(), softBodyProperties);
+  scene.softBody = softPair.second;
+  softSkeleton->setMobile(false);
+  scene.world->addSkeleton(softSkeleton);
+
+  auto sphereSkeleton = dynamics::Skeleton::create("heavy_sphere");
+  auto spherePair
+      = sphereSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  scene.sphereBody = spherePair.second;
+  const auto sphereShape
+      = std::make_shared<dynamics::SphereShape>(scene.sphereRadius);
+  scene.sphereBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(sphereShape);
+
+  dynamics::Inertia inertia;
+  inertia.setMass(5.0);
+  inertia.setMoment(sphereShape->computeInertia(inertia.getMass()));
+  scene.sphereBody->setInertia(inertia);
+
+  Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+  sphereTransform.translation() = Eigen::Vector3d(-0.25, -0.25, 0.22);
+  dynamics::FreeJoint::setTransformOf(spherePair.first, sphereTransform);
+  scene.world->addSkeleton(sphereSkeleton);
+  return scene;
+}
+
+double softBodyLowerBound(const dynamics::SoftBodyNode* softBody)
+{
+  double lowerBound = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i) {
+    lowerBound = std::min(
+        lowerBound, softBody->getPointMass(i)->getWorldPosition().z());
+  }
+  return lowerBound;
+}
+
+void enableAdaptiveContactActivation(
+    const simulation::WorldPtr& world,
+    std::size_t ringCount = 2u,
+    std::size_t lingerSteps = 8u,
+    double velocityTolerance = 1.0e-4,
+    double positionTolerance = 1.0e-4)
+{
+  ASSERT_TRUE(world != nullptr);
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      ASSERT_TRUE(softBody != nullptr);
+      softBody->setAdaptiveContactActivationRingCount(ringCount);
+      softBody->setAdaptiveContactActivationLingerSteps(lingerSteps);
+      softBody->setAdaptiveContactActivationVelocityTolerance(
+          velocityTolerance);
+      softBody->setAdaptiveContactActivationPositionTolerance(
+          positionTolerance);
+      softBody->setAdaptiveContactActivationEnabled(true);
+    }
+  }
+}
+
+std::size_t countPointMasses(const simulation::WorldPtr& world)
+{
+  return collectSoftSceneStats(world).pointMasses;
+}
+
+std::size_t countActivePointMasses(const simulation::WorldPtr& world)
+{
+  std::size_t active = 0u;
+  if (!world)
+    return active;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody != nullptr)
+        active += softBody->getNumActivePointMasses();
+    }
+  }
+
+  return active;
+}
+
+std::vector<double> collectSkeletonPositionsAndVelocities(
+    const simulation::WorldPtr& world)
+{
+  std::vector<double> values;
+  if (!world)
+    return values;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    appendStateValues(skeleton->getPositions(), values);
+    appendStateValues(skeleton->getVelocities(), values);
+  }
+
+  return values;
+}
+
+double maxAbsDifference(
+    const std::vector<double>& lhs, const std::vector<double>& rhs)
+{
+  DART_ASSERT(lhs.size() == rhs.size());
+  double maxDifference = 0.0;
+  for (std::size_t i = 0; i < lhs.size(); ++i)
+    maxDifference = std::max(maxDifference, std::abs(lhs[i] - rhs[i]));
+
+  return maxDifference;
+}
+
+void configureDetector(
+    const simulation::WorldPtr& world, bool useNativeDetector)
+{
+  DART_ASSERT(world != nullptr);
+  if (useNativeDetector)
+    world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+}
+
+double computeSoftMechanicalEnergy(
+    const dynamics::SkeletonPtr& skeleton, const Eigen::Vector3d& gravity)
+{
+  DART_ASSERT(skeleton != nullptr);
+
+  // Skeleton energy covers the rigid parent bodies and joints. Point masses
+  // are not Skeleton DOFs in DART 6, so add their kinetic, gravitational, and
+  // spring energies explicitly through the public soft-body API.
+  double energy
+      = skeleton->computeKineticEnergy() + skeleton->computePotentialEnergy();
+  for (std::size_t i = 0; i < skeleton->getNumSoftBodyNodes(); ++i) {
+    const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(i);
+    DART_ASSERT(softBody != nullptr);
+    const double vertexStiffness = softBody->getVertexSpringStiffness();
+    const double edgeStiffness = softBody->getEdgeSpringStiffness();
+
+    for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j) {
+      const dynamics::PointMass* pointMass = softBody->getPointMass(j);
+      DART_ASSERT(pointMass != nullptr);
+      energy += 0.5 * pointMass->getMass()
+                * pointMass->getWorldVelocity().squaredNorm();
+      if (softBody->getGravityMode())
+        energy -= pointMass->getMass()
+                  * gravity.dot(pointMass->getWorldPosition());
+      energy += 0.5 * vertexStiffness * pointMass->getPositions().squaredNorm();
+
+      for (std::size_t k = 0; k < pointMass->getNumConnectedPointMasses();
+           ++k) {
+        const dynamics::PointMass* neighbor
+            = pointMass->getConnectedPointMass(k);
+        DART_ASSERT(neighbor != nullptr);
+        if (neighbor->getIndexInSoftBodyNode() <= j)
+          continue;
+        energy += 0.5 * edgeStiffness
+                  * (pointMass->getPositions() - neighbor->getPositions())
+                        .squaredNorm();
+      }
+    }
+  }
+
+  return energy;
+}
+
+double computeSoftSystemMass(const dynamics::SkeletonPtr& skeleton)
+{
+  DART_ASSERT(skeleton != nullptr);
+  double mass = 0.0;
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
+    mass += skeleton->getBodyNode(i)->getInertia().getMass();
+
+  for (std::size_t i = 0; i < skeleton->getNumSoftBodyNodes(); ++i) {
+    const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(i);
+    DART_ASSERT(softBody != nullptr);
+    for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j)
+      mass += softBody->getPointMass(j)->getMass();
+  }
+
+  return mass;
+}
+
+ContactMetrics computeContactMetrics(
+    const simulation::WorldPtr& world,
+    const dynamics::SkeletonPtr& targetSkeleton)
+{
+  DART_ASSERT(world != nullptr);
+  DART_ASSERT(targetSkeleton != nullptr);
+
+  ContactMetrics metrics;
+  Eigen::Vector3d weightedContactPoint = Eigen::Vector3d::Zero();
+  double verticalWeight = 0.0;
+  const auto& result = world->getLastCollisionResult();
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    const collision::Contact& contact = result.getContact(i);
+    const dynamics::ConstBodyNodePtr body1 = contact.getBodyNodePtr1();
+    const dynamics::ConstBodyNodePtr body2 = contact.getBodyNodePtr2();
+    const bool targetIsBody1
+        = body1 && body1->getSkeleton().get() == targetSkeleton.get();
+    const bool targetIsBody2
+        = body2 && body2->getSkeleton().get() == targetSkeleton.get();
+    if (targetIsBody1 == targetIsBody2)
+      continue;
+
+    const Eigen::Vector3d forceOnTarget
+        = targetIsBody1 ? contact.force : -contact.force;
+    metrics.force += forceOnTarget;
+    ++metrics.contacts;
+
+    const double upwardForce = std::max(0.0, forceOnTarget.y());
+    weightedContactPoint += upwardForce * contact.point;
+    verticalWeight += upwardForce;
+  }
+
+  if (verticalWeight > 1.0e-12) {
+    metrics.centerOfPressure = weightedContactPoint / verticalWeight;
+    metrics.hasCenterOfPressure = true;
+  }
+  return metrics;
+}
+
 } // namespace
 
 //==============================================================================
 class SoftDynamicsTest : public ::testing::Test
 {
 public:
-  // Get Skel file list to test.
-  const std::vector<std::string>& getList();
-
   // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
   MatrixXd getMassMatrix(dynamics::SkeletonPtr _skel);
@@ -241,31 +824,7 @@ public:
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
   // void compareAccelerations(const std::string& _fileName) {}
-
-  // Compare dynamics terms in equations of motion such as mass matrix, mass
-  // inverse matrix, Coriolis force vector, gravity force vector, and external
-  // force vector.
-  void compareEquationsOfMotion(const std::string& _fileName);
-
-protected:
-  // Sets up the test fixture.
-  void SetUp() override;
-
-  // Skel file list.
-  std::vector<std::string> list;
 };
-
-//==============================================================================
-void SoftDynamicsTest::SetUp()
-{
-  list.push_back("dart://sample/skel/test/test_drop_box.skel");
-}
-
-//==============================================================================
-const std::vector<std::string>& SoftDynamicsTest::getList()
-{
-  return list;
-}
 
 //==============================================================================
 MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
@@ -300,6 +859,9 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
         skelM(jIdx, kIdx) += M(j, k);
       }
     }
+
+    if (const dynamics::SoftBodyNode* softBody = body->asSoftBodyNode())
+      skelM += projectPointMassMassMatrix(_skel, softBody);
   }
 
   return skelM;
@@ -366,222 +928,126 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 }
 
 //==============================================================================
-void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
+TEST_F(SoftDynamicsTest, representativeEquationMatrixAndVectorChecks)
 {
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
+  struct EquationScene
+  {
+    std::string uri;
+    bool expectMobileRigidSkeleton;
+    bool expectMobileSoftSkeleton;
+    bool expectRigidSkeleton;
+  };
 
-  //---------------------------- Settings --------------------------------------
-  // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
-  std::size_t nRandomItr = 1;
-#else
-  std::size_t nRandomItr = 1;
-#endif
+  const std::array<EquationScene, 3> scenes = {{
+      {"dart://sample/skel/test/double_pendulum.skel", true, false, true},
+      {"dart://sample/skel/test/test_drop_box.skel", false, true, true},
+      {"dart://sample/skel/softBodies.skel", false, true, true},
+  }};
 
-  // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  for (const EquationScene& scene : scenes) {
+    simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+    ASSERT_TRUE(world != nullptr) << scene.uri;
 
-  // Lower and upper bound of joint damping and stiffness
-  double lbD = 0.0;
-  double ubD = 10.0;
-  double lbK = 0.0;
-  double ubK = 10.0;
+    bool sawMobileRigidSkeleton = false;
+    bool sawMobileSoftSkeleton = false;
+    bool sawRigidSkeleton = false;
 
-  simulation::WorldPtr myWorld;
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+      ASSERT_TRUE(skeleton != nullptr) << scene.uri << " skeleton=" << i;
 
-  //----------------------------- Tests ----------------------------------------
-  // Check whether multiplication of mass matrix and its inverse is identity
-  // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != nullptr);
+      const bool hasSoftBody = skeleton->getNumSoftBodyNodes() > 0u;
+      const bool hasRigidBody
+          = skeleton->getNumBodyNodes() > skeleton->getNumSoftBodyNodes();
+      sawRigidSkeleton = sawRigidSkeleton || hasRigidBody;
 
-  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
-    dynamics::SkeletonPtr softSkel = myWorld->getSkeleton(i);
+      const std::string context = scene.uri + " skeleton=" + std::to_string(i)
+                                  + " name=" + skeleton->getName();
+      const std::size_t dof = skeleton->getNumDofs();
+      if (dof == 0u)
+        continue;
 
-    int dof = softSkel->getNumDofs();
-    //    int nBodyNodes     = skel->getNumBodyNodes();
-    int nSoftBodyNodes = 0;
-    if (softSkel != nullptr)
-      nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
+      sawMobileSoftSkeleton = sawMobileSoftSkeleton || hasSoftBody;
+      sawMobileRigidSkeleton = sawMobileRigidSkeleton || !hasSoftBody;
 
-    if (dof == 0) {
-      dtmsg << "Skeleton [" << softSkel->getName()
-            << "] is skipped since it has "
-            << "0 DOF." << endl;
-      continue;
+      const Eigen::MatrixXd mass = skeleton->getMassMatrix();
+      const Eigen::MatrixXd expectedMass = getMassMatrix(skeleton);
+      const Eigen::MatrixXd invMass = skeleton->getInvMassMatrix();
+      const Eigen::MatrixXd augMass = skeleton->getAugMassMatrix();
+      const Eigen::MatrixXd expectedAugMass = getAugMassMatrix(skeleton);
+      const Eigen::MatrixXd invAugMass = skeleton->getInvAugMassMatrix();
+      const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dof, dof);
+
+      expectMatrixNear(mass, expectedMass, 1.0e-8, context + " mass");
+      expectMatrixNear(
+          augMass, expectedAugMass, 1.0e-8, context + " augmented mass");
+      expectMatrixNear(
+          mass * invMass, identity, 1.0e-8, context + " mass inverse left");
+      expectMatrixNear(
+          invMass * mass, identity, 1.0e-8, context + " mass inverse right");
+      expectMatrixNear(
+          augMass * invAugMass,
+          identity,
+          1.0e-8,
+          context + " augmented inverse left");
+      expectMatrixNear(
+          invAugMass * augMass,
+          identity,
+          1.0e-8,
+          context + " augmented inverse right");
+
+      const Eigen::VectorXd coriolis = skeleton->getCoriolisForces();
+      const Eigen::VectorXd combined = skeleton->getCoriolisAndGravityForces();
+      const Eigen::Vector3d originalGravity = skeleton->getGravity();
+      const Eigen::VectorXd originalForces = skeleton->getForces();
+      const Eigen::VectorXd originalAccelerations
+          = skeleton->getAccelerations();
+
+      skeleton->resetGeneralizedForces();
+      skeleton->clearExternalForces();
+      skeleton->setAccelerations(Eigen::VectorXd::Zero(dof));
+
+      skeleton->setGravity(Eigen::Vector3d::Zero());
+      skeleton->computeInverseDynamics(false, false, false);
+      const Eigen::VectorXd coriolisFromInverseDynamics = skeleton->getForces();
+
+      skeleton->setGravity(originalGravity);
+      skeleton->computeInverseDynamics(false, false, false);
+      const Eigen::VectorXd combinedFromInverseDynamics = skeleton->getForces();
+
+      expectVectorNear(
+          coriolis,
+          coriolisFromInverseDynamics,
+          1.0e-8,
+          context + " coriolis inverse dynamics");
+      expectVectorNear(
+          combined,
+          combinedFromInverseDynamics,
+          1.0e-8,
+          context + " combined inverse dynamics");
+
+      skeleton->setGravity(originalGravity);
+      skeleton->setForces(originalForces);
+      skeleton->setAccelerations(originalAccelerations);
     }
 
-    for (std::size_t j = 0; j < nRandomItr; ++j) {
-      // Random joint stiffness and damping coefficient
-      for (std::size_t k = 0; k < softSkel->getNumBodyNodes(); ++k) {
-        BodyNode* body = softSkel->getBodyNode(k);
-        Joint* joint = body->getParentJoint();
-        int localDof = joint->getNumDofs();
-
-        for (int l = 0; l < localDof; ++l) {
-          joint->setDampingCoefficient(l, Random::uniform(lbD, ubD));
-          joint->setSpringStiffness(l, Random::uniform(lbK, ubK));
-
-          double lbRP = joint->getPositionLowerLimit(l);
-          double ubRP = joint->getPositionUpperLimit(l);
-          joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
-        }
-      }
-
-      // Set random states
-      Skeleton::Configuration x = softSkel->getConfiguration();
-      for (auto k = 0u; k < softSkel->getNumDofs(); ++k) {
-        x.mPositions[k] = Random::uniform(lb, ub);
-        x.mVelocities[k] = Random::uniform(lb, ub);
-      }
-      softSkel->setConfiguration(x);
-
-      //------------------------ Mass Matrix Test ----------------------------
-      // Get matrices
-      MatrixXd M = softSkel->getMassMatrix();
-      MatrixXd M2 = getMassMatrix(softSkel);
-      MatrixXd InvM = softSkel->getInvMassMatrix();
-      MatrixXd M_InvM = M * InvM;
-      MatrixXd InvM_M = InvM * M;
-
-      MatrixXd AugM = softSkel->getAugMassMatrix();
-      MatrixXd AugM2 = getAugMassMatrix(softSkel);
-      MatrixXd InvAugM = softSkel->getInvAugMassMatrix();
-      MatrixXd AugM_InvAugM = AugM * InvAugM;
-      MatrixXd InvAugM_AugM = InvAugM * AugM;
-
-      MatrixXd I = MatrixXd::Identity(dof, dof);
-
-      // Check if the number of generalized coordinates and dimension of mass
-      // matrix are same.
-      EXPECT_EQ(M.rows(), dof);
-      EXPECT_EQ(M.cols(), dof);
-
-      // Check mass matrix
-      EXPECT_TRUE(equals(M, M2, 1e-6));
-      if (!equals(M, M2, 1e-6)) {
-        cout << "M :" << endl << M << endl << endl;
-        cout << "M2:" << endl << M2 << endl << endl;
-      }
-
-      // Check augmented mass matrix
-      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
-      if (!equals(AugM, AugM2, 1e-6)) {
-        cout << "AugM :" << endl << AugM << endl << endl;
-        cout << "AugM2:" << endl << AugM2 << endl << endl;
-      }
-
-      // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(M_InvM, I, 1e-6));
-      if (!equals(M_InvM, I, 1e-6)) {
-        cout << "InvM  :" << endl << InvM << endl << endl;
-      }
-      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
-      if (!equals(InvM_M, I, 1e-6)) {
-        cout << "InvM_M:" << endl << InvM_M << endl << endl;
-      }
-
-      // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
-      if (!equals(AugM_InvAugM, I, 1e-6)) {
-        cout << "InvAugM  :" << endl << InvAugM << endl << endl;
-        cout << "InvAugM2  :" << endl << AugM.inverse() << endl << endl;
-        cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
-      }
-      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
-      if (!equals(InvAugM_AugM, I, 1e-6)) {
-        cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
-      }
-
-      //------- Coriolis Force Vector and Combined Force Vector Tests --------
-      // Get C1, Coriolis force vector using recursive method
-      VectorXd C = softSkel->getCoriolisForces();
-      VectorXd Cg = softSkel->getCoriolisAndGravityForces();
-
-      // Get C2, Coriolis force vector using inverse dynamics algorithm
-      Vector3d oldGravity = softSkel->getGravity();
-      VectorXd oldTau = softSkel->getForces();
-      VectorXd oldDdq = softSkel->getAccelerations();
-      // TODO(JS): Save external forces of body nodes
-      vector<double> oldKv(nSoftBodyNodes, 0.0);
-      vector<double> oldKe(nSoftBodyNodes, 0.0);
-      vector<double> oldD(nSoftBodyNodes, 0.0);
-      for (int k = 0; k < nSoftBodyNodes; ++k) {
-        DART_ASSERT(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
-        oldKv[k] = sbn->getVertexSpringStiffness();
-        oldKe[k] = sbn->getEdgeSpringStiffness();
-        oldD[k] = sbn->getDampingCoefficient();
-      }
-
-      softSkel->resetGeneralizedForces();
-      softSkel->clearExternalForces();
-      softSkel->setAccelerations(VectorXd::Zero(dof));
-      for (int k = 0; k < nSoftBodyNodes; ++k) {
-        DART_ASSERT(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
-        sbn->setVertexSpringStiffness(0.0);
-        sbn->setEdgeSpringStiffness(0.0);
-        sbn->setDampingCoefficient(0.0);
-      }
-
-      EXPECT_TRUE(softSkel->getForces() == VectorXd::Zero(dof));
-      EXPECT_TRUE(softSkel->getExternalForces() == VectorXd::Zero(dof));
-      EXPECT_TRUE(softSkel->getAccelerations() == VectorXd::Zero(dof));
-
-      softSkel->setGravity(Vector3d::Zero());
-      EXPECT_TRUE(softSkel->getGravity() == Vector3d::Zero());
-      softSkel->computeInverseDynamics(false, false);
-      VectorXd C2 = softSkel->getForces();
-
-      softSkel->setGravity(oldGravity);
-      EXPECT_TRUE(softSkel->getGravity() == oldGravity);
-      softSkel->computeInverseDynamics(false, false);
-      VectorXd Cg2 = softSkel->getForces();
-
-      EXPECT_TRUE(equals(C, C2, 1e-6));
-      if (!equals(C, C2, 1e-6)) {
-        cout << "C :" << C.transpose() << endl;
-        cout << "C2:" << C2.transpose() << endl;
-      }
-
-      EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
-      if (!equals(Cg, Cg2, 1e-6)) {
-        cout << "Cg :" << Cg.transpose() << endl;
-        cout << "Cg2:" << Cg2.transpose() << endl;
-      }
-
-      softSkel->setForces(oldTau);
-      softSkel->setAccelerations(oldDdq);
-      // TODO(JS): Restore external forces of body nodes
-    }
+    EXPECT_EQ(scene.expectMobileRigidSkeleton, sawMobileRigidSkeleton)
+        << scene.uri;
+    EXPECT_EQ(scene.expectMobileSoftSkeleton, sawMobileSoftSkeleton)
+        << scene.uri;
+    EXPECT_EQ(scene.expectRigidSkeleton, sawRigidSkeleton) << scene.uri;
   }
-}
-
-//==============================================================================
-TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
-{
-  // TODO(JS): Equations of motion for softbody skeleton is not done yet
-
-  //  for (int i = 0; i < getList().size(); ++i)
-  //  {
-  // #if DART_BUILD_MODE_DEBUG
-  //    dtdbg << getList()[i] << std::endl;
-  // #endif
-  //    compareEquationsOfMotion(getList()[i]);
-  //  }
 }
 
 //==============================================================================
 TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
 {
+  struct DetectorConfig
+  {
+    std::string name;
+    bool useNativeDetector;
+  };
+
   const std::array<SoftStabilityScene, 7> scenes = {{
       {"dart://sample/skel/test/test_drop_box.skel", 1u, 26u, 30u},
       {"dart://sample/skel/test/test_drop_low_stiffness.skel", 1u, 26u, 30u},
@@ -591,22 +1057,1506 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
       {"dart://sample/skel/softBodies.skel", 5u, 290u, 30u},
       {"dart://sample/skel/soft_open_chain.skel", 5u, 120u, 30u},
   }};
+  const std::array<DetectorConfig, 2> detectorConfigs = {{
+      {"default", false},
+      {"dart", true},
+  }};
   const std::array<std::size_t, 2> threadCounts = {{1u, 4u}};
 
-  for (const SoftStabilityScene& scene : scenes) {
-    for (const std::size_t threads : threadCounts) {
-      simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
-      ASSERT_TRUE(world != nullptr) << scene.uri;
-      world->setNumSimulationThreads(threads);
+  for (const DetectorConfig& detectorConfig : detectorConfigs) {
+    std::vector<SoftStateSnapshot> finalSnapshots;
+    finalSnapshots.reserve(threadCounts.size());
 
-      expectFiniteWorldState(world, scene, threads, 0u);
+    for (const SoftStabilityScene& scene : scenes) {
+      finalSnapshots.clear();
 
-      for (std::size_t step = 1u; step <= scene.steps; ++step) {
-        world->step();
+      for (const std::size_t threads : threadCounts) {
+        simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+        ASSERT_TRUE(world != nullptr) << scene.uri;
+        if (detectorConfig.useNativeDetector)
+          world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+        world->setNumSimulationThreads(threads);
 
-        if (step == scene.steps || step % 10u == 0u)
-          expectFiniteWorldState(world, scene, threads, step);
+        expectFiniteWorldState(world, scene, detectorConfig.name, threads, 0u);
+
+        for (std::size_t step = 1u; step <= scene.steps; ++step) {
+          world->step();
+
+          if (step == scene.steps || step % 10u == 0u) {
+            expectFiniteWorldState(
+                world, scene, detectorConfig.name, threads, step);
+          }
+        }
+
+        finalSnapshots.push_back(computeSoftStateSnapshot(world));
       }
+
+      ASSERT_EQ(finalSnapshots.size(), threadCounts.size())
+          << detectorConfig.name << " " << scene.uri;
+      expectSnapshotsNear(
+          finalSnapshots[0],
+          finalSnapshots[1],
+          scene.uri + " detector=" + detectorConfig.name
+              + " threads=1-vs-4 final state");
     }
   }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softFaceInteriorContactPreventsSphereTunneling)
+{
+  SoftFaceRestScene enabled = makeSoftFaceRestScene(true);
+  SoftFaceRestScene disabled = makeSoftFaceRestScene(false);
+  ASSERT_TRUE(enabled.world != nullptr);
+  ASSERT_TRUE(disabled.world != nullptr);
+  ASSERT_TRUE(enabled.softBody != nullptr);
+  ASSERT_TRUE(disabled.softBody != nullptr);
+  ASSERT_TRUE(enabled.sphereBody != nullptr);
+  ASSERT_TRUE(disabled.sphereBody != nullptr);
+
+  const auto enabledDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          enabled.world->getCollisionDetector());
+  const auto disabledDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          disabled.world->getCollisionDetector());
+  ASSERT_TRUE(enabledDetector != nullptr);
+  ASSERT_TRUE(disabledDetector != nullptr);
+  ASSERT_TRUE(enabledDetector->getSoftFaceInteriorContactsEnabled());
+  ASSERT_FALSE(disabledDetector->getSoftFaceInteriorContactsEnabled());
+
+  bool sawEnabledContact = false;
+  for (std::size_t step = 1u; step <= 500u; ++step) {
+    enabled.world->step();
+    disabled.world->step();
+
+    const Eigen::Vector3d enabledPosition
+        = enabled.sphereBody->getWorldTransform().translation();
+    expectFinite(enabledPosition, "enabled sphere position");
+    expectFinite(
+        enabled.sphereBody->getLinearVelocity(), "enabled sphere velocity");
+    const double enabledLowerBound = softBodyLowerBound(enabled.softBody);
+    expectFinite(enabledLowerBound, "enabled soft lower bound");
+    ASSERT_GT(
+        enabledPosition.z() - enabled.sphereRadius, enabledLowerBound - 1.0e-6)
+        << "step=" << step;
+
+    sawEnabledContact
+        = sawEnabledContact
+          || enabled.world->getLastCollisionResult().getNumContacts() > 0u;
+    if (step % 50u == 0u) {
+      expectFiniteSoftBodyState(
+          enabled.softBody,
+          "enabled soft face support step=" + std::to_string(step));
+    }
+  }
+  EXPECT_TRUE(sawEnabledContact);
+
+  const double disabledSphereBottom
+      = disabled.sphereBody->getWorldTransform().translation().z()
+        - disabled.sphereRadius;
+  const double disabledLowerBound = softBodyLowerBound(disabled.softBody);
+  expectFinite(disabledSphereBottom, "disabled sphere bottom");
+  expectFinite(disabledLowerBound, "disabled soft lower bound");
+
+  // The disabled lane is a diagnostic control, not a behavioral contract:
+  // other vertex contacts may happen to catch a changed scene in the future.
+  // Record the observed outcome without requiring that it tunnel.
+  RecordProperty("disabled_sphere_bottom", disabledSphereBottom);
+  RecordProperty("disabled_soft_lower_bound", disabledLowerBound);
+  RecordProperty(
+      "disabled_sphere_sank_through",
+      disabledSphereBottom < disabledLowerBound ? "true" : "false");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationDefaultOffMatchesControlWorld)
+{
+  simulation::WorldPtr lhs
+      = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+  simulation::WorldPtr rhs
+      = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+  ASSERT_TRUE(lhs != nullptr);
+  ASSERT_TRUE(rhs != nullptr);
+
+  lhs->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  rhs->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  lhs->setNumSimulationThreads(1u);
+  rhs->setNumSimulationThreads(1u);
+
+  for (std::size_t step = 0u; step < 120u; ++step) {
+    lhs->step();
+    rhs->step();
+  }
+
+  expectSnapshotsNear(
+      computeSoftStateSnapshot(lhs),
+      computeSoftStateSnapshot(rhs),
+      "adaptive activation default-off control equivalence");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest, adaptiveContactActivationSupportsCustomPointMassNotifier)
+{
+  bool customNotifierDestroyed = false;
+  {
+    auto world = simulation::World::create();
+    world->setGravity(Eigen::Vector3d::Zero());
+
+    auto skeleton = dynamics::Skeleton::create("custom_notifier_soft_body");
+    const auto uniqueProperties
+        = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+            Eigen::Vector3d::Ones(),
+            Eigen::Isometry3d::Identity(),
+            1.0,
+            100.0,
+            100.0,
+            1.0);
+    const dynamics::BodyNode::Properties bodyProperties(
+        dynamics::BodyNode::AspectProperties("custom_notifier_body"));
+    const dynamics::SoftBodyNode::Properties softProperties(
+        bodyProperties, uniqueProperties);
+    auto pair = skeleton->createJointAndBodyNodePair<
+        dynamics::WeldJoint,
+        CustomNotifierSoftBodyNode>(
+        nullptr, dynamics::WeldJoint::Properties(), softProperties);
+    CustomNotifierSoftBodyNode* softBody = pair.second;
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+    const dynamics::PointMassNotifier* originalNotifier
+        = softBody->getNotifier();
+    const auto expectAdaptiveState = [softBody](
+                                         bool enabled,
+                                         std::size_t activePointMasses) {
+      EXPECT_EQ(softBody->isAdaptiveContactActivationEnabled(), enabled);
+      EXPECT_EQ(softBody->getAdaptiveContactActivationRingCount(), 1u);
+      EXPECT_EQ(softBody->getAdaptiveContactActivationLingerSteps(), 2u);
+      EXPECT_DOUBLE_EQ(
+          softBody->getAdaptiveContactActivationVelocityTolerance(), 2.0e-4);
+      EXPECT_DOUBLE_EQ(
+          softBody->getAdaptiveContactActivationPositionTolerance(), 3.0e-4);
+      EXPECT_EQ(softBody->getNumActivePointMasses(), activePointMasses);
+    };
+
+    softBody->setAdaptiveContactActivationRingCount(1u);
+    softBody->setAdaptiveContactActivationLingerSteps(2u);
+    softBody->setAdaptiveContactActivationVelocityTolerance(2.0e-4);
+    softBody->setAdaptiveContactActivationPositionTolerance(3.0e-4);
+    softBody->setAdaptiveContactActivationEnabled(true);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->installCustomNotifier(&customNotifierDestroyed);
+    EXPECT_NE(softBody->getNotifier(), originalNotifier);
+    EXPECT_EQ(softBody->getOriginalNotifier(), originalNotifier);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->removeAllShapeNodes();
+    ASSERT_EQ(softBody->getNumShapeNodes(), 0u);
+    const std::size_t oldPointMassCount = softBody->getNumPointMasses();
+    const auto topologyProperties
+        = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+            Eigen::Vector3d::Ones(),
+            Eigen::Isometry3d::Identity(),
+            Eigen::Vector3i(3, 3, 3),
+            1.0,
+            100.0,
+            100.0,
+            1.0);
+    softBody->setProperties(topologyProperties);
+    ASSERT_GT(softBody->getNumPointMasses(), oldPointMassCount);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->restoreOriginalNotifier();
+    EXPECT_EQ(softBody->getNotifier(), originalNotifier);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    world->addSkeleton(skeleton);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "restored point-mass notifier");
+    const std::size_t activeAfterRestoredStep
+        = softBody->getNumActivePointMasses();
+    expectAdaptiveState(true, activeAfterRestoredStep);
+
+    // Leave the custom notifier installed so the derived destructor must
+    // restore the original before PointMass and base-notifier teardown.
+    softBody->installCustomNotifier(&customNotifierDestroyed);
+    expectAdaptiveState(true, activeAfterRestoredStep);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "custom point-mass notifier");
+
+    softBody->setAdaptiveContactActivationEnabled(false);
+    expectAdaptiveState(false, softBody->getNumPointMasses());
+    world->step();
+    expectAdaptiveState(false, softBody->getNumPointMasses());
+
+    softBody->setAdaptiveContactActivationEnabled(true);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "re-enabled custom notifier");
+  }
+
+  EXPECT_TRUE(customNotifierDestroyed);
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationMatchesSoftDropBehavior)
+{
+  simulation::WorldPtr activationOff
+      = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+  simulation::WorldPtr activationOn
+      = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+  ASSERT_TRUE(activationOff != nullptr);
+  ASSERT_TRUE(activationOn != nullptr);
+
+  activationOff->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  activationOn->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  enableAdaptiveContactActivation(activationOn);
+
+  for (std::size_t step = 0u; step < 200u; ++step) {
+    activationOff->step();
+    activationOn->step();
+  }
+
+  const std::vector<double> offState
+      = collectSkeletonPositionsAndVelocities(activationOff);
+  const std::vector<double> onState
+      = collectSkeletonPositionsAndVelocities(activationOn);
+  ASSERT_EQ(offState.size(), onState.size());
+  EXPECT_LT(maxAbsDifference(offState, onState), 0.75);
+  EXPECT_GT(countActivePointMasses(activationOn), 0u);
+  EXPECT_LT(
+      countActivePointMasses(activationOn), countPointMasses(activationOn));
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationRestGatedLingerFreezesQuietPoints)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 2u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->getPointMass(0)->setVelocities(Eigen::Vector3d(0.1, 0.0, 0.0));
+
+  enableAdaptiveContactActivation(world, 0u, 0u, 1.0e-3, 1.0e-9);
+  world->step();
+  world->step();
+
+  EXPECT_GT(softBody->getNumActivePointMasses(), 0u);
+  EXPECT_LT(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  EXPECT_GT(softBody->getPointMass(0)->getVelocities().norm(), 1.0e-3);
+  EXPECT_NEAR(softBody->getPointMass(1)->getVelocities().norm(), 0.0, 1.0e-12);
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationReactivatesAfterRigidApproach)
+{
+  simulation::WorldPtr world
+      = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  enableAdaptiveContactActivation(world, 2u, 0u);
+
+  bool sawAllFrozen = false;
+  bool sawReactivation = false;
+  for (std::size_t step = 0u; step < 220u; ++step) {
+    world->step();
+    const std::size_t active = countActivePointMasses(world);
+    if (active == 0u)
+      sawAllFrozen = true;
+    if (sawAllFrozen && active > 0u && active < countPointMasses(world)) {
+      sawReactivation = true;
+      break;
+    }
+  }
+
+  EXPECT_TRUE(sawAllFrozen);
+  EXPECT_TRUE(sawReactivation);
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationAllFrozenPointsRideRigidly)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_adaptive_deformable.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  enableAdaptiveContactActivation(world, 2u, 0u);
+
+  for (std::size_t step = 0u; step < 40u; ++step)
+    world->step();
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    EXPECT_NEAR(pointMass->getPositions().norm(), 0.0, 1.0e-12);
+    EXPECT_NEAR(pointMass->getVelocities().norm(), 0.0, 1.0e-12);
+    const Eigen::Vector3d expectedWorld
+        = softBody->getWorldTransform() * pointMass->getRestingPosition();
+    EXPECT_NEAR(
+        (pointMass->getWorldPosition() - expectedWorld).norm(), 0.0, 1.0e-12)
+        << "all-frozen point rides parent transform";
+  }
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationToggleInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allActiveImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allFrozenImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+  EXPECT_GT((allFrozenImplicit - allActiveImplicit).norm(), 1.0e-6);
+
+  softBody->setAdaptiveContactActivationEnabled(false);
+  EXPECT_FALSE(softBody->isAdaptiveContactActivationEnabled());
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  const Eigen::Matrix6d disabled = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d disabledImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  // Force an independent recomputation to discriminate a stale toggle cache
+  // from the correct disabled/all-active articulated inertia.
+  softBody->dirtyArticulatedInertia();
+  const Eigen::Matrix6d recomputed = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d recomputedImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  expectMatrixNear(
+      disabled, recomputed, 1.0e-12, "disabled adaptive articulated inertia");
+  expectMatrixNear(
+      disabledImplicit,
+      recomputedImplicit,
+      1.0e-12,
+      "disabled adaptive implicit articulated inertia");
+  expectMatrixNear(
+      recomputed,
+      allActive,
+      1.0e-12,
+      "recomputed all-active articulated inertia");
+  expectMatrixNear(
+      recomputedImplicit,
+      allActiveImplicit,
+      1.0e-12,
+      "recomputed all-active implicit articulated inertia");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationRingChangeInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allActiveImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allFrozenImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+  EXPECT_GT((allFrozenImplicit - allActiveImplicit).norm(), 1.0e-6);
+
+  softBody->setAdaptiveContactActivationRingCount(1u);
+  const Eigen::Matrix6d ringChanged = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d ringChangedImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  expectMatrixNear(
+      ringChanged, allActive, 1.0e-12, "ring-change articulated inertia");
+  expectMatrixNear(
+      ringChangedImplicit,
+      allActiveImplicit,
+      1.0e-12,
+      "ring-change implicit articulated inertia");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationControlChangesInvalidateArticulatedInertia)
+{
+  const auto makeQuiescentWorld = []() {
+    simulation::WorldPtr world = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_box.skel");
+    if (!world)
+      return world;
+
+    world->setGravity(Eigen::Vector3d::Zero());
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    if (softBody != nullptr) {
+      softBody->setVertexSpringStiffness(0.0);
+      softBody->setEdgeSpringStiffness(0.0);
+      softBody->setDampingCoefficient(0.0);
+    }
+    return world;
+  };
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+
+    enableAdaptiveContactActivation(world, 0u, 8u);
+    world->step();
+    ASSERT_EQ(
+        softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+    const Eigen::Matrix6d active = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationLingerSteps(0u);
+    const Eigen::Matrix6d lingerChanged = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((lingerChanged - active).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        lingerChanged,
+        1.0e-12,
+        "linger-change articulated inertia");
+  }
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+    softBody->getPointMass(0)->setVelocities(Eigen::Vector3d(1.0e-3, 0.0, 0.0));
+
+    enableAdaptiveContactActivation(world, 0u, 0u, 1.0e-4, 1.0);
+    world->step();
+    world->step();
+    ASSERT_GT(softBody->getNumActivePointMasses(), 0u);
+    const Eigen::Matrix6d strictVelocity = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationVelocityTolerance(1.0e-2);
+    const Eigen::Matrix6d relaxedVelocity = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((relaxedVelocity - strictVelocity).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        relaxedVelocity,
+        1.0e-12,
+        "velocity-tolerance articulated inertia");
+  }
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+    softBody->getPointMass(0)->setPositions(Eigen::Vector3d(1.0e-3, 0.0, 0.0));
+
+    enableAdaptiveContactActivation(world, 0u, 0u, 1.0, 1.0e-4);
+    world->step();
+    world->step();
+    ASSERT_GT(softBody->getNumActivePointMasses(), 0u);
+    const Eigen::Matrix6d strictPosition = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationPositionTolerance(1.0e-2);
+    const Eigen::Matrix6d relaxedPosition = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((relaxedPosition - strictPosition).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        relaxedPosition,
+        1.0e-12,
+        "position-tolerance articulated inertia");
+  }
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationSameCountRebuildInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  ASSERT_GT(softBody->getNumFaces(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+
+  const Eigen::Vector3i repeatedFace = softBody->getFace(0u);
+  softBody->addFace(repeatedFace);
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  expectMatrixNear(
+      softBody->getArticulatedInertia(),
+      allActive,
+      1.0e-12,
+      "same-count rebuild articulated inertia");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationKeepsPublicMatricesAllActive)
+{
+  simulation::WorldPtr activationOff = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  simulation::WorldPtr activationOn = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(activationOff != nullptr);
+  ASSERT_TRUE(activationOn != nullptr);
+  enableAdaptiveContactActivation(activationOn);
+
+  const dynamics::SkeletonPtr offSkeleton
+      = activationOff->getSkeleton("skeleton 1");
+  const dynamics::SkeletonPtr onSkeleton
+      = activationOn->getSkeleton("skeleton 1");
+  ASSERT_TRUE(offSkeleton != nullptr);
+  ASSERT_TRUE(onSkeleton != nullptr);
+
+  expectMatrixNear(
+      offSkeleton->getMassMatrix(),
+      onSkeleton->getMassMatrix(),
+      1.0e-12,
+      "activation on mass matrix");
+  expectMatrixNear(
+      offSkeleton->getAugMassMatrix(),
+      onSkeleton->getAugMassMatrix(),
+      1.0e-12,
+      "activation on augmented mass matrix");
+  expectMatrixNear(
+      offSkeleton->getInvMassMatrix(),
+      onSkeleton->getInvMassMatrix(),
+      1.0e-12,
+      "activation on inverse mass matrix");
+  expectMatrixNear(
+      offSkeleton->getInvAugMassMatrix(),
+      onSkeleton->getInvAugMassMatrix(),
+      1.0e-12,
+      "activation on inverse augmented mass matrix");
+
+  // The all-active guarantee must survive frozen points: soft trees compute
+  // inverse matrices from the public (all-active) mass matrices, so the
+  // identity products discriminate against any activity-dependent inverse.
+  dynamics::SoftBodyNode* softBody = onSkeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  for (std::size_t i = 0; i < 400; ++i) {
+    activationOn->step();
+    if (softBody->getNumActivePointMasses() < softBody->getNumPointMasses())
+      break;
+  }
+  ASSERT_LT(softBody->getNumActivePointMasses(), softBody->getNumPointMasses())
+      << "scene never froze a point; frozen-state matrix check not exercised";
+
+  const Eigen::MatrixXd frozenM = onSkeleton->getMassMatrix();
+  const Eigen::MatrixXd frozenInvM = onSkeleton->getInvMassMatrix();
+  const Eigen::MatrixXd frozenAugM = onSkeleton->getAugMassMatrix();
+  const Eigen::MatrixXd frozenInvAugM = onSkeleton->getInvAugMassMatrix();
+  const Eigen::MatrixXd identity
+      = Eigen::MatrixXd::Identity(frozenM.rows(), frozenM.cols());
+  expectMatrixNear(
+      frozenM * frozenInvM,
+      identity,
+      1.0e-9,
+      "frozen-state mass/inverse identity");
+  expectMatrixNear(
+      frozenAugM * frozenInvAugM,
+      identity,
+      1.0e-9,
+      "frozen-state augmented mass/inverse identity");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationCloneAndStateRestoreResetTransientState)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  enableAdaptiveContactActivation(world, 1u, 3u, 2.0e-4, 3.0e-4);
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  dynamics::SkeletonPtr skeleton = softBody->getSkeleton();
+  ASSERT_TRUE(skeleton != nullptr);
+
+  dynamics::SkeletonPtr clone = skeleton->cloneSkeleton();
+  ASSERT_TRUE(clone != nullptr);
+  ASSERT_EQ(clone->getNumSoftBodyNodes(), 1u);
+  const dynamics::SoftBodyNode* clonedSoftBody = clone->getSoftBodyNode(0);
+  ASSERT_TRUE(clonedSoftBody != nullptr);
+  EXPECT_TRUE(clonedSoftBody->isAdaptiveContactActivationEnabled());
+  EXPECT_EQ(clonedSoftBody->getAdaptiveContactActivationRingCount(), 1u);
+  EXPECT_EQ(clonedSoftBody->getAdaptiveContactActivationLingerSteps(), 3u);
+  EXPECT_DOUBLE_EQ(
+      clonedSoftBody->getAdaptiveContactActivationVelocityTolerance(), 2.0e-4);
+  EXPECT_DOUBLE_EQ(
+      clonedSoftBody->getAdaptiveContactActivationPositionTolerance(), 3.0e-4);
+  EXPECT_EQ(
+      clonedSoftBody->getNumActivePointMasses(),
+      clonedSoftBody->getNumPointMasses());
+
+  enableAdaptiveContactActivation(world, 1u, 0u);
+  for (std::size_t step = 0u; step < 4u; ++step)
+    world->step();
+  EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+
+  const dynamics::SoftBodyNode::AspectState restoredState
+      = softBody->getAspectState();
+  const Eigen::Matrix6d frozenArticulatedInertia
+      = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d frozenImplicitArticulatedInertia
+      = softBody->getArticulatedInertiaImplicit();
+  softBody->setAspectState(restoredState);
+  // Even when the public point state is identical, a restore resets the hidden
+  // activation bookkeeping and invalidates the frozen articulated inertia.
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  EXPECT_GT(
+      (softBody->getArticulatedInertia() - frozenArticulatedInertia).norm(),
+      1.0e-6);
+  EXPECT_GT(
+      (softBody->getArticulatedInertiaImplicit()
+       - frozenImplicitArticulatedInertia)
+          .norm(),
+      1.0e-6);
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest, softMeshShapeUsesContiguousStateAndCachedFallbackStorage)
+{
+  auto emptySkeleton = dynamics::Skeleton::create("empty_soft_mesh");
+  auto emptyPair = emptySkeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>();
+  ASSERT_TRUE(emptyPair.second != nullptr);
+  ASSERT_EQ(emptyPair.second->getNumPointMasses(), 0u);
+  ASSERT_EQ(emptyPair.second->getNumShapeNodes(), 1u);
+
+  auto emptyShape = std::dynamic_pointer_cast<dynamics::SoftMeshShape>(
+      emptyPair.second->getShapeNode(0)->getShape());
+  ASSERT_TRUE(emptyShape != nullptr);
+  EXPECT_TRUE(emptyShape->getBoundingBox().getMin().isZero(0.0));
+  EXPECT_TRUE(emptyShape->getBoundingBox().getMax().isZero(0.0));
+
+  auto skeleton = dynamics::Skeleton::create("soft_mesh_storage");
+  const auto uniqueProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(1.0, 2.0, 3.0),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      100.0,
+      200.0,
+      1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_mesh_body"));
+  const dynamics::SoftBodyNode::Properties softProperties(
+      bodyProperties, uniqueProperties);
+  auto pair = skeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::WeldJoint::Properties(), softProperties);
+  dynamics::SoftBodyNode* softBody = pair.second;
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_EQ(softBody->getNumPointMasses(), 8u);
+  ASSERT_EQ(softBody->getNumShapeNodes(), 1u);
+
+  auto shape = std::dynamic_pointer_cast<dynamics::SoftMeshShape>(
+      softBody->getShapeNode(0)->getShape());
+  ASSERT_TRUE(shape != nullptr);
+
+  dynamics::SoftBodyNode::AspectState state = softBody->getAspectState();
+  ASSERT_EQ(state.mPointStates.size(), softBody->getNumPointMasses());
+  state.mPointStates[0].mPositions = Eigen::Vector3d(0.25, -0.5, 0.75);
+  state.mPointStates[7].mPositions = Eigen::Vector3d(-0.5, 0.25, -0.75);
+  softBody->setAspectState(state);
+  shape->refreshData();
+
+  std::vector<Eigen::Vector3d> expectedVertices;
+  expectedVertices.reserve(softBody->getNumPointMasses());
+  Eigen::Vector3d expectedMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d expectedMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    const Eigen::Vector3d vertex
+        = state.mPointStates[i].mPositions + pointMass->getRestingPosition();
+    expectedVertices.push_back(vertex);
+    expectedMin = expectedMin.cwiseMin(vertex);
+    expectedMax = expectedMax.cwiseMax(vertex);
+  }
+
+  const aiMesh* mesh = shape->getAssimpMesh();
+  ASSERT_TRUE(mesh != nullptr);
+  ASSERT_EQ(mesh->mNumVertices, expectedVertices.size());
+  for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
+    EXPECT_TRUE(
+        Eigen::Vector3d(
+            mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)
+            .isApprox(expectedVertices[i], 1.0e-6));
+  }
+  EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(expectedMin, 1.0e-12));
+  EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
+
+  // SoftMeshShape retains a defensive fallback for temporarily mismatched
+  // aspect storage. Preserve the last coherent PointMass transforms while
+  // constructing that state so the fallback can be exercised in isolation.
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i)
+    EXPECT_TRUE(softBody->getPointMass(i)->getLocalPosition().isApprox(
+        expectedVertices[i], 1.0e-12));
+  dynamics::SoftBodyNode::AspectState mismatchedState;
+  softBody->setAspectState(mismatchedState);
+  softBody->getNotifier()->clearTransformNotice();
+  shape->refreshData();
+
+  mesh = shape->getAssimpMesh();
+  ASSERT_TRUE(mesh != nullptr);
+  for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
+    EXPECT_TRUE(
+        Eigen::Vector3d(
+            mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)
+            .isApprox(expectedVertices[i], 1.0e-6));
+  }
+  EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(expectedMin, 1.0e-12));
+  EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
+
+  softBody->setAspectState(state);
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationCopyInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr sourceWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  simulation::WorldPtr targetWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(sourceWorld != nullptr);
+  ASSERT_TRUE(targetWorld != nullptr);
+  sourceWorld->setGravity(Eigen::Vector3d::Zero());
+  targetWorld->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* source = firstSoftBody(sourceWorld);
+  dynamics::SoftBodyNode* target = firstSoftBody(targetWorld);
+  ASSERT_TRUE(source != nullptr);
+  ASSERT_TRUE(target != nullptr);
+  source->setVertexSpringStiffness(0.0);
+  source->setEdgeSpringStiffness(0.0);
+  source->setDampingCoefficient(0.0);
+  target->setVertexSpringStiffness(0.0);
+  target->setEdgeSpringStiffness(0.0);
+  target->setDampingCoefficient(0.0);
+
+  enableAdaptiveContactActivation(sourceWorld, 3u, 5u);
+  enableAdaptiveContactActivation(targetWorld, 0u, 0u);
+  targetWorld->step();
+  targetWorld->step();
+  ASSERT_EQ(target->getNumActivePointMasses(), 0u);
+  const Eigen::Matrix6d frozen = target->getArticulatedInertia();
+
+  target->copy(*source);
+  const Eigen::Matrix6d copied = target->getArticulatedInertia();
+  EXPECT_EQ(target->getNumActivePointMasses(), target->getNumPointMasses());
+  EXPECT_GT((copied - frozen).norm(), 1.0e-6);
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
+
+  target->setAdaptiveContactActivationRingCount(0u);
+  target->setAdaptiveContactActivationLingerSteps(0u);
+  targetWorld->step();
+  targetWorld->step();
+  ASSERT_EQ(target->getNumActivePointMasses(), 0u);
+
+  *target = *source;
+  const Eigen::Matrix6d assigned = target->getArticulatedInertia();
+  EXPECT_EQ(target->getNumActivePointMasses(), target->getNumPointMasses());
+  EXPECT_GT((assigned - frozen).norm(), 1.0e-6);
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationCopyClampsAndInvalidatesRestGeometry)
+{
+  simulation::WorldPtr sourceWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  simulation::WorldPtr targetWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(sourceWorld != nullptr);
+  ASSERT_TRUE(targetWorld != nullptr);
+
+  dynamics::SoftBodyNode* source = firstSoftBody(sourceWorld);
+  dynamics::SoftBodyNode* target = firstSoftBody(targetWorld);
+  ASSERT_TRUE(source != nullptr);
+  ASSERT_TRUE(target != nullptr);
+  source->setAdaptiveContactActivationEnabled(true);
+  source->setAdaptiveContactActivationRingCount(3u);
+  source->setAdaptiveContactActivationLingerSteps(5u);
+  source->setAdaptiveContactActivationVelocityTolerance(2.0e-4);
+  source->setAdaptiveContactActivationPositionTolerance(3.0e-4);
+
+  target->copy(*source);
+  EXPECT_TRUE(target->isAdaptiveContactActivationEnabled());
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 2.0e-4);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 3.0e-4);
+
+  target->setAdaptiveContactActivationVelocityTolerance(-1.0);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 0.0);
+  target->setAdaptiveContactActivationVelocityTolerance(
+      std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 0.0);
+  target->setAdaptiveContactActivationPositionTolerance(-1.0);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 0.0);
+  target->setAdaptiveContactActivationPositionTolerance(
+      std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 0.0);
+
+  ASSERT_GT(target->getNumPointMasses(), 0u);
+  dynamics::PointMass* pointMass = target->getPointMass(0);
+  ASSERT_TRUE(pointMass != nullptr);
+  const Eigen::Matrix6d inertiaBefore = target->getArticulatedInertiaImplicit();
+  const std::size_t versionBefore = target->getVersion();
+  const Eigen::Vector3d updatedRestingPosition
+      = pointMass->getRestingPosition() + Eigen::Vector3d(0.2, -0.1, 0.3);
+  pointMass->setRestingPosition(updatedRestingPosition);
+  EXPECT_EQ(pointMass->getRestingPosition(), updatedRestingPosition);
+  EXPECT_GT(target->getVersion(), versionBefore);
+
+  const Eigen::Matrix6d inertiaAfter = target->getArticulatedInertiaImplicit();
+  EXPECT_GT((inertiaAfter - inertiaBefore).norm(), 1.0e-12);
+
+  const std::size_t unchangedVersion = target->getVersion();
+  pointMass->setRestingPosition(updatedRestingPosition);
+  EXPECT_EQ(target->getVersion(), unchangedVersion);
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, adaptiveContactActivationDeterministicAcrossThreads)
+{
+  std::vector<SoftStateSnapshot> snapshots;
+  for (const std::size_t threads : {1u, 1u, 4u}) {
+    simulation::WorldPtr world
+        = utils::SkelParser::readWorld("dart://sample/skel/soft_cubes.skel");
+    ASSERT_TRUE(world != nullptr);
+    world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+    world->setNumSimulationThreads(threads);
+    enableAdaptiveContactActivation(world);
+
+    for (std::size_t step = 0u; step < 200u; ++step)
+      world->step();
+
+    snapshots.push_back(computeSoftStateSnapshot(world));
+  }
+
+  ASSERT_EQ(snapshots.size(), 3u);
+  expectSnapshotsNear(
+      snapshots[0], snapshots[1], "activation repeat determinism threads=1");
+  expectSnapshotsNear(
+      snapshots[0], snapshots[2], "activation determinism threads=1-vs-4");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softMechanicalEnergyGrowthIsBounded)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    simulation::WorldPtr freeWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(freeWorld != nullptr) << detector.name;
+    freeWorld->removeSkeleton(freeWorld->getSkeleton("ground skeleton"));
+    freeWorld->setGravity(Eigen::Vector3d::Zero());
+    configureDetector(freeWorld, detector.useNativeDetector);
+
+    const dynamics::SkeletonPtr freeSoft = freeWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(freeSoft != nullptr) << detector.name;
+    dynamics::SoftBodyNode* freeSoftBody = freeSoft->getSoftBodyNode(0);
+    ASSERT_TRUE(freeSoftBody != nullptr) << detector.name;
+    ASSERT_GT(freeSoftBody->getNumPointMasses(), 1u) << detector.name;
+    // The fixture ships with ke=0; a nonzero edge stiffness keeps the
+    // edge-spring energy term exercised instead of multiplying to zero.
+    freeSoftBody->setEdgeSpringStiffness(5.0);
+    freeSoftBody->getPointMass(0)->setPositions(
+        Eigen::Vector3d(0.02, 0.0, 0.0));
+    freeSoftBody->getPointMass(1)->setPositions(
+        Eigen::Vector3d(-0.01, 0.015, 0.0));
+
+    const double initialEnergy
+        = computeSoftMechanicalEnergy(freeSoft, freeWorld->getGravity());
+    expectFinite(initialEnergy, std::string(detector.name) + " initial energy");
+    ASSERT_GT(initialEnergy, 1.0e-8) << detector.name;
+    double previousEnergy = initialEnergy;
+    double maxEnergyIncrease = 0.0;
+    for (std::size_t step = 0; step < 500u; ++step) {
+      freeWorld->step();
+      EXPECT_EQ(freeWorld->getLastCollisionResult().getNumContacts(), 0u)
+          << detector.name << " step=" << step;
+      const double energy
+          = computeSoftMechanicalEnergy(freeSoft, freeWorld->getGravity());
+      expectFinite(
+          energy,
+          std::string(detector.name)
+              + " free energy step=" + std::to_string(step));
+      maxEnergyIncrease = std::max(maxEnergyIncrease, energy - previousEnergy);
+      previousEnergy = energy;
+    }
+
+    // One nanjoule per step (scaled only for energies above one joule) absorbs
+    // floating-point summation noise while rejecting integrator energy growth.
+    const double freeStepTolerance
+        = 1.0e-9 * std::max(1.0, std::abs(initialEnergy));
+    EXPECT_LE(maxEnergyIncrease, freeStepTolerance) << detector.name;
+    EXPECT_LT(previousEnergy, initialEnergy) << detector.name;
+
+    simulation::WorldPtr contactWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(contactWorld != nullptr) << detector.name;
+    configureDetector(contactWorld, detector.useNativeDetector);
+    const dynamics::SkeletonPtr contactSoft
+        = contactWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(contactSoft != nullptr) << detector.name;
+
+    previousEnergy
+        = computeSoftMechanicalEnergy(contactSoft, contactWorld->getGravity());
+    maxEnergyIncrease = 0.0;
+    bool sawContact = false;
+    for (std::size_t step = 0; step < 800u; ++step) {
+      contactWorld->step();
+      sawContact
+          = sawContact
+            || contactWorld->getLastCollisionResult().getNumContacts() > 0u;
+      const double energy = computeSoftMechanicalEnergy(
+          contactSoft, contactWorld->getGravity());
+      expectFinite(
+          energy,
+          std::string(detector.name)
+              + " contact energy step=" + std::to_string(step));
+      maxEnergyIncrease = std::max(maxEnergyIncrease, energy - previousEnergy);
+      previousEnergy = energy;
+    }
+
+    ASSERT_TRUE(sawContact) << detector.name;
+    // Contact impulses may inject correction energy. Limiting one-step growth
+    // to the system weight times 1 cm permits that impulse-scale correction
+    // while rejecting macroscopic energy spikes or runaway contact response.
+    const double contactStepBound = computeSoftSystemMass(contactSoft)
+                                    * std::abs(contactWorld->getGravity().y())
+                                    * 0.01;
+    EXPECT_LE(maxEnergyIncrease, contactStepBound) << detector.name;
+  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, restingSoftContactForceAndCenterOfPressureAreSmooth)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    for (const bool adaptive : {false, true}) {
+      simulation::WorldPtr world = utils::SkelParser::readWorld(
+          "dart://sample/skel/test/test_drop_low_stiffness.skel");
+      ASSERT_TRUE(world != nullptr) << detector.name;
+      configureDetector(world, detector.useNativeDetector);
+      if (adaptive)
+        enableAdaptiveContactActivation(world);
+
+      const dynamics::SkeletonPtr softSkeleton
+          = world->getSkeleton("skeleton 1");
+      ASSERT_TRUE(softSkeleton != nullptr) << detector.name;
+      for (std::size_t step = 0; step < 3000u; ++step)
+        world->step();
+
+      const std::string context = std::string(detector.name)
+                                  + (adaptive ? " adaptive" : " all-active");
+      const double weight = computeSoftSystemMass(softSkeleton)
+                            * std::abs(world->getGravity().y());
+      std::vector<double> verticalForces;
+      verticalForces.reserve(300u);
+      double maxCopDisplacement = 0.0;
+      Eigen::Vector3d previousCop = Eigen::Vector3d::Zero();
+      bool havePreviousCop = false;
+      std::size_t sampledContacts = 0u;
+
+      for (std::size_t step = 0; step < 300u; ++step) {
+        world->step();
+        const ContactMetrics metrics
+            = computeContactMetrics(world, softSkeleton);
+        expectFinite(metrics.force, context + " contact force");
+        ASSERT_TRUE(metrics.hasCenterOfPressure) << context << " step=" << step;
+        expectFinite(metrics.centerOfPressure, context + " center of pressure");
+        sampledContacts += metrics.contacts;
+        verticalForces.push_back(metrics.force.y());
+        if (havePreviousCop) {
+          const Eigen::Vector2d displacement(
+              metrics.centerOfPressure.x() - previousCop.x(),
+              metrics.centerOfPressure.z() - previousCop.z());
+          maxCopDisplacement
+              = std::max(maxCopDisplacement, displacement.norm());
+        }
+        previousCop = metrics.centerOfPressure;
+        havePreviousCop = true;
+      }
+
+      ASSERT_GT(sampledContacts, 0u) << context;
+      // Smoothness is judged on the 5th/95th percentile of per-step vertical
+      // force: the native manifold is held to +/-25% of weight and 2 cm CoP
+      // motion, while legacy FCL needs a 0.25x-3x band and 13 cm CoP bound
+      // for its larger contact-point churn. The FCL cap stays just above one
+      // 12.5 cm surface-mesh interval in this scene, admitting one manifold
+      // handoff while rejecting a two-cell, footprint-scale jump. Raw extrema
+      // only carry wide spike caps because isolated one-step impulsive
+      // corrections are platform-scheduling-sensitive (FreeBSD CI observed a
+      // single 3.8x spike in the FCL+adaptive lane that Linux never
+      // reproduces): support
+      // must never be lost entirely and transients stay bounded, but a lone
+      // spike does not fail the smoothness claim. Each backend uses the same
+      // bounds with adaptive activation on and off.
+      ASSERT_FALSE(verticalForces.empty()) << context;
+      std::sort(verticalForces.begin(), verticalForces.end());
+      const std::size_t lastIndex = verticalForces.size() - 1u;
+      const double lowPercentileForce
+          = verticalForces[static_cast<std::size_t>(0.05 * lastIndex)];
+      const double highPercentileForce
+          = verticalForces[static_cast<std::size_t>(0.95 * lastIndex)];
+      const double minForceFactor = detector.useNativeDetector ? 0.75 : 0.25;
+      const double maxForceFactor = detector.useNativeDetector ? 1.25 : 3.0;
+      const double spikeForceFactor = detector.useNativeDetector ? 2.0 : 5.0;
+      const double copDisplacementBound
+          = detector.useNativeDetector ? 0.02 : 0.13;
+      EXPECT_GE(lowPercentileForce, minForceFactor * weight) << context;
+      EXPECT_LE(highPercentileForce, maxForceFactor * weight) << context;
+      EXPECT_GT(verticalForces.front(), 0.0) << context << " lost support";
+      EXPECT_LE(verticalForces.back(), spikeForceFactor * weight) << context;
+      EXPECT_LE(maxCopDisplacement, copDisplacementBound) << context;
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softContactForcesAreRobustToLcpInitialPoint)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    simulation::WorldPtr continuousWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(continuousWorld != nullptr) << detector.name;
+    configureDetector(continuousWorld, detector.useNativeDetector);
+    for (std::size_t step = 0; step < 3000u; ++step)
+      continuousWorld->step();
+
+    simulation::WorldPtr restoredWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(restoredWorld != nullptr) << detector.name;
+    configureDetector(restoredWorld, detector.useNativeDetector);
+    restoredWorld->reset();
+    ASSERT_EQ(
+        restoredWorld->getNumSkeletons(), continuousWorld->getNumSkeletons())
+        << detector.name;
+    for (std::size_t i = 0; i < continuousWorld->getNumSkeletons(); ++i) {
+      restoredWorld->getSkeleton(i)->setState(
+          continuousWorld->getSkeleton(i)->getState());
+    }
+
+    const dynamics::SkeletonPtr continuousSoft
+        = continuousWorld->getSkeleton("skeleton 1");
+    const dynamics::SkeletonPtr restoredSoft
+        = restoredWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(continuousSoft != nullptr) << detector.name;
+    ASSERT_TRUE(restoredSoft != nullptr) << detector.name;
+
+    // Let the restored world rebuild contact/LCP caches from the same public
+    // state before comparing its steady window with uninterrupted simulation.
+    for (std::size_t step = 0; step < 300u; ++step) {
+      continuousWorld->step();
+      restoredWorld->step();
+    }
+
+    double continuousForceMagnitudeSum = 0.0;
+    double restoredForceMagnitudeSum = 0.0;
+    for (std::size_t step = 0; step < 300u; ++step) {
+      continuousWorld->step();
+      restoredWorld->step();
+      const ContactMetrics continuousMetrics
+          = computeContactMetrics(continuousWorld, continuousSoft);
+      const ContactMetrics restoredMetrics
+          = computeContactMetrics(restoredWorld, restoredSoft);
+      ASSERT_GT(continuousMetrics.contacts, 0u)
+          << detector.name << " continuous step=" << step;
+      ASSERT_GT(restoredMetrics.contacts, 0u)
+          << detector.name << " restored step=" << step;
+      continuousForceMagnitudeSum += continuousMetrics.force.norm();
+      restoredForceMagnitudeSum += restoredMetrics.force.norm();
+    }
+
+    const double continuousMeanForce = continuousForceMagnitudeSum / 300.0;
+    const double restoredMeanForce = restoredForceMagnitudeSum / 300.0;
+    const double weight = computeSoftSystemMass(continuousSoft)
+                          * std::abs(continuousWorld->getGravity().y());
+    // Five percent of weight permits cache-rebuild transients while rejecting
+    // a warm-start history that materially changes steady contact load.
+    EXPECT_NEAR(continuousMeanForce, restoredMeanForce, 0.05 * weight)
+        << detector.name;
+  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_TRUE(softBody->getGravityMode());
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const Eigen::VectorXd expectedPointMassGravity
+      = projectPointMassGravity(softBody, world->getGravity());
+  const Eigen::MatrixXd expectedPointMassMass
+      = projectPointMassMassMatrix(skeleton, softBody);
+  ASSERT_GT(expectedPointMassGravity.norm(), 1.0e-9);
+  ASSERT_GT(expectedPointMassMass.norm(), 1.0e-9);
+  ASSERT_LT(skeleton->getVelocities().norm(), 1.0e-12);
+
+  const Eigen::VectorXd withOriginalPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withOriginalPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withOriginalPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesAugM
+      = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvM
+      = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
+
+  const double skeletonMassBeforeHalving = skeleton->getMass();
+  const double softBodyMassBeforeHalving = softBody->getMass();
+  double halvedPointMassSum = 0.0;
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    halvedPointMassSum += 0.5 * pointMass->getMass();
+    pointMass->setMass(0.5 * pointMass->getMass());
+  }
+
+  // SoftBodyNode::getMass() shadows the non-virtual BodyNode::getMass(), so
+  // Skeleton-level totals are rigid-only by construction and must not move
+  // when point-mass masses change, while the soft body's own flesh-inclusive
+  // mass reflects the halving. Point-mass gravity reaches the skeleton
+  // through the aggregation paths verified below, not through the cached
+  // skeleton total.
+  EXPECT_NEAR(skeleton->getMass(), skeletonMassBeforeHalving, 1e-12);
+  EXPECT_NEAR(
+      softBody->getMass(),
+      softBodyMassBeforeHalving - halvedPointMassSum,
+      1e-12);
+
+  const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withHalfPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withHalfPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesAugM = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvM = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
+  const Eigen::VectorXd actualPointMassDelta
+      = withOriginalPointMasses - withHalfPointMasses;
+  const Eigen::VectorXd actualPointMassCgDelta
+      = withOriginalPointMassesCg - withHalfPointMassesCg;
+  const Eigen::MatrixXd actualPointMassMassDelta
+      = withOriginalPointMassesM - withHalfPointMassesM;
+  const Eigen::MatrixXd actualPointMassAugMassDelta
+      = withOriginalPointMassesAugM - withHalfPointMassesAugM;
+
+  expectVectorNear(
+      actualPointMassDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass gravity projection");
+  expectVectorNear(
+      actualPointMassCgDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass combined gravity projection");
+  expectMatrixNear(
+      actualPointMassMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass mass matrix projection");
+  expectMatrixNear(
+      actualPointMassAugMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass augmented mass matrix projection");
+
+  const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(
+      skeleton->getNumDofs(), skeleton->getNumDofs());
+  expectMatrixNear(
+      withOriginalPointMassesM * withOriginalPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvM * withOriginalPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesM * withHalfPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvM * withHalfPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse right identity");
+  expectMatrixNear(
+      withOriginalPointMassesAugM * withOriginalPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvAugM * withOriginalPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesAugM * withHalfPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvAugM * withHalfPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse right identity");
+
+  std::vector<Eigen::Vector3d> localExternalForces;
+  localExternalForces.reserve(softBody->getNumPointMasses());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+
+    const double scale = static_cast<double>(i + 1u);
+    const Eigen::Vector3d localForce(0.01 * scale, -0.02 * scale, 0.03 * scale);
+    pointMass->addExtForce(localForce, true);
+    localExternalForces.push_back(localForce);
+  }
+
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      projectPointMassExternalForces(skeleton, softBody, localExternalForces),
+      1.0e-10,
+      "soft point-mass external force projection");
+
+  skeleton->clearExternalForces();
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      Eigen::VectorXd::Zero(skeleton->getNumDofs()),
+      1.0e-12,
+      "soft point-mass external force clear");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, clearCollidingBodiesClearsPointMassOnlyState)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  dynamics::PointMass* pointMass = softBody->getPointMass(0);
+  ASSERT_TRUE(pointMass != nullptr);
+
+  pointMass->setColliding(true);
+  ASSERT_TRUE(pointMass->isColliding());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  ASSERT_FALSE(softBody->isColliding());
+  skeleton->clearCollidingBodies();
+  EXPECT_FALSE(softBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_FALSE(pointMass->isColliding());
+
+  const dynamics::GroupPtr group
+      = dynamics::Group::create("soft_body_group", {softBody});
+  ASSERT_TRUE(group != nullptr);
+  ASSERT_EQ(group->getNumBodyNodes(), 1u);
+
+  pointMass->setColliding(true);
+  ASSERT_TRUE(pointMass->isColliding());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  ASSERT_FALSE(softBody->isColliding());
+  group->clearCollidingBodies();
+  EXPECT_FALSE(softBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_FALSE(pointMass->isColliding());
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassAccelerationsDoNotAffectMassMatrices)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const Eigen::MatrixXd baselineMass = skeleton->getMassMatrix();
+  const Eigen::MatrixXd baselineAugMass = skeleton->getAugMassMatrix();
+  expectMatrixNear(
+      baselineMass,
+      getMassMatrix(skeleton),
+      1.0e-10,
+      "soft point-mass baseline mass matrix");
+  expectMatrixNear(
+      baselineAugMass,
+      getAugMassMatrix(skeleton),
+      1.0e-10,
+      "soft point-mass baseline augmented mass matrix");
+
+  std::vector<Eigen::Vector3d> originalAccelerations;
+  originalAccelerations.reserve(softBody->getNumPointMasses());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    originalAccelerations.push_back(pointMass->getAccelerations());
+
+    const double scale = static_cast<double>(i + 1u);
+    pointMass->setAccelerations(
+        Eigen::Vector3d(0.25 * scale, -0.5 * scale, 0.75 * scale));
+  }
+
+  // Point-mass accelerations are simulation state, not generalized-coordinate
+  // basis accelerations. Force a fresh column assembly to prove that retained
+  // point state cannot leak into either public mass matrix.
+  softBody->dirtyArticulatedInertia();
+  expectMatrixNear(
+      skeleton->getMassMatrix(),
+      baselineMass,
+      1.0e-10,
+      "soft point-mass acceleration-independent mass matrix");
+  expectMatrixNear(
+      skeleton->getAugMassMatrix(),
+      baselineAugMass,
+      1.0e-10,
+      "soft point-mass acceleration-independent augmented mass matrix");
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i)
+    softBody->getPointMass(i)->setAccelerations(originalAccelerations[i]);
 }

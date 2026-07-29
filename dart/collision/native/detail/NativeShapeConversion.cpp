@@ -39,6 +39,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
@@ -207,6 +208,12 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
   if (shapeType == dynamics::SphereShape::getStaticType()) {
     const auto& sphere = static_cast<const dynamics::SphereShape&>(shape);
     return std::make_unique<native::SphereShape>(sphere.getRadius());
+  }
+
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto& ellipsoid = static_cast<const dynamics::EllipsoidShape&>(shape);
+    if (ellipsoid.isSphere())
+      return std::make_unique<native::SphereShape>(ellipsoid.getRadii()[0]);
   }
 
   if (shapeType == dynamics::BoxShape::getStaticType()) {

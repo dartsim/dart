@@ -115,6 +115,26 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--parent", default="HEAD^1")
     parser.add_argument("--base")
     parser.add_argument("--detectors", default="fcl,dart,native,bullet,ode")
+    parser.add_argument(
+        "--expected-fastest-detector",
+        default="native",
+        help=(
+            "Detector expected to be the fastest eligible current-row backend. "
+            f"The checksum reference remains {REFERENCE_DETECTOR}."
+        ),
+    )
+    parser.add_argument(
+        "--expected-fastest-tie-tolerance",
+        type=float,
+        default=0.02,
+        help=(
+            "Relative CPU-time margin within which the expected fastest "
+            "detector counts as matching the winning row. The acceptance "
+            "wording is 'matches or beats'; near-tied backends sharing the "
+            "same narrow-phase kernels would otherwise fail on scheduler "
+            "noise. Set to 0 to require strict wins."
+        ),
+    )
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
@@ -235,6 +255,7 @@ def count_local_dart_workloads(root: Path) -> int:
     workspace = str(local_dart_workspace_root(root))
     build_tools = {"cc1plus", "clang-format", "cmake", "ninja"}
     python_tools = {"python", "python3", "python3.14", "pytest"}
+    benchmark_markers = ("/BM_", "BM_INTEGRATION_", "/soft_body_headless")
     try:
         result = subprocess.run(
             ["ps", "-eo", "comm=,args="],
@@ -266,6 +287,8 @@ def count_local_dart_workloads(root: Path) -> int:
         elif command in python_tools and (
             "cmake_build.py" in arguments or "pytest" in arguments
         ):
+            count += 1
+        elif any(marker in arguments for marker in benchmark_markers):
             count += 1
     return count
 
@@ -364,7 +387,7 @@ def prepare_revision(
     output_dir: Path,
     label: str,
     rev: str,
-    harness_source: Path,
+    harness_source: Path | None,
 ) -> Revision:
     sha = git(root, "rev-parse", rev)
     source_dir = output_dir / "worktrees" / f"{label}-{sha[:12]}"
@@ -378,7 +401,20 @@ def prepare_revision(
                 f"Existing worktree {source_dir} is at {existing}, expected {sha}."
             )
 
-    patched = ensure_harness(source_dir, harness_source)
+    patched = False
+    if harness_source is not None:
+        patched = ensure_harness(source_dir, harness_source)
+    else:
+        missing = [
+            str(relative)
+            for relative in HARNESS_FILES
+            if not (source_dir / relative).is_file()
+        ]
+        if missing:
+            raise SystemExit(
+                f"Revision {sha} does not own the soft-body benchmark harness: "
+                + ", ".join(missing)
+            )
     build_dir = output_dir / "build" / f"{label}-{sha[:12]}"
     metadata = {
         "label": label,
@@ -679,11 +715,16 @@ def run_headless_checksum(
     scene: str,
     steps: str,
     output_dir: Path,
+    thread_count: int = 1,
 ) -> tuple[dict[str, float] | None, str]:
-    log_path = output_dir / "logs" / f"{revision.label}-{detector}-{scene}-headless.log"
+    log_path = (
+        output_dir
+        / "logs"
+        / f"{revision.label}-{detector}-{scene}-t{thread_count}-headless.log"
+    )
     env = os.environ.copy()
     env["COLLISION_DETECTOR"] = detector
-    env["THREADS"] = "1"
+    env["THREADS"] = str(thread_count)
     command = [str(headless_binary), scene, steps, steps]
     try:
         result = run(command, cwd=revision.source_dir, env=env, capture_path=log_path)
@@ -702,6 +743,7 @@ def evaluate_detector_equivalence(
     steps: str,
     tolerance: float,
     output_dir: Path,
+    thread_count: int = 1,
 ) -> tuple[dict[str, dict[str, object]], list[str]]:
     detector_results: dict[str, dict[str, object]] = {}
     eligible = []
@@ -715,6 +757,7 @@ def evaluate_detector_equivalence(
             scene,
             steps,
             output_dir,
+            thread_count,
         )
         if checksum is None:
             detector_results[REFERENCE_DETECTOR] = {
@@ -731,6 +774,7 @@ def evaluate_detector_equivalence(
                 "eligible": True,
                 "reason": "reference detector",
                 "scenes": scenes,
+                "threads": thread_count,
             }
             eligible.append(detector)
             continue
@@ -739,7 +783,13 @@ def evaluate_detector_equivalence(
         reasons = []
         for scene in scenes:
             checksum, output = run_headless_checksum(
-                current, headless_binary, detector, scene, steps, output_dir
+                current,
+                headless_binary,
+                detector,
+                scene,
+                steps,
+                output_dir,
+                thread_count,
             )
             if checksum is None:
                 detector_ok = False
@@ -761,6 +811,7 @@ def evaluate_detector_equivalence(
             "eligible": detector_ok,
             "reason": "checksum-equivalent" if detector_ok else "; ".join(reasons),
             "scenes": scenes,
+            "threads": thread_count,
         }
         if detector_ok:
             eligible.append(detector)
@@ -823,6 +874,52 @@ def write_cpu_change_graph(
         label = f"{item['detector']}/{item['scene']}/{item['threads']}"
         scope = "apples" if item.get("apples_to_apples", True) else "diagnostic"
         lines.append(f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%  {scope}")
+    lines.append("```")
+
+
+def write_detector_winner_graph(
+    lines: list[str], fastest: list[dict[str, object]]
+) -> None:
+    if not fastest:
+        return
+
+    bar_width = 24
+    lines.extend(
+        [
+            "Detector CPU graph, lower is better. `*` marks the winning row.",
+            "",
+            "```text",
+        ]
+    )
+    for item in fastest:
+        detectors = {
+            str(detector): float(cpu_ms)
+            for detector, cpu_ms in item["detectors"].items()
+        }
+        if not detectors:
+            continue
+
+        max_cpu = max(detectors.values())
+        if max_cpu <= 0.0:
+            max_cpu = 1.0
+
+        parts = []
+        for detector, cpu_ms in sorted(detectors.items()):
+            units = int(round(cpu_ms / max_cpu * bar_width))
+            units = min(bar_width, max(1, units))
+            marker = "*" if detector == item["winner"] else " "
+            parts.append(
+                f"{marker}{detector}:{'#' * units:<{bar_width}} "
+                f"{cpu_ms:.3f}ms"
+            )
+
+        lines.append(
+            "{scene}/{threads:<2} {parts}".format(
+                scene=item["scene"],
+                threads=item["threads"],
+                parts=" | ".join(parts),
+            )
+        )
     lines.append("```")
 
 
@@ -913,6 +1010,8 @@ def fastest_rows(
     current_rows: dict[tuple[str, str, int], BenchmarkRow],
     detectors: list[str],
     eligible_detectors: list[str],
+    expected_fastest_detector: str,
+    tie_tolerance: float,
 ) -> tuple[list[dict[str, object]], list[str]]:
     by_scene_thread: dict[tuple[str, int], list[BenchmarkRow]] = {}
     for row in current_rows.values():
@@ -931,6 +1030,7 @@ def fastest_rows(
 
         winner = min(eligible_candidates, key=lambda row: row.cpu_ms)
         reference_row = by_detector.get(REFERENCE_DETECTOR)
+        expected_row = by_detector.get(expected_fastest_detector)
         detector_times = {
             detector: by_detector[detector].cpu_ms
             for detector in detectors
@@ -943,6 +1043,10 @@ def fastest_rows(
             "winner_cpu_ms": winner.cpu_ms,
             "reference_detector": REFERENCE_DETECTOR,
             "reference_cpu_ms": reference_row.cpu_ms if reference_row else None,
+            "expected_fastest_detector": expected_fastest_detector,
+            "expected_fastest_cpu_ms": (
+                expected_row.cpu_ms if expected_row is not None else None
+            ),
             "detectors": detector_times,
             "eligible_detectors": sorted(
                 detector
@@ -955,12 +1059,28 @@ def fastest_rows(
             failures.append(
                 f"{scene}/{threads}: {REFERENCE_DETECTOR} reference detector " "missing"
             )
-        elif winner.detector != REFERENCE_DETECTOR:
+        if expected_row is None:
             failures.append(
-                f"{scene}/{threads}: {REFERENCE_DETECTOR} "
-                f"{reference_row.cpu_ms:.3f} ms, "
-                f"winner {winner.detector} {winner.cpu_ms:.3f} ms"
+                f"{scene}/{threads}: {expected_fastest_detector} expected "
+                "fastest detector missing"
             )
+        elif expected_fastest_detector not in eligible_detectors:
+            failures.append(
+                f"{scene}/{threads}: {expected_fastest_detector} is not "
+                "checksum-equivalent to reference"
+            )
+        elif winner.detector != expected_fastest_detector:
+            margin = (expected_row.cpu_ms - winner.cpu_ms) / winner.cpu_ms
+            row["expected_fastest_margin"] = margin
+            if margin > tie_tolerance:
+                failures.append(
+                    f"{scene}/{threads}: expected {expected_fastest_detector} "
+                    f"{expected_row.cpu_ms:.3f} ms, "
+                    f"winner {winner.detector} {winner.cpu_ms:.3f} ms "
+                    f"(+{margin:.1%} exceeds tie tolerance {tie_tolerance:.1%})"
+                )
+            else:
+                row["expected_fastest_within_tolerance"] = True
     return rows, failures
 
 
@@ -974,6 +1094,7 @@ def write_markdown(
     run_errors: list[dict[str, str]],
     benchmark_run_order: str,
     benchmark_cycles: int,
+    expected_fastest_detector: str,
 ) -> None:
     lines = [
         "# Soft-Body Performance Comparison",
@@ -1111,8 +1232,30 @@ def write_markdown(
             "",
             "## Current Detector Winners",
             "",
-            f"| Scene | Threads | Winner | Winner CPU ms | Reference (`{REFERENCE_DETECTOR}`) CPU ms | Eligible detectors | Detector CPU ms |",
-            "| --- | ---: | --- | ---: | ---: | --- | --- |",
+        ]
+    )
+    write_detector_winner_graph(lines, fastest)
+    tolerance_items = [
+        item for item in fastest if item.get("expected_fastest_within_tolerance")
+    ]
+    if tolerance_items:
+        lines.extend(["", "Within-tolerance matches (not strict wins):", ""])
+        for item in tolerance_items:
+            lines.append(
+                "- `{scene}`/{threads}: expected `{expected}` trailed winner "
+                "`{winner}` by {margin:.1%} (counted as a match).".format(
+                    scene=item["scene"],
+                    threads=item["threads"],
+                    expected=item["expected_fastest_detector"],
+                    winner=item["winner"],
+                    margin=float(item["expected_fastest_margin"]),
+                )
+            )
+    lines.extend(
+        [
+            "",
+            f"| Scene | Threads | Winner | Winner CPU ms | Expected (`{expected_fastest_detector}`) CPU ms | Reference (`{REFERENCE_DETECTOR}`) CPU ms | Eligible detectors | Detector CPU ms |",
+            "| --- | ---: | --- | ---: | ---: | ---: | --- | --- |",
         ]
     )
     for item in fastest:
@@ -1122,11 +1265,12 @@ def write_markdown(
         )
         lines.append(
             "| `{scene}` | {threads} | `{winner}` | {winner_cpu} | "
-            "{reference_cpu} | {eligible} | {detectors} |".format(
+            "{expected_cpu} | {reference_cpu} | {eligible} | {detectors} |".format(
                 scene=item["scene"],
                 threads=item["threads"],
                 winner=item["winner"],
                 winner_cpu=fmt_float(float(item["winner_cpu_ms"])),
+                expected_cpu=fmt_float(item["expected_fastest_cpu_ms"]),
                 reference_cpu=fmt_float(item["reference_cpu_ms"]),
                 eligible=", ".join(
                     f"`{detector}`" for detector in item["eligible_detectors"]
@@ -1304,7 +1448,11 @@ def main(argv: list[str]) -> int:
             )
 
     fastest, detector_winner_failures = fastest_rows(
-        current_rows, detectors, eligible_detectors
+        current_rows,
+        detectors,
+        eligible_detectors,
+        args.expected_fastest_detector,
+        args.expected_fastest_tie_tolerance,
     )
     run_error_keys = {(error["revision"], error["detector"]) for error in run_errors}
     coverage_failures = []
@@ -1335,6 +1483,7 @@ def main(argv: list[str]) -> int:
         "threads": sorted(requested_threads),
         "benchmark_run_order": args.benchmark_run_order,
         "benchmark_cycles": args.benchmark_cycles,
+        "expected_fastest_detector": args.expected_fastest_detector,
         "rows": {
             label: [
                 {
@@ -1384,6 +1533,7 @@ def main(argv: list[str]) -> int:
         run_errors,
         args.benchmark_run_order,
         args.benchmark_cycles,
+        args.expected_fastest_detector,
     )
 
     print(output_dir / "summary.md")

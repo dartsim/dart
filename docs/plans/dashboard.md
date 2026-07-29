@@ -39,9 +39,26 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Next step: Continue the open WP-DB stability, native soft-collision,
-  contiguous point-mass storage, SIMD, and paper-parity evidence gaps without
-  importing DART 7 clean-break APIs as the implementation target.
+- Scope (elevated 2026-07-23): the maintainer retracted the 2026-07-11 deferral
+  list and set the binding goal to **full replication of both reference papers'
+  demos/examples — correctness AND performance, no compromise — plus zero
+  rigid-body overhead**, as ABI-safe additive work on `release-6.20` in a ~3-PR
+  structure. Execution plan:
+  [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
+- Next step: #3382 is milestone-1 merge-ready (green required checks + two clean
+  independent reviews on `351d4a04fb3`/docs head `f334dc84529`; Codex is
+  weekly-limited, so those reviews are the authoritative evidence). Then begin
+  **M2.0**: prototype the ABI-safe FEM integration seam (custom `FemBodyNode`
+  virtuals vs `ConstraintBase` vs subclassed `ConstraintSolver`) and prove
+  pure-rigid determinism / zero-overhead is preserved — the make-or-break
+  feasibility checkpoint before PR-2's volumetric-FEM build. In parallel, PR-3a
+  soft-foot SIMBICON reuses the existing controller + soft-feet Atlas asset.
+  Still open and now folded into the plan: the competitive-envelope definition,
+  the four-link flexible-foot comparison, WP-DB.07 scaling, WP-DB.08
+  native-owned/default coverage, a valid `bm-soft-body-paired` artifact or
+  approved disposition, and the separate `main` PR for the zero-DoF soft
+  point-mass assertion (`10c6b6055e4`). New GUI examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
-  soft-body benchmarks; allocation gates and Gazebo coverage when the touched
-  surface affects collision, constraints, or downstream behavior.
+  soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
+  multi-thread determinism/scaling evidence; allocation gates and Gazebo
+  coverage before any collision, constraint, or backend-default change.

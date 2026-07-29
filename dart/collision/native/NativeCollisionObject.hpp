@@ -49,6 +49,7 @@ namespace collision {
 
 class NativeCollisionDetector;
 class NativeCollisionGroup;
+class DARTCollisionObject;
 
 class NativeCollisionObject : public CollisionObject
 {
@@ -61,6 +62,14 @@ public:
   const Eigen::Isometry3d& getNativeTransform() const;
 
   const native::Aabb& getNativeAabb() const;
+
+  DARTCollisionObject* getDartFallbackObject();
+
+  bool usesDartFallbackShape() const;
+
+  bool usesSoftMeshFallbackShape() const;
+
+  bool isPlaneShape() const;
 
 protected:
   NativeCollisionObject(

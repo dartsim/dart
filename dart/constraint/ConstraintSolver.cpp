@@ -464,6 +464,20 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+
+  // A newly subscribed skeleton may carry constraint state from another
+  // solver. Clear it once at insertion so steady-state solve() can derive its
+  // clear work from the previous active set and collision result without a
+  // side registry or per-step synchronization.
+  skeleton->clearConstraintImpulses();
+  if (mSplitImpulseEnabled) {
+    skeleton->clearPositionConstraintImpulses();
+    skeleton->clearPositionVelocityChanges();
+    skeleton->setPositionImpulseApplied(false);
+  }
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  skeleton->clearCollidingBodies();
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -590,6 +604,12 @@ std::vector<ConstConstraintBasePtr> ConstraintSolver::getConstraints() const
 //==============================================================================
 void ConstraintSolver::clearLastCollisionResult()
 {
+  if (mCollisionResult.getNumContacts() > 0u) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    for (const auto& skeleton : mSkeletons)
+      skeleton->clearCollidingBodies();
+    DART_SUPPRESS_DEPRECATED_END
+  }
   mCollisionResult.clear();
 }
 
@@ -789,31 +809,56 @@ void ConstraintSolver::solve()
   DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
 
   const bool splitImpulse = mSplitImpulseEnabled;
+  // updateConstraints() retains both values until the next solve. They are
+  // therefore the exact hot-path state needed here: an active constraint set
+  // means the previous solve may have written impulses, and a non-empty
+  // collision result means it may have marked bodies as colliding.
+  const bool clearConstraintImpulses = !mActiveConstraints.empty();
+  const bool clearCollidingBodies = mCollisionResult.getNumContacts() > 0u;
 
   {
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "ConstraintSolver::clearSkeletonConstraintState");
 
-    auto clearSkeletonAt = [&](std::size_t i) {
-      auto& skeleton = mSkeletons[i];
-      skeleton->clearConstraintImpulses();
-      if (splitImpulse) {
-        skeleton->clearPositionConstraintImpulses();
-        skeleton->clearPositionVelocityChanges();
-        skeleton->setPositionImpulseApplied(false);
-      }
-      DART_SUPPRESS_DEPRECATED_BEGIN
-      skeleton->clearCollidingBodies();
-      DART_SUPPRESS_DEPRECATED_END
-    };
+    if (clearConstraintImpulses || clearCollidingBodies) {
+      auto clearConstraintStateAt = [&](std::size_t i) {
+        auto& skeleton = mSkeletons[i];
+        skeleton->clearConstraintImpulses();
+        if (splitImpulse) {
+          skeleton->clearPositionConstraintImpulses();
+          skeleton->clearPositionVelocityChanges();
+          skeleton->setPositionImpulseApplied(false);
+        }
+      };
+      auto clearCollidingStateAt = [&](std::size_t i) {
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        mSkeletons[i]->clearCollidingBodies();
+        DART_SUPPRESS_DEPRECATED_END
+      };
+      auto clearBothStatesAt = [&](std::size_t i) {
+        clearConstraintStateAt(i);
+        clearCollidingStateAt(i);
+      };
+      const auto clearSkeletons = [&](auto&& clearSkeletonAt) {
+        if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
+            && mSkeletons.size() >= 128u) {
+          mConstraintThreadPool->parallelFor(
+              mSkeletons.size(), mNumSimulationThreads, clearSkeletonAt);
+        } else {
+          for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+            clearSkeletonAt(i);
+        }
+      };
 
-    if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
-        && mSkeletons.size() >= 128u) {
-      mConstraintThreadPool->parallelFor(
-          mSkeletons.size(), mNumSimulationThreads, clearSkeletonAt);
-    } else {
-      for (std::size_t i = 0; i < mSkeletons.size(); ++i)
-        clearSkeletonAt(i);
+      // Keep the ordinary contact path branch-free per skeleton, matching the
+      // pre-optimization clear loop. The split paths only run when the prior
+      // solve produced one kind of state but not the other.
+      if (clearConstraintImpulses && clearCollidingBodies)
+        clearSkeletons(clearBothStatesAt);
+      else if (clearConstraintImpulses)
+        clearSkeletons(clearConstraintStateAt);
+      else
+        clearSkeletons(clearCollidingStateAt);
     }
   }
 
@@ -822,6 +867,11 @@ void ConstraintSolver::solve()
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "ConstraintSolver::updateConstraints");
     updateConstraints();
+  }
+
+  if (mActiveConstraints.empty()) {
+    clearInactiveConstrainedGroups();
+    return;
   }
 
   // Build constrained groups
@@ -848,6 +898,17 @@ void ConstraintSolver::solve()
 //==============================================================================
 void ConstraintSolver::prepareForSimulation()
 {
+  // solve() uses a non-empty previous active set as evidence that constraint
+  // impulses may need clearing. Preparation deliberately skips manual
+  // constraints, so preserve the active-set bookkeeping across these
+  // state-neutral preparation passes.
+  const auto activeConstraints = mActiveConstraints;
+  const bool activeConstraintsAllSingleReactiveContacts
+      = mActiveConstraintsAllSingleReactiveContacts;
+  const bool activeConstraintsHaveCustomContactConstraint
+      = mActiveConstraintsHaveCustomContactConstraint;
+  const bool activeSingleReactiveContactsNeedSharedDependencyScan
+      = mActiveSingleReactiveContactsNeedSharedDependencyScan;
   const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   const std::size_t collisionGroupContentVersion
@@ -865,6 +926,13 @@ void ConstraintSolver::prepareForSimulation()
       mCollisionResult.addContact(contact);
   }
   restoreCollidingState(collidingState);
+  mActiveConstraints = activeConstraints;
+  mActiveConstraintsAllSingleReactiveContacts
+      = activeConstraintsAllSingleReactiveContacts;
+  mActiveConstraintsHaveCustomContactConstraint
+      = activeConstraintsHaveCustomContactConstraint;
+  mActiveSingleReactiveContactsNeedSharedDependencyScan
+      = activeSingleReactiveContactsNeedSharedDependencyScan;
 }
 
 //==============================================================================
@@ -1070,309 +1138,313 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
   mReusableSoftContactConstraints.clear();
   mReusableSoftContactConstraints.swap(mSoftContactConstraints);
 
-  // Create a mapping of contact pairs to the number of contacts between them.
-  // The scratch table uses open addressing over retained vectors so the
-  // per-step contact-pair count remains order-independent without allocating
-  // one unordered_map node per contact pair.
-  struct ContactPair
   {
-    collision::CollisionObject* first;
-    collision::CollisionObject* second;
-  };
-  const auto makeContactPair = [](collision::CollisionObject* object1,
-                                  collision::CollisionObject* object2) {
-    ContactPair pair{object1, object2};
-    if (reinterpret_cast<std::uintptr_t>(pair.first)
-        > reinterpret_cast<std::uintptr_t>(pair.second)) {
-      std::swap(pair.first, pair.second);
-    }
-    return pair;
-  };
-  struct ContactPairHash
-  {
-    std::size_t operator()(const ContactPair& pair) const
+    // Create a mapping of contact pairs to the number of contacts between them.
+    // The scratch table uses open addressing over retained vectors so the
+    // per-step contact-pair count remains order-independent without allocating
+    // one unordered_map node per contact pair.
+    struct ContactPair
     {
-      const auto a = reinterpret_cast<std::uintptr_t>(pair.first);
-      const auto b = reinterpret_cast<std::uintptr_t>(pair.second);
-      const std::size_t h1 = std::hash<std::uintptr_t>()(a);
-      const std::size_t h2 = std::hash<std::uintptr_t>()(b);
-      return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
-    }
-  };
-  struct ContactPairCount
-  {
-    ContactPair pair;
-    const dynamics::BodyNode* bodyNode1;
-    const dynamics::BodyNode* bodyNode2;
-    const dynamics::ShapeNode* shapeNode1;
-    const dynamics::ShapeNode* shapeNode2;
-    bool defaultSurfaceParamsChecked;
-    bool canUseDefaultSurfaceParams;
-    bool skipRelVelocityBody1;
-    bool skipRelVelocityBody2;
-    std::size_t count;
-    std::size_t firstCandidateIndex;
-    std::size_t lastCandidateIndex;
-    ContactSurfaceParams surfaceParams;
-    bool surfaceParamsInitialized;
-  };
-  struct ContactCandidate
-  {
-    collision::Contact* contact;
-    std::size_t contactPairIndex;
-    std::size_t nextCandidateIndex;
-  };
-
-  constexpr std::size_t invalidContactPairIndex
-      = (std::numeric_limits<std::size_t>::max)();
-  static thread_local std::vector<ContactPairCount> contactPairCounts;
-  contactPairCounts.clear();
-  static thread_local std::vector<std::size_t> contactPairBuckets;
-
-  static thread_local std::vector<ContactCandidate> contactCandidates;
-  contactCandidates.clear();
-
-  {
-    contactPairCounts.reserve(mCollisionResult.getNumContacts());
-    contactCandidates.reserve(mCollisionResult.getNumContacts());
-    const ContactPairHash contactPairHash;
-    bool contactPairBucketsInitialized = false;
-    const auto initializeContactPairBuckets = [&]() {
-      if (contactPairBucketsInitialized)
-        return;
-
-      std::size_t bucketCount = 2u;
-      while (bucketCount < mCollisionResult.getNumContacts() * 2u)
-        bucketCount <<= 1u;
-      if (contactPairBuckets.size() < bucketCount)
-        contactPairBuckets.resize(bucketCount, invalidContactPairIndex);
-      std::fill(
-          contactPairBuckets.begin(),
-          contactPairBuckets.end(),
-          invalidContactPairIndex);
-      contactPairBucketsInitialized = true;
+      collision::CollisionObject* first;
+      collision::CollisionObject* second;
     };
-
-    std::size_t lastContactPairIndex = invalidContactPairIndex;
-    ContactPair lastContactPair{nullptr, nullptr};
-
-    const auto findOrCreateContactPairIndex
-        = [&](const ContactPair& pair,
-              const dynamics::BodyNode* bodyNode1,
-              const dynamics::BodyNode* bodyNode2,
-              const dynamics::ShapeNode* shapeNode1,
-              const dynamics::ShapeNode* shapeNode2) -> std::size_t {
-      initializeContactPairBuckets();
-
-      const std::size_t bucketMask = contactPairBuckets.size() - 1u;
-      std::size_t bucket = contactPairHash(pair) & bucketMask;
-      while (true) {
-        const std::size_t pairIndex = contactPairBuckets[bucket];
-        if (pairIndex == invalidContactPairIndex) {
-          const std::size_t newPairIndex = contactPairCounts.size();
-          contactPairCounts.push_back(
-              {pair,
-               bodyNode1,
-               bodyNode2,
-               shapeNode1,
-               shapeNode2,
-               false,
-               false,
-               false,
-               false,
-               0u,
-               invalidContactPairIndex,
-               invalidContactPairIndex,
-               ContactSurfaceParams(),
-               false});
-          contactPairBuckets[bucket] = newPairIndex;
-          return newPairIndex;
-        }
-
-        const auto& existingPair = contactPairCounts[pairIndex].pair;
-        if (existingPair.first == pair.first
-            && existingPair.second == pair.second) {
-          return pairIndex;
-        }
-
-        bucket = (bucket + 1u) & bucketMask;
+    const auto makeContactPair = [](collision::CollisionObject* object1,
+                                    collision::CollisionObject* object2) {
+      ContactPair pair{object1, object2};
+      if (reinterpret_cast<std::uintptr_t>(pair.first)
+          > reinterpret_cast<std::uintptr_t>(pair.second)) {
+        std::swap(pair.first, pair.second);
+      }
+      return pair;
+    };
+    struct ContactPairHash
+    {
+      std::size_t operator()(const ContactPair& pair) const
+      {
+        const auto a = reinterpret_cast<std::uintptr_t>(pair.first);
+        const auto b = reinterpret_cast<std::uintptr_t>(pair.second);
+        const std::size_t h1 = std::hash<std::uintptr_t>()(a);
+        const std::size_t h2 = std::hash<std::uintptr_t>()(b);
+        return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
       }
     };
-    const auto findContactPairIndex
-        = [&](collision::CollisionObject* object1,
-              collision::CollisionObject* object2,
-              dynamics::BodyNode* bodyNode1,
-              dynamics::BodyNode* bodyNode2,
-              const dynamics::ShapeNode* shapeNode1,
-              const dynamics::ShapeNode* shapeNode2) -> std::size_t {
-      const auto pair = makeContactPair(object1, object2);
-      if (lastContactPairIndex != invalidContactPairIndex
-          && lastContactPair.first == pair.first
-          && lastContactPair.second == pair.second) {
-        return lastContactPairIndex;
-      }
-
-      const bool objectsWereSwapped = pair.first != object1;
-      const auto* pairBodyNode1 = objectsWereSwapped ? bodyNode2 : bodyNode1;
-      const auto* pairBodyNode2 = objectsWereSwapped ? bodyNode1 : bodyNode2;
-      const auto* pairShapeNode1 = objectsWereSwapped ? shapeNode2 : shapeNode1;
-      const auto* pairShapeNode2 = objectsWereSwapped ? shapeNode1 : shapeNode2;
-      const auto contactPairIndex = findOrCreateContactPairIndex(
-          pair, pairBodyNode1, pairBodyNode2, pairShapeNode1, pairShapeNode2);
-      lastContactPair = pair;
-      lastContactPairIndex = contactPairIndex;
-      return contactPairIndex;
+    struct ContactPairCount
+    {
+      ContactPair pair;
+      const dynamics::BodyNode* bodyNode1;
+      const dynamics::BodyNode* bodyNode2;
+      const dynamics::ShapeNode* shapeNode1;
+      const dynamics::ShapeNode* shapeNode2;
+      bool defaultSurfaceParamsChecked;
+      bool canUseDefaultSurfaceParams;
+      bool skipRelVelocityBody1;
+      bool skipRelVelocityBody2;
+      std::size_t count;
+      std::size_t firstCandidateIndex;
+      std::size_t lastCandidateIndex;
+      ContactSurfaceParams surfaceParams;
+      bool surfaceParamsInitialized;
+    };
+    struct ContactCandidate
+    {
+      collision::Contact* contact;
+      std::size_t contactPairIndex;
+      std::size_t nextCandidateIndex;
     };
 
-    for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
-      auto& contact = mCollisionResult.getContact(i);
+    constexpr std::size_t invalidContactPairIndex
+        = (std::numeric_limits<std::size_t>::max)();
+    static thread_local std::vector<ContactPairCount> contactPairCounts;
+    contactPairCounts.clear();
+    static thread_local std::vector<std::size_t> contactPairBuckets;
 
-      // Skip contacts with non-finite geometry. A collision shape with an
-      // invalid (infinite or NaN) dimension, a malformed mesh, or a third-party
-      // collision backend can report a contact whose point, normal, or
-      // penetration depth is not finite. Such a contact would otherwise inject
-      // NaN/Inf into the contact constraint Jacobians, corrupting the LCP solve
-      // in release builds and tripping an assertion in ContactConstraint in
-      // debug builds. See gz-physics issue #1010.
-      if (!contact.point.allFinite() || !contact.normal.allFinite()
-          || !std::isfinite(contact.penetrationDepth)) {
-        dtwarn
-            << "[ConstraintSolver] Ignoring contact with non-finite geometry "
-            << "(point, normal, or penetration depth). This usually indicates "
-            << "a malformed collision mesh or a collision backend that "
-               "produced an invalid contact.\n";
-        continue;
-      }
+    static thread_local std::vector<ContactCandidate> contactCandidates;
+    contactCandidates.clear();
 
-      if (collision::Contact::isZeroNormal(contact.normal)) {
-        // Skip this contact. This is because we assume that a contact with
-        // zero-length normal is invalid.
-        continue;
-      }
+    {
+      contactPairCounts.reserve(mCollisionResult.getNumContacts());
+      contactCandidates.reserve(mCollisionResult.getNumContacts());
+      const ContactPairHash contactPairHash;
+      bool contactPairBucketsInitialized = false;
+      const auto initializeContactPairBuckets = [&]() {
+        if (contactPairBucketsInitialized)
+          return;
 
-      // Set colliding bodies
-      if (contact.collisionObject1 == nullptr
-          || contact.collisionObject2 == nullptr) {
-        dtwarn << "[ConstraintSolver] Ignoring contact with a null collision "
-               << "object.\n";
-        continue;
-      }
+        std::size_t bucketCount = 2u;
+        while (bucketCount < mCollisionResult.getNumContacts() * 2u)
+          bucketCount <<= 1u;
+        if (contactPairBuckets.size() < bucketCount)
+          contactPairBuckets.resize(bucketCount, invalidContactPairIndex);
+        std::fill(
+            contactPairBuckets.begin(),
+            contactPairBuckets.end(),
+            invalidContactPairIndex);
+        contactPairBucketsInitialized = true;
+      };
 
-      const auto* shapeNode1 = contact.collisionObject1->getShapeNode();
-      const auto* shapeNode2 = contact.collisionObject2->getShapeNode();
-      auto* bodyNode1 = contact.collisionObject1->getBodyNode();
-      auto* bodyNode2 = contact.collisionObject2->getBodyNode();
-      if (shapeNode1 == nullptr || shapeNode2 == nullptr || bodyNode1 == nullptr
-          || bodyNode2 == nullptr) {
-        dtwarn << "[ConstraintSolver] Ignoring contact with a missing "
-               << "ShapeNode or BodyNode.\n";
-        continue;
-      }
+      std::size_t lastContactPairIndex = invalidContactPairIndex;
+      ContactPair lastContactPair{nullptr, nullptr};
 
-      DART_SUPPRESS_DEPRECATED_BEGIN
-      bodyNode1->setColliding(true);
-      bodyNode2->setColliding(true);
-      DART_SUPPRESS_DEPRECATED_END
+      const auto findOrCreateContactPairIndex
+          = [&](const ContactPair& pair,
+                const dynamics::BodyNode* bodyNode1,
+                const dynamics::BodyNode* bodyNode2,
+                const dynamics::ShapeNode* shapeNode1,
+                const dynamics::ShapeNode* shapeNode2) -> std::size_t {
+        initializeContactPairBuckets();
 
-      // If penetration depth is negative, then the collision isn't really
-      // happening and the contact point should be ignored.
-      // TODO(MXG): Investigate ways to leverage the proximity information of a
-      //            negative penetration to improve collision handling.
-      if (contact.penetrationDepth < 0.0)
-        continue;
+        const std::size_t bucketMask = contactPairBuckets.size() - 1u;
+        std::size_t bucket = contactPairHash(pair) & bucketMask;
+        while (true) {
+          const std::size_t pairIndex = contactPairBuckets[bucket];
+          if (pairIndex == invalidContactPairIndex) {
+            const std::size_t newPairIndex = contactPairCounts.size();
+            contactPairCounts.push_back(
+                {pair,
+                 bodyNode1,
+                 bodyNode2,
+                 shapeNode1,
+                 shapeNode2,
+                 false,
+                 false,
+                 false,
+                 false,
+                 0u,
+                 invalidContactPairIndex,
+                 invalidContactPairIndex,
+                 ContactSurfaceParams(),
+                 false});
+            contactPairBuckets[bucket] = newPairIndex;
+            return newPairIndex;
+          }
 
-      if (isSoftContact(bodyNode1, bodyNode2)) {
-        SoftContactConstraintPtr softContactConstraint;
-        while (!mReusableSoftContactConstraints.empty()) {
-          softContactConstraint
-              = std::move(mReusableSoftContactConstraints.back());
-          mReusableSoftContactConstraints.pop_back();
-          if (softContactConstraint != nullptr)
-            break;
+          const auto& existingPair = contactPairCounts[pairIndex].pair;
+          if (existingPair.first == pair.first
+              && existingPair.second == pair.second) {
+            return pairIndex;
+          }
+
+          bucket = (bucket + 1u) & bucketMask;
+        }
+      };
+      const auto findContactPairIndex
+          = [&](collision::CollisionObject* object1,
+                collision::CollisionObject* object2,
+                dynamics::BodyNode* bodyNode1,
+                dynamics::BodyNode* bodyNode2,
+                const dynamics::ShapeNode* shapeNode1,
+                const dynamics::ShapeNode* shapeNode2) -> std::size_t {
+        const auto pair = makeContactPair(object1, object2);
+        if (lastContactPairIndex != invalidContactPairIndex
+            && lastContactPair.first == pair.first
+            && lastContactPair.second == pair.second) {
+          return lastContactPairIndex;
         }
 
-        if (softContactConstraint != nullptr) {
-          softContactConstraint->reset(contact, mTimeStep);
-        } else {
-          softContactConstraint
-              = std::make_shared<SoftContactConstraint>(contact, mTimeStep);
+        const bool objectsWereSwapped = pair.first != object1;
+        const auto* pairBodyNode1 = objectsWereSwapped ? bodyNode2 : bodyNode1;
+        const auto* pairBodyNode2 = objectsWereSwapped ? bodyNode1 : bodyNode2;
+        const auto* pairShapeNode1
+            = objectsWereSwapped ? shapeNode2 : shapeNode1;
+        const auto* pairShapeNode2
+            = objectsWereSwapped ? shapeNode1 : shapeNode2;
+        const auto contactPairIndex = findOrCreateContactPairIndex(
+            pair, pairBodyNode1, pairBodyNode2, pairShapeNode1, pairShapeNode2);
+        lastContactPair = pair;
+        lastContactPairIndex = contactPairIndex;
+        return contactPairIndex;
+      };
+
+      for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
+        auto& contact = mCollisionResult.getContact(i);
+
+        // Skip contacts with non-finite geometry. A collision shape with an
+        // invalid (infinite or NaN) dimension, a malformed mesh, or a
+        // third-party collision backend can report a contact whose point,
+        // normal, or penetration depth is not finite. Such a contact would
+        // otherwise inject NaN/Inf into the contact constraint Jacobians,
+        // corrupting the LCP solve in release builds and tripping an assertion
+        // in ContactConstraint in debug builds. See gz-physics issue #1010.
+        if (!contact.point.allFinite() || !contact.normal.allFinite()
+            || !std::isfinite(contact.penetrationDepth)) {
+          dtwarn
+              << "[ConstraintSolver] Ignoring contact with non-finite geometry "
+              << "(point, normal, or penetration depth). This usually "
+                 "indicates "
+              << "a malformed collision mesh or a collision backend that "
+                 "produced an invalid contact.\n";
+          continue;
         }
 
-        mSoftContactConstraints.push_back(std::move(softContactConstraint));
-      } else {
-        const std::size_t contactPairIndex = findContactPairIndex(
-            contact.collisionObject1,
-            contact.collisionObject2,
-            bodyNode1,
-            bodyNode2,
-            shapeNode1,
-            shapeNode2);
-        auto& contactPairCount = contactPairCounts[contactPairIndex];
-        ++contactPairCount.count;
-
-        const std::size_t candidateIndex = contactCandidates.size();
-        contactCandidates.push_back(
-            {&contact, contactPairIndex, invalidContactPairIndex});
-        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex) {
-          contactPairCount.firstCandidateIndex = candidateIndex;
-        } else {
-          contactCandidates[contactPairCount.lastCandidateIndex]
-              .nextCandidateIndex
-              = candidateIndex;
+        if (collision::Contact::isZeroNormal(contact.normal)) {
+          // Skip this contact. This is because we assume that a contact with
+          // zero-length normal is invalid.
+          continue;
         }
-        contactPairCount.lastCandidateIndex = candidateIndex;
-      }
-    }
-  }
 
-  // Add the new contact constraints to dynamic constraint list
-  {
-    std::size_t reusableContactConstraintIndex = 0u;
-    const auto createDefaultContactConstraint =
-        [&](collision::Contact& contact,
-            const ContactSurfaceParams& surfaceParams) -> ContactConstraintPtr {
-      while (reusableContactConstraintIndex
-             < mReusableContactConstraints.size()) {
-        auto contactConstraint = std::move(
-            mReusableContactConstraints[reusableContactConstraintIndex++]);
-        if (contactConstraint == nullptr)
+        // Set colliding bodies
+        if (contact.collisionObject1 == nullptr
+            || contact.collisionObject2 == nullptr) {
+          dtwarn << "[ConstraintSolver] Ignoring contact with a null collision "
+                 << "object.\n";
+          continue;
+        }
+
+        const auto* shapeNode1 = contact.collisionObject1->getShapeNode();
+        const auto* shapeNode2 = contact.collisionObject2->getShapeNode();
+        auto* bodyNode1 = contact.collisionObject1->getBodyNode();
+        auto* bodyNode2 = contact.collisionObject2->getBodyNode();
+        if (shapeNode1 == nullptr || shapeNode2 == nullptr
+            || bodyNode1 == nullptr || bodyNode2 == nullptr) {
+          dtwarn << "[ConstraintSolver] Ignoring contact with a missing "
+                 << "ShapeNode or BodyNode.\n";
+          continue;
+        }
+
+        DART_SUPPRESS_DEPRECATED_BEGIN
+        bodyNode1->setColliding(true);
+        bodyNode2->setColliding(true);
+        DART_SUPPRESS_DEPRECATED_END
+        // If penetration depth is negative, then the collision isn't really
+        // happening and the contact point should be ignored.
+        // TODO(MXG): Investigate ways to leverage the proximity information of
+        // a
+        //            negative penetration to improve collision handling.
+        if (contact.penetrationDepth < 0.0)
           continue;
 
-        if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
-          continue;
+        if (isSoftContact(bodyNode1, bodyNode2)) {
+          SoftContactConstraintPtr softContactConstraint;
+          while (!mReusableSoftContactConstraints.empty()) {
+            softContactConstraint
+                = std::move(mReusableSoftContactConstraints.back());
+            mReusableSoftContactConstraints.pop_back();
+            if (softContactConstraint != nullptr)
+              break;
+          }
 
-        contactConstraint->reset(contact, mTimeStep, surfaceParams);
-        return contactConstraint;
+          if (softContactConstraint != nullptr) {
+            softContactConstraint->reset(contact, mTimeStep);
+          } else {
+            softContactConstraint
+                = std::make_shared<SoftContactConstraint>(contact, mTimeStep);
+          }
+
+          mSoftContactConstraints.push_back(std::move(softContactConstraint));
+        } else {
+          const std::size_t contactPairIndex = findContactPairIndex(
+              contact.collisionObject1,
+              contact.collisionObject2,
+              bodyNode1,
+              bodyNode2,
+              shapeNode1,
+              shapeNode2);
+          auto& contactPairCount = contactPairCounts[contactPairIndex];
+          ++contactPairCount.count;
+
+          const std::size_t candidateIndex = contactCandidates.size();
+          contactCandidates.push_back(
+              {&contact, contactPairIndex, invalidContactPairIndex});
+          if (contactPairCount.firstCandidateIndex == invalidContactPairIndex) {
+            contactPairCount.firstCandidateIndex = candidateIndex;
+          } else {
+            contactCandidates[contactPairCount.lastCandidateIndex]
+                .nextCandidateIndex
+                = candidateIndex;
+          }
+          contactPairCount.lastCandidateIndex = candidateIndex;
+        }
       }
-
-      return builtInDefaultContactHandler
-          ->DefaultContactSurfaceHandler::createConstraint(
-              contact, mTimeStep, surfaceParams);
-    };
-
-    struct DefaultSurfaceCacheEntry
+    }
+    // Add the new contact constraints to dynamic constraint list
     {
-      const dynamics::ShapeNode* shapeNode{nullptr};
-      std::size_t shapeNodeVersion{std::numeric_limits<std::size_t>::max()};
-      std::size_t updateEpoch{0u};
-      bool hasDefaultProperties{false};
-    };
-    static thread_local std::array<DefaultSurfaceCacheEntry, 8192u>
-        defaultSurfaceCache{};
-    static thread_local std::size_t defaultSurfaceCacheEpoch = 0u;
-    ++defaultSurfaceCacheEpoch;
-    // LCOV_EXCL_START: requires wrapping size_t solver-update epochs.
-    if (defaultSurfaceCacheEpoch == 0u) {
-      std::fill(
-          defaultSurfaceCache.begin(),
-          defaultSurfaceCache.end(),
-          DefaultSurfaceCacheEntry{});
+      std::size_t reusableContactConstraintIndex = 0u;
+      const auto createDefaultContactConstraint
+          = [&](collision::Contact& contact,
+                const ContactSurfaceParams& surfaceParams)
+          -> ContactConstraintPtr {
+        while (reusableContactConstraintIndex
+               < mReusableContactConstraints.size()) {
+          auto contactConstraint = std::move(
+              mReusableContactConstraints[reusableContactConstraintIndex++]);
+          if (contactConstraint == nullptr)
+            continue;
+
+          if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
+            continue;
+
+          contactConstraint->reset(contact, mTimeStep, surfaceParams);
+          return contactConstraint;
+        }
+
+        return builtInDefaultContactHandler
+            ->DefaultContactSurfaceHandler::createConstraint(
+                contact, mTimeStep, surfaceParams);
+      };
+
+      struct DefaultSurfaceCacheEntry
+      {
+        const dynamics::ShapeNode* shapeNode{nullptr};
+        std::size_t shapeNodeVersion{std::numeric_limits<std::size_t>::max()};
+        std::size_t updateEpoch{0u};
+        bool hasDefaultProperties{false};
+      };
+      static thread_local std::array<DefaultSurfaceCacheEntry, 8192u>
+          defaultSurfaceCache{};
+      static thread_local std::size_t defaultSurfaceCacheEpoch = 0u;
       ++defaultSurfaceCacheEpoch;
-    }
-    // LCOV_EXCL_STOP
+      // LCOV_EXCL_START: requires wrapping size_t solver-update epochs.
+      if (defaultSurfaceCacheEpoch == 0u) {
+        std::fill(
+            defaultSurfaceCache.begin(),
+            defaultSurfaceCache.end(),
+            DefaultSurfaceCacheEntry{});
+        ++defaultSurfaceCacheEpoch;
+      }
+      // LCOV_EXCL_STOP
 
-    const auto queryDefaultContactSurfacePropertiesUncached
-        = [&](const dynamics::ShapeNode* shapeNode) {
+      const auto queryDefaultContactSurfacePropertiesUncached =
+          [&](const dynamics::ShapeNode* shapeNode) {
             if (shapeNode == nullptr)
               return false;
 
@@ -1391,8 +1463,8 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
                           < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
           };
 
-    const auto queryDefaultContactSurfaceProperties
-        = [&](const dynamics::ShapeNode* shapeNode) {
+      const auto queryDefaultContactSurfaceProperties =
+          [&](const dynamics::ShapeNode* shapeNode) {
             if (shapeNode == nullptr)
               return false;
 
@@ -1433,36 +1505,36 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
                    hasDefaultProperties};
             return hasDefaultProperties;
           };
-    const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
-    const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
-    bool lastContactShapeNode1HasDefaultProperties = false;
-    bool lastContactShapeNode2HasDefaultProperties = false;
-    const auto hasDefaultContactSurfaceProperties
-        = [&](const dynamics::ShapeNode* shapeNode, bool firstShapeNode) {
-            auto& lastShapeNode = firstShapeNode ? lastContactShapeNode1
-                                                 : lastContactShapeNode2;
-            auto& lastHasDefaultProperties
-                = firstShapeNode ? lastContactShapeNode1HasDefaultProperties
-                                 : lastContactShapeNode2HasDefaultProperties;
-            if (shapeNode == lastShapeNode)
-              return lastHasDefaultProperties;
+      const dynamics::ShapeNode* lastContactShapeNode1 = nullptr;
+      const dynamics::ShapeNode* lastContactShapeNode2 = nullptr;
+      bool lastContactShapeNode1HasDefaultProperties = false;
+      bool lastContactShapeNode2HasDefaultProperties = false;
+      const auto hasDefaultContactSurfaceProperties
+          = [&](const dynamics::ShapeNode* shapeNode, bool firstShapeNode) {
+              auto& lastShapeNode = firstShapeNode ? lastContactShapeNode1
+                                                   : lastContactShapeNode2;
+              auto& lastHasDefaultProperties
+                  = firstShapeNode ? lastContactShapeNode1HasDefaultProperties
+                                   : lastContactShapeNode2HasDefaultProperties;
+              if (shapeNode == lastShapeNode)
+                return lastHasDefaultProperties;
 
-            const bool hasDefaultProperties
-                = queryDefaultContactSurfaceProperties(shapeNode);
-            lastShapeNode = shapeNode;
-            lastHasDefaultProperties = hasDefaultProperties;
-            return hasDefaultProperties;
-          };
-    const auto canUseDefaultSurfaceParamsForContactPair
-        = [&](const ContactPairCount& contactPairCount) {
-            return useBuiltInDefaultSurfaceParamsCache
-                   && hasDefaultContactSurfaceProperties(
-                       contactPairCount.shapeNode1, true)
-                   && hasDefaultContactSurfaceProperties(
-                       contactPairCount.shapeNode2, false);
-          };
-    const auto ensureDefaultSurfaceParamsChecked
-        = [&](ContactPairCount& contactPairCount) {
+              const bool hasDefaultProperties
+                  = queryDefaultContactSurfaceProperties(shapeNode);
+              lastShapeNode = shapeNode;
+              lastHasDefaultProperties = hasDefaultProperties;
+              return hasDefaultProperties;
+            };
+      const auto canUseDefaultSurfaceParamsForContactPair
+          = [&](const ContactPairCount& contactPairCount) {
+              return useBuiltInDefaultSurfaceParamsCache
+                     && hasDefaultContactSurfaceProperties(
+                         contactPairCount.shapeNode1, true)
+                     && hasDefaultContactSurfaceProperties(
+                         contactPairCount.shapeNode2, false);
+            };
+      const auto ensureDefaultSurfaceParamsChecked =
+          [&](ContactPairCount& contactPairCount) {
             if (!contactPairCount.defaultSurfaceParamsChecked) {
               contactPairCount.canUseDefaultSurfaceParams
                   = canUseDefaultSurfaceParamsForContactPair(contactPairCount);
@@ -1471,414 +1543,433 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
             return contactPairCount.canUseDefaultSurfaceParams;
           };
 
-    const auto initializeDefaultSurfaceParams =
-        [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
-          if (contactPairCount.surfaceParamsInitialized)
-            return;
+      const auto initializeDefaultSurfaceParams =
+          [&](ContactPairCount& contactPairCount, collision::Contact& contact) {
+            if (contactPairCount.surfaceParamsInitialized)
+              return;
 
-          contactPairCount.surfaceParams
-              = ensureDefaultSurfaceParamsChecked(contactPairCount)
-                    ? ContactSurfaceParams()
-                    : builtInDefaultContactHandler
-                          ->DefaultContactSurfaceHandler::createParams(
-                              contact, contactPairCount.count);
-          const auto contactCount = static_cast<double>(contactPairCount.count);
-          contactPairCount.surfaceParams.mPrimarySlipCompliance *= contactCount;
-          contactPairCount.surfaceParams.mSecondarySlipCompliance
-              *= contactCount;
-          contactPairCount.surfaceParamsInitialized = true;
-        };
-    const auto initializeDefaultSurfaceParamsUncached =
-        [&](ContactPairCount& contactPairCount) {
-          if (contactPairCount.surfaceParamsInitialized)
-            return;
+            contactPairCount.surfaceParams
+                = ensureDefaultSurfaceParamsChecked(contactPairCount)
+                      ? ContactSurfaceParams()
+                      : builtInDefaultContactHandler
+                            ->DefaultContactSurfaceHandler::createParams(
+                                contact, contactPairCount.count);
+            const auto contactCount
+                = static_cast<double>(contactPairCount.count);
+            contactPairCount.surfaceParams.mPrimarySlipCompliance
+                *= contactCount;
+            contactPairCount.surfaceParams.mSecondarySlipCompliance
+                *= contactCount;
+            contactPairCount.surfaceParamsInitialized = true;
+          };
+      const auto initializeDefaultSurfaceParamsUncached
+          = [&](ContactPairCount& contactPairCount) {
+              if (contactPairCount.surfaceParamsInitialized)
+                return;
 
-          const bool canUseDefaultSurfaceParams
-              = contactPairCount.defaultSurfaceParamsChecked
-                && contactPairCount.canUseDefaultSurfaceParams;
-          DART_ASSERT(canUseDefaultSurfaceParams);
-          DART_UNUSED(canUseDefaultSurfaceParams);
-          contactPairCount.surfaceParams = ContactSurfaceParams();
+              const bool canUseDefaultSurfaceParams
+                  = contactPairCount.defaultSurfaceParamsChecked
+                    && contactPairCount.canUseDefaultSurfaceParams;
+              DART_ASSERT(canUseDefaultSurfaceParams);
+              DART_UNUSED(canUseDefaultSurfaceParams);
+              contactPairCount.surfaceParams = ContactSurfaceParams();
 
-          const auto contactCount = static_cast<double>(contactPairCount.count);
-          contactPairCount.surfaceParams.mPrimarySlipCompliance *= contactCount;
-          contactPairCount.surfaceParams.mSecondarySlipCompliance
-              *= contactCount;
-          contactPairCount.surfaceParamsInitialized = true;
-        };
+              const auto contactCount
+                  = static_cast<double>(contactPairCount.count);
+              contactPairCount.surfaceParams.mPrimarySlipCompliance
+                  *= contactCount;
+              contactPairCount.surfaceParams.mSecondarySlipCompliance
+                  *= contactCount;
+              contactPairCount.surfaceParamsInitialized = true;
+            };
 
-    const auto activateContactConstraint =
-        [&](const ContactConstraintPtr& contactConstraint) {
-          if (contactConstraint == nullptr)
-            return;
+      const auto activateContactConstraint =
+          [&](const ContactConstraintPtr& contactConstraint) {
+            if (contactConstraint == nullptr)
+              return;
 
-          if (useBuiltInDefaultContactActiveState) {
-            contactConstraint->mActive = contactConstraint->mIsReactiveA
-                                         || contactConstraint->mIsReactiveB;
-          } else {
-            contactConstraint->update();
-          }
-
-          const bool isActive = useBuiltInDefaultContactActiveState
-                                    ? contactConstraint->mActive
-                                    : contactConstraint->isActive();
-          if (isActive) {
-            if (!isExactDynamicType<ContactConstraint>(contactConstraint.get()))
-              mActiveConstraintsHaveCustomContactConstraint = true;
-
-            if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
-              mActiveConstraintsAllSingleReactiveContacts = false;
+            if (useBuiltInDefaultContactActiveState) {
+              contactConstraint->mActive = contactConstraint->mIsReactiveA
+                                           || contactConstraint->mIsReactiveB;
             } else {
-              const bool nonReactiveSideIsSkipped
-                  = (contactConstraint->mIsReactiveA
-                     && contactConstraint->mSkipRelVelocityB)
-                    || (contactConstraint->mIsReactiveB
-                        && contactConstraint->mSkipRelVelocityA);
-              const bool nonReactiveSideIsFixed
-                  = (contactConstraint->mIsReactiveA
-                     && contactConstraint->mSkeletonB != nullptr
-                     && !contactConstraint->mSkeletonB->isMobile())
-                    || (contactConstraint->mIsReactiveB
-                        && contactConstraint->mSkeletonA != nullptr
-                        && !contactConstraint->mSkeletonA->isMobile());
-              if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
-                mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
+              contactConstraint->update();
             }
-            mActiveConstraints.push_back(contactConstraint);
-          }
-        };
 
-    constexpr std::size_t kParallelDefaultSurfacePrepassMinPairs = 1024u;
+            const bool isActive = useBuiltInDefaultContactActiveState
+                                      ? contactConstraint->mActive
+                                      : contactConstraint->isActive();
+            if (isActive) {
+              if (!isExactDynamicType<ContactConstraint>(
+                      contactConstraint.get()))
+                mActiveConstraintsHaveCustomContactConstraint = true;
 
-    bool parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
-    const auto canBuildDefaultContactsByPairInParallel = [&]() {
-      parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
-      if (!useBuiltInDefaultSurfaceParamsCache
-          || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
-          || contactCandidates.size() < 512u || contactPairCounts.size() < 64u
-          || mReusableContactConstraints.size() < contactCandidates.size()) {
-        return false;
-      }
+              if (contactConstraint->getSingleReactiveSkeleton() == nullptr) {
+                mActiveConstraintsAllSingleReactiveContacts = false;
+              } else {
+                const bool nonReactiveSideIsSkipped
+                    = (contactConstraint->mIsReactiveA
+                       && contactConstraint->mSkipRelVelocityB)
+                      || (contactConstraint->mIsReactiveB
+                          && contactConstraint->mSkipRelVelocityA);
+                const bool nonReactiveSideIsFixed
+                    = (contactConstraint->mIsReactiveA
+                       && contactConstraint->mSkeletonB != nullptr
+                       && !contactConstraint->mSkeletonB->isMobile())
+                      || (contactConstraint->mIsReactiveB
+                          && contactConstraint->mSkeletonA != nullptr
+                          && !contactConstraint->mSkeletonA->isMobile());
+                if (!nonReactiveSideIsSkipped && !nonReactiveSideIsFixed)
+                  mActiveSingleReactiveContactsNeedSharedDependencyScan = true;
+              }
+              mActiveConstraints.push_back(contactConstraint);
+            }
+          };
 
-      for (std::size_t i = 0u; i < contactCandidates.size(); ++i) {
-        if (mReusableContactConstraints[i] == nullptr)
-          return false;
+      constexpr std::size_t kParallelDefaultSurfacePrepassMinPairs = 1024u;
 
-        if (!isExactDynamicType<ContactConstraint>(
-                mReusableContactConstraints[i].get())) {
+      bool parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
+      const auto canBuildDefaultContactsByPairInParallel = [&]() {
+        parallelDefaultContactBuildNeedsSurfaceParamsPrepass = false;
+        if (!useBuiltInDefaultSurfaceParamsCache
+            || mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u
+            || contactCandidates.size() < 512u || contactPairCounts.size() < 64u
+            || mReusableContactConstraints.size() < contactCandidates.size()) {
           return false;
         }
-      }
 
-      static thread_local std::vector<const dynamics::BodyNode*>
-          sharedBodyBuckets;
-      static thread_local std::vector<const dynamics::BodyNode*>
-          skipRelVelocityBodyBuckets;
-      bool needsSurfaceParamsPrepass = false;
+        for (std::size_t i = 0u; i < contactCandidates.size(); ++i) {
+          if (mReusableContactConstraints[i] == nullptr)
+            return false;
 
-      const auto resetBodyBuckets =
-          [](std::vector<const dynamics::BodyNode*>& buckets,
-             std::size_t minimumBucketCount) {
-            std::size_t bucketCount = 2u;
-            while (bucketCount < minimumBucketCount)
-              bucketCount <<= 1u;
-            if (buckets.size() < bucketCount)
-              buckets.resize(bucketCount, nullptr);
-            std::fill(buckets.begin(), buckets.begin() + bucketCount, nullptr);
-            return bucketCount - 1u;
-          };
-      const auto findBodyInBuckets
-          = [](const std::vector<const dynamics::BodyNode*>& buckets,
-               const std::size_t bucketMask,
-               const dynamics::BodyNode* bodyNode) {
-              const auto bodyNodeKey
-                  = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
-              std::size_t bucket
-                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
-              while (true) {
-                const auto* existingBodyNode = buckets[bucket];
-                if (existingBodyNode == nullptr)
+          if (!isExactDynamicType<ContactConstraint>(
+                  mReusableContactConstraints[i].get())) {
+            return false;
+          }
+        }
+
+        static thread_local std::vector<const dynamics::BodyNode*>
+            sharedBodyBuckets;
+        static thread_local std::vector<const dynamics::BodyNode*>
+            skipRelVelocityBodyBuckets;
+        bool needsSurfaceParamsPrepass = false;
+
+        const auto resetBodyBuckets
+            = [](std::vector<const dynamics::BodyNode*>& buckets,
+                 std::size_t minimumBucketCount) {
+                std::size_t bucketCount = 2u;
+                while (bucketCount < minimumBucketCount)
+                  bucketCount <<= 1u;
+                if (buckets.size() < bucketCount)
+                  buckets.resize(bucketCount, nullptr);
+                std::fill(
+                    buckets.begin(), buckets.begin() + bucketCount, nullptr);
+                return bucketCount - 1u;
+              };
+        const auto findBodyInBuckets
+            = [](const std::vector<const dynamics::BodyNode*>& buckets,
+                 const std::size_t bucketMask,
+                 const dynamics::BodyNode* bodyNode) {
+                const auto bodyNodeKey
+                    = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
+                std::size_t bucket
+                    = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
+                while (true) {
+                  const auto* existingBodyNode = buckets[bucket];
+                  if (existingBodyNode == nullptr)
+                    return false;
+
+                  if (existingBodyNode == bodyNode)
+                    return true;
+
+                  bucket = (bucket + 1u) & bucketMask;
+                }
+              };
+        const auto recordBodyIfUnique
+            = [&](std::vector<const dynamics::BodyNode*>& buckets,
+                  const std::size_t bucketMask,
+                  const dynamics::BodyNode* bodyNode) {
+                if (findBodyInBuckets(buckets, bucketMask, bodyNode))
                   return false;
 
-                if (existingBodyNode == bodyNode)
-                  return true;
+                const auto bodyNodeKey
+                    = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
+                std::size_t bucket
+                    = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
+                while (buckets[bucket] != nullptr)
+                  bucket = (bucket + 1u) & bucketMask;
+                buckets[bucket] = bodyNode;
+                return true;
+              };
+        const std::size_t sharedBodyBucketMask = resetBodyBuckets(
+            sharedBodyBuckets, contactPairCounts.size() * 4u);
+        const std::size_t skipRelVelocityBodyBucketMask = resetBodyBuckets(
+            skipRelVelocityBodyBuckets, contactPairCounts.size() * 4u);
+        const auto recordSharedBodyIfUnique
+            = [&](const dynamics::BodyNode* bodyNode) {
+                return recordBodyIfUnique(
+                    sharedBodyBuckets, sharedBodyBucketMask, bodyNode);
+              };
 
-                bucket = (bucket + 1u) & bucketMask;
-              }
-            };
-      const auto recordBodyIfUnique
-          = [&](std::vector<const dynamics::BodyNode*>& buckets,
-                const std::size_t bucketMask,
-                const dynamics::BodyNode* bodyNode) {
-              if (findBodyInBuckets(buckets, bucketMask, bodyNode))
-                return false;
+        struct ParallelBodyCheckResult
+        {
+          bool canBuild;
+          bool skipRelVelocity;
+        };
+        const auto checkBodyForParallelDefaultContact =
+            [&](const dynamics::BodyNode* bodyNode) -> ParallelBodyCheckResult {
+          if (bodyNode == nullptr)
+            return {true, false};
 
-              const auto bodyNodeKey
-                  = reinterpret_cast<std::uintptr_t>(bodyNode) >> 4u;
-              std::size_t bucket
-                  = std::hash<std::uintptr_t>()(bodyNodeKey) & bucketMask;
-              while (buckets[bucket] != nullptr)
-                bucket = (bucket + 1u) & bucketMask;
-              buckets[bucket] = bodyNode;
-              return true;
-            };
-      const std::size_t sharedBodyBucketMask
-          = resetBodyBuckets(sharedBodyBuckets, contactPairCounts.size() * 4u);
-      const std::size_t skipRelVelocityBodyBucketMask = resetBodyBuckets(
-          skipRelVelocityBodyBuckets, contactPairCounts.size() * 4u);
-      const auto recordSharedBodyIfUnique
-          = [&](const dynamics::BodyNode* bodyNode) {
-              return recordBodyIfUnique(
-                  sharedBodyBuckets, sharedBodyBucketMask, bodyNode);
-            };
+          if (findBodyInBuckets(
+                  skipRelVelocityBodyBuckets,
+                  skipRelVelocityBodyBucketMask,
+                  bodyNode)) {
+            return {true, true};
+          }
 
-      struct ParallelBodyCheckResult
-      {
-        bool canBuild;
-        bool skipRelVelocity;
-      };
-      const auto checkBodyForParallelDefaultContact
-          = [&](const dynamics::BodyNode* bodyNode) -> ParallelBodyCheckResult {
-        if (bodyNode == nullptr)
-          return {true, false};
-
-        if (findBodyInBuckets(
+          const auto* skeleton = bodyNode->getSkeletonRawPtr();
+          const bool fixedZeroVelocitySupport
+              = skeleton != nullptr && !skeleton->isMobile()
+                && !bodyNode->isReactive()
+                && bodyNode->getSpatialVelocity().squaredNorm()
+                       < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
+          if (fixedZeroVelocitySupport) {
+            recordBodyIfUnique(
                 skipRelVelocityBodyBuckets,
                 skipRelVelocityBodyBucketMask,
-                bodyNode)) {
-          return {true, true};
-        }
-
-        const auto* skeleton = bodyNode->getSkeletonRawPtr();
-        const bool fixedZeroVelocitySupport
-            = skeleton != nullptr && !skeleton->isMobile()
-              && !bodyNode->isReactive()
-              && bodyNode->getSpatialVelocity().squaredNorm()
-                     < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED;
-        if (fixedZeroVelocitySupport) {
-          recordBodyIfUnique(
-              skipRelVelocityBodyBuckets,
-              skipRelVelocityBodyBucketMask,
-              bodyNode);
-          return {true, true};
-        }
-
-        if (bodyNode->getNumDependentGenCoords() == 0u)
-          return {true, false};
-
-        return {recordSharedBodyIfUnique(bodyNode), false};
-      };
-
-      if (contactPairCounts.size() < kParallelDefaultSurfacePrepassMinPairs) {
-        {
-          for (auto& contactPairCount : contactPairCounts) {
-            const auto body1Check = checkBodyForParallelDefaultContact(
-                contactPairCount.bodyNode1);
-            const auto body2Check = checkBodyForParallelDefaultContact(
-                contactPairCount.bodyNode2);
-            if (!body1Check.canBuild || !body2Check.canBuild)
-              return false;
-
-            contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
-            contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
+                bodyNode);
+            return {true, true};
           }
-        }
 
-        {
-          for (auto& contactPairCount : contactPairCounts) {
-            if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
-              needsSurfaceParamsPrepass = true;
-          }
-        }
-      } else {
-        {
-          for (auto& contactPairCount : contactPairCounts) {
-            const auto body1Check = checkBodyForParallelDefaultContact(
-                contactPairCount.bodyNode1);
-            const auto body2Check = checkBodyForParallelDefaultContact(
-                contactPairCount.bodyNode2);
-            if (!body1Check.canBuild || !body2Check.canBuild)
-              return false;
+          if (bodyNode->getNumDependentGenCoords() == 0u)
+            return {true, false};
 
-            contactPairCount.skipRelVelocityBody1 = body1Check.skipRelVelocity;
-            contactPairCount.skipRelVelocityBody2 = body2Check.skipRelVelocity;
-          }
-        }
+          return {recordSharedBodyIfUnique(bodyNode), false};
+        };
 
-        {
-          static thread_local std::vector<char> surfaceParamsPrepassScratch;
-          surfaceParamsPrepassScratch.resize(contactPairCounts.size());
+        if (contactPairCounts.size() < kParallelDefaultSurfacePrepassMinPairs) {
+          {
+            for (auto& contactPairCount : contactPairCounts) {
+              const auto body1Check = checkBodyForParallelDefaultContact(
+                  contactPairCount.bodyNode1);
+              const auto body2Check = checkBodyForParallelDefaultContact(
+                  contactPairCount.bodyNode2);
+              if (!body1Check.canBuild || !body2Check.canBuild)
+                return false;
 
-          auto* contactPairCountsForSurfaceScan = &contactPairCounts;
-          auto* surfaceParamsPrepassScratchForScan
-              = &surfaceParamsPrepassScratch;
-          auto scanDefaultSurfaceParams = [&](std::size_t pairIndex) {
-            auto& contactPairCount
-                = (*contactPairCountsForSurfaceScan)[pairIndex];
-            const bool canUseDefaultSurfaceParams
-                = useBuiltInDefaultSurfaceParamsCache
-                  && queryDefaultContactSurfacePropertiesUncached(
-                      contactPairCount.shapeNode1)
-                  && queryDefaultContactSurfacePropertiesUncached(
-                      contactPairCount.shapeNode2);
-            contactPairCount.canUseDefaultSurfaceParams
-                = canUseDefaultSurfaceParams;
-            contactPairCount.defaultSurfaceParamsChecked = true;
-            (*surfaceParamsPrepassScratchForScan)[pairIndex]
-                = canUseDefaultSurfaceParams ? 0 : 1;
-          };
-
-          mConstraintThreadPool->parallelFor(
-              contactPairCountsForSurfaceScan->size(),
-              mNumSimulationThreads,
-              scanDefaultSurfaceParams);
-
-          for (const char needsPrepass : surfaceParamsPrepassScratch) {
-            if (needsPrepass) {
-              needsSurfaceParamsPrepass = true;
-              break;
-            }
-          }
-        }
-      }
-
-      parallelDefaultContactBuildNeedsSurfaceParamsPrepass
-          = needsSurfaceParamsPrepass;
-      return true;
-    };
-
-    const bool useParallelDefaultContactBuild
-        = canBuildDefaultContactsByPairInParallel();
-    if (useBuiltInDefaultSurfaceParamsCache
-        && (!useParallelDefaultContactBuild
-            || parallelDefaultContactBuildNeedsSurfaceParamsPrepass)) {
-      for (auto& contactPairCount : contactPairCounts) {
-        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
-          continue;
-
-        initializeDefaultSurfaceParams(
-            contactPairCount,
-            *contactCandidates[contactPairCount.firstCandidateIndex].contact);
-      }
-    }
-
-    if (useParallelDefaultContactBuild) {
-      mContactConstraints.resize(contactCandidates.size());
-      auto* contactPairCountsForParallel = &contactPairCounts;
-      auto* contactCandidatesForParallel = &contactCandidates;
-      auto buildDefaultContactConstraintsForPair = [&](std::size_t pairIndex) {
-        auto& contactPairCount = (*contactPairCountsForParallel)[pairIndex];
-        if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
-          return;
-
-        initializeDefaultSurfaceParamsUncached(contactPairCount);
-
-        for (auto i = contactPairCount.firstCandidateIndex;
-             i != invalidContactPairIndex;
-             i = (*contactCandidatesForParallel)[i].nextCandidateIndex) {
-          const auto& candidate = (*contactCandidatesForParallel)[i];
-
-          ContactConstraintPtr contactConstraint;
-          if (i < mReusableContactConstraints.size()) {
-            auto reusableContactConstraint
-                = std::move(mReusableContactConstraints[i]);
-            if (reusableContactConstraint != nullptr
-                && isExactDynamicType<ContactConstraint>(
-                    reusableContactConstraint.get())) {
-              contactConstraint = std::move(reusableContactConstraint);
+              contactPairCount.skipRelVelocityBody1
+                  = body1Check.skipRelVelocity;
+              contactPairCount.skipRelVelocityBody2
+                  = body2Check.skipRelVelocity;
             }
           }
 
-          if (contactConstraint != nullptr) {
-            const bool contactUsesPairOrder
-                = candidate.contact->collisionObject1
-                  == contactPairCount.pair.first;
-            DART_ASSERT(
-                contactUsesPairOrder
-                || candidate.contact->collisionObject1
-                       == contactPairCount.pair.second);
-            DART_ASSERT(
-                candidate.contact->collisionObject2
-                == (contactUsesPairOrder ? contactPairCount.pair.second
-                                         : contactPairCount.pair.first));
-            const bool skipRelVelocityA
-                = contactUsesPairOrder ? contactPairCount.skipRelVelocityBody1
-                                       : contactPairCount.skipRelVelocityBody2;
-            const bool skipRelVelocityB
-                = contactUsesPairOrder ? contactPairCount.skipRelVelocityBody2
-                                       : contactPairCount.skipRelVelocityBody1;
-            contactConstraint->reset(
-                *candidate.contact,
-                mTimeStep,
-                contactPairCount.surfaceParams,
-                skipRelVelocityA,
-                skipRelVelocityB);
-          } else {
-            contactConstraint
-                = builtInDefaultContactHandler
-                      ->DefaultContactSurfaceHandler::createConstraint(
-                          *candidate.contact,
-                          mTimeStep,
-                          contactPairCount.surfaceParams);
+          {
+            for (auto& contactPairCount : contactPairCounts) {
+              if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
+                needsSurfaceParamsPrepass = true;
+            }
           }
-
-          mContactConstraints[i] = std::move(contactConstraint);
-        }
-      };
-
-      {
-        mConstraintThreadPool->parallelFor(
-            contactPairCountsForParallel->size(),
-            mNumSimulationThreads,
-            buildDefaultContactConstraintsForPair);
-      }
-
-      for (const auto& contactConstraint : mContactConstraints)
-        activateContactConstraint(contactConstraint);
-    } else {
-      for (const auto& candidate : contactCandidates) {
-        ContactConstraintPtr contactConstraint;
-        if (useBuiltInDefaultSurfaceParamsCache) {
-          auto& contactPairCount
-              = contactPairCounts[candidate.contactPairIndex];
-          initializeDefaultSurfaceParams(contactPairCount, *candidate.contact);
-
-          contactConstraint = createDefaultContactConstraint(
-              *candidate.contact, contactPairCount.surfaceParams);
         } else {
-          auto& contactPairCount
-              = contactPairCounts[candidate.contactPairIndex];
-          const auto numContactsOnPair = contactPairCount.count;
-          contactConstraint
-              = builtInDefaultContactHandler != nullptr
-                    ? builtInDefaultContactHandler
-                          ->DefaultContactSurfaceHandler ::createConstraint(
-                              *candidate.contact, numContactsOnPair, mTimeStep)
-                    : mContactSurfaceHandler->createConstraint(
-                        *candidate.contact, numContactsOnPair, mTimeStep);
+          {
+            for (auto& contactPairCount : contactPairCounts) {
+              const auto body1Check = checkBodyForParallelDefaultContact(
+                  contactPairCount.bodyNode1);
+              const auto body2Check = checkBodyForParallelDefaultContact(
+                  contactPairCount.bodyNode2);
+              if (!body1Check.canBuild || !body2Check.canBuild)
+                return false;
+
+              contactPairCount.skipRelVelocityBody1
+                  = body1Check.skipRelVelocity;
+              contactPairCount.skipRelVelocityBody2
+                  = body2Check.skipRelVelocity;
+            }
+          }
+
+          {
+            static thread_local std::vector<char> surfaceParamsPrepassScratch;
+            surfaceParamsPrepassScratch.resize(contactPairCounts.size());
+
+            auto* contactPairCountsForSurfaceScan = &contactPairCounts;
+            auto* surfaceParamsPrepassScratchForScan
+                = &surfaceParamsPrepassScratch;
+            auto scanDefaultSurfaceParams = [&](std::size_t pairIndex) {
+              auto& contactPairCount
+                  = (*contactPairCountsForSurfaceScan)[pairIndex];
+              const bool canUseDefaultSurfaceParams
+                  = useBuiltInDefaultSurfaceParamsCache
+                    && queryDefaultContactSurfacePropertiesUncached(
+                        contactPairCount.shapeNode1)
+                    && queryDefaultContactSurfacePropertiesUncached(
+                        contactPairCount.shapeNode2);
+              contactPairCount.canUseDefaultSurfaceParams
+                  = canUseDefaultSurfaceParams;
+              contactPairCount.defaultSurfaceParamsChecked = true;
+              (*surfaceParamsPrepassScratchForScan)[pairIndex]
+                  = canUseDefaultSurfaceParams ? 0 : 1;
+            };
+
+            mConstraintThreadPool->parallelFor(
+                contactPairCountsForSurfaceScan->size(),
+                mNumSimulationThreads,
+                scanDefaultSurfaceParams);
+
+            for (const char needsPrepass : surfaceParamsPrepassScratch) {
+              if (needsPrepass) {
+                needsSurfaceParamsPrepass = true;
+                break;
+              }
+            }
+          }
         }
-        if (contactConstraint == nullptr)
-          continue;
 
-        mContactConstraints.push_back(contactConstraint);
-        activateContactConstraint(contactConstraint);
+        parallelDefaultContactBuildNeedsSurfaceParamsPrepass
+            = needsSurfaceParamsPrepass;
+        return true;
+      };
+
+      const bool useParallelDefaultContactBuild
+          = canBuildDefaultContactsByPairInParallel();
+      if (useBuiltInDefaultSurfaceParamsCache
+          && (!useParallelDefaultContactBuild
+              || parallelDefaultContactBuildNeedsSurfaceParamsPrepass)) {
+        for (auto& contactPairCount : contactPairCounts) {
+          if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
+            continue;
+
+          initializeDefaultSurfaceParams(
+              contactPairCount,
+              *contactCandidates[contactPairCount.firstCandidateIndex].contact);
+        }
       }
+
+      if (useParallelDefaultContactBuild) {
+        mContactConstraints.resize(contactCandidates.size());
+        auto* contactPairCountsForParallel = &contactPairCounts;
+        auto* contactCandidatesForParallel = &contactCandidates;
+        auto buildDefaultContactConstraintsForPair =
+            [&](std::size_t pairIndex) {
+              auto& contactPairCount
+                  = (*contactPairCountsForParallel)[pairIndex];
+              if (contactPairCount.firstCandidateIndex
+                  == invalidContactPairIndex)
+                return;
+
+              initializeDefaultSurfaceParamsUncached(contactPairCount);
+
+              for (auto i = contactPairCount.firstCandidateIndex;
+                   i != invalidContactPairIndex;
+                   i = (*contactCandidatesForParallel)[i].nextCandidateIndex) {
+                const auto& candidate = (*contactCandidatesForParallel)[i];
+
+                ContactConstraintPtr contactConstraint;
+                if (i < mReusableContactConstraints.size()) {
+                  auto reusableContactConstraint
+                      = std::move(mReusableContactConstraints[i]);
+                  if (reusableContactConstraint != nullptr
+                      && isExactDynamicType<ContactConstraint>(
+                          reusableContactConstraint.get())) {
+                    contactConstraint = std::move(reusableContactConstraint);
+                  }
+                }
+
+                if (contactConstraint != nullptr) {
+                  const bool contactUsesPairOrder
+                      = candidate.contact->collisionObject1
+                        == contactPairCount.pair.first;
+                  DART_ASSERT(
+                      contactUsesPairOrder
+                      || candidate.contact->collisionObject1
+                             == contactPairCount.pair.second);
+                  DART_ASSERT(
+                      candidate.contact->collisionObject2
+                      == (contactUsesPairOrder ? contactPairCount.pair.second
+                                               : contactPairCount.pair.first));
+                  const bool skipRelVelocityA
+                      = contactUsesPairOrder
+                            ? contactPairCount.skipRelVelocityBody1
+                            : contactPairCount.skipRelVelocityBody2;
+                  const bool skipRelVelocityB
+                      = contactUsesPairOrder
+                            ? contactPairCount.skipRelVelocityBody2
+                            : contactPairCount.skipRelVelocityBody1;
+                  contactConstraint->reset(
+                      *candidate.contact,
+                      mTimeStep,
+                      contactPairCount.surfaceParams,
+                      skipRelVelocityA,
+                      skipRelVelocityB);
+                } else {
+                  contactConstraint
+                      = builtInDefaultContactHandler
+                            ->DefaultContactSurfaceHandler::createConstraint(
+                                *candidate.contact,
+                                mTimeStep,
+                                contactPairCount.surfaceParams);
+                }
+
+                mContactConstraints[i] = std::move(contactConstraint);
+              }
+            };
+
+        {
+          mConstraintThreadPool->parallelFor(
+              contactPairCountsForParallel->size(),
+              mNumSimulationThreads,
+              buildDefaultContactConstraintsForPair);
+        }
+
+        for (const auto& contactConstraint : mContactConstraints)
+          activateContactConstraint(contactConstraint);
+      } else {
+        for (const auto& candidate : contactCandidates) {
+          ContactConstraintPtr contactConstraint;
+          if (useBuiltInDefaultSurfaceParamsCache) {
+            auto& contactPairCount
+                = contactPairCounts[candidate.contactPairIndex];
+            initializeDefaultSurfaceParams(
+                contactPairCount, *candidate.contact);
+
+            contactConstraint = createDefaultContactConstraint(
+                *candidate.contact, contactPairCount.surfaceParams);
+          } else {
+            auto& contactPairCount
+                = contactPairCounts[candidate.contactPairIndex];
+            const auto numContactsOnPair = contactPairCount.count;
+            contactConstraint
+                = builtInDefaultContactHandler != nullptr
+                      ? builtInDefaultContactHandler
+                            ->DefaultContactSurfaceHandler ::createConstraint(
+                                *candidate.contact,
+                                numContactsOnPair,
+                                mTimeStep)
+                      : mContactSurfaceHandler->createConstraint(
+                          *candidate.contact, numContactsOnPair, mTimeStep);
+          }
+          if (contactConstraint == nullptr)
+            continue;
+
+          mContactConstraints.push_back(contactConstraint);
+          activateContactConstraint(contactConstraint);
+        }
+      }
+
+      mReusableContactConstraints.clear();
     }
 
-    mReusableContactConstraints.clear();
-  }
+    // Add the new soft contact constraints to dynamic constraint list
+    {
+      for (const auto& softContactConstraint : mSoftContactConstraints) {
+        softContactConstraint->update();
 
-  // Add the new soft contact constraints to dynamic constraint list
-  {
-    for (const auto& softContactConstraint : mSoftContactConstraints) {
-      softContactConstraint->update();
-
-      if (softContactConstraint->isActive()) {
-        mActiveConstraintsAllSingleReactiveContacts = false;
-        mActiveConstraints.push_back(softContactConstraint);
+        if (softContactConstraint->isActive()) {
+          mActiveConstraintsAllSingleReactiveContacts = false;
+          mActiveConstraints.push_back(softContactConstraint);
+        }
       }
+      mReusableSoftContactConstraints.clear();
     }
-    mReusableSoftContactConstraints.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -1978,8 +2069,99 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 }
 
 //==============================================================================
+bool ConstraintSolver::clearInactiveConstrainedGroups()
+{
+  if (!mActiveConstraints.empty())
+    return false;
+
+  mConstrainedGroups.clear();
+  mGroupResting.clear();
+  mGroupAllSleepCandidates.clear();
+  mGroupPreserveSleepCandidates.clear();
+
+  // With no active constraints, no island can be frozen. Clear any stale
+  // freeze flags so a body that just lost all of its contacts resumes
+  // simulating (e.g. a stack member that was kicked away). Preserve the
+  // sleep-candidate dwell state here: World::updateRestStates() and the
+  // pre-solve wake-band check clear stale candidates only when the body is
+  // actually disturbed or moving again, which makes sleeping robust to
+  // one-frame contact misses from collision jitter.
+  if (mDeactivationActive && mHadDeactivationGroups) {
+    if (mCollisionResult.getNumContacts() > 0) {
+      static thread_local std::unordered_set<const dynamics::Skeleton*>
+          contactedSkeletons;
+      contactedSkeletons.clear();
+      contactedSkeletons.reserve(mCollisionResult.getNumContacts());
+
+      for (std::size_t i = 0; i < mCollisionResult.getNumContacts(); ++i) {
+        const auto& contact = mCollisionResult.getContact(i);
+        const auto bodyNode1 = contact.getBodyNodePtr1();
+        const auto bodyNode2 = contact.getBodyNodePtr2();
+
+        if (bodyNode1) {
+          const auto skeleton = bodyNode1->getSkeleton();
+          if (skeleton && skeleton->isMobile())
+            contactedSkeletons.insert(skeleton.get());
+        }
+
+        if (bodyNode2) {
+          const auto skeleton = bodyNode2->getSkeleton();
+          if (skeleton && skeleton->isMobile())
+            contactedSkeletons.insert(skeleton.get());
+        }
+      }
+
+      for (auto& skeleton : mSkeletons) {
+        if (contactedSkeletons.find(skeleton.get())
+            != contactedSkeletons.end()) {
+          continue;
+        }
+
+        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+          skeleton->setResting(false);
+          skeleton->setIslandIndex(-1);
+        }
+      }
+
+      recordConstrainedGroupProfileCounters();
+      return true;
+    }
+
+    bool preservedRestingIsland = false;
+    for (auto& skeleton : mSkeletons) {
+      const bool canRemainResting = skeleton->isResting()
+                                    && skeleton->isSleepCandidate()
+                                    && skeleton->getIslandIndex() >= 0
+                                    && !skeleton->hasExternalDisturbance();
+
+      if (canRemainResting) {
+        preservedRestingIsland = true;
+        continue;
+      }
+
+      if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+        skeleton->setResting(false);
+        skeleton->setIslandIndex(-1);
+      }
+    }
+
+    if (preservedRestingIsland) {
+      recordConstrainedGroupProfileCounters();
+      return true;
+    }
+  }
+
+  mHadDeactivationGroups = false;
+  recordConstrainedGroupProfileCounters();
+  return true;
+}
+
+//==============================================================================
 void ConstraintSolver::buildConstrainedGroups()
 {
+  if (clearInactiveConstrainedGroups())
+    return;
+
   // Clear constrained groups while retaining per-group constraint-vector
   // capacity for the steady-state case where thousands of small contact groups
   // are rebuilt every step.
@@ -1995,93 +2177,6 @@ void ConstraintSolver::buildConstrainedGroups()
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
   mGroupPreserveSleepCandidates.clear();
-
-  // Exit if there is no active constraint
-  if (mActiveConstraints.empty()) {
-    mConstrainedGroups.clear();
-
-    // With no active constraints, no island can be frozen. Clear any stale
-    // freeze flags so a body that just lost all of its contacts resumes
-    // simulating (e.g. a stack member that was kicked away). Preserve the
-    // sleep-candidate dwell state here: World::updateRestStates() and the
-    // pre-solve wake-band check clear stale candidates only when the body is
-    // actually disturbed or moving again, which makes sleeping robust to
-    // one-frame contact misses from collision jitter.
-    if (mDeactivationActive && mHadDeactivationGroups) {
-      if (mCollisionResult.getNumContacts() > 0) {
-        static thread_local std::unordered_set<const dynamics::Skeleton*>
-            contactedSkeletons;
-        contactedSkeletons.clear();
-        contactedSkeletons.reserve(mCollisionResult.getNumContacts());
-
-        for (std::size_t i = 0; i < mCollisionResult.getNumContacts(); ++i) {
-          const auto& contact = mCollisionResult.getContact(i);
-          const auto bodyNode1 = contact.getBodyNodePtr1();
-          const auto bodyNode2 = contact.getBodyNodePtr2();
-
-          if (bodyNode1) {
-            const auto skeleton = bodyNode1->getSkeleton();
-            if (skeleton && skeleton->isMobile())
-              contactedSkeletons.insert(skeleton.get());
-          }
-
-          if (bodyNode2) {
-            const auto skeleton = bodyNode2->getSkeleton();
-            if (skeleton && skeleton->isMobile())
-              contactedSkeletons.insert(skeleton.get());
-          }
-        }
-
-        for (auto& skeleton : mSkeletons) {
-          if (contactedSkeletons.find(skeleton.get())
-              != contactedSkeletons.end()) {
-            continue;
-          }
-
-          if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-            skeleton->setResting(false);
-            skeleton->setIslandIndex(-1);
-          }
-        }
-
-        recordConstrainedGroupProfileCounters();
-        return;
-      }
-
-      bool preservedRestingIsland = false;
-      for (auto& skeleton : mSkeletons) {
-        const bool canRemainResting = skeleton->isResting()
-                                      && skeleton->isSleepCandidate()
-                                      && skeleton->getIslandIndex() >= 0
-                                      && !skeleton->hasExternalDisturbance();
-
-        if (canRemainResting) {
-          preservedRestingIsland = true;
-          continue;
-        }
-
-        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-          skeleton->setResting(false);
-          skeleton->setIslandIndex(-1);
-        }
-      }
-
-      if (preservedRestingIsland) {
-        recordConstrainedGroupProfileCounters();
-        return;
-      }
-
-      for (auto& skeleton : mSkeletons) {
-        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-          skeleton->setResting(false);
-          skeleton->setIslandIndex(-1);
-        }
-      }
-    }
-    mHadDeactivationGroups = false;
-    recordConstrainedGroupProfileCounters();
-    return;
-  }
 
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships

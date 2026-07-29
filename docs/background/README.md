@@ -26,3 +26,9 @@ against the original source.
 
 For cross-bucket rules, see
 [`../information-architecture.md`](../information-architecture.md).
+
+## Files
+
+| File | Purpose |
+| --- | --- |
+| [`deformable_body_paper_targets.md`](deformable_body_paper_targets.md) | Kim/Pollard and Jain/Liu deformable-body models and published measurements. |
