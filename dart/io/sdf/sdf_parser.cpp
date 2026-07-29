@@ -994,23 +994,27 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 
   if (joint.sdfType == sdf::JointType::PRISMATIC
       || std::string("prismatic") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
-        parent,
-        static_cast<const dynamics::PrismaticJoint::Properties&>(
-            *joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
+    return skeleton
+        ->createJointAndBodyNodePair<dynamics::PrismaticJoint, NodeType>(
+            parent,
+            static_cast<const dynamics::PrismaticJoint::Properties&>(
+                *joint.properties),
+            static_cast<const typename NodeType::Properties&>(
+                *node.properties));
   } else if (
       joint.sdfType == sdf::JointType::REVOLUTE
       || joint.sdfType == sdf::JointType::CONTINUOUS
       || std::string("revolute") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
-        parent,
-        static_cast<const dynamics::RevoluteJoint::Properties&>(
-            *joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
+    return skeleton
+        ->createJointAndBodyNodePair<dynamics::RevoluteJoint, NodeType>(
+            parent,
+            static_cast<const dynamics::RevoluteJoint::Properties&>(
+                *joint.properties),
+            static_cast<const typename NodeType::Properties&>(
+                *node.properties));
   } else if (
       joint.sdfType == sdf::JointType::SCREW || std::string("screw") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
+    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint, NodeType>(
         parent,
         static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
@@ -1018,25 +1022,27 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
       joint.sdfType == sdf::JointType::REVOLUTE2
       || joint.sdfType == sdf::JointType::UNIVERSAL
       || std::string("revolute2") == type || std::string("universal") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
-        parent,
-        static_cast<const dynamics::UniversalJoint::Properties&>(
-            *joint.properties),
-        static_cast<const typename NodeType::Properties&>(*node.properties));
+    return skeleton
+        ->createJointAndBodyNodePair<dynamics::UniversalJoint, NodeType>(
+            parent,
+            static_cast<const dynamics::UniversalJoint::Properties&>(
+                *joint.properties),
+            static_cast<const typename NodeType::Properties&>(
+                *node.properties));
   } else if (
       joint.sdfType == sdf::JointType::BALL || std::string("ball") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint, NodeType>(
         parent,
         static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
   } else if (
       joint.sdfType == sdf::JointType::FIXED || std::string("fixed") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint, NodeType>(
         parent,
         static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
   } else if (std::string("free") == type) {
-    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint, NodeType>(
         parent,
         static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
