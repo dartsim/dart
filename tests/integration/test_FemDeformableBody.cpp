@@ -683,3 +683,239 @@ TEST(FemDeformableBody, DetachStopsIntegrationAndReattachResumes)
   world->step();
   EXPECT_GT((body->getNodePosition(0) - afterOneStep).norm(), 0.0);
 }
+
+//==============================================================================
+TEST(FemDeformableBody, RestConfigurationHasNoElasticForceOrEnergy)
+{
+  for (const auto model :
+       {fem::ElasticModel::Linear, fem::ElasticModel::Corotational}) {
+    fem::Material material;
+    material.mElasticModel = model;
+    const auto body = fem::DeformableBody::create(createTestMesh(), material);
+    body->computeElasticForces();
+
+    EXPECT_NEAR(0.0, body->getElasticEnergy(), kTightTolerance);
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      EXPECT_LT(body->getNodeForce(i).norm(), 1e-9) << "node " << i;
+    }
+  }
+}
+
+//==============================================================================
+TEST(FemDeformableBody, RigidTranslationProducesNoElasticForce)
+{
+  const fem::TetMesh mesh = createTestMesh();
+  const auto body = fem::DeformableBody::create(mesh);
+
+  const Eigen::Vector3d offset(1.7, -2.3, 0.9);
+  for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+    body->setNodePosition(i, mesh.getRestPosition(i) + offset);
+  }
+  body->computeElasticForces();
+
+  EXPECT_NEAR(0.0, body->getElasticEnergy(), kTightTolerance);
+  for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+    EXPECT_LT(body->getNodeForce(i).norm(), 1e-9) << "node " << i;
+  }
+}
+
+//==============================================================================
+// The reason the co-rotated model exists. Under a rigid rotation every element
+// has F == R exactly, so the co-rotated stress 2*mu*(F - R) + lambda*(tr(R^T F)
+// - 3)*R vanishes identically. Small-strain elasticity instead reads the
+// rotation as strain and manufactures large restoring forces out of nothing,
+// which is why it cannot be used for characters that turn.
+TEST(FemDeformableBody, CorotationalIsRotationInvariantWhileLinearIsNot)
+{
+  const fem::TetMesh mesh = createTestMesh();
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d(0.3, -0.7, 0.6).normalized())
+            .toRotationMatrix();
+
+  const auto rotatedPeakForce = [&](fem::ElasticModel model) {
+    fem::Material material;
+    material.mElasticModel = model;
+    const auto body = fem::DeformableBody::create(mesh, material);
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      body->setNodePosition(i, rotation * mesh.getRestPosition(i));
+    }
+    body->computeElasticForces();
+
+    double peak = 0.0;
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      peak = std::max(peak, body->getNodeForce(i).norm());
+    }
+    return std::make_pair(peak, body->getElasticEnergy());
+  };
+
+  const auto corotational = rotatedPeakForce(fem::ElasticModel::Corotational);
+  const auto linear = rotatedPeakForce(fem::ElasticModel::Linear);
+
+  // Co-rotated: no force and no stored energy, to round-off.
+  EXPECT_LT(corotational.first, 1e-8);
+  EXPECT_NEAR(0.0, corotational.second, 1e-8);
+
+  // Linear: a large spurious force and real stored energy from a motion that
+  // did not deform the body at all.
+  EXPECT_GT(linear.first, 1.0);
+  EXPECT_GT(linear.second, 1.0);
+}
+
+//==============================================================================
+TEST(FemDeformableBody, ElasticForcesAreInternallyBalanced)
+{
+  const fem::TetMesh mesh = createTestMesh();
+
+  for (const auto model :
+       {fem::ElasticModel::Linear, fem::ElasticModel::Corotational}) {
+    fem::Material material;
+    material.mElasticModel = model;
+    const auto body = fem::DeformableBody::create(mesh, material);
+
+    // An arbitrary non-uniform deformation, so the forces are large.
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      const Eigen::Vector3d rest = mesh.getRestPosition(i);
+      body->setNodePosition(
+          i,
+          rest
+              + Eigen::Vector3d(
+                  0.12 * rest[2], -0.08 * rest[0], 0.05 * rest[1] * rest[0]));
+    }
+    body->computeElasticForces();
+
+    // Internal forces cannot accelerate the body as a whole.
+    Eigen::Vector3d total = Eigen::Vector3d::Zero();
+    double peak = 0.0;
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      total += body->getNodeForce(i);
+      peak = std::max(peak, body->getNodeForce(i).norm());
+    }
+
+    ASSERT_GT(peak, 1.0) << "deformation was too small to be a real test";
+    EXPECT_LT(total.norm(), 1e-9 * peak);
+    EXPECT_GT(body->getElasticEnergy(), 0.0);
+  }
+}
+
+//==============================================================================
+// A uniform stretch leaves the co-rotated rotation at identity, so the energy
+// density reduces to (mu + lambda/2) * s^2 for stretch s. That makes the energy
+// exactly quadratic in strain and exactly linear in Young's modulus, both of
+// which are checked here against ratios rather than absolute values.
+TEST(FemDeformableBody, ElasticEnergyIsQuadraticInStrainAndLinearInStiffness)
+{
+  const fem::TetMesh mesh = createTestMesh();
+
+  const auto stretchedEnergy = [&](double stretch, double youngsModulus) {
+    fem::Material material;
+    material.mYoungsModulus = youngsModulus;
+    const auto body = fem::DeformableBody::create(mesh, material);
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      Eigen::Vector3d position = mesh.getRestPosition(i);
+      position[0] *= 1.0 + stretch;
+      body->setNodePosition(i, position);
+    }
+    return body->getElasticEnergy();
+  };
+
+  const double base = stretchedEnergy(0.01, 1.0e5);
+  ASSERT_GT(base, 0.0);
+
+  // Doubling the strain quadruples the energy.
+  EXPECT_NEAR(4.0, stretchedEnergy(0.02, 1.0e5) / base, 1e-9);
+
+  // Doubling Young's modulus doubles the energy.
+  EXPECT_NEAR(2.0, stretchedEnergy(0.01, 2.0e5) / base, 1e-9);
+}
+
+//==============================================================================
+TEST(FemDeformableBody, StretchedBodyRelaxesAndKeepsEnergyBounded)
+{
+  auto world = createTestWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const fem::TetMesh mesh = createTestMesh();
+  fem::Material material;
+  material.mLinearDamping = 4.0;
+  const auto body = fem::DeformableBody::create(mesh, material);
+
+  for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+    Eigen::Vector3d position = mesh.getRestPosition(i);
+    position[0] *= 1.05;
+    body->setNodePosition(i, position);
+  }
+  const double initialEnergy = body->getElasticEnergy();
+  ASSERT_GT(initialEnergy, 0.0);
+
+  body->attachTo(world);
+  double peakEnergy = initialEnergy;
+  for (int i = 0; i < 2000; ++i) {
+    world->step();
+    peakEnergy = std::max(peakEnergy, body->getElasticEnergy());
+  }
+
+  // Damped and unforced, the body must return toward its rest shape rather than
+  // gain energy: no explicit-integration blow-up.
+  EXPECT_TRUE(body->getNodePosition(0).allFinite());
+  EXPECT_LT(body->getElasticEnergy(), 0.05 * initialEnergy);
+  EXPECT_LT(peakEnergy, 1.5 * initialEnergy);
+}
+
+//==============================================================================
+TEST(FemDeformableBody, FixedNodesAnchorTheBodyAndSofterMaterialSagsMore)
+{
+  const fem::TetMesh mesh = createTestMesh();
+
+  const auto tipDrop = [&](double youngsModulus) {
+    auto world = createTestWorld();
+    fem::Material material;
+    material.mYoungsModulus = youngsModulus;
+    material.mLinearDamping = 6.0;
+    const auto body = fem::DeformableBody::create(mesh, material);
+
+    // Anchor the whole face at minimum x, leaving the rest to hang.
+    const double anchorX = -0.5 * kBoxSize[0] + 1e-9;
+    std::size_t anchored = 0;
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      if (mesh.getRestPosition(i)[0] <= anchorX) {
+        body->setNodeFixed(i, true);
+        ++anchored;
+      }
+    }
+    EXPECT_GT(anchored, 0u);
+
+    body->attachTo(world);
+    for (int i = 0; i < 3000; ++i) {
+      world->step();
+    }
+
+    // Anchored nodes never moved.
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      if (body->isNodeFixed(i)) {
+        EXPECT_LT(
+            (body->getNodePosition(i) - mesh.getRestPosition(i)).norm(),
+            kTightTolerance)
+            << "fixed node " << i;
+      }
+    }
+
+    // Largest downward drop among the free nodes.
+    double drop = 0.0;
+    for (std::size_t i = 0; i < body->getNumNodes(); ++i) {
+      if (!body->isNodeFixed(i)) {
+        drop = std::max(
+            drop, mesh.getRestPosition(i)[2] - body->getNodePosition(i)[2]);
+      }
+    }
+    EXPECT_TRUE(body->getNodePosition(0).allFinite());
+    return drop;
+  };
+
+  const double stiffDrop = tipDrop(4.0e5);
+  const double softDrop = tipDrop(1.0e5);
+
+  // It hangs rather than falling freely, and a softer body sags further.
+  EXPECT_GT(stiffDrop, 0.0);
+  EXPECT_LT(stiffDrop, 0.5 * kBoxSize[0]);
+  EXPECT_GT(softDrop, stiffDrop);
+}

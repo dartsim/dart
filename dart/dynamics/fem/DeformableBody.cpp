@@ -61,7 +61,17 @@ public:
 
     mPositions.setZero(static_cast<int>(3 * numNodes));
     mVelocities.setZero(static_cast<int>(3 * numNodes));
+    mForces.setZero(static_cast<int>(3 * numNodes));
     mMasses.setZero(static_cast<int>(numNodes));
+    mFixed.assign(numNodes, 0);
+
+    // Lame parameters of an isotropic linear-elastic solid, from Young's
+    // modulus and Poisson's ratio.
+    const double youngsModulus = mMaterial.mYoungsModulus;
+    const double poissonRatio = mMaterial.mPoissonRatio;
+    mShearModulus = youngsModulus / (2.0 * (1.0 + poissonRatio));
+    mLameLambda = youngsModulus * poissonRatio
+                  / ((1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio));
 
     for (std::size_t i = 0; i < numNodes; ++i) {
       mPositions.segment<3>(static_cast<int>(3 * i)) = mMesh.getRestPosition(i);
@@ -84,6 +94,8 @@ public:
   /// bodies: velocities first, then positions from the updated velocities.
   void integrate(double timeStep, const Eigen::Vector3d& gravity)
   {
+    computeElasticForces();
+
     // Damping is mass proportional and integrated implicitly, so the whole
     // update is
     //   v <- (v + g * dt) / (1 + c * dt).
@@ -104,6 +116,13 @@ public:
     const auto numNodes = static_cast<int>(mMasses.size());
 
     for (int i = 0; i < numNodes; ++i) {
+      // A fixed node is anchored: it keeps zero velocity and ignores gravity,
+      // elastic force, and damping alike.
+      if (mFixed[static_cast<std::size_t>(i)] != 0) {
+        mVelocities.segment<3>(3 * i).setZero();
+        continue;
+      }
+
       const double mass = mMasses[i];
       // A node that no tetrahedron references carries no mass and cannot be
       // accelerated; leave it where it is instead of dividing by zero.
@@ -112,11 +131,120 @@ public:
       }
 
       Eigen::Vector3d velocity = mVelocities.segment<3>(3 * i);
+      velocity += mForces.segment<3>(3 * i) * (timeStep / mass);
       velocity = (velocity + gravityStep) / dampingDivisor;
 
       mVelocities.segment<3>(3 * i) = velocity;
       mPositions.segment<3>(3 * i) += velocity * timeStep;
     }
+  }
+
+  /// Returns the rotation part of a deformation gradient's polar decomposition.
+  ///
+  /// Taken from the singular value decomposition F = U S V^T as R = U V^T. When
+  /// an element inverts, det(F) is negative and that product is a reflection
+  /// rather than a rotation, so the smallest singular direction is flipped to
+  /// recover the nearest true rotation.
+  static Eigen::Matrix3d polarRotation(const Eigen::Matrix3d& F)
+  {
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(
+        F, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3d u = svd.matrixU();
+    const Eigen::Matrix3d& v = svd.matrixV();
+
+    if ((u * v.transpose()).determinant() < 0.0) {
+      u.col(2) = -u.col(2);
+    }
+
+    return u * v.transpose();
+  }
+
+  /// Returns the first Piola-Kirchhoff stress of one element.
+  Eigen::Matrix3d computeStress(const Eigen::Matrix3d& F) const
+  {
+    if (mMaterial.mElasticModel == ElasticModel::Linear) {
+      // Small-strain tensor. It cannot tell a rotation from a stretch, which is
+      // exactly what the co-rotated model below fixes.
+      const Eigen::Matrix3d strain
+          = 0.5 * (F + F.transpose()) - Eigen::Matrix3d::Identity();
+      return 2.0 * mShearModulus * strain
+             + mLameLambda * strain.trace() * Eigen::Matrix3d::Identity();
+    }
+
+    // Co-rotated: measure strain in the element's own unrotated frame, so a
+    // rigid rotation gives F == R and no stress at all.
+    const Eigen::Matrix3d rotation = polarRotation(F);
+    return 2.0 * mShearModulus * (F - rotation)
+           + mLameLambda * ((rotation.transpose() * F).trace() - 3.0)
+                 * rotation;
+  }
+
+  /// Returns the current deformation gradient of one element.
+  Eigen::Matrix3d computeDeformationGradient(std::size_t tetIndex) const
+  {
+    const Eigen::Vector4i tet = mMesh.getTet(tetIndex);
+    const auto x0 = mPositions.segment<3>(3 * tet[0]);
+
+    Eigen::Matrix3d shape;
+    shape.col(0) = mPositions.segment<3>(3 * tet[1]) - x0;
+    shape.col(1) = mPositions.segment<3>(3 * tet[2]) - x0;
+    shape.col(2) = mPositions.segment<3>(3 * tet[3]) - x0;
+
+    return shape * mMesh.getInverseRestShape(tetIndex);
+  }
+
+  /// Recomputes every node's elastic force from the current positions.
+  void computeElasticForces()
+  {
+    mForces.setZero();
+
+    for (std::size_t t = 0; t < mMesh.getNumTets(); ++t) {
+      const Eigen::Matrix3d stress
+          = computeStress(computeDeformationGradient(t));
+
+      // Nodal forces of one element: H = -volume * P * inverseRestShape^T gives
+      // the forces on nodes one through three as its columns, and the force on
+      // node zero follows from the element exerting no net force on itself.
+      const Eigen::Matrix3d nodalForces
+          = -mMesh.getRestVolume(t) * stress
+            * mMesh.getInverseRestShape(t).transpose();
+
+      const Eigen::Vector4i tet = mMesh.getTet(t);
+      Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+      for (int corner = 0; corner < 3; ++corner) {
+        const Eigen::Vector3d force = nodalForces.col(corner);
+        mForces.segment<3>(3 * tet[corner + 1]) += force;
+        sum += force;
+      }
+      mForces.segment<3>(3 * tet[0]) -= sum;
+    }
+  }
+
+  /// Returns the elastic potential energy of the current configuration.
+  double getElasticEnergy() const
+  {
+    double energy = 0.0;
+
+    for (std::size_t t = 0; t < mMesh.getNumTets(); ++t) {
+      const Eigen::Matrix3d F = computeDeformationGradient(t);
+      double density = 0.0;
+
+      if (mMaterial.mElasticModel == ElasticModel::Linear) {
+        const Eigen::Matrix3d strain
+            = 0.5 * (F + F.transpose()) - Eigen::Matrix3d::Identity();
+        density = mShearModulus * strain.squaredNorm()
+                  + 0.5 * mLameLambda * strain.trace() * strain.trace();
+      } else {
+        const Eigen::Matrix3d rotation = polarRotation(F);
+        const double volumetric = (rotation.transpose() * F).trace() - 3.0;
+        density = mShearModulus * (F - rotation).squaredNorm()
+                  + 0.5 * mLameLambda * volumetric * volumetric;
+      }
+
+      energy += mMesh.getRestVolume(t) * density;
+    }
+
+    return energy;
   }
 
   /// Advances one step using the attached world's gravity and time step.
@@ -204,8 +332,19 @@ public:
   /// Node velocities, laid out like mPositions.
   Eigen::VectorXd mVelocities;
 
+  /// Elastic force on each node, laid out like mPositions.
+  Eigen::VectorXd mForces;
+
   /// Lumped mass of each node.
   Eigen::VectorXd mMasses;
+
+  /// Whether each node is anchored in place.
+  std::vector<char> mFixed;
+
+  /// Lame parameters derived from the material's Young's modulus and
+  /// Poisson's ratio.
+  double mShearModulus = 0.0;
+  double mLameLambda = 0.0;
 
   /// Tetrahedron each embedded surface vertex is bound to.
   std::vector<std::size_t> mSurfaceTets;
@@ -325,6 +464,19 @@ std::shared_ptr<DeformableBody> DeformableBody::create(
         "DeformableBody::create: material linear damping must not be negative");
   }
 
+  if (!(material.mYoungsModulus > 0.0)) {
+    throw std::invalid_argument(
+        "DeformableBody::create: material Young's modulus must be positive");
+  }
+
+  // Outside (-1, 0.5) the Lame parameter lambda is negative or divergent, so
+  // the material is not physically admissible.
+  if (!(material.mPoissonRatio > -1.0 && material.mPoissonRatio < 0.5)) {
+    throw std::invalid_argument(
+        "DeformableBody::create: material Poisson's ratio must lie strictly "
+        "between -1 and 0.5");
+  }
+
   return std::shared_ptr<DeformableBody>(new DeformableBody(mesh, material));
 }
 
@@ -393,6 +545,42 @@ double DeformableBody::getTotalMass() const
 void DeformableBody::resetToRest()
 {
   mImpl->resetToRest();
+}
+
+//==============================================================================
+void DeformableBody::computeElasticForces()
+{
+  mImpl->computeElasticForces();
+}
+
+//==============================================================================
+Eigen::Vector3d DeformableBody::getNodeForce(std::size_t nodeIndex) const
+{
+  DART_ASSERT(nodeIndex < getNumNodes());
+  return mImpl->mForces.segment<3>(static_cast<int>(3 * nodeIndex));
+}
+
+//==============================================================================
+double DeformableBody::getElasticEnergy() const
+{
+  return mImpl->getElasticEnergy();
+}
+
+//==============================================================================
+void DeformableBody::setNodeFixed(std::size_t nodeIndex, bool fixed)
+{
+  DART_ASSERT(nodeIndex < getNumNodes());
+  mImpl->mFixed[nodeIndex] = fixed ? 1 : 0;
+  if (fixed) {
+    mImpl->mVelocities.segment<3>(static_cast<int>(3 * nodeIndex)).setZero();
+  }
+}
+
+//==============================================================================
+bool DeformableBody::isNodeFixed(std::size_t nodeIndex) const
+{
+  DART_ASSERT(nodeIndex < getNumNodes());
+  return mImpl->mFixed[nodeIndex] != 0;
 }
 
 //==============================================================================

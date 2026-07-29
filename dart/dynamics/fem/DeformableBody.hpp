@@ -55,21 +55,38 @@ namespace detail {
 class DeformableBodyImpl;
 } // namespace detail
 
+/// Constitutive model used to turn element deformation into elastic force.
+enum class ElasticModel
+{
+  /// Small-strain linear elasticity. It measures strain directly from the
+  /// deformation gradient, so a large rigid rotation registers as strain and
+  /// produces spurious restoring forces. Useful for small deformation and as a
+  /// reference, but not for characters that rotate.
+  Linear,
+
+  /// Co-rotated linear elasticity. The element's rotation is factored out
+  /// before strain is measured, so a rigid rotation produces no force at all
+  /// and large deformation stays well behaved. This is the default.
+  Corotational,
+};
+
 /// Material parameters of a volumetric FEM body.
-///
-/// Young's modulus and Poisson's ratio are carried but not yet consumed. The
-/// elastic element forces that use them arrive with the constitutive-model
-/// work; density and linear damping are already in use.
 struct Material
 {
   /// Mass per unit undeformed volume, in kg/m^3.
   double mDensity = 1000.0;
 
-  /// Young's modulus, in Pa. Reserved for the elastic-force work.
+  /// Young's modulus, in Pa. Larger values make the body stiffer, and also
+  /// tighten the largest stable explicit time step.
   double mYoungsModulus = 1.0e5;
 
-  /// Poisson's ratio. Reserved for the elastic-force work.
+  /// Poisson's ratio, which must lie in (-1, 0.5). It approaches
+  /// incompressibility as it approaches 0.5, where the Lame parameter lambda
+  /// diverges.
   double mPoissonRatio = 0.3;
+
+  /// Constitutive model used for elastic element forces.
+  ElasticModel mElasticModel = ElasticModel::Corotational;
 
   /// Mass-proportional viscous damping rate, in 1/s.
   ///
@@ -129,6 +146,26 @@ public:
 
   /// Moves every node back to its rest position with zero velocity.
   void resetToRest();
+
+  /// Recomputes the elastic force on every node from the current node
+  /// positions. Stepping the world does this automatically; call it directly to
+  /// inspect forces in a configuration that has not been simulated.
+  void computeElasticForces();
+
+  /// Returns the elastic force on one node as of the last computation.
+  Eigen::Vector3d getNodeForce(std::size_t nodeIndex) const;
+
+  /// Returns the elastic potential energy stored in the current configuration.
+  /// It is zero at rest and positive for any deformation.
+  double getElasticEnergy() const;
+
+  /// Holds a node at its current position, or releases it.
+  ///
+  /// A fixed node keeps zero velocity and ignores every force, which is how a
+  /// body is anchored to the world without a coupling constraint.
+  void setNodeFixed(std::size_t nodeIndex, bool fixed);
+
+  bool isNodeFixed(std::size_t nodeIndex) const;
 
   /// Embeds a surface in the volume mesh.
   ///
