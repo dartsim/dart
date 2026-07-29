@@ -39,14 +39,21 @@ better harness.
    reasoning mode, tool version, branch, and `audit-only` or `apply` boundary.
    Record which DART branch is being audited and whether GitHub mutations are
    approved. Do not silently substitute a different model or pin the repository
-   to the audit target.
-2. **Capture the control.** Before editing, record `git` state, installed tool
-   versions, `pixi run ai-doctor --json`, current model/config references,
-   prompt and instruction sizes, generated skill metadata size, custom-agent
-   inheritance, hooks, scenarios, durable context and project-state owners,
-   active plan/dev-task handoff surfaces, docs-policy freshness advisories, and
-   baseline focused gates. If the task is multi-session, create or refresh
-   `docs/dev_tasks/<task>/`.
+   to the audit target. Treat `audit-only` as read-only for tracked checkout and
+   external state: do not edit, regenerate, create a dev-task folder, run
+   auto-fixing lint, commit, push, or mutate GitHub. `apply` permits scoped local
+   implementation; external mutations still need their own approval.
+2. **Capture the control.** Before any apply-mode edit, record `git` state,
+   installed tool versions, `pixi run ai-doctor --json`, current model/config
+   references, prompt and instruction sizes, generated skill metadata size,
+   custom-agent inheritance, hooks, scenarios, durable context and project-state
+   owners, and active plan/dev-task handoff surfaces.
+
+   Record docs-policy freshness advisories and baseline read-only focused gates.
+   If an `apply` task is multi-session, create or refresh
+   `docs/dev_tasks/<task>/`. In `audit-only`, report the recommended handoff path
+   without creating it.
+
 3. **Refresh primary guidance.** Read the current official model, prompting,
    migration, configuration, skills, agents, and hook guidance relevant to the
    target. Record source URLs, retrieval date, and installed-version evidence.
@@ -90,34 +97,41 @@ better harness.
    Max evaluation must exercise that lane, not turn it into a global default.
    For another target family, derive routing from its refreshed guidance rather
    than carrying these names forward.
-7. **Implement the smallest supported delta.** Keep outcome, success criteria,
-   domain constraints, safety, permissions, evidence, tool routing, output, and
-   stop conditions explicit. Remove repeated procedural detail one coherent
-   group at a time. Edit `.claude/commands/` or `.claude/skills/` sources and
-   regenerate adapters with `pixi run sync-ai-commands`; do not hand-edit
-   generated `.agents/skills/` or `.opencode/command/` files. Improve owner
-   routing and progressive disclosure instead of loading every plan, task, or
-   handbook page by default.
+7. **Implement only in `apply` mode.** In `audit-only`, skip implementation and
+   continue only with non-mutating verification and the evidence report. In
+   `apply`, implement the smallest supported delta. Keep outcome, success
+   criteria, domain constraints, safety, permissions, evidence, tool routing,
+   output, and stop conditions explicit. Remove repeated procedural detail one
+   coherent group at a time. Edit `.claude/commands/` or `.claude/skills/`
+   sources and regenerate adapters with `pixi run sync-ai-commands`; do not
+   hand-edit generated `.agents/skills/` or `.opencode/command/` files. Improve
+   owner routing and progressive disclosure instead of loading every plan,
+   task, or handbook page by default.
 8. **Exercise trigger and failure boundaries.** Cover direct, indirect,
    incomplete, non-trigger, and edge prompts. Include a negative case that must
    retain the existing route, plus failure-sensitive checks for model pins,
    configuration aliases, generated parity, instruction discovery, and
    approval boundaries when touched. Include a fresh-session case that must
    find current project state and the correct cross-session resume surface
-   without hidden chat history.
+   without hidden chat history. In `audit-only`, assess existing coverage and
+   report missing cases without adding them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, relevant
    docs/AI checks from `docs/ai/verification.md`, including
-   `pixi run check-docs-policy` when the durable context layer is touched, and
-   `pixi run lint` before a commit. Complete the principle audit and two clean
-   role-separated reviews. Label unavailable behavioral, cross-tool, or hosted
-   evidence explicitly.
-10. **Close out by branch.** Make the changelog decision, promote durable
-    guidance, and remove the temporary dev-task folder in the completing
-    change. Load `docs/onboarding/changelog.md` for the closeout decision
-    instead of carrying it through the audit. For shared infrastructure, finish
-    and merge DART 7 first; then inspect `release-6.20` from its own current base
-    and record an apply/adapt/omit verdict. Never copy DART 7-only paths or
+   `pixi run check-docs-policy` when the durable context layer is touched.
+   `audit-only` must use read-only lint gates such as `pixi run check-lint`;
+   only `apply` runs auto-fixing `pixi run lint` before a commit. Complete the
+   principle audit and two clean role-separated reviews. Label unavailable
+   behavioral, cross-tool, or hosted evidence explicitly.
+10. **Close out by mode and branch.** In `audit-only`, stop with findings,
+    recommendations, limitations, proposed gates, and a branch-local
+    apply/adapt/omit recommendation; do not perform change-oriented closeout.
+    Only in `apply` mode, make the changelog decision, promote durable guidance,
+    and remove the temporary dev-task folder in the completing change. Load
+    `docs/onboarding/changelog.md` for that closeout decision instead of
+    carrying it through the audit. For shared infrastructure, finish and merge
+    DART 7 first; then inspect `release-6.20` from its own current base and
+    record an apply/adapt/omit verdict. Never copy DART 7-only paths or
     assumptions into the intentionally smaller release catalog. Pushes, PRs,
     comments, review re-triggers, and other GitHub mutations require explicit
     maintainer/user approval.
@@ -129,6 +143,8 @@ better harness.
 - Durable context, project-state, session-handoff, and freshness findings
 - Comparison matrix, limitations, prompt/config changes, and unchanged choices
 - Direct, indirect, incomplete, non-trigger, and edge-case results
-- Gates, principle audit, two review passes, changelog decision, and blockers
-- Branch completion state and, for shared changes, the DART 7 then DART 6
-  apply/adapt/omit verdict
+- Mode, mutations performed (none for `audit-only`), gates, principle audit, two
+  review passes, and blockers
+- For `audit-only`, recommendations and proposed change/validation scope; for
+  `apply`, the changelog decision and branch completion state
+- For shared changes, the DART 7 then DART 6 apply/adapt/omit verdict

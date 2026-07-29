@@ -615,6 +615,10 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "docs-policy freshness advisories",
         "without hidden chat history",
         "apply/adapt/omit verdict",
+        "Treat `audit-only` as read-only",
+        "skip implementation",
+        "only `apply` runs auto-fixing `pixi run lint`",
+        "do not perform change-oriented closeout",
     ):
         assert marker in text
 
