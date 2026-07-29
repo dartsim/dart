@@ -30,63 +30,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
+#pragma once
 
-#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/dart/broad_phase/AabbTree.hpp>
+
+#include <unordered_map>
+#include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {
 
-class DARTCollisionDetector;
+class CollisionObject;
 class DARTCollisionObject;
 
 namespace detail {
-struct DARTCollisionGroupEngineData;
-} // namespace detail
 
-class DARTCollisionGroup : public CollisionGroup
+struct DARTCollisionGroupEngineData
 {
-public:
-  friend class DARTCollisionDetector;
-
-  DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
-
-  ~DARTCollisionGroup() override;
-
-protected:
-  // Documentation inherited
-  void initializeEngineData() override;
-
-  // Documentation inherited
-  void addCollisionObjectToEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void addCollisionObjectsToEngine(
-      const std::vector<CollisionObject*>& collObjects) override;
-
-  // Documentation inherited
-  void removeCollisionObjectFromEngine(CollisionObject* object) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjectsFromEngine() override;
-
-  // Documentation inherited
-  void updateCollisionGroupEngineData() override;
-
-  void updateEngineDataForCollide();
-
-protected:
-  /// CollisionObjects added to this DARTCollisionGroup
-  std::vector<CollisionObject*> mCollisionObjects;
-
-private:
-  // Consolidated broadphase state lives outside this installed class so its
-  // released object layout remains unchanged.
-  detail::DARTCollisionGroupEngineData& getEngineData();
+  native::AabbTreeBroadPhase broadPhase;
+  std::unordered_map<std::size_t, DARTCollisionObject*> idToObject;
+  std::unordered_map<CollisionObject*, std::size_t> objectToId;
+  std::vector<std::size_t> freeIds;
+  std::size_t nextId{0u};
 };
 
+} // namespace detail
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_

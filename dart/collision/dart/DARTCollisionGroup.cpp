@@ -33,19 +33,79 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 
 namespace dart {
 namespace collision {
 
+namespace {
+
+using GroupEngineDataMap = std::unordered_map<
+    const DARTCollisionGroup*,
+    std::unique_ptr<detail::DARTCollisionGroupEngineData>>;
+
+//==============================================================================
+struct GroupEngineDataRegistry
+{
+  GroupEngineDataMap groups;
+  std::mutex mutex;
+};
+
+//==============================================================================
+GroupEngineDataRegistry& getGroupEngineDataRegistry()
+{
+  static GroupEngineDataRegistry registry;
+  return registry;
+}
+
+//==============================================================================
+void createGroupEngineData(const DARTCollisionGroup* group)
+{
+  auto& registry = getGroupEngineDataRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.groups[group]
+      = std::make_unique<detail::DARTCollisionGroupEngineData>();
+}
+
+//==============================================================================
+void removeGroupEngineData(const DARTCollisionGroup* group)
+{
+  auto& registry = getGroupEngineDataRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.groups.erase(group);
+}
+
+//==============================================================================
+std::size_t assignId(detail::DARTCollisionGroupEngineData& engineData)
+{
+  if (!engineData.freeIds.empty()) {
+    const std::size_t id = engineData.freeIds.back();
+    engineData.freeIds.pop_back();
+    return id;
+  }
+
+  return engineData.nextId++;
+}
+
+} // namespace
+
 //==============================================================================
 DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector),
-    mBroadPhase(std::make_unique<native::AabbTreeBroadPhase>())
+  : CollisionGroup(collisionDetector)
 {
-  // Do nothing
+  createGroupEngineData(this);
+}
+
+//==============================================================================
+DARTCollisionGroup::~DARTCollisionGroup()
+{
+  removeGroupEngineData(this);
 }
 
 //==============================================================================
@@ -57,17 +117,18 @@ void DARTCollisionGroup::initializeEngineData()
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  if (mObjectToId.find(object) != mObjectToId.end())
+  auto& engineData = getEngineData();
+  if (engineData.objectToId.find(object) != engineData.objectToId.end())
     return;
 
   auto* nativeObject = static_cast<DARTCollisionObject*>(object);
   nativeObject->updateEngineData();
 
-  const std::size_t id = assignId(nativeObject);
-  mObjectToId[object] = id;
-  mIdToObject[id] = nativeObject;
+  const std::size_t id = assignId(engineData);
+  engineData.objectToId[object] = id;
+  engineData.idToObject[id] = nativeObject;
   mCollisionObjects.push_back(object);
-  mBroadPhase->add(id, nativeObject->getNativeAabb());
+  engineData.broadPhase.add(id, nativeObject->getNativeAabb());
 }
 
 //==============================================================================
@@ -82,15 +143,16 @@ void DARTCollisionGroup::addCollisionObjectsToEngine(
 void DARTCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
-  const auto search = mObjectToId.find(object);
-  if (search == mObjectToId.end())
+  auto& engineData = getEngineData();
+  const auto search = engineData.objectToId.find(object);
+  if (search == engineData.objectToId.end())
     return;
 
   const std::size_t id = search->second;
-  mBroadPhase->remove(id);
-  mObjectToId.erase(search);
-  mIdToObject.erase(id);
-  mFreeIds.push_back(id);
+  engineData.broadPhase.remove(id);
+  engineData.objectToId.erase(search);
+  engineData.idToObject.erase(id);
+  engineData.freeIds.push_back(id);
   mCollisionObjects.erase(
       std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object),
       mCollisionObjects.end());
@@ -99,22 +161,24 @@ void DARTCollisionGroup::removeCollisionObjectFromEngine(
 //==============================================================================
 void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  mBroadPhase->clear();
+  auto& engineData = getEngineData();
+  engineData.broadPhase.clear();
   mCollisionObjects.clear();
-  mIdToObject.clear();
-  mObjectToId.clear();
-  mFreeIds.clear();
-  mNextId = 0u;
+  engineData.idToObject.clear();
+  engineData.objectToId.clear();
+  engineData.freeIds.clear();
+  engineData.nextId = 0u;
 }
 
 //==============================================================================
 void DARTCollisionGroup::updateCollisionGroupEngineData()
 {
+  auto& engineData = getEngineData();
   // Iterate the id map directly instead of hashing every object through
-  // mObjectToId each step; broadphase update order cannot leak into results
+  // objectToId each step; broadphase update order cannot leak into results
   // because pair queries are normalized and sorted before visitation.
-  for (const auto& entry : mIdToObject) {
-    mBroadPhase->update(entry.first, entry.second->getNativeAabb());
+  for (const auto& entry : engineData.idToObject) {
+    engineData.broadPhase.update(entry.first, entry.second->getNativeAabb());
   }
 }
 
@@ -125,15 +189,11 @@ void DARTCollisionGroup::updateEngineDataForCollide()
 }
 
 //==============================================================================
-std::size_t DARTCollisionGroup::assignId(DARTCollisionObject* /*object*/)
+detail::DARTCollisionGroupEngineData& DARTCollisionGroup::getEngineData()
 {
-  if (!mFreeIds.empty()) {
-    const std::size_t id = mFreeIds.back();
-    mFreeIds.pop_back();
-    return id;
-  }
-
-  return mNextId++;
+  auto& registry = getGroupEngineDataRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  return *registry.groups.at(this);
 }
 
 } // namespace collision

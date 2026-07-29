@@ -40,6 +40,7 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/collision/dart/SoftCollision.hpp"
+#include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
 #include "dart/collision/dart/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Profile.hpp"
@@ -277,9 +278,18 @@ native::CollisionOption makeNativeOption(
   native::CollisionOption nativeOption;
   nativeOption.enableContact = option.enableContact && result != nullptr;
   if (nativeOption.enableContact) {
-    nativeOption.maxNumContacts = std::min(
-        option.getEffectiveMaxNumContactsPerPair(),
-        kSolverFacingManifoldContactTarget);
+    const std::size_t maxPairContacts
+        = option.getEffectiveMaxNumContactsPerPair();
+    // DARTCollide uses an explicit unlimited per-pair request to preserve its
+    // released full-manifold behavior. Ordinary detector queries retain the
+    // solver-facing three-contact target, including wider finite requests.
+    const bool preserveCompleteManifold
+        = option.maxNumContactsPerPair
+          == std::numeric_limits<std::size_t>::max();
+    nativeOption.maxNumContacts
+        = preserveCompleteManifold
+              ? maxPairContacts
+              : std::min(maxPairContacts, kSolverFacingManifoldContactTarget);
   } else {
     nativeOption.maxNumContacts = 1u;
   }
@@ -1268,6 +1278,7 @@ bool DARTCollisionDetector::collide(
   const bool profileRecording
       = dart::common::profile::isProfileRecordingEnabled();
   auto* nativeGroup = static_cast<DARTCollisionGroup*>(group);
+  auto& groupEngineData = nativeGroup->getEngineData();
   {
     DART_PROFILE_SCOPED_IF_N(profileRecording, "Native::updateEngineData");
     nativeGroup->updateEngineData();
@@ -1292,7 +1303,7 @@ bool DARTCollisionDetector::collide(
 
       struct ParallelPairVisitContext
       {
-        DARTCollisionGroup* group;
+        detail::DARTCollisionGroupEngineData* groupEngineData;
         std::vector<ParallelObjectPair>* pairs;
         const CollisionOption* option;
         CollisionResult* result;
@@ -1302,7 +1313,7 @@ bool DARTCollisionDetector::collide(
         std::size_t numCollisionThreads;
         bool shouldStop{false};
       } context{
-          nativeGroup,
+          &groupEngineData,
           &objectPairs,
           &option,
           result,
@@ -1313,8 +1324,8 @@ bool DARTCollisionDetector::collide(
 
       const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
         context.pairs->emplace_back(
-            context.group->mIdToObject.at(id1),
-            context.group->mIdToObject.at(id2));
+            context.groupEngineData->idToObject.at(id1),
+            context.groupEngineData->idToObject.at(id2));
         if (context.pairs->size() < kParallelPairBatchSize)
           return true;
 
@@ -1329,7 +1340,8 @@ bool DARTCollisionDetector::collide(
         context.pairs->clear();
         return !context.shouldStop;
       };
-      const bool visitedAll = nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+      const bool visitedAll
+          = groupEngineData.broadPhase.visitPairs(pairVisitor);
       if (visitedAll && !objectPairs.empty()) {
         processNativePairsInParallel(
             objectPairs,
@@ -1348,22 +1360,22 @@ bool DARTCollisionDetector::collide(
       // gates.
       struct PairVisitContext
       {
-        DARTCollisionGroup* group;
+        detail::DARTCollisionGroupEngineData* groupEngineData;
         const CollisionOption* option;
         CollisionResult* result;
         bool* collisionFound;
         native::CollisionResult* scratchResult;
         CollisionResult* softPairScratch;
       } context{
-          nativeGroup,
+          &groupEngineData,
           &option,
           result,
           &collisionFound,
           &scratchResult,
           &softPairScratch};
       const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
-        auto* object1 = context.group->mIdToObject.at(id1);
-        auto* object2 = context.group->mIdToObject.at(id2);
+        auto* object1 = context.groupEngineData->idToObject.at(id1);
+        auto* object2 = context.groupEngineData->idToObject.at(id2);
         return !processNativePair(
             object1,
             object2,
@@ -1378,11 +1390,11 @@ bool DARTCollisionDetector::collide(
         // order: which contacts survive a maxNumContacts cap is part of the
         // observable behavior, and the ordered walk reproduces BruteForce
         // bit-for-bit.
-        nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+        groupEngineData.broadPhase.visitPairs(pairVisitor);
       } else {
         // Boolean existence queries return no per-pair data, so traversal
         // order cannot leak; stream the tree walk and stop at the first hit.
-        nativeGroup->mBroadPhase->visitPairsAnyOrder(pairVisitor);
+        groupEngineData.broadPhase.visitPairsAnyOrder(pairVisitor);
       }
     }
   }

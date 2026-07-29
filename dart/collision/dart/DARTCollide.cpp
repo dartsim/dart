@@ -66,10 +66,9 @@ int collideShapeFrames(
   auto group2 = detector->createCollisionGroup(frame2);
 
   CollisionResult adapterResult;
-  group1->collide(
-      group2.get(),
-      CollisionOption(true, std::numeric_limits<std::size_t>::max()),
-      &adapterResult);
+  CollisionOption adapterOption(true, std::numeric_limits<std::size_t>::max());
+  adapterOption.maxNumContactsPerPair = std::numeric_limits<std::size_t>::max();
+  group1->collide(group2.get(), adapterOption, &adapterResult);
 
   for (const auto& adapterContact : adapterResult.getContacts()) {
     Contact contact = adapterContact;

@@ -24,6 +24,11 @@ install(
 # consolidation). These stay under the dart::collision::native namespace to
 # minimize diff noise; only the detector-facing classes changed names.
 set(
+  collision_dart_private_headers
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionGroupEngineData.hpp
+)
+
+set(
   collision_dart_engine_headers
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/InlineVector.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/Span.hpp
@@ -101,5 +106,8 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.cpp
 )
 
-dart_add_core_headers(${collision_dart_engine_headers})
+dart_add_core_headers(
+  ${collision_dart_private_headers}
+  ${collision_dart_engine_headers}
+)
 dart_add_core_sources(${collision_dart_engine_sources})

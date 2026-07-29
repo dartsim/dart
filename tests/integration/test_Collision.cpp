@@ -96,6 +96,19 @@ public:
   }
 };
 
+// Keep the released DARTCollisionGroup layout: the base plus its protected
+// CollisionObject vector. Consolidated broadphase state must remain external.
+class ReleasedDARTCollisionGroupLayout : public CollisionGroup
+{
+protected:
+  std::vector<CollisionObject*> mCollisionObjects;
+};
+
+static_assert(
+    sizeof(DARTCollisionGroup) == sizeof(ReleasedDARTCollisionGroupLayout));
+static_assert(
+    alignof(DARTCollisionGroup) == alignof(ReleasedDARTCollisionGroupLayout));
+
 class ToggleBodyNodeCollisionFilter : public BodyNodeCollisionFilter
 {
 public:
@@ -994,16 +1007,16 @@ TEST_F(Collision, DartCollideCompatibilityWrappersDelegateToDartDetector)
   offset.translation().x() = 0.5;
 
   CollisionResult result;
-  EXPECT_GT(
-      collideBoxBox(
-          &objectA,
-          &objectB,
-          Eigen::Vector3d::Ones(),
-          identity,
-          Eigen::Vector3d::Ones(),
-          offset,
-          result),
-      0);
+  const int boxContacts = collideBoxBox(
+      &objectA,
+      &objectB,
+      Eigen::Vector3d::Ones(),
+      identity,
+      Eigen::Vector3d::Ones(),
+      offset,
+      result);
+  EXPECT_EQ(boxContacts, 4);
+  EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
   EXPECT_GT(
