@@ -232,18 +232,16 @@ def check_codex_config(root: Path) -> list[str]:
     if not isinstance(agents, dict):
         errors.append(".codex/config.toml: agents must be a table")
         return errors
-    if set(agents) != {"max_concurrent_threads_per_session", "max_depth"}:
+    if set(agents) != {"max_threads", "max_depth"}:
         errors.append(
             ".codex/config.toml: agents keys must equal "
-            "max_concurrent_threads_per_session, max_depth"
+            "max_threads, max_depth (the compatibility spelling keeps "
+            "Codex 0.144 strict config support)"
         )
-    if (
-        type(agents.get("max_concurrent_threads_per_session")) is not int
-        or agents.get("max_concurrent_threads_per_session") != 4
-    ):
+    if type(agents.get("max_threads")) is not int or agents.get("max_threads") != 4:
         errors.append(
-            ".codex/config.toml: agents.max_concurrent_threads_per_session "
-            "must equal 4"
+            ".codex/config.toml: agents.max_threads must equal 4 "
+            "for Codex 0.144 compatibility"
         )
     if type(agents.get("max_depth")) is not int or agents.get("max_depth") != 1:
         errors.append(".codex/config.toml: agents.max_depth must equal 1")

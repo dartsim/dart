@@ -109,6 +109,8 @@ authorization for a blanket pin.
 | `docs/ai/branch-profile.json`  | Machine-readable branch facts, required paths, exclusions, and AI-infra gates         |
 | `docs/ai/agent-scenarios.json` | Eight deterministic fresh-session routing and verification contracts                  |
 | `docs/ai/orchestration.md`     | Orchestrator/executor roles and the work-packet contract                              |
+| `docs/plans/`                  | Living project priority, current state, next steps, and acceptance gates              |
+| `docs/dev_tasks/`              | Temporary branch/session handoff state for active multi-session work                  |
 | `docs/onboarding/ai-tools.md`  | Tool compatibility and adapter maintenance details                                    |
 | `.claude/commands/`            | Editable workflow source for DART user-invoked workflow capabilities                  |
 | `.claude/skills/`              | Editable domain-skill source for DART on-demand Agent Skills                          |

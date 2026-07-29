@@ -98,11 +98,16 @@
       "owner_docs": [
         "docs/ai/principles.md",
         "docs/ai/components.md",
+        "docs/ai/sessions.md",
         "docs/ai/verification.md",
+        "docs/information-architecture.md",
+        "docs/plans/README.md",
+        "docs/dev_tasks/README.md",
         "docs/onboarding/ai-tools.md"
       ],
       "permitted_scopes": [
         "model routing owner docs",
+        "durable AI context, planning, and session handoff owner docs",
         "editable workflow and domain skill sources",
         "generated adapters",
         "maintained Codex runtime configuration",

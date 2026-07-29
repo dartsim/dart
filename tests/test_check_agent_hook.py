@@ -217,9 +217,7 @@ def test_unstaged_related_ai_file_is_rejected_across_files(
     root = _repo(tmp_path)
     _stage(root, ".codex/config.toml", "[agents]\n")
     subprocess.run(["git", "-C", str(root), "commit", "-qm", "fixture"], check=True)
-    (root / ".codex/config.toml").write_text(
-        "[agents]\nmax_concurrent_threads_per_session = 4\n"
-    )
+    (root / ".codex/config.toml").write_text("[agents]\nmax_threads = 4\n")
     _stage(root, "docs/ai/README.md", "staged docs\n")
     monkeypatch.setattr(hook, "parse_args", lambda: _args(root))
     monkeypatch.setattr(

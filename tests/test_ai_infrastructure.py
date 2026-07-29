@@ -310,7 +310,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
     _write(
         root,
         ".codex/config.toml",
-        "[agents]\n" "max_concurrent_threads_per_session = 4\n" "max_depth = 1\n",
+        "[agents]\n" "max_threads = 4\n" "max_depth = 1\n",
     )
     _write(
         root,
@@ -610,6 +610,10 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "Max gives one difficult task more reasoning",
         "Ultra is for independently parallelizable work",
         "Do not silently substitute a different model",
+        "durable context and project-state layer",
+        "`docs/plans/dashboard.md`",
+        "docs-policy freshness advisories",
+        "without hidden chat history",
         "apply/adapt/omit verdict",
     ):
         assert marker in text
@@ -1297,10 +1301,10 @@ def test_config_schema_reports_non_table_agents_without_crashing(tmp_path):
 @pytest.mark.parametrize(
     "content",
     (
-        "[agents]\nmax_concurrent_threads_per_session = true\nmax_depth = 1\n",
-        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = true\n",
-        "[agents]\nmax_concurrent_threads_per_session = 4.0\nmax_depth = 1\n",
-        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = 1.0\n",
+        "[agents]\nmax_threads = true\nmax_depth = 1\n",
+        "[agents]\nmax_threads = 4\nmax_depth = true\n",
+        "[agents]\nmax_threads = 4.0\nmax_depth = 1\n",
+        "[agents]\nmax_threads = 4\nmax_depth = 1.0\n",
     ),
 )
 def test_config_schema_requires_exact_integer_limits(tmp_path, content):
@@ -1310,15 +1314,15 @@ def test_config_schema_requires_exact_integer_limits(tmp_path, content):
     assert infra.check_codex_config(root)
 
 
-def test_config_schema_rejects_legacy_concurrency_alias(tmp_path):
+def test_config_schema_rejects_new_concurrency_key_until_0144_is_retired(tmp_path):
     root = make_repo(tmp_path, "main")
     (root / ".codex" / "config.toml").write_text(
-        "[agents]\nmax_threads = 4\nmax_depth = 1\n"
+        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = 1\n"
     )
 
     errors = infra.check_codex_config(root)
 
-    assert any("max_concurrent_threads_per_session" in error for error in errors)
+    assert any("max_threads" in error and "0.144" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -1738,7 +1742,7 @@ def test_doctor_report_is_read_only(tmp_path):
         "custom_agents": [],
     }
     assert model_harness["project_agent_config"] == {
-        "max_concurrent_threads_per_session": 4,
+        "max_threads": 4,
         "max_depth": 1,
     }
     assert model_harness["workflow_sources"]["longest"]["lines"] > 0
@@ -1765,10 +1769,7 @@ def test_doctor_report_is_read_only(tmp_path):
 def test_doctor_reports_project_model_pin_for_upgrade_audit(tmp_path, key):
     root = make_repo(tmp_path, "main")
     (root / ".codex" / "config.toml").write_text(
-        f'{key} = "gpt-5.6"\n'
-        "[agents]\n"
-        "max_concurrent_threads_per_session = 4\n"
-        "max_depth = 1\n"
+        f'{key} = "gpt-5.6"\n' "[agents]\n" "max_threads = 4\n" "max_depth = 1\n"
     )
 
     result = ai_doctor.report(root, "main")
@@ -1783,10 +1784,7 @@ def test_doctor_reports_project_model_pin_for_upgrade_audit(tmp_path, key):
 def test_doctor_reports_project_subagent_model_pin_for_upgrade_audit(tmp_path, key):
     root = make_repo(tmp_path, "main")
     (root / ".codex" / "config.toml").write_text(
-        "[agents]\n"
-        f'{key} = "gpt-5.6-terra"\n'
-        "max_concurrent_threads_per_session = 4\n"
-        "max_depth = 1\n"
+        "[agents]\n" f'{key} = "gpt-5.6-terra"\n' "max_threads = 4\n" "max_depth = 1\n"
     )
 
     result = ai_doctor.report(root, "main")
@@ -1811,9 +1809,7 @@ def test_doctor_reports_custom_agent_model_pin_for_upgrade_audit(tmp_path):
 def test_doctor_model_harness_inventory_stays_json_safe_on_toml_type_error(tmp_path):
     root = make_repo(tmp_path, "main")
     (root / ".codex" / "config.toml").write_text(
-        "[agents]\n"
-        "max_concurrent_threads_per_session = 4\n"
-        "max_depth = 2026-07-29\n"
+        "[agents]\n" "max_threads = 4\n" "max_depth = 2026-07-29\n"
     )
 
     result = ai_doctor.report(root, "main")

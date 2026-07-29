@@ -421,8 +421,8 @@ hand-checked 2026-07
 
 ### OpenAI Codex
 
-**Tested Version**: Codex CLI 0.146.0 (local discovery/config/hook checks,
-2026-07-29)
+**Tested Versions**: Codex CLI 0.144.1 (strict-config compatibility) and
+0.146.0 (local discovery/config/hook checks), 2026-07-29
 
 | Feature           | Location                    | Status                                |
 | ----------------- | --------------------------- | ------------------------------------- |
@@ -453,10 +453,14 @@ mode, put the generated adapter in the goal text, such as
 
 Use the current model and reasoning guidance in `docs/ai/README.md`; do not
 duplicate or pin it here. Project agents inherit the active parent model.
-`.codex/config.toml` bounds concurrency with
-`agents.max_concurrent_threads_per_session` and delegation depth with
-`agents.max_depth`, while progressively loaded skills and owner docs supply
-task procedures.
+`.codex/config.toml` bounds concurrency with `agents.max_threads` and delegation
+depth with `agents.max_depth`, while progressively loaded skills and owner docs
+supply task procedures. Current Codex documents `agents.max_threads` as a
+supported alias for `agents.max_concurrent_threads_per_session`; DART keeps the
+alias because the previously documented 0.144.1 client rejects the newer
+spelling under strict configuration. Revisit the spelling only when DART
+intentionally advances its minimum tested Codex version and verifies both
+strict-config paths.
 
 Project hooks are trusted-project automation, not complete enforcement.
 `PreToolUse` does not intercept every possible mutation path, and a hook may be
@@ -481,7 +485,8 @@ Current references:
 [Codex models and reasoning](https://learn.chatgpt.com/docs/models),
 [Agent Skills](https://learn.chatgpt.com/docs/build-skills),
 [subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents),
-[project configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml), and
+[project configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml),
+[configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml), and
 [hooks](https://learn.chatgpt.com/docs/hooks).
 
 ---

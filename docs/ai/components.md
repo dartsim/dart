@@ -29,6 +29,18 @@ AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
 compact and make rules visible through owner placement, read-order pointers,
 workflow required reading, and generated-adapter sync instead of duplication.
 
+DART's AI infrastructure includes the tracked documentation that supplies
+in-session context and across-session project state, not only tool config,
+prompts, adapters, agents, hooks, scripts, and tests. That durable context layer
+includes the north star and session policy under `docs/ai/`, living priority
+and gates under `docs/plans/`, active handoff state under `docs/dev_tasks/`,
+and the handbook, design, release, or module owner docs routed into a task.
+
+Model or coding-agent upgrade audits must inspect that layer for discovery,
+freshness, duplication, context cost, resume quality, and human usability.
+Keep it progressively disclosed: audit owner paths and representative live
+state, but do not load every plan, task, or handbook page into every session.
+
 Generated adapter entrypoints are first-class entrypoints for their tools:
 
 - `.agents/skills/` for Codex;
