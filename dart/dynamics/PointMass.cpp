@@ -140,7 +140,13 @@ bool PointMass::Properties::operator!=(const PointMass::Properties& other) const
 
 //==============================================================================
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
-  : // mIndexInSkeleton(Eigen::Matrix<std::size_t, 3, 1>::Zero()),
+  : mM_dV(Eigen::Vector3d::Zero()),
+    mM_F(Eigen::Vector3d::Zero()),
+    mBiasForceForInvMeta(Eigen::Vector3d::Zero()),
+    mG_F(Eigen::Vector3d::Zero()),
+    mCg_dV(Eigen::Vector3d::Zero()),
+    mCg_F(Eigen::Vector3d::Zero()),
+    // mIndexInSkeleton(Eigen::Matrix<std::size_t, 3, 1>::Zero()),
     mParentSoftBodyNode(_softBodyNode),
     mPositionDeriv(Eigen::Vector3d::Zero()),
     mVelocitiesDeriv(Eigen::Vector3d::Zero()),
@@ -209,7 +215,7 @@ void PointMass::setMass(double _mass)
     return;
 
   mMass = _mass;
-  mParentSoftBodyNode->incrementVersion();
+  mParentSoftBodyNode->handlePointMassMassChange();
 }
 
 //==============================================================================
@@ -608,7 +614,7 @@ void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
     return;
 
   mRest = _p;
-  mParentSoftBodyNode->incrementVersion();
+  mParentSoftBodyNode->handlePointMassRestingPositionChange();
   mNotifier->dirtyTransform();
 }
 
@@ -1074,11 +1080,12 @@ void PointMass::updateConstrainedTermsFD(double _timeStep)
 //==============================================================================
 void PointMass::aggregateMassMatrix(MatrixXd& /*_MCol*/, int /*_col*/)
 {
-  // TODO(JS): Not implemented
+  mM_F.noalias() = getMass() * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
+
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
   //  int iStart = mIndexInSkeleton[0];
-  //  mM_F.noalias() = mMass * mM_dV;
   //  _MCol->block<3, 1>(iStart, _col).noalias() = mM_F;
 }
 
@@ -1086,11 +1093,12 @@ void PointMass::aggregateMassMatrix(MatrixXd& /*_MCol*/, int /*_col*/)
 void PointMass::aggregateAugMassMatrix(
     Eigen::MatrixXd& /*_MCol*/, int /*_col*/, double /*_timeStep*/)
 {
-  // TODO(JS): Not implemented
+  mM_F.noalias() = getMass() * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
+
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
   //  int iStart = mIndexInSkeleton[0];
-  //  mM_F.noalias() = mMass * mM_dV;
 
   //  double d = mParentSoftBodyNode->getDampingCoefficient();
   //  double kv = mParentSoftBodyNode->getVertexSpringStiffness();
@@ -1142,12 +1150,18 @@ void PointMass::aggregateInvAugMassMatrix(
 
 //==============================================================================
 void PointMass::aggregateGravityForceVector(
-    VectorXd& /*_g*/, const Eigen::Vector3d& /*_gravity*/)
+    VectorXd& /*_g*/, const Eigen::Vector3d& _gravity)
 {
-  // TODO(JS): Not implemented
-  //  mG_F = mMass *
-  //  (mParentSoftBodyNode->getWorldTransform().linear().transpose()
-  //                  * _gravity);
+  if (mParentSoftBodyNode->getGravityMode()) {
+    mG_F.noalias()
+        = getMass()
+          * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
+             * _gravity);
+  } else {
+    mG_F.setZero();
+  }
+
+  DART_ASSERT(!math::isNan(mG_F));
 
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
@@ -1165,15 +1179,19 @@ void PointMass::updateCombinedVector()
 
 //==============================================================================
 void PointMass::aggregateCombinedVector(
-    Eigen::VectorXd& /*_Cg*/, const Eigen::Vector3d& /*_gravity*/)
+    Eigen::VectorXd& /*_Cg*/, const Eigen::Vector3d& _gravity)
 {
-  // TODO(JS): Not implemented
-  //  mCg_F.noalias() = mMass * mCg_dV;
-  //  mCg_F -= mMass
-  //           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
-  //              * _gravity);
-  //  mCg_F += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mMass *
-  //  mV);
+  const double mass = getMass();
+  mCg_F.noalias() = mass * mCg_dV;
+  if (mParentSoftBodyNode->getGravityMode()) {
+    mCg_F.noalias()
+        -= mass
+           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
+              * _gravity);
+  }
+  mCg_F.noalias()
+      += mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(mass * mV);
+  DART_ASSERT(!math::isNan(mCg_F));
 
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
@@ -1184,9 +1202,9 @@ void PointMass::aggregateCombinedVector(
 //==============================================================================
 void PointMass::aggregateExternalForces(VectorXd& /*_Fext*/)
 {
-  // TODO(JS): Not implemented
-  //  int iStart = mIndexInSkeleton[0];
-  //  _Fext->segment<3>(iStart) = mFext;
+  // Point masses are not exposed as Skeleton generalized coordinates in
+  // DART 6. SoftBodyNode projects each point's local external force through
+  // the parent joint while aggregating the soft body's generalized wrench.
 }
 
 //==============================================================================

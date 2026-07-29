@@ -77,6 +77,8 @@ std::vector<DemoScene> makeDemoScenes()
 
   // Soft Bodies (new category; first appearance here).
   scenes.push_back(makeMixedChainScene());
+  scenes.push_back(makeAdaptiveSoftContactScene());
+  scenes.push_back(makeSoftWormScene());
   scenes.push_back(makeSoftBodiesScene());
   scenes.push_back(makeSoftCubesScene());
   scenes.push_back(makeSoftOpenChainScene());

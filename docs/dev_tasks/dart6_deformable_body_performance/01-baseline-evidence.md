@@ -54,5 +54,7 @@ final performance numbers for regression thresholds.
   host with CPU governor metadata before setting thresholds.
 - Add a SIMD-on A/B once the DART 6 `dart/simd/` contract for point-mass loops
   is chosen.
-- Add finite-state stability counters or hashes so performance rows cannot hide
-  exploding or divergent soft-body states.
+- Attach stability or checksum evidence to performance rows so timing claims
+  cannot hide exploding or divergent soft-body states. The first
+  `test_SoftDynamics` one-thread versus four-thread final-state gate is
+  recorded in `03-stability-gate.md`.
