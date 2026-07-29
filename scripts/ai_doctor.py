@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import tomllib
 from pathlib import Path
@@ -163,6 +164,34 @@ def _instruction_context_inventory(root: Path) -> dict[str, object]:
     }
 
 
+def _managed_generated_skills(root: Path) -> list[Path]:
+    skills_root = root / ".agents" / "skills"
+    manifest_path = skills_root / ".dart-generated.json"
+    if skills_root.is_symlink() or manifest_path.is_symlink():
+        return []
+    manifest = _read_json(manifest_path)
+    if (
+        type(manifest.get("schema_version")) is not int
+        or manifest["schema_version"] != 1
+        or manifest.get("generator") != "scripts/sync_ai_commands.py"
+    ):
+        return []
+    declared = manifest.get("paths")
+    if not isinstance(declared, list):
+        return []
+    managed: list[Path] = []
+    for relative in declared:
+        if not isinstance(relative, str) or not re.fullmatch(
+            r"[a-z0-9][a-z0-9-]*/SKILL\.md", relative
+        ):
+            continue
+        path = skills_root / relative
+        if path.parent.is_symlink() or path.is_symlink() or not path.is_file():
+            continue
+        managed.append(path)
+    return sorted(managed)
+
+
 def _model_harness_inventory(
     root: Path,
     commands: list[Path],
@@ -292,6 +321,7 @@ def _inventory(root: Path, profile: str) -> dict[str, object]:
     commands = sorted((root / ".claude" / "commands").glob("*.md"))
     skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
     generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
+    managed_generated = _managed_generated_skills(root)
     agents = sorted((root / ".codex" / "agents").glob("*.toml"))
     tasks = pixi_task_names(root)
     hooks = _read_json(root / ".codex" / "hooks.json").get("hooks") or {}
@@ -311,7 +341,7 @@ def _inventory(root: Path, profile: str) -> dict[str, object]:
         },
         "custom_agents": _path_inventory(agents, root),
         "model_harness": _model_harness_inventory(
-            root, commands, skills, generated, agents
+            root, commands, skills, managed_generated, agents
         ),
         "hooks": {
             "path": ".codex/hooks.json",

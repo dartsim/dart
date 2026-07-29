@@ -1765,6 +1765,29 @@ def test_doctor_report_is_read_only(tmp_path):
     assert _content_hashes(root) == before
 
 
+def test_doctor_skill_metadata_ignores_unmanaged_catalog_skills(tmp_path):
+    root = make_repo(tmp_path, "main")
+    baseline = ai_doctor.report(root, "main")["inventory"]["model_harness"][
+        "generated_skill_metadata_chars"
+    ]
+    unrelated = root / ".agents" / "skills" / "personal-helper" / "SKILL.md"
+    unrelated.parent.mkdir()
+    unrelated.write_text(
+        "---\n"
+        "name: personal-helper\n"
+        "description: This unrelated local skill must not affect DART metrics.\n"
+        "---\n"
+    )
+
+    result = ai_doctor.report(root, "main")
+
+    assert result["ok"]
+    assert (
+        result["inventory"]["model_harness"]["generated_skill_metadata_chars"]
+        == baseline
+    )
+
+
 @pytest.mark.parametrize("key", ("model", "model_reasoning_effort", "review_model"))
 def test_doctor_reports_project_model_pin_for_upgrade_audit(tmp_path, key):
     root = make_repo(tmp_path, "main")
