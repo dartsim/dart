@@ -620,8 +620,14 @@ def _boxed_summary(
     timeline_path = output_dir / "timeline.json"
     clip_path = output_dir / "clip.mp4"
     metadata = read_json(metadata_path)
-    if metadata.get("schema_version") != runner.CAPTURE_RESULT_SCHEMA_VERSION:
-        raise EvidenceError("boxed capture is not current provenance schema v2")
+    accepted_capture_schemas = {runner.CAPTURE_RESULT_SCHEMA_VERSION}
+    semantic_capture_schema = getattr(
+        runner, "SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION", None
+    )
+    if semantic_capture_schema is not None:
+        accepted_capture_schemas.add(semantic_capture_schema)
+    if metadata.get("schema_version") not in accepted_capture_schemas:
+        raise EvidenceError("boxed capture is not provenance schema v2/v3")
     metrics = verified.get("timeline", {}).get(
         "author_masonry_arch_101_scene_state_metrics"
     )

@@ -31,6 +31,11 @@ def test_v3_defaults_bind_the_checker_texture_contract():
 
     assert module.DEFAULT_BUNDLE.name == "fig03_backspin_current_v3"
     assert module.SCHEMA_VERSION == "dart.fbf_backspin_visual_bundle/v3"
+    assert module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS == (
+        "dart.fbf_visual_evidence/v1",
+        "dart.fbf_visual_evidence/v2",
+        "dart.fbf_visual_evidence/v3",
+    )
     assert module.MANUAL_SCHEMA_VERSION == ("dart.fbf_backspin_manual_inspection/v3")
     assert module.EXPECTED_CONFIGURATION["orientation_cue"] == (
         "renderer-applied high-contrast 6x4 checker texture with coral "

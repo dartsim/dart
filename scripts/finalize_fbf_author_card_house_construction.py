@@ -71,9 +71,11 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_author_card_house_construction_manual_inspecti
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_author_card_house_construction_invocations/v1"
 CONTRACT_SCHEMA_VERSION = "dart.fbf_author_card_house_configuration_contract/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
-RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
 RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
     RUNNER_SCHEMA_VERSION,
+    RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
     RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
 )
 
@@ -1267,8 +1269,18 @@ def validate_capture_bundle(
         "ffmpeg",
         "ffprobe",
     }
-    if result.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+    if result.get("schema_version") in (
+        RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+        RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+    ):
         expected_runtime_keys.add("scene_physics_provenance")
+    if result.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+        expected_runtime_keys.update(
+            {
+                "demo_runtime_closure",
+                "demo_runtime_closure_unchanged_during_capture",
+            }
+        )
     if (
         not isinstance(runtime, dict)
         or set(runtime) != expected_runtime_keys
@@ -1280,7 +1292,10 @@ def validate_capture_bundle(
 
     queried_contract = read_json(root / "contract.json")
     validate_configuration_contract(queried_contract)
-    if result.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+    if result.get("schema_version") in (
+        RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+        RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+    ):
         provenance = build_semantic_physics_provenance(queried_contract)
         expected_provenance = {
             "schema_version": SEMANTIC_PROVENANCE_SCHEMA_VERSION,

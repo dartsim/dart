@@ -64,6 +64,13 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_backspin_manual_inspection/v3"
 TRACE_SUMMARY_SCHEMA_VERSION = "dart.fbf_backspin_trace_summary/v1"
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_backspin_invocations/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
+RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
+    RUNNER_SCHEMA_VERSION,
+    RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+    RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+)
 STAGING_SCHEMA_VERSION = "dart.fbf_backspin_pruned_staging/v1"
 
 TRACE_COLUMNS = (
@@ -1019,7 +1026,7 @@ def validate_capture_bundle(
     if run_results["backspin"] != metadata:
         raise ValueError("backspin run-summary no longer equals metadata.json")
     if (
-        metadata.get("schema_version") != RUNNER_SCHEMA_VERSION
+        metadata.get("schema_version") not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS
         or metadata.get("kind") != "capture_result"
         or metadata.get("pass") is not True
         or metadata.get("actual_simulator") is not True

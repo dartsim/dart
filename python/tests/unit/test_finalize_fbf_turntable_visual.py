@@ -1450,8 +1450,15 @@ def test_current_source_contract_rejects_queried_parameter_swap(monkeypatch):
         )
 
 
-def test_author_turntable_capture_accepts_and_revalidates_v2_provenance():
+@pytest.mark.parametrize(
+    "capture_schema_name",
+    ("RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION", "RUNNER_CAPTURE_RESULT_SCHEMA_VERSION"),
+)
+def test_author_turntable_capture_accepts_and_revalidates_provenance(
+    capture_schema_name,
+):
     module = _load_module()
+    capture_schema_version = getattr(module, capture_schema_name)
     scenario = next(iter(module.SCENARIOS))
     scene = module.SCENARIOS[scenario]["scene"]
     capture_id = module.SCENARIOS[scenario]["capture_id"]
@@ -1463,7 +1470,7 @@ def test_author_turntable_capture_accepts_and_revalidates_v2_provenance():
     )
 
     module._validate_scene_physics_provenance(
-        capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+        capture_schema_version=capture_schema_version,
         runtime={"scene_physics_provenance": binding},
         contract=contract,
         demo=SCRIPT,
@@ -1481,7 +1488,7 @@ def test_author_turntable_capture_accepts_and_revalidates_v2_provenance():
 
     with pytest.raises(ValueError, match="semantic physics provenance changed"):
         module._validate_scene_physics_provenance(
-            capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+            capture_schema_version=capture_schema_version,
             runtime={},
             contract=contract,
             demo=SCRIPT,
@@ -1492,7 +1499,7 @@ def test_author_turntable_capture_accepts_and_revalidates_v2_provenance():
     changed["semantic_physics_sha256"] = "f" * 64
     with pytest.raises(ValueError, match="semantic physics provenance changed"):
         module._validate_scene_physics_provenance(
-            capture_schema_version=module.RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+            capture_schema_version=capture_schema_version,
             runtime={"scene_physics_provenance": changed},
             contract=contract,
             demo=SCRIPT,

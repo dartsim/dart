@@ -66,6 +66,13 @@ MANUAL_SCHEMA_VERSION = "dart.fbf_incline_manual_inspection/v1"
 TRACE_SUMMARY_SCHEMA_VERSION = "dart.fbf_incline_trace_summary/v1"
 INVOCATIONS_SCHEMA_VERSION = "dart.fbf_incline_invocations/v1"
 RUNNER_SCHEMA_VERSION = "dart.fbf_visual_evidence/v1"
+RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v2"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSION = "dart.fbf_visual_evidence/v3"
+RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS = (
+    RUNNER_SCHEMA_VERSION,
+    RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+    RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+)
 STAGING_SCHEMA_VERSION = "dart.fbf_incline_pruned_staging/v1"
 
 TRACE_COLUMNS = (
@@ -1469,7 +1476,8 @@ def validate_capture_bundle(
             "known_mismatches",
             "pass",
         }
-        or metadata.get("schema_version") != RUNNER_SCHEMA_VERSION
+        or metadata.get("schema_version")
+        not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS
         or metadata.get("kind") != "capture_result"
         or metadata.get("pass") is not True
         or metadata.get("actual_simulator") is not True
@@ -1525,10 +1533,28 @@ def validate_capture_bundle(
         raise ValueError("incline capture mismatch disclosures changed")
 
     runtime = metadata.get("runtime")
+    expected_runtime_keys = {
+        "demo_argv",
+        "demo_path",
+        "demo_sha256",
+        "ffmpeg",
+        "ffprobe",
+    }
+    if metadata.get("schema_version") in (
+        RUNNER_SEMANTIC_CAPTURE_RESULT_SCHEMA_VERSION,
+        RUNNER_CAPTURE_RESULT_SCHEMA_VERSION,
+    ):
+        expected_runtime_keys.add("scene_physics_provenance")
+    if metadata.get("schema_version") == RUNNER_CAPTURE_RESULT_SCHEMA_VERSION:
+        expected_runtime_keys.update(
+            {
+                "demo_runtime_closure",
+                "demo_runtime_closure_unchanged_during_capture",
+            }
+        )
     if (
         not isinstance(runtime, dict)
-        or set(runtime)
-        != {"demo_argv", "demo_path", "demo_sha256", "ffmpeg", "ffprobe"}
+        or set(runtime) != expected_runtime_keys
         or runtime.get("demo_path") != str(demo)
         or runtime.get("demo_sha256") != sha256(demo)
         or runtime.get("demo_argv") != expected_demo_argv
