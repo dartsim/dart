@@ -1,64 +1,56 @@
-# Verification - DART 6 deformable body performance
+# Verification - DART 6 deformable body feature and performance
 
-Updated: 2026-07-19
+Updated: 2026-07-30
 
-## Current publication candidate
+## Accepted merged slice
 
-- Base: `origin/release-6.20@75306efe770`
-- Base merge: `834a2548fd9`
-- Published PR head: `05d9de6e3fb`
-- Test calibration commit: `50a254e7e56`
-- DART detector ABI fix: `9a6796596bc`
+PR #3382 merged into `release-6.20` as
+`6c88ac1d774a702b494643fb598be6b8af9385e1`.
 
-## Local gates
+The final hosted matrix completed successfully across:
 
-- Legacy-FCL CoP calibration: 20/20 focused repeats passed.
-- `test_SoftDynamics`: 25/25 passed.
-- No-cache Release build: 292/292 passed.
-- Full Release C++ suite: 154/154 passed.
-- Downstream gz-physics suite: 199/199 tests passed.
-- Downstream gz-physics performance checks: 4/4 passed.
-- Selected gz-sim headless `INTEGRATION_entity_system` smoke: 1/1 passed.
-- Independent post-fix reviews: clean x2.
-- `pixi run lint`: passed.
-- `git diff --check`: passed.
-- `pixi run check-ai-commands`: passed after the task-doc refresh.
-- ABI follow-up no-cache focused dependency build: passed.
-- `test_DARTCollisionDetector`: 22/22 passed.
-- `test_Collision`: 52/52 passed.
-- `test_NonFiniteContact`: 4/4 passed.
-- Exact-v6.19.4-header/new-library ABI canary: 20/20 process runs passed;
-  legacy/current detector sizes were both 32 bytes, and current-header thread
-  and soft-option configuration, cloning, and active-pool destruction preserved
-  the legacy derived canaries and surrounding guards.
-- Independent post-ABI-fix reviews: clean x2.
+- Linux Release, Debug, assertions, Eigen alignment, and AI infrastructure;
+- Windows Release;
+- macOS arm64 Release and Debug;
+- FreeBSD reproduction;
+- GCC and Clang toolchain jobs;
+- scalar, SSE4.2, AVX, and AVX2 SIMD jobs;
+- gz-physics and gz-sim;
+- API documentation and English/Korean Read the Docs; and
+- Codecov patch and project gates.
 
-## Hosted evidence
+The accepted local evidence recorded by the merged PR includes:
 
-At `b172b2ee1db`, Windows Release completed 150/151 tests; only the legacy-FCL
-`default adaptive` CoP assertion failed (`0.12115883267368355` m versus `0.11`
-m). Codecov passed with patch `94.34783%` (143 uncovered changed lines) and
-project `75.17%` versus `73.90%` (reported `+1.26` percentage points).
+- `test_SoftDynamics`;
+- the full Release C++ suite;
+- detector, collision, constraint, allocation, and ABI-focused tests;
+- exact-v6.19.4-header compatibility canaries;
+- gz-physics functional and performance checks; and
+- the selected gz-sim headless integration smoke.
 
-Published head `05d9de6e3fb` had successful API docs, Windows Release,
-gz-physics, AVX, and both Read the Docs checks at the last refresh. Additional
-matrix jobs were running or queued with no CI failure reported. Its fresh top-level
-Codex review contains the detector-layout finding addressed by local commit
-`9a6796596bc`; there is no inline review thread to resolve.
+PR #3381 subsequently established the single built-in `dart` detector while
+preserving FCL as the DART 6.20 default. PR #3407 removed the out-of-scope
+volumetric-FEM subsystem.
 
-## Oracle disposition
+## Evidence boundary
 
-No visual rerun is required for the 0.11-to-0.13 change because it modifies a
-numeric test threshold, not simulation or rendering behavior; visual evidence
-cannot prove a per-step CoP limit. The Windows trace, 0.125 m scene mesh
-interval, focused repetitions, full soft-dynamics test, full C++ suite, and
-downstream gz-physics/gz-sim gates are the relevant text oracle. Historical
-visual commands and verdicts remain recorded in `06-pr-evidence.md`, but their
-temporary captures no longer exist and are not durable current evidence; the
-model gates remain the numerical scene evidence.
+The merged PR and its hosted checks own the historical exact-head evidence.
+Temporary local captures and interrupted benchmark directories are not durable
+evidence. Do not infer a complete paired benchmark result without the runner's
+completion marker and all required raw rows.
 
 ## Open evidence
 
-No paired benchmark directory contains `COMPLETE.json`; interrupted directories
-are non-evidence. Exact-head Windows CI and a fresh clean automated review
-remain required after the next push. Broader PLAN-622 acceptance remains open.
+PLAN-622 still requires:
+
+- a same-controller rigid-foot versus deformable-foot comparison;
+- a complete competitive-envelope decision;
+- representative multicore scaling evidence or an approved negative
+  disposition;
+- the `dart` detector coverage, determinism, allocation, and same-host
+  performance gates needed before any default proposal;
+- a complete paired benchmark artifact or approved disposition; and
+- verification for the separate `main` zero-DoF assertion fix.
+
+Each new behavior-bearing packet must add its exact commands, revision,
+results, review evidence, and visual oracle here before completion.

@@ -6,12 +6,12 @@ wrapper's *contact-history* bookkeeping is quadratic: per-pair full copies
 of the accumulated contact vector (`OdeCollisionDetector.cpp:536`), a
 linear-scan pair-history lookup (`:150`), and O(history × contacts)
 pruning (`:1074`). After the round-1 fix (#3203) the ODE backend is still
-~4.5x slower than DART-native on the settled 3k scene (RTF 18.1 vs ~81)
+~4.5x slower than the `dart` detector on the settled 3k scene (RTF 18.1 vs ~81)
 and ~1.5–2x slower on the active container rows; WP-PG.01 re-derives the
 ratios on the round-2 branch point.
 
 **Coordination (D5)**: WS-F may eventually flip the default detector to a
-ported native engine and turn ODE into a facade. Until that flip is
+built-in DART engine and turn ODE into a facade. Until that flip is
 *decided and green* (WS-F phases 5–6), ODE is the downstream default and
 bounded algorithmic fixes here pay off immediately. D5's bounded set is
 WP-PG.20/21/22 (behavior-preserving bookkeeping); WP-PG.23 is
@@ -103,8 +103,8 @@ scenes, plus the gz gate.
 - Objective: the follow-up named by #3209 root-cause finding 3: when the
   ODE trimesh cylinder fallback (or any pair) emits excessive contacts,
   reduce to a representative per-pair manifold at the wrapper level
-  (deepest + spread selection, mining round 1's #3135 native
-  implementation, issue #2366, and DART 7 native contact reduction)
+  (deepest + spread selection, mining round 1's #3135 DART
+  implementation, issue #2366, and DART 7 contact reduction)
   instead of relying on scene-level caps.
 - Value: round 1 recorded 2.6x RTF on FCL from per-pair capping alone;
   removes the silent-contact-drop failure mode (bodies tunneling out)
@@ -112,7 +112,7 @@ scenes, plus the gz gate.
 - Scope: `dart/collision/ode/*` wrapper (no ODE library changes); honors
   `CollisionOption.maxNumContactsPerPair` semantics gz relies on
   (`GzCollisionDetector::LimitCollisionPairMaxContacts`).
-- Non-goals: changing native/FCL/Bullet manifold behavior; altering the
+- Non-goals: changing `dart`/FCL/Bullet manifold behavior; altering the
   contact-history machinery (WP-PG.20/21 territory).
 - Acceptance evidence: behavior-changing bar — tolerance rationale,
   old/new ODE guard rows (contacts, resting, hash) with maintainer
