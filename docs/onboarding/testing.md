@@ -88,6 +88,10 @@ pixi run python -I scripts/ctest_tier.py \
   --test-dir <BUILD_DIR> -R <TEST_REGEX>
 ```
 
+For a Visual Studio, Xcode, or other multi-config tree, also pass
+`--build-type <CONFIG>`. The runner detects `CMAKE_CONFIGURATION_TYPES` and
+forwards that value to CTest as the build configuration.
+
 Example:
 
 ```bash

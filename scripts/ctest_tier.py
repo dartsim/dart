@@ -93,6 +93,21 @@ def resolve_build_dir(build_type: str) -> tuple[Path, str | None]:
     return single_config, None
 
 
+def explicit_build_config(test_dir: Path, build_type: str) -> str | None:
+    """Return the requested config when an explicit tree is multi-config."""
+    cache_path = test_dir / "CMakeCache.txt"
+    try:
+        cache_lines = cache_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for line in cache_lines:
+        key_and_type, separator, value = line.partition("=")
+        key = key_and_type.partition(":")[0]
+        if separator and key == "CMAKE_CONFIGURATION_TYPES" and value.strip():
+            return build_type
+    return None
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-type", default="Release")
@@ -131,7 +146,7 @@ def main(argv: list[str]) -> int:
         build_dir, build_config = resolve_build_dir(args.build_type)
     else:
         build_dir = args.test_dir
-        build_config = None
+        build_config = explicit_build_config(build_dir, args.build_type)
     if not build_dir.exists():
         raise SystemExit(
             f"Build directory {build_dir} does not exist. Build the tests first."

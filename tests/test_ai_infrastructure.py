@@ -658,6 +658,63 @@ def test_ctest_tier_supports_guarded_explicit_test_tree(tmp_path, monkeypatch):
     assert "GTEST_FILTER" not in observed["env"]
 
 
+@pytest.mark.parametrize(
+    ("cache_text", "expected_config"),
+    (
+        ("CMAKE_BUILD_TYPE:STRING=Debug\n", []),
+        (
+            "CMAKE_CONFIGURATION_TYPES:STRING=Debug;Release;RelWithDebInfo\n",
+            ["--build-config", "Debug"],
+        ),
+    ),
+)
+def test_ctest_tier_explicit_tree_detects_multi_config(
+    tmp_path, monkeypatch, cache_text, expected_config
+):
+    test_dir = tmp_path / "explicit-build"
+    test_dir.mkdir()
+    (test_dir / "CMakeCache.txt").write_text(cache_text, encoding="utf-8")
+    observed: dict[str, object] = {}
+    monkeypatch.setattr(ctest_runner, "compute_load_limit", lambda: None)
+    monkeypatch.setattr(ctest_runner, "resolve_jobs", lambda explicit: 1)
+
+    def fake_run(command, *, env):
+        observed["command"] = command
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(ctest_runner.subprocess, "run", fake_run)
+
+    assert (
+        ctest_runner.main(
+            [
+                "--test-dir",
+                str(test_dir),
+                "--build-type",
+                "Debug",
+                "-R",
+                "^UNIT_explicit$",
+                "--timeout",
+                "60",
+            ]
+        )
+        == 0
+    )
+    assert observed["command"] == [
+        "ctest",
+        "--test-dir",
+        str(test_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+        *expected_config,
+        "--parallel",
+        "1",
+        "--timeout",
+        "60",
+        "-R",
+        "^UNIT_explicit$",
+    ]
+
+
 RUNNER_CONTRACT_PATHS = (
     ".github/workflows/ci_simd.yml",
     ".github/workflows/ci_ubuntu.yml",
