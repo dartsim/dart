@@ -37,6 +37,9 @@
 #include "dart/simulation/compute/variational_integration.hpp"
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 
+// Required for DART_BUILD_MEMORY_DIAGNOSTICS below.
+#include <dart/config.hpp>
+
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -967,8 +970,17 @@ WorldMemoryDiagnostics MemoryDiagnosticsTracker::collect(
   diagnostics.frameScratchUsedBytes = frameAllocator.used() + overflowBytes;
   diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
   diagnostics.frameScratchOverflowBytes = overflowBytes;
+#if DART_BUILD_MEMORY_DIAGNOSTICS
   diagnostics.frameScratchPeakUsedBytes = std::max(
       m_cached.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
+#else
+  // Without a per-step sample there is no high-water mark to report. Falling
+  // back to the current usage would advertise a "maximum since construction"
+  // that drops back to zero after the next frame-scratch reset, so report the
+  // documented zero instead of a transient value callers could mistake for a
+  // historical peak.
+  diagnostics.frameScratchPeakUsedBytes = 0u;
+#endif
   return diagnostics;
 }
 

@@ -854,10 +854,19 @@ void expectPeakAtLeast(
   if (kMemoryDiagnosticsInstrumented) {
     EXPECT_GE(diagnostics.frameScratchPeakUsedBytes, instrumentedFloor);
   } else {
-    EXPECT_EQ(
-        diagnostics.frameScratchPeakUsedBytes,
-        diagnostics.frameScratchUsedBytes);
+    // Uninstrumented builds have no high-water mark. They must report zero
+    // rather than the current usage, which would be a "peak" that decreases
+    // after the next reset.
+    EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
   }
+}
+
+void expectPeakEqualsUsed(
+    const dart::simulation::WorldMemoryDiagnostics& diagnostics)
+{
+  EXPECT_EQ(
+      diagnostics.frameScratchPeakUsedBytes,
+      kMemoryDiagnosticsInstrumented ? diagnostics.frameScratchUsedBytes : 0u);
 }
 
 class FrameScratchStage final : public dart::simulation::compute::WorldStepStage
@@ -11016,7 +11025,7 @@ TEST(World, FrameScratchResetsAtStepBoundary)
   EXPECT_EQ(first.frameScratchOverflowCount, 0u);
   EXPECT_EQ(first.frameScratchOverflowBytes, 0u);
   EXPECT_GE(first.frameScratchUsedBytes, scratch.bytesToAllocate);
-  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakEqualsUsed(first);
 
   scratch.bytesToAllocate = 0;
   world.step(executor, scratch);
@@ -11056,7 +11065,7 @@ TEST(World, FrameScratchDiagnosticsIncludeOverflowBytes)
   EXPECT_EQ(first.frameScratchOverflowCount, 1u);
   EXPECT_GE(first.frameScratchOverflowBytes, scratch.bytesToAllocate);
   EXPECT_GE(first.frameScratchUsedBytes, first.frameScratchOverflowBytes);
-  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakEqualsUsed(first);
 
   scratch.bytesToAllocate = 0;
   world.step(executor, scratch);
