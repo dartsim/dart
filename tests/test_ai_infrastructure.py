@@ -2987,6 +2987,15 @@ def test_agent_hook_path_routing_is_bounded():
     assert hook.is_ai_infrastructure_path(".gitignore")
     assert hook.is_ai_infrastructure_path("pixi.toml")
     assert hook.is_ai_infrastructure_path("dart/new_module/AGENTS.md")
+    for path in (
+        "CMakeLists.txt",
+        "cmake/DARTRunCTest.cmake",
+        "python/CMakeLists.txt",
+        "python/tests/CMakeLists.txt",
+        "scripts/run_pytest.py",
+        "tests/CMakeLists.txt",
+    ):
+        assert hook.is_ai_infrastructure_path(path)
     assert not hook.is_ai_infrastructure_path("dart/dynamics/BodyNode.cpp")
 
 
