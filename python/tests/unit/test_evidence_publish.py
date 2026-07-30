@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -378,6 +379,68 @@ def test_partial_upload_invalidates_stale_success_outputs(
     section = out.read_text(encoding="utf-8")
     assert "OLD SUCCESS URL" not in section
     assert "Publishable evidence**: no" in section
+
+
+def test_partial_upload_refreshes_observed_remote_assets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
+    view_count = 0
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
+        if args[:2] == ["release", "view"]:
+            view_count += 1
+            release = _release() if view_count == 1 else _release(shot)
+            return _Completed(stdout=json.dumps(release))
+        if args[:2] == ["release", "upload"]:
+            raise subprocess.CalledProcessError(
+                1,
+                ["gh", *args],
+                stderr="simulated partial upload",
+            )
+        return _Completed()
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 2
+    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
+    observed = {
+        asset["name"]: asset for asset in failed["observed_release_assets"]
+    }
+    assert observed[_release_asset_name(shot)] == {
+        **_remote_asset(shot),
+        "present": True,
+    }
+    assert observed[_release_asset_name(clip)] == {
+        "name": _release_asset_name(clip),
+        "present": False,
+        "size": None,
+        "digest": None,
+        "state": None,
+        "url": None,
+    }
+    assert view_count == 2
 
 
 @pytest.mark.parametrize("alias", ["same-output", "selected-artifact"])

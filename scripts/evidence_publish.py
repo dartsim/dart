@@ -373,6 +373,23 @@ def _stage_release_assets(
     return staged
 
 
+def _refresh_observed_assets_after_mutation_failure(
+    view_arguments: list[str],
+    selected_assets: dict[str, dict[str, Any]],
+    attempt: _PublicationAttempt,
+) -> None:
+    """Best-effort refresh remote state without masking the mutation failure."""
+    attempt.observed_assets = []
+    try:
+        view = _gh(view_arguments, check=False)
+        if view.returncode != 0:
+            return
+        _, assets = _parse_release_assets(view)
+    except OSError, TypeError, ValueError, subprocess.CalledProcessError:
+        return
+    attempt.observed_assets = _observed_selected_assets(assets, selected_assets)
+
+
 def _publish_gh_release(
     selection: dict[str, Any],
     base_dir: Path,
@@ -441,36 +458,52 @@ def _publish_gh_release(
 
         if not release_exists:
             attempt.mutation_started = True
-            _gh(
-                [
-                    "release",
-                    "create",
-                    tag,
-                    "--repo",
-                    repo,
-                    "--title",
-                    f"Verification media ({tag})",
-                    "--notes",
-                    "GitHub-hosted media for PR visual-verification sections. "
-                    + "Not a software release.",
-                    "--prerelease",
-                ]
-            )
+            try:
+                _gh(
+                    [
+                        "release",
+                        "create",
+                        tag,
+                        "--repo",
+                        repo,
+                        "--title",
+                        f"Verification media ({tag})",
+                        "--notes",
+                        "GitHub-hosted media for PR visual-verification sections. "
+                        + "Not a software release.",
+                        "--prerelease",
+                    ]
+                )
+            except OSError, subprocess.CalledProcessError:
+                _refresh_observed_assets_after_mutation_failure(
+                    view_arguments,
+                    selected_assets,
+                    attempt,
+                )
+                raise
         if missing:
             # Content-addressed names prevent a later publication from replacing
             # bytes behind an older PR URL. Exact uploaded assets are reusable;
             # same-name incomplete or unverifiable assets deliberately block.
             attempt.mutation_started = True
-            _gh(
-                [
-                    "release",
-                    "upload",
-                    tag,
-                    *(str(staged[name]) for name in missing),
-                    "--repo",
-                    repo,
-                ]
-            )
+            try:
+                _gh(
+                    [
+                        "release",
+                        "upload",
+                        tag,
+                        *(str(staged[name]) for name in missing),
+                        "--repo",
+                        repo,
+                    ]
+                )
+            except OSError, subprocess.CalledProcessError:
+                _refresh_observed_assets_after_mutation_failure(
+                    view_arguments,
+                    selected_assets,
+                    attempt,
+                )
+                raise
         final_view = _gh(view_arguments)
         _, final_assets = _parse_release_assets(final_view)
         attempt.observed_assets = _observed_selected_assets(
