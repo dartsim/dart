@@ -38,10 +38,13 @@ surface affects shared behavior.
   validates the configured Release graph through the CMake File API, expanded
   target trace, configuration-selected CTest inventory, sanitized GTest
   contract, and conftest-free pytest provenance. It rejects result-neutralizing
-  CTest properties and explicit local pytest plugins. It does not execute CTest
-  or pytest and does not replace `test-ai-infra`, `test-all`, hosted platform
-  CI, or claim-tied semantic image review. The direct structural checker form
-  is reserved for fast staged/setup internals and is not sufficient completion
+  CTest properties and explicit local pytest plugins. It executes controlled
+  runner probes for hostile ambient controls, actual test-body execution,
+  successful zero-body rejection, and failure propagation; it does not execute
+  the project suites and does not replace `test-ai-infra`, `test-all`, hosted
+  platform CI, or claim-tied semantic image review. The canonical AI and visual
+  pytest tasks share this guarded runner. The direct structural checker form is
+  reserved for fast staged/setup internals and is not sufficient completion
   evidence. The focused tests cover regressions; the scenario command exercises
   release routing and unavailable-hook fallbacks without network or model
   calls.

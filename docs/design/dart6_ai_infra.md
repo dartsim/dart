@@ -61,6 +61,14 @@ release, or module references routed into a task. The audit checks discovery,
 freshness, duplication, context cost, resume quality, and usefulness to human
 maintainers as well as agent behavior.
 
+The same model-independent rule applies to verification harnesses: a gate must
+prove that its test bodies ran, not merely that a test process exited zero.
+Canonical CTest and pytest routes therefore clear whole ambient control
+families, use branch-owned configuration and plugin boundaries, reject
+successful zero-body execution, and exercise passing and failing probes through
+the checker. This is shared infrastructure to adapt to `main`, not a permanent
+DART 6 divergence.
+
 ## Visual Verification North Star
 
 DART 6 visual verification follows one evidence chain:

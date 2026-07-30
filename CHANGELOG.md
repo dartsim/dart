@@ -77,8 +77,11 @@
     path/size/digest/URL bindings so later or partially retried publications
     cannot replace bytes behind earlier PR URLs. The AI checker also validates
     branch test-task semantics, including the Release-only CMake `ALL` boundary
-    and its graph-owned CTest/pytest coverage, and Pixi commands across every
-    active durable task document. The required
+    and its graph-owned CTest/pytest coverage, executes controlled sanitization
+    and failure-propagation probes, and requires canonical C++, AI-infra, and
+    visual pytest tasks to execute test bodies despite ambient selector or
+    collection controls. It also validates Pixi commands across every active
+    durable task document. The required
     consolidated-DART detector smoke uses a semantically inspected orthogonal
     view that keeps its shape labels, contact markers, and collision bounds
     readable.

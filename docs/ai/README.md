@@ -67,11 +67,13 @@ pixi run lint
 `check-ai-infra` is the completion gate: it includes the structural checks and
 validates the configured Release test graph through the CMake File API,
 expanded target trace, configuration-selected CTest inventory, clean ambient
-GTest contract, and conftest-free pytest provenance. It does not execute CTest
-or pytest and does not replace `test-ai-infra`, `test-all`, hosted platform CI,
-or claim-tied semantic image review. The direct structural checker form is
-reserved for fast staged/setup internals and is not sufficient completion
-evidence.
+GTest contract, and conftest-free pytest provenance. It also runs controlled
+passing, failing, hostile-environment, and zero-body runner probes; it does not
+run the project test suites and does not replace `test-ai-infra`, `test-all`,
+hosted platform CI, or claim-tied semantic image review. `test-ai-infra` and
+the visual debug-overlay gate use the same guarded pytest runner, which fails
+when no test body executes. The direct structural checker form is reserved for
+fast staged/setup internals and is not sufficient completion evidence.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;

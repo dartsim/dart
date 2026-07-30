@@ -171,7 +171,15 @@ check-ai-infra = { cmd = "python scripts/check_ai_infrastructure.py --check --se
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 exercise-agent-scenarios = { cmd = "python scripts/check_ai_infrastructure.py --scenarios" }
-test-ai-infra = { cmd = "python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q" }
+test-ai-infra = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_sync_ai_commands.py",
+  "tests/test_ai_infrastructure.py",
+  "tests/test_install_git_hooks.py",
+  "-q",
+] }
 
 # ssik is an optional, PyPI-only analytical IK solver used only by the
 # ssik_ik_gui scene (dart-demos, C++) and the ssik_analytical_ik (Python)
@@ -284,10 +292,11 @@ py-demos = { cmd = "python -m examples.demos", cwd = "python", depends-on = [
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
 test = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
+        -j \
+        --target tests_and_run
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
 
@@ -503,8 +512,12 @@ agent-capture = { cmd = [
 # rendered case is non-skippable whenever DISPLAY is set; CI runs it under Xvfb.
 test-agent-debug-overlay = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--pythonpath",
+  "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy",
+  "--pythonpath",
+  "$PIXI_PROJECT_ROOT/scripts",
   "python/tests/unit/gui/test_agent_debug_overlay.py::test_contacts_layer_marks_points_and_normals",
   "python/tests/unit/gui/test_agent_debug_overlay.py::test_engine_rendered_overlay_changes_pixels",
   "python/tests/unit/gui/test_agent_capture.py::test_run_capture_smoke_writes_stills_and_sidecar",
@@ -512,7 +525,7 @@ test-agent-debug-overlay = { cmd = [
   "-q",
 ], depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts" } }
+], env = { BUILD_TYPE = "Release" } }
 
 bm-empty = { cmd = """
     cmake \
@@ -872,11 +885,12 @@ config-py = { cmd = """
 """, env = { DART_VERBOSE = "OFF" } }
 
 test = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --build-config $BUILD_TYPE \
-        --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        -j \
+        --target tests_and_run
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-py = { cmd = """
     cmake \

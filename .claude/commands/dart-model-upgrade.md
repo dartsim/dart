@@ -123,7 +123,9 @@ simulation state with text-first and OSG visual/debug evidence.
    docs/AI gates in `docs/ai/verification.md`, and the representative OSG
    investigation. Treat the configured CMake File API result, expanded
    target-command trace, and CTest inventory from `check-ai-infra` as the
-   effective test-graph proof. Confirm inactive tests use explicit reached
+   effective test-graph proof. Require its controlled runner probes to execute a
+   body under hostile ambient controls, reject a successful zero-body run, and
+   propagate a deliberate failure. Confirm inactive tests use explicit reached
    predicates, the requested multi-config CTest branch executes without ambient
    GTest selectors or result-neutralizing properties, and pytest remains pinned
    to the trusted root configuration without conftest or explicit local plugin

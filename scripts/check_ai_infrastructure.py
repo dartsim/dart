@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -244,6 +245,7 @@ def required_paths(root: Path) -> list[Path]:
         root / "scripts" / "check_agent_hook.py",
         root / "scripts" / "check_ai_infrastructure.py",
         root / "scripts" / "pretool_guard_bridge.py",
+        root / "scripts" / "run_pytest.py",
         root / "scripts" / "setup_ai.py",
     ]
     paths.extend(
@@ -566,17 +568,22 @@ def is_inside_double_quotes(value: str, position: int) -> bool:
     return in_double_quotes
 
 
-def is_single_cmake_all_build(command: str) -> bool:
-    """Return whether a task is exactly one CMake build of only target ALL."""
+def is_single_cmake_target_build(command: str, target: str) -> bool:
+    """Return whether a task is exactly one CMake build of one named target."""
     tokens = shell_tokens(command)
     return (
         not has_shell_control_syntax(command)
         and tokens[:2] == ["cmake", "--build"]
         and tokens.count("cmake") == 1
         and tokens.count("--target") == 1
-        and tokens[-2:] == ["--target", "ALL"]
+        and tokens[-2:] == ["--target", target]
         and "--" not in tokens
     )
+
+
+def is_single_cmake_all_build(command: str) -> bool:
+    """Return whether a task is exactly one CMake build of only target ALL."""
+    return is_single_cmake_target_build(command, "ALL")
 
 
 def is_configuration_only_command(command: str) -> bool:
@@ -1064,26 +1071,18 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                     ("pytest",),
                     (
                         "COMMAND",
-                        "${CMAKE_COMMAND}",
-                        "-E",
-                        "env",
-                        "PYTHONPATH=${DART_PYTHONPATH}",
-                        "PYTEST_ADDOPTS=",
-                        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1",
-                        "PYTEST_PLUGINS=",
                         "${Python3_EXECUTABLE}",
-                        "-m",
-                        "pytest",
-                        "-c",
-                        "${PROJECT_SOURCE_DIR}/pyproject.toml",
-                        "--noconftest",
+                        "-I",
+                        "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py",
+                        "--pythonpath",
+                        "${DART_PYTHONPATH}",
                         "${dartpy_test_files}",
                         "-v",
                     ),
                     ("DEPENDS", "dartpy"),
                 ),
                 ("if:DARTPY_PYTEST_FOUND",),
-                '"${Python3_EXECUTABLE}" -m pytest',
+                "scripts/run_pytest.py",
             ),
             (
                 "add_custom_target",
@@ -1136,11 +1135,31 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
     except OSError as error:
         errors.append(f"{prefix}: unable to inspect clean-environment runner: {error}")
         return
-    token_records = [
-        (name, tuple(cmake_argument_tokens(arguments)), line)
-        for name, arguments, line in records
-    ]
-    required = (
+    actual = tuple(
+        (name, tuple(cmake_argument_tokens(arguments)))
+        for name, arguments, _ in records
+    )
+    expected = (
+        (
+            "if",
+            (
+                "NOT",
+                "DEFINED",
+                "DART_CTEST_COMMAND",
+                "OR",
+                "DART_CTEST_COMMAND",
+                "STREQUAL",
+                "",
+            ),
+        ),
+        (
+            "message",
+            (
+                "FATAL_ERROR",
+                "DART_CTEST_COMMAND must name the configured CTest executable",
+            ),
+        ),
+        ("endif", ()),
         (
             "execute_process",
             (
@@ -1154,18 +1173,98 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
                 "_dart_environment_result",
             ),
         ),
+        ("if", ("NOT", "_dart_environment_result", "EQUAL", "0")),
+        ("message", ("FATAL_ERROR", "Failed to inspect the test environment")),
+        ("endif", ()),
         (
             "string",
-            ("TOUPPER", "${_dart_name}", "_dart_name_upper"),
+            (
+                "REPLACE",
+                "rn",
+                "n",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
         ),
         (
+            "string",
+            (
+                "REPLACE",
+                "r",
+                "n",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        (
+            "string",
+            (
+                "REPLACE",
+                ";",
+                "\\;",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        (
+            "string",
+            (
+                "REPLACE",
+                "n",
+                ";",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        ("set", ("_dart_gtest_unsets",)),
+        (
+            "foreach",
+            ("_dart_environment_entry", "IN", "LISTS", "_dart_test_environment"),
+        ),
+        (
+            "string",
+            ("FIND", "${_dart_environment_entry}", "=", "_dart_separator"),
+        ),
+        ("if", ("_dart_separator", "GREATER", "0")),
+        (
+            "string",
+            (
+                "SUBSTRING",
+                "${_dart_environment_entry}",
+                "0",
+                "${_dart_separator}",
+                "_dart_name",
+            ),
+        ),
+        ("string", ("TOUPPER", "${_dart_name}", "_dart_name_upper")),
+        ("if", ("_dart_name_upper", "MATCHES", "^GTEST_")),
+        ("list", ("APPEND", "_dart_gtest_unsets", "--unset=${_dart_name}")),
+        ("endif", ()),
+        ("endif", ()),
+        ("endforeach", ()),
+        ("set", ("_dart_ctest_arguments", "--output-on-failure")),
+        (
             "if",
-            ("_dart_name_upper", "MATCHES", "^GTEST_"),
+            (
+                "DEFINED",
+                "DART_CTEST_CONFIGURATION",
+                "AND",
+                "NOT",
+                "DART_CTEST_CONFIGURATION",
+                "STREQUAL",
+                "",
+            ),
         ),
         (
             "list",
-            ("APPEND", "_dart_gtest_unsets", "--unset=${_dart_name}"),
+            (
+                "APPEND",
+                "_dart_ctest_arguments",
+                "-C",
+                "${DART_CTEST_CONFIGURATION}",
+            ),
         ),
+        ("endif", ()),
         (
             "execute_process",
             (
@@ -1181,22 +1280,11 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
             ),
         ),
     )
-    for name, tokens in required:
-        if (
-            sum(
-                record_name == name and record_tokens == tokens
-                for record_name, record_tokens, _ in token_records
-            )
-            != 1
-        ):
-            errors.append(
-                f"{prefix}: missing exact clean-environment command "
-                f"`{name}({' '.join(tokens)})`"
-            )
-    if any(name == "return" for name, _, _ in token_records):
-        errors.append(f"{prefix}: `return()` may bypass CTest execution")
-    if sum(name == "execute_process" for name, _, _ in token_records) != 2:
-        errors.append(f"{prefix}: must contain exactly two `execute_process()` calls")
+    if actual != expected:
+        errors.append(
+            f"{prefix}: commands and lexical control flow must exactly match "
+            "the canonical clean-environment runner"
+        )
 
 
 def check_test_gate_contract(root: Path, errors: list[str]) -> None:
@@ -1208,7 +1296,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         return
 
     task_markers = {
-        "test": "ctest",
+        "test": "--target tests_and_run",
         "test-py": "pytest",
         "test-all": "--target ALL",
     }
@@ -1220,6 +1308,35 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             errors.append(
                 f"pixi.toml: `{task}` task must retain command marker `{marker}`"
             )
+
+    test_definitions = collect_task_definitions(pixi, "test")
+    test_commands = collect_task_commands(pixi, "test")
+    if test_definitions and len(test_commands) != len(test_definitions):
+        errors.append("pixi.toml: every `test` variant must define one command")
+    if test_commands and any(
+        not is_single_cmake_target_build(command, "tests_and_run")
+        for command in test_commands
+    ):
+        errors.append(
+            "pixi.toml: every `test` command must be one CMake build with "
+            "the single target `--target tests_and_run`"
+        )
+    for definition in test_definitions:
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies != ["config"]:
+            errors.append(
+                "pixi.toml: every `test` variant must depend only on "
+                "the build configuration task `config`"
+            )
+            break
+        if definition.get("env") != {"BUILD_TYPE": "Release"}:
+            errors.append(
+                "pixi.toml: every `test` variant must set only "
+                '`BUILD_TYPE = "Release"`'
+            )
+            break
 
     test_all_definitions = collect_task_definitions(pixi, "test-all")
     test_all_commands = collect_task_commands(pixi, "test-all")
@@ -1251,6 +1368,64 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 '`BUILD_TYPE = "Release"`'
             )
             break
+
+    exact_pytest_tasks = {
+        "test-ai-infra": {
+            "tokens": [
+                "python",
+                "-I",
+                "scripts/run_pytest.py",
+                "tests/test_sync_ai_commands.py",
+                "tests/test_ai_infrastructure.py",
+                "tests/test_install_git_hooks.py",
+                "-q",
+            ],
+            "depends-on": [],
+            "env": None,
+        },
+        "test-agent-debug-overlay": {
+            "tokens": [
+                "python",
+                "-I",
+                "scripts/run_pytest.py",
+                "--pythonpath",
+                (
+                    "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/"
+                    "$BUILD_TYPE/python/dartpy"
+                ),
+                "--pythonpath",
+                "$PIXI_PROJECT_ROOT/scripts",
+                "python/tests/unit/gui/test_agent_debug_overlay.py::"
+                "test_contacts_layer_marks_points_and_normals",
+                "python/tests/unit/gui/test_agent_debug_overlay.py::"
+                "test_engine_rendered_overlay_changes_pixels",
+                "python/tests/unit/gui/test_agent_capture.py::"
+                "test_run_capture_smoke_writes_stills_and_sidecar",
+                "python/tests/unit/gui/test_agent_capture.py::"
+                "test_run_capture_debug_layers_change_pixels_end_to_end",
+                "-q",
+            ],
+            "depends-on": ["build-py-dev"],
+            "env": {"BUILD_TYPE": "Release"},
+        },
+    }
+    for task, expected in exact_pytest_tasks.items():
+        definitions = collect_task_definitions(pixi, task)
+        commands = collect_task_commands(pixi, task)
+        if len(definitions) != 1 or len(commands) != 1:
+            errors.append(f"pixi.toml: `{task}` must have one exact task definition")
+            continue
+        if shell_tokens(commands[0]) != expected["tokens"]:
+            errors.append(
+                f"pixi.toml: `{task}` must use the guarded repository pytest runner"
+            )
+        dependencies = definitions[0].get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies != expected["depends-on"]:
+            errors.append(f"pixi.toml: `{task}` has unexpected prerequisite tasks")
+        if definitions[0].get("env") != expected["env"]:
+            errors.append(f"pixi.toml: `{task}` has unexpected environment settings")
     for definition in test_all_definitions:
         dependencies = definition.get("depends-on", [])
         if isinstance(dependencies, str):
@@ -1390,10 +1565,11 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "pixi run test-all     # Build defaults and run C++/Python tests",
         ),
         "docs/onboarding/testing.md": (
-            "`pixi run test` runs the C++ test suite",
+            "`pixi run test` builds the `tests_and_run` target",
             "`pixi run test-py`",
             "`pixi run test-all` builds the",
             "`tests_and_run` and `pytest`",
+            "`scripts/run_pytest.py`",
             "does not run lint",
             "CMake's File API",
         ),
@@ -1929,7 +2105,13 @@ def check_pytest_execution_options(root: Path, errors: list[str]) -> None:
 def check_pytest_source_policies(root: Path, errors: list[str]) -> None:
     """Reject test-module declarations that can load unvalidated local plugins."""
     prefix = "CMake semantic test graph"
-    for path in sorted((root / "python" / "tests").rglob("*.py")):
+    test_sources = {
+        path
+        for test_root in (root / "tests", root / "python" / "tests")
+        if test_root.is_dir()
+        for path in test_root.rglob("*.py")
+    }
+    for path in sorted(test_sources):
         if not path.is_file():
             continue
         try:
@@ -1955,6 +2137,204 @@ def check_pytest_source_policies(root: Path, errors: list[str]) -> None:
                 f"{prefix}: pytest source `{path.relative_to(root)}` declares "
                 "`pytest_plugins`; local plugin loading is not allowed"
             )
+
+
+def check_test_runner_semantics(root: Path, errors: list[str]) -> None:
+    """Execute controlled probes for sanitization, test bodies, and failures."""
+    prefix = "Test runner semantic probe"
+    cmake = shutil.which("cmake")
+    ctest = shutil.which("ctest")
+    pytest_runner = root / "scripts" / "run_pytest.py"
+    ctest_runner = root / "cmake" / "DARTRunCTest.cmake"
+    if cmake is None or ctest is None:
+        errors.append(f"{prefix}: active CMake and CTest executables are required")
+        return
+    if not pytest_runner.is_file() or not ctest_runner.is_file():
+        errors.append(f"{prefix}: guarded CTest and pytest runners are required")
+        return
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="dart-test-runner-") as directory:
+            probe_root = Path(directory)
+            pytest_marker = probe_root / "pytest-body-ran"
+            pytest_source = probe_root / "test_runner_probe.py"
+            pytest_source.write_text(
+                "from pathlib import Path\n\n"
+                "def test_runner_body():\n"
+                f"    Path({str(pytest_marker)!r}).write_text('ran')\n",
+                encoding="utf-8",
+            )
+            (probe_root / "conftest.py").write_text(
+                "def pytest_collection_modifyitems(items):\n"
+                "    items.clear()\n\n"
+                "def pytest_sessionfinish(session):\n"
+                "    session.exitstatus = 0\n",
+                encoding="utf-8",
+            )
+            (probe_root / "runner_probe_plugin.py").write_text(
+                "def pytest_collection_modifyitems(items):\n"
+                "    items.clear()\n\n"
+                "def pytest_sessionfinish(session):\n"
+                "    session.exitstatus = 0\n",
+                encoding="utf-8",
+            )
+            (probe_root / "pytest.py").write_text(
+                "raise RuntimeError('ambient pytest shadow loaded')\n",
+                encoding="utf-8",
+            )
+            hostile_pytest_environment = os.environ.copy()
+            hostile_pytest_environment.update(
+                {
+                    "PYTEST_ADDOPTS": "--collect-only",
+                    "PYTEST_FUTURE_SELECTOR": "skip-everything",
+                    "PYTEST_PLUGINS": "runner_probe_plugin",
+                    "PYTHONPATH": str(probe_root),
+                }
+            )
+            pytest_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    str(pytest_runner),
+                    str(pytest_source),
+                    "-q",
+                ],
+                cwd=root,
+                env=hostile_pytest_environment,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if pytest_result.returncode != 0 or not pytest_marker.is_file():
+                errors.append(
+                    f"{prefix}: pytest did not execute a body after clearing "
+                    "ambient controls and local plugins"
+                )
+
+            collect_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    str(pytest_runner),
+                    str(pytest_source),
+                    "--collect-only",
+                    "-q",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if collect_result.returncode == 0:
+                errors.append(f"{prefix}: pytest accepted a successful zero-body run")
+
+            failing_source = probe_root / "test_runner_failure.py"
+            failing_source.write_text(
+                "def test_runner_failure():\n"
+                "    raise AssertionError('semantic failure probe')\n",
+                encoding="utf-8",
+            )
+            failure_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    str(pytest_runner),
+                    str(failing_source),
+                    "-q",
+                ],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if failure_result.returncode == 0:
+                errors.append(f"{prefix}: pytest did not propagate a test failure")
+
+            ctest_source = probe_root / "ctest-project"
+            ctest_build = ctest_source / "build"
+            ctest_source.mkdir()
+            ctest_marker = ctest_build / "ctest-body-ran"
+            body_probe = ctest_source / "body_probe.py"
+            body_probe.write_text(
+                "import os\n"
+                "import sys\n"
+                "from pathlib import Path\n\n"
+                "if any(name.upper().startswith('GTEST_') for name in os.environ):\n"
+                "    raise SystemExit(0)\n"
+                "Path(sys.argv[1]).write_text('ran')\n",
+                encoding="utf-8",
+            )
+
+            def cmake_path(path: Path | str) -> str:
+                return str(path).replace("\\", "/").replace('"', '\\"')
+
+            (ctest_source / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.22)\n"
+                "project(dart_test_runner_probe NONE)\n"
+                "enable_testing()\n"
+                "add_test(\n"
+                "  NAME runner_body\n"
+                f'  COMMAND "{cmake_path(sys.executable)}" '
+                f'"{cmake_path(body_probe)}" "{cmake_path(ctest_marker)}"\n'
+                ")\n",
+                encoding="utf-8",
+            )
+            configure_result = subprocess.run(
+                [
+                    cmake,
+                    "-S",
+                    str(ctest_source),
+                    "-B",
+                    str(ctest_build),
+                    "-DCMAKE_BUILD_TYPE=Release",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if configure_result.returncode != 0:
+                errors.append(f"{prefix}: controlled CTest project did not configure")
+                return
+            hostile_ctest_environment = os.environ.copy()
+            hostile_ctest_environment["GTEST_FUTURE_SELECTOR"] = "skip;future=controls"
+            ctest_result = subprocess.run(
+                [
+                    cmake,
+                    f"-DDART_CTEST_COMMAND={ctest}",
+                    "-DDART_CTEST_CONFIGURATION=Release",
+                    "-P",
+                    str(ctest_runner),
+                ],
+                cwd=ctest_build,
+                env=hostile_ctest_environment,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if ctest_result.returncode != 0 or not ctest_marker.is_file():
+                errors.append(
+                    f"{prefix}: CTest did not execute a body after clearing "
+                    "ambient GTest controls"
+                )
+
+            ctest_failure_result = subprocess.run(
+                [
+                    cmake,
+                    f"-DDART_CTEST_COMMAND={sys.executable}",
+                    "-P",
+                    str(ctest_runner),
+                ],
+                cwd=ctest_build,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            if ctest_failure_result.returncode == 0:
+                errors.append(
+                    f"{prefix}: CTest wrapper did not propagate command failure"
+                )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        errors.append(f"{prefix}: controlled execution failed: {error}")
 
 
 def cmake_unquote_bracket(value: str) -> str:
@@ -2463,21 +2843,19 @@ def check_cmake_test_target_trace(
                     pytest_arguments[echo_index + 1], cmake_executable
                 )
                 and pytest_arguments[echo_index + 2 : echo_index + 4] == ["-E", "echo"]
-                and len(pytest_arguments) > pytest_index + 3
+                and len(pytest_arguments) > pytest_index + 6
                 and executable_paths_match(
-                    pytest_arguments[pytest_index + 1], cmake_executable
+                    pytest_arguments[pytest_index + 1], sys.executable
                 )
-                and pytest_arguments[pytest_index + 2 : pytest_index + 4]
-                == ["-E", "env"]
-                and len(pytest_arguments) > pytest_index + 14
+                and pytest_arguments[pytest_index + 2] == "-I"
+                and cmake_paths_match(
+                    pytest_arguments[pytest_index + 3],
+                    root / "scripts" / "run_pytest.py",
+                )
+                and pytest_arguments[pytest_index + 4] == "--pythonpath"
             )
         if valid:
-            environment_assignments = pytest_arguments[
-                pytest_index + 4 : pytest_index + 8
-            ]
-            pythonpath = environment_assignments[0]
-            traced_python = pytest_arguments[pytest_index + 8]
-            pythonpath_value = pythonpath.partition("=")[2]
+            pythonpath_value = pytest_arguments[pytest_index + 5]
             pythonpath_entries = pythonpath_value.split(os.pathsep)
             normalized_pythonpath = {
                 normalized_absolute_path(entry, root / "python" / "tests")
@@ -2492,25 +2870,10 @@ def check_cmake_test_target_trace(
                 str(build_dir / "python" / "dartpy"), root
             )
             valid = (
-                pythonpath.startswith("PYTHONPATH=")
-                and all(pythonpath_entries)
+                all(pythonpath_entries)
                 and len(pythonpath_entries) == len(normalized_pythonpath)
                 and required_pythonpath in normalized_pythonpath
                 and normalized_pythonpath <= allowed_pythonpath
-                and environment_assignments[1:]
-                == [
-                    "PYTEST_ADDOPTS=",
-                    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1",
-                    "PYTEST_PLUGINS=",
-                ]
-                and executable_paths_match(traced_python, sys.executable)
-                and pytest_arguments[pytest_index + 9 : pytest_index + 12]
-                == ["-m", "pytest", "-c"]
-                and cmake_paths_match(
-                    pytest_arguments[pytest_index + 12],
-                    root / "pyproject.toml",
-                )
-                and pytest_arguments[pytest_index + 13] == "--noconftest"
             )
         if valid:
             try:
@@ -2527,7 +2890,7 @@ def check_cmake_test_target_trace(
                     == (root / "python" / "tests").resolve()
                 )
         if valid:
-            command_tail = pytest_arguments[pytest_index + 14 : working_index]
+            command_tail = pytest_arguments[pytest_index + 6 : working_index]
             valid = bool(command_tail) and command_tail[-1] == "-v"
         if valid:
             traced_sources = [
@@ -3230,7 +3593,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         expected_commands = (
             "pixi run check-ai-commands",
             "pixi run check-ai-infra",
-            "tests/test_sync_ai_commands.py",
+            "pixi run test-ai-infra",
             "scripts/check_ai_infrastructure.py --scenarios",
         )
         for command in expected_commands:
@@ -3386,6 +3749,7 @@ def run_checks(root: Path) -> list[str]:
     check_hooks(root, errors)
     check_pixi_references(root, errors)
     check_test_gate_contract(root, errors)
+    check_pytest_source_policies(root, errors)
     check_path_references(root, errors)
     check_markdown_links(root, errors)
     check_instruction_budget(root, errors)
@@ -4400,6 +4764,7 @@ def main() -> int:
     else:
         errors = run_checks(root)
         if args.semantic_cmake:
+            check_test_runner_semantics(root, errors)
             build_dir = args.cmake_build_dir or discover_cmake_build_dir(root)
             if build_dir is None:
                 errors.append(

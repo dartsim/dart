@@ -18,8 +18,13 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
   CMake test-graph checker; the Pixi gate couples source contracts to a
   configured File API graph, expanded command trace, active generated CTest
   configuration, clean ambient GTest execution, and pinned conftest-free pytest
-  provenance rather than trusting lexical markers, stale build files, result-
-  neutralizing properties, or imported module state.
+  provenance. Controlled runner probes require actual body execution and
+  failure propagation rather than trusting lexical markers, stale build files,
+  result-neutralizing properties, or imported module state.
+- `scripts/run_pytest.py`: shared guarded pytest runner for project, AI-infra,
+  and claim-tied visual gates; starts under Python isolation, clears ambient
+  pytest controls, disables local configuration/plugins, and rejects successful
+  zero-body runs.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
   surfaces, and DART 7 exclusions.

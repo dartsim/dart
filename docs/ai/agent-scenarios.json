@@ -111,7 +111,7 @@
         "pixi run check-ai-infra"
       ],
       "full_gates": [
-        "pixi run python -m pytest tests/test_ai_infrastructure.py tests/test_sync_ai_commands.py -q",
+        "pixi run test-ai-infra",
         "pixi run lint"
       ],
       "recovery": "docs/ai/README.md",

@@ -50,11 +50,7 @@ jobs:
         run: pixi run check-ai-infra
 
       - name: Test AI infrastructure
-        run: >-
-          pixi run python -m pytest
-          tests/test_sync_ai_commands.py
-          tests/test_ai_infrastructure.py
-          tests/test_install_git_hooks.py -q
+        run: pixi run test-ai-infra
 
       - name: Exercise agent scenarios
         run: pixi run python scripts/check_ai_infrastructure.py --scenarios

@@ -8,12 +8,13 @@ pixi run test-py
 pixi run test-all
 ```
 
-`pixi run test` runs the C++ test suite after building tests. `pixi run test-py`
-runs the Python binding tests. `pixi run test-all` builds the default CMake
-`ALL` target. The branch configuration pins `BUILD_TESTING=ON`, and `ALL`
-depends on `tests_and_run` and `pytest`, so this aggregate also runs CTest and
-the Python binding tests. It does not run lint; run `pixi run lint` separately.
-Use `test` or `test-py` for focused reruns and clearer failure attribution.
+`pixi run test` builds the `tests_and_run` target and runs the C++ test suite.
+`pixi run test-py` runs the Python binding tests. `pixi run test-all` builds the
+default CMake `ALL` target. The branch configuration pins `BUILD_TESTING=ON`,
+and `ALL` depends on `tests_and_run` and `pytest`, so this aggregate also runs
+CTest and the Python binding tests. It does not run lint; run `pixi run lint`
+separately. Use `test` or `test-py` for focused reruns and clearer failure
+attribution.
 
 `pixi run check-ai-infra` also reconfigures the current platform, queries
 CMake's File API, inspects the expanded configure trace, and inventories CTest
@@ -27,18 +28,24 @@ configured executables, rejects unapproved command filters or non-executing
 modes, selects only the requested branch of multi-config registrations, rejects
 result-neutralizing test properties or GTest environment modifications, and
 requires selected registrations to use a digit-bounded zero-test failure guard.
-The `tests_and_run` target removes every ambient `GTEST_*` variable before
-invoking CTest, while branch-owned per-test selections remain explicit. The
-pytest target pins the root configuration, disables `conftest.py`, clears
-ambient/plugin overrides, rejects explicit local `pytest_plugins`, and resolves
-the installed package without importing a local shadow. The probe also ties
-each broad target back to its validated source command and confirms Release
-commands use the active Pixi CTest and Python implementations. It catches early
-exits, inactive lexical decoys, variable poisoning, command shadowing, disabled,
-list-only, skipped, or result-inverted CTest entries, collection-only or
-spoofed pytest substitutions, stale generated test directories, and decoy
-targets that a source-marker check alone cannot distinguish. Native hosted CI
-remains the platform-specific execution proof.
+Both `pixi run test` and the aggregate reach `tests_and_run`, which removes
+every ambient `GTEST_*` variable before invoking CTest while branch-owned
+per-test selections remain explicit. Repository pytest gates use
+`scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
+external plugin autoload, runs under Python isolation before adding only the
+task-owned import path, pins the root configuration, disables `conftest.py`,
+and fails if no test body executes. The checker rejects explicit local
+`pytest_plugins` and resolves the installed package without importing a local
+shadow. Its semantic probes execute controlled passing and failing
+CTest/pytest cases, so source markers alone cannot claim that sanitization,
+test-body execution, or failure propagation works. The configured-graph probe
+also ties each broad target back to its validated source command and confirms
+Release commands use the active Pixi CTest and Python implementations. It
+catches early exits, inactive lexical decoys, variable poisoning, command
+shadowing, disabled, list-only, skipped, or result-inverted CTest entries,
+collection-only or spoofed pytest substitutions, stale generated test
+directories, and decoy targets. Native hosted CI remains the platform-specific
+execution proof.
 
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in

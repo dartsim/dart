@@ -605,6 +605,36 @@ def test_single_cmake_all_build_contract(command, expected):
 
 
 @pytest.mark.parametrize(
+    ("command", "target", "expected"),
+    [
+        (
+            'cmake --build "build/default" -j --target tests_and_run',
+            "tests_and_run",
+            True,
+        ),
+        (
+            'cmake --build "build/default" --config "$BUILD_TYPE" '
+            "-j --target tests_and_run",
+            "tests_and_run",
+            True,
+        ),
+        (
+            'cmake --build "build/default" --target tests_and_run && ctest',
+            "tests_and_run",
+            False,
+        ),
+        (
+            'cmake --build "build/default" --target tests_and_run ALL',
+            "tests_and_run",
+            False,
+        ),
+    ],
+)
+def test_single_cmake_target_build_contract(command, target, expected):
+    assert infra.is_single_cmake_target_build(command, target) is expected
+
+
+@pytest.mark.parametrize(
     ("command", "expected"),
     [
         ('cmake -S . -B "$PIXI_PROJECT_ROOT/build/default"', True),
@@ -701,13 +731,9 @@ def _copy_test_gate_contract(root: Path) -> None:
 def _replace_required_pytest_command(cmake: Path, replacement: str) -> None:
     marker = (
         "    COMMAND\n"
-        "      ${CMAKE_COMMAND} -E env "
-        '"PYTHONPATH=${DART_PYTHONPATH}" "PYTEST_ADDOPTS="\n'
-        '      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" "PYTEST_PLUGINS="\n'
-        '      "${Python3_EXECUTABLE}" -m pytest -c\n'
-        '      "${PROJECT_SOURCE_DIR}/pyproject.toml" --noconftest '
-        "${dartpy_test_files}\n"
-        "      -v\n"
+        '      "${Python3_EXECUTABLE}" -I '
+        '"${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"\n'
+        '      --pythonpath "${DART_PYTHONPATH}" ${dartpy_test_files} -v\n'
     )
     text = cmake.read_text(encoding="utf-8")
     assert marker in text
@@ -826,6 +852,69 @@ def test_test_gate_contract_rejects_test_all_runtime_semantics(
     infra.check_test_gate_contract(tmp_path, errors)
 
     assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "--target tests_and_run",
+            "--target tests",
+            "`test` task must retain command marker `--target tests_and_run`",
+        ),
+        (
+            "--target tests_and_run",
+            "--target tests_and_run && ctest",
+            "every `test` command must be one CMake build",
+        ),
+        (
+            'depends-on = ["config"]',
+            'depends-on = ["build-tests"]',
+            "every `test` variant must depend only on",
+        ),
+        (
+            'env = { BUILD_TYPE = "Release" }',
+            'env = { BUILD_TYPE = "Debug" }',
+            'every `test` variant must set only `BUILD_TYPE = "Release"`',
+        ),
+    ],
+)
+def test_test_gate_contract_rejects_focused_test_runtime_semantics(
+    tmp_path, old, new, expected
+):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    test_offset = text.index("\ntest = {")
+    text = text[:test_offset] + text[test_offset:].replace(old, new, 1)
+    pixi.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize("task", ("test-ai-infra", "test-agent-debug-overlay"))
+def test_test_gate_contract_rejects_raw_canonical_pytest_tasks(tmp_path, task):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    task_offset = text.index(f"{task} =")
+    text = text[:task_offset] + text[task_offset:].replace(
+        '"scripts/run_pytest.py"',
+        '"-m", "pytest"',
+        1,
+    )
+    pixi.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"pixi.toml: `{task}` must use the guarded repository pytest runner" in error
+        for error in errors
+    )
 
 
 def test_test_gate_contract_rejects_dependency_indirection(tmp_path):
@@ -1068,7 +1157,7 @@ def test_test_gate_contract_rejects_inactive_runtime_graph(tmp_path, replacement
         (
             "python/tests/CMakeLists.txt",
             "DARTPY_PYTEST_FOUND",
-            '"${Python3_EXECUTABLE}" -m pytest',
+            "scripts/run_pytest.py",
         ),
     ),
 )
@@ -1118,6 +1207,85 @@ def test_test_gate_contract_rejects_ctest_runner_drift(tmp_path):
     )
 
 
+@pytest.mark.parametrize(
+    "injection",
+    (
+        "set(_dart_gtest_unsets)\n",
+        "set(_dart_ctest_arguments --show-only)\n",
+        "cmake_language(EXIT 0)\n",
+    ),
+)
+def test_test_gate_contract_rejects_ctest_runner_dataflow_bypass(tmp_path, injection):
+    _copy_test_gate_contract(tmp_path)
+    runner = tmp_path / "cmake" / "DARTRunCTest.cmake"
+    text = runner.read_text(encoding="utf-8")
+    final_call = text.rfind("execute_process(")
+    assert final_call > 0
+    runner.write_text(
+        text[:final_call] + injection + text[final_call:],
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "cmake/DARTRunCTest.cmake: commands and lexical control flow must "
+        "exactly match" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("opener", "closer"),
+    (
+        ("if(FALSE)\n", "endif()\n"),
+        ("function(unused_ctest_runner)\n", "endfunction()\n"),
+    ),
+)
+def test_test_gate_contract_rejects_unreachable_ctest_execution(
+    tmp_path, opener, closer
+):
+    _copy_test_gate_contract(tmp_path)
+    runner = tmp_path / "cmake" / "DARTRunCTest.cmake"
+    text = runner.read_text(encoding="utf-8")
+    final_call = text.rfind("execute_process(")
+    assert final_call > 0
+    runner.write_text(
+        text[:final_call] + opener + text[final_call:] + closer,
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "cmake/DARTRunCTest.cmake: commands and lexical control flow must "
+        "exactly match" in error
+        for error in errors
+    )
+
+
+def test_test_gate_contract_rejects_ctest_command_shadowing(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    runner = tmp_path / "cmake" / "DARTRunCTest.cmake"
+    runner.write_text(
+        "macro(execute_process)\n"
+        "  set(_dart_environment_result 0)\n"
+        "endmacro()\n" + runner.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "cmake/DARTRunCTest.cmake: commands and lexical control flow must "
+        "exactly match" in error
+        for error in errors
+    )
+
+
 def test_test_gate_contract_rejects_quoted_pytest_target_spoof(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/tests/CMakeLists.txt"
@@ -1135,7 +1303,7 @@ def test_test_gate_contract_rejects_quoted_pytest_target_spoof(tmp_path):
 
     assert any(
         "python/tests/CMakeLists.txt: missing `test-all` graph marker "
-        '`"${Python3_EXECUTABLE}" -m pytest`' in error
+        "`scripts/run_pytest.py`" in error
         for error in errors
     )
 
@@ -1148,11 +1316,10 @@ def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
         (
             "    COMMAND ${CMAKE_COMMAND} -E echo\n"
             '      "COMMAND ${CMAKE_COMMAND} -E env '
-            "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
-            "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
-            "${Python3_EXECUTABLE} -m pytest -c "
-            "${PROJECT_SOURCE_DIR}/pyproject.toml "
-            '--noconftest ${dartpy_test_files} -v"\n'
+            "PYTHONPATH=${DART_PYTHONPATH} "
+            "${Python3_EXECUTABLE} "
+            "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py "
+            '${dartpy_test_files} -v"\n'
         ),
     )
     errors = []
@@ -1161,7 +1328,7 @@ def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
 
     assert any(
         "python/tests/CMakeLists.txt: missing `test-all` graph marker "
-        '`"${Python3_EXECUTABLE}" -m pytest`' in error
+        "`scripts/run_pytest.py`" in error
         for error in errors
     )
 
@@ -1173,11 +1340,10 @@ def test_test_gate_contract_rejects_bracket_pytest_command_spoof(tmp_path):
         cmake,
         (
             "    [=[COMMAND ${CMAKE_COMMAND} -E env "
-            "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
-            "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
-            "${Python3_EXECUTABLE} -m pytest -c "
-            "${PROJECT_SOURCE_DIR}/pyproject.toml "
-            "--noconftest ${dartpy_test_files} -v]=]\n"
+            "PYTHONPATH=${DART_PYTHONPATH} "
+            "${Python3_EXECUTABLE} "
+            "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py "
+            "${dartpy_test_files} -v]=]\n"
         ),
     )
     errors = []
@@ -1186,7 +1352,7 @@ def test_test_gate_contract_rejects_bracket_pytest_command_spoof(tmp_path):
 
     assert any(
         "python/tests/CMakeLists.txt: missing `test-all` graph marker "
-        '`"${Python3_EXECUTABLE}" -m pytest`' in error
+        "`scripts/run_pytest.py`" in error
         for error in errors
     )
 
@@ -1307,17 +1473,15 @@ if(DARTPY_PYTEST_FOUND)
     pytest
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m pytest [sources]"
+      "Running pytest by: ${Python3_EXECUTABLE} -I ${PROJECT_SOURCE_DIR}/scripts/run_pytest.py --pythonpath ${DART_PYTHONPATH} [sources]"
     COMMAND
-      ${CMAKE_COMMAND} -E env
-      "PYTHONPATH=${DART_PYTHONPATH}"
-      "PYTEST_ADDOPTS="
-      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1"
-      "PYTEST_PLUGINS="
-      "${Python3_EXECUTABLE}" -m pytest -c
-      "${PROJECT_SOURCE_DIR}/pyproject.toml" --noconftest ${dartpy_test_files} -v
+      "${Python3_EXECUTABLE}" -I "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
+      --pythonpath "${DART_PYTHONPATH}" ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils}
+    SOURCES
+      ${dartpy_test_files}
+      ${dartpy_test_utils}
+      "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"
     DEPENDS dartpy
   )
 else()
@@ -1331,6 +1495,9 @@ endif()
 """.lstrip(),
         "python/tests/test_semantic.py": "def test_semantic():\n    pass\n",
         "cmake/DARTRunCTest.cmake": (ROOT / "cmake/DARTRunCTest.cmake").read_text(
+            encoding="utf-8"
+        ),
+        "scripts/run_pytest.py": (ROOT / "scripts/run_pytest.py").read_text(
             encoding="utf-8"
         ),
         "pyproject.toml": """
@@ -1777,6 +1944,67 @@ int main()
     assert (build / "tests" / "regression" / "semantic-body-ran").is_file()
 
 
+def _copy_test_runner_probe_contract(root: Path) -> None:
+    for relative in (
+        "pyproject.toml",
+        "cmake/DARTRunCTest.cmake",
+        "scripts/run_pytest.py",
+    ):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            (ROOT / relative).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+
+def test_test_runner_semantic_probe_accepts_repository_contract(tmp_path):
+    _copy_test_runner_probe_contract(tmp_path)
+    errors = []
+
+    infra.check_test_runner_semantics(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("relative", "old", "new", "expected"),
+    (
+        (
+            "cmake/DARTRunCTest.cmake",
+            "execute_process(\n  COMMAND\n",
+            "set(_dart_ctest_arguments --show-only)\n" "execute_process(\n  COMMAND\n",
+            "CTest did not execute a body",
+        ),
+        (
+            "scripts/run_pytest.py",
+            'name.upper().startswith("PYTEST_")',
+            'name.upper().startswith("UNRELATED_")',
+            "pytest did not execute a body",
+        ),
+    ),
+)
+def test_test_runner_semantic_probe_rejects_execution_bypass(
+    tmp_path, relative, old, new, expected
+):
+    _copy_test_runner_probe_contract(tmp_path)
+    path = tmp_path / relative
+    text = path.read_text(encoding="utf-8")
+    if relative.startswith("cmake/"):
+        offset = text.rfind(old)
+        assert offset > 0
+        text = text[:offset] + text[offset:].replace(old, new, 1)
+    else:
+        assert old in text
+        text = text.replace(old, new, 1)
+    path.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_runner_semantics(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
 def test_cmake_zero_test_guard_does_not_match_ten_tests(tmp_path, monkeypatch):
     cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
     build = _configure_semantic_graph_fixture(tmp_path)
@@ -2124,10 +2352,14 @@ def test_cmake_semantic_graph_probe_rejects_pytest_non_execution_flags(tmp_path)
 @pytest.mark.parametrize(
     ("old", "new"),
     (
-        ('"PYTEST_ADDOPTS="', '"PYTEST_ADDOPTS=--collect-only"'),
         (
-            '-m pytest -c\n      "${PROJECT_SOURCE_DIR}/pyproject.toml"',
-            "-m pytest",
+            '"${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"',
+            '"${PROJECT_SOURCE_DIR}/scripts/Noop.py"',
+        ),
+        (
+            '"${Python3_EXECUTABLE}" -I '
+            '"${PROJECT_SOURCE_DIR}/scripts/run_pytest.py"',
+            '"${Python3_EXECUTABLE}" -m pytest',
         ),
     ),
 )
@@ -2937,7 +3169,7 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     (workflows / "ci_ubuntu.yml").write_text(
         "pixi run check-ai-commands\n"
         "pixi run check-ai-infra\n"
-        "tests/test_sync_ai_commands.py\n"
+        "pixi run test-ai-infra\n"
         "scripts/check_ai_infrastructure.py --scenarios\n"
         "      - name: Agent visual verification smoke\n"
         "if: matrix.build_type == 'Release'\n"
