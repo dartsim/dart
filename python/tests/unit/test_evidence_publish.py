@@ -25,6 +25,22 @@ def _release_asset_name(path: Path) -> str:
     return f"sha256-{_sha256(path)}{path.suffix.lower()}"
 
 
+def _remote_asset(path: Path) -> dict[str, object]:
+    return {
+        "name": _release_asset_name(path),
+        "size": path.stat().st_size,
+        "digest": f"sha256:{_sha256(path)}",
+        "state": "uploaded",
+    }
+
+
+def _release(*paths: Path, immutable: bool = False) -> dict[str, object]:
+    return {
+        "isImmutable": immutable,
+        "assets": [_remote_asset(path) for path in paths],
+    }
+
+
 class _Completed:
     def __init__(
         self, returncode: int = 0, *, stdout: str = "", stderr: str = ""
@@ -189,6 +205,8 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["schema_version"] == "dart.evidence_publication/v3"
+    assert manifest["repository"] == "dartsim/dart"
+    assert manifest["release_tag"] == "verification-media"
     assert manifest["uploaded"] is False
     assert "dry-run" in manifest["note"]
     shot_name = _release_asset_name(tmp_path / "shot.png")
@@ -220,13 +238,19 @@ def test_gh_release_yes_uploads_each_artifact(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
     calls: list[list[str]] = []
+    view_count = 0
 
     def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
         calls.append(list(args))
-        # First call is `release view` for a tag that does not exist yet.
         if args[:2] == ["release", "view"]:
-            return _Completed(1, stderr="release not found")
+            view_count += 1
+            if view_count == 1:
+                return _Completed(1, stderr="release not found")
+            return _Completed(stdout=json.dumps(_release(shot, clip)))
         return _Completed(0)
 
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
@@ -254,10 +278,14 @@ def test_gh_release_yes_uploads_each_artifact(
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["uploaded"] is True
+    assert manifest["repository"] == "dartsim/dart"
+    assert manifest["release_tag"] == "verification-media"
     assert "note" not in manifest
     verbs = [call[:2] for call in calls]
     assert verbs[0] == ["release", "view"]
     assert verbs[1] == ["release", "create"]
+    assert verbs[-1] == ["release", "view"]
+    assert view_count == 2
     uploads = [call for call in calls if call[:2] == ["release", "upload"]]
     assert len(uploads) == 1
     assert "--clobber" not in uploads[0]
@@ -322,26 +350,30 @@ def test_partial_content_addressed_upload_resumes_without_clobber(
 ) -> None:
     selection = _selection(tmp_path)
     shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
     shot_name = _release_asset_name(shot)
     calls: list[list[str]] = []
-    release = {
-        "isImmutable": False,
-        "assets": [
-            {
-                "name": shot_name,
-                "size": shot.stat().st_size,
-                "digest": f"sha256:{_sha256(shot)}",
-                "state": "uploaded",
-            }
-        ],
-    }
+    staged_sources: list[str] = []
+    events: list[str] = []
+    view_count = 0
+    copyfile = evidence_publish.shutil.copyfile
+
+    def record_copy(source, target):
+        staged_sources.append(Path(source).name)
+        events.append(f"stage:{Path(source).name}")
+        return copyfile(source, target)
 
     def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
         calls.append(list(args))
+        events.append(f"gh:{'/'.join(args[:2])}")
         if args[:2] == ["release", "view"]:
-            return _Completed(stdout=json.dumps(release))
+            view_count += 1
+            paths = (shot,) if view_count == 1 else (shot, clip)
+            return _Completed(stdout=json.dumps(_release(*paths)))
         return _Completed()
 
+    monkeypatch.setattr(evidence_publish.shutil, "copyfile", record_copy)
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
     manifest_out = tmp_path / "publication.json"
     code = evidence_publish.main(
@@ -363,6 +395,12 @@ def test_partial_content_addressed_upload_resumes_without_clobber(
     )
 
     assert code == 0
+    assert staged_sources == ["shot.png", "clip.mp4"]
+    assert events[:3] == [
+        "stage:shot.png",
+        "stage:clip.mp4",
+        "gh:release/view",
+    ]
     assert not any(call[:2] == ["release", "create"] for call in calls)
     uploads = [call for call in calls if call[:2] == ["release", "upload"]]
     assert len(uploads) == 1
@@ -504,7 +542,67 @@ def test_release_lookup_failure_is_not_treated_as_missing_release(
     assert calls[0][:2] == ["release", "view"]
 
 
-def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("final_state", "expected"),
+    [
+        ("missing", "did not find selected asset"),
+        ("digest", "does not match the selected digest"),
+    ],
+)
+def test_gh_release_requeries_and_verifies_every_asset_after_upload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    final_state: str,
+    expected: str,
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
+    calls: list[list[str]] = []
+    view_count = 0
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
+        calls.append(list(args))
+        if args[:2] != ["release", "view"]:
+            return _Completed()
+        view_count += 1
+        if view_count == 1:
+            return _Completed(stdout=json.dumps(_release()))
+        final = _release(shot, clip)
+        if final_state == "missing":
+            final["assets"] = [final["assets"][0]]
+        else:
+            final["assets"][1]["digest"] = f"sha256:{'0' * 64}"
+        return _Completed(stdout=json.dumps(final))
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert view_count == 2
+    assert len([call for call in calls if call[:2] == ["release", "upload"]]) == 1
+    assert expected in capsys.readouterr().err
+
+
+def test_duplicate_basenames_use_distinct_content_addressed_assets(
+    tmp_path: Path,
+) -> None:
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
     a_shot = tmp_path / "a" / "shot.png"
@@ -545,17 +643,56 @@ def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
     }
     selection = tmp_path / "selection.json"
     selection.write_text(json.dumps(manifest), encoding="utf-8")
+    publication = tmp_path / "publication.json"
     code = evidence_publish.main(
         [
             str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
             "--environment",
             "Linux",
             *_semantic_args(),
             "--out",
             str(tmp_path / "x.md"),
+            "--manifest-out",
+            str(publication),
         ]
     )
-    assert code == 2
+    assert code == 0
+    published = json.loads(publication.read_text(encoding="utf-8"))
+    assets = [artifact["release_asset"] for artifact in published["artifacts"]]
+    assert len(set(assets)) == 2
+    assert all(asset.startswith("sha256-") for asset in assets)
+
+
+def test_staging_revalidates_distinct_paths_sharing_one_release_asset(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    first = tmp_path / "a" / "shot.png"
+    second = tmp_path / "b" / "shot.png"
+    first.write_bytes(b"same")
+    second.write_bytes(b"same")
+    digest = _sha256(first)
+    artifacts = [
+        {"path": "a/shot.png", "bytes": 4, "sha256": digest},
+        {"path": "b/shot.png", "bytes": 4, "sha256": digest},
+    ]
+    stage_dir = tmp_path / "stage"
+    stage_dir.mkdir()
+
+    staged = evidence_publish._stage_release_assets(
+        artifacts,
+        tmp_path,
+        stage_dir,
+    )
+
+    assert list(staged) == [f"sha256-{digest}.png"]
+    assert len(list(stage_dir.iterdir())) == 2
+    assert all(path.read_bytes() == b"same" for path in stage_dir.iterdir())
 
 
 def test_gh_release_requires_repo(tmp_path: Path) -> None:
@@ -573,6 +710,94 @@ def test_gh_release_requires_repo(tmp_path: Path) -> None:
         ]
     )
     assert code == 2
+
+
+@pytest.mark.parametrize("repo", ["dartsim", "/dart", "dartsim/", "bad owner/dart"])
+def test_gh_release_rejects_invalid_repository(tmp_path: Path, repo: str) -> None:
+    selection = _selection(tmp_path)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            repo,
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+    assert code == 2
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "--force",
+        "bad tag",
+        "refs//verification",
+        "refs/.verification",
+        "refs/verification.lock",
+        "verification..media",
+        "verification@{media",
+        "verification?media",
+        "verification/",
+        "@",
+    ],
+)
+def test_gh_release_rejects_unsafe_tag(tmp_path: Path, tag: str) -> None:
+    selection = _selection(tmp_path)
+    with pytest.raises(SystemExit) as caught:
+        evidence_publish.main(
+            [
+                str(selection),
+                "--backend",
+                "gh-release",
+                "--repo",
+                "dartsim/dart",
+                "--tag",
+                tag,
+                "--environment",
+                "Linux",
+                *_semantic_args(),
+                "--out",
+                str(tmp_path / "section.md"),
+            ]
+        )
+    assert caught.value.code == 2
+
+
+def test_gh_release_accepts_hierarchical_safe_tag(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--tag",
+            "verification-media/pr-3403",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 0
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["release_tag"] == "verification-media/pr-3403"
+    assert all(
+        "/verification-media%2Fpr-3403/" in url
+        for url in manifest["urls"].values()
+    )
 
 
 def test_uncertain_semantic_review_fails_publication(tmp_path: Path) -> None:

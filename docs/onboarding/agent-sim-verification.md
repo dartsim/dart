@@ -116,15 +116,19 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   repro commands) with GitHub-hosted media: `manual` backend emits
   web-editor upload placeholders (the documented user-attachments flow);
   `gh-release` uploads release assets via `gh` but only with `--yes` and
-  maintainer approval. Immediately before any upload, it recomputes artifact
-  sizes, SHA-256 hashes, claim coverage, and pass state from the selected files;
+  maintainer approval. Before any GitHub action, it recomputes artifact sizes,
+  SHA-256 hashes, claim coverage, and pass state, then freezes every selected
+  file under its content-addressed name in a temporary staging directory;
   stale, tampered, incomplete, or inconsistent evidence causes no GitHub
-  mutation. Release assets use content-addressed names without cross-content
-  clobber, and the publication manifest binds each path, size, digest, and URL
-  so a later run cannot silently replace reviewed bytes. Existing assets are
-  reused only when GitHub reports the exact size, SHA-256 digest, and `uploaded`
-  state; missing integrity metadata fails closed. PR-only media never enters
-  git history. The published section must also carry the actual text oracle,
+  mutation. Duplicate local basenames are safe because release assets use the
+  digest rather than the source basename. Existing assets are reused only when
+  GitHub reports the exact size, SHA-256 digest, and `uploaded` state. After
+  creating or updating the release, the publisher re-queries it and verifies
+  every selected asset before reporting success; missing integrity metadata
+  fails closed and a retry remains idempotent. The publication manifest binds
+  repository, release tag, path, size, digest, asset name, and URL so a later
+  run cannot silently replace reviewed bytes. PR-only media never enters git
+  history. The published section must also carry the actual text oracle,
   visible observation,
   reconciliation/verdict, and a non-empty claim boundary describing what the
   evidence does not prove; limitations are added when applicable. "What to

@@ -390,7 +390,10 @@ compatibility remains on the active DART 6 LTS branch._
   upload. GitHub release evidence uses content-addressed asset names and records
   each path/size/digest/URL binding so later publications cannot replace bytes
   behind an earlier PR's URL; reuse requires an exact remote digest, size, and
-  completed-upload state.
+  completed-upload state. The publisher now freezes every selected file before
+  remote action, validates conservative release tags, records repository/tag
+  provenance, and re-queries the completed release to verify the full remote
+  asset set before reporting success.
   Corrected the shared box-stack evidence fixture so it starts with shallow
   contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403))
