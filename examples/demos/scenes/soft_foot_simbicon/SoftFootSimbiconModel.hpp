@@ -129,6 +129,12 @@ Eigen::VectorXd stateVector(const Model& model);
 /// point-mass state, gait phase, and any pending push.
 void resetModel(Model& model);
 
+/// Bounds of the lateral push sweep maxRecoverablePush() searches. Exported so
+/// a caller can tell a measured threshold from one that saturated the ceiling.
+constexpr double kPushSweepStart = 2000.0;
+constexpr double kPushSweepEnd = 12000.0;
+constexpr double kPushSweepStep = 2000.0;
+
 /// Largest pelvis push magnitude (N) from which the biped recovers upright,
 /// found by sweeping magnitudes in a fixed lateral direction and returning the
 /// largest that leaves the biped upright after a fixed recovery window.

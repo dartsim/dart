@@ -58,9 +58,6 @@ constexpr int kSettledTailSteps = 250;
 // actual topple threshold: both foot types comfortably recover the lower
 // magnitudes and topple at the top of the range, so the returned value is a
 // real measured threshold, not a saturated sweep ceiling.
-constexpr double kPushSweepStart = 2000.0;
-constexpr double kPushSweepEnd = 12000.0;
-constexpr double kPushSweepStep = 2000.0;
 const Eigen::Vector3d kPushDirection = Eigen::Vector3d::UnitZ();
 
 //==============================================================================
@@ -101,6 +98,57 @@ bool survivesPush(Feet feet, double magnitude)
   return true;
 }
 
+//==============================================================================
+/// Makes a loaded soft foot directly comparable with the rigid foot it
+/// replaces, by changing the loaded instance rather than the shared
+/// `dart://sample` asset, which other callers and `test_SdfParser` also load.
+///
+/// Two things differ once `<soft_shape>` is parsed, and both would let the
+/// comparison measure something other than deformability:
+///
+///  - The generated `SoftMeshShape` is collidable *in addition to* the link's
+///    original rigid STL collision mesh, so a soft foot would present two
+///    overlapping collision surfaces against the rigid foot's one, and could
+///    win on contact count by duplication alone.
+///  - `<total_mass>` is added on top of the link's mass rather than carved out
+///    of it, so a soft foot would be 0.5 kg heavier, and extra ground load
+///    raises contact counts and changes push recovery by itself.
+void normalizeSoftFoot(dart::dynamics::BodyNode* foot)
+{
+  auto* soft = dynamic_cast<dart::dynamics::SoftBodyNode*>(foot);
+  if (!soft)
+    throw std::runtime_error(
+        std::string(foot->getName()) + ": expected a SoftBodyNode");
+
+  // Leave only the soft surface collidable.
+  soft->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+      [](dart::dynamics::ShapeNode* shapeNode) {
+        const auto& shape = shapeNode->getShape();
+        if (!std::dynamic_pointer_cast<dart::dynamics::SoftMeshShape>(shape))
+          shapeNode->removeCollisionAspect();
+      });
+
+  // SoftBodyNode::getMass() is link mass plus point masses; BodyNode::getMass()
+  // is the link alone. Taking the point-mass total out of the link leaves the
+  // foot weighing exactly what the SDF declared for the link, which is what the
+  // rigid foot weighs.
+  const double linkMass = soft->dart::dynamics::BodyNode::getMass();
+  const double pointMass = soft->getMass() - linkMass;
+  const double normalizedLinkMass = linkMass - pointMass;
+  if (!(normalizedLinkMass > 0.0))
+    throw std::runtime_error(
+        std::string(foot->getName())
+        + ": soft point masses exceed the link mass");
+
+  // The moment of inertia was authored for the full link mass, so scale it with
+  // the mass that remains. The point masses contribute their own rotational
+  // inertia through their offsets, as separate degrees of freedom.
+  dart::dynamics::Inertia inertia = soft->getInertia();
+  inertia.setMoment(inertia.getMoment() * (normalizedLinkMass / linkMass));
+  inertia.setMass(normalizedLinkMass);
+  soft->setInertia(inertia);
+}
+
 } // namespace
 
 //==============================================================================
@@ -139,6 +187,11 @@ Model createModel(Feet feet)
   if (!pelvis || !leftFoot || !rightFoot)
     throw std::runtime_error(
         sdfUriFor(feet) + ": missing 'pelvis', 'l_foot', or 'r_foot'");
+
+  if (feet == Feet::Soft) {
+    normalizeSoftFoot(leftFoot);
+    normalizeSoftFoot(rightFoot);
+  }
 
   model.world = world;
   model.atlas = atlas;
