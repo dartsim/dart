@@ -393,7 +393,13 @@ compatibility remains on the active DART 6 LTS branch._
   completed-upload state. The publisher now freezes every selected file before
   remote action, validates conservative release tags, records repository/tag
   provenance, and re-queries the completed release to verify the full remote
-  asset set before reporting success.
+  asset set before reporting success. Mutating publication now atomically
+  invalidates stale local success before remote changes, persists explicit
+  partial/unverified attempt state and recovery guidance after failures, and
+  accepts success URLs only from validated final GitHub asset metadata.
+  Retries reuse absent or exact completed assets but fail closed on same-name
+  incomplete/unverifiable state pending an explicitly approved exact deletion
+  or a new tag.
   Corrected the shared box-stack evidence fixture so it starts with shallow
   contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403))

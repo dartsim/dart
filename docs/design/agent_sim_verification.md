@@ -213,9 +213,18 @@ The follow-up workflow closes these:
   asset requires an exact GitHub-reported size, SHA-256 digest, and `uploaded`
   state. After create/upload, publication re-queries the release and verifies
   every selected remote asset before success; absent or stale integrity
-  metadata fails closed. The publication manifest records the repository,
-  release tag, and each path/size/digest/asset/URL binding so retrying a partial
-  upload cannot mutate older evidence.
+  metadata fails closed. Success URLs come from that final remote response and
+  are checked against the expected repository, tag, and content-addressed
+  asset name rather than inferred locally. Only absent names or exact assets
+  already in `uploaded` state are safely retryable. A same-name incomplete or
+  unverifiable asset is never deleted or clobbered automatically; recovery
+  requires explicit maintainer approval for that exact deletion or a new tag.
+  Before a mutating attempt, output paths are preflighted and any previous
+  local success is atomically invalidated with a non-passing attempt record.
+  Later failure records `partial_or_unverified`, the observed remote state,
+  and bounded recovery guidance with no publishable URLs. The final
+  publication manifest records attempt and selection identity, repository,
+  release tag, URL provenance, and each path/size/digest/asset/URL binding.
 - **Case study (#2984 retrospective).** Re-verifying the renderer-fidelity
   PR with this workflow (`scripts/write_retro_2984_evidence_packet.py`)
   produced claim-tied evidence its own body declined to attach: a PBR
