@@ -161,14 +161,19 @@ void applyPush(Model& model, const Eigen::Vector3d& force, int steps)
 void prepareStep(Model& model)
 {
   // Order matches AtlasSimbiconScene::preStep: apply the pending pelvis force,
-  // run one controller update, then count the force window down.
-  model.pelvis->addExtForce(model.externalForce);
-  model.controller->update();
+  // then run one controller update.
+  //
+  // The force is applied only while the window is open. Applying it before
+  // testing the counter would push for one step longer than requested, and
+  // would turn a zero-step request into a one-step impulse, which would make
+  // the recovery sweep's reported push window wrong.
+  if (model.forceDuration > 0) {
+    model.pelvis->addExtForce(model.externalForce);
+    if (--model.forceDuration == 0)
+      model.externalForce.setZero();
+  }
 
-  if (model.forceDuration > 0)
-    --model.forceDuration;
-  else
-    model.externalForce.setZero();
+  model.controller->update();
 }
 
 //==============================================================================

@@ -146,6 +146,14 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
   ASSERT_TRUE(rigid.finiteThroughout);
   ASSERT_TRUE(soft.finiteThroughout);
 
+  // Both bipeds must still be standing. A toppled rigid biped also reports few
+  // foot contacts, so without this the comparison below could "pass" by
+  // measuring a fall rather than the contact spreading the paper describes.
+  ASSERT_TRUE(rigid.uprightThroughout) << "rigid biped fell; contact totals "
+                                          "would not be comparable";
+  ASSERT_TRUE(soft.uprightThroughout) << "soft biped fell; contact totals would "
+                                         "not be comparable";
+
   const double rigidAvg = contactAvg(rigid);
   const double softAvg = contactAvg(soft);
 
