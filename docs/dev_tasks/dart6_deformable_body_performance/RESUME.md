@@ -1,31 +1,38 @@
 # RESUME - DART 6 deformable body feature and performance
 
-Updated: 2026-07-29 (#3382 merged; M2.0 and M2.1 landed; M2.2 is next)
+Updated: 2026-07-29 (Kim/Pollard removed from DART 6 and retargeted to DART 7;
+DART 6 scope is the Jain/Liu lane; #3382 and #3407 merged)
+
+> **Read this first.** DART 6 carries one deformable model. The Kim/Pollard
+> volumetric-FEM lane was removed from `release-6.20` on 2026-07-29 and
+> retargeted to DART 7; **do not restart it here.** The next DART 6 build step is
+> PR-3a soft-foot SIMBICON (`12-pr3a-soft-foot-simbicon.md`). Durable owner of
+> that scope: `docs/design/dart6_deformable_body.md`. Sections dated before
+> 2026-07-29 are historical and may describe a two-paper scope that no longer
+> applies.
 
 ## Terminal state
 
 The representative DART 6 release slice
 [#3382](https://github.com/dartsim/dart/pull/3382) merged into `release-6.20` as
-`6c88ac1d774`. The M2.0 FEM integration seam is validated, and the internal-only
-M2.1 volumetric FEM foundation plus damping correction landed in
-`d68ca4e9c29` and `d65e88ebda4`. Continue from M2.2 rather than reopening PR
-stabilization. PLAN-622 remains active: paper parity, the paired artifact or
-approved disposition, competitive-envelope and flexible-foot decisions,
-WP-DB.07/WP-DB.08 follow-ups, and the separate `main` assertion fix remain
-open.
+`6c88ac1d774`. [#3407](https://github.com/dartsim/dart/pull/3407) then merged as
+`2ffe228c14c` and removed the experimental volumetric FEM subsystem. Do not
+reopen #3382 stabilization or continue M2.x on DART 6. PLAN-622 remains active
+for Jain/Liu paper parity, the paired artifact or approved disposition,
+competitive-envelope and flexible-foot decisions, WP-DB.07/WP-DB.08
+follow-ups, and the separate `main` assertion fix.
 
 ## Authoritative current state
 
 - Start new work from the current `origin/release-6.20`; at this refresh it is
-  `6c88ac1d774`.
+  `2ffe228c14c`.
 - #3382: merged on 2026-07-29 as `6c88ac1d774`.
-- M2.0: validated in `11-fem-integration-seam.md`.
-- M2.1: landed in `d68ca4e9c29`, with correction `d65e88ebda4`; evidence and
-  exact next increments are in `13-fem-foundation.md`.
-- Next implementation increment: M2.2 elastic element forces, energy and
-  stability gates, and the first deforming demo.
-- Parallel product lane: soft-foot SIMBICON using the existing controller and
-  soft-feet Atlas asset.
+- #3407: merged on 2026-07-29 as `2ffe228c14c`; removed M2.1 and retargeted the
+  Kim/Pollard lane to DART 7.
+- M2.0: retained only as historical seam evidence in
+  `11-fem-integration-seam.md`; there is no DART 6 M2.2 increment.
+- Next implementation increment: soft-foot SIMBICON using the existing
+  controller and soft-feet Atlas asset.
 - The former `wp-db-native-soft-fallback` checkout and heads below are
   historical evidence, not a branch to resume.
 - Published Windows calibration: `50a254e7e56`; test-only legacy-FCL
@@ -101,7 +108,13 @@ deprecated `isColliding()` flags when the prior result had contacts (required
 for equivalence; its only in-tree caller is `World::reset()`, where it is an
 improvement).
 
-### Scope elevated to full two-paper parity (2026-07-23 maintainer directive)
+### Scope elevated to full two-paper parity (2026-07-23) — SUPERSEDED
+
+> **Superseded on 2026-07-29.** The two-paper scope below no longer holds: the
+> Kim/Pollard lane was removed from DART 6 and retargeted to DART 7, so there is
+> no PR-2 and no FEM subsystem to build here. What survives from this directive
+> is the retraction of the 2026-07-11 deferral list (the Jain/Liu rows remain
+> active DART 6 work) and the zero-rigid-overhead requirement. Kept as history.
 
 The maintainer **retracted the 2026-07-11 deferral list** and set two goals
 beyond the representative slice (see `decisions.md` 2026-07-23 entry and
@@ -449,7 +462,8 @@ resume its directory or weaken the runner's gates.
 ## Current open work and historical evidence boundaries
 
 - #3382, including the Gazebo zero-overhead correction and preparation-state
-  review fix, is in `release-6.20@6c88ac1d774`.
+  review fix, first merged at `6c88ac1d774` and remains present in the current
+  `release-6.20@2ffe228c14c`.
 - Heads such as `c41f273d271` and `891f43fd590` are historical #3382 evidence,
   not bases or exact-head gates for new work.
 - No paired benchmark directory has `COMPLETE.json`. Interrupted and
@@ -472,29 +486,25 @@ Next actions:
    `10-full-parity-execution-plan.md` (accepted 2026-07-23; ABI-safe additive on
    `release-6.20`, ~3-PR structure; PLAN-622 points at it). The 2026-07-11
    deferral list is retracted.
-3. **M2.0 FEM integration seam: validated** — see `11-fem-integration-seam.md`.
-   A custom `constraint::ConstraintBase` whose `update()` DART calls every
-   `solve()` (`ConstraintSolver.cpp:1077`, before the `isActive()` LCP gate) is
-   the ABI-safe per-step FEM integration hook; a throwaway prototype proved the
-   hook runs 200/200, integrates deterministically, and leaves the rigid
-   trajectory bit-identical (zero perturbation), touching no production code.
-   Two-way FEM→rigid coupling must use LCP participation (`isActive()==true`) or
-   caller-driven force before `step()` (mid-solve `addExtForce` is cleared at
-   `World.cpp:1378`); one-way skeleton→FEM drive is immediate. Additive-on-
-   `release-6.20` is confirmed feasible; the branch decision holds pending a
-   later milestone showing otherwise.
-4. **M2.1 FEM foundation: landed** — commits `d68ca4e9c29` and
-   `d65e88ebda4`; see `13-fem-foundation.md`.
-5. **Next build steps:** PR-2 **M2.2** — elastic element forces (linear, then
-   corotational/StVK), energy/stability gates, and the first deforming demo; in
-   parallel PR-3a **soft-foot SIMBICON** (reuse `examples/demos/scenes/
-   atlas_simbicon/` + `atlas_v3_no_head_soft_feet.sdf`). Confirm the
-   competitive-envelope definition (decisions.md item 2) before the
-   performance-acceptance stage.
-6. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
+3. **The volumetric FEM lane is no longer DART 6 work.** The subsystem that the
+   M2.x milestones were building was removed from `release-6.20` and retargeted
+   to DART 7 (`decisions.md`, 2026-07-29): the two reference papers need
+   different discretizations, and DART 6 keeps only the Jain/Liu model that
+   `SoftBodyNode` implements. **Do not restart the tet/FEM build here.** The
+   implementation is preserved in `wp-db-fem-foundation` and
+   `wp-db-fem-elastic` / #3404 if it is ever revived on DART 7, where the first
+    question is whether a reduced FEM still beats newer solvers such as AVBD.
+    `11-fem-integration-seam.md` is retained only for its DART 6 facts.
+4. **Next build step: PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`),
+    which reuses the existing GUI-free `atlas_simbicon` controller with
+    `atlas_v3_no_head_soft_feet.sdf`, then the remaining Jain/Liu rows: noisy
+   floor, soft-contact walk, hand/arm manipulation, and the four-link
+    flexible-foot comparison. Confirm the competitive-envelope definition before
+    the performance-acceptance stage.
+5. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
    WP-DB.08 native-owned/default coverage, flexible-foot, and the separate
    `main` zero-DoF assertion PR remain open and now fold into the parity plan.
-7. Remove this temporary task folder only when its open work has durable
+6. Remove this temporary task folder only when its open work has durable
    owners, and clean branches only with explicit approval.
 
 ## Demo integration rule
