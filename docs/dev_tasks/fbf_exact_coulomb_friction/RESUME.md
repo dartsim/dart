@@ -18,14 +18,14 @@ Current branch and evidence runtime:
   `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df`. It contains current
   `origin/release-6.20` checkpoint
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through that merge checkpoint.
-  Documentation-only descendants do not change this runtime identity; query
-  the live branch/PR head instead of assuming `6fb4` is still HEAD.
-- The last pushed head before the generated optional-baseline change is
-  `3a185ee2743d5111461f5dd0465dba5535f9b74c`. PR #3377 remains open and
-  draft. Query the resulting live head and checks rather than assuming that
-  checkpoint is still current. Relative to `release-6.20`, the generated
-  baseline tree has 161 changed files and seven `data/` paths, down from 264
-  and 110.
+  Subsequent documentation and optional MuJoCo-baseline source/data-hygiene
+  commits do not change the DART demo or solver binary identity; query the live
+  branch/PR head instead of assuming `6fb4` is still HEAD.
+- Pushed head `33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5` closes the
+  current-tree generated-baseline cleanup. PR #3377 remains open and draft.
+  Query the live head and checks rather than assuming that checkpoint is still
+  current. Relative to `release-6.20`, the tree has 161 changed files and seven
+  `data/` paths, down from 264 and 110.
 - The scalable role rule remains
   `docs/dev_tasks/.gitignore` `**/assets/`; no broad extension ignore was
   added. The current net tree has no tracked task assets or generated
@@ -144,11 +144,10 @@ merge/rebuild is complete; rerun only after a declared cool/low-load gate.
 
 Next:
 
-1. Complete the generated-baseline checkpoint gates (`pixi run build`, focused
-   Python/MuJoCo tests, `pixi run lint`, diff/ignore audit), merge a newer
-   `release-6.20` only if one exists, and commit/push the current-tree raw-file
-   cleanup. Keep the role-based `**/assets/` ignore; do not add broad extension
-   ignores.
+1. Preserve the closed generated-baseline checkpoint. Its build, focused
+   Python/MuJoCo, lint/check-lint, exact-equivalence, and diff/ignore gates
+   passed before commit `33a7b2f32dc` was pushed. Keep the role-based
+   `**/assets/` ignore; do not add broad extension ignores.
 2. Decide with the maintainer whether a true squash merge is sufficient for
    the 492 historical evidence blobs or whether the published review branch
    must be reconstructed. Any history replacement and

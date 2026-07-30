@@ -41,12 +41,13 @@ renderer, Apple hardware, or paper timer boundary.
   `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df`. It contains current
   `origin/release-6.20` target
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
-  merge checkpoint. Documentation-only descendants do not change the binary
-  identity below. The last pushed head before the generated optional-baseline
-  change is `3a185ee2743d5111461f5dd0465dba5535f9b74c`. PR #3377 is open and
-  draft. Relative to `release-6.20`, the generated-baseline tree has 161 changed
-  files and seven `data/` paths, down from 264 and 110. Requery mutable
-  head/check state before reporting it.
+  merge checkpoint. Subsequent documentation and optional MuJoCo-baseline
+  source/data-hygiene commits do not change the DART demo or solver binary
+  identity below. Pushed head `33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5`
+  closes the current-tree generated-baseline cleanup. PR #3377 is open and
+  draft. Relative to `release-6.20`, that tree has 161 changed files and seven
+  `data/` paths, down from 264 and 110. Requery mutable head/check state before
+  reporting it.
 - The merge resolution passed `pixi run lint`, the full 166/166 C++ suite,
   all 34 FBF scene-documentation checks, `check-ai-commands`, and the AI
   infrastructure doctor. The rebuilt post-merge `dart-demos` SHA-256 is
@@ -122,7 +123,7 @@ renderer, Apple hardware, or paper timer boundary.
 | --- | --- | --- |
 | Public author reference | The MIT-licensed repository is available at pinned commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` with the solver, six runnable examples, current configurations, pinned dependencies, and optional MuJoCo/Kamino runners | Available and source-auditable; porting and matched runs are now internal work |
 | PR #3374 | Merged at `fa17fad` | Required visual infrastructure is available on the release branch |
-| PR #3377 | Open and draft; `3a185ee2743d` is the last pushed pre-generation checkpoint. Post-merge code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`; the generated optional-baseline change does not alter the DART demo or solver runtime. The current net tree has 161 files, seven `data/` paths, zero tracked task-asset paths, and zero generated video/CSV/JSON/log paths. The 103 redundant MJCF/OBJ files are removed after exact source-byte, compiled-model, and short-trajectory equivalence checks. Published history still has 492 evidence blobs. Requery mutable head/check state before reporting it | WIP, draft, and not completion evidence. Current-tree raw-file cleanup is closed; final integration must be a true squash unless a clean-history reconstruction is explicitly approved. Paper-parity, performance, CI, and review gates remain open. Slots 02/16 are byte-identically resealed against the post-merge demo/core/runtime closure; Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a` |
+| PR #3377 | Open and draft at pushed head `33a7b2f32dc`; post-merge code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`, and its optional-baseline source/data cleanup does not alter the DART demo or solver runtime. The current net tree has 161 files, seven `data/` paths, zero tracked task-asset paths, and zero generated video/CSV/JSON/log paths. The 103 redundant MJCF/OBJ files are removed after exact source-byte, compiled-model, and short-trajectory equivalence checks. Published history still has 492 evidence blobs. Requery mutable head/check state before reporting it | WIP, draft, and not completion evidence. Current-tree raw-file cleanup is closed; final integration must be a true squash unless a clean-history reconstruction is explicitly approved. Paper-parity, performance, CI, and review gates remain open. Slots 02/16 are byte-identically resealed against the post-merge demo/core/runtime closure; Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a` |
 | Exact algebra | Row signs validated; row-operator versus impulse-test `W` relative error `1.33e-16`; spectral-nullspace regressions pass | Tested formulation is internally consistent |
 | Literal 25-stone exact dynamics | Schema-v8 mark26 has eight complete 600-step processes: one warmup plus three measured runs at each of one and four threads | Full local exact trajectory is proven for the reconstructed non-paper scene |
 | Exact solve contract | 1,800 measured steps per thread count; maximum residual `9.999807145410957e-7`; zero exact failures, caps, or fallbacks | Pass |
@@ -1710,7 +1711,7 @@ explicit opt-in skips" line: 1 of the 3 opt-in fixtures passes when enabled
 | Small figures and video | Capture-time v2 roots retain their recorded binary identity; schema-v3 Figure 3, Figure 8, and ten-level evidence bind captured demo/core/runtime closure at `333a809f14a`. All 16 intended PR attachments are referenced and re-download/hash verified | Preserve every DART/source/history/golden/media boundary. Do not call captured roots post-merge current-runtime evidence or promote policy-asymmetric/blocker media to parity |
 | Paper performance | Pinned author workloads and current external runners were audited/run; DART has a matched-work local 1-/4-core exact result and a current-source small CPU matrix. Precision, engine/backend, host, timer, warmup, and historical Apple attestation remain unmatched | Preserve the local non-paper throughput/scaling claims and null paper timing verdicts; no apples-to-apples paper comparison is available from the public artifacts |
 | Manifest | Validator passes with 24 partial, 5 blocked, and 0 complete | Keep every row bound to current artifacts while retaining missing source-equivalence and historical-parity blockers |
-| CI/PR | PR #3377 is draft. Post-merge code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`; the inspected net diff had 264 files and no tracked task assets/generated evidence. The earlier `333a` macOS randomized joint-test failure must not be carried forward without current-head evidence | Keep it draft and query live head/check/review state before classifying CI |
+| CI/PR | PR #3377 is draft at pushed head `33a7b2f32dc`. Post-merge code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`; the current net diff has 161 files, seven `data/` paths, and no tracked task assets/generated evidence. The earlier `333a` macOS randomized joint-test failure must not be carried forward without current-head evidence | Keep it draft and query live head/check/review state before classifying CI |
 | Final review | The schema-v3 runtime-closure implementation has a clean independent read-only review; the broader task remains active | Obtain two clean independent reviews after the eventual final post-fix state |
 
 ## Archived Immediate Work Order

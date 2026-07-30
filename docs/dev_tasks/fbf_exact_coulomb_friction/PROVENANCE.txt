@@ -20,8 +20,11 @@ Figure 3 exact/boxed/group reseal has been captured against this post-merge
 binary under assets/pr_media_postmerge_a833/. Its runtime-closure digest is
 22c7f90e766b14c0993aaa929f9e9b92fcb05278d1e1071486a74ade677317d3,
 and the closure remained unchanged during capture.
-Documentation-only descendants do not change this runtime identity; query Git
-for the live branch head.
+Subsequent documentation and optional MuJoCo-baseline source/data-hygiene
+commits do not change the DART demo or solver runtime identity; query Git for
+the live branch head. Pushed cleanup checkpoint
+33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5 reduces the current net tree to 161
+files and seven data/ paths while retaining no generated task evidence.
 
 The 2026-07-29 captured-checkpoint visual evidence binds dart-demos SHA-256
 3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750,

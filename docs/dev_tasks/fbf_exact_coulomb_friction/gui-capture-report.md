@@ -8,8 +8,9 @@ below. Schema-v3 evidence under ignored
 `3d685d2c...`, core DART SHA-256 `3b66436b...`, 61 regular libraries, and
 eight build-tree libraries before and after capture at `333a809f14a`.
 Post-merge code/runtime checkpoint `6fb4d0dbd8c` rebuilds to demo/core SHA-256 values
-`d9932f4c...` / `caf402af...`. Documentation-only descendants do not change
-this identity. Figure 3 was freshly recaptured and independently verified
+`d9932f4c...` / `caf402af...`. Subsequent documentation and optional
+MuJoCo-baseline source/data-hygiene commits do not change the DART demo or
+solver binary identity. Figure 3 was freshly recaptured and independently verified
 against that post-merge runtime under ignored
 `assets/pr_media_postmerge_a833/`; its exact/boxed/group bytes are identical
 to slots 02/16. Figure 8, ten-level, and the remaining uploaded clips retain
@@ -801,10 +802,12 @@ trajectory, solver convergence, or physical outcome.
 The public author solver, six current scene/configuration sources,
 dependencies, and MuJoCo/Kamino runners are available and pinned; source-port
 and matched-run work are internal. Current author invocations were
-independently run and preserved. Only masonry-arch meshes are shipped, so the
-historical renderer/cameras/materials/approved goldens, original
-invocation/timing logs and warmup/aggregation attestation, and exact Apple
-silicon host remain unavailable.
+independently run and preserved. The optional MuJoCo masonry geometry is
+generated deterministically from the pinned weighted-catenary contract, with
+license/provenance retained instead of 101 copied mesh files. The historical
+renderer/cameras/materials/approved goldens, original invocation/timing logs
+and warmup/aggregation attestation, and exact Apple silicon host remain
+unavailable.
 
 ## Geometry Boundary
 

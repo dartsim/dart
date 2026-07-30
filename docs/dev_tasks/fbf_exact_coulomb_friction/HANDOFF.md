@@ -28,13 +28,14 @@ Current durable branch:
     6c88ac1d774a702b494643fb598be6b8af9385e1
   merge checkpoint 6fb4d0dbd8c
 
-Documentation-only descendants do not change that runtime identity. Query the
-live branch/PR head rather than assuming the checkpoint is still HEAD.
-The last pushed head before the generated optional-baseline change is
-3a185ee2743d5111461f5dd0465dba5535f9b74c. PR #3377 is open and draft.
-Query the resulting live head and hosted checks rather than assuming this
-checkpoint is still current. Relative to release-6.20, the generated-baseline
-tree has 161 changed files and seven data/ paths, down from 264 and 110.
+Subsequent documentation and optional MuJoCo-baseline source/data-hygiene
+commits do not change that DART demo or solver runtime identity. Query the live
+branch/PR head rather than assuming the checkpoint is still HEAD.
+Pushed head 33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5 closes the
+current-tree generated-baseline cleanup. PR #3377 is open and draft. Query the
+live head and hosted checks rather than assuming this checkpoint is still
+current. Relative to release-6.20, the tree has 161 changed files and seven
+data/ paths, down from 264 and 110.
 It must remain draft. The current net tree tracks no generated task assets or
 raw capture output. docs/dev_tasks/.gitignore uses the scalable role-based
 **/assets/ rule. Do not add broad *.png, *.csv, *.obj, or similar ignores:
@@ -59,9 +60,10 @@ without that approval.
 The prior handoff audit found zero non-ignored untracked files, zero tracked
 ignored files, and zero tracked task-asset paths. It found 19,521 ignored local
 files under this task's assets/ tree; leave them local. No solver, renderer,
-capture, benchmark, or history-rewrite process is active. The
-generated-baseline checkpoint still needs its full build/lint gate and
-commit/push before this prompt can be treated as a clean published checkpoint.
+capture, benchmark, or history-rewrite process is active. The generated
+baseline's build, focused Python/MuJoCo, lint/check-lint, exact-equivalence, and
+diff/ignore gates passed before commit 33a7b2f32dc was pushed. Treat it as a
+clean published checkpoint while still querying mutable hosted CI.
 
 Post-merge current runtime:
 
@@ -150,10 +152,9 @@ gate.
 
 Immediate order:
 
-1. Finish the generated-baseline checkpoint gates: focused Python/MuJoCo tests,
-   pixi run build, pixi run lint, and diff/ignore audits. Merge a newer
-   release-6.20 only if one exists, then commit and push the cleanup. Do not
-   broaden extension ignores.
+1. Preserve the closed generated-baseline checkpoint and its passing build,
+   focused Python/MuJoCo, lint/check-lint, exact-equivalence, and diff/ignore
+   gates. Do not broaden extension ignores.
 2. Obtain a maintainer decision on squash-only integration versus an explicitly
    approved clean review-branch reconstruction for the historical evidence
    blobs.

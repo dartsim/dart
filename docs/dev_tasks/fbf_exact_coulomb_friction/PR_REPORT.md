@@ -9,12 +9,13 @@ Figure 8, upload, branch, and CI statement below.
   `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df` contains current
   `release-6.20` checkpoint
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
-  merge. Documentation-only descendants do not change the binary identity.
-  The last pushed head before the generated optional-baseline change is
-  `3a185ee2743d5111461f5dd0465dba5535f9b74c`. PR #3377 is open and draft.
-  Relative to `release-6.20`, the generated-baseline tree has 161 changed files
-  and seven `data/` paths, down from 264 and 110. Requery its mutable head,
-  checks, and review state.
+  merge. Subsequent documentation and optional MuJoCo-baseline
+  source/data-hygiene commits do not change the DART demo or solver binary
+  identity. Pushed head
+  `33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5` closes the current-tree
+  generated-baseline cleanup. PR #3377 is open and draft. Relative to
+  `release-6.20`, that tree has 161 changed files and seven `data/` paths, down
+  from 264 and 110. Requery its mutable head, checks, and review state.
 - The merge resolution passed `pixi run lint`, all 166 C++ tests, all 34 FBF
   scene-documentation checks, `check-ai-commands`, and the AI infrastructure
   doctor. The rebuilt post-merge demo/core SHA-256 values are

@@ -34,11 +34,11 @@ The optional MuJoCo masonry baseline no longer vendors its adapted MJCF and 102
 OBJ files. The branch now reconstructs the 101 source wedges deterministically
 inside `fbf_paper_mujoco_baseline.py` and emits self-contained inline MJCF.
 
-- The last pushed head before this generated-baseline change is
-  `3a185ee2743d5111461f5dd0465dba5535f9b74c`. Query the live branch, draft PR
-  #3377, and checks rather than assuming that checkpoint is still current.
-  Relative to `release-6.20`, this generated-baseline tree has 161 changed
-  files and seven `data/` paths, down from 264 and 110 respectively.
+- Pushed head `33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5` closes this
+  generated-baseline cleanup. Query the live branch, draft PR #3377, and checks
+  rather than assuming that checkpoint is still current. Relative to
+  `release-6.20`, this tree has 161 changed files and seven `data/` paths, down
+  from 264 and 110 respectively.
 - The scalable repository policy remains role-based:
   `docs/dev_tasks/.gitignore` ignores every task's `**/assets/` subtree, while
   legitimate runtime/source meshes remain visible. No broad `*.obj`, `*.csv`,
@@ -63,12 +63,13 @@ inside `fbf_paper_mujoco_baseline.py` and emits self-contained inline MJCF.
   current-tree raw-file surface.
 
 The immutable post-merge code/runtime checkpoint is `6fb4d0dbd8c`; it contains
-current target `6c88ac1d774` through that merge checkpoint. Documentation-only
-descendants do not change its rebuilt `dart-demos` and exact build-tree
-core-DART SHA-256 values: `d9932f4c...` and `caf402af...`. The merge passed
-lint, all 166 C++ tests, the 34-scene FBF documentation validator, and
-AI-workflow consistency checks. Query the live branch/PR head rather than
-assuming the runtime checkpoint is still HEAD.
+current target `6c88ac1d774` through that merge checkpoint. Subsequent
+documentation and optional MuJoCo-baseline source/data-hygiene commits do not
+change its rebuilt `dart-demos` and exact build-tree core-DART SHA-256 values:
+`d9932f4c...` and `caf402af...`. The merge passed lint, all 166 C++ tests, the
+34-scene FBF documentation validator, and AI-workflow consistency checks.
+Query the live branch/PR head rather than assuming the runtime checkpoint is
+still HEAD.
 
 Captured `dart-demos` and core-DART SHA-256 values for checkpoint
 `333a809f14a` are `3d685d2c...` and `3b66436b...`. Fresh schema-v3 Figure 3,
@@ -89,7 +90,7 @@ not the current-runtime checkpoint.
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 is open and draft; the last pushed pre-generation checkpoint is `3a185ee2743d`. Code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`; the generated optional-baseline change does not alter the DART demo or solver runtime. The current net tree has 161 files, seven `data/` paths, no tracked task assets, and no generated video/CSV/JSON/log paths. The 103 redundant MJCF/OBJ files are removed after exact source-byte, compiled-model, and short-trajectory equivalence checks. Published topic history still has 492 evidence blobs, so final integration must be a true squash unless an explicitly approved clean-history reconstruction replaces it. Mutable head/check/review state must be verified live | #3377 remains work in progress and draft, not completion evidence. The current-tree raw-file surface is closed; the historical-blob integration decision, remaining parity/performance gates, and current-head CI/review state remain open. Figure 3 slots 02/16 are byte-identically resealed against the post-merge demo/core/runtime closure. Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a`, not the post-merge binary |
+| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 is open and draft at pushed head `33a7b2f32dc`. Code/runtime checkpoint `6fb4d0dbd8c` contains target `6c88ac1d774`; the generated optional-baseline change does not alter the DART demo or solver runtime. The current net tree has 161 files, seven `data/` paths, no tracked task assets, and no generated video/CSV/JSON/log paths. The 103 redundant MJCF/OBJ files are removed after exact source-byte, compiled-model, and short-trajectory equivalence checks. Published topic history still has 492 evidence blobs, so final integration must be a true squash unless an explicitly approved clean-history reconstruction replaces it. Mutable head/check/review state must be verified live | #3377 remains work in progress and draft, not completion evidence. The current-tree raw-file surface is closed; the historical-blob integration decision, remaining parity/performance gates, and current-head CI/review state remain open. Figure 3 slots 02/16 are byte-identically resealed against the post-merge demo/core/runtime closure. Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a`, not the post-merge binary |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |

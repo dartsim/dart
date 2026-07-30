@@ -34,7 +34,9 @@ row to complete.
 
 Post-merge code/runtime checkpoint `6fb4d0dbd8c` includes release target
 `6c88ac1d774` and rebuilds to demo/core SHA-256 values `d9932f4c...` /
-`caf402af...`. Documentation-only descendants do not change this identity. The
+`caf402af...`. Subsequent documentation and optional MuJoCo-baseline
+source/data-hygiene commits do not change the DART demo or solver binary
+identity. The
 merge passes lint, all 166 C++ tests, the 34-scene FBF documentation validator,
 and AI-workflow checks. A fresh Figure 3 exact/boxed/group capture under ignored
 `assets/pr_media_postmerge_a833/` binds that post-merge demo/core plus closure
@@ -112,7 +114,9 @@ other uploaded clips retain their recorded captured-checkpoint identities.
   or paper parity.
 - The repository does not contain the historical paper renderer
   cameras/materials/goldens, exact Apple-silicon model, or original timing-run
-  and warmup/aggregation attestation. Only masonry-arch meshes are shipped.
+  and warmup/aggregation attestation. The optional MuJoCo masonry geometry is
+  now generated deterministically from its pinned weighted-catenary contract;
+  the DART tree retains license/provenance instead of 101 copied mesh files.
   Current author invocations were independently run and preserved, but do not
   fill the missing historical invocation/timing record. Local evidence uses
   reconstructed scenes, Native collision, float64, and x86-64 Linux.
