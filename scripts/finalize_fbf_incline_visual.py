@@ -1476,8 +1476,7 @@ def validate_capture_bundle(
             "known_mismatches",
             "pass",
         }
-        or metadata.get("schema_version")
-        not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS
+        or metadata.get("schema_version") not in RUNNER_CAPTURE_RESULT_SCHEMA_VERSIONS
         or metadata.get("kind") != "capture_result"
         or metadata.get("pass") is not True
         or metadata.get("actual_simulator") is not True

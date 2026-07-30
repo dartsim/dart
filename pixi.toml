@@ -838,7 +838,9 @@ lint = { depends-on = ["lint-spell", "lint-py"] }
 
 check-lint-py = { cmd = """
     black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
-""", depends-on = ["config"] }
+""", depends-on = [
+  "config",
+] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 

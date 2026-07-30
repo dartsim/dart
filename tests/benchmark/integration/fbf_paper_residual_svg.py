@@ -159,9 +159,7 @@ def render_svg(series: dict[int, list[tuple[float, float]]], title: str) -> str:
     legend_y = margin_top + 18
     for index, (solve_index, points) in enumerate(sorted(series.items())):
         color = COLORS[index % len(COLORS)]
-        coordinates = " ".join(
-            f"{map_x(x):.1f},{map_y(y):.1f}" for x, y in points
-        )
+        coordinates = " ".join(f"{map_x(x):.1f},{map_y(y):.1f}" for x, y in points)
         lines.append(
             f'<polyline fill="none" stroke="{color}" stroke-width="2" '
             f'points="{coordinates}"/>'
@@ -324,9 +322,7 @@ def render_panel_svg(
         legend_y = plot_y + 16
         for index, (solve_index, points) in enumerate(sorted(series.items())):
             color = COLORS[index % len(COLORS)]
-            coordinates = " ".join(
-                f"{map_x(x):.1f},{map_y(y):.1f}" for x, y in points
-            )
+            coordinates = " ".join(f"{map_x(x):.1f},{map_y(y):.1f}" for x, y in points)
             lines.append(
                 f'<polyline fill="none" stroke="{color}" stroke-width="2" '
                 f'points="{coordinates}"/>'
@@ -374,7 +370,9 @@ def main() -> None:
     if args.panel:
         if args.output is None:
             raise SystemExit("--output is required with --panel")
-        panels = [(panel_title, load_series(Path(path))) for path, panel_title in args.panel]
+        panels = [
+            (panel_title, load_series(Path(path))) for path, panel_title in args.panel
+        ]
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(render_panel_svg(panels, args.title), encoding="utf-8")
         return
