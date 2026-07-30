@@ -39,6 +39,18 @@ def test_inactive_cpp_test_policies_name_tracked_sources_and_owners():
         assert (ROOT / policy["owner"]).is_file()
 
 
+def test_static_ikfast_test_has_an_explicit_inactive_policy():
+    assert infra.APPROVED_INACTIVE_CPP_TESTS["tests/integration/test_IkFast.cpp"] == {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": (
+            "if:TARGET dart-utils-urdf",
+            "if:BUILD_SHARED_LIBS",
+        ),
+        "cache": {"BUILD_SHARED_LIBS": "OFF"},
+    }
+
+
 def test_repository_check_works_without_python_utf8_mode():
     env = {
         **os.environ,
@@ -1559,6 +1571,53 @@ def test_cmake_semantic_graph_probe_accepts_release_multi_config_graph(tmp_path)
     assert errors == []
 
 
+def test_cmake_semantic_graph_probe_accepts_legacy_multi_config_tests(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path, "Ninja Multi-Config")
+    replacements = {
+        "tests/integration/CMakeLists.txt": (
+            "add_test(NAME INTEGRATION_semantic COMMAND INTEGRATION_semantic)",
+            "add_test(INTEGRATION_semantic INTEGRATION_semantic)",
+        ),
+        "tests/regression/CMakeLists.txt": (
+            "add_test(NAME test_semantic_regression COMMAND test_semantic_regression)",
+            "add_test(test_semantic_regression test_semantic_regression)",
+        ),
+        "tests/unit/CMakeLists.txt": (
+            "add_test(NAME UNIT_semantic COMMAND UNIT_semantic)",
+            "add_test(UNIT_semantic UNIT_semantic)",
+        ),
+    }
+    for relative, (old, new) in replacements.items():
+        path = tmp_path / relative
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(old, new, 1),
+            encoding="utf-8",
+        )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+def test_cmake_semantic_graph_probe_rejects_unowned_legacy_registration(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path, "Ninja Multi-Config")
+    cmake = tmp_path / "tests/regression/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8") + "\nadd_test(ghost_test ghost_test)\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "CTest commands do not map to configured C++ test targets" in error
+        and "ghost_test" in error
+        for error in errors
+    )
+
+
 def test_cmake_semantic_graph_probe_rejects_external_build_directory(tmp_path):
     root = tmp_path / "repo"
     root.mkdir()
@@ -1965,6 +2024,28 @@ def test_test_runner_semantic_probe_accepts_repository_contract(tmp_path):
     infra.check_test_runner_semantics(tmp_path, errors)
 
     assert errors == []
+
+
+def test_test_runner_semantic_probe_stays_on_repository_volume(tmp_path, monkeypatch):
+    _copy_test_runner_probe_contract(tmp_path)
+    original = infra.tempfile.TemporaryDirectory
+    parents = []
+
+    def tracked_temporary_directory(*args, **kwargs):
+        parents.append(Path(kwargs["dir"]).resolve())
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        infra.tempfile,
+        "TemporaryDirectory",
+        tracked_temporary_directory,
+    )
+    errors = []
+
+    infra.check_test_runner_semantics(tmp_path, errors)
+
+    assert errors == []
+    assert parents == [(tmp_path / "build").resolve()]
 
 
 @pytest.mark.parametrize(

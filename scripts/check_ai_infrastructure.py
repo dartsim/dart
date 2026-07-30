@@ -119,6 +119,15 @@ APPROVED_INACTIVE_CPP_TESTS = {
         "scopes": ("if:TARGET dart-utils-urdf", "if:NOT MSVC"),
         "msvc": True,
     },
+    "tests/integration/test_IkFast.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": (
+            "if:TARGET dart-utils-urdf",
+            "if:BUILD_SHARED_LIBS",
+        ),
+        "cache": {"BUILD_SHARED_LIBS": "OFF"},
+    },
 }
 APPROVED_CTEST_SELECTIONS = {
     "test_ConstraintSolver": {
@@ -2153,8 +2162,13 @@ def check_test_runner_semantics(root: Path, errors: list[str]) -> None:
         errors.append(f"{prefix}: guarded CTest and pytest runners are required")
         return
 
+    probe_parent = root / "build"
     try:
-        with tempfile.TemporaryDirectory(prefix="dart-test-runner-") as directory:
+        probe_parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(
+            prefix="dart-test-runner-",
+            dir=probe_parent,
+        ) as directory:
             probe_root = Path(directory)
             pytest_marker = probe_root / "pytest-body-ran"
             pytest_source = probe_root / "test_runner_probe.py"
@@ -2587,7 +2601,6 @@ def check_cmake_ctest_inventory(
     if inventory_names != generated_names:
         errors.append(f"{prefix}: CTest JSON and generated registration names disagree")
 
-    registered_commands: set[str] = set()
     registered_tests: dict[str, tuple[list[str], Path]] = {}
     for test in tests:
         if not isinstance(test, dict):
@@ -2616,6 +2629,7 @@ def check_cmake_ctest_inventory(
         if generated_registration is None:
             continue
         generated_command, command_base = generated_registration
+        effective_command = generated_command
         if command is not None:
             if (
                 not isinstance(command, list)
@@ -2629,6 +2643,7 @@ def check_cmake_ctest_inventory(
                     f"{prefix}: CTest test `{name}` command disagrees with "
                     "the generated registration"
                 )
+            effective_command = command
         reason = ctest_nonexecution_reason(generated_command)
         if reason is not None:
             errors.append(f"{prefix}: CTest test `{name}` {reason}")
@@ -2687,10 +2702,8 @@ def check_cmake_ctest_inventory(
                 f"{prefix}: CTest test `{name}` has unapproved failure patterns "
                 f"{fail_patterns}"
             )
-        registered_tests[name] = generated_registration
-        registered_commands.add(
-            normalized_absolute_path(generated_command[0], command_base)
-        )
+        effective_registration = (effective_command, command_base)
+        registered_tests[name] = effective_registration
 
     target_artifacts: dict[str, set[str]] = {}
     for name, target in test_targets.items():
@@ -2707,18 +2720,32 @@ def check_cmake_ctest_inventory(
             continue
         target_artifacts[name] = paths
 
+    def registration_matches_target(
+        test_name: str,
+        registration: tuple[list[str], Path],
+        target_name: str,
+        artifacts: set[str],
+    ) -> bool:
+        command, command_base = registration
+        if normalized_absolute_path(command[0], command_base) in artifacts:
+            return True
+        return test_name == target_name and command[0] == target_name
+
+    matched_registrations: set[str] = set()
     unregistered = []
     for name, artifacts in target_artifacts.items():
-        named_registration = False
-        if name in registered_tests:
-            named_command, command_base = registered_tests[name]
-            named_registration = (
-                len(named_command) == 1
-                and normalized_absolute_path(named_command[0], command_base)
-                in artifacts
+        matches = {
+            test_name
+            for test_name, registration in registered_tests.items()
+            if registration_matches_target(
+                test_name,
+                registration,
+                name,
+                artifacts,
             )
-        command_registration = not artifacts.isdisjoint(registered_commands)
-        if not named_registration and not command_registration:
+        }
+        matched_registrations.update(matches)
+        if not matches:
             unregistered.append(name)
     unregistered.sort()
     if unregistered:
@@ -2726,14 +2753,11 @@ def check_cmake_ctest_inventory(
             f"{prefix}: {len(unregistered)} configured C++ test targets are not "
             f"registered with CTest, including {unregistered[:5]}"
         )
-    configured_artifacts = {
-        artifact for artifacts in target_artifacts.values() for artifact in artifacts
-    }
-    unmapped_commands = registered_commands - configured_artifacts
+    unmapped_commands = sorted(set(registered_tests) - matched_registrations)
     if unmapped_commands:
         errors.append(
             f"{prefix}: {len(unmapped_commands)} CTest commands do not map to "
-            "configured C++ test targets"
+            f"configured C++ test targets, including {unmapped_commands[:5]}"
         )
 
 
