@@ -288,20 +288,12 @@ void resetModel(Model& model)
     }
   }
 
-  // Restart the gait from the state the machine was configured to start in --
-  // which is not mStates[0] for the walking machines, they start mid-cycle --
-  // and rewind the phase clock the terminal conditions are timed against.
-  auto* stateMachine = model.controller->getCurrentState();
-  const double now = model.world->getTime();
-  stateMachine->transiteTo(stateMachine->getInitialState(), now);
-  stateMachine->begin(now);
-
-  // Contact bookkeeping outlives the state above. The per-body and
-  // per-point-mass colliding flags, the last collision result, and the
-  // constraint impulses all still describe the pre-reset frame, and
-  // prepareStep() runs the controller before the next solve refreshes them --
-  // so the initial gait state's BodyContactCondition would fire on a stance
-  // foot that no longer exists.
+  // Contact bookkeeping and world-level state outlive everything above. The
+  // colliding flags are per body and per point mass; the constraint impulses,
+  // last collision result, clock, frame counter and island resting/deactivation
+  // snapshots live on the world. prepareStep() runs the controller before the
+  // next solve refreshes any of it, so the initial gait state's
+  // BodyContactCondition would fire on a stance foot that no longer exists.
   //
   // The colliding flags are themselves deprecated in DART 6, but the SIMBICON
   // terminal conditions this demo reuses still read them, so the reset has to
@@ -309,8 +301,28 @@ void resetModel(Model& model)
   DART_SUPPRESS_DEPRECATED_BEGIN
   model.atlas->clearCollidingBodies();
   DART_SUPPRESS_DEPRECATED_END
-  model.atlas->clearConstraintImpulses();
-  model.world->getConstraintSolver()->clearLastCollisionResult();
+  model.atlas->clearExternalForces();
+  model.atlas->clearInternalForces();
+  model.world->reset();
+
+  // The collision detector keeps an incremental broadphase built up over every
+  // step so far. Two worlds holding the same bodies but different update
+  // histories can report the same contacts in a different order, which reorders
+  // the LCP and changes the result in the last bits. That was the whole of the
+  // residual difference from a fresh model: rebuilding the detector takes a
+  // reset from "agrees to 5e-15, then diverges once a gait transition lands one
+  // step apart" to bit-for-bit identical.
+  auto* solver = model.world->getConstraintSolver();
+  solver->setCollisionDetector(
+      solver->getCollisionDetector()->cloneWithoutCollisionObjects());
+
+  // After world->reset() the clock reads zero, so the gait restarts from the
+  // same phase origin a fresh model does. State 0 is not the initial state of
+  // the walking machines -- they start mid-cycle -- so ask the machine.
+  auto* stateMachine = model.controller->getCurrentState();
+  const double now = model.world->getTime();
+  stateMachine->transiteTo(stateMachine->getInitialState(), now);
+  stateMachine->begin(now);
 
   model.externalForce.setZero();
   model.forceDuration = 0;

@@ -232,21 +232,18 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
 
   // Restoring the state is necessary but not sufficient. Contact bookkeeping --
   // the colliding flags, the last collision result, the constraint impulses --
-  // survives a state restore, and prepareStep() runs the controller before the
-  // next solve refreshes any of it. A reset that left that bookkeeping in place
-  // would let the initial gait state's BodyContactCondition fire immediately on
-  // a stance foot from before the reset, so only stepping both models can show
-  // the reset is equivalent to a fresh one.
+  // survives a state restore, as do the world clock, the island resting
+  // snapshots, and the collision detector's incremental broadphase. All of it
+  // steers the next step, and prepareStep() runs the controller before the next
+  // solve refreshes any of it. Only stepping both models shows the reset is
+  // equivalent to a fresh one.
   //
-  // The horizon is deliberately short. Measured divergence between a reset and
-  // a fresh model is at floating-point noise for four steps (7e-16, 2e-14,
-  // 2e-14, 4e-15) and then jumps to 0.24 at step five, when a discrete gait
-  // transition lands one step apart in the two runs. Past that point this would
-  // be measuring how chaotic a contact-rich biped is, not whether reset works.
-  // A stale-contact reset diverges on the very first step, well inside this
-  // window.
-  constexpr int kLockstepSteps = 4;
-  constexpr double kLockstepTolerance = 1e-12;
+  // The requirement is exact equality, because two fresh runs are already
+  // bit-for-bit identical (see the determinism gate above); anything less would
+  // mean state was left behind. 300 steps carries this well past the two points
+  // where an incomplete reset showed up historically: a gait transition landing
+  // one step apart at step 5, and a second at step 65.
+  constexpr int kLockstepSteps = 300;
   for (int s = 1; s <= kLockstepSteps; ++s) {
     sfs::step(fresh);
     sfs::step(model);
@@ -254,9 +251,9 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
         = (sfs::stateVector(fresh) - sfs::stateVector(model))
               .cwiseAbs()
               .maxCoeff();
-    EXPECT_LT(divergence, kLockstepTolerance)
+    ASSERT_EQ(divergence, 0.0)
         << "a reset model diverged from a fresh model at step " << s;
-    EXPECT_EQ(gaitStateName(model), gaitStateName(fresh))
+    ASSERT_EQ(gaitStateName(model), gaitStateName(fresh))
         << "gait state diverged at step " << s;
   }
 

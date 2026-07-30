@@ -58,8 +58,12 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 
 - Soft-foot biped stands finite + upright for ≥ N steps (no fall) under the
   controller — deterministic (two runs produce an exactly equal `stateVector`).
-- Reset restores the full starting state, including the soft feet's independent
-  point-mass deformation and momentum and the gait phase.
+- Reset is bit-for-bit equivalent to a freshly built model: a reset model and a
+  fresh model stepped in lockstep for 300 steps stay exactly equal, in both the
+  physical state and the gait phase. That requires restoring the soft feet's
+  point-mass state, the gait phase, the contact bookkeeping, the world clock and
+  resting snapshots, and rebuilding the collision detector's incremental
+  broadphase.
 - **Push recovery: soft withstands ≥ rigid** — `maxRecoverablePush(Soft) >=
   maxRecoverablePush(Rigid)` (paper: soft withstands larger perturbations), or a
   push magnitude that fells rigid but not soft.
