@@ -1,11 +1,19 @@
-# M2.0 — ABI-safe FEM integration seam (de-risking findings)
+# DART 6 per-step extension seam — findings
+
+> **Retained after the 2026-07-29 scope change.** The volumetric FEM subsystem
+> this investigation was written for has been removed from DART 6 and retargeted
+> to DART 7 (`decisions.md`). The findings below are kept because they are facts
+> about **DART 6 itself**, not about FEM: they constrain any future attempt to
+> hang per-step work off the constraint solver, and the deactivation early-out
+> in particular is a trap worth knowing about.
+
 
 Purpose: answer the make-or-break question behind the branch-strategy decision —
 *can a volumetric-FEM deformable subsystem be integrated into DART 6's step loop
 as ABI-safe additive API on `release-6.20`, with per-step internal-DOF
 integration, coupling to rigid/skeleton bodies, zero pure-rigid overhead, and
 preserved rigid determinism, without changing any existing public class layout
-or vtable?* Plan reference: `10-full-parity-execution-plan.md` §7, §11 step 2.
+or vtable?* Plan reference: `10-full-parity-execution-plan.md`, Part B (retired).
 
 ## Verdict
 
@@ -111,13 +119,20 @@ The probe was reverted after capture (throwaway de-risking; the tree is clean
 and matches the pushed head). Two-way LCP coupling and the caller-driven path
 were established analytically above (mid-solve `addExtForce` is cleared at
 `World.cpp:1378`, so they are the coupling routes); an empirical two-way LCP
-demo is deferred to the first real PR-2 milestone.
+demo was never built, since the lane was retired before that point.
 
-## Recommendation → branch strategy
+## Recommendation (withdrawn 2026-07-29)
 
-Proceed with the additive-on-`release-6.20` FEM backend using the
-`ConstraintBase`-hook seam: `update()` for FEM internal integration + one-way
-skeleton drive; LCP-participating constraint for two-way coupling. Re-open the
-branch decision only if a later milestone shows the ABI-safe surface blocks
-correctness/performance parity. Model-authoring scale (tet meshes, characters)
-remains a separate plan risk, not an integration-mechanism blocker.
+This document originally recommended proceeding with an additive
+volumetric-FEM backend on `release-6.20` via the `ConstraintBase` hook. **That
+recommendation is withdrawn.** The subsystem was removed from DART 6 and
+retargeted to DART 7, because the two reference papers need different
+discretizations and a compatibility release branch should not carry two parallel
+deformable architectures (`decisions.md`). Do not act on it.
+
+What survives is the mechanism knowledge above, which is about DART 6 rather
+than about FEM: the constraint solver's manual-constraint `update()` is the only
+per-step hook reachable through public API, it is silently skipped when
+automatic deactivation puts the rigid scene to rest, and forces applied
+mid-solve are cleared before the next step. Anything that later needs per-step
+work in DART 6 inherits those constraints.
