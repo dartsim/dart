@@ -34,10 +34,12 @@ if(DARTPY_PYTEST_FOUND)
     pytest
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m pytest [sources]"
+      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m pytest -c ${PROJECT_SOURCE_DIR}/pyproject.toml [sources]"
     COMMAND
-      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}"
-      "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v
+      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}" "PYTEST_ADDOPTS="
+      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" "PYTEST_PLUGINS="
+      "${Python3_EXECUTABLE}" -m pytest -c
+      "${PROJECT_SOURCE_DIR}/pyproject.toml" ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy

@@ -123,7 +123,10 @@ simulation state with text-first and OSG visual/debug evidence.
    docs/AI gates in `docs/ai/verification.md`, and the representative OSG
    investigation. Treat the configured CMake File API result, expanded
    target-command trace, and CTest inventory from `check-ai-infra` as the
-   effective test-graph proof; source-marker matches alone are insufficient.
+   effective test-graph proof. Confirm inactive tests use explicit reached
+   predicates, CTest registrations execute rather than list, and pytest remains
+   pinned to the trusted root configuration and pre-import package provenance;
+   source-marker matches alone are insufficient.
    Audit-only uses `pixi run check-lint`; only apply mode runs auto-fixing
    `pixi run lint` before a commit. Complete the principle audit and two clean
    role-separated reviews. Label unavailable behavioral, cross-tool, hosted,

@@ -86,6 +86,59 @@ SCENARIO_KEYS = {
 }
 SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 ROUTE_KEYS = {"kind", "name", "path"}
+APPROVED_INACTIVE_CPP_TESTS = {
+    "tests/regression/test_Issue2516.cpp": {
+        "owner": "tests/regression/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": (
+            "if:TARGET dart-external-imgui",
+            "if:NOT DART_USE_SYSTEM_IMGUI",
+        ),
+        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
+    },
+    "tests/regression/test_Issue2668.cpp": {
+        "owner": "tests/regression/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": (
+            "if:TARGET dart-external-imgui",
+            "if:NOT DART_USE_SYSTEM_IMGUI",
+        ),
+        "cache": {"DART_USE_SYSTEM_IMGUI": "ON"},
+    },
+    "tests/integration/test_VskParser.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": ("if:TARGET dart-utils", "if:NOT MSVC"),
+        "msvc": True,
+    },
+    "tests/integration/test_DartLoader.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": ("if:TARGET dart-utils-urdf", "if:NOT MSVC"),
+        "msvc": True,
+    },
+}
+APPROVED_CTEST_SELECTIONS = {
+    "test_ConstraintSolver": {
+        "arguments": (),
+        "environment": ("GTEST_FILTER=ConstraintSolver.*",),
+    },
+    "test_AdaptiveSoftContactModel": {
+        "arguments": ("--gtest_filter=AdaptiveSoftContactModelTest.*",),
+        "environment": (),
+    },
+    "test_SoftWormModel": {
+        "arguments": ("--gtest_filter=SoftWormModelTest.*",),
+        "environment": (),
+    },
+}
+EXPECTED_PYTEST_INI_OPTIONS = {
+    "minversion": "6.0",
+    "addopts": ["-ra", "--showlocals", "--strict-markers", "--strict-config"],
+    "xfail_strict": True,
+    "filterwarnings": ["error"],
+    "testpaths": ["tests"],
+}
 CODEX_HOOK_COMMAND = (
     'repo_root="$(git rev-parse --show-toplevel)" && '
     'CLAUDE_PROJECT_DIR="$repo_root" CODEX_PROJECT_DIR="$repo_root" '
@@ -382,6 +435,31 @@ def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
         (name, arguments, context)
         for name, arguments, context, _ in cmake_scoped_command_details(text)
     ]
+
+
+def cmake_scoped_command_origin_details(
+    text: str,
+) -> list[tuple[str, str, tuple[tuple[str, str, int], ...], int]]:
+    """Attach commands to lexical scopes including each opener's source line."""
+    records: list[tuple[str, str, tuple[tuple[str, str, int], ...], int]] = []
+    stack: list[tuple[str, str, int]] = []
+    openers = {"block", "foreach", "function", "if", "macro", "while"}
+    closers = {f"end{name}" for name in openers}
+    for name, arguments, line in cmake_command_details(text):
+        if name in openers:
+            stack.append((name, arguments, line))
+            continue
+        if name in closers:
+            if stack:
+                stack.pop()
+            continue
+        if name in {"else", "elseif"}:
+            if stack and stack[-1][0] in {"if", "else", "elseif"}:
+                condition = stack[-1][1]
+                stack[-1] = (name, condition, line)
+            continue
+        records.append((name, arguments, tuple(stack), line))
+    return records
 
 
 def cmake_argument_tokens(arguments: str) -> list[str]:
@@ -981,9 +1059,14 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "-E",
                         "env",
                         "PYTHONPATH=${DART_PYTHONPATH}",
+                        "PYTEST_ADDOPTS=",
+                        "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1",
+                        "PYTEST_PLUGINS=",
                         "${Python3_EXECUTABLE}",
                         "-m",
                         "pytest",
+                        "-c",
+                        "${PROJECT_SOURCE_DIR}/pyproject.toml",
                         "${dartpy_test_files}",
                         "-v",
                     ),
@@ -1248,6 +1331,36 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             if marker not in text:
                 errors.append(f"{relative}: missing branch test-gate marker `{marker}`")
 
+    completion_gate_surfaces = (
+        ".codex/AGENTS.md",
+        "docs/ai/README.md",
+        "docs/ai/verification.md",
+    )
+    structural_only_command = (
+        "pixi run python scripts/check_ai_infrastructure.py --check"
+    )
+    for relative in completion_gate_surfaces:
+        path = root / relative
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(
+                f"{relative}: unable to read AI completion-gate guidance: {error}"
+            )
+            continue
+        if "pixi run check-ai-infra" not in text:
+            errors.append(
+                f"{relative}: missing semantic AI completion gate "
+                "`pixi run check-ai-infra`"
+            )
+        if structural_only_command in text:
+            errors.append(
+                f"{relative}: structural-only AI checker is presented as a "
+                "completion gate"
+            )
+
     list_item = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
     for path in operational_context_paths(root):
         if not path.exists():
@@ -1425,6 +1538,141 @@ def cmake_trace_records(output: str) -> list[dict[str, Any]]:
     return records
 
 
+def cmake_compiler_uses_msvc_abi(
+    build_dir: Path, cache: dict[str, str], errors: list[str]
+) -> bool | None:
+    """Return CMake's MSVC-family compiler semantics from configured state."""
+    prefix = "CMake semantic test graph"
+    version_parts = [
+        cache.get("CMAKE_CACHE_MAJOR_VERSION"),
+        cache.get("CMAKE_CACHE_MINOR_VERSION"),
+        cache.get("CMAKE_CACHE_PATCH_VERSION"),
+    ]
+    if not all(isinstance(part, str) and part.isdigit() for part in version_parts):
+        errors.append(f"{prefix}: configured CMake version is unavailable")
+        return None
+    cmake_version = ".".join(part for part in version_parts if part is not None)
+    compiler_file = build_dir / "CMakeFiles" / cmake_version / "CMakeCXXCompiler.cmake"
+    if not compiler_file.is_file():
+        errors.append(
+            f"{prefix}: configured C++ compiler description is unavailable "
+            f"at `{compiler_file}`"
+        )
+        return None
+    try:
+        records = cmake_commands(compiler_file.read_text(encoding="utf-8"))
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect C++ compiler state: {error}")
+        return None
+    values: dict[str, str] = {}
+    for name, arguments in records:
+        if name != "set":
+            continue
+        tokens = cmake_argument_tokens(arguments)
+        if len(tokens) >= 2 and tokens[0] in {
+            "CMAKE_CXX_COMPILER_ID",
+            "CMAKE_CXX_SIMULATE_ID",
+        }:
+            values[tokens[0]] = tokens[1]
+    if "CMAKE_CXX_COMPILER_ID" not in values:
+        errors.append(f"{prefix}: configured C++ compiler identity is unavailable")
+        return None
+    return (
+        values["CMAKE_CXX_COMPILER_ID"] == "MSVC"
+        or values.get("CMAKE_CXX_SIMULATE_ID") == "MSVC"
+    )
+
+
+def inactive_cpp_test_is_approved(
+    relative: str,
+    root: Path,
+    build_dir: Path,
+    cache: dict[str, str],
+    trace_records: list[dict[str, Any]],
+    errors: list[str],
+) -> bool:
+    """Validate one explicit, predicate-proven inactive C++ test contract."""
+    policy = APPROVED_INACTIVE_CPP_TESTS.get(relative)
+    if policy is None:
+        return False
+    cache_predicates = policy.get("cache", {})
+    if not isinstance(cache_predicates, dict) or not all(
+        cache.get(variable) == value for variable, value in cache_predicates.items()
+    ):
+        return False
+    if policy.get("msvc"):
+        uses_msvc = cmake_compiler_uses_msvc_abi(build_dir, cache, errors)
+        if uses_msvc is not True:
+            return False
+
+    owner_value = policy.get("owner")
+    command = policy.get("command")
+    scopes = policy.get("scopes")
+    if (
+        not isinstance(owner_value, str)
+        or not isinstance(command, str)
+        or not isinstance(scopes, tuple)
+    ):
+        return False
+    owner = (root / owner_value).resolve()
+    try:
+        owner_records = cmake_scoped_command_origin_details(
+            owner.read_text(encoding="utf-8")
+        )
+    except OSError as error:
+        errors.append(
+            f"CMake semantic test graph: unable to inspect inactive test "
+            f"owner `{owner_value}`: {error}"
+        )
+        return False
+    source_stem = Path(relative).stem
+    owners = [
+        record
+        for record in owner_records
+        if record[0] == command
+        and source_stem in cmake_argument_tokens(record[1])
+        and tuple(f"{kind}:{arguments}" for kind, arguments, _ in record[2]) == scopes
+    ]
+    if len(owners) != 1:
+        errors.append(
+            f"CMake semantic test graph: inactive test `{relative}` does not "
+            "have its exact branch-owned conditional declaration"
+        )
+        return False
+
+    for scope_kind, scope_arguments, scope_line in owners[0][2]:
+        if scope_kind != "if":
+            errors.append(
+                f"CMake semantic test graph: inactive test `{relative}` uses "
+                f"unsupported `{scope_kind}` ownership"
+            )
+            return False
+        condition = tuple(cmake_argument_tokens(scope_arguments))
+        matches = []
+        for record in trace_records:
+            source = record.get("file")
+            arguments = record.get("args")
+            if not isinstance(source, str) or not isinstance(arguments, list):
+                continue
+            source_path = Path(source)
+            if not source_path.is_absolute():
+                source_path = root / source_path
+            if (
+                record.get("cmd") == "if"
+                and source_path.resolve() == owner
+                and tuple(arguments) == condition
+                and record.get("line") == scope_line
+            ):
+                matches.append(record)
+        if len(matches) != 1:
+            errors.append(
+                f"CMake semantic test graph: inactive test `{relative}` "
+                f"condition {list(condition)} was not reached exactly once"
+            )
+            return False
+    return True
+
+
 def executable_paths_match(actual: str, expected: str) -> bool:
     """Compare configured executable paths across platform spelling variants."""
     return os.path.normcase(str(Path(actual).resolve())) == os.path.normcase(
@@ -1446,21 +1694,52 @@ def check_pytest_module_provenance(
     pythonpath: str,
     errors: list[str],
 ) -> None:
-    """Require target-context pytest imports to resolve inside the Pixi prefix."""
+    """Resolve pytest without importing repository-controlled Python code."""
     prefix = "CMake semantic test graph"
-    environment = {**os.environ, "PYTHONPATH": pythonpath}
+    probe = """
+import importlib.machinery
+import json
+import os
+import sys
+
+trusted = importlib.machinery.PathFinder.find_spec("pytest", sys.path)
+target_path = [
+    sys.argv[1],
+    *[entry for entry in sys.argv[2].split(os.pathsep) if entry],
+    *sys.path,
+]
+target = importlib.machinery.PathFinder.find_spec("pytest", target_path)
+print(
+    json.dumps(
+        {
+            "prefix": sys.prefix,
+            "target": None if target is None else target.origin,
+            "target_locations": (
+                None
+                if target is None or target.submodule_search_locations is None
+                else list(target.submodule_search_locations)
+            ),
+            "trusted": None if trusted is None else trusted.origin,
+            "trusted_locations": (
+                None
+                if trusted is None or trusted.submodule_search_locations is None
+                else list(trusted.submodule_search_locations)
+            ),
+        }
+    )
+)
+""".strip()
     try:
         result = subprocess.run(
             [
                 python_executable,
+                "-I",
                 "-c",
-                (
-                    "from pathlib import Path; import pytest; "
-                    "print(Path(pytest.__file__).resolve())"
-                ),
+                probe,
+                str(working_directory),
+                pythonpath,
             ],
-            cwd=working_directory,
-            env=environment,
+            cwd=working_directory.parent,
             capture_output=True,
             text=True,
             timeout=30,
@@ -1477,57 +1756,185 @@ def check_pytest_module_provenance(
     if len(output) != 1:
         errors.append(f"{prefix}: pytest provenance probe returned invalid output")
         return
-    module_path = Path(output[0]).resolve()
     try:
-        module_path.relative_to(Path(sys.prefix).resolve())
+        data = json.loads(output[0])
+    except json.JSONDecodeError as error:
+        errors.append(
+            f"{prefix}: pytest provenance probe returned invalid JSON: {error}"
+        )
+        return
+    if not isinstance(data, dict):
+        errors.append(f"{prefix}: pytest provenance probe returned invalid data")
+        return
+    target = data.get("target")
+    target_locations = data.get("target_locations")
+    trusted = data.get("trusted")
+    trusted_locations = data.get("trusted_locations")
+    environment_prefix = data.get("prefix")
+    if not all(
+        isinstance(value, str) and value for value in (trusted, environment_prefix)
+    ):
+        errors.append(f"{prefix}: trusted pytest package is unavailable")
+        return
+    trusted_path = Path(trusted).resolve()
+    try:
+        trusted_path.relative_to(Path(environment_prefix).resolve())
     except ValueError:
         errors.append(
-            f"{prefix}: pytest resolves outside the active Pixi environment "
-            f"at `{module_path}`"
+            f"{prefix}: trusted pytest resolves outside the configured Python "
+            f"environment at `{trusted_path}`"
+        )
+        return
+    if (
+        not isinstance(trusted_locations, list)
+        or not trusted_locations
+        or not all(isinstance(path, str) and path for path in trusted_locations)
+    ):
+        errors.append(f"{prefix}: trusted pytest package locations are unavailable")
+        return
+    trusted_location_paths = {
+        normalized_absolute_path(path, Path(environment_prefix))
+        for path in trusted_locations
+    }
+    environment_path = Path(environment_prefix).resolve()
+    try:
+        for path in trusted_location_paths:
+            Path(path).resolve().relative_to(environment_path)
+    except ValueError:
+        errors.append(
+            f"{prefix}: trusted pytest package locations escape the configured "
+            "Python environment"
+        )
+        return
+    target_location_paths = (
+        {normalized_absolute_path(path, working_directory) for path in target_locations}
+        if isinstance(target_locations, list)
+        and all(isinstance(path, str) for path in target_locations)
+        else set()
+    )
+    if (
+        not isinstance(target, str)
+        or not executable_paths_match(target, trusted)
+        or target_location_paths != trusted_location_paths
+    ):
+        errors.append(
+            f"{prefix}: pytest target resolution does not match the trusted "
+            f"active-environment package (resolved `{target}`, expected "
+            f"`{trusted_path}`)"
         )
 
 
 def check_pytest_execution_options(root: Path, errors: list[str]) -> None:
-    """Reject repository or ambient pytest options that suppress execution."""
+    """Require the pinned pytest configuration to match the safe branch contract."""
     prefix = "CMake semantic test graph"
-    options: list[str] = []
     config = root / "pyproject.toml"
-    if config.is_file():
+    try:
+        data = read_toml(config)
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        errors.append(f"{prefix}: invalid pytest configuration: {error}")
+        return
+    tool = data.get("tool")
+    pytest = tool.get("pytest") if isinstance(tool, dict) else None
+    options = pytest.get("ini_options") if isinstance(pytest, dict) else None
+    if options != EXPECTED_PYTEST_INI_OPTIONS:
+        errors.append(
+            f"{prefix}: pinned pytest options do not match the safe branch contract"
+        )
+
+
+def cmake_unquote_bracket(value: str) -> str:
+    """Remove CMake bracket quoting from one generated argument."""
+    match = re.fullmatch(r"\[(=*)\[(.*)\]\1\]", value, re.DOTALL)
+    return match.group(2) if match is not None else value
+
+
+def generated_ctest_registrations(
+    build_dir: Path, errors: list[str]
+) -> dict[str, tuple[list[str], Path]]:
+    """Read freshly configured CTest commands without requiring built artifacts."""
+    prefix = "CMake semantic test graph"
+    registrations: dict[str, tuple[list[str], Path]] = {}
+    test_root = (build_dir / "tests").resolve()
+    root_file = test_root / "CTestTestfile.cmake"
+    if not root_file.is_file():
+        errors.append(f"{prefix}: configured CTest files are unavailable")
+        return registrations
+    pending = [root_file]
+    visited: set[Path] = set()
+    while pending:
+        path = pending.pop()
+        if path in visited:
+            errors.append(f"{prefix}: generated CTest subdirectory cycle at `{path}`")
+            continue
+        visited.add(path)
         try:
-            data = read_toml(config)
-        except (OSError, tomllib.TOMLDecodeError) as error:
-            errors.append(f"{prefix}: invalid pytest configuration: {error}")
-            return
-        tool = data.get("tool")
-        pytest = tool.get("pytest") if isinstance(tool, dict) else None
-        ini = pytest.get("ini_options") if isinstance(pytest, dict) else None
-        addopts = ini.get("addopts", []) if isinstance(ini, dict) else []
-        if isinstance(addopts, str):
-            try:
-                options.extend(shlex.split(addopts))
-            except ValueError as error:
-                errors.append(f"{prefix}: invalid pytest addopts: {error}")
-                return
-        elif isinstance(addopts, list) and all(
-            isinstance(option, str) for option in addopts
-        ):
-            options.extend(addopts)
-        else:
-            errors.append(f"{prefix}: pytest addopts must be strings")
-            return
-    ambient = os.environ.get("PYTEST_ADDOPTS")
-    if ambient:
-        try:
-            options.extend(shlex.split(ambient))
-        except ValueError as error:
-            errors.append(f"{prefix}: invalid ambient PYTEST_ADDOPTS: {error}")
-            return
+            records = cmake_command_details(path.read_text(encoding="utf-8"))
+        except OSError as error:
+            errors.append(f"{prefix}: unable to read `{path}`: {error}")
+            continue
+        for command_name, arguments, _ in records:
+            tokens = [
+                cmake_unquote_bracket(token)
+                for token in cmake_argument_tokens(arguments)
+            ]
+            if command_name == "subdirs":
+                for directory in tokens:
+                    child = (path.parent / directory / "CTestTestfile.cmake").resolve()
+                    try:
+                        child.relative_to(test_root)
+                    except ValueError:
+                        errors.append(
+                            f"{prefix}: generated CTest subdirectory escapes "
+                            f"the build tree: `{directory}`"
+                        )
+                        continue
+                    if not child.is_file():
+                        errors.append(
+                            f"{prefix}: generated CTest subdirectory is missing "
+                            f"`{child}`"
+                        )
+                        continue
+                    pending.append(child)
+                continue
+            if command_name != "add_test":
+                continue
+            if tokens[:1] == ["NAME"]:
+                try:
+                    command_index = tokens.index("COMMAND")
+                except ValueError:
+                    command_index = -1
+                name = tokens[1] if len(tokens) > 1 else ""
+                command = tokens[command_index + 1 :] if command_index >= 0 else []
+            else:
+                name = tokens[0] if tokens else ""
+                command = tokens[1:]
+            if not name or not command:
+                errors.append(f"{prefix}: generated CTest registration is invalid")
+                continue
+            if name in registrations:
+                errors.append(f"{prefix}: generated CTest test `{name}` is duplicated")
+                continue
+            registrations[name] = (command, path.parent)
+    if not registrations:
+        errors.append(f"{prefix}: generated CTest files register no tests")
+    return registrations
+
+
+def ctest_nonexecution_reason(command: list[str]) -> str | None:
+    """Return why a configured CTest command cannot execute its test body."""
     forbidden = {
+        "--benchmark_list_tests",
         "--co",
         "--collect-only",
         "--fixtures",
-        "--fixtures-per-test",
+        "--gtest_help",
+        "--gtest_list_tests",
         "--help",
+        "--list",
+        "--list-content",
+        "--list-labels",
+        "--list-test-names-only",
+        "--list-tests",
         "--markers",
         "--setup-only",
         "--setup-plan",
@@ -1535,11 +1942,27 @@ def check_pytest_execution_options(root: Path, errors: list[str]) -> None:
         "-h",
         "-V",
     }
-    suppressed = sorted(forbidden.intersection(options))
-    if suppressed:
-        errors.append(
-            f"{prefix}: pytest execution is suppressed by options {suppressed}"
-        )
+    for argument in command[1:]:
+        option, _, value = argument.partition("=")
+        if option in forbidden:
+            return f"uses non-executing option `{argument}`"
+        if option == "--gtest_repeat" and value == "0":
+            return "uses non-executing option `--gtest_repeat=0`"
+        if option == "--gtest_filter" and (not value or value.startswith("-")):
+            return f"uses empty-selection option `{argument}`"
+    return None
+
+
+def ctest_property_values(test: dict[str, Any], name: str) -> list[Any]:
+    """Return all values for one CTest JSON property."""
+    properties = test.get("properties", [])
+    if not isinstance(properties, list):
+        return []
+    return [
+        prop.get("value")
+        for prop in properties
+        if isinstance(prop, dict) and prop.get("name") == name
+    ]
 
 
 def check_cmake_ctest_inventory(
@@ -1549,7 +1972,7 @@ def check_cmake_ctest_inventory(
     test_targets: dict[str, dict[str, Any]],
     errors: list[str],
 ) -> None:
-    """Require every configured C++ test target to be registered with CTest."""
+    """Require configured C++ targets to have executing CTest registrations."""
     prefix = "CMake semantic test graph"
     try:
         result = subprocess.run(
@@ -1583,8 +2006,18 @@ def check_cmake_ctest_inventory(
         errors.append(f"{prefix}: CTest inventory exposes no registered tests")
         return
 
+    generated = generated_ctest_registrations(build_dir, errors)
+    inventory_names = {
+        test.get("name")
+        for test in tests
+        if isinstance(test, dict) and isinstance(test.get("name"), str)
+    }
+    generated_names = set(generated)
+    if inventory_names != generated_names:
+        errors.append(f"{prefix}: CTest JSON and generated registration names disagree")
+
     registered_commands: set[str] = set()
-    registered_tests: dict[str, list[str] | None] = {}
+    registered_tests: dict[str, tuple[list[str], Path]] = {}
     for test in tests:
         if not isinstance(test, dict):
             errors.append(f"{prefix}: CTest inventory contains an invalid test")
@@ -1597,29 +2030,66 @@ def check_cmake_ctest_inventory(
         if name in registered_tests:
             errors.append(f"{prefix}: CTest test name `{name}` is duplicated")
             continue
-        properties = test.get("properties", [])
-        if isinstance(properties, list) and any(
-            isinstance(prop, dict)
-            and prop.get("name") == "DISABLED"
-            and prop.get("value") in (True, 1, "1", "ON", "TRUE")
-            for prop in properties
+        if any(
+            value in (True, 1, "1", "ON", "TRUE")
+            for value in ctest_property_values(test, "DISABLED")
         ):
             errors.append(f"{prefix}: CTest test `{name}` is disabled")
-        if command is None:
-            # CTest omits the command for an unbuilt target but still reports
-            # its name and add_test() backtrace.
-            registered_tests[name] = None
+        generated_registration = generated.get(name)
+        if generated_registration is None:
             continue
-        if (
-            not isinstance(command, list)
-            or not command
-            or not isinstance(command[0], str)
+        generated_command, command_base = generated_registration
+        if command is not None:
+            if (
+                not isinstance(command, list)
+                or not command
+                or not all(isinstance(argument, str) for argument in command)
+            ):
+                errors.append(f"{prefix}: CTest test `{name}` has an invalid command")
+                continue
+            if command[1:] != generated_command[1:]:
+                errors.append(
+                    f"{prefix}: CTest test `{name}` command disagrees with "
+                    "the generated registration"
+                )
+        reason = ctest_nonexecution_reason(generated_command)
+        if reason is not None:
+            errors.append(f"{prefix}: CTest test `{name}` {reason}")
+        selection_policy = APPROVED_CTEST_SELECTIONS.get(
+            name, {"arguments": (), "environment": ()}
+        )
+        expected_arguments = tuple(selection_policy["arguments"])
+        if tuple(generated_command[1:]) != expected_arguments:
+            errors.append(
+                f"{prefix}: CTest test `{name}` has unapproved command arguments "
+                f"{generated_command[1:]}"
+            )
+        environment_values = [
+            item
+            for value in ctest_property_values(test, "ENVIRONMENT")
+            for item in (value if isinstance(value, list) else [value])
+            if isinstance(item, str)
+        ]
+        selection_environment = tuple(
+            item for item in environment_values if item.startswith("GTEST_")
+        )
+        expected_environment = tuple(selection_policy["environment"])
+        if selection_environment != expected_environment:
+            errors.append(
+                f"{prefix}: CTest test `{name}` has unapproved GTest "
+                f"environment {list(selection_environment)}"
+            )
+        fail_patterns = ctest_property_values(test, "FAIL_REGULAR_EXPRESSION")
+        if (expected_arguments or expected_environment) and not any(
+            isinstance(value, list) and "0 tests" in value for value in fail_patterns
         ):
-            errors.append(f"{prefix}: CTest test `{name}` has an invalid command")
-            continue
-        command_path = normalized_absolute_path(command[0], build_dir)
-        registered_tests[name] = command
-        registered_commands.add(command_path)
+            errors.append(
+                f"{prefix}: selected CTest test `{name}` does not fail on zero tests"
+            )
+        registered_tests[name] = generated_registration
+        registered_commands.add(
+            normalized_absolute_path(generated_command[0], command_base)
+        )
 
     target_artifacts: dict[str, set[str]] = {}
     for name, target in test_targets.items():
@@ -1638,14 +2108,14 @@ def check_cmake_ctest_inventory(
 
     unregistered = []
     for name, artifacts in target_artifacts.items():
-        named_command = registered_tests.get(name, "")
-        named_registration = name in registered_tests and (
-            named_command is None
-            or (
+        named_registration = False
+        if name in registered_tests:
+            named_command, command_base = registered_tests[name]
+            named_registration = (
                 len(named_command) == 1
-                and normalized_absolute_path(named_command[0], build_dir) in artifacts
+                and normalized_absolute_path(named_command[0], command_base)
+                in artifacts
             )
-        )
         command_registration = not artifacts.isdisjoint(registered_commands)
         if not named_registration and not command_registration:
             unregistered.append(name)
@@ -1767,11 +2237,14 @@ def check_cmake_test_target_trace(
                 )
                 and pytest_arguments[pytest_index + 2 : pytest_index + 4]
                 == ["-E", "env"]
-                and len(pytest_arguments) > pytest_index + 8
+                and len(pytest_arguments) > pytest_index + 13
             )
         if valid:
-            pythonpath = pytest_arguments[pytest_index + 4]
-            traced_python = pytest_arguments[pytest_index + 5]
+            environment_assignments = pytest_arguments[
+                pytest_index + 4 : pytest_index + 8
+            ]
+            pythonpath = environment_assignments[0]
+            traced_python = pytest_arguments[pytest_index + 8]
             pythonpath_value = pythonpath.partition("=")[2]
             pythonpath_entries = pythonpath_value.split(os.pathsep)
             normalized_pythonpath = {
@@ -1792,9 +2265,19 @@ def check_cmake_test_target_trace(
                 and len(pythonpath_entries) == len(normalized_pythonpath)
                 and required_pythonpath in normalized_pythonpath
                 and normalized_pythonpath <= allowed_pythonpath
+                and environment_assignments[1:]
+                == [
+                    "PYTEST_ADDOPTS=",
+                    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1",
+                    "PYTEST_PLUGINS=",
+                ]
                 and executable_paths_match(traced_python, sys.executable)
-                and pytest_arguments[pytest_index + 6 : pytest_index + 8]
-                == ["-m", "pytest"]
+                and pytest_arguments[pytest_index + 9 : pytest_index + 12]
+                == ["-m", "pytest", "-c"]
+                and cmake_paths_match(
+                    pytest_arguments[pytest_index + 12],
+                    root / "pyproject.toml",
+                )
             )
         if valid:
             try:
@@ -1811,7 +2294,7 @@ def check_cmake_test_target_trace(
                     == (root / "python" / "tests").resolve()
                 )
         if valid:
-            command_tail = pytest_arguments[pytest_index + 8 : working_index]
+            command_tail = pytest_arguments[pytest_index + 13 : working_index]
             valid = bool(command_tail) and command_tail[-1] == "-v"
         if valid:
             traced_sources = [
@@ -1886,10 +2369,12 @@ def check_cmake_test_graph(
     if executable is None:
         errors.append(f"{prefix}: `cmake` is unavailable")
         return
-    traced_sources = (
-        root / "tests" / "CMakeLists.txt",
+    trace_candidates = {
+        root / "cmake" / "DARTMacros.cmake",
         root / "python" / "tests" / "CMakeLists.txt",
-    )
+        *(root / "tests").rglob("CMakeLists.txt"),
+    }
+    traced_sources = sorted(path for path in trace_candidates if path.is_file())
     trace_arguments = [
         "--trace-expand",
         "--trace-format=json-v1",
@@ -1918,6 +2403,7 @@ def check_cmake_test_graph(
         detail = output[-1] if output else f"exit {result.returncode}"
         errors.append(f"{prefix}: configure probe failed: {detail}")
         return
+    trace_records = cmake_trace_records(result.stderr)
 
     try:
         cache = cmake_cache_values(cache_path)
@@ -2092,6 +2578,7 @@ def check_cmake_test_graph(
     test_target_names: set[str] = set()
     test_target_data: dict[str, dict[str, Any]] = {}
     configured_test_sources: set[str] = set()
+    configured_source_targets: dict[str, list[tuple[str, dict[str, Any]]]] = {}
     executable_test_sources: set[str] = set()
     for entry in targets:
         if not isinstance(entry, dict):
@@ -2142,6 +2629,9 @@ def check_cmake_test_graph(
                 if relative is not None:
                     configured_test_sources.add(relative)
                     candidate_sources.add(relative)
+                    configured_source_targets.setdefault(relative, []).append(
+                        (name, candidate)
+                    )
             if candidate.get("type") == "EXECUTABLE":
                 test_target_names.add(name)
                 test_target_data[name] = candidate
@@ -2164,33 +2654,45 @@ def check_cmake_test_graph(
         for path in (root / directory).rglob("test_*")
         if path.is_file() and path.suffix.lower() in source_extensions
     }
-    ownership_commands = {
-        "add_executable",
-        "add_library",
-        "dart_add_test",
-        "dart_build_tests",
-        "target_sources",
-    }
     unowned_sources = []
     library_only_sources = []
-    for relative, path in expected_test_sources.items():
+    invalid_compile_only_sources = []
+    for relative in expected_test_sources:
         if relative in executable_test_sources:
             continue
         if relative in configured_test_sources:
-            # This C translation unit is an intentional compile/link ABI check.
-            if relative == "tests/unit/math/test_LegacyConvexHullC.c":
+            owners = configured_source_targets.get(relative, [])
+            compile_only_valid = False
+            if (
+                relative == "tests/unit/math/test_LegacyConvexHullC.c"
+                and len(owners) == 1
+            ):
+                owner_name, owner_target = owners[0]
+                backtrace = cmake_target_backtrace(owner_target)
+                compile_only_valid = (
+                    owner_name == "UNIT_math_LegacyConvexHullC"
+                    and owner_target.get("type") == "OBJECT_LIBRARY"
+                    and owner_name in dependency_names("tests_and_run")
+                    and backtrace is not None
+                    and backtrace[0] == "add_library"
+                    and backtrace[1].replace("\\", "/")
+                    == "tests/unit/math/CMakeLists.txt"
+                    and backtrace[2] == 11
+                )
+            if compile_only_valid:
                 continue
-            library_only_sources.append(relative)
+            if relative == "tests/unit/math/test_LegacyConvexHullC.c":
+                invalid_compile_only_sources.append(relative)
+            else:
+                library_only_sources.append(relative)
             continue
-        owner = path.parent / "CMakeLists.txt"
-        try:
-            owner_commands = cmake_commands(owner.read_text(encoding="utf-8"))
-        except OSError:
-            owner_commands = []
-        if any(
-            name in ownership_commands
-            and (path.name in arguments or path.stem in arguments)
-            for name, arguments in owner_commands
+        if inactive_cpp_test_is_approved(
+            relative,
+            root,
+            build_dir,
+            cache,
+            trace_records,
+            errors,
         ):
             continue
         unowned_sources.append(relative)
@@ -2200,10 +2702,16 @@ def check_cmake_test_graph(
             f"belong only to non-executable targets, including "
             f"{library_only_sources[:5]}"
         )
+    if invalid_compile_only_sources:
+        errors.append(
+            f"{prefix}: compile-only C++ test sources do not match their exact "
+            f"object-target contract, including {invalid_compile_only_sources[:5]}"
+        )
     if unowned_sources:
         errors.append(
             f"{prefix}: {len(unowned_sources)} C++ test sources are neither "
-            f"configured nor conditionally owned, including {unowned_sources[:5]}"
+            f"configured nor explicitly approved as inactive, including "
+            f"{unowned_sources[:5]}"
         )
 
     ctest_executable = shutil.which("ctest")
@@ -2295,7 +2803,7 @@ def check_cmake_test_graph(
             root,
             build_dir,
             cache,
-            cmake_trace_records(result.stderr),
+            trace_records,
             configured_origins,
             executable,
             errors,
@@ -2487,7 +2995,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         content = workflow.read_text(encoding="utf-8")
         expected_commands = (
             "pixi run check-ai-commands",
-            "scripts/check_ai_infrastructure.py --check",
+            "pixi run check-ai-infra",
             "tests/test_sync_ai_commands.py",
             "scripts/check_ai_infrastructure.py --scenarios",
         )
@@ -2707,6 +3215,14 @@ def scenario_gate_error(root: Path, command: Any, pixi_tasks: set[str]) -> str |
         return f"unknown gate task `{task}`"
     if not arguments:
         return f"Python gate is missing a script or module `{command}`"
+    if (
+        arguments[0] == "scripts/check_ai_infrastructure.py"
+        and "--check" in arguments[1:]
+    ):
+        return (
+            "structural-only AI checker is not completion evidence; "
+            "use `pixi run check-ai-infra`"
+        )
 
     repo_references: list[str] = []
     if arguments[:2] == ["-m", "pytest"]:

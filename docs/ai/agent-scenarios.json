@@ -27,7 +27,7 @@
         "pixi run python scripts/check_ai_infrastructure.py --doctor"
       ],
       "full_gates": [
-        "pixi run python scripts/check_ai_infrastructure.py --check"
+        "pixi run check-ai-infra"
       ],
       "recovery": "docs/onboarding/ai-tools.md",
       "forbidden_paths": ["dart/io", "python/dartpy/nanobind"]
@@ -77,7 +77,7 @@
         "smallest reproduced failing surface"
       ],
       "focused_gates": [
-        "pixi run python scripts/check_ai_infrastructure.py --check"
+        "pixi run check-ai-infra"
       ],
       "full_gates": ["pixi run lint", "pixi run test-all"],
       "recovery": "docs/onboarding/ci-cd.md",
@@ -108,7 +108,7 @@
       ],
       "focused_gates": [
         "pixi run check-ai-commands",
-        "pixi run python scripts/check_ai_infrastructure.py --check"
+        "pixi run check-ai-infra"
       ],
       "full_gates": [
         "pixi run python -m pytest tests/test_ai_infrastructure.py tests/test_sync_ai_commands.py -q",

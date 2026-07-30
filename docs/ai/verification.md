@@ -27,17 +27,22 @@ surface affects shared behavior.
   ```bash
   pixi run sync-ai-commands
   pixi run check-ai-commands
-  pixi run python scripts/check_ai_infrastructure.py --check
-  pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
-  pixi run python scripts/check_ai_infrastructure.py --scenarios
+  pixi run check-ai-infra
+  pixi run test-ai-infra
+  pixi run exercise-agent-scenarios
   pixi run lint
   ```
 
   `check-ai-commands` proves generated parity and manifest ownership. The
-  structural checker validates task/path references, instruction budgets,
-  branch profile, agent/config/hook wiring, and CI coverage. The focused tests
-  cover regressions; the scenario command exercises release routing and
-  unavailable-hook fallbacks without network or model calls.
+  `check-ai-infra` completion gate includes those structural checks and
+  validates the configured Release graph through the CMake File API, expanded
+  target trace, CTest inventory, and pytest provenance. It does not execute
+  CTest or pytest and does not replace `test-ai-infra`, `test-all`, hosted
+  platform CI, or claim-tied semantic image review. The direct structural
+  checker form is reserved for fast staged/setup internals and is not
+  sufficient completion evidence. The focused tests cover regressions; the
+  scenario command exercises release routing and unavailable-hook fallbacks
+  without network or model calls.
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source

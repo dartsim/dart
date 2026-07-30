@@ -58,11 +58,19 @@ run `pixi run lint` before a commit.
 
 ```bash
 pixi run check-ai-commands
-pixi run python scripts/check_ai_infrastructure.py --check
-pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
-pixi run python scripts/check_ai_infrastructure.py --scenarios
+pixi run check-ai-infra
+pixi run test-ai-infra
+pixi run exercise-agent-scenarios
 pixi run lint
 ```
+
+`check-ai-infra` is the completion gate: it includes the structural checks and
+validates the configured Release test graph through the CMake File API,
+expanded target trace, CTest inventory, and pytest provenance. It does not
+execute CTest or pytest and does not replace `test-ai-infra`, `test-all`,
+hosted platform CI, or claim-tied semantic image review. The direct structural
+checker form is reserved for fast staged/setup internals and is not sufficient
+completion evidence.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;

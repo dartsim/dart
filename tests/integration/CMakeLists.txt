@@ -74,7 +74,9 @@ target_include_directories(
 )
 set_tests_properties(
   test_ConstraintSolver
-  PROPERTIES ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+  PROPERTIES
+    ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+    FAIL_REGULAR_EXPRESSION "0 tests"
 )
 add_test(
   NAME test_AdaptiveSoftContactModel

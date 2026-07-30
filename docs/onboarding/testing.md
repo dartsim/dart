@@ -20,14 +20,20 @@ CMake's File API, inspects the expanded configure trace, and inventories CTest
 registrations without executing tests. It requires the effective `ALL` target
 to depend directly on `tests_and_run` and `pytest`, requires those targets to
 cover every configured C++ and Python test, rejects omitted test directories or
-unowned test sources, ties each target back to its validated source command,
-and confirms the Release target commands resolve to the active Pixi CTest,
-Python, and installed pytest implementations. This semantic probe catches
-early exits, variable poisoning, command shadowing, disabled CTest entries,
-collection-only or locally shadowed pytest substitutions, and decoy targets
-that a source-marker check alone cannot distinguish. Static adversarial tests
-cover the alternate MSVC and pytest source branches; native hosted CI remains
-the platform-specific execution proof.
+unowned test sources, and admits inactive platform tests or the one compile-only
+C test only through exact branch-owned predicates and target contracts. It
+walks the active generated CTest subdirectory graph, maps registrations back to
+configured executables, rejects unapproved command filters or non-executing
+modes, and requires selected GTest registrations to fail when they match zero
+tests. The pytest target pins the root configuration, clears ambient/plugin
+overrides, and resolves the installed package without importing a local shadow.
+The probe also ties each broad target back to its validated source command and
+confirms Release commands use the active Pixi CTest and Python implementations.
+It catches early exits, inactive lexical decoys, variable poisoning, command
+shadowing, disabled or list-only CTest entries, collection-only or spoofed
+pytest substitutions, stale generated test directories, and decoy targets that
+a source-marker check alone cannot distinguish. Native hosted CI remains the
+platform-specific execution proof.
 
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in

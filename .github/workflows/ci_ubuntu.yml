@@ -47,7 +47,7 @@ jobs:
         run: pixi run check-ai-commands
 
       - name: Check AI infrastructure
-        run: pixi run python scripts/check_ai_infrastructure.py --check
+        run: pixi run check-ai-infra
 
       - name: Test AI infrastructure
         run: >-
