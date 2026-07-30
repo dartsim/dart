@@ -41,14 +41,15 @@ This section is authoritative for current branch, detector, runtime-evidence,
 CI, and PR state. It supersedes every older runtime hash and media-currency
 claim in this file.
 
-- The active merge combines topic parent
-  `ca806fb72358c8e696787a3dead8d9dbc49333b2` with
-  `origin/release-6.20` target
-  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The target consolidates
-  DART-owned native collision into `DARTCollisionDetector` and removes the
-  public `NativeCollisionDetector` frontend. Query the merge commit, live
-  branch, and draft PR #3377 after publication rather than treating either
-  parent hash as current.
+- Local integration commit `da135c99c30` merges topic parent
+  `ca806fb72358c8e696787a3dead8d9dbc49333b2` with collision-consolidation
+  target `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The immediately following
+  merge incorporates current `origin/release-6.20` tip
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`. Consolidation commit `46719bf`
+  folds DART-owned native collision into `DARTCollisionDetector` and removes
+  the public `NativeCollisionDetector` frontend. Query the final merge commit,
+  live branch, and draft PR #3377 after publication rather than treating any
+  recorded parent hash as current.
 - Exact-FBF contact-gap and `FourPointPlanar` policies now live on
   `DARTCollisionDetector`. Their state remains behind its existing manager
   sidecar, so the released public class layout does not grow. Exact-FBF

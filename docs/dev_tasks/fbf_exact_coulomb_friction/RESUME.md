@@ -13,14 +13,15 @@ benchmark, GUI example, physical outcome, or performance result.
 
 Current code state:
 
-- Branch `research/fbf-friction-release620` incorporates topic parent
-  `ca806fb72358c8e696787a3dead8d9dbc49333b2` and current
-  `origin/release-6.20` target
-  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The target commit consolidates
-  DART-owned collision detection and retires the public
-  `NativeCollisionDetector` frontend. The merge commit containing this
-  section is the authoritative checkpoint; query the live branch and draft
-  PR #3377 rather than copying a hash from older sections.
+- Local integration commit `da135c99c30` merges topic parent
+  `ca806fb72358c8e696787a3dead8d9dbc49333b2` with collision-consolidation
+  target `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The immediately following
+  merge incorporates current `origin/release-6.20` tip
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`. Consolidation commit `46719bf`
+  folds DART-owned collision detection into `DARTCollisionDetector` and
+  retires the public `NativeCollisionDetector` frontend. The final merge
+  commit containing this section is the authoritative checkpoint; query the
+  live branch and draft PR #3377 rather than copying an older hash.
 - Exact-FBF contact-gap and four-point-manifold policies now live on
   `DARTCollisionDetector`, with state behind its existing manager sidecar so
   the released public class layout remains unchanged. Exact-FBF consumers,
