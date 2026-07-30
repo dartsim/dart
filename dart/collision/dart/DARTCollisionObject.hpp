@@ -71,8 +71,6 @@ public:
   friend int collide(
       CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 
-  ~DARTCollisionObject() override;
-
   enum class CachedShapeKind
   {
     Unknown,

@@ -64,15 +64,11 @@ DARTCollisionGroup::DARTCollisionGroup(
   : CollisionGroup(collisionDetector)
 {
   auto* detector = static_cast<DARTCollisionDetector*>(collisionDetector.get());
-  detector->createCollisionGroupEngineData(this);
-}
-
-//==============================================================================
-DARTCollisionGroup::~DARTCollisionGroup()
-{
-  auto* detector
-      = static_cast<DARTCollisionDetector*>(getCollisionDetector().get());
-  detector->removeCollisionGroupEngineData(this);
+  // Anchor the external broadphase state in the released detector pointer
+  // member. Old DART 6.20 headers inline this class's destructor, but they
+  // still destroy mCollisionDetector and therefore release this owner.
+  mCollisionDetector
+      = detector->attachCollisionGroupEngineData(this, collisionDetector);
 }
 
 //==============================================================================

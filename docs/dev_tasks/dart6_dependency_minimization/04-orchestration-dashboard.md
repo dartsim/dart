@@ -138,12 +138,17 @@
   adapters. The phase-6 default flip
   (previously in both `ConstraintSolver` ctors) was **reverted 2026-07-23**
   and is deferred beyond DART 6.20; the default remains `fcl`. Current-head
-  review and CI must be re-established after the 2026-07-29 review fixes.
+  review and CI must be re-established after the latest review fixes.
   The local candidate passes the complete C++/dartpy/lint/AI/Gazebo/visual
   gates, exact-header ABI canaries, and alternating incumbent-backend
-  performance A/Bs with no measured FCL/ODE/Bullet regression; publication,
-  hosted artifact inspection, and a fresh current-head review are still
-  pending. **Merge is the maintainer's**.
+  performance A/Bs with no measured FCL/ODE/Bullet regression. A new
+  exact-head P2 about old inline destructors now has a local released-layout
+  lifetime-owner fix with 42/42 Release and assertions-enabled engine tests
+  plus refreshed `32/376/320` canaries. Its fresh no-cache 155-test C++,
+  223-test dartpy, and `199 + 4 + 1` Gazebo gates also pass; publication,
+  hosted artifact inspection, and another fresh current-head review are still
+  pending.
+  **Merge is the maintainer's**.
 - **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
   gaps were superseded by the consolidation and the documented S6 acceptance
   re-scope (see RESUME.md). Remaining performance work is tracked by the

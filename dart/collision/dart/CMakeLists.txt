@@ -25,6 +25,7 @@ install(
 # minimize diff noise; only the detector-facing classes changed names.
 set(
   collision_dart_private_headers
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionDetectorAccessor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionGroupEngineData.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionObjectEngineData.hpp
 )

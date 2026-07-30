@@ -100,20 +100,17 @@ DARTCollisionObject::DARTCollisionObject(
   : CollisionObject(collisionDetector, shapeFrame)
 {
   auto* detector = static_cast<DARTCollisionDetector*>(collisionDetector);
-  detector->createCollisionObjectEngineData(this);
+  // Anchor the external engine state in a member present in the released
+  // object layout. This also cleans up objects destroyed through an old inline
+  // destructor or a directly constructed downstream subclass.
+  mCachedShape = detector->attachCollisionObjectEngineData(
+      this, shapeFrame ? shapeFrame->getShape() : nullptr);
   try {
     updateEngineData();
   } catch (...) {
-    detector->removeCollisionObjectEngineData(this);
+    mCachedShape.reset();
     throw;
   }
-}
-
-//==============================================================================
-DARTCollisionObject::~DARTCollisionObject()
-{
-  auto* detector = static_cast<DARTCollisionDetector*>(getCollisionDetector());
-  detector->removeCollisionObjectEngineData(this);
 }
 
 //==============================================================================
@@ -257,7 +254,9 @@ void DARTCollisionObject::refreshShapeCache()
 {
   const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
   const auto currentShape = mShapeFrame ? mShapeFrame->getShape() : nullptr;
-  const bool hasSameShape = mCachedShape == currentShape;
+  const bool hasEngineDataOwner = mCachedShape.use_count() > 0;
+  const bool hasSameShape
+      = hasEngineDataOwner && mCachedShape.get() == currentShape.get();
 
   if (hasSameShape && mCachedShapeFrameVersion == shapeFrameVersion
       && mCachedShapeKind != CachedShapeKind::SoftMesh) {
@@ -271,7 +270,16 @@ void DARTCollisionObject::refreshShapeCache()
   }
 
   mCachedShapeFrameVersion = shapeFrameVersion;
-  mCachedShape = currentShape;
+  if (!hasSameShape) {
+    // Releasing the old alias removes the old shape's engine state. Attach the
+    // replacement before any code asks for the sidecar again.
+    mCachedShapeType = nullptr;
+    mCachedShape.reset();
+    auto* detector
+        = static_cast<DARTCollisionDetector*>(getCollisionDetector());
+    mCachedShape
+        = detector->attachCollisionObjectEngineData(this, currentShape);
+  }
   mCachedShapeType = mCachedShape ? &mCachedShape->getType() : nullptr;
   mCachedShapeKind = CachedShapeKind::Unknown;
   mCachedLocalBoundsMin.setZero();
@@ -342,8 +350,8 @@ void DARTCollisionObject::refreshShapeCache()
 //==============================================================================
 void DARTCollisionObject::updateEngineData()
 {
-  auto& data = getEngineData();
   refreshShapeCache();
+  auto& data = getEngineData();
   const auto shape = getShape();
   const auto* shapePtr = shape.get();
   const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;

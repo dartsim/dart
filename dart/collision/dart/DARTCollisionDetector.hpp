@@ -43,6 +43,7 @@ class DARTCollisionObject;
 class DARTCollisionGroup;
 
 namespace detail {
+struct DARTCollisionDetectorAccessor;
 struct DARTCollisionGroupEngineData;
 struct DARTCollisionObjectEngineData;
 } // namespace detail
@@ -139,17 +140,21 @@ protected:
 private:
   friend class DARTCollisionGroup;
   friend class DARTCollisionObject;
+  friend struct detail::DARTCollisionDetectorAccessor;
 
   class DARTCollisionObjectManager;
 
-  void createCollisionGroupEngineData(const DARTCollisionGroup* group);
+  CollisionDetectorPtr attachCollisionGroupEngineData(
+      const DARTCollisionGroup* group,
+      const CollisionDetectorPtr& collisionDetector);
 
   void removeCollisionGroupEngineData(const DARTCollisionGroup* group);
 
   detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
       const DARTCollisionGroup* group);
 
-  void createCollisionObjectEngineData(const DARTCollisionObject* object);
+  dynamics::ConstShapePtr attachCollisionObjectEngineData(
+      const DARTCollisionObject* object, const dynamics::ConstShapePtr& shape);
 
   void removeCollisionObjectEngineData(const DARTCollisionObject* object);
 
@@ -158,6 +163,10 @@ private:
 
   const detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
       const DARTCollisionObject* object) const;
+
+  std::size_t getNumCollisionGroupEngineData() const;
+
+  std::size_t getNumCollisionObjectEngineData() const;
 
   static Registrar<DARTCollisionDetector> mRegistrar;
 };

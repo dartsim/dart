@@ -43,6 +43,7 @@
 #include <dart/collision/dart/DARTCollisionGroup.hpp>
 #include <dart/collision/dart/DARTCollisionObject.hpp>
 #include <dart/collision/dart/PersistentManifoldCache.hpp>
+#include <dart/collision/dart/detail/DARTCollisionDetectorAccessor.hpp>
 #include <dart/collision/dart/detail/NativeShapeConversion.hpp>
 #include <dart/collision/dart/shapes/Shape.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
@@ -1802,6 +1803,53 @@ TEST(DARTCollisionDetector, ClaimedObjectTracksNativeAabb)
       nativeObject->getEngineTransform().translation());
   EXPECT_EQ(Eigen::Vector3d(0.5, 1.5, 2.5), nativeObject->getEngineAabb().min);
   EXPECT_EQ(Eigen::Vector3d(1.5, 2.5, 3.5), nativeObject->getEngineAabb().max);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, EngineSidecarsFollowReleasedInlineLifetimes)
+{
+  using collision::detail::DARTCollisionDetectorAccessor;
+
+  auto detector = collision::DARTCollisionDetector::create();
+  EXPECT_EQ(
+      0u,
+      DARTCollisionDetectorAccessor::getNumCollisionGroupEngineData(*detector));
+  EXPECT_EQ(
+      0u,
+      DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
+          *detector));
+
+  {
+    collision::DARTCollisionGroup group(detector);
+    EXPECT_EQ(
+        1u,
+        DARTCollisionDetectorAccessor::getNumCollisionGroupEngineData(
+            *detector));
+  }
+  EXPECT_EQ(
+      0u,
+      DARTCollisionDetectorAccessor::getNumCollisionGroupEngineData(*detector));
+
+  auto frame = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  {
+    ExposedDARTCollisionObject object(detector.get(), frame.get());
+    EXPECT_EQ(
+        1u,
+        DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
+            *detector));
+
+    frame->setShape(
+        std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+    object.updateEngineData();
+    EXPECT_EQ(
+        1u,
+        DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
+            *detector));
+  }
+  EXPECT_EQ(
+      0u,
+      DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
+          *detector));
 }
 
 //==============================================================================

@@ -40,6 +40,7 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/collision/dart/SoftCollision.hpp"
+#include "dart/collision/dart/detail/DARTCollisionDetectorAccessor.hpp"
 #include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
 #include "dart/collision/dart/detail/DARTCollisionObjectEngineData.hpp"
 #include "dart/collision/dart/narrow_phase/NarrowPhase.hpp"
@@ -1195,6 +1196,11 @@ public:
     return *mGroupEngineData.at(group);
   }
 
+  std::size_t getNumCollisionGroupEngineData() const
+  {
+    return mGroupEngineData.size();
+  }
+
   void createCollisionObjectEngineData(const DARTCollisionObject* object)
   {
     mObjectEngineData[object]
@@ -1216,6 +1222,11 @@ public:
       const DARTCollisionObject* object) const
   {
     return *mObjectEngineData.at(object);
+  }
+
+  std::size_t getNumCollisionObjectEngineData() const
+  {
+    return mObjectEngineData.size();
   }
 
 private:
@@ -1246,12 +1257,23 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-void DARTCollisionDetector::createCollisionGroupEngineData(
-    const DARTCollisionGroup* group)
+CollisionDetectorPtr DARTCollisionDetector::attachCollisionGroupEngineData(
+    const DARTCollisionGroup* group,
+    const CollisionDetectorPtr& collisionDetector)
 {
+  // The alias points at the detector while its independent control block owns
+  // both the original detector reference and the group sidecar lifetime.
+  auto lifetime = std::shared_ptr<const DARTCollisionGroup>(
+      group, [collisionDetector](const DARTCollisionGroup* groupToRemove) {
+        auto* detector
+            = static_cast<DARTCollisionDetector*>(collisionDetector.get());
+        detector->removeCollisionGroupEngineData(groupToRemove);
+      });
+
   auto* manager
       = static_cast<DARTCollisionObjectManager*>(mCollisionObjectManager.get());
   manager->createCollisionGroupEngineData(group);
+  return CollisionDetectorPtr(std::move(lifetime), collisionDetector.get());
 }
 
 //==============================================================================
@@ -1274,12 +1296,21 @@ DARTCollisionDetector::getCollisionGroupEngineData(
 }
 
 //==============================================================================
-void DARTCollisionDetector::createCollisionObjectEngineData(
-    const DARTCollisionObject* object)
+dynamics::ConstShapePtr DARTCollisionDetector::attachCollisionObjectEngineData(
+    const DARTCollisionObject* object, const dynamics::ConstShapePtr& shape)
 {
+  // The alias preserves normal cached-shape pointer semantics while its
+  // independent control block owns the object sidecar lifetime.
+  auto lifetime = std::shared_ptr<const DARTCollisionObject>(
+      object, [this, shape](const DARTCollisionObject* objectToRemove) {
+        static_cast<void>(shape);
+        removeCollisionObjectEngineData(objectToRemove);
+      });
+
   auto* manager
       = static_cast<DARTCollisionObjectManager*>(mCollisionObjectManager.get());
   manager->createCollisionObjectEngineData(object);
+  return dynamics::ConstShapePtr(std::move(lifetime), shape.get());
 }
 
 //==============================================================================
@@ -1309,6 +1340,38 @@ DARTCollisionDetector::getCollisionObjectEngineData(
   const auto* manager = static_cast<const DARTCollisionObjectManager*>(
       mCollisionObjectManager.get());
   return manager->getCollisionObjectEngineData(object);
+}
+
+//==============================================================================
+std::size_t DARTCollisionDetector::getNumCollisionGroupEngineData() const
+{
+  const auto* manager = static_cast<const DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  return manager->getNumCollisionGroupEngineData();
+}
+
+//==============================================================================
+std::size_t DARTCollisionDetector::getNumCollisionObjectEngineData() const
+{
+  const auto* manager = static_cast<const DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  return manager->getNumCollisionObjectEngineData();
+}
+
+//==============================================================================
+std::size_t
+detail::DARTCollisionDetectorAccessor::getNumCollisionGroupEngineData(
+    const DARTCollisionDetector& detector)
+{
+  return detector.getNumCollisionGroupEngineData();
+}
+
+//==============================================================================
+std::size_t
+detail::DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
+    const DARTCollisionDetector& detector)
+{
+  return detector.getNumCollisionObjectEngineData();
 }
 
 //==============================================================================

@@ -52,7 +52,8 @@ public:
 
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-  ~DARTCollisionGroup() override;
+  /// Destructor
+  virtual ~DARTCollisionGroup() = default;
 
 protected:
   // Documentation inherited

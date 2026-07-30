@@ -192,7 +192,20 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   medians `868/867-868 ms`, FCL `257/255-256 ms`, Bullet `267/266 ms`, with
   identical contact counts. Local visual smoke and all four rendered-overlay
   regressions pass. This evidence predates publication; exact-head hosted CI,
-  artifact inspection, and fresh Codex review are still mandatory.
+  artifact inspection, and fresh Codex review are still mandatory. The review
+  of pushed head `fd96521bb14` then found that new out-of-line group/object
+  destructors cannot clean sidecars for binaries built with the old inline
+  destructors. The local follow-up ties sidecar ownership to the existing
+  detector/cached-shape shared-pointer members, restores defaulted inline
+  destructors, and adds a direct lifetime regression. The full 42-test engine
+  target passes in Release and assertions-enabled builds; refreshed
+  `32/376/320` mixed-header canaries pass 20/20 and the private test accessor is
+  absent from the install. Fresh no-cache gates also pass all 155 C++ tests,
+  all 223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
+  gz-physics performance/symbol checks, and the gz-sim entity-system
+  integration test. This follow-up remains candidate evidence until
+  publication; exact-head hosted CI, artifact inspection, and fresh Codex
+  review remain mandatory.
 - **Phase 4 native performance** — #3362 and #3364 are merged. Next session
   should either close out Phase 4 with fresh evidence or produce one cohesive
   measured follow-up PR before Phase 5.
