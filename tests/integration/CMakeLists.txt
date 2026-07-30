@@ -122,7 +122,6 @@ target_compile_definitions(
     DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256="${fbf_author_masonry_arch_spec_sha256}"
 )
 dart_add_test("integration" test_ContactConstraint)
-dart_add_test("integration" test_FemDeformableBody)
 dart_add_test("integration" test_SplitImpulse)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
