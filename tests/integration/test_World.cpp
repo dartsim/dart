@@ -53,7 +53,6 @@
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -513,13 +512,14 @@ TEST(World, DefaultWorldUsesFclPrimitive)
 }
 
 //==============================================================================
-TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
+TEST(World, UnreleasedNativeSkelAliasFallsBackToFcl)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
   ASSERT_TRUE(
-      factory->canCreate(collision::NativeCollisionDetector::getStaticType()));
+      factory->canCreate(collision::DARTCollisionDetector::getStaticType()));
+  ASSERT_FALSE(factory->canCreate("native"));
 
   const std::string skel = R"(
 <skel version="1.0">
@@ -536,13 +536,12 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   auto world = utils::SkelParser::readWorldXML(skel);
   ASSERT_NE(nullptr, world);
 
-  auto nativeDetector
-      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
-          world->getCollisionDetector());
-  ASSERT_TRUE(nativeDetector);
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
   EXPECT_EQ(
-      collision::NativeCollisionDetector::getStaticType(),
-      nativeDetector->getType());
+      collision::FCLCollisionDetector::PRIMITIVE,
+      fclDetector->getPrimitiveShapeType());
 }
 
 //==============================================================================

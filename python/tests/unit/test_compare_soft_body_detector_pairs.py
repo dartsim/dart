@@ -29,7 +29,7 @@ def _load_runner_module():
 def _write_run(
     path: Path,
     *,
-    detector: str = "dart",
+    detector: str = "fcl",
     scene: str = "soft_cubes",
     scene_index: int = 1,
     threads: int = 1,
@@ -92,13 +92,13 @@ def test_schedule_alternates_and_balances_first_position():
     schedule = runner.build_schedule(20)
 
     assert schedule[:4] == [
-        ("dart", "native"),
-        ("native", "dart"),
-        ("dart", "native"),
-        ("native", "dart"),
+        ("fcl", "dart"),
+        ("dart", "fcl"),
+        ("fcl", "dart"),
+        ("dart", "fcl"),
     ]
+    assert sum(order[0] == "fcl" for order in schedule) == 10
     assert sum(order[0] == "dart" for order in schedule) == 10
-    assert sum(order[0] == "native" for order in schedule) == 10
     with pytest.raises(ValueError, match="positive"):
         runner.build_schedule(0)
 
@@ -160,7 +160,7 @@ def test_run_parser_uses_iteration_cpu_time_and_converts_units(
         time_unit=unit,
     )
 
-    row = runner.load_run_cpu_time(path, "dart", "soft_cubes", 1)
+    row = runner.load_run_cpu_time(path, "fcl", "soft_cubes", 1)
 
     assert row["cpu_ms"] == pytest.approx(expected_ms)
     assert row["real_ms"] == pytest.approx(expected_ms * 10)
@@ -169,17 +169,17 @@ def test_run_parser_uses_iteration_cpu_time_and_converts_units(
 def test_run_parser_rejects_wrong_detector_and_duplicate_iterations(tmp_path):
     runner = _load_runner_module()
     path = tmp_path / "run.json"
-    _write_run(path, detector="native")
+    _write_run(path, detector="dart")
 
     with pytest.raises(ValueError, match="detector label"):
-        runner.load_run_cpu_time(path, "dart", "soft_cubes", 1)
+        runner.load_run_cpu_time(path, "fcl", "soft_cubes", 1)
 
     data = json.loads(path.read_text(encoding="utf-8"))
-    data["benchmarks"][0]["label"] = "scene=soft_cubes detector=dart threads=1"
+    data["benchmarks"][0]["label"] = "scene=soft_cubes detector=fcl threads=1"
     data["benchmarks"].append(dict(data["benchmarks"][0]))
     path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(ValueError, match="expected one iteration row, found 2"):
-        runner.load_run_cpu_time(path, "dart", "soft_cubes", 1)
+        runner.load_run_cpu_time(path, "fcl", "soft_cubes", 1)
 
 
 def test_run_parser_requires_executable_context(tmp_path):
@@ -191,7 +191,7 @@ def test_run_parser_requires_executable_context(tmp_path):
     path.write_text(json.dumps(data), encoding="utf-8")
 
     with pytest.raises(ValueError, match="missing Google Benchmark executable"):
-        runner.load_run_cpu_time(path, "dart", "soft_cubes", 1)
+        runner.load_run_cpu_time(path, "fcl", "soft_cubes", 1)
 
 
 def test_warning_bearing_benchmark_run_is_rejected_and_recorded(tmp_path, monkeypatch):
@@ -222,7 +222,7 @@ def test_warning_bearing_benchmark_run_is_rejected_and_recorded(tmp_path, monkey
         )
         raw_path.parent.mkdir(parents=True, exist_ok=True)
         _write_run(raw_path, detector=env["COLLISION_DETECTOR"])
-        output = "shape will be skipped by the native adapter"
+        output = "shape will be skipped by DARTCollisionDetector"
         capture_path.parent.mkdir(parents=True, exist_ok=True)
         capture_path.write_text(output, encoding="utf-8")
         return subprocess.CompletedProcess(command, 0, output)
@@ -240,7 +240,7 @@ def test_warning_bearing_benchmark_run_is_rejected_and_recorded(tmp_path, monkey
             threads=1,
             pair=1,
             position=1,
-            detector="native",
+            detector="dart",
             min_time="0.5s",
             cpu_list=None,
             timeout=1.0,
@@ -353,7 +353,7 @@ def test_out_of_range_pair_is_rejected_even_when_expected_pairs_are_complete():
             scene="soft_cubes",
             threads=1,
             pair=21,
-            order=("dart", "native"),
+            order=("fcl", "dart"),
             reference_cpu_ms=100.0,
             candidate_cpu_ms=100.0,
             reference_real_ms=100.0,
@@ -426,8 +426,8 @@ def test_dry_run_serializes_schema_revision_and_full_schedule(tmp_path):
 
     assert plan["metadata"]["schema_version"] == "dart.soft_body_detector_pairs/v1"
     assert len(plan["metadata"]["protocol"]["schedule"]) == 20
-    assert plan["metadata"]["protocol"]["schedule"][0] == ["dart", "native"]
-    assert plan["metadata"]["protocol"]["schedule"][1] == ["native", "dart"]
+    assert plan["metadata"]["protocol"]["schedule"][0] == ["fcl", "dart"]
+    assert plan["metadata"]["protocol"]["schedule"][1] == ["dart", "fcl"]
     assert plan["metadata"]["protocol"]["correctness_steps"] == "200"
     assert plan["metadata"]["protocol"]["correctness_tolerance"] == 0.05
     assert plan["metadata"]["invocation_cwd"] == str(ROOT)
@@ -584,22 +584,22 @@ def test_pair_environment_gate_checks_load_and_workloads_across_pair(tmp_path):
         "thermal_celsius": {"coretemp": 90.0},
     }
     records = {
-        "dart": {
+        "fcl": {
             "environment_before": clean,
             "environment_after": contaminated,
         },
-        "native": {
+        "dart": {
             "environment_before": contaminated,
             "environment_after": contaminated,
         },
     }
 
     failures = runner.pair_environment_failures(
-        records, ("dart", "native"), args, {"coretemp": 50.0}
+        records, ("fcl", "dart"), args, {"coretemp": 50.0}
     )
 
-    assert any("dart after: 1-minute load=9.00" in failure for failure in failures)
-    assert any("native before: 1-minute load=9.00" in failure for failure in failures)
+    assert any("fcl after: 1-minute load=9.00" in failure for failure in failures)
+    assert any("dart before: 1-minute load=9.00" in failure for failure in failures)
     assert not any("coretemp" in failure for failure in failures)
 
 
@@ -616,20 +616,20 @@ def test_pair_environment_gate_treats_post_run_heat_as_observational(tmp_path):
         "thermal_celsius": {"coretemp": 93.0},
     }
     records = {
-        "dart": {"environment_before": cool, "environment_after": hot},
-        "native": {"environment_before": hot, "environment_after": hot},
+        "fcl": {"environment_before": cool, "environment_after": hot},
+        "dart": {"environment_before": hot, "environment_after": hot},
     }
 
     assert not runner.pair_environment_failures(
-        records, ("dart", "native"), args, {"coretemp": 50.0}
+        records, ("fcl", "dart"), args, {"coretemp": 50.0}
     )
 
     hot_start = {
+        "fcl": {"environment_before": hot, "environment_after": hot},
         "dart": {"environment_before": hot, "environment_after": hot},
-        "native": {"environment_before": hot, "environment_after": hot},
     }
     failures = runner.pair_environment_failures(
-        hot_start, ("dart", "native"), args, {"coretemp": 50.0}
+        hot_start, ("fcl", "dart"), args, {"coretemp": 50.0}
     )
     assert any("coretemp=93.00 C > 80 C" in failure for failure in failures)
 
@@ -640,16 +640,16 @@ def test_detector_equivalence_qualifies_every_thread_count(tmp_path, monkeypatch
 
     def fake_equivalence(*, thread_count, **_kwargs):
         called.append(thread_count)
-        native_ok = thread_count == 1
+        dart_ok = thread_count == 1
         return (
             {
-                "dart": {"eligible": True, "reason": "reference detector"},
-                "native": {
-                    "eligible": native_ok,
-                    "reason": "checksum-equivalent" if native_ok else "mismatch",
+                "fcl": {"eligible": True, "reason": "reference detector"},
+                "dart": {
+                    "eligible": dart_ok,
+                    "reason": "checksum-equivalent" if dart_ok else "mismatch",
                 },
             },
-            ["dart", "native"] if native_ok else ["dart"],
+            ["fcl", "dart"] if dart_ok else ["fcl"],
         )
 
     monkeypatch.setattr(
@@ -670,9 +670,9 @@ def test_detector_equivalence_qualifies_every_thread_count(tmp_path, monkeypatch
     )
 
     assert called == [1, 16]
-    assert eligible == ["dart"]
-    assert not results["native"]["eligible"]
-    assert "threads 16: mismatch" in results["native"]["reason"]
+    assert eligible == ["fcl"]
+    assert not results["dart"]["eligible"]
+    assert "threads 16: mismatch" in results["dart"]["reason"]
 
 
 def test_headless_checksum_sets_requested_thread_count(tmp_path, monkeypatch):
@@ -700,7 +700,7 @@ def test_headless_checksum_sets_requested_thread_count(tmp_path, monkeypatch):
     checksum, _output = runner.matrix.run_headless_checksum(
         revision,
         tmp_path / "soft_body_headless",
-        "native",
+        "dart",
         "soft_cubes",
         "200",
         tmp_path / "artifact",
@@ -803,10 +803,10 @@ def test_diagnostic_main_runs_adjacent_row_protocol_and_publishes_marker_last(
         "evaluate_detector_equivalence_all_threads",
         lambda *_args, **_kwargs: (
             {
-                "dart": {"eligible": True, "reason": "reference detector"},
-                "native": {"eligible": True, "reason": "checksum-equivalent"},
+                "fcl": {"eligible": True, "reason": "reference detector"},
+                "dart": {"eligible": True, "reason": "checksum-equivalent"},
             },
-            ["dart", "native"],
+            ["fcl", "dart"],
         ),
     )
     snapshot = {
@@ -870,9 +870,9 @@ def test_diagnostic_main_runs_adjacent_row_protocol_and_publishes_marker_last(
     assert [
         (phase, pair, order) for phase, _scene, _threads, pair, order in actions
     ] == [
-        ("warmup", 1, ("dart", "native")),
-        ("measured", 1, ("dart", "native")),
-        ("measured", 2, ("native", "dart")),
+        ("warmup", 1, ("fcl", "dart")),
+        ("measured", 1, ("fcl", "dart")),
+        ("measured", 2, ("dart", "fcl")),
     ]
     assert idle_contexts[0] == {"phase": "preflight"}
     assert [context["phase"] for context in idle_contexts[1:]] == [

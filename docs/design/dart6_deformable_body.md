@@ -58,78 +58,66 @@ compare only checksum-eligible backends. A reduced representative demo proves a
 mechanism; it does not by itself establish paper-scale model, controller, or
 performance parity.
 
-## Native soft collision direction
+## DART soft collision direction
 
-The DART and direct-native detector paths currently share DART-owned soft
-contact kernels. Direct native keeps its own broadphase and bridges unsupported
-soft/ellipsoid narrow-phase pairs through cached fallback objects. This is a
-measured compatibility path, not evidence that native owns complete soft-mesh
-collision.
+The built-in `dart` detector owns the DART soft-contact kernels, cached soft
+geometry, and broadphase. There is no second public detector or fallback bridge
+for the same engine.
 
-Native must not become the preferred deformable backend until all of these are
-true:
+The `dart` detector must not become the preferred deformable backend until all
+of these are true:
 
 - representative soft scenes pass finite-state, physical-regression, and
   thread-determinism tests;
-- direct-native and DART checksums are stable, and comparisons classify only
-  checksum-eligible backends as performance competitors;
-- native matches or beats eligible backends on same-host representative and
+- DART and incumbent-backend checksums are stable, and comparisons classify
+  only checksum-eligible backends as performance competitors;
+- DART matches or beats eligible backends on same-host representative and
   contact-heavy scenes with reproducible raw evidence;
 - steady-state allocation gates cover the representative soft scene set;
 - representative scenes emit no unsupported-pair diagnostics; and
 - downstream Gazebo/gz-physics collision and constraint gates pass.
 
-The remaining architecture choice is whether native-owned coverage uses full
+The remaining architecture choice is whether DART-owned coverage uses full
 triangle-mesh collision, adaptive active-contact neighborhoods, or both. That
-choice stays open until a bounded follow-up proves coverage and scaling; it is
-not implied by the fallback bridge.
+choice stays open until a bounded follow-up proves coverage and scaling.
 
-### Native-owned soft-kernel follow-up contract
+### DART-owned soft-kernel follow-up contract
 
-The follow-up that removes the cached DART-object bridge must make native own
-the five soft pair families that the bridge currently implements:
-soft x plane, sphere, box, ellipsoid, and soft. Unsupported pair families must
-keep their current no-contact behavior until their own kernels and correctness
-evidence exist. The port is staged per pair family rather than by globally
-flipping a soft-shape flag.
+The detector directly owns the five implemented soft pair families: soft
+against plane, sphere, box, ellipsoid, and soft. Unsupported pair families keep
+their current no-contact behavior until their own kernels and correctness
+evidence exist. Extend coverage per pair family rather than by globally
+changing soft-shape dispatch.
 
-The native soft shape owns one retained deforming-geometry cache. Native and
-still-bridged pairs must read that same cache during a staged rollout; they must
-not maintain parallel mirrors. Each ported pair preserves object order, contact
-point, normal, depth, soft-side face IDs, the established non-finite-bounds
+The DART collision object owns one retained deforming-geometry cache; pair
+kernels must not maintain parallel mirrors. Each pair preserves object order,
+contact point, normal, depth, soft-side face IDs, established non-finite-bounds
 behavior, and the full configured per-pair contact budget at both generation
-and emission; the rigid-native three-contact generation clamp must not truncate
-soft contacts before emission. Cache access uses the canonical local vertex
-formula, point position plus resting offset. A missing or mismatched native
-cache view fails loudly rather than falling back to `getLocalPosition()`, which
-does not provide the same vertex formula. Native soft contacts bypass the rigid
-persistent-manifold cache because deforming local points violate its
-rigid-transform assumption; this guard lands with the first pair predicate
-change, while rigid-rigid neighbors remain cache-eligible.
+and emission. The rigid three-contact generation clamp must not truncate soft
+contacts before emission. Cache access uses the canonical local vertex formula,
+point position plus resting offset. A missing or mismatched cache view fails
+loudly rather than falling back to `getLocalPosition()`, which does not provide
+the same vertex formula. Soft contacts bypass the rigid persistent-manifold
+cache because deforming local points violate its rigid-transform assumption;
+rigid-rigid neighbors remain cache-eligible.
 
-Land the work in independently gated stages:
+Land further work in independently gated stages:
 
-1. add the native soft shape/cache and bit-identical AABB refresh without
-   changing dispatch;
-2. port plane, sphere/box, soft-soft, and ellipsoid pairs separately, retaining
-   the bridge for each pair until its native kernel passes parity; the
-   ellipsoid stage adds explicit no-contact guards for rigid-primitive pairs so
-   a convex fallback cannot create contacts that DART 6 previously omitted;
-3. add deterministic per-pair threading only after serial parity is proven;
-4. change broadphase structure only if measured attribution still shows it is
+1. extend unsupported pair families separately with parity tests and explicit
+   no-contact guards where DART 6 previously omitted contacts;
+2. add deterministic per-pair threading only after serial parity is proven;
+3. change broadphase structure only if measured attribution still shows it is
    needed; and
-5. add soft-face-interior coverage only as an opt-in, checksum-changing
-   correctness extension with its own reference tests.
+4. keep additional checksum-changing contact coverage opt-in until its own
+   reference tests and downstream evidence justify a compatibility decision.
 
 Every parity stage requires both object orderings, contact-field comparison,
 single- and multi-thread checksum evidence, zero steady-state allocation, and
-manifold-cache ownership tests. The completed native path must then pass the
+manifold-cache ownership tests. The completed DART path must then pass the
 paired same-host detector protocol, representative allocation and physical
 regressions, and Gazebo/gz-physics gates before any preferred/default-backend
-proposal. Profiling on the current bridge has not shown a structural native
-penalty, so measurement remains the gate for dispatching this port rather than
-an assumed speedup. Cost accounting must not claim one-time mirror construction
-or the fallback branch's no-op native-shape reset as recurring per-step savings.
+proposal. Measurement remains the gate for dispatch changes rather than an
+assumed speedup.
 
 ## Paper-scope decisions
 

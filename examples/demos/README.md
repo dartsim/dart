@@ -87,13 +87,9 @@ whatever the user changes at runtime:
 - `--headless --shot <path> [--steps N]` — off-screen pbuffer capture
   (requires a DISPLAY/GPU; a local self-verification tool, not a CI gate).
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
-  scene with a specific registered backend (`fcl`, `dart`, `native`, `bullet`,
-  or `ode` when available). The toolbar can switch backends while the scene is
-  running. Soft-body scenes should use `dart` or `fcl` for apples-to-apples
-  comparisons; the `native` adapter can run `SoftMeshShape` scenes through the
-  cached DART fallback bridge, but remains diagnostic rather than preferred
-  until native owns the complete soft-mesh kernels and passes the parity and
-  performance gates.
+  scene with a specific registered backend (`fcl`, `dart`, `bullet`, or `ode`
+  when available). The toolbar can switch backends while the scene is running.
+  The consolidated `dart` detector supports soft-body scenes.
 - `--threads <n>` / `THREADS=<n>` — start with a specific simulation worker
   count (`0` selects hardware concurrency). The toolbar can change this live.
 - `--debug-select-body <name>` / `--debug-record-profile` — hidden hooks that

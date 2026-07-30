@@ -34,10 +34,12 @@ dashboard fix (#3363) merged, and after the first Phase 4 optimization slice
   package version (`6.19.3` in the current CMake configure output).
 - DART 6.20 intentionally uses the release lane while package version metadata
   catches up to the branch/milestone naming.
-- Native collision status: DART 6.20 now has the opt-in `"native"` detector,
-  phase-2 adapter, phase-3 capability parity pieces, native dashboard rows, and
-  one measured Phase 4 solver-facing manifold optimization. FCL is still the
-  default and still part of the core dependency surface until phases 6 and 7.
+- Collision status: PR #3381 consolidates the DART-owned engine into
+  `DARTCollisionDetector`, with `"dart"` as its only factory key. The interim
+  `"native"` key was introduced only on the unreleased 6.20 branch and is
+  removed by the consolidation rather than carried as an alias. FCL remains
+  the 6.20 default and a core dependency; a default flip and dependency
+  removal are deferred until a later release and their full acceptance gates.
 
 ## DART 6 Dependency Inventory
 

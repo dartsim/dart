@@ -38,14 +38,18 @@
 namespace dart {
 namespace collision {
 
+class DARTCollisionDetector;
 class DARTCollisionObject;
+
+namespace detail {
+struct DARTCollisionGroupEngineData;
+} // namespace detail
 
 class DARTCollisionGroup : public CollisionGroup
 {
 public:
   friend class DARTCollisionDetector;
 
-  /// Constructor
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
@@ -76,6 +80,11 @@ protected:
 protected:
   /// CollisionObjects added to this DARTCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;
+
+private:
+  // Consolidated broadphase state lives outside this installed class so its
+  // released object layout remains unchanged.
+  detail::DARTCollisionGroupEngineData& getEngineData();
 };
 
 } // namespace collision

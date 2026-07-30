@@ -38,7 +38,7 @@ dart_benchmarks(
   TYPE BM_UNIT
   SOURCES
     bm_dantzig_lcp.cpp
-    bm_native_collision.cpp
+    bm_dart_collision.cpp
   LINK_LIBRARIES
     ${unit_benchmark_link_libraries}
 )
