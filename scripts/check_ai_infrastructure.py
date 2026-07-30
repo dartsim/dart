@@ -345,10 +345,9 @@ def cmake_commands(text: str) -> list[tuple[str, str]]:
 
 
 def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
-    """Attach each executable CMake command to its enclosing control scopes."""
+    """Attach each CMake command to its enclosing lexical control scopes."""
     records: list[tuple[str, str, tuple[str, ...]]] = []
     stack: list[tuple[str, str]] = []
-    terminated_contexts: list[tuple[str, ...]] = []
     openers = {"block", "foreach", "function", "if", "macro", "while"}
     closers = {f"end{name}" for name in openers}
     for name, arguments in cmake_commands(text):
@@ -365,23 +364,55 @@ def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
                 stack[-1] = (name, condition)
             continue
         context = tuple(f"{kind}:{value}" for kind, value in stack)
-        if any(
-            context[: len(terminated)] == terminated
-            for terminated in terminated_contexts
-        ):
-            continue
         records.append((name, arguments, context))
-        if name == "return":
-            terminated_contexts.append(context)
     return records
 
 
 def cmake_argument_tokens(arguments: str) -> list[str]:
-    """Split normalized CMake arguments without matching inside quoted values."""
-    try:
-        return shlex.split(arguments, posix=True)
-    except ValueError:
-        return []
+    """Split normalized CMake arguments while keeping bracket values opaque."""
+
+    def bracket_end(offset: int) -> int | None:
+        match = re.match(r"\[(=*)\[", arguments[offset:])
+        if match is None:
+            return None
+        delimiter = "]" + match.group(1) + "]"
+        end = arguments.find(delimiter, offset + match.end())
+        return len(arguments) if end < 0 else end + len(delimiter)
+
+    tokens: list[str] = []
+    offset = 0
+    while offset < len(arguments):
+        while offset < len(arguments) and arguments[offset].isspace():
+            offset += 1
+        if offset >= len(arguments):
+            break
+
+        token: list[str] = []
+        while offset < len(arguments) and not arguments[offset].isspace():
+            if arguments[offset] == '"':
+                offset += 1
+                while offset < len(arguments):
+                    if arguments[offset] == "\\" and offset + 1 < len(arguments):
+                        token.append(arguments[offset + 1])
+                        offset += 2
+                        continue
+                    if arguments[offset] == '"':
+                        offset += 1
+                        break
+                    token.append(arguments[offset])
+                    offset += 1
+                continue
+
+            bracket = bracket_end(offset) if arguments[offset] == "[" else None
+            if bracket is not None:
+                token.append(arguments[offset:bracket])
+                offset = bracket
+                continue
+
+            token.append(arguments[offset])
+            offset += 1
+        tokens.append("".join(token))
+    return tokens
 
 
 def contains_token_sequence(tokens: list[str], sequence: tuple[str, ...]) -> bool:
@@ -1073,6 +1104,10 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         except OSError as error:
             errors.append(f"{relative}: unable to read test graph: {error}")
             continue
+        if any(name == "return" for name, _ in cmake_commands(text)):
+            errors.append(
+                f"{relative}: `return()` may bypass the required `test-all` graph"
+            )
         records = cmake_scoped_commands(text)
         for (
             name,
