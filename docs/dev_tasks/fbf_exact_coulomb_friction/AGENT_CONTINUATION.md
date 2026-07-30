@@ -19,12 +19,15 @@ No.
 This section supersedes the 2026-07-29 branch-head, API-default, Figure 3,
 host-load, CI, and next-action statements below.
 
-- The pushed branch and draft PR #3377 are at
-  `91eea8541b8908f00a3d21717f0bb832320490ec`. That merge contains
+- The pushed branch and draft PR #3377 are at documentation-only head
+  `6be9d0f42de62c75a71bded1820311f2a8878e6a`. The code/runtime evidence
+  checkpoint remains
+  `91eea8541b8908f00a3d21717f0bb832320490ec`; that merge contains
   `origin/release-6.20` tip
-  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. At the last live query the PR
-  was open, draft, and mergeable; its new current-head check suite was queued.
-  Keep it draft and do not trigger `@codex review`.
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. At the 2026-07-30 live query
+  the PR was open, draft, and mergeable, and every reported current-head
+  check was green; the API-documentation deploy job was intentionally
+  skipped. Keep it draft and do not trigger `@codex review`.
 - The PR body now has a before/after `API and defaults` section. Existing
   `World::create()` behavior remains the default:
   `BoxedLcpConstraintSolver` with the world's normal FCL/primitive collision
@@ -63,12 +66,17 @@ host-load, CI, and next-action statements below.
   Manual panel/keyframe inspection confirms that the ivory/charcoal checker
   facets are legible and visibly change orientation; its ignored record hash
   is `9807fac4d9a38e367c10076f80247bed1fb86520c0192972ad4fcb14c4e3881b`.
-- The separate reuse-only verification was stopped while validating PNGs
-  because the shared host reached its 100 C package limit. This interrupted
-  run is non-evidence. Do not call the current-head Figure 3 bundle
-  independently verified or fully resealed until `verify` completes in a
-  cool window. The capture itself passed capture-time frame, media-decode,
-  runtime-closure, and outcome validation.
+- Earlier reuse-only verification attempts stopped while validating PNGs
+  because the shared host reached its 100 C package limit and are
+  non-evidence. The later thermally throttled reuse-only verifier completed
+  and independently passed exact, boxed, and the paired group, including
+  full MP4 decode, frame/metadata checks, runtime closure, and outcome
+  validation. Its ignored
+  `assets/pr_media_current_head_cfd865/fig03_verify_summary.json` SHA-256 is
+  `7b5c40beba769ec301d78ee5038c0d9118ffac75190429968f899d1f1a40005a`.
+  It reused the captured bytes rather than rerunning the simulation. Exact
+  recorded 205 attempts, 205 solves, zero exact failures, zero boxed
+  fallbacks, and a worst residual below `1e-6`.
 - Both Figure 3 solvers pass. No solver superiority or equivalence,
   source-backend/full-trajectory equivalence, signed-rate proof from video,
   historical-renderer/golden parity, timing result, Figure 3 parity, or paper
@@ -79,30 +87,31 @@ host-load, CI, and next-action statements below.
   topic history still contains 492 historical evidence blobs; final
   integration needs a true squash unless a separate, explicitly approved
   clean-history reconstruction is chosen.
+- All 16 recorded GitHub user-attachment URLs were freshly streamed from
+  GitHub on 2026-07-30 and every byte stream matched its recorded SHA-256.
+  This is attachment-integrity evidence only and does not promote any partial
+  or blocked coverage row.
 
-Next, do documentation-only handoff work until the host is cool. Then complete
-the Figure 3 reuse-only verification, followed by the declared cool/quiet
-one-/four-core packet, fresh Figure 8 finalize/seal/verify, and the roughly
-five-hour paired ten-level run from one unchanged pushed head. Before another
-commit, fetch and merge an advanced target if needed, run mandatory
-`pixi run lint`, rerun proportionate gates, checkpoint, and push. Review videos
-remain GitHub user attachments, never tracked repository files.
+Next, run the declared cool/quiet one-/four-core packet, fresh Figure 8
+finalize/seal/verify, and the roughly five-hour paired ten-level run from one
+unchanged pushed head. Before another commit, fetch and merge an advanced
+target if needed, run mandatory `pixi run lint`, rerun proportionate gates,
+checkpoint, and push. Review videos remain GitHub user attachments, never
+tracked repository files.
 
 The performance packet's declared host gate requires two samples at least
 60 seconds apart with package temperature at or below 60 C, one-minute load at
 or below 1.0, and no competing process above 5% CPU on logical CPUs 8, 10, 12,
-or 14. Figure 3 reuse verification and visual capture do not create timing
-evidence, but they must still wait until the package is below the thermal alarm
-and unrelated build saturation has cleared.
+or 14. Visual verification and capture do not create timing evidence, but
+they must still wait until the package is below the thermal alarm and
+unrelated build saturation has cleared.
 
-This section plus the matching `RESUME.md`, `HANDOFF.md`, `README.md`, and
-`docs/dev_tasks/.gitignore` updates form a documentation-only checkpoint; they
-do not change the runtime hashes above. If they remain modified in the
-worktree, preserve them. Once the host is cool, inspect them, run
-`pixi run lint`, rerun `git diff --check`, and make the authorized
-documentation checkpoint before resuming CPU-heavy evidence work. If the
-worktree is clean, query the live branch for the resulting documentation-only
-commit.
+Commit `6be9d0f42de6` is the matching documentation-only checkpoint for this
+file, `RESUME.md`, `HANDOFF.md`, `README.md`, and
+`docs/dev_tasks/.gitignore`; it does not change the runtime hashes above.
+Preserve any later handoff edits. Before their next commit, wait for a safe
+host window, run `pixi run lint` and `git diff --check`, fetch the target,
+merge it if advanced, and then create and push the authorized checkpoint.
 
 The current work reconstructs the method in DART. The authors' public
 Warp/Newton reference implementation is pinned at
