@@ -119,6 +119,41 @@ Filament, nanobind, DART 7 renderer descriptors, and main-only camera/viewer
 types. This apply/adapt/omit record prevents a later model upgrade from
 mistaking intentional branch differences for drift.
 
+### Post-Merge Parity Audit For #3403
+
+The final DART 7 comparison point is
+[#3403](https://github.com/dartsim/dart/pull/3403), merged as
+`83110ef54abf41f54c1e03500e49c1c12c305b8a`. Its tree is identical to the
+reviewed head `b507b288e8de267f0a3518e5bde2efb948337291`; no squash or merge drift
+changed the audited implementation. The DART 6 comparison was then refreshed
+against `release-6.20` at `f7c835bcbec1ea0a3eddd7c2b017f6ff995ac5b5`
+([#3405](https://github.com/dartsim/dart/pull/3405)).
+
+The resulting branch verdict is:
+
+- **Apply:** keep the model-agnostic upgrade workflow, documentation as
+  operational memory, absence of repository model pins, text/image semantic
+  review contract, hashed verification bundle, and fail-closed evidence
+  publication. Publication revalidates every selected artifact's size and
+  SHA-256 digest plus claim coverage and pass state before any GitHub call,
+  then uses content-addressed assets and records path/size/digest/URL bindings
+  without cross-content clobber.
+- **Adapt:** implement the DART 7 Filament/nanobind/viewer intent through the
+  established DART 6 C++17, pybind11, OSG `OffscreenViewer`,
+  `agent_capture.py`, `agent_view_quality.py`, and core `DebugOverlay` path.
+  The release-only contact snapshot and same-camera overlay checks strengthen
+  that adapted path; they are not missing main APIs.
+- **Omit:** do not import DART 7-only viewer C++ APIs, nanobind
+  descriptor/stub machinery, trajectory/scene-dump tools, C++23 surfaces, or
+  clean-break simulation architecture. Those surfaces do not exist on the
+  compatibility branch and are not prerequisites for its visual evidence
+  contract.
+
+Future model audits must repeat this comparison against the then-current final
+trees. They should improve the shared workflow or capability contract when a
+new model exposes a portable weakness, rather than adding a model-named command
+or treating an intentional renderer/API difference as drift.
+
 ## Intentional Non-Adoption
 
 `docs/python_api/` from DART 7 is not adopted in this AI-infra change. On this

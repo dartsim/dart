@@ -71,7 +71,9 @@
   * Add a release-tailored model-upgrade audit and strengthen agent visual
     verification with durable-context diagnostics, viewport-aware assessed OSG
     framing, deterministic semantic-review targets and bundles, and fail-closed
-    evidence publication.
+    evidence publication. Release evidence is content-addressed and records its
+    path/size/digest/URL bindings so later or partially retried publications
+    cannot replace bytes behind earlier PR URLs.
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable

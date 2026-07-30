@@ -26,12 +26,15 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
-SCHEMA_VERSION = "dart.evidence_publication/v2"
+SCHEMA_VERSION = "dart.evidence_publication/v3"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
@@ -184,6 +187,82 @@ def _gh(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(["gh", *args], capture_output=True, text=True, check=check)
 
 
+def _release_asset_name(artifact: dict[str, Any]) -> str:
+    """Return an immutable, content-addressed release-asset name."""
+    suffix = Path(artifact["path"]).suffix.lower()
+    return f"sha256-{artifact['sha256']}{suffix}"
+
+
+def _release_asset_url(repo: str, tag: str, artifact: dict[str, Any]) -> str:
+    tag_path = quote(tag, safe="")
+    asset_path = quote(_release_asset_name(artifact), safe="")
+    return f"https://github.com/{repo}/releases/download/{tag_path}/{asset_path}"
+
+
+def _parse_release_assets(
+    view: subprocess.CompletedProcess,
+) -> tuple[bool, dict[str, dict[str, Any]]]:
+    payload = json.loads(view.stdout)
+    if not isinstance(payload, dict):
+        raise ValueError("gh release view returned a non-object JSON value")
+    if type(payload.get("isImmutable")) is not bool:
+        raise ValueError("gh release view omitted boolean isImmutable")
+    assets = payload.get("assets")
+    if not isinstance(assets, list):
+        raise ValueError("gh release view omitted its assets list")
+    by_name: dict[str, dict[str, Any]] = {}
+    for asset in assets:
+        if not isinstance(asset, dict):
+            raise ValueError("gh release view returned a non-object asset")
+        name = asset.get("name")
+        if not isinstance(name, str) or not name:
+            raise ValueError("gh release view returned an asset without a name")
+        if name in by_name:
+            raise ValueError(f"release contains duplicate asset name {name!r}")
+        by_name[name] = asset
+    return payload["isImmutable"], by_name
+
+
+def _validate_existing_asset(asset: dict[str, Any], artifact: dict[str, Any]) -> None:
+    name = _release_asset_name(artifact)
+    if type(asset.get("size")) is not int or asset["size"] != artifact["bytes"]:
+        raise ValueError(
+            f"existing release asset {name!r} does not match the selected byte count"
+        )
+    digest = asset.get("digest")
+    expected_digest = f"sha256:{artifact['sha256']}"
+    if digest not in (None, "", expected_digest):
+        raise ValueError(
+            f"existing release asset {name!r} does not match the selected digest"
+        )
+    if asset.get("state") not in (None, "uploaded"):
+        raise ValueError(f"existing release asset {name!r} is not fully uploaded")
+
+
+def _stage_release_assets(
+    artifacts: dict[str, dict[str, Any]],
+    base_dir: Path,
+    stage_dir: Path,
+) -> list[Path]:
+    """Freeze and revalidate every missing asset before any GitHub mutation."""
+    staged: list[Path] = []
+    for name, artifact in artifacts.items():
+        source = Path(artifact["path"])
+        if not source.is_absolute():
+            source = base_dir / source
+        target = stage_dir / name
+        shutil.copyfile(source, target)
+        if (
+            target.stat().st_size != artifact["bytes"]
+            or _sha256(target) != artifact["sha256"]
+        ):
+            raise ValueError(
+                f"selected artifact {artifact['path']!r} changed while staging"
+            )
+        staged.append(target)
+    return staged
+
+
 def _publish_gh_release(
     selection: dict[str, Any],
     base_dir: Path,
@@ -191,44 +270,85 @@ def _publish_gh_release(
     tag: str,
 ) -> dict[str, str]:
     """Upload selected artifacts as release assets; return path->URL map."""
-    view = _gh(["release", "view", tag, "--repo", repo], check=False)
-    if view.returncode != 0:
-        _gh(
-            [
-                "release",
-                "create",
-                tag,
-                "--repo",
-                repo,
-                "--title",
-                f"Verification media ({tag})",
-                "--notes",
-                "GitHub-hosted media for PR visual-verification sections. "
-                + "Not a software release.",
-                "--prerelease",
-            ]
+    view = _gh(
+        [
+            "release",
+            "view",
+            tag,
+            "--repo",
+            repo,
+            "--json",
+            "assets,isImmutable",
+        ],
+        check=False,
+    )
+    release_exists = view.returncode == 0
+    immutable = False
+    existing: dict[str, dict[str, Any]] = {}
+    if release_exists:
+        immutable, existing = _parse_release_assets(view)
+    elif "release not found" not in f"{view.stdout}\n{view.stderr}".lower():
+        raise subprocess.CalledProcessError(
+            view.returncode,
+            ["gh", "release", "view", tag, "--repo", repo],
+            output=view.stdout,
+            stderr=view.stderr,
         )
-    urls: dict[str, str] = {}
+
+    missing: dict[str, dict[str, Any]] = {}
+    urls = {
+        artifact["path"]: _release_asset_url(repo, tag, artifact)
+        for artifact in selection["selected"]
+    }
     for artifact in selection["selected"]:
-        path = Path(artifact["path"])
-        if not path.is_absolute():
-            path = base_dir / path
-        # --clobber overwrites an asset of the same name so regenerated
-        # evidence keeps a stable download URL instead of failing on re-upload.
-        _gh(
-            [
-                "release",
-                "upload",
-                tag,
-                str(path),
-                "--repo",
-                repo,
-                "--clobber",
-            ]
+        name = _release_asset_name(artifact)
+        if name in existing:
+            _validate_existing_asset(existing[name], artifact)
+        else:
+            previous = missing.setdefault(name, artifact)
+            if (
+                previous["sha256"] != artifact["sha256"]
+                or previous["bytes"] != artifact["bytes"]
+            ):
+                raise ValueError(
+                    f"selected artifacts collide on release asset name {name!r}"
+                )
+    if immutable and missing:
+        raise ValueError(
+            f"release tag {tag!r} is immutable and cannot accept missing evidence assets"
         )
-        urls[artifact["path"]] = (
-            f"https://github.com/{repo}/releases/download/{tag}/{path.name}"
-        )
+
+    with tempfile.TemporaryDirectory(prefix="dart-evidence-publish-") as temp_dir:
+        staged = _stage_release_assets(missing, base_dir, Path(temp_dir))
+        if not release_exists:
+            _gh(
+                [
+                    "release",
+                    "create",
+                    tag,
+                    "--repo",
+                    repo,
+                    "--title",
+                    f"Verification media ({tag})",
+                    "--notes",
+                    "GitHub-hosted media for PR visual-verification sections. "
+                    + "Not a software release.",
+                    "--prerelease",
+                ]
+            )
+        if staged:
+            # Content-addressed names make retries idempotent and prevent a
+            # later publication from replacing bytes behind an older PR URL.
+            _gh(
+                [
+                    "release",
+                    "upload",
+                    tag,
+                    *(str(path) for path in staged),
+                    "--repo",
+                    repo,
+                ]
+            )
     return urls
 
 
@@ -428,10 +548,8 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 # Dry-run: emit the URLs the upload would produce.
                 for artifact in selection["selected"]:
-                    name = Path(artifact["path"]).name
-                    urls[artifact["path"]] = (
-                        f"https://github.com/{args.repo}/releases/download/"
-                        f"{args.tag}/{name}"
+                    urls[artifact["path"]] = _release_asset_url(
+                        args.repo, args.tag, artifact
                     )
         section = render_section(
             selection,
@@ -453,6 +571,20 @@ def main(argv: list[str] | None = None) -> int:
             "backend": args.backend,
             "uploaded": uploaded,
             "urls": urls,
+            "artifacts": [
+                {
+                    "path": artifact["path"],
+                    "bytes": artifact["bytes"],
+                    "sha256": artifact["sha256"],
+                    "release_asset": (
+                        _release_asset_name(artifact)
+                        if args.backend == "gh-release"
+                        else None
+                    ),
+                    "url": urls.get(artifact["path"]),
+                }
+                for artifact in selection["selected"]
+            ],
             "section": str(args.out),
             "artifact_count": len(selection["selected"]),
             "semantic_review": {

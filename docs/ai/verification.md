@@ -194,6 +194,11 @@ to end without a display-dependent skip.
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
   A `gh-release --yes` run does not upload anything when either gate fails.
+  Before mutation, it revalidates selected sizes, SHA-256 digests, coverage,
+  and pass state, then stages immutable content-addressed assets. It never
+  cross-content-clobbers an existing URL, and the publication manifest binds
+  each source path, size, digest, asset name, and URL so a partial upload is
+  safely retryable.
   Media is GitHub-hosted, never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that

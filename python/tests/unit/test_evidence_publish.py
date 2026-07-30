@@ -21,6 +21,19 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _release_asset_name(path: Path) -> str:
+    return f"sha256-{_sha256(path)}{path.suffix.lower()}"
+
+
+class _Completed:
+    def __init__(
+        self, returncode: int = 0, *, stdout: str = "", stderr: str = ""
+    ) -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 def _selection(tmp_path: Path, *, passing: bool = True) -> Path:
     shot = tmp_path / "shot.png"
     clip = tmp_path / "clip.mp4"
@@ -148,19 +161,31 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     )
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
-    assert manifest["schema_version"] == "dart.evidence_publication/v2"
+    assert manifest["schema_version"] == "dart.evidence_publication/v3"
     assert manifest["pass"] is True
     assert manifest["uploaded"] is False
     assert "dry-run" in manifest["note"]
+    shot_name = _release_asset_name(tmp_path / "shot.png")
+    clip_name = _release_asset_name(tmp_path / "clip.mp4")
+    assert manifest["artifacts"][0] == {
+        "path": "shot.png",
+        "bytes": 3,
+        "sha256": _sha256(tmp_path / "shot.png"),
+        "release_asset": shot_name,
+        "url": (
+            "https://github.com/dartsim/dart/releases/download/"
+            f"verification-media/{shot_name}"
+        ),
+    }
     text = out.read_text(encoding="utf-8")
     # Images embed inline; videos fall back to plain links.
     assert (
         "![contact markers at rest](https://github.com/dartsim/dart/releases/"
-        "download/verification-media/shot.png)" in text
+        f"download/verification-media/{shot_name})" in text
     )
     assert (
         "[settling clip](https://github.com/dartsim/dart/releases/download/"
-        "verification-media/clip.mp4)" in text
+        f"verification-media/{clip_name})" in text
     )
     assert "UPLOAD-PLACEHOLDER" not in text
 
@@ -171,17 +196,11 @@ def test_gh_release_yes_uploads_each_artifact(
     selection = _selection(tmp_path)
     calls: list[list[str]] = []
 
-    class _Completed:
-        def __init__(self, returncode: int) -> None:
-            self.returncode = returncode
-            self.stdout = ""
-            self.stderr = ""
-
     def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
         calls.append(list(args))
         # First call is `release view` for a tag that does not exist yet.
         if args[:2] == ["release", "view"]:
-            return _Completed(1)
+            return _Completed(1, stderr="release not found")
         return _Completed(0)
 
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
@@ -215,13 +234,196 @@ def test_gh_release_yes_uploads_each_artifact(
     assert verbs[0] == ["release", "view"]
     assert verbs[1] == ["release", "create"]
     uploads = [call for call in calls if call[:2] == ["release", "upload"]]
-    assert len(uploads) == 2  # one per selected artifact
-    # Uploads clobber so regenerated evidence keeps a stable download URL.
-    assert all("--clobber" in call for call in uploads)
+    assert len(uploads) == 1
+    assert "--clobber" not in uploads[0]
+    uploaded_names = [
+        Path(argument).name for argument in uploads[0][3 : uploads[0].index("--repo")]
+    ]
+    assert uploaded_names == [
+        _release_asset_name(tmp_path / "shot.png"),
+        _release_asset_name(tmp_path / "clip.mp4"),
+    ]
+    shot_name = _release_asset_name(tmp_path / "shot.png")
     assert manifest["urls"]["shot.png"] == (
         "https://github.com/dartsim/dart/releases/download/"
-        "verification-media/shot.png"
+        f"verification-media/{shot_name}"
     )
+
+
+def test_content_addressing_isolates_same_basename_across_publications(
+    tmp_path: Path,
+) -> None:
+    urls: list[str] = []
+    for index, content in enumerate((b"png", b"PNG")):
+        root = tmp_path / str(index)
+        root.mkdir()
+        selection = _selection(root)
+        shot = root / "shot.png"
+        shot.write_bytes(content)
+        selected = json.loads(selection.read_text(encoding="utf-8"))
+        selected["selected"][0]["sha256"] = _sha256(shot)
+        selection.write_text(json.dumps(selected), encoding="utf-8")
+        manifest_out = root / "publication.json"
+
+        code = evidence_publish.main(
+            [
+                str(selection),
+                "--backend",
+                "gh-release",
+                "--repo",
+                "dartsim/dart",
+                "--environment",
+                "Linux",
+                *_semantic_args(),
+                "--out",
+                str(root / "section.md"),
+                "--manifest-out",
+                str(manifest_out),
+            ]
+        )
+
+        assert code == 0
+        manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+        urls.append(manifest["urls"]["shot.png"])
+        assert manifest["artifacts"][0]["sha256"] == _sha256(shot)
+
+    assert urls[0] != urls[1]
+    assert urls[0].endswith(f"/{_release_asset_name(tmp_path / '0' / 'shot.png')}")
+    assert urls[1].endswith(f"/{_release_asset_name(tmp_path / '1' / 'shot.png')}")
+
+
+def test_partial_content_addressed_upload_resumes_without_clobber(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    shot_name = _release_asset_name(shot)
+    calls: list[list[str]] = []
+    release = {
+        "isImmutable": False,
+        "assets": [
+            {
+                "name": shot_name,
+                "size": shot.stat().st_size,
+                "digest": f"sha256:{_sha256(shot)}",
+                "state": "uploaded",
+            }
+        ],
+    }
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        if args[:2] == ["release", "view"]:
+            return _Completed(stdout=json.dumps(release))
+        return _Completed()
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 0
+    assert not any(call[:2] == ["release", "create"] for call in calls)
+    uploads = [call for call in calls if call[:2] == ["release", "upload"]]
+    assert len(uploads) == 1
+    assert "--clobber" not in uploads[0]
+    uploaded_names = [
+        Path(argument).name for argument in uploads[0][3 : uploads[0].index("--repo")]
+    ]
+    assert uploaded_names == [_release_asset_name(tmp_path / "clip.mp4")]
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["urls"]["shot.png"].endswith(f"/{shot_name}")
+
+
+def test_existing_content_addressed_asset_mismatch_fails_before_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    calls: list[list[str]] = []
+    release = {
+        "isImmutable": False,
+        "assets": [
+            {
+                "name": _release_asset_name(shot),
+                "size": shot.stat().st_size,
+                "digest": f"sha256:{'0' * 64}",
+                "state": "uploaded",
+            }
+        ],
+    }
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        return _Completed(stdout=json.dumps(release))
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert len(calls) == 1
+    assert calls[0][:2] == ["release", "view"]
+
+
+def test_release_lookup_failure_is_not_treated_as_missing_release(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    calls: list[list[str]] = []
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        return _Completed(1, stderr="authentication failed")
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert len(calls) == 1
+    assert calls[0][:2] == ["release", "view"]
 
 
 def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
