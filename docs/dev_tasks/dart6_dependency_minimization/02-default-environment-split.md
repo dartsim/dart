@@ -64,10 +64,11 @@ are documented breaking changes for 6.20.
 3. **Compatibility bar:** retained features keep source-compat (old `#include`
    paths, component names, exported CMake targets). Removing deprecated optional
    surfaces (e.g. optimizer components/macros) is a documented breaking change.
-4. **CI for feature envs uses runtime gates** — `pixi run -e <env> test` (ctest)
-   **and** `pixi run -e <env> test-py` (pytest). **`test-all` does NOT run
-   tests** — it only builds CMake's `ALL` target (no ctest/pytest), so never
-   treat it as runtime coverage. _(maintainer clarification)_
+4. **CI for feature envs names its runtime gates explicitly** — `pixi run -e
+   <env> test` (CTest) **and** `pixi run -e <env> test-py` (pytest), so the
+   environment-specific coverage is visible. The default `test-all` task pins
+   `BUILD_TESTING=ON` and runs both through CMake's `ALL` graph; it does not run
+   lint. _(corrected from live task output on 2026-07-29)_
 
 ## Status by dependency (release-6.20)
 
@@ -152,9 +153,10 @@ lane* — this lane takes no further action on them.
 
 - Always: `pixi run check-lint` before commit.
 - After any dep change: default `pixi run config` + `build`.
-- Runtime coverage: `pixi run test` (ctest) + `pixi run test-py` (pytest).
-  **`test-all` only builds the `ALL` target — it does NOT run ctest/pytest**, so
-  never treat it as runtime coverage. _(maintainer clarification)_
+- Default aggregate: `pixi run test-all` builds `ALL` and runs its CTest and
+  pytest dependencies because the branch config pins `BUILD_TESTING=ON`.
+  `pixi run test` and `pixi run test-py` remain the focused, attributable
+  runtime gates. Run lint separately.
 - For a removed dep: grep the tree for residual references; confirm a clean
   default build.
 - Exported/installed surfaces: installed-package/component smoke.
@@ -217,5 +219,6 @@ lane* — this lane takes no further action on them.
 > by the **native-replacement lane**; **boost** is not independently removable
 > (`openscenegraph → collada-dom → libboost`). **Do not** pick up the native-port
 > or GUI/OSG work in this lane (avoids overlap). If reactivated, get a fresh
-> maintainer scope first. Feature-env CI (if any) must use `test`/`test-py`,
-> never `test-all`.
+> maintainer scope first. Feature-env CI (if any) should name `test`/`test-py`
+> explicitly so its environment-specific runtime coverage is attributable;
+> `test-all` remains the default branch aggregate.

@@ -394,6 +394,59 @@ def test_existing_content_addressed_asset_mismatch_fails_before_mutation(
     assert calls[0][:2] == ["release", "view"]
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("digest", None),
+        ("digest", ""),
+        ("state", None),
+        ("state", "new"),
+    ],
+)
+def test_existing_asset_requires_verifiable_digest_and_uploaded_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: object,
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    calls: list[list[str]] = []
+    asset = {
+        "name": _release_asset_name(shot),
+        "size": shot.stat().st_size,
+        "digest": f"sha256:{_sha256(shot)}",
+        "state": "uploaded",
+    }
+    asset[field] = value
+    release = {"isImmutable": False, "assets": [asset]}
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        return _Completed(stdout=json.dumps(release))
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert len(calls) == 1
+    assert calls[0][:2] == ["release", "view"]
+
+
 def test_release_lookup_failure_is_not_treated_as_missing_release(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -588,6 +641,74 @@ def test_stored_coverage_without_selected_artifact_fails_closed(
 @pytest.mark.parametrize(
     ("mutation", "expected"),
     [
+        ("claim-text", "invalid text"),
+        ("kind", "invalid kind"),
+        ("observe", "invalid observe"),
+        ("quality", "invalid quality"),
+        ("rationale", "empty rationale"),
+        ("duplicate-claim", "duplicate claim IDs"),
+        ("zero-bytes", "invalid byte count"),
+        ("rejected", "rejected artifact entries are invalid"),
+    ],
+)
+def test_gh_release_yes_validates_complete_selection_before_github_lookup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    mutation: str,
+    expected: str,
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    if mutation == "claim-text":
+        manifest["claims"][0]["text"] = " "
+    elif mutation == "kind":
+        manifest["selected"][0]["kind"] = "unknown"
+    elif mutation == "observe":
+        manifest["selected"][0]["observe"] = 1
+    elif mutation == "quality":
+        manifest["selected"][0]["quality"] = float("nan")
+    elif mutation == "rationale":
+        manifest["selected"][0]["rationale"] = " "
+    elif mutation == "duplicate-claim":
+        manifest["selected"][0]["claims"] = ["C1", "C1"]
+    elif mutation == "zero-bytes":
+        manifest["selected"][0]["bytes"] = 0
+    else:
+        manifest["rejected"] = [{"path": "other.png", "reason": ""}]
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    calls = []
+
+    def record_gh(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("invalid selection must fail before a GitHub lookup")
+
+    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert calls == []
+    assert expected in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
         ("hash", "changed content"),
         ("size", "changed size"),
         ("missing", "missing or not a regular file"),
@@ -681,6 +802,59 @@ def test_gh_release_yes_does_not_upload_failing_evidence(
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["uploaded"] is False
     assert manifest["urls"] == {}
+
+
+def test_gh_release_dry_run_does_not_render_unpublishable_urls(
+    tmp_path: Path,
+) -> None:
+    selection = _selection(tmp_path, passing=False)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 1
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["urls"] == {}
+    assert all(artifact["url"] is None for artifact in manifest["artifacts"])
+    assert "UPLOAD-PLACEHOLDER" in out.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("repo", ["dartsim", "/dart", "dartsim/", "bad owner/dart"])
+def test_gh_release_rejects_invalid_repository(
+    tmp_path: Path, repo: str
+) -> None:
+    selection = _selection(tmp_path)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            repo,
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+    assert code == 2
 
 
 def test_required_semantic_field_rejects_empty_value(tmp_path: Path) -> None:

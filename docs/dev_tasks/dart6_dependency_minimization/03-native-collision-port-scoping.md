@@ -31,10 +31,9 @@ Refs checked:
   after detector consolidation #3381 and formatting repair #3406.
 - Current `origin/main`: `83110ef54abf41f54c1e03500e49c1c12c305b8a`
   after merged AI-infrastructure update #3403.
-- Related remote heads: `feature/native-occupancy-grid`,
-  `task/native-collision-performance-exec`,
-  `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
-  `fix/gz-physics-joint-detach-6.20`.
+- Surviving related remote heads: `feature/native-occupancy-grid` and
+  `task/native-collision-performance-exec`. The older dashboard, SIMD-backport,
+  and gz joint-detach topic heads have already been removed from the remote.
 
 Historical conclusion at that refresh:
 
@@ -140,13 +139,13 @@ The completed port was **not a copy**:
 
 ## gz-physics / gz-sim compatibility matrix (hard constraint - `pixi run -e gazebo test-gz`)
 
-| gz requirement | Evidence | Native-port obligation |
+| gz requirement | Evidence | Consolidated-engine obligation |
 | --- | --- | --- |
-| `find_package(DART COMPONENTS collision-bullet collision-ode utils utils-urdf)` | `.deps/gz-physics/CMakeLists.txt` | Keep `collision-bullet` + `collision-ode` **components resolvable** (real or facade). |
-| Subclasses `OdeCollisionDetector` **only** (`GzOdeCollisionDetector` adds `SetCollisionPairMaxContacts`; there is no `GzBulletCollisionDetector` — Bullet is used via plain `create()`) | `dartsim/src/GzOdeCollisionDetector.{hh,cc}` | `OdeCollisionDetector` must stay **subclassable** with overridable `collide()` (facade-over-native is OK only if it preserves that); Bullet/FCL only need `create()` + name resolution. |
+| `find_package(DART COMPONENTS collision-bullet collision-ode utils utils-urdf)` | `.deps/gz-physics/CMakeLists.txt` | Keep `collision-bullet` + `collision-ode` **components resolvable** until an approved transition preserves this downstream contract. |
+| Subclasses `OdeCollisionDetector` **only** (`GzOdeCollisionDetector` adds `SetCollisionPairMaxContacts`; there is no `GzBulletCollisionDetector` — Bullet is used via plain `create()`) | `dartsim/src/GzOdeCollisionDetector.{hh,cc}` | `OdeCollisionDetector` must stay **subclassable** with overridable `collide()` unless a coordinated gz change lands first. A compatibility facade would delegate to the canonical `dart` engine; Bullet/FCL only need `create()` + name resolution. |
 | `SetWorldCollisionDetector("bullet"/"ode"/"fcl"/"dart")` | `dartsim/src/WorldFeatures.cc` | All four names must keep resolving. |
-| `world->getLastCollisionResult().getContacts()`; `Contact{point,normal,penetrationDepth,force,collisionObject1/2}` | `dartsim/src/SimulationFeatures.cc` | Native `Contact` must populate the same fields with equivalent semantics. |
-| Per-pair contact capping | `GzOdeCollisionDetector::LimitCollisionPairMaxContacts` | Native must honor `CollisionOption.maxNumContactsPerPair`. |
+| `world->getLastCollisionResult().getContacts()`; `Contact{point,normal,penetrationDepth,force,collisionObject1/2}` | `dartsim/src/SimulationFeatures.cc` | The canonical `dart` engine and any compatibility facades must populate the same fields with equivalent semantics. |
+| Per-pair contact capping | `GzOdeCollisionDetector::LimitCollisionPairMaxContacts` | The canonical `dart` engine and any ODE facade must honor `CollisionOption.maxNumContactsPerPair`. |
 | CI gate | `scripts/run_gz_physics_task.sh` (ctest + plugin-links-DART check) | `pixi run -e gazebo test-gz` must stay green on every phase. |
 
 ## Historical feature-parity matrix (completed by phases 2–3)
@@ -237,16 +236,19 @@ Success means **both**:
    120-object contact-container row in that run; #3368 added the AABB-tree
    broadphase. **Closed for this lane by the consolidation; general remaining
    performance work is owned by `dart6_performance_generalization`.**
-5. **Compatibility facade decision.** Decide whether Bullet/ODE/FCL components
-   stay real optional components or become facade-over-native compatibility
-   components. This phase must prove gz subclassing still works, not just
-   `find_package`. **Decision drafted in `08-phase5-facade-decision.md`; the
-   ODE-facade versus coordinated gz-physics path still needs maintainer
-   ratification.**
-6. **Default flip.** Flip native in *both* `ConstraintSolver` constructors
-   (`ConstraintSolver.cpp:416` & `:433`) and confirm runtime
-   `setCollisionDetector` remains unaffected. Require the full A/B packet,
-   `pixi run test-all`, and `pixi run -e gazebo test-gz` before merge.
+5. **Compatibility facade decision.** Decide whether FCL/Bullet/ODE components
+   stay real optional components or become compatibility facades over the
+   canonical `dart` engine. This phase must prove gz subclassing still works,
+   not just `find_package`. **Decision drafted in
+   `08-phase5-facade-decision.md`; facade-over-dart for ODE versus a
+   coordinated gz-physics change still needs maintainer ratification.**
+6. **Default flip.** Change the default from FCL to Dart in *both*
+   `ConstraintSolver` constructors (`ConstraintSolver.cpp:416` & `:433`) and
+   the other flip surfaces documented in `08-phase5-facade-decision.md`;
+   confirm runtime detector selection remains unaffected. Require the full A/B
+   packet, the `pixi run test-all` default build-and-runtime aggregate,
+   focused `pixi run test`/`test-py` reruns, and
+   `pixi run -e gazebo test-gz` before merge.
 7. **FCL decoupling.** Only after the default flip is green, drop FCL from the
    `dart` target and `DART_PKG_EXTERNAL_DEPS`, move Bullet/ODE/FCL packages out
    of the default build, and update package/export docs. This is the dependency
@@ -254,11 +256,18 @@ Success means **both**:
 
 ## Risks / open questions (for maintainer)
 
-- **EnTT removal + C++23→C++17** is the bulk of the effort; confirm "no new deps" (EnTT must not be introduced).
-- **gz subclassing**: is facade-over-native acceptable for `Bullet/OdeCollisionDetector`, or must Bullet/ODE remain real for gz? (DART 7 used facades; verify gz's `Gz*CollisionDetector` still compiles/links against facades.)
-- **Bit-exact parity** with FCL/Bullet contacts is likely infeasible; agree the correctness bar is the `contact_benchmark` hash *for the native detector held fixed*, plus tolerance-based scene-dump diffs vs incumbents.
+- **Port constraints resolved:** the consolidated engine is C++17 and does not
+  add EnTT; future phases must preserve that no-new-dependency result.
+- **gz subclassing:** ratify facade-over-dart for `OdeCollisionDetector` or a
+  coordinated gz-physics change that removes the subclass first. Bullet and
+  FCL do not have gz subclasses.
+- **Bit-exact parity** with FCL/Bullet contacts is likely infeasible; agree the
+  correctness bar is the `contact_benchmark` hash for the consolidated `dart`
+  detector held fixed, plus tolerance-based scene-dump diffs vs incumbents.
 - **LTS risk**: this is a large change on a release branch. Phasing keeps each PR reviewable + gz-gated; default-flip (phase 6) is the point of no return - gate it on the perf evidence + a full Gazebo run.
-- **#3114** (FCL null contact when contact generation is disabled — the island-deactivation regression) is **already merged** into `release-6.20` and present in this branch (`e3b76ddf`); no rebase needed, the native port builds on top of it.
+- **#3114** (FCL null contact when contact generation is disabled — the
+  island-deactivation regression) is historical prerequisite work already
+  present in `release-6.20` (`e3b76ddf`); no follow-up action remains here.
 - **Scale**: DART 7 delivered this across PLAN-035 (#2652/#2688/#2700) over months; in 6.20 it's a multi-PR, multi-week initiative even reusing the algorithms.
 
 ## Immediate work packet

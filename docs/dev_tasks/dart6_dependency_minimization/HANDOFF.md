@@ -237,9 +237,11 @@ parent.
   Preserve shipped DART 6 source/link surfaces, such as `DARTCollide`, with
   thin adapters when necessary, and prove downstream compatibility through
   installed-prefix builds plus the gz gate.
-- **Lazy geometry refresh** (P3b `NativeCollisionObject::updateEngineData`) must
-  key on **shape identity + null**, not version alone (a fresh shape starts at
-  version 1 → a version-only guard misses a swap). See `07` §1.4.
+- **Lazy geometry refresh** now lives in
+  `DARTCollisionObject::updateEngineData` and its shape cache. It must keep
+  detecting **shape identity changes + null**, not version alone (a fresh shape
+  starts at version 1, so a version-only guard misses a swap). `07` §1.4
+  records the historical pre-consolidation implementation.
 
 ## 7. Portable operational lessons
 
@@ -253,9 +255,12 @@ parent.
 - **Moving bases:** fetch and re-check the approved target tip before every
   capture, branch, or push. Merge the latest base into a published PR branch
   before pushing; never rebase it.
-- **`nanobind` Debug-config poison:** a `test-all` "Build Debug FAILED" is often
-  a poisoned `CMakeCache.txt` (`nanobind_DIR-NOTFOUND`), not a code bug — `rm`
-  the Debug cache + reconfigure.
+- **Branch test gates:** `pixi run test-all` is the Release-only default CMake
+  aggregate. The branch config pins `BUILD_TESTING=ON`, so its `ALL` graph
+  builds the defaults and runs both CTest and pytest. Run `pixi run lint`
+  separately; use `pixi run test` or `pixi run test-py` for focused reruns and
+  clearer attribution. Diagnose cache failures from the exact DART 6 pybind11
+  configuration rather than importing main-only dependency guidance.
 - **Sphere-fix lesson (why #3283 was reverted):** the `enableContact` binary
   check must use the **squared** overlap predicate `dx²+dy²+dz² <= (r1+r2)²`,
   identical to the contact path's generic branch, so binary and contact agree.

@@ -197,11 +197,14 @@ readable alongside their contact markers and collision bounds.
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
   A `gh-release --yes` run does not upload anything when either gate fails.
-  Before mutation, it revalidates selected sizes, SHA-256 digests, coverage,
-  and pass state, then stages immutable content-addressed assets. It never
-  cross-content-clobbers an existing URL, and the publication manifest binds
-  each source path, size, digest, asset name, and URL so a partial upload is
-  safely retryable.
+  Before mutation, it validates the complete selection contract (claims,
+  artifact kinds and metadata, coverage, rejected entries, byte totals, and
+  pass state), revalidates local sizes and SHA-256 digests, then stages
+  immutable content-addressed assets. A retry accepts an existing asset only
+  when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
+  missing integrity metadata fails closed. It never cross-content-clobbers an
+  existing URL, and the publication manifest binds each source path, size,
+  digest, asset name, and URL so a partial upload is safely retryable.
   Media is GitHub-hosted, never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that

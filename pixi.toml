@@ -56,11 +56,12 @@ config = { cmd = """
     cmake \
         -G Ninja \
         -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DDART_DISABLE_COMPILER_CACHE="$DART_DISABLE_COMPILER_CACHE" \
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -68,7 +69,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
+        -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 lint-cpp = { cmd = """
@@ -296,7 +297,7 @@ test-py = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
+    cmake --build "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 config-asan = { cmd = """
@@ -788,17 +789,18 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 config = { cmd = """
     cmake \
         -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -B "build/$PIXI_ENVIRONMENT_NAME/cpp" \
         -DBUILD_SHARED_LIBS=OFF \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
+        -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
@@ -882,8 +884,8 @@ test-py = { cmd = """
 
 test-all = { cmd = """
     cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
         -j \
         --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }

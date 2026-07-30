@@ -17,7 +17,32 @@ from typing import Any
 from urllib.parse import unquote
 
 EXPECTED_AGENTS = {"dart_release_auditor", "dart_reviewer", "dart_scout"}
-DIRECT_PIXI_COMMANDS = {"bash", "cmake", "ctest", "python", "python3", "sh"}
+DIRECT_PIXI_COMMANDS = {"bash", "c++", "cmake", "ctest", "python", "python3", "sh"}
+CONFIG_ONLY_CACHE_VARIABLES = {
+    "BUILD_SHARED_LIBS",
+    "BUILD_TESTING",
+    "CMAKE_BUILD_TYPE",
+    "CMAKE_INSTALL_PREFIX",
+    "CMAKE_PREFIX_PATH",
+    "DART_BUILD_DARTPY",
+    "DART_BUILD_PROFILE",
+    "DART_DISABLE_COMPILER_CACHE",
+    "DART_MSVC_FORCE_RELEASE_RUNTIME",
+    "DART_USE_SYSTEM_GOOGLEBENCHMARK",
+    "DART_USE_SYSTEM_GOOGLETEST",
+    "DART_USE_SYSTEM_IMGUI",
+    "DART_USE_SYSTEM_PYBIND11",
+    "DART_USE_SYSTEM_TRACY",
+    "DART_VERBOSE",
+}
+APPROVED_TASK_SHELL_VARIABLES = {
+    "BUILD_TYPE",
+    "CONDA_PREFIX",
+    "DART_DISABLE_COMPILER_CACHE",
+    "DART_VERBOSE",
+    "PIXI_ENVIRONMENT_NAME",
+    "PIXI_PROJECT_ROOT",
+}
 REFERENCE_ROOTS = (
     ".agents/",
     ".claude/",
@@ -177,6 +202,129 @@ def collect_task_names(value: Any) -> set[str]:
     return tasks
 
 
+def collect_task_commands(value: Any, task_name: str) -> list[str]:
+    commands: list[str] = []
+    if not isinstance(value, dict):
+        return commands
+    tasks = value.get("tasks")
+    if isinstance(tasks, dict):
+        task = tasks.get(task_name)
+        if isinstance(task, dict):
+            command = task.get("cmd")
+            if isinstance(command, str):
+                commands.append(command)
+            elif isinstance(command, list) and all(
+                isinstance(item, str) for item in command
+            ):
+                commands.append(" ".join(command))
+    for child in value.values():
+        commands.extend(collect_task_commands(child, task_name))
+    return commands
+
+
+def collect_task_definitions(value: Any, task_name: str) -> list[dict[str, Any]]:
+    """Return every platform/feature definition of a named Pixi task."""
+    definitions: list[dict[str, Any]] = []
+    if not isinstance(value, dict):
+        return definitions
+    tasks = value.get("tasks")
+    if isinstance(tasks, dict):
+        task = tasks.get(task_name)
+        if isinstance(task, dict):
+            definitions.append(task)
+    for child in value.values():
+        definitions.extend(collect_task_definitions(child, task_name))
+    return definitions
+
+
+def shell_tokens(command: str) -> list[str]:
+    try:
+        return shlex.split(command)
+    except ValueError:
+        return []
+
+
+def has_shell_control_syntax(command: str) -> bool:
+    """Reject syntax that can hide another command from token validation."""
+    if re.search(r"[\r\n;&|<>`]|[$][(]", command.strip()) is not None:
+        return True
+
+    variable_pattern = re.compile(
+        r"[$](?:[{]([A-Za-z_][A-Za-z0-9_]*)[}]|" r"([A-Za-z_][A-Za-z0-9_]*))"
+    )
+    matches = {match.start(): match for match in variable_pattern.finditer(command)}
+    for position, character in enumerate(command):
+        if character != "$":
+            continue
+        match = matches.get(position)
+        if match is None:
+            return True
+        variable = match.group(1) or match.group(2)
+        if variable not in APPROVED_TASK_SHELL_VARIABLES:
+            return True
+        if not is_inside_double_quotes(command, position):
+            return True
+    return False
+
+
+def is_inside_double_quotes(value: str, position: int) -> bool:
+    in_single_quotes = False
+    in_double_quotes = False
+    escaped = False
+    for character in value[:position]:
+        if escaped:
+            escaped = False
+        elif character == "\\" and not in_single_quotes:
+            escaped = True
+        elif character == "'" and not in_double_quotes:
+            in_single_quotes = not in_single_quotes
+        elif character == '"' and not in_single_quotes:
+            in_double_quotes = not in_double_quotes
+    return in_double_quotes
+
+
+def is_single_cmake_all_build(command: str) -> bool:
+    """Return whether a task is exactly one CMake build of only target ALL."""
+    tokens = shell_tokens(command)
+    return (
+        not has_shell_control_syntax(command)
+        and tokens[:2] == ["cmake", "--build"]
+        and tokens.count("cmake") == 1
+        and tokens.count("--target") == 1
+        and tokens[-2:] == ["--target", "ALL"]
+        and "--" not in tokens
+    )
+
+
+def is_configuration_only_command(command: str) -> bool:
+    """Return whether a prerequisite only configures and never builds/tests."""
+    tokens = shell_tokens(command)
+    if not tokens or has_shell_control_syntax(command) or tokens[0] != "cmake":
+        return False
+
+    index = 1
+    if index < len(tokens) and tokens[index] == "-G":
+        if tokens[index : index + 2] != ["-G", "Ninja"]:
+            return False
+        index += 2
+    if tokens[index : index + 1] != ["-S"] or index + 1 >= len(tokens):
+        return False
+    if tokens[index + 1] != ".":
+        return False
+    index += 2
+    if tokens[index : index + 1] != ["-B"] or index + 1 >= len(tokens):
+        return False
+    index += 2
+    definitions = tokens[index:]
+    return all(
+        token.startswith("-D")
+        and "=" in token
+        and token[2:].split("=", maxsplit=1)[0].split(":", maxsplit=1)[0]
+        in CONFIG_ONLY_CACHE_VARIABLES
+        for token in definitions
+    )
+
+
 def source_paths(root: Path) -> list[Path]:
     paths = [
         root / "AGENTS.md",
@@ -188,6 +336,7 @@ def source_paths(root: Path) -> list[Path]:
         root / "docs" / "onboarding" / "architecture.md",
         root / "docs" / "onboarding" / "contributing.md",
         root / "docs" / "onboarding" / "release-management.md",
+        root / "docs" / "onboarding" / "testing.md",
     ]
     paths.extend(sorted((root / ".claude" / "commands").glob("*.md")))
     paths.extend(sorted((root / ".claude" / "skills").glob("*/SKILL.md")))
@@ -200,6 +349,16 @@ def source_paths(root: Path) -> list[Path]:
             for part in path.relative_to(root).parts
         )
     )
+    return sorted(set(paths))
+
+
+def operational_context_paths(root: Path) -> list[Path]:
+    """Return durable session/handoff surfaces that may direct agent commands."""
+    paths = list(source_paths(root))
+    task_root = root / "docs" / "dev_tasks"
+    if task_root.is_dir():
+        for task in sorted(path for path in task_root.iterdir() if path.is_dir()):
+            paths.extend(sorted(task.glob("*.md")))
     return sorted(set(paths))
 
 
@@ -550,9 +709,13 @@ def check_pixi_references(root: Path, errors: list[str]) -> None:
         return
     tasks = collect_task_names(pixi)
     run_pattern = re.compile(
-        r"pixi run(?:\s+-e\s+[A-Za-z0-9_-]+)?(?:\s+--skip-deps)?" r"\s+([A-Za-z0-9_-]+)"
+        r"pixi run"
+        r"(?:\s+(?:-e|--environment)\s+\S+)?"
+        r"(?:\s+--skip-deps)?"
+        r"(?:\s+--)?"
+        r"\s+([A-Za-z0-9_][A-Za-z0-9_+.-]*)"
     )
-    for path in source_paths(root):
+    for path in operational_context_paths(root):
         if not path.exists():
             continue
         for line_number, line in enumerate(
@@ -563,6 +726,256 @@ def check_pixi_references(root: Path, errors: list[str]) -> None:
                     continue
                 errors.append(
                     f"{path.relative_to(root)}:{line_number}: unknown Pixi task `{task}`"
+                )
+
+
+def check_test_gate_contract(root: Path, errors: list[str]) -> None:
+    """Keep the Release ALL graph and focused test gates unambiguous."""
+    try:
+        pixi = read_toml(root / "pixi.toml")
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        errors.append(f"pixi.toml: invalid TOML: {error}")
+        return
+
+    task_markers = {
+        "test": "ctest",
+        "test-py": "pytest",
+        "test-all": "--target ALL",
+    }
+    for task, marker in task_markers.items():
+        commands = collect_task_commands(pixi, task)
+        if not commands:
+            errors.append(f"pixi.toml: missing required test task `{task}`")
+        elif any(marker not in command for command in commands):
+            errors.append(
+                f"pixi.toml: `{task}` task must retain command marker `{marker}`"
+            )
+
+    test_all_definitions = collect_task_definitions(pixi, "test-all")
+    test_all_commands = collect_task_commands(pixi, "test-all")
+    if test_all_definitions and len(test_all_commands) != len(test_all_definitions):
+        errors.append("pixi.toml: every `test-all` variant must define one command")
+    if (
+        test_all_commands
+        and all("--target ALL" in command for command in test_all_commands)
+        and any(not is_single_cmake_all_build(command) for command in test_all_commands)
+    ):
+        errors.append(
+            "pixi.toml: every `test-all` command must be one CMake build with "
+            "the single target `--target ALL`"
+        )
+    if any(
+        forbidden in command.lower()
+        for command in test_all_commands
+        for forbidden in ("ctest", "pytest")
+    ):
+        errors.append(
+            "pixi.toml: `test-all` runtime coverage must remain owned by "
+            "the CMake `ALL` graph, not appended to the Pixi command"
+        )
+    for definition in test_all_definitions:
+        environment = definition.get("env")
+        if environment != {"BUILD_TYPE": "Release"}:
+            errors.append(
+                "pixi.toml: every `test-all` variant must set only "
+                '`BUILD_TYPE = "Release"`'
+            )
+            break
+    for definition in test_all_definitions:
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies != ["config"]:
+            errors.append(
+                "pixi.toml: every `test-all` variant must depend only on "
+                "the build configuration task `config`"
+            )
+            break
+
+    config_definitions = collect_task_definitions(pixi, "config")
+    if not config_definitions:
+        errors.append("pixi.toml: missing required build task `config`")
+    for definition in config_definitions:
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies:
+            errors.append(
+                "pixi.toml: `config` must not depend on other tasks because "
+                "`test-all` requires a direct configuration prerequisite"
+            )
+            break
+        environment = definition.get("env")
+        if environment not in (
+            {"DART_VERBOSE": "OFF"},
+            {"DART_VERBOSE": "OFF", "BUILD_TYPE": "Release"},
+        ):
+            errors.append(
+                "pixi.toml: every `config` variant must use the exact "
+                "branch-owned environment"
+            )
+            break
+    config_commands = collect_task_commands(pixi, "config")
+    if config_definitions and len(config_commands) != len(config_definitions):
+        errors.append("pixi.toml: every `config` variant must define one command")
+    elif config_commands and any(
+        not is_configuration_only_command(command) for command in config_commands
+    ):
+        errors.append(
+            "pixi.toml: every `config` command used by `test-all` must only "
+            "configure CMake"
+        )
+    if config_commands and any(
+        "-DBUILD_TESTING=ON" not in shell_tokens(command) for command in config_commands
+    ):
+        errors.append(
+            "pixi.toml: every `config` command used by `test-all` must pin "
+            "`BUILD_TESTING=ON`"
+        )
+
+    graph_markers = {
+        "CMakeLists.txt": (
+            "list(APPEND all_target_candidates tests_and_run pytest)",
+            "add_custom_target(ALL DEPENDS ${all_targets})",
+        ),
+        "tests/CMakeLists.txt": (
+            "tests_and_run",
+            "${CMAKE_CTEST_COMMAND} --output-on-failure",
+        ),
+        "python/tests/CMakeLists.txt": (
+            "pytest",
+            '"${Python3_EXECUTABLE}" -m pytest',
+        ),
+    }
+    for relative, markers in graph_markers.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(f"{relative}: unable to read test graph: {error}")
+            continue
+        for marker in markers:
+            if marker not in text:
+                errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
+
+    dependencies = pixi.get("dependencies")
+    if not isinstance(dependencies, dict) or "pytest" not in dependencies:
+        errors.append(
+            "pixi.toml: the default environment must provide pytest for "
+            "the CMake `ALL` graph"
+        )
+
+    required_doc_markers = {
+        "AGENTS.md": (
+            "pixi run test         # Build and run C++ tests",
+            "pixi run test-py      # Run dartpy tests",
+            "pixi run test-all     # Build defaults and run C++/Python tests",
+        ),
+        "docs/onboarding/testing.md": (
+            "`pixi run test` runs the C++ test suite",
+            "`pixi run test-py`",
+            "`pixi run test-all` builds the",
+            "`tests_and_run` and `pytest`",
+            "does not run lint",
+        ),
+        "docs/onboarding/release-management.md": (
+            "`pixi run test-all` for the complete default CMake graph",
+            "`tests_and_run` and `pytest`",
+            "`test-all` does not format or check lint",
+        ),
+    }
+    for relative, markers in required_doc_markers.items():
+        path = root / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as error:
+            errors.append(f"{relative}: unable to read test-gate guidance: {error}")
+            continue
+        for marker in markers:
+            if marker not in text:
+                errors.append(f"{relative}: missing branch test-gate marker `{marker}`")
+
+    list_item = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
+    for path in operational_context_paths(root):
+        if not path.exists():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            errors.append(
+                f"{path.relative_to(root)}: unable to read operational "
+                f"test-gate guidance: {error}"
+            )
+            continue
+        blocks: list[tuple[int, list[str]]] = []
+        block_start = 1
+        block_lines: list[str] = []
+        for line_number, line in enumerate(lines, start=1):
+            if not line.strip() or (list_item.match(line) and block_lines):
+                if block_lines:
+                    blocks.append((block_start, block_lines))
+                    block_lines = []
+                if not line.strip():
+                    continue
+            if not block_lines:
+                block_start = line_number
+            block_lines.append(line)
+        if block_lines:
+            blocks.append((block_start, block_lines))
+
+        for line_number, block in blocks:
+            original = re.sub(r"[`*_]", "", " ".join(block))
+            plain = original.lower()
+            if re.search(
+                r"\bnanobind\b[^.!?]{0,120}\b(?:known|poisoned)\b"
+                r"[^.!?]{0,80}\b(?:cmake)?cache\b",
+                plain,
+            ):
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: remove stale "
+                    "main-only nanobind cache guidance"
+                )
+            if "test-all" not in plain:
+                continue
+            stale_debug_claim = re.search(
+                r"\btest-all\b[^.!?]{0,80}\b(?:reports?|runs?|builds?|"
+                r"uses?|is)\b[^.!?]{0,40}\bdebug\b",
+                plain,
+            )
+            if stale_debug_claim or "nanobind" in plain:
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: `test-all` is a "
+                    "Release-only build task; remove Debug/nanobind guidance"
+                )
+            false_no_runtime_claim = any(
+                re.search(pattern, plain)
+                for pattern in (
+                    r"\btest-all\b[^.!?]{0,100}\b(?:does\s+not|doesn.t|"
+                    r"never)\s+(?:run|execute|provide|cover|include)\b"
+                    r"[^.!?]{0,100}\b(?:ctest|pytest|runtime|tests?)\b",
+                    r"\btest-all\b[^.!?]{0,100}\bonly\s+(?:builds?|" r"compiles?)\b",
+                    r"\btest-all\b[^.!?]{0,100}\b(?:is|provides?)\s+not\b"
+                    r"[^.!?]{0,60}\bruntime coverage\b",
+                )
+            )
+            if false_no_runtime_claim:
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: `test-all` must "
+                    "not be described as build-only or lacking runtime coverage"
+                )
+            false_lint_claim = any(
+                re.search(pattern, plain)
+                for pattern in (
+                    r"\btest-all\s+(?:runs?|executes?|includes?|covers?)\b"
+                    r"[^.!?]{0,80}\blint\b",
+                    r"\btest-all\s+(?:is|provides?)\s+(?:the\s+)?full\s+"
+                    r"(?:lint[/,+ ]+build[/,+ ]+test|aggregate)\b",
+                )
+            )
+            if false_lint_claim:
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: `test-all` must "
+                    "not be described as providing lint coverage"
                 )
 
 
@@ -907,6 +1320,7 @@ def run_checks(root: Path) -> list[str]:
     check_codex_config(root, errors)
     check_hooks(root, errors)
     check_pixi_references(root, errors)
+    check_test_gate_contract(root, errors)
     check_path_references(root, errors)
     check_markdown_links(root, errors)
     check_instruction_budget(root, errors)

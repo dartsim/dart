@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -38,6 +39,10 @@ SCHEMA_VERSION = "dart.evidence_publication/v3"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
+_ARTIFACT_KINDS = {"still", "grid", "composite", "video"}
+_GITHUB_REPOSITORY = re.compile(
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9_.-]+"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -69,7 +74,7 @@ def _load_selection(path: Path) -> dict[str, Any]:
             raise ValueError("selection claim IDs must be non-empty strings")
         if claim_id in claim_ids:
             raise ValueError(f"selection claim ID {claim_id!r} is duplicated")
-        if not isinstance(claim.get("text"), str):
+        if not isinstance(claim.get("text"), str) or not claim["text"].strip():
             raise ValueError(f"selection claim {claim_id!r} has invalid text")
         if type(claim.get("covered")) is not bool:
             raise ValueError(
@@ -102,6 +107,11 @@ def _load_selection(path: Path) -> dict[str, Any]:
             )
         basenames[name] = declared_path
 
+        kind = artifact.get("kind")
+        if kind not in _ARTIFACT_KINDS:
+            raise ValueError(
+                f"selected artifact {declared_path!r} has invalid kind {kind!r}"
+            )
         supported = artifact.get("claims")
         if (
             not isinstance(supported, list)
@@ -109,6 +119,10 @@ def _load_selection(path: Path) -> dict[str, Any]:
             or not all(isinstance(item, str) and item.strip() for item in supported)
         ):
             raise ValueError(f"selected artifact {declared_path!r} must support claims")
+        if len(set(supported)) != len(supported):
+            raise ValueError(
+                f"selected artifact {declared_path!r} has duplicate claim IDs"
+            )
         unknown = sorted(set(supported) - claim_ids)
         if unknown:
             raise ValueError(
@@ -117,13 +131,23 @@ def _load_selection(path: Path) -> dict[str, Any]:
             )
         covered_by_artifacts.update(supported)
 
-        for field in ("caption", "rationale"):
+        for field in ("caption", "observe", "rationale"):
             if not isinstance(artifact.get(field), str):
                 raise ValueError(
                     f"selected artifact {declared_path!r} has invalid {field}"
                 )
+        if not artifact["rationale"].strip():
+            raise ValueError(f"selected artifact {declared_path!r} has empty rationale")
+        quality = artifact.get("quality")
+        if (
+            isinstance(quality, bool)
+            or not isinstance(quality, (int, float))
+            or not math.isfinite(quality)
+            or not 0.0 <= quality <= 1.0
+        ):
+            raise ValueError(f"selected artifact {declared_path!r} has invalid quality")
         expected_bytes = artifact.get("bytes")
-        if type(expected_bytes) is not int or expected_bytes < 0:
+        if type(expected_bytes) is not int or expected_bytes <= 0:
             raise ValueError(
                 f"selected artifact {declared_path!r} has invalid byte count"
             )
@@ -180,6 +204,18 @@ def _load_selection(path: Path) -> dict[str, Any]:
         or manifest["total_bytes"] != selected_bytes
     ):
         raise ValueError("selection total_bytes does not match selected artifact sizes")
+    rejected = manifest.get("rejected")
+    if not isinstance(rejected, list):
+        raise ValueError("selection rejected artifacts must be a list")
+    for artifact in rejected:
+        if (
+            not isinstance(artifact, dict)
+            or not isinstance(artifact.get("path"), str)
+            or not artifact["path"].strip()
+            or not isinstance(artifact.get("reason"), str)
+            or not artifact["reason"].strip()
+        ):
+            raise ValueError("selection rejected artifact entries are invalid")
     return manifest
 
 
@@ -231,11 +267,11 @@ def _validate_existing_asset(asset: dict[str, Any], artifact: dict[str, Any]) ->
         )
     digest = asset.get("digest")
     expected_digest = f"sha256:{artifact['sha256']}"
-    if digest not in (None, "", expected_digest):
+    if digest != expected_digest:
         raise ValueError(
             f"existing release asset {name!r} does not match the selected digest"
         )
-    if asset.get("state") not in (None, "uploaded"):
+    if asset.get("state") != "uploaded":
         raise ValueError(f"existing release asset {name!r} is not fully uploaded")
 
 
@@ -482,7 +518,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--backend", choices=("manual", "gh-release"), default="manual")
     parser.add_argument("--repo", default="", help="owner/repo for gh-release")
     parser.add_argument(
-        "--tag", default="verification-media", help="release tag for gh-release"
+        "--tag",
+        default="verification-media",
+        type=_non_empty,
+        help="release tag for gh-release",
     )
     parser.add_argument(
         "--yes",
@@ -537,19 +576,20 @@ def main(argv: list[str] | None = None) -> int:
         urls: dict[str, str] = {}
         uploaded = False
         if args.backend == "gh-release":
-            if not args.repo:
+            repo = args.repo.strip()
+            if not _GITHUB_REPOSITORY.fullmatch(repo):
                 raise ValueError("--backend gh-release requires --repo owner/repo")
             if args.yes:
                 if publication_ready:
                     urls = _publish_gh_release(
-                        selection, args.selection.parent, args.repo, args.tag
+                        selection, args.selection.parent, repo, args.tag
                     )
                     uploaded = True
-            else:
+            elif publication_ready:
                 # Dry-run: emit the URLs the upload would produce.
                 for artifact in selection["selected"]:
                     urls[artifact["path"]] = _release_asset_url(
-                        args.repo, args.tag, artifact
+                        repo, args.tag, artifact
                     )
         section = render_section(
             selection,

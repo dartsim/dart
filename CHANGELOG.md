@@ -71,11 +71,17 @@
   * Add a release-tailored model-upgrade audit and strengthen agent visual
     verification with durable-context diagnostics, viewport-aware assessed OSG
     framing, deterministic semantic-review targets and bundles, and fail-closed
-    evidence publication. Release evidence is content-addressed and records its
+    evidence publication. Release evidence is content-addressed, validates the
+    complete selection contract before any GitHub lookup, requires exact remote
+    size/digest/uploaded-state metadata on retry, and records its
     path/size/digest/URL bindings so later or partially retried publications
-    cannot replace bytes behind earlier PR URLs. The required consolidated-DART
-    detector smoke also uses a semantically inspected orthogonal view that keeps
-    its shape labels, contact markers, and collision bounds readable.
+    cannot replace bytes behind earlier PR URLs. The AI checker also validates
+    branch test-task semantics, including the Release-only CMake `ALL` boundary
+    and its graph-owned CTest/pytest coverage, and Pixi commands across every
+    active durable task document. The required
+    consolidated-DART detector smoke uses a semantically inspected orthogonal
+    view that keeps its shape labels, contact markers, and collision bounds
+    readable.
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable

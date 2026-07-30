@@ -133,9 +133,9 @@ pass the gz gate against facades before dependency removal ships.
   `dart/constraint/ConstraintSolver.cpp:416` and `:433` (doc 03's 322/342 was
   stale). The phase-6 flip surface also includes `WorldConfig` (`World.hpp:103`
   defaults to Fcl) and `SkelParser`'s FCL helpers
-  (`dart/utils/SkelParser.cpp:718-731`). 23 files reference
+  (`dart/utils/SkelParser.cpp:718-731`). 25 code files reference
   `FCLCollisionDetector` outside `dart/collision/fcl/` (5 core, 2 dartpy,
-  ~16 tests/examples).
+  18 tests/examples/scripts).
 - Component asymmetry: the consolidated `collision/dart` implementation and FCL
   compile **into core libdart**; `collision/native` no longer exists, while
   `collision-bullet`/`collision-ode` are separate exported components. Thus a

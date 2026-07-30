@@ -9,8 +9,11 @@ pixi run test-all
 ```
 
 `pixi run test` runs the C++ test suite after building tests. `pixi run test-py`
-runs the Python binding tests. `pixi run test-all` is the broad default gate for
-the release branch.
+runs the Python binding tests. `pixi run test-all` builds the default CMake
+`ALL` target. The branch configuration pins `BUILD_TESTING=ON`, and `ALL`
+depends on `tests_and_run` and `pytest`, so this aggregate also runs CTest and
+the Python binding tests. It does not run lint; run `pixi run lint` separately.
+Use `test` or `test-py` for focused reruns and clearer failure attribution.
 
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in

@@ -516,6 +516,440 @@ def test_task_collection_includes_default_and_feature_tasks():
     assert infra.collect_task_names(data) == {"default-task", "feature-task"}
 
 
+def test_task_command_collection_includes_platform_variants():
+    data = {
+        "tasks": {"test": {"cmd": "ctest unix"}},
+        "target": {"win-64": {"tasks": {"test": {"cmd": ["ctest", "windows"]}}}},
+    }
+    assert infra.collect_task_commands(data, "test") == [
+        "ctest unix",
+        "ctest windows",
+    ]
+
+
+def test_task_definition_collection_includes_platform_variants():
+    data = {
+        "tasks": {"test-all": {"cmd": "build unix", "env": {"BUILD_TYPE": "Release"}}},
+        "target": {
+            "win-64": {
+                "tasks": {
+                    "test-all": {
+                        "cmd": "build windows",
+                        "env": {"BUILD_TYPE": "Release"},
+                    }
+                }
+            }
+        },
+    }
+
+    assert [
+        task["cmd"] for task in infra.collect_task_definitions(data, "test-all")
+    ] == [
+        "build unix",
+        "build windows",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("cmake --build build/default --target ALL", True),
+        (
+            "cmake --build build/default --target test && "
+            "cmake --build build/default --target ALL",
+            False,
+        ),
+        ("cmake --build build/default --target test --target ALL", False),
+        ("cmake --build build/default --target clean --target ALL", False),
+        ('cmake --build "$PIXI_PROJECT_ROOT/build/default" --target ALL', True),
+        ("cmake --build $PIXI_PROJECT_ROOT/build/default --target ALL", False),
+        (
+            "cmake --build build/default\nruntime-wrapper --target ALL",
+            False,
+        ),
+        (
+            'cmake --build "$(runtime-wrapper)" --target ALL',
+            False,
+        ),
+        (
+            "cmake --build `runtime-wrapper` --target ALL",
+            False,
+        ),
+    ],
+)
+def test_single_cmake_all_build_contract(command, expected):
+    assert infra.is_single_cmake_all_build(command) is expected
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ('cmake -S . -B "$PIXI_PROJECT_ROOT/build/default"', True),
+        ("cmake -S . -B $PIXI_PROJECT_ROOT/build/default", False),
+        (
+            "cmake -G Ninja -S . -B build/default -DCMAKE_BUILD_TYPE=Release",
+            True,
+        ),
+        ("cmake -S . -B build/default\nninja test", False),
+        ('cmake -S "$(python -m unittest)" -B build/default', False),
+        (
+            'cmake -E env sh -c "ninja -C build/default test" ' "-S . -B build/default",
+            False,
+        ),
+        (
+            "cmake -S . -B build/default --install build/default",
+            False,
+        ),
+        (
+            "cmake -S . -B build/default -C runtime-cache.cmake",
+            False,
+        ),
+        ("cmake -S . -B build/default -N", False),
+        (
+            "cmake -S . -B build/default "
+            "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=runtime.cmake",
+            False,
+        ),
+        (
+            'cmake -S . -B build/default -DCMAKE_PREFIX_PATH="x${IFS}-C"',
+            False,
+        ),
+        (
+            'cmake -S . -B build/default -DCMAKE_PREFIX_PATH="$UNKNOWN_PATH"',
+            False,
+        ),
+        ("cmake -S runtime-project -B build/default", False),
+    ],
+)
+def test_configuration_only_command_contract(command, expected):
+    assert infra.is_configuration_only_command(command) is expected
+
+
+def test_pixi_reference_check_includes_durable_resume_surfaces(tmp_path):
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\nlint = { cmd = "true" }\n', encoding="utf-8"
+    )
+    resume = tmp_path / "docs/dev_tasks/example/RESUME.md"
+    resume.parent.mkdir(parents=True)
+    resume.write_text("Run `pixi run test-unit` before resuming.\n", encoding="utf-8")
+    errors = []
+
+    infra.check_pixi_references(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/RESUME.md:1: unknown Pixi task `test-unit`"
+    ]
+
+
+def test_pixi_reference_check_includes_numbered_task_context(tmp_path):
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\nlint = { cmd = "true" }\n', encoding="utf-8"
+    )
+    packet = tmp_path / "docs/dev_tasks/example/07-work-packet.md"
+    packet.parent.mkdir(parents=True)
+    packet.write_text("Run `pixi run test-unit` before resuming.\n", encoding="utf-8")
+    errors = []
+
+    infra.check_pixi_references(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/07-work-packet.md:1: unknown Pixi task `test-unit`"
+    ]
+
+
+def _copy_test_gate_contract(root: Path) -> None:
+    for relative in (
+        "pixi.toml",
+        "AGENTS.md",
+        "CMakeLists.txt",
+        "docs/onboarding/testing.md",
+        "docs/onboarding/release-management.md",
+        "tests/CMakeLists.txt",
+        "python/tests/CMakeLists.txt",
+    ):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            (ROOT / relative).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+
+
+@pytest.mark.parametrize(
+    ("relative", "marker"),
+    [
+        ("AGENTS.md", "pixi run test         # Build and run C++ tests"),
+        (
+            "docs/onboarding/testing.md",
+            "`tests_and_run` and `pytest`",
+        ),
+        (
+            "docs/onboarding/release-management.md",
+            "`test-all` does not format or check lint",
+        ),
+    ],
+)
+def test_test_gate_contract_rejects_operational_doc_drift(tmp_path, relative, marker):
+    _copy_test_gate_contract(tmp_path)
+    path = tmp_path / relative
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(marker, "stale gate claim", 1),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(relative in error and marker in error for error in errors)
+
+
+def test_test_gate_contract_rejects_task_semantic_drift(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    pixi.write_text(
+        pixi.read_text(encoding="utf-8").replace("--target ALL", "--target build"),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == [
+        "pixi.toml: `test-all` task must retain command marker `--target ALL`"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "--target ALL",
+            "--target ALL && ctest",
+            "`test-all` runtime coverage must remain owned by the CMake `ALL` graph",
+        ),
+        (
+            "--target ALL",
+            "--target ALL test",
+            "every `test-all` command must be one CMake build",
+        ),
+        (
+            'depends-on = ["config"]',
+            'depends-on = ["config", "test"]',
+            "every `test-all` variant must depend only on",
+        ),
+        (
+            'env = { BUILD_TYPE = "Release" }',
+            'env = { BUILD_TYPE = "Debug" }',
+            'every `test-all` variant must set only `BUILD_TYPE = "Release"`',
+        ),
+    ],
+)
+def test_test_gate_contract_rejects_test_all_runtime_semantics(
+    tmp_path, old, new, expected
+):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    test_all_offset = text.index("test-all =")
+    text = text[:test_all_offset] + text[test_all_offset:].replace(old, new, 1)
+    pixi.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
+def test_test_gate_contract_rejects_dependency_indirection(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    test_all_offset = text.index("test-all =")
+    text = text[:test_all_offset] + text[test_all_offset:].replace(
+        'depends-on = ["config"]',
+        'depends-on = ["runtime-wrapper"]',
+        1,
+    )
+    text += '\nruntime-wrapper = { cmd = "ctest", depends-on = ["test"] }\n'
+    pixi.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "every `test-all` variant must depend only on" in error for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "    cmake \\\n        -G Ninja",
+            "    ctest && cmake \\\n        -G Ninja",
+            "every `config` command used by `test-all` must only configure CMake",
+        ),
+        (
+            '""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }',
+            '""", depends-on = ["runtime-wrapper"], '
+            'env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }',
+            "`config` must not depend on other tasks",
+        ),
+        (
+            'env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }',
+            'env = { DART_VERBOSE = "OFF -C runtime.cmake", '
+            'BUILD_TYPE = "Release" }',
+            "every `config` variant must use the exact branch-owned environment",
+        ),
+    ],
+)
+def test_test_gate_contract_rejects_runtime_config_path(tmp_path, old, new, expected):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    text = pixi.read_text(encoding="utf-8")
+    assert old in text
+    pixi.write_text(text.replace(old, new, 1), encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
+def test_test_gate_contract_requires_build_testing_on(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    pixi = tmp_path / "pixi.toml"
+    pixi.write_text(
+        pixi.read_text(encoding="utf-8").replace(
+            "        -DBUILD_TESTING=ON \\\n",
+            "",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any("must pin `BUILD_TESTING=ON`" in error for error in errors)
+
+
+def test_test_gate_contract_requires_runtime_graph(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "list(APPEND all_target_candidates tests_and_run pytest)",
+            "list(APPEND all_target_candidates tests)",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "CMakeLists.txt: missing `test-all` graph marker" in error for error in errors
+    )
+
+
+def test_test_gate_contract_rejects_stale_task_handoff_semantics(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    handoff = tmp_path / "docs/dev_tasks/example/HANDOFF.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text(
+        "- If `test-all` reports a Debug nanobind failure, clear its cache.\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/HANDOFF.md:1: `test-all` is a Release-only "
+        "build task; remove Debug/nanobind guidance"
+    ]
+
+
+def test_test_gate_contract_rejects_main_only_nanobind_cache_advice(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    packet = tmp_path / "docs/dev_tasks/example/07-work-packet.md"
+    packet.parent.mkdir(parents=True)
+    packet.write_text(
+        '- Debug "nanobind not found" is the known poisoned-CMakeCache issue.\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/07-work-packet.md:1: remove stale main-only "
+        "nanobind cache guidance"
+    ]
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "`pixi run test-all` only builds and does not run tests.",
+        "`test-all` does not run CTest or pytest.",
+        "`test-all` is not runtime coverage.",
+    ],
+)
+def test_test_gate_contract_rejects_false_no_runtime_claims(tmp_path, claim):
+    _copy_test_gate_contract(tmp_path)
+    handoff = tmp_path / "docs/dev_tasks/example/HANDOFF.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text(f"- {claim}\n", encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/HANDOFF.md:1: `test-all` must not be "
+        "described as build-only or lacking runtime coverage"
+    ]
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "`pixi run test-all` is the full lint/build/test aggregate.",
+        "`test-all` runs lint before building and testing.",
+    ],
+)
+def test_test_gate_contract_rejects_false_lint_claims(tmp_path, claim):
+    _copy_test_gate_contract(tmp_path)
+    handoff = tmp_path / "docs/dev_tasks/example/HANDOFF.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text(f"- {claim}\n", encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == [
+        "docs/dev_tasks/example/HANDOFF.md:1: `test-all` must not be "
+        "described as providing lint coverage"
+    ]
+
+
+def test_test_gate_contract_accepts_runtime_graph_claim(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    handoff = tmp_path / "docs/dev_tasks/example/HANDOFF.md"
+    handoff.parent.mkdir(parents=True)
+    handoff.write_text(
+        "- `test-all` provides C++ and Python runtime coverage through the "
+        "CMake `ALL` graph; run lint separately.\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert errors == []
+
+
 def test_agent_hook_path_routing_is_bounded():
     assert hook.is_ai_infrastructure_path("docs/ai/README.md")
     assert hook.is_ai_infrastructure_path("docs/onboarding/architecture.md")

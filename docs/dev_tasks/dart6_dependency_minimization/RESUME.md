@@ -101,23 +101,24 @@ gz-physics performance/symbol checks, and the gz-sim entity-system integration
 test. This implementation-only correction changes no header or ABI surface and
 was included in the merged final head.
 
-**Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
-[05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw
-evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head
-`1e6a8332a730` after merging `release-6.20` = `949a9c2ff5ed`, with the
-verdict "native default NOT allowed at this tip" and the phase-6 acceptance
-envelope. Consume the committed row summaries and verdict for phase-1
-sequencing; do **not** re-run the matrix just to start phase 1. For any
-phase-6/default-flip tolerance gate, retrieve JSONL scene dumps matching
-the recorded SHA-256 digests or recapture dumps on the flip PR's parent
-and compare within that same recapture.
+**Phase 0 was captured and recaptured on its then-current base.** The baseline
+packet lives in [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md)
+(raw evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head
+`1e6a8332a730` after merging the then-current `release-6.20` tip
+`949a9c2ff5ed`. Its verdict was "native default NOT allowed at this tip" and it
+defined the phase-6 acceptance envelope. For any later default-flip tolerance
+gate, retrieve JSONL scene dumps matching the recorded SHA-256 digests or
+recapture dumps on the flip PR's parent and compare within that same recapture;
+the historical packet is not evidence for the current release tip.
 
 **Phases 0 and 1 are merged** (#3271 phase-0 packet, #3281 phase-1 native
 math core — C++17, no EnTT, internal-only; FCL stays default). Follow-ups
 fixed the `maxNumContacts==0` contract in native sphere-sphere on both
 release-6.20 (#3298) and main (#3283).
 
-**Phase 2 is complete.** The execution plan (merged, #3302) is
+**Phase 2 is complete.** The following describes the historical
+pre-consolidation implementation merged through #3302 and the P-series PRs.
+The execution plan is
 [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
 internal, non-default `dart::collision::NativeCollisionDetector` that
 bridges DART 6's `CollisionDetector`/`CollisionGroup`/`CollisionObject`
@@ -130,8 +131,10 @@ scope-diff-guarded.
 
 - **P1** (BroadPhase base + BruteForce): **#3303** — **merged**.
 - **P2** (narrowphase dispatcher, sphere/box only): **#3306** — **merged**
-  (`dart/collision/native/narrow_phase/NarrowPhase.{hpp,cpp}` now on
-  `release-6.20`).
+  (at that tip,
+  `dart/collision/native/narrow_phase/NarrowPhase.{hpp,cpp}` was added to
+  `release-6.20`; #3381 later folded this implementation into
+  `dart/collision/dart/`).
 - **P3a** (adapter skeleton + sphere/box shape conversion, intentionally
   unregistered): **#3318** — **merged**.
 - **P3b** (bridge translation + `"native"` registration + `sphere_box` +
@@ -312,14 +315,17 @@ facts above that remain true after the 2026-07-29 merge: the task folder stays
 was DART 6.20.0.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff, merged state,
-remaining ratification point, and later-release gates.
+remaining ratification points, and later-release gates.
 
 ## Standing constraints
 
 - Run the gz gate for any later collision/default/dependency phase:
   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
-- Use the repository-owned Pixi tasks in `AGENTS.md`; `pixi run test-all` is the
-  full lint/build/test aggregate.
+- Use the repository-owned Pixi tasks in `AGENTS.md`; `pixi run test-all`
+  builds the default CMake `ALL` graph and, with the branch-pinned
+  `BUILD_TESTING=ON`, runs its CTest and pytest targets. Run `pixi run lint`
+  separately, and use `pixi run test` or `pixi run test-py` for focused
+  reruns.
 - Shared hot files (`pixi.toml`/`pixi.lock`): merge the latest approved target
   branch before pushing; never rebase a published PR branch.
 - Prefer fewer PRs from phase 3 onward: group cohesive capability wiring,

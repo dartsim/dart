@@ -185,9 +185,9 @@ packet's rows, re-captured on the flip PR's parent for drift control):
 3. Capability parity: distance vs FCL, raycast vs Bullet, VoxelGrid/
    octree vs FCL, CCD + persistent manifolds + per-pair capping per
    `03`'s matrix.
-4. Gates: full A/B packet, `pixi run test-all` build + `pixi run test`/
-   `test-py` runtime, and `DART_PARALLEL_JOBS=8 pixi run -e gazebo
-   test-gz` green.
+4. Gates: full A/B packet, the `pixi run test-all` default
+   build-and-runtime aggregate, focused `pixi run test`/`test-py` reruns, and
+   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` green.
 
 Phase 1 (#3281 native core skeleton, C++17, no EnTT, internal-only, FCL
 stays default) has landed. Phase 2 (DART 6 detector adapter) is the next
