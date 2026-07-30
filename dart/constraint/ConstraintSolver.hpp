@@ -325,6 +325,9 @@ protected:
   /// Build constrained groupsContact
   void buildConstrainedGroups();
 
+  /// Clears group state and returns true when no active constraints remain.
+  bool clearInactiveConstrainedGroups();
+
   /// Record profiler counters for the currently built constrained groups.
   void recordConstrainedGroupProfileCounters() const;
 

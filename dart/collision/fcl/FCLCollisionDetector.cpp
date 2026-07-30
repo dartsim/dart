@@ -1220,6 +1220,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    const_cast<SoftMeshShape*>(softMeshShape)->refreshData();
     auto aiMesh = softMeshShape->getAssimpMesh();
 
     geom = createSoftMesh<fcl::OBBRSS>(
