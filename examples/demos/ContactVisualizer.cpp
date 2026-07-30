@@ -128,7 +128,8 @@ void ContactVisualizer::applyPostStep()
   }
 
   const auto& result = mWorld->getLastCollisionResult();
-  const auto& arrows = mLayout.update(result.getContacts(), kMaxArrows);
+  const auto& arrows
+      = mLayout.update(result.getContacts(), kMaxArrows, mWorld->getTimeStep());
   const std::size_t count = arrows.size();
   ensurePool(count);
 

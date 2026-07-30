@@ -104,12 +104,17 @@ public:
 
   /// Lays out at most `maxArrows` arrows for `contacts` and returns them.
   ///
+  /// `timeStep` is the world's current timestep, passed in per call rather than
+  /// captured in resetForWorld() because the demo host lets it change while a
+  /// scene runs; it sets how fast the force reference decays.
+  ///
   /// Contacts with a non-finite point or force, and contacts carrying
   /// negligible force, are dropped rather than laid out, so the result is
   /// often shorter than `contacts`.
   const std::vector<ContactArrow>& update(
       const std::vector<dart::collision::Contact>& contacts,
-      std::size_t maxArrows);
+      std::size_t maxArrows,
+      double timeStep);
 
   /// The arrows produced by the most recent update().
   const std::vector<ContactArrow>& getArrows() const
@@ -135,7 +140,6 @@ private:
   double mReferenceLength = kFallbackReferenceLength;
   double mReferenceForce = 1.0;
   double mFloorForce = 1.0;
-  double mDecayPerStep = 0.0;
 };
 
 } // namespace dart_demos

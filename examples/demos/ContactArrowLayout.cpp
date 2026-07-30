@@ -57,15 +57,26 @@ constexpr double kNegligibleForce = 1e-8;
 /// its origin, plus the largest half-extent of any collision shape it carries
 /// so a single-body scene still has a nonzero size. Only collision geometry
 /// counts, since that is what the contacts these arrows annotate come from.
-void accumulateBodyExtent(
+///
+/// Returns whether the body contributed, so the caller can skip its mass too.
+bool accumulateBodyExtent(
     const dart::dynamics::BodyNode& body,
     Eigen::Vector3d& min,
     Eigen::Vector3d& max,
     double& maxShapeHalfExtent)
 {
+  // A body that cannot collide cannot produce a contact, so it must not size
+  // the arrows that annotate contacts. The `sleeping` scene is the case that
+  // matters: it parks its projectile pool at (60, 60, 10) with the bodies made
+  // noncollidable, and counting those would stretch the reference length to
+  // the clamp and pull the force floor up by their idle mass -- reproducing
+  // the very detached-arrow symptom this layout exists to prevent.
+  if (!body.isCollidable())
+    return false;
+
   const Eigen::Vector3d origin = body.getWorldTransform().translation();
   if (!origin.allFinite())
-    return;
+    return false;
 
   min = min.cwiseMin(origin);
   max = max.cwiseMax(origin);
@@ -83,6 +94,8 @@ void accumulateBodyExtent(
               = std::max(maxShapeHalfExtent, halfExtents.maxCoeff());
         }
       });
+
+  return true;
 }
 
 } // namespace
@@ -112,11 +125,14 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
     if (!skeleton || !skeleton->isMobile() || skeleton->getNumDofs() == 0)
       continue;
 
-    mobileMass += skeleton->getMass();
+    // Mass is accumulated per body rather than per skeleton for the same
+    // reason: only what can actually reach a contact should set the scale.
     for (const auto* body : skeleton->getBodyNodes()) {
       if (!body)
         continue;
-      accumulateBodyExtent(*body, min, max, maxShapeHalfExtent);
+      if (!accumulateBodyExtent(*body, min, max, maxShapeHalfExtent))
+        continue;
+      mobileMass += body->getMass();
       sawMobileBody = true;
     }
   }
@@ -136,17 +152,13 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
   const double weight = mobileMass * world.getGravity().norm();
   mFloorForce = std::max(kNegligibleForce, kFloorForceWeightFraction * weight);
   mReferenceForce = mFloorForce;
-
-  const double timeStep = world.getTimeStep();
-  mDecayPerStep = (timeStep > 0.0 && std::isfinite(timeStep))
-                      ? std::exp(-timeStep / kForceDecayTime)
-                      : 0.0;
 }
 
 //==============================================================================
 const std::vector<ContactArrow>& ContactArrowLayout::update(
     const std::vector<dart::collision::Contact>& contacts,
-    std::size_t maxArrows)
+    std::size_t maxArrows,
+    double timeStep)
 {
   mArrows.clear();
 
@@ -166,8 +178,14 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   // longest arrow pinned to the largest force; decaying over kForceDecayTime
   // lets resting contacts become readable again shortly after an impact,
   // instead of staying crushed to invisibility by a spike seconds in the past.
-  mReferenceForce
-      = std::max({peakForce, mDecayPerStep * mReferenceForce, mFloorForce});
+  //
+  // The decay is derived from the timestep on every call rather than cached,
+  // because the demo host lets the user change the timestep while a scene is
+  // running; a cached value would silently stretch or compress the recovery.
+  const double decay = (timeStep > 0.0 && std::isfinite(timeStep))
+                           ? std::exp(-timeStep / kForceDecayTime)
+                           : 0.0;
+  mReferenceForce = std::max({peakForce, decay * mReferenceForce, mFloorForce});
 
   mArrows.reserve(count);
   for (std::size_t i = 0; i < count; ++i) {
