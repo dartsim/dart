@@ -719,6 +719,16 @@ def _copy_runner_contract(tmp_path: Path) -> Path:
             "pixi run -- ctest",
             "direct ctest invocation",
         ),
+        (
+            "pixi.toml",
+            "python -I scripts/ctest_tier.py \\\n"
+            '        --build-type "$BUILD_TYPE" \\\n'
+            '        -R "^UNIT_math_"',
+            "ctest \\\n"
+            "        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \\\n"
+            '        -R "^UNIT_math_"',
+            "direct ctest invocation",
+        ),
     ),
 )
 def test_runner_contract_rejects_execution_bypasses(
@@ -763,6 +773,42 @@ def test_workflow_scan_rejects_direct_runner_scalar_forms(tmp_path, run_step, ex
     errors = infra.check_workflow_test_runner_invocations(tmp_path)
 
     assert any(f"direct {expected} invocation" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    (
+        ("ctest -R '^UNIT_future$'", "ctest"),
+        (
+            ["bash", "-lc", "set -euo pipefail\nctest -R '^UNIT_future$'"],
+            "ctest",
+        ),
+        ("bash -lc \"ctest -R '^UNIT_future$'\"", "ctest"),
+        ("if ctest -R '^UNIT_future$'; then echo passed; fi", "ctest"),
+        ("prepare-tests && python -m pytest -q tests/future.py", "pytest"),
+        ("pixi run -- pytest -q tests/future.py", "pytest"),
+    ),
+)
+def test_pixi_scan_rejects_direct_runner_in_future_task(command, expected):
+    pixi = {"tasks": {"future-subsystem": {"cmd": command}}}
+
+    errors = infra.check_pixi_test_runner_invocations(pixi)
+
+    assert any(f"direct {expected} invocation" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "python -I scripts/ctest_tier.py -R '^UNIT_future$'",
+        "python -I scripts/run_pytest.py -q tests/future.py",
+        "python scripts/cmake_build.py --target pytest",
+    ),
+)
+def test_pixi_scan_accepts_guarded_and_non_runner_commands(command):
+    pixi = {"tasks": {"future-subsystem": {"cmd": command}}}
+
+    assert infra.check_pixi_test_runner_invocations(pixi) == []
 
 
 @pytest.mark.parametrize(

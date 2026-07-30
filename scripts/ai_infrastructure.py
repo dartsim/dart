@@ -31,6 +31,22 @@ DIRECT_WORKFLOW_TEST_RUNNERS = (
     ("pytest", re.compile(r"\bpytest\b"), "python -I scripts/run_pytest.py"),
     ("ctest", re.compile(r"\bctest\b"), "python -I scripts/ctest_tier.py"),
 )
+DIRECT_PIXI_TEST_RUNNERS = (
+    (
+        "pytest",
+        re.compile(
+            r"(?m)(?:^|&&|\|\||[;|])\s*"
+            r"(?:pixi\s+run\s+--\s+)?"
+            r"(?:pytest|python(?:3)?\s+-m\s+pytest)(?=\s|\\|$)"
+        ),
+        "python -I scripts/run_pytest.py",
+    ),
+    (
+        "ctest",
+        re.compile(r"\bctest\b"),
+        "python -I scripts/ctest_tier.py",
+    ),
+)
 LINUX_DEBUG_PYTHON_SMOKE_TESTS = (
     "python/tests/unit/common/test_string.py",
     "python/tests/unit/math/test_lcp.py",
@@ -1098,6 +1114,39 @@ def _task_command_definitions(
     return definitions
 
 
+def _all_task_command_definitions(
+    data: object,
+    path: tuple[str, ...] = (),
+) -> list[tuple[str, object]]:
+    """Return every Pixi task command, including target-specific definitions."""
+    definitions: list[tuple[str, object]] = []
+    if isinstance(data, dict):
+        if "cmd" in data:
+            definitions.append((".".join(path), data["cmd"]))
+        for key, value in data.items():
+            definitions.extend(_all_task_command_definitions(value, (*path, str(key))))
+    elif isinstance(data, list):
+        for index, value in enumerate(data):
+            definitions.extend(
+                _all_task_command_definitions(value, (*path, str(index)))
+            )
+    return definitions
+
+
+def check_pixi_test_runner_invocations(pixi: dict) -> list[str]:
+    """Reject Pixi task commands that bypass guarded test runners."""
+    errors: list[str] = []
+    for location, command in _all_task_command_definitions(pixi):
+        text = _command_text(command)
+        for runner, pattern, guarded_command in DIRECT_PIXI_TEST_RUNNERS:
+            if pattern.search(text):
+                errors.append(
+                    f"pixi.toml: {location}: direct {runner} invocation must "
+                    f"use the guarded runner {guarded_command!r}"
+                )
+    return errors
+
+
 def _require_task_prefix(
     pixi: dict,
     task_name: str,
@@ -1516,6 +1565,7 @@ def check_test_runner_contract(root: Path) -> list[str]:
             )
 
     pixi = _load_toml(root / "pixi.toml", errors)
+    errors.extend(check_pixi_test_runner_invocations(pixi))
     pytest_prefix = ("python", "-I", "scripts/run_pytest.py")
     for task_name in (
         "check-dart7-legacy-freeze-meta",
@@ -1531,6 +1581,9 @@ def check_test_runner_contract(root: Path) -> list[str]:
         "test-simulation-quick",
         "test-simulation-full",
         "test-full",
+        "test-math",
+        "test-lcpsolver",
+        "test-capsule-ground-contact",
     ):
         _require_task_prefix(
             pixi,

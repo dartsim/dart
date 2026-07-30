@@ -39,8 +39,8 @@ Canonical CTest gates remove every current or future case-insensitive
 Intentional focused selection therefore belongs in explicit task or runner
 arguments, not inherited environment variables. The Linux Debug dartpy smoke
 keeps its three-file scope through explicit guarded-runner arguments; the AI
-infrastructure check rejects tracked workflow steps that invoke pytest/CTest
-directly, revive the retired selectors, or drift that smoke path.
+infrastructure check rejects Pixi tasks and tracked workflow steps that invoke
+pytest/CTest directly, revive the retired selectors, or drift that smoke path.
 
 `pixi run check-ai-infra` executes small controlled pass, hostile-environment,
 zero-body, and deliberate-failure probes for both runners. The probes are

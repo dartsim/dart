@@ -779,7 +779,9 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py --target test_simulation_public_header_smoke
-ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_simulation_public_header_smoke$'
+python -I scripts/ctest_tier.py \
+  --test-dir "${BUILD_DIR}" \
+  -R '^test_simulation_public_header_smoke$'
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -1444,16 +1446,14 @@ python scripts/run_cpp_benchmark.py \
 """], depends-on = [{ task = "build-cuda", args = ["Release"] }] }
 
 test-math = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
         -R "^UNIT_math_"
 """, depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-lcpsolver = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
         -R "^UNIT_math_lcp_"
 """, depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
@@ -1491,10 +1491,9 @@ test-dart-gui-smoke = { cmd = [
 test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
 test-capsule-ground-contact = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
-        -R INTEGRATION_collision_CapsuleGroundContact
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
+        -R "^INTEGRATION_collision_CapsuleGroundContact$"
 """, depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1588,7 +1587,10 @@ build-coverage = { cmd = [
 set -euo pipefail
 PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
-  && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+  && python -I scripts/ctest_tier.py \
+    --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+    --jobs ${PARALLEL_JOBS} \
+    --timeout 2400
 """,
 ], depends-on = [
   "config-coverage",
@@ -2573,10 +2575,10 @@ test-asan = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-ctest \
+python -I scripts/ctest_tier.py \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --output-on-failure \
-  -LE simulation
+  -LE simulation \
+  --timeout 2400
 """,
 ], depends-on = [
   "build-asan",
@@ -3248,9 +3250,17 @@ test-gz = { cmd = """
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         echo "Running gz-physics compatibility tests in parallel..."
-        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS} -E PERFORMANCE_
+        python -I "$ROOT_DIR/scripts/ctest_tier.py" \
+          --test-dir . \
+          --jobs ${DART_PARALLEL_JOBS} \
+          --timeout 2400 \
+          -E PERFORMANCE_
         echo "Running gz-physics performance tests serially..."
-        ctest --output-on-failure --parallel 1 -R PERFORMANCE_
+        python -I "$ROOT_DIR/scripts/ctest_tier.py" \
+          --test-dir . \
+          --jobs 1 \
+          --timeout 2400 \
+          -R PERFORMANCE_
         cd lib
         (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
         echo "✓ Full gz-physics suite passed and DART plugin links successfully!"
