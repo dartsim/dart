@@ -34,13 +34,19 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
-
-#include <vector>
+#include <dart/collision/dart/Fwd.hpp>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class DARTCollisionGroup;
+
+namespace detail {
+struct DARTCollisionDetectorAccessor;
+struct DARTCollisionGroupEngineData;
+struct DARTCollisionObjectEngineData;
+} // namespace detail
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -56,15 +62,14 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
-  /// Get collision detector type for this class
+  /// Get collision detector type for this class.
   static const std::string& getStaticType();
 
-  /// Sets the number of worker participants for parallel native collision
-  /// queries. A value of 0 maps to hardware concurrency.
+  /// Sets the number of worker participants for parallel collision queries.
+  /// A value of 0 maps to hardware concurrency.
   void setNumCollisionThreads(std::size_t numThreads);
 
-  /// Returns the number of worker participants for parallel native collision
-  /// queries.
+  /// Returns the number of worker participants for parallel collision queries.
   std::size_t getNumCollisionThreads() const;
 
   /// Enables contacts for primitive penetration through soft triangle
@@ -106,8 +111,20 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override;
+
+  [[nodiscard]] native::CachedContact* getCachedContact(
+      const DARTCollisionObject* object1,
+      const DARTCollisionObject* object2,
+      void* userData) const;
+
 protected:
-  /// Constructor
   DARTCollisionDetector();
 
   // Documentation inherited
@@ -117,8 +134,39 @@ protected:
   // Documentation inherited
   void refreshCollisionObject(CollisionObject* object) override;
 
+  // Documentation inherited
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
+
 private:
+  friend class DARTCollisionGroup;
+  friend class DARTCollisionObject;
+  friend struct detail::DARTCollisionDetectorAccessor;
+
   class DARTCollisionObjectManager;
+
+  CollisionDetectorPtr attachCollisionGroupEngineData(
+      const DARTCollisionGroup* group,
+      const CollisionDetectorPtr& collisionDetector);
+
+  void removeCollisionGroupEngineData(const DARTCollisionGroup* group);
+
+  detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
+      const DARTCollisionGroup* group);
+
+  dynamics::ConstShapePtr attachCollisionObjectEngineData(
+      const DARTCollisionObject* object, const dynamics::ConstShapePtr& shape);
+
+  void removeCollisionObjectEngineData(const DARTCollisionObject* object);
+
+  detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object);
+
+  const detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object) const;
+
+  std::size_t getNumCollisionGroupEngineData() const;
+
+  std::size_t getNumCollisionObjectEngineData() const;
 
   static Registrar<DARTCollisionDetector> mRegistrar;
 };

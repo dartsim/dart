@@ -747,25 +747,34 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                 ".github/workflows/ci_ubuntu.yml: visual smoke must not use "
                 "continue-on-error"
             )
-        if visual_section.count("xvfb-run") != 2:
-            errors.append(
-                ".github/workflows/ci_ubuntu.yml: missing visual smoke marker "
-                "`xvfb-run` exactly twice"
-            )
-        for marker in (
-            "pixi run agent-capture",
-            "--scene box_on_ground --steps 250 --focus box --auto-views 1",
-            "--layers contacts collision_bounds labels",
-            "--width 320 --height 240",
-            "--out /tmp/dart-agent-visual-smoke --prefix smoke",
-            "pixi run image-verdict",
-            "/tmp/dart-agent-visual-smoke/smoke_auto0.png",
-            "pixi run test-agent-debug-overlay",
-        ):
-            if marker not in visual_section:
+        expected_visual_markers = (
+            ("xvfb-run", 2),
+            ("bash -eu -o pipefail <<'VISUAL_SMOKE'", 1),
+            ("pixi run agent-capture", 2),
+            (
+                "--scene box_on_ground --steps 250 --focus box --auto-views 1",
+                1,
+            ),
+            ("--scene dart_shape_contacts --steps 500", 1),
+            ("--camera-azimuth 0.8 --camera-elevation 0.42", 1),
+            ("--camera-distance 4.5 --camera-target 0 0 0.2", 1),
+            ("--layers contacts collision_bounds labels", 2),
+            ("--width 320 --height 240", 1),
+            ("--width 640 --height 480", 1),
+            ("--out /tmp/dart-agent-visual-smoke --prefix smoke", 1),
+            ("--out /tmp/dart-agent-visual-smoke --prefix dart", 1),
+            ("pixi run image-verdict", 2),
+            ("/tmp/dart-agent-visual-smoke/smoke_auto0.png", 1),
+            ("/tmp/dart-agent-visual-smoke/dart_main.png", 1),
+            ("pixi run test-agent-debug-overlay", 1),
+        )
+        for marker, expected_count in expected_visual_markers:
+            actual_count = visual_section.count(marker)
+            if actual_count != expected_count:
                 errors.append(
                     ".github/workflows/ci_ubuntu.yml: missing visual smoke "
-                    f"marker `{marker}`"
+                    f"marker `{marker}` exactly {expected_count} time(s); "
+                    f"found {actual_count}"
                 )
         overlay_test = root / "python/tests/unit/gui/test_agent_debug_overlay.py"
         try:

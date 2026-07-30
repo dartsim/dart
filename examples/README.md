@@ -29,10 +29,8 @@ standalone examples:
     $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
     $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
 
-Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The `native`
-adapter can run these `SoftMeshShape` scenes through the cached DART fallback
-bridge, but it remains diagnostic rather than preferred until native owns the
-complete soft-mesh kernels and passes the parity and performance gates.
+Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The
+consolidated `dart` detector covers `SoftMeshShape` in these scenes.
 
 or, from a manual build directory:
 

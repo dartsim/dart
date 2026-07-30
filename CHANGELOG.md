@@ -174,6 +174,15 @@
 
 * Collision
 
+  * Consolidate the experimental DART-owned collision engine into the built-in
+    `dart` detector and add the soft-body, ellipsoid, cone, and capsule
+    coverage the `dart` detector was missing. The temporary `native` factory
+    key is removed before release, leaving `dart` as the only name. The
+    released `DARTCollide` entry points and detector ABI remain compatible, as
+    do the pre-consolidation 6.20 group and object layouts. The `dart` detector
+    remains opt-in; the built-in default is unchanged (`fcl`):
+    [#3381](https://github.com/dartsim/dart/pull/3381)
+
   * Speed up many-object DART-native collision queries by replacing the
     quadratic brute-force broadphase with a dynamic AABB tree, while preserving
     deterministic result ordering and streaming boolean-query early exits:
@@ -220,11 +229,9 @@
     single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Let the direct `native` collision detector participate in soft-body scenes
-    by routing `SoftMeshShape` and `EllipsoidShape` pairs through cached
-    DART-native fallback collision objects instead of skipping them, while
-    keeping native broadphase traversal cache-friendly for small dynamic
-    groups:
+  * Add `SoftMeshShape` and `EllipsoidShape` collision support to the built-in
+    `dart` detector, with cached soft geometry and a cache-friendly broadphase
+    for small dynamic groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up primitive DART-native plane collision dispatch by caching a compact
@@ -553,9 +560,9 @@
 
 * Python
 
-  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
-    split-process DART-vs-MuJoCo comparison harness with deterministic
-    generated contact scenes and a pinned MuJoCo Pixi environment:
+  * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
+    deterministic generated contact scenes, selectable DART collision
+    detectors, and a pinned MuJoCo Pixi environment:
     [#3367](https://github.com/dartsim/dart/pull/3367)
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
