@@ -560,3 +560,46 @@ TEST(ContactArrowLayoutTest, RejectsForcesThatOverflowUnderNorm)
   EXPECT_TRUE(later[0].head.allFinite());
   EXPECT_NEAR(later[0].normalizedMagnitude, 1.0, 1e-12);
 }
+
+//==============================================================================
+// Gravity is a live control: the host has a Gravity checkbox and some scenes
+// have a gravity slider. The force floor is derived from the weight the
+// contacts carry, so it has to follow.
+TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(100.0, 0.5, box);
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  // 100 kg at 9.81 puts the floor at 5% of ~981 N.
+  const double weightedFloor = layout.getReferenceForce();
+  EXPECT_NEAR(weightedFloor, 0.05 * 100.0 * 9.81, 1e-9);
+
+  // A small contact is compressed against that floor, as it should be.
+  const std::vector<dart::collision::Contact> small
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 5.0, 0.0))};
+  layout.update(small, kMaxArrows, kTimeStep);
+  EXPECT_LT(layout.getArrows().front().normalizedMagnitude, 0.2);
+
+  // Switch gravity off. There is no weight left to carry, so that same contact
+  // must become readable instead of staying crushed by the old floor.
+  world->setGravity(Eigen::Vector3d::Zero());
+  layout.refreshForWorld(*world);
+  for (int s = 0; s < 3000; ++s) // let the tracked peak decay away
+    layout.update(small, kMaxArrows, kTimeStep);
+  const double zeroGravityReference = layout.getReferenceForce();
+  EXPECT_LT(zeroGravityReference, weightedFloor);
+  EXPECT_NEAR(layout.getArrows().front().normalizedMagnitude, 1.0, 1e-9)
+      << "the floor stayed at the old weight after gravity was switched off";
+
+  // Switch it back on and the floor returns.
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  layout.refreshForWorld(*world);
+  EXPECT_NEAR(layout.getReferenceForce(), weightedFloor, 1e-9)
+      << "the floor did not come back when gravity was restored";
+
+  std::cout << "contact_arrow_gravity  with_gravity_floor=" << weightedFloor
+            << " N  zero_gravity_ref=" << zeroGravityReference
+            << " N  restored_floor=" << layout.getReferenceForce() << " N\n";
+}

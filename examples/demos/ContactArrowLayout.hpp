@@ -157,6 +157,7 @@ private:
   double mReferenceLength = kFallbackReferenceLength;
   double mReferenceForce = 1.0;
   double mFloorForce = 1.0;
+  double mMobileMass = 0.0;
   std::size_t mSceneFingerprint = 0;
 };
 

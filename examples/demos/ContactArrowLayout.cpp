@@ -129,6 +129,18 @@ std::size_t ContactArrowLayout::sceneFingerprint(
 //==============================================================================
 void ContactArrowLayout::refreshForWorld(const dart::simulation::World& world)
 {
+  // The floor is re-derived every call rather than compared, because gravity is
+  // a live control -- the host has a Gravity checkbox and some scenes have a
+  // gravity slider -- and it is only a multiply against the mass already
+  // measured. Leaving it cached would keep low-force contacts compressed by the
+  // old weight after gravity is switched off, and leave the floor at its
+  // noise-suppression minimum after gravity is switched on in a zero-gravity
+  // scene.
+  mFloorForce = std::max(
+      kNegligibleForce,
+      kFloorForceWeightFraction * mMobileMass * world.getGravity().norm());
+  mReferenceForce = std::max(mReferenceForce, mFloorForce);
+
   const std::size_t fingerprint = sceneFingerprint(world);
   if (fingerprint == mSceneFingerprint)
     return;
@@ -187,7 +199,9 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
   }
 
   // The weight the contacts have to carry is the natural floor for the force
-  // reference: it is what a resting scene's contact forces sum to.
+  // reference: it is what a resting scene's contact forces sum to. The mass is
+  // kept so refreshForWorld() can re-derive the floor when gravity changes.
+  mMobileMass = mobileMass;
   const double weight = mobileMass * world.getGravity().norm();
   mFloorForce = std::max(kNegligibleForce, kFloorForceWeightFraction * weight);
   mReferenceForce = mFloorForce;
