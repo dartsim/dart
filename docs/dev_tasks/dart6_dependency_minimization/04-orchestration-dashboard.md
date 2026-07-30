@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — **PR #3381** is open and its latest 2026-07-29 review fix is being published; the phase-6 default flip was reverted 2026-07-23 and is deferred beyond 6.20 (default remains `fcl`); phase 7 (FCL decoupling) remains pending |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phases 0–3 and performance slices #3362/#3364/#3368 merged; detector consolidation **#3381 merged** as `46719bfbd75`; phase 4 is closed for this lane, the phase-6 default flip remains deferred beyond 6.20 (`fcl` stays default), and later-release Phase 5 ratification plus Phase 7 FCL decoupling remain |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -124,10 +124,12 @@
   **#3239** release-branch AI enforcement stack · **#3245** MSVC SIMD fix ·
   **#3233** release CI concurrency fix.
 
-### 🔄 Open — monitoring (checked 2026-07-29)
+### ✅ Consolidation closeout / monitoring (checked 2026-07-29)
 
-- **PR #3381** (`feature/dart-detector-consolidation`, milestone DART 6.20.0)
-  — the consolidation PR: `dart/collision/native/` folded into
+- **PR #3381** — **MERGED** from final head
+  `64d476b68ad5ae0dcca4e98abb9bba15b6962b87` as release commit
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The consolidation folded
+  `dart/collision/native/` into
   `dart/collision/dart/`, `DARTCollisionDetector` now denotes the consolidated
   engine (sole canonical key `"dart"`; the unreleased `"native"` key is
   removed), soft-body + ellipsoid + cone + capsule coverage ported, released
@@ -137,9 +139,10 @@
   released `DARTCollide` header/symbols remain as thin consolidated-engine
   adapters. The phase-6 default flip
   (previously in both `ConstraintSolver` ctors) was **reverted 2026-07-23**
-  and is deferred beyond DART 6.20; the default remains `fcl`. Current-head
-  review and CI must be re-established after the latest review fixes.
-  The local candidate passes the complete C++/dartpy/lint/AI/Gazebo/visual
+  and is deferred beyond DART 6.20; the default remains `fcl`. The final review
+  trail is historical; no publication, review, CI-monitoring, or
+  merge action remains.
+  The final reviewed lineage passed the complete C++/dartpy/lint/AI/Gazebo/visual
   gates, exact-header ABI canaries, and alternating incumbent-backend
   performance A/Bs with no measured FCL/ODE/Bullet regression. A new
   exact-head P2 about old inline destructors was fixed at `af2ac200e26` with a
@@ -148,14 +151,12 @@
   race in the four one-time shape-warning sets; that correction was published
   at `2f2d45d99da` with an eight-thread all-category regression. Fresh review
   `4814842827` then found that single-thread two-group queries missed the
-  parallel path's AABB rejection. The current candidate restores rejection
+  parallel path's AABB rejection. The final correction restores rejection
   before filters and narrowphase in both paths and verifies eight isolated
   cross-group overlaps visit eight candidates rather than all 64 Cartesian
   pairs. Its focused Release and assertions-enabled detector targets, fresh
-  no-cache 155-test C++, 223-test dartpy, and `199 + 4 + 1` Gazebo gates pass;
-  publication, hosted artifact inspection, and another fresh current-head
-  review are still pending.
-  **Merge is the maintainer's**.
+  no-cache 155-test C++, 223-test dartpy, and `199 + 4 + 1` Gazebo gates pass.
+  The correction is part of the merged final head.
 - **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
   gaps were superseded by the consolidation and the documented S6 acceptance
   re-scope (see RESUME.md). Remaining performance work is tracked by the
@@ -177,7 +178,7 @@ before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
 - **Current state:** DART 6.20 contains #3281's internal native math core and
-  phase-2 P1-P10. PR #3381 folds that engine into the canonical `"dart"`
+  phase-2 P1-P10. Merged PR #3381 folds that engine into the canonical `"dart"`
   detector and removes the unreleased `"native"` selector. It does not make
   the default FCL-optional.
   `release-6.20` still uses FCL as the default detector — created in *both*
@@ -198,10 +199,9 @@ before treating it as an open/active PR.)_
   performance tests. **Phase 3 D1-D4 are merged (#3352/#3355/#3358/#3359):**
   native detector distance, raycast, VoxelGrid/compound wiring, and CCD support
   against the incumbent support gaps. **Phase 3 D5 is merged (#3360):**
-  persistent manifold cache/reuse and cached-impulse seed/write-back. **Phase 4
-  has begun (#3362/#3364):** native dashboard rows and solver-facing manifold
-  contact reduction are merged, but Phase 4 still needs closeout evidence or one
-  consolidated measured follow-up before Phase 5.
+  persistent manifold cache/reuse and cached-impulse seed/write-back.
+  **Phase 4 is closed for this lane (#3362/#3364/#3368);** later general
+  performance work belongs to `dart6_performance_generalization`.
 - **Default flip:** deferred beyond DART 6.20. Do not flip defaults until
   `03`'s full A/B packet and gz gate pass on the proposing release.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
@@ -212,15 +212,15 @@ before treating it as an open/active PR.)_
 ## Coordination flags / blockers
 
 1. **Base / conflict status**:
-   - Current planning baseline (2026-07-18): `origin/release-6.20` =
-     `75306efe770decd70fe88c0e20d0cb4ca212f71a`.
+   - Current planning baseline (2026-07-29): `origin/release-6.20` =
+     `ac7b9462612a9ef54eeb9d6841375c7789cf23d8` (#3406, after #3381).
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - Remote mutations are maintainer-owned unless the maintainer explicitly
      requests a direct maintenance push.
-2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
-   **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
-   (per `AGENTS.md` / `02`).
+2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple
+   lanes. For future work, merge the latest approved target release before
+   pushing; never rebase a published PR branch (per `AGENTS.md` / `02`).
 3. **CI health (2026-07-04):** the known branch-level failures (macOS arm64
    SIMD `-Werror`, dartpy format preflight, shallow-support/SIMD rows) were
    fixed by **#3267/#3272/#3273, all merged 2026-07-04**. Residual red rows
@@ -228,12 +228,12 @@ before treating it as an open/active PR.)_
    Windows `Install`-step and coverage `Build with coverage` failures
    reproduced on base pushes, and FreeBSD ssh exit-8 / runner `Setup pixi`
    failures are infra flakes that clear on re-run.
-4. **Native-collision lane: stay inside the active phase.** The #3056
-   performance stack is useful evidence, but the DART 7 native default flip is
-   still a later phase. Phase 4 measured performance work is active; do not treat
-   `feature/native-occupancy-grid` or `task/native-collision-performance-exec`
-   as release-branch PRs unless a live PR exists and is based on
-   `release-6.20`.
+4. **Native-collision lane: Phase 4 is closed here.** The #3056 performance
+   stack remains useful evidence, but general follow-up belongs to
+   `dart6_performance_generalization` and the default flip is deferred to an
+   approved later release. Do not treat `feature/native-occupancy-grid` or
+   `task/native-collision-performance-exec` as release-branch PRs unless a live
+   PR exists and is based on the intended current release.
 
 ## Effort-level status
 
@@ -252,17 +252,17 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-29):** one open native-collision release PR —
-  **#3381**, the detector consolidation (default flip
-  reverted/deferred); current-head review fixes are under validation. The former
+- **Open queue (2026-07-29):** no native-collision consolidation PR remains.
+  **#3381** is merged; the default flip remains reverted/deferred. The former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
   #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360/#3362/#3364
   lane milestones, main-branch dual #3283, workflow rename #3357, and MSVC
   policy #3348 are merged.
-- **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
-  optional and eventually drops `fcl` from core. The opt-in native detector and
-  capability parity pieces are now on DART 6.20, but default-flip and dependency
-  decoupling are still late-phase decisions.
+- **Largest remaining win:** an approved later-release default flip and
+  dependency reduction could make FCL/Bullet/ODE optional and eventually drop
+  `fcl` from core. DART 6.20 already consolidated the engine under the sole
+  `"dart"` key; there is no opt-in `"native"` selector. Phase 5 ratification is
+  next, while default-flip and dependency decoupling remain deferred.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 

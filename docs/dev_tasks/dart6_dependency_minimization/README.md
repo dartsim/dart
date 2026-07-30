@@ -2,13 +2,12 @@
 
 ## Working Branches
 
-This task is for the DART 6.20 support lane.
+This task has no active implementation branch after merged PR #3381. This
+folder remains the project home for the unresolved later-release decision; do
+not recreate or resume historical Phase 0–4 branches.
 
-- Implementation branch:
-  `plan/dart6-dependency-minimization-6.20`, based on
-  `origin/release-6.20`.
-- Native-collision planning refresh branch:
-  `plan/dart6-native-collision-port`, based on `origin/release-6.20`.
+- Before future implementation, obtain maintainer approval for the target
+  release, fetch it, and create a fresh topic branch from that exact remote tip.
 - DART 7 reference: use `origin/main` directly, or create a local worktree from
   `origin/main` for comparisons. Do not rely on a developer-specific checkout
   path.
@@ -22,24 +21,27 @@ evidence in `03-native-collision-port-scoping.md` and the dashboard state in
 `04-orchestration-dashboard.md` were refreshed on 2026-07-09 after fetching
 `origin/main` and `origin/release-6.20`, after phase-3 D5 plus the native
 dashboard fix (#3363) merged, and after the first Phase 4 optimization slice
-(#3364) landed.
+(#3364) landed. The active owner state was refreshed again on 2026-07-29 after
+the detector consolidation (#3381) merged.
 
 ## Current Branch State
 
 - `origin/release-6.20` currently points at
-  `613241385ae58fed2d2a47e9ff53beb2972d4b76`.
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8` (#3406, after #3381).
 - `origin/main` currently points at
-  `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
+  `83110ef54abf41f54c1e03500e49c1c12c305b8a`.
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
-  package version (`6.19.3` in the current CMake configure output).
+  package version (`6.19.4` at this refresh).
 - DART 6.20 intentionally uses the release lane while package version metadata
   catches up to the branch/milestone naming.
-- Collision status: PR #3381 consolidates the DART-owned engine into
+- Collision status: merged PR #3381 consolidates the DART-owned engine into
   `DARTCollisionDetector`, with `"dart"` as its only factory key. The interim
   `"native"` key was introduced only on the unreleased 6.20 branch and is
   removed by the consolidation rather than carried as an alias. FCL remains
   the 6.20 default and a core dependency; a default flip and dependency
   removal are deferred until a later release and their full acceptance gates.
+  The final PR head was `64d476b68ad5ae0dcca4e98abb9bba15b6962b87`;
+  the release merge is `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`.
 
 ## DART 6 Dependency Inventory
 
@@ -140,17 +142,30 @@ ODE in the Gazebo feature lane.
   boxed LCP constraint-solver behavior. The ODE LCP-derived solver code is
   high-risk even if the folder name is undesirable.
 
-## Removal Candidates
+## Historical removal work and deferred collision work
 
-### First Slices
+The standalone-removal entries below are retained as design history, not as
+active branch instructions. Their authoritative status is:
+
+| Area | Current status |
+| --- | --- |
+| Convex hull replacement | ✅ merged (#3076) |
+| IKFast relocation/forwarder | ✅ merged (#3078) |
+| ImGui vendored-source replacement | ✅ merged (#3081) |
+| ODE LCP production replacement | ✅ merged (#3088) |
+| GLUT and lodepng removal | ✅ merged (#3116) |
+| DART-owned collision consolidation | ✅ merged (#3381); FCL remains default |
+| Default flip and FCL/Bullet/ODE dependency reduction | ⏸ deferred to an approved later release after Phase 5 ratification |
+
+### Completed first slices
 
 `dart/external/convhull_3d`
 
 - Risk: low.
-- Status: in progress on `chore/replace-convhull-3d-release-6.20`.
-- Plan: replace the vendored C implementation with the DART-owned native
-  `dart/math/detail/ConvexHull.hpp` implementation adapted from DART 7, update
-  the geometry include, and keep the legacy C implementation only under
+- Status: completed by #3076.
+- Result: replaced the vendored C implementation with the DART-owned native
+  `dart/math/detail/ConvexHull.hpp` implementation adapted from DART 7, updated
+  the geometry include, and kept the legacy C implementation only under
   `tests/unit/math/legacy_convhull_3d` for regression coverage.
 - Compatibility decision: intentionally remove the previously installed
   `dart/external/convhull_3d/convhull_3d.h` and
@@ -166,34 +181,34 @@ Default Pixi/package metadata for optional components
 - Plan: move optional packages out of the default path one at a time only after
   proving the default configure still succeeds and explicit feature/component
   environments keep their tests.
-- Remaining candidates for feature-only treatment before code removal: Bullet,
-  ODE, GUI packages, and OctoMap. Optimizer packages were already removed from
-  the default environment.
+- Deferred candidates for feature-only treatment: Bullet and ODE, only as part
+  of the approved later-release collision plan. Optimizer packages were already
+  removed; GUI and OctoMap contracts require separate live owner evidence.
 - Validation: default configure/build, explicit feature configure/build for each
   moved surface, package-component smoke tests, and Gazebo when the change is
   visible to downstream package discovery.
 
-### Medium-Risk Slices
+### Completed medium-risk slices
 
 `dart/external/ikfast`
 
 - Risk: medium because the old installed include path may be source-visible.
-- Status: in progress on `chore/replace-ikfast-release-6.20`.
-- Plan: move the header to the DART-owned `dart/dynamics/ikfast.h` path, update
-  in-repo includes, remove the source `dart/external/ikfast` tree, and generate
-  a forwarding header at the old `dart/external/ikfast` path for build-tree and
-  installed DART 6 source compatibility.
+- Status: completed by #3078.
+- Result: moved the header to the DART-owned `dart/dynamics/ikfast.h` path,
+  updated in-repo includes, removed the source `dart/external/ikfast` tree, and
+  generated a forwarding header at the old `dart/external/ikfast` path for
+  build-tree and installed DART 6 source compatibility.
 - Validation: IKFast integration tests, generated WAM example builds, and an
   installed-header smoke if the old include path changes.
 
 `dart/external/imgui`
 
 - Risk: medium because the OSG GUI path remains part of DART 6.
-- Status: in progress on `chore/replace-imgui-release-6.20`.
-- Plan: make the packaged/system ImGui path the default for normal GUI builds,
-  preserve the `external-imgui` component plus old installed
+- Status: completed by #3081.
+- Result: made the packaged/system ImGui path the default for normal GUI builds,
+  preserved the `external-imgui` component plus old installed
   `dart/external/imgui` include path through a system-backed compatibility
-  target in default builds, and use an explicit DART-patched FetchContent
+  target in default builds, and used an explicit DART-patched FetchContent
   target when `DART_USE_SYSTEM_IMGUI=OFF`.
 - Validation: default configure/build with system ImGui, headless system-ImGui
   build of `dart-external-imgui`, explicit fetched-ImGui fallback
@@ -203,11 +218,9 @@ Default Pixi/package metadata for optional components
 
 `dart/external/lodepng`
 
-- Risk: medium to high because it is tied to legacy GUI screenshot behavior.
-- Plan: do not revive standalone `lodepng` replacement work while GLUT remains.
-  DART 6.20 should remove GLUT completely and migrate every GLUT-supported
-  feature to OSG first; once OSG owns screenshot output, `lodepng` should be
-  removed as a consequence, following the DART 7 sequence in #2044 and #2051.
+- Risk: medium to high because it was tied to legacy GUI screenshot behavior.
+- Status: completed with the GLUT removal in #3116. Do not revive standalone
+  `lodepng` work.
 - Validation: OSG screenshot smoke, all migrated GUI examples/tutorials, package
   metadata proving `glut`, `libxi-dev`, `libxmu-dev`, and `freeglut` are no
   longer advertised, and install/package smokes proving the remaining GUI
@@ -218,27 +231,29 @@ Default Pixi/package metadata for optional components
 FCL in DART 6 core
 
 - Risk: high.
-- Plan: do not remove FCL from DART 6 core unless maintainers accept a larger
-  native-collision backport with package, API, and gz-physics evidence.
+- Plan: do not remove FCL from core until maintainers ratify Phase 5 and a later
+  default-flip packet passes package, API, and gz-physics gates.
 - Validation: native-collision parity, installed package/component smokes, full
   collision tests, dartpy coverage, and Gazebo.
 
 Bullet and ODE collision components
 
 - Risk: high for removal, lower for default-environment demotion.
-- Plan: first move their packages out of the default Pixi/package path while
-  keeping component builds working when dependencies are explicitly installed.
+- Plan: retain the real components until Phase 5 and the default flip are
+  accepted; any later facade/package change must preserve component discovery
+  and downstream behavior.
 - Validation: component configure/build with dependencies absent and present,
   examples/tutorials that request those components, package smoke, and Gazebo.
 
 `dart/external/odelcpsolver`
 
 - Risk: very high.
-- Plan: replace the production ODE-style source tree with the DART-owned native
+- Status: completed by #3088.
+- Result: replaced the production ODE-style source tree with the DART-owned native
   Dantzig kernel ported from DART 7, wired through DART 6's existing
   `dart/lcpsolver` and constraint APIs.
-- Current PR direction: install only the DART-owned `dart/lcpsolver/dantzig`
-  headers and sources. Keep the original ODE implementation only as a
+- The merged implementation installs only the DART-owned `dart/lcpsolver/dantzig`
+  headers and sources. It keeps the original ODE implementation only as a
   test-only baseline under `tests/baseline/odelcpsolver` for parity,
   correctness, and performance-comparison evidence.
 - Validation: full unit tests for constraints/contact/dynamics, focused LCP
@@ -248,16 +263,9 @@ Bullet and ODE collision components
 OpenSceneGraph and GLUT GUI dependencies
 
 - Risk: high for API removal, medium for default-environment demotion.
-- Owner decision: DART 6.20 should completely remove GLUT. All features
-  supported by GLUT must be supported by OSG before removal, including example
-  interactivity, keyboard/mouse event handling, run-loop behavior, overlays or
-  HUDs, screenshots/PNG output, and tutorial coverage.
-- Plan: use DART 7 PR #2044 as the migration reference for converting the
-  remaining GLUT examples to OSG and deleting `dart/gui/glut`, GLUT headers,
-  CMake find modules, package metadata, and dependency declarations. Use #2203
-  as the reference for tutorial, manifest, and dependency-doc cleanup after the
-  code migration lands. Treat #2051 as the follow-up `lodepng` removal once no
-  GLUT screenshot path remains.
+- Status: completed by #3116. GLUT code, headers, package metadata, and the
+  lodepng screenshot path are removed; OSG remains the supported DART 6 GUI
+  surface.
 - Validation: OSG feature-parity smoke for every migrated GLUT example,
   tutorial/example builds, GUI screenshot smoke, package-component smoke for
   `gui-osg`, absence checks for installed `dart/gui/glut` headers and top-level
@@ -268,27 +276,23 @@ OpenSceneGraph and GLUT GUI dependencies
   configure/build without GLUT packages and an explicit GUI build with OSG
   enabled.
 
-## Sequenced Workstreams
+## Historical workstream sequence
 
-1. **Branch and package baseline.** Confirm the 6.20 branch/version owner state
-   and record the gz-physics version lane for 6.20 before dependency removals.
-2. **Default-environment split.** Move optional dependencies out of the default
-   Pixi/package path one surface at a time, preserving explicit feature
-   environments and component builds.
-3. **Low-risk native replacements.** Replace `convhull_3d` with DART-owned
-   native math detail code, then move IKFast with a compatibility-forwarder
-   decision.
-4. **ImGui vendored-source removal.** Prefer system ImGui or an approved fetch
-   fallback while preserving the DART 6 OSG GUI component.
-5. **GLUT-to-OSG migration and screenshot cleanup.** Migrate every remaining
-   GLUT example/tutorial/feature to OSG, remove the GLUT component and package
-   metadata, then remove `lodepng` once screenshot output is owned by OSG.
-6. **Collision dependency reduction.** Treat Bullet/ODE package moves as
-   optional-component packaging work. Treat FCL removal as a native-collision
-   backport decision, not a routine cleanup.
-7. **LCP solver cleanup.** Replace the production `odelcpsolver` tree with the
-   DART-owned native Dantzig kernel, and keep any old ODE code under tests only
-   when it is needed as a parity or performance baseline.
+Steps 1–5 and 7 are complete; collision consolidation in step 6 is complete
+through #3381. The only active owner action is Phase 5 later-release
+ratification, not replaying this sequence.
+
+1. **Branch and package baseline** established the release and gz lane.
+2. **Default-environment split** removed optimizer defaults; collision
+   dependency work remains deferred.
+3. **Low-risk native replacements** completed convhull and IKFast migration.
+4. **ImGui vendored-source removal** completed the system/fetch compatibility
+   path.
+5. **GLUT-to-OSG migration and screenshot cleanup** removed GLUT and lodepng.
+6. **Collision dependency reduction** completed consolidation but intentionally
+   retained the default and external backends pending later-release decisions.
+7. **LCP solver cleanup** replaced production ODE code with DART-owned Dantzig
+   code and retained test-only baselines where required.
 
 ## Implementation Gates
 
@@ -314,24 +318,21 @@ Select gates by touched surface:
 
 ## Non-Goals
 
-- Do not port the full DART 7 GUI, C++23 architecture, or native-collision stack
-  into DART 6 as part of this cleanup.
+- Do not port the DART 7 GUI or C++23 architecture into DART 6. The collision
+  algorithms already consolidated into DART 6 were deliberately adapted to its
+  C++17/API/ABI constraints; do not reopen that port.
 - Do not remove DART 6 public package components or installed include paths
   without an explicit compatibility decision.
 - Do not treat deletion of `dart/external/` as evidence that runtime behavior is
-  simpler. Some code, especially LCP solver code, may need to move under a
-  DART-owned internal path before it can be replaced.
+  equivalent; preserve the merged parity baselines and focused tests.
 
-## Open Decisions
+## Current decision boundary
 
-- Should branch/version metadata move to 6.20 before dependency cleanup begins?
-- Which gz-physics lane is the authoritative DART 6.20 downstream gate?
-- For IKFast, can the old installed `dart/external/ikfast/ikfast.h` path be
-  removed in a future major release after DART 6 keeps compatibility by
-  forwarding it to `dart/dynamics/ikfast.h` in the build and install trees?
-- For ImGui, should DART 6 keep the DART-patched FetchContent compatibility
-  target as the default long-term, or require a patched system package path in a
-  future release?
-- Resolved on 2026-06-21: DART 6.20 should completely remove GLUT, not split or
-  preserve it. All GLUT-supported features must have OSG support before deletion,
-  and `lodepng` removal follows the OSG screenshot migration.
+- Ratify facade-over-dart for `OdeCollisionDetector` versus a coordinated
+  gz-physics change, and ratify the target later-release sequence. The
+  6.21/6.22 labels in `08-phase5-facade-decision.md` are proposals, not an
+  approved schedule.
+- Do not implement a default flip or dependency removal on `release-6.20`.
+- IKFast/ImGui future-major compatibility questions belong to their API/package
+  owners and are not active work in this folder.
+- GLUT/lodepng removal is resolved and merged (#3116).

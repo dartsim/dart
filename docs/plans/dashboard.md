@@ -9,12 +9,12 @@ Priority order is document order. Active implementation handoff remains in
 ### PLAN-620: Dependency Minimization And Native Collision
 
 - Owner doc: [dependency minimization](../dev_tasks/dart6_dependency_minimization/README.md)
-- Status: Active
-- Horizon: Now
+- Status: Planning / maintainer decision
+- Horizon: Later release
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Continue the native-collision port sequence from the
-  dependency-minimization task, using DART 7 as reference evidence only and
-  proving every release-branch compatibility surface directly.
+- Next step: Ratify the Phase 5 ODE-facade versus coordinated gz-physics choice
+  and the target later-release sequence. The DART 6.20 consolidation is merged;
+  do not continue the port or implement the default flip on `release-6.20`.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

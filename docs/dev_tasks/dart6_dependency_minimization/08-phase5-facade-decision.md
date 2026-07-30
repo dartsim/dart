@@ -1,10 +1,12 @@
-# Phase 5 — backend consolidation, facades, and the 6.21/6.22 deprecation plan
+# Phase 5 — backend consolidation and later-release facade proposal
 
 > Decision doc (v2, 2026-07-10). Evidence: source-verified gz usage surface
 > (`.deps/gz-physics/dartsim/src/`), the phase-0 acceptance envelope
 > ([05-phase0-baseline-packet.md](05-phase0-baseline-packet.md)), and the
-> 2026-07-10 current-head audit (`/tmp/audit_head_20260710T011207Z`).
-> Maintainer ratification points are listed at the end.
+> 2026-07-10 audit snapshot. Its `/tmp/audit_head_20260710T011207Z` directory
+> was session-local and is not durable evidence; reverify gz source and all
+> acceptance gates on the eventual target parent. Maintainer ratification points
+> are listed at the end.
 >
 > **Executed (2026-07-11):** Decision 1 below was implemented in the
 > detector-consolidation branch — `dart/collision/native/` folded into
@@ -15,16 +17,25 @@
 > `DARTCollide.{hpp,cpp}` API remains as thin wrappers over the consolidated
 > detector.
 >
-> **Reverted (2026-07-23):** the default flip referenced above has been
-> reverted per maintainer direction; PR #3381 now ships the
+> **Reverted (2026-07-23):** the default flip referenced above was
+> reverted per maintainer direction; PR #3381 ultimately shipped the
 > consolidation alone, and the built-in default remains **`fcl`**. The
 > flip is deferred beyond DART 6.20.
+>
+> **Merged (2026-07-29):** PR #3381 final head
+> `64d476b68ad5ae0dcca4e98abb9bba15b6962b87` merged to `release-6.20` as
+> `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. Decision 1 is implemented.
+> The remaining actions are maintainer ratification points 1 and 4: the ODE/gz
+> compatibility approach and the target later-release sequence. This document
+> does not authorize a 6.20 default flip or dependency removal.
 
 ## Goal restated
 
-Consolidate DART's built-in collision detection into one backend; deprecate
-the FCL, Bullet, and ODE collision backends in DART 6.21.0 and remove them in
-DART 6.22.0, while preserving the downstream gz-physics/gz-sim contract.
+The consolidation is complete. The unratified follow-up proposal is to
+deprecate the FCL, Bullet, and ODE collision backends after an accepted default
+flip, then remove their external dependencies in a later release while
+preserving the downstream gz-physics/gz-sim contract. The 6.21/6.22 labels
+below are planning examples, not an approved schedule.
 
 ## Decision 1 — canonical backend and naming (maintainer-directed, 2026-07-10)
 
@@ -32,8 +43,9 @@ DART 6.22.0, while preserving the downstream gz-physics/gz-sim contract.
 folds into `dart/collision/dart/`, and `NativeCollisionDetector` merges into
 `DARTCollisionDetector`, replacing its legacy collision implementation. The
 single built-in backend is the `dart` detector, canonical factory key `"dart"`.
-The keys `"fcl"`, `"bullet"`, `"ode"` remain resolvable
-and, from 6.22, create dart-backed facade implementations.**
+The keys `"fcl"`, `"bullet"`, `"ode"` remain resolvable and, in the proposed
+eventual dependency-removal release, create dart-backed facade
+implementations.**
 
 Maintainer direction (2026-07-10): "NativeDetector must merged into
 DartDetector (so native/ into dart/ as well)."
@@ -45,17 +57,16 @@ Mechanics, and why this is clean now:
   shipped; the consolidation PR renames/folds them with no deprecation cycle.
   All in-tree users are updated to `"dart"` in the same PR; no `"native"`
   selector or factory alias remains.
-- The incumbent `DARTCollisionDetector` has six primitive narrowphase pairs,
-  an in-detector AABB sweep broadphase (including plane pruning and parallel
-  scratch paths), a `distance()` stub, and no raycast. The consolidated engine
-  must preserve or deliberately replace and re-baseline that existing
-  broadphase behavior while extending the `"dart"` key's shape and query
-  capabilities. `dart`-detector guard rows re-baseline with the consolidation
-  PR's A/B evidence (pre-release change, allowed with recorded old/new rows).
+- Before #3381, the incumbent `DARTCollisionDetector` had six primitive
+  narrowphase pairs, an in-detector AABB sweep broadphase, a `distance()` stub,
+  and no raycast. The merged consolidated engine deliberately replaced and
+  re-baselined that behavior while extending the `"dart"` key's shape and query
+  capabilities; the PR's recorded old/new guard rows are historical evidence.
 - gz-physics keeps working: `SetWorldCollisionDetector("dart")` returns the
-  consolidated engine; the other names keep resolving; gz's own default
-  remains its `GzOdeCollisionDetector` subclass until 6.22
-  (`EntityManagementFeatures.cc:728`).
+  consolidated engine; the other names keep resolving. Under the facade
+  proposal, gz's own default remains its `GzOdeCollisionDetector` subclass
+  until the approved transition (`EntityManagementFeatures.cc:728` in the
+  audited snapshot).
 - No new enum value is needed: `CollisionDetectorType::Dart` and the dartpy
   `DARTCollisionDetector` binding now denote the consolidated engine, and the
   phase-6 flip simply changes the default from Fcl to Dart across the flip
@@ -86,15 +97,16 @@ Mechanics, and why this is clean now:
 > `0xd6736cd716faf01d`, S3 `0x6088ea0177efa6a`, S4 `0x55bf77ebc1c491b2`,
 > S5 `0x4f265a803b596035`).
 
-## Decision 2 — facades over the dart detector, not component removal
+## Proposal 2 — facades over the dart detector, not component removal
 
-**6.22 removes the external fcl/bullet/ode dependencies; the detector classes
-and CMake components survive as compatibility facades over the consolidated
-`dart` detector.** Dependency removal is gated on migrating the installed public
-detector headers and API types so they no longer include or expose FCL, Bullet,
-or ODE headers. Header-only downstream compile checks and component smoke tests
-must pass without those packages installed. The source-verified gz obligations
-and how facades satisfy them:
+**The proposed dependency-removal release drops the external fcl/bullet/ode
+dependencies while detector classes and CMake components survive as
+compatibility facades over the consolidated `dart` detector.** This approach
+and its target release are not yet ratified. Dependency removal is gated on
+migrating installed public detector headers and API types so they no longer
+include or expose FCL, Bullet, or ODE headers. Header-only downstream compile
+checks and component smoke tests must pass without those packages installed.
+The source-verified gz obligations and how facades would satisfy them:
 
 | gz obligation (evidence) | facade answer |
 | --- | --- |
@@ -110,10 +122,10 @@ Notes: gz subclasses **only** `OdeCollisionDetector` (there is no
 `GzBulletCollisionDetector`; the doc-03 matrix row overstated this). Bullet
 and FCL only need `create()` + name resolution + `getType()`.
 
-Behavior disclosure: facades emit the dart engine's contact profiles (counts/normals may
-differ from real FCL/Bullet/ODE). That is the documented semantic of the 6.22
-removal; 6.21's deprecation cycle is the migration window, and the gz gate
-must pass against facades before 6.22 ships.
+Behavior disclosure: facades would emit the dart engine's contact profiles
+(counts/normals may differ from real FCL/Bullet/ODE). The eventual migration
+release must document that semantic, provide a ratified deprecation window, and
+pass the gz gate against facades before dependency removal ships.
 
 ## Mechanics facts that shape the implementation
 
@@ -124,25 +136,24 @@ must pass against facades before 6.22 ships.
   (`dart/utils/SkelParser.cpp:718-731`). 23 files reference
   `FCLCollisionDetector` outside `dart/collision/fcl/` (5 core, 2 dartpy,
   ~16 tests/examples).
-- Component asymmetry: `collision/fcl`, `collision/dart`, `collision/native`
-  compile **into core libdart** (`dart_add_core_headers/sources`);
-  `collision-bullet`/`collision-ode` are separate exported components. So the
-  6.22 bullet/ode drop is component-level, while the FCL drop is core surgery:
+- Component asymmetry: the consolidated `collision/dart` implementation and FCL
+  compile **into core libdart**; `collision/native` no longer exists, while
+  `collision-bullet`/`collision-ode` are separate exported components. Thus a
+  future bullet/ode drop is component-level, while the FCL drop is core surgery:
   `target_link_libraries(dart PUBLIC ... fcl ...)` (`dart/CMakeLists.txt:117`),
   `DART_PKG_EXTERNAL_DEPS` (`CMakeLists.txt:103` -> `dart.pc` Requires), and
   `dart_check_required_package(fcl)` (`cmake/DARTFindDependencies.cmake:21-22`).
 - `DART_DEPRECATED(version)` ignores its argument and carries no message
-  (`dart/common/Deprecated.hpp:44-53`). 6.21 deprecations should use
+  (`dart/common/Deprecated.hpp:44-53`). A future deprecation release should use
   `[[deprecated("...use the dart collision detector...")]]` (or a new
   `DART_DEPRECATED_MESSAGE`) on `create()`/constructors — NOT on the classes
   gz subclasses; warning-cleanliness of `GzOdeCollisionDetector` under
-  -Werror must be prototyped before 6.21 ships.
+  -Werror must be prototyped before that release ships.
 - SOVERSION is `MAJOR.MINOR` (`cmake/DARTMacros.cmake:94`): every minor gets
-  a new SONAME, so converting classes to facades in 6.21/6.22 is
-  ABI-permissible; the constraint is source/API compatibility plus the gz
-  gate.
+  a new SONAME, so converting classes to facades in a later minor is
+  ABI-permissible; the constraint is source/API compatibility plus the gz gate.
 
-## Timeline
+## Proposed timeline (unratified beyond 6.20)
 
 - **6.20:** ship detector consolidation only. Keep FCL as the built-in default,
   keep FCL/Bullet/ODE implementations and package components real, and prove
@@ -151,22 +162,26 @@ must pass against facades before 6.22 ships.
 - **Later default-flip release:** only after the full acceptance packet and
   maintainer approval, change both `ConstraintSolver` constructors plus the
   WorldConfig/SkelParser surface.
-- **6.21 or later, after an accepted default flip:** deprecation attributes
+- **Proposed deprecation release, after an accepted default flip:** attributes
   with migration messages on FCL/Bullet/ODE `create()`/ctors; CHANGELOG +
   migration guide; CMake configure-time notices. Everything remains
   functional.
-- **6.22:** drop external fcl/bullet/ode from the required surface; classes
-  become facades over the dart detector; FCL decoupled from core
-  (`phase 7`), bullet/ode components rebuilt as facade components; package/
-  export smoke tests.
+- **Proposed following release:** drop external fcl/bullet/ode from the required
+  surface; classes become facades over the dart detector; FCL is decoupled from
+  core (`phase 7`), bullet/ode components are rebuilt as facade components, and
+  package/export smoke tests pass.
 
 ## Maintainer ratification points
 
 1. Facade-over-dart for `OdeCollisionDetector` vs coordinating a gz-physics
    change that drops the `GzOdeCollisionDetector` subclass first (facade is
-   the recommended default; both keep the gz gate green in 6.22).
+   the recommended default; either path must keep the gz gate green at the
+   approved transition).
 2. ~~Canonical name~~ RESOLVED by maintainer direction 2026-07-10: canonical
    `"dart"`, with `dart/collision/native/` merged into `dart/collision/dart/`
    and `NativeCollisionDetector` merged into `DARTCollisionDetector`.
 3. (retired) The legacy `DARTCollisionDetector` engine question is subsumed
    by the consolidation: its narrowphase is replaced in 6.20, not deprecated.
+4. Target release sequence: ratify which later release owns the default flip,
+   how long deprecation lasts, and which following release may remove external
+   dependencies. The historical 6.21/6.22 labels are proposal placeholders.
