@@ -385,7 +385,12 @@ compatibility remains on the active DART 6 LTS branch._
   image-capable agents inspect and reconcile captures instead of treating pixel
   checks as scene understanding, keeps bounds and viewport-aware camera fitting
   in the shared GUI core, points reviewers at representative temporal frames,
-  and gates evidence publication on a recorded text/image semantic verdict.
+  and gates evidence publication on a recorded text/image semantic verdict
+  while revalidating selected artifact hashes, sizes, and claim coverage before
+  upload. GitHub release evidence uses content-addressed asset names and records
+  each path/size/digest/URL binding so later publications cannot replace bytes
+  behind an earlier PR's URL; reuse requires an exact remote digest, size, and
+  completed-upload state.
   Corrected the shared box-stack evidence fixture so it starts with shallow
   contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403))

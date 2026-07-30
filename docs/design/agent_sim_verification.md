@@ -204,7 +204,14 @@ The follow-up workflow closes these:
   upload placeholders, and the `gh-release` backend uploads release assets
   but only behind `--yes` plus maintainer approval (release-asset images
   render inline in PR bodies; videos render as links — only
-  user-attachments URLs get the inline player).
+  user-attachments URLs get the inline player). Before any upload, publication
+  recomputes artifact sizes and SHA-256 hashes plus claim coverage and pass
+  state; any stale, tampered, incomplete, or inconsistent selection fails
+  without a GitHub call. Release assets are content-addressed and never
+  cross-content-clobbered; the publication manifest records each
+  path/size/digest/URL binding so retrying a partial upload cannot mutate older
+  evidence. Reusing an existing asset requires an exact GitHub-reported size,
+  SHA-256 digest, and `uploaded` state; absent integrity metadata fails closed.
 - **Case study (#2984 retrospective).** Re-verifying the renderer-fidelity
   PR with this workflow (`scripts/write_retro_2984_evidence_packet.py`)
   produced claim-tied evidence its own body declined to attach: a PBR
