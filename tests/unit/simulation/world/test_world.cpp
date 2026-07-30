@@ -3328,6 +3328,37 @@ void enableAvbdSelfContactFrictionRows(dart::simulation::World& world)
   }
 }
 
+void configureDeformableAvbdFiniteStiffnessRowsScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.8, 0.6, 0.0)};
+  options.masses = {1.0, 1.0};
+  options.fixedNodes = {0};
+  options.edges = {sx::DeformableEdge{0, 1, 0.5}};
+  options.edgeStiffness = 1000.0;
+  world.addDeformableBody("avbd_finite_stiffness_spring", options);
+
+  sx::comps::DeformableVbdConfig cfg;
+  cfg.enabled = true;
+  cfg.iterations = 4;
+  cfg.useAvbdFiniteStiffnessRows = true;
+  cfg.avbdFiniteStiffnessStart = 1.0;
+  cfg.avbdBeta = 100.0;
+  cfg.avbdGamma = 1.0;
+  cfg.avbdMaxStiffness = 1000.0;
+
+  auto& registry = sx::detail::registryOf(world);
+  for (const auto entity : registry.view<sx::comps::DeformableBodyTag>()) {
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, cfg);
+  }
+}
+
 void configureAvbdSelfContactFrictionRowsScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -8359,6 +8390,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "deformable inter-body surface CCD production grid crossing",
       configureDeformableInterBodySurfaceCcdProductionGridScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable AVBD finite-stiffness rows",
+      configureDeformableAvbdFiniteStiffnessRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
@@ -10151,6 +10185,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
       "deformable inter-body surface CCD production grid crossing",
       configureDeformableInterBodySurfaceCcdProductionGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable AVBD finite-stiffness rows",
+      configureDeformableAvbdFiniteStiffnessRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
@@ -10297,6 +10334,9 @@ TEST(World, BakedAvbdVbdRowsDoNotMallocOnHeap)
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "rigid AVBD distance-spring rows",
       configureRigidAvbdDistanceSpringRowsScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable AVBD finite-stiffness rows",
+      configureDeformableAvbdFiniteStiffnessRowsScene);
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "deformable AVBD self-contact friction rows",
       configureAvbdSelfContactFrictionRowsScene);

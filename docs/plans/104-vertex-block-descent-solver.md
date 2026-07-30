@@ -988,7 +988,15 @@ They do not cover the AVBD source-demo or paper corpus, and the dashboard rows
 are narrow CPU public-World evidence only. The next bounded
 implementation work should prefer one of these gaps, in order:
 
-1. **Articulated multibody AVBD extraction** — the private extractor now
+1. **Parallel dual/stiffness update pass** — implement the Section 4
+   post-primal row-state update as a deterministic, allocation-stable
+   task-parallel CPU pass over the already-promoted deformable and rigid row
+   inventories. Require serial/parallel state equivalence, stable row ordering,
+   a warmed-step allocation gate, and a matched throughput packet before
+   expanding the claim. This starts the missing
+   `avbd.method.parallel_dual_stiffness_pass` row but does not close it until
+   every row family and CUDA use the same contract.
+2. **Articulated multibody AVBD extraction** — the private extractor now
    classifies free rigid-body endpoints separately from multibody links, and
    explicitly hard fixed, masked revolute/prismatic, and breakable
    multibody-link point-joint configs can bridge into the variational
@@ -1146,7 +1154,7 @@ implementation work should prefer one of these gaps, in order:
    break/skip/reset endpoint-shape assertions, and explicit-anchor one-DOF
    motor reset endpoint/axis-shape assertions are current evidence rather than
    fresh next targets.
-2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
+3. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
    feature extraction and row identity so box/sphere/cylinder/capsule/plane/mesh
    contact manifolds persist across realistic rigid stacks and piles, building
    beyond the current known/unknown shape-frame feature mapping, endpoint-A/B
@@ -1191,7 +1199,7 @@ implementation work should prefer one of these gaps, in order:
    projection when contact normals rotate, then
    connect that evidence to the paper's rigid
    stacking/friction scenes.
-3. **Paper/source-demo corpus implementation** — the durable
+4. **Paper/source-demo corpus implementation** — the durable
    [`avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
    matrix now owns the 19 `avbd-demo2d` scenes, 14 `avbd-demo3d` scenes, paper
    scenes, website/video scenes, and performance packets. The first baseline row
@@ -1236,7 +1244,7 @@ implementation work should prefer one of these gaps, in order:
    finite-stiffness rows, hard multibody distance loop closures, and
    articulated per-axis compliant point-joint rows are not source-parity
    substitutes.
-4. **GPU row parity plan** — route each landed CPU row family through the
+5. **GPU row parity plan** — route each landed CPU row family through the
    private CUDA boundary only after the shared CUDA substrate and row inventory
    can preserve warm-started dual/stiffness state deterministically.
 
@@ -1283,6 +1291,25 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-07-30, the bounded AVBD Section 3.5 quasi-Newton packet added a shared
+fixed-size column-norm kernel and applied the paper's force-scaled geometric
+diagonal to CPU deformable distance springs, rigid distance springs, rigid
+point attachments, and nonlinear rigid point-pair joint/motor rows. Contact
+normal and friction rows now encode their intentional Taylor-linearized
+zero-curvature policy instead of inheriting the nonlinear model accidentally.
+Mutation-sensitive analytic and finite-difference tests cover compressed and
+off-center cases, and the promoted deformable finite-stiffness path now enters
+PLAN-122's world-base/global/raw post-bake allocation gates.
+[`avbd-quasi-newton-evidence.json`](104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json)
+records the 60-second source Spring text oracle, assessed current-build render,
+and exact-HEAD interleaved mechanism-cost benchmark. Specializing the
+fixed-size projector and origin-anchor paths reduced a rejected 24-26% Spring
+regression to 1.9-2.3%, while the fixed-joint row improved by 1.0%. The
+canonical method row remains `partial`: angular/material families, explicit
+adjudication of the pinned 3D spring source's omitted geometric term, full
+source-corpus closure, achieved-accuracy reference performance, and CUDA parity
+are still open.
 
 On 2026-07-30, the official VBD and AVBD papers, project pages, repositories,
 and paper videos were normalized into the fail-closed

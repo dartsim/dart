@@ -209,6 +209,60 @@ TEST(AvbdRigidBlock, RigidStepUpdatesTranslationAndOrientation)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, WorldPointGeometricStiffnessMatchesForceJacobian)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(0.25, -0.5, 1.0);
+  state.orientation = rotationZ(0.3) * rotationX(-0.2);
+  const Vec3 localPoint(0.4, -0.7, 0.2);
+  const Vec3 worldForce(3.0, -2.0, 5.0);
+  const Vec3 worldPoint = vbd::avbdRigidBodyWorldPoint(state, localPoint);
+
+  const Eigen::Matrix3d analytic = vbd::avbdRigidWorldPointGeometricStiffness(
+      state, worldPoint, worldForce);
+  Eigen::Matrix3d numeric;
+  constexpr double epsilon = 1e-6;
+  for (Eigen::Index axis = 0; axis < 3; ++axis) {
+    Vec3 angularStep = Vec3::Zero();
+    angularStep[axis] = epsilon;
+
+    vbd::AvbdRigidBodyState plus = state;
+    plus.orientation
+        = vbd::avbdRigidOrientationDelta(angularStep) * state.orientation;
+    vbd::AvbdRigidBodyState minus = state;
+    minus.orientation
+        = vbd::avbdRigidOrientationDelta(-angularStep) * state.orientation;
+
+    const Vec3 plusArm
+        = vbd::avbdRigidBodyWorldPoint(plus, localPoint) - plus.position;
+    const Vec3 minusArm
+        = vbd::avbdRigidBodyWorldPoint(minus, localPoint) - minus.position;
+    numeric.col(axis)
+        = -(plusArm.cross(worldForce) - minusArm.cross(worldForce))
+          / (2.0 * epsilon);
+  }
+
+  EXPECT_NEAR((analytic - numeric).norm(), 0.0, 1e-8);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, WorldPointQuasiNewtonDiagonalPropagatesNonfiniteForce)
+{
+  vbd::AvbdRigidBodyState state;
+  vbd::AvbdRigidBodyBlock block;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  vbd::addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      block,
+      state,
+      Vec3::UnitY(),
+      Vec3(nan, 1.0, 0.0),
+      vbd::AvbdRigidPointCurvatureModel::QuasiNewton);
+
+  EXPECT_FALSE(block.hessian.allFinite());
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, InertiaTermSolvesBackToInertialTarget)
 {
   vbd::AvbdRigidBodyState state;
@@ -275,7 +329,7 @@ TEST(AvbdRigidBlock, LowerTriangleInertiaTermMatchesFullForScaledOrientations)
 }
 
 //==============================================================================
-TEST(AvbdRigidBlock, PointAttachmentStampsForceTorqueAndPsdHessian)
+TEST(AvbdRigidBlock, PointAttachmentStampsQuasiNewtonHessian)
 {
   vbd::AvbdRigidBodyState state;
 
@@ -295,11 +349,10 @@ TEST(AvbdRigidBlock, PointAttachmentStampsForceTorqueAndPsdHessian)
 
   EXPECT_DOUBLE_EQ(forceMagnitude, 40.0);
   EXPECT_NEAR((block.force - 40.0 * expectedDirection).norm(), 0.0, 1e-12);
-  EXPECT_NEAR(
-      (block.hessian - 40.0 * expectedDirection * expectedDirection.transpose())
-          .norm(),
-      0.0,
-      1e-12);
+  vbd::Matrix6d expectedHessian
+      = 40.0 * expectedDirection * expectedDirection.transpose();
+  expectedHessian(3, 3) += 40.0;
+  EXPECT_NEAR((block.hessian - expectedHessian).norm(), 0.0, 1e-12);
   EXPECT_GE(
       block.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
       -1e-12);
@@ -405,6 +458,78 @@ TEST(AvbdRigidBlock, PointPairIncludesTorqueDirections)
   EXPECT_NEAR((secondDirection.head<3>() + Vec3::UnitX()).norm(), 0.0, 1e-12);
   EXPECT_NEAR(
       (secondDirection.tail<3>() - Vec3(0.0, 0.0, -1.0)).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, NonlinearPointPairStampsQuasiNewtonCurvature)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3::UnitX();
+
+  vbd::AvbdRigidPointPairRow row;
+  row.localPointA = Vec3::UnitY();
+  row.axis = Vec3::UnitX();
+  row.state.stiffness = 25.0;
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPair(
+      blockA, blockB, stateA, stateB, row, /*alpha=*/0.0);
+
+  const vbd::Vector6d firstDirection
+      = vbd::avbdRigidPointPairDirectionA(stateA, row);
+  const vbd::Vector6d secondDirection
+      = vbd::avbdRigidPointPairDirectionB(stateB, row);
+  vbd::Matrix6d expectedA = 25.0 * firstDirection * firstDirection.transpose();
+  expectedA(3, 3) += 25.0;
+  const vbd::Matrix6d expectedB
+      = 25.0 * secondDirection * secondDirection.transpose();
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 25.0);
+  EXPECT_NEAR((blockA.hessian - expectedA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.hessian - expectedB).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, TaylorLinearizedContactOmitsPointCurvature)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3::UnitX();
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 25.0;
+  const vbd::AvbdRigidPointPairRow row = vbd::makeAvbdRigidContactNormalRow(
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      Vec3::UnitX(),
+      /*targetDistance=*/0.0,
+      rowState);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPair(
+      blockA, blockB, stateA, stateB, row, /*alpha=*/0.0);
+
+  const vbd::Vector6d firstDirection
+      = vbd::avbdRigidPointPairDirectionA(stateA, row);
+  const vbd::Vector6d secondDirection
+      = vbd::avbdRigidPointPairDirectionB(stateB, row);
+
+  EXPECT_EQ(
+      row.curvatureModel, vbd::AvbdRigidPointCurvatureModel::TaylorLinearized);
+  EXPECT_DOUBLE_EQ(forceMagnitude, 25.0);
+  EXPECT_NEAR(
+      (blockA.hessian - 25.0 * firstDirection * firstDirection.transpose())
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (blockB.hessian - 25.0 * secondDirection * secondDirection.transpose())
+          .norm(),
+      0.0,
+      1e-12);
 }
 
 //==============================================================================
@@ -521,7 +646,7 @@ TEST(AvbdRigidBlock, PointPairDistanceSpringStampsRadialFiniteStiffness)
 }
 
 //==============================================================================
-TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
+TEST(AvbdRigidBlock, DistanceSpringOriginAnchorUsesQuasiNewtonHessian)
 {
   vbd::AvbdRigidBodyState state;
   state.position = Vec3(1.0, -2.0, 0.5);
@@ -534,22 +659,15 @@ TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
 
   vbd::AvbdRigidBodyBlock block;
   vbd::addAvbdRigidDistanceSpringHessianAtWorldPoint(
-      block,
-      state,
-      state.position,
-      axis,
-      length,
-      restLength,
-      stiffness,
-      /*clampToPsd=*/true);
+      block, state, state.position, axis, length, restLength, stiffness);
 
   const Eigen::Matrix3d nnT = axis * axis.transpose();
-  const Eigen::Matrix3d pointHessian
-      = stiffness
-        * (nnT
-           + (1.0 - restLength / length) * (Eigen::Matrix3d::Identity() - nnT));
   vbd::Matrix6d expectedHessian = vbd::Matrix6d::Zero();
-  expectedHessian.topLeftCorner<3, 3>() = pointHessian;
+  expectedHessian.topLeftCorner<3, 3>() = stiffness * nnT;
+  const double forceMagnitude = stiffness * (length - restLength);
+  expectedHessian.diagonal().head<3>()
+      += (std::abs(forceMagnitude) / length)
+         * (Vec3::Ones() - axis.cwiseAbs2()).cwiseSqrt();
 
   EXPECT_NEAR((block.hessian - expectedHessian).norm(), 0.0, 1e-12);
   const double translationAngularNorm
@@ -557,6 +675,107 @@ TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
   const double angularNorm = block.hessian.bottomRightCorner<3, 3>().norm();
   EXPECT_NEAR(translationAngularNorm, 0.0, 1e-12);
   EXPECT_NEAR(angularNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringIncludesRotationalQuasiNewtonCurvature)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = 3.0 * Vec3::UnitY();
+
+  vbd::AvbdRigidPointPairDistanceSpringRow row;
+  row.localPointA = Vec3::UnitY();
+  row.restLength = 1.0;
+  row.state.stiffness = 8.0;
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double forceMagnitude = vbd::addAvbdRigidPointPairDistanceSpring(
+      blockA, blockB, stateA, stateB, row);
+
+  vbd::Matrix6d expectedA = vbd::Matrix6d::Zero();
+  expectedA.diagonal() = (vbd::Vector6d() << std::sqrt(32.0),
+                          8.0,
+                          std::sqrt(32.0),
+                          std::sqrt(160.0),
+                          0.0,
+                          std::sqrt(160.0))
+                             .finished();
+  vbd::Matrix6d expectedB = vbd::Matrix6d::Zero();
+  expectedB.diagonal()
+      = (vbd::Vector6d() << 4.0, 8.0, 4.0, 0.0, 0.0, 0.0).finished();
+
+  EXPECT_DOUBLE_EQ(forceMagnitude, 8.0);
+  EXPECT_NEAR(
+      (blockA.force.head<3>() - 8.0 * Vec3::UnitY()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockB.force.head<3>() + 8.0 * Vec3::UnitY()).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockA.hessian - expectedA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.hessian - expectedB).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringQuasiNewtonDiagonalMatchesFiniteDifference)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(0.2, -0.3, 0.4);
+  state.orientation = rotationZ(0.35) * rotationX(-0.2);
+  const Vec3 localPoint(0.6, -0.2, 0.5);
+  const Vec3 target(1.4, 0.8, 1.2);
+  const Vec3 worldPoint = vbd::avbdRigidBodyWorldPoint(state, localPoint);
+  const Vec3 relative = target - worldPoint;
+  const double length = relative.norm();
+  const Vec3 axis = relative / length;
+  const double restLength = 0.7 * length;
+  constexpr double stiffness = 11.0;
+  const double forceMagnitude = stiffness * (length - restLength);
+  const vbd::Vector6d direction
+      = vbd::avbdRigidDistanceSpringDirectionAtWorldPoint(
+          state, worldPoint, axis);
+
+  vbd::AvbdRigidBodyBlock block;
+  vbd::addAvbdRigidDistanceSpringHessianAtWorldPoint(
+      block, state, worldPoint, axis, length, restLength, stiffness);
+
+  vbd::Matrix6d numericGeometricStiffness;
+  constexpr double epsilon = 1e-6;
+  for (Eigen::Index coordinate = 0; coordinate < 6; ++coordinate) {
+    vbd::AvbdRigidBodyState plus = state;
+    vbd::AvbdRigidBodyState minus = state;
+    if (coordinate < 3) {
+      plus.position[coordinate] += epsilon;
+      minus.position[coordinate] -= epsilon;
+    } else {
+      Vec3 angularStep = Vec3::Zero();
+      angularStep[coordinate - 3] = epsilon;
+      plus.orientation
+          = vbd::avbdRigidOrientationDelta(angularStep) * state.orientation;
+      minus.orientation
+          = vbd::avbdRigidOrientationDelta(-angularStep) * state.orientation;
+    }
+
+    const Vec3 plusPoint = vbd::avbdRigidBodyWorldPoint(plus, localPoint);
+    const Vec3 minusPoint = vbd::avbdRigidBodyWorldPoint(minus, localPoint);
+    const vbd::Vector6d plusDirection
+        = vbd::avbdRigidDistanceSpringDirectionAtWorldPoint(
+            plus, plusPoint, (target - plusPoint).normalized());
+    const vbd::Vector6d minusDirection
+        = vbd::avbdRigidDistanceSpringDirectionAtWorldPoint(
+            minus, minusPoint, (target - minusPoint).normalized());
+
+    // The direction is the negative constraint gradient. Keep the force
+    // magnitude fixed here so this isolates f * d^2 C; the rank-one term
+    // separately accounts for the derivative of f.
+    numericGeometricStiffness.col(coordinate)
+        = -forceMagnitude * (plusDirection - minusDirection) / (2.0 * epsilon);
+  }
+
+  vbd::Matrix6d expected = stiffness * (direction * direction.transpose());
+  expected.diagonal()
+      += vbd::avbdQuasiNewtonGeometricDiagonal(numericGeometricStiffness);
+
+  EXPECT_NEAR((block.hessian - expected).norm(), 0.0, 5e-8);
 }
 
 //==============================================================================
@@ -755,6 +974,8 @@ TEST(AvbdRigidBlock, ContactNormalPointPairUsesGapOffsetAndBounds)
       /*targetDistance=*/0.2,
       rowState);
 
+  EXPECT_EQ(
+      row.curvatureModel, vbd::AvbdRigidPointCurvatureModel::TaylorLinearized);
   EXPECT_DOUBLE_EQ(row.bounds.lower, 0.0);
   EXPECT_TRUE(std::isinf(row.bounds.upper));
   EXPECT_NEAR(
@@ -806,6 +1027,8 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairUsesLaggedRelativeOffset)
           /*forceLimit=*/5.0,
           rowState);
 
+  EXPECT_EQ(
+      row.curvatureModel, vbd::AvbdRigidPointCurvatureModel::TaylorLinearized);
   EXPECT_NEAR(row.axis.norm(), 1.0, 1e-12);
   EXPECT_NEAR(row.offset, -0.1, 1e-12);
   EXPECT_DOUBLE_EQ(row.bounds.lower, -5.0);

@@ -429,8 +429,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
             positions[vertex],
             positions[other],
             spring.restLength,
-            *row,
-            options.clampSpringHessian);
+            *row);
       } else {
         addSpringTerm(
             block,
@@ -573,8 +572,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
             positions[vertex],
             positions[other],
             spring.restLength,
-            *row,
-            options.clampSpringHessian);
+            *row);
       } else {
         addSpringTerm(
             block,

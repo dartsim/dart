@@ -22,12 +22,20 @@ This folder is the temporary working surface; the durable owner is the plan.
   same-hardware paper-number match.
 - **Branch state:** active local branch
   `feature/vbd-avbd-paper-parity-contract`, based on `main` at `83110ef54ab`;
-  it has not been pushed.
-- **Current packet:** establish the exact official
-  paper/repository/video/project-page source inventory and fail-closed
-  validation gate. The contracts contain 88 VBD and 88 AVBD requirements; all
-  176 remain incomplete until their recorded correctness, solver-identity,
-  CPU/CUDA, visual, and comparable-performance predicates pass.
+  the fail-closed contract is committed locally at `710cbfc1152`, and nothing
+  has been pushed.
+- **Current packet:** implement the Section 4 parallel dual/stiffness update
+  pass over the already-promoted CPU row inventories. The contracts contain 88
+  VBD and 88 AVBD requirements; all 176 remain incomplete until their recorded
+  correctness, solver-identity, CPU/CUDA, visual, and comparable-performance
+  predicates pass.
+- **Latest verified local packet:** `avbd.method.quasi_newton_hessian` advanced
+  from missing to partial. CPU deformable distance springs, rigid distance
+  springs, point attachments, and nonlinear point-pair joint/motor rows now
+  use the Section 3.5 column-norm model, while contact explicitly remains
+  Taylor-linearized. The row is not complete; angular/material families,
+  source adjudication, source-matched corpus evidence, CUDA, and comparable
+  achieved-accuracy performance remain open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -37,11 +45,11 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Out-of-scope pre-existing gates:** two allocator regressions
-  (`DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers`,
-  `World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator`) are LCP/rigid-IPC
-  issues, not AVBD. They reproduce only under `DART_BUILD_PROFILE=ON`; hosted CI
-  is green. Recommended for a separate LCP/IPC allocator fix.
+- **Current local gates:** the fresh uncached Release/profile build, 168/168
+  selected unit tests, focused AVBD tests, and the relevant
+  world-base/global/raw allocation tests pass. Two allocator tests previously
+  recorded as pre-existing failures also pass in this build and are no longer
+  open blockers.
 
 ## Goal
 
@@ -72,18 +80,80 @@ numbers.
 
 ## Immediate Next Steps
 
-Finish and review the parity-contract packet, then select the highest-leverage
-missing method row rather than adding another narrow demo packet. The first
-candidate is `avbd.method.quasi_newton_hessian`, because the paper describes
-its diagonal geometric-stiffness approximation as part of the core AVBD local
-block update and DART currently has no end-to-end implementation. Keep every
-dependent figure/demo/performance row partial until source-matched CPU and CUDA
-evidence closes it.
+Begin the bounded Section 4 parallel dual/stiffness update packet below after
+the verified `avbd.method.quasi_newton_hessian` closeout. Keep every dependent
+figure/demo/performance row partial until source-matched CPU and CUDA evidence
+closes it.
 
 Two smaller deferred maintenance items remain valid but do not outrank the
 missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
 shared `detail` header, and upgrade the Spring / Spring Ratio packets from
 legacy schema version 1 to version 2 with a `resolved_solver_identity`.
+
+## Verified Local Packet: Section 3.5 Quasi-Newton Hessian
+
+- **Value:** replace DART's current rank-one-only or generic PSD-clamped AVBD
+  row blocks with the paper's non-negative diagonal approximation of the
+  force-scaled geometric stiffness so the inertia-anchored local block remains
+  positive-definite.
+- **Scope:** add one allocation-free shared column-norm kernel; use it for
+  deformable finite-stiffness distance springs, rigid distance springs, rigid
+  point attachments, and nonlinear rigid point-pair rows used by linear
+  joints and motors. Encode the paper/reference implementation's intentional
+  Taylor-linearized contact exception in row data so normal and friction
+  contact rows do not silently acquire a different Hessian model.
+- **Non-goals for this packet:** angular log-map curvature, CUDA kernels,
+  second-order contact curvature, new paper scenes, broad performance claims,
+  and closing `avbd.method.quasi_newton_hessian` as complete. These remain in
+  the overall task rather than disappearing from scope.
+- **Assumptions and decisions:** the geometric matrix is diagonally lumped by
+  the Euclidean norm of each column after force scaling, exactly as AVBD
+  Section 3.5 specifies. The pinned 2D solver applies that rule generically and
+  the 3D joint source applies it to nonlinear point rows; the pinned 3D spring
+  source omits its geometric term, so DART's distance-spring implementation
+  follows the paper without claiming 3D source equivalence. The rank-one term
+  always uses the current penalty stiffness. Contact remains linearized because
+  both the paper and reference source explicitly discard its second-order term.
+- **Acceptance evidence:** analytic expected-matrix tests for compressed and
+  oblique deformable springs, off-center rigid attachments and point pairs,
+  rigid springs with rotational curvature, and explicit contact linearization;
+  at least one mutation-sensitive test that fails if the geometric diagonal is
+  removed; matched before/after fixed-joint and spring benchmark runs; focused
+  post-bake allocation coverage; a text-first solver/scene oracle; and an
+  assessed headless capture if the behavior-level scene changes visibly.
+- **Gates:** `pixi run lint`, focused AVBD unit tests, the relevant DART 7 world
+  allocation filters, `pixi run build`, parity-contract validation, matched
+  benchmark comparison, and two clean review passes.
+- **Dependencies:** PLAN-104 paper contracts and gap audit, PLAN-122 allocation
+  contract, the pinned AVBD paper/source revisions, and the existing rigid and
+  deformable AVBD row inventories.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json`](../../plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json).
+The fresh focused result is 115/115 rigid AVBD and 9/9 deformable
+finite-stiffness tests, plus all three post-bake allocation policies. The
+60-second source Spring oracle remains finite and settles within 0.00018 m of
+the expected static length. The current-build fixed-joint mechanism benchmark
+improves 1.02%; the 2D/3D Spring mechanisms cost 2.32%/1.90% more. These are
+descriptive same-host costs, not paper/reference-performance claims. The
+120-frame software render passed pixel integrity and manual semantic review.
+
+## Active Packet: Section 4 Parallel Dual/Stiffness Update
+
+- **Value:** match Algorithm 1's additional post-primal pass without
+  serializing otherwise independent AVBD rows.
+- **Scope:** factor one deterministic, allocation-stable CPU pass over the
+  promoted deformable and rigid row inventories; preserve row order and exactly
+  match serial dual, bounds, fracture, and stiffness state.
+- **Non-goals:** CUDA closure, new row families, changes to public APIs,
+  nondeterministic reductions, and a paper-speedup claim before matched
+  achieved-accuracy evidence.
+- **Acceptance evidence:** serial/parallel state equivalence for every promoted
+  row kind, thread-count determinism, warmed-step world-base/global/raw
+  allocation gates, failure propagation, and matched throughput measurements.
+- **Claim boundary:** this can advance
+  `avbd.method.parallel_dual_stiffness_pass` only to partial until all paper row
+  families and CUDA share the same contract.
 
 ## History
 

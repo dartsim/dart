@@ -148,10 +148,15 @@
         },
         {
           "id": "avbd.method.quasi_newton_hessian",
-          "status": "missing",
-          "source_locator": "Section 3.5, Equations 15-16 and diagonal geometric-stiffness approximation",
-          "evidence": [],
-          "blockers": ["The paper's always-on quasi-Newton diagonal geometric-stiffness approximation is not implemented end to end."]
+          "status": "partial",
+          "source_locator": "Section 3.5, Equations 15-17 and diagonal geometric-stiffness approximation",
+          "evidence": [
+            "dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp",
+            "tests/unit/simulation/deformable_vbd/test_vbd_finite_stiffness.cpp",
+            "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp",
+            "docs/plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json"
+          ],
+          "blockers": ["CPU deformable distance-spring, rigid point, and rigid distance-spring rows now use the Section 3.5 column-norm approximation, with contact explicitly Taylor-linearized; a narrow current-build scene oracle, assessed render, allocation gate, and matched before/after mechanism-cost benchmark pass, but remaining row families, the pinned 3D spring source's omission of the paper geometric term, source-matched corpus closure, CUDA, and achieved-accuracy reference performance are still open."]
         },
         {
           "id": "avbd.method.rigid_six_dof_blocks",

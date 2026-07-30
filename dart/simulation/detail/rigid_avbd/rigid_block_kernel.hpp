@@ -34,6 +34,7 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
+#include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -142,6 +143,18 @@ struct AvbdRigidBodyState
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
 };
 
+/// Curvature model for a world-point scalar row.
+///
+/// General joints and motors recompute their nonlinear world points during the
+/// solve and use the AVBD Section 3.5 quasi-Newton geometric term. Contact rows
+/// use the paper's Taylor-linearized contact energy, whose second-order term is
+/// intentionally discarded.
+enum class AvbdRigidPointCurvatureModel : std::uint8_t
+{
+  QuasiNewton,
+  TaylorLinearized,
+};
+
 struct AvbdRigidPointAttachmentRow
 {
   Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
@@ -163,6 +176,8 @@ struct AvbdRigidPointPairRow
   AvbdScalarRowState state;
   double materialStiffness = std::numeric_limits<double>::infinity();
   double previousConstraintValue = 0.0;
+  AvbdRigidPointCurvatureModel curvatureModel
+      = AvbdRigidPointCurvatureModel::QuasiNewton;
   AvbdScalarRowBounds bounds{
       -std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::infinity()};
@@ -757,6 +772,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
   row.offset = targetDistance;
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdContactNormalBounds();
   return row;
 }
@@ -804,6 +820,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
   row.offset = -row.axis.dot(stepStartRelativePosition);
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdFrictionTangentBounds(forceLimit);
   return row;
 }
@@ -1565,6 +1582,53 @@ inline Matrix3x6d avbdRigidWorldPointJacobian(
 }
 
 //==============================================================================
+/// Return the force-scaled rotational curvature of a rigid world point.
+///
+/// With arm r and the actual world force w applied at the point, the negative
+/// Jacobian of the generalized torque r x w under DART's left exponential-map
+/// update is (r dot w) I - r w^T. This is the rigid-body form of the AVBD
+/// geometric-stiffness term before Section 3.5 diagonal lumping.
+inline Eigen::Matrix3d avbdRigidWorldPointGeometricStiffness(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  return arm.dot(worldForce) * Eigen::Matrix3d::Identity()
+         - arm * worldForce.transpose();
+}
+
+//==============================================================================
+inline void addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+    AvbdRigidBodyBlock& block,
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce,
+    AvbdRigidPointCurvatureModel curvatureModel)
+{
+  if (curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+    return;
+  }
+
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    return;
+  }
+
+  const double armForceDot = arm.dot(worldForce);
+  const double armSquaredNorm = arm.squaredNorm();
+  Eigen::Vector3d diagonal;
+  for (Eigen::Index column = 0; column < 3; ++column) {
+    const double squaredNorm
+        = armForceDot * armForceDot
+          - 2.0 * armForceDot * arm[column] * worldForce[column]
+          + armSquaredNorm * worldForce[column] * worldForce[column];
+    diagonal[column] = std::sqrt(std::max(squaredNorm, 0.0));
+  }
+  block.hessian.diagonal().tail<3>() += diagonal;
+}
+
+//==============================================================================
 inline Vector6d avbdRigidDistanceSpringDirectionAtWorldPoint(
     const AvbdRigidBodyState& state,
     const Eigen::Vector3d& worldPoint,
@@ -1581,30 +1645,36 @@ inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   if (!axis.allFinite() || length <= kAvbdRigidMinDistanceSpringLength
       || !std::isfinite(stiffness)) {
     return;
   }
 
-  double transverse = 1.0 - restLength / length;
-  if (clampToPsd) {
-    transverse = std::max(0.0, transverse);
-  }
+  const double forceMagnitude = stiffness * (length - restLength);
+  const Vector6d direction
+      = avbdRigidWorldPointDirection(state, worldPoint, axis);
+  block.hessian.noalias() += stiffness * (direction * direction.transpose());
 
-  const Eigen::Matrix3d nnT = axis * axis.transpose();
-  const Eigen::Matrix3d pointHessian
-      = stiffness * (nnT + transverse * (Eigen::Matrix3d::Identity() - nnT));
   if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
-    block.hessian.topLeftCorner<3, 3>().noalias() += pointHessian;
+    block.hessian.diagonal().head<3>()
+        += avbdQuasiNewtonProjectedDistanceDiagonal(
+            axis, forceMagnitude / length);
     return;
   }
 
+  const Eigen::Matrix3d constraintHessian
+      = (Eigen::Matrix3d::Identity() - axis * axis.transpose()) / length;
   const Matrix3x6d jacobian
       = avbdRigidWorldPointJacobianAtWorldPoint(state, worldPoint);
-  block.hessian.noalias() += jacobian.transpose() * pointHessian * jacobian;
+  Matrix6d geometricStiffness
+      = forceMagnitude * jacobian.transpose() * constraintHessian * jacobian;
+  geometricStiffness.bottomRightCorner<3, 3>()
+      += avbdRigidWorldPointGeometricStiffness(
+          state, worldPoint, forceMagnitude * axis);
+  block.hessian.diagonal()
+      += avbdQuasiNewtonGeometricDiagonal(geometricStiffness);
 }
 
 //==============================================================================
@@ -1615,8 +1685,7 @@ inline void addAvbdRigidDistanceSpringHessian(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       block,
@@ -1625,8 +1694,7 @@ inline void addAvbdRigidDistanceSpringHessian(
       axis,
       length,
       restLength,
-      stiffness,
-      clampToPsd);
+      stiffness);
 }
 
 //==============================================================================
@@ -1667,6 +1735,12 @@ inline double addAvbdRigidPointAttachment(
   block.force.noalias() += forceMagnitude * direction;
   block.hessian.noalias()
       += row.state.stiffness * (direction * direction.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      block,
+      state,
+      worldPoint,
+      forceMagnitude * row.axis,
+      AvbdRigidPointCurvatureModel::QuasiNewton);
   return forceMagnitude;
 }
 
@@ -1724,6 +1798,18 @@ inline double addAvbdRigidPointPair(
       += row.state.stiffness * (firstDirection * firstDirection.transpose());
   blockB.hessian.noalias()
       += row.state.stiffness * (secondDirection * secondDirection.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      worldPointA,
+      forceMagnitude * row.axis,
+      row.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      worldPointB,
+      -forceMagnitude * row.axis,
+      row.curvatureModel);
   return forceMagnitude;
 }
 
@@ -1733,8 +1819,7 @@ inline double addAvbdRigidPointPairDistanceSpring(
     AvbdRigidBodyBlock& blockB,
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
-    const AvbdRigidPointPairDistanceSpringRow& row,
-    bool clampToPsd = true)
+    const AvbdRigidPointPairDistanceSpringRow& row)
 {
   const Eigen::Vector3d worldPointA
       = avbdRigidBodyWorldPoint(stateA, row.localPointA);
@@ -1763,17 +1848,15 @@ inline double addAvbdRigidPointPairDistanceSpring(
       axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       blockB,
       stateB,
       worldPointB,
-      axis,
+      -axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   return forceMagnitude;
 }
 
@@ -1864,6 +1947,30 @@ inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
   blockB.hessian.noalias()
       += second.state.stiffness
          * (secondDirectionB * secondDirectionB.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      firstWorldPointA,
+      force.x() * first.axis,
+      first.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      secondWorldPointA,
+      force.y() * second.axis,
+      second.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      firstWorldPointB,
+      -force.x() * first.axis,
+      first.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      secondWorldPointB,
+      -force.y() * second.axis,
+      second.curvatureModel);
   return force;
 }
 
@@ -3823,6 +3930,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+              block,
+              stateA,
+              worldPointA,
+              forceMagnitude * row.axis,
+              row.curvatureModel);
         }
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
           const Vector6d direction
@@ -3830,6 +3943,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+              block,
+              stateB,
+              worldPointB,
+              -forceMagnitude * row.axis,
+              row.curvatureModel);
         }
       };
 
@@ -3866,8 +3985,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
           if (indexedRow.bodyB == body) {
             const Vector6d direction
@@ -3878,11 +3996,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block,
                 stateB,
                 worldPointB,
-                axis,
+                -axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
         };
 
@@ -3995,6 +4112,18 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block, firstDirection, indexedRows.first.state.stiffness);
             addAvbdRigidBlockHessianRankOneLowerTriangle(
                 block, secondDirection, indexedRows.second.state.stiffness);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateA,
+                firstWorldPointA,
+                force.x() * indexedRows.first.axis,
+                indexedRows.first.curvatureModel);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateA,
+                secondWorldPointA,
+                force.y() * indexedRows.second.axis,
+                indexedRows.second.curvatureModel);
           }
           if (indexedRows.bodyB == body
               && indexedRows.bodyB != indexedRows.bodyA) {
@@ -4008,6 +4137,18 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block, firstDirection, indexedRows.first.state.stiffness);
             addAvbdRigidBlockHessianRankOneLowerTriangle(
                 block, secondDirection, indexedRows.second.state.stiffness);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateB,
+                firstWorldPointB,
+                -force.x() * indexedRows.first.axis,
+                indexedRows.first.curvatureModel);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateB,
+                secondWorldPointB,
+                -force.y() * indexedRows.second.axis,
+                indexedRows.second.curvatureModel);
           }
         };
 

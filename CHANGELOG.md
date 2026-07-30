@@ -188,7 +188,11 @@ compatibility remains on the active DART 6 LTS branch._
   line), skipping the general inverse/compose when the child (and optionally
   parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
-  variational solver paths behind the `World` and executor model.
+  variational solver paths behind the `World` and executor model; AVBD CPU
+  distance-spring and nonlinear rigid-point rows now use the paper's
+  non-negative quasi-Newton geometric-stiffness diagonal while contact
+  remains intentionally Taylor-linearized.
+  ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default
   public API.

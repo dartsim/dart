@@ -218,27 +218,21 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-104: Vertex Block Descent Solver
 
-- Owner doc:
-  [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md)
+- Owner doc: [PLAN-104](104-vertex-block-descent-solver.md)
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Maintainer direction promotes Augmented VBD (`avbd-2025`) as the
-  current implementation focus: continue the active
+- Next step: Continue the active Augmented VBD (`avbd-2025`)
   [`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/) tracker with
   [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
-  toward AVBD hard constraints, bounded contact/friction, finite-stiffness
-  ramping, rigid/articulated blocks, all paper/demo scenes, and CPU/GPU benchmark
-  parity. Select the next missing mechanism or reproduction from the
-  machine-checked 176-row
+  toward hard constraints, bounded contact/friction, finite-stiffness ramping,
+  rigid/articulated blocks, all paper/demo scenes, and CPU/GPU benchmark parity.
+  Select the next missing mechanism or reproduction from the machine-checked
+  176-row
   [`104-vertex-block-descent-solver/paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md);
-  the older
-  [`104-vertex-block-descent-solver/avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
-  remains a narrow artifact inventory rather than the global completion gate.
   Remaining VBD closeout (self-contact tangential friction, OGC audit, benchmark
   JSON, paper tetrahedral reproduction, Phase 8b SoA + Gaia-CPU, Phase 9 same-GPU
-  Table 1) stays tracked in the owner plan. History: see the progress log in
-  [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md).
+  Table 1) stays tracked in the owner plan and its progress log.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, an explicit

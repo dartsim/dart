@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <vector>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
@@ -90,6 +91,42 @@ TEST(VbdFiniteStiffness, SpringConstraintValueIsStretch)
   EXPECT_DOUBLE_EQ(
       vbd::avbdSpringConstraintValue(Vec3::Zero(), Vec3(0.75, 0.0, 0.0), 1.0),
       -0.25);
+}
+
+//==============================================================================
+TEST(VbdFiniteStiffness, CompressedSpringUsesQuasiNewtonColumnNorms)
+{
+  const Vec3 self = Vec3::Zero();
+  const Vec3 other(0.3, 0.4, 0.0);
+  const vbd::AvbdSpringFiniteStiffnessRow row
+      = makeSpringRow(/*stiffness=*/8.0, /*materialStiffness=*/20.0);
+
+  vbd::VertexBlock block;
+  vbd::addAvbdSpringFiniteStiffness(
+      block, self, other, /*restLength=*/1.0, row);
+
+  const Vec3 direction(0.6, 0.8, 0.0);
+  const Vec3 expectedForce = -4.0 * direction;
+  Eigen::Matrix3d expectedHessian = 8.0 * direction * direction.transpose();
+  expectedHessian.diagonal() += Vec3(6.4, 4.8, 8.0);
+
+  EXPECT_NEAR((block.force - expectedForce).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((block.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  EXPECT_GT(block.hessian.determinant(), 0.0);
+}
+
+//==============================================================================
+TEST(VbdFiniteStiffness, ProjectedQuasiNewtonDiagonalPropagatesNonfiniteInputs)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  const Vec3 nonfiniteDirection = vbd::avbdQuasiNewtonProjectedDistanceDiagonal(
+      Vec3(nan, 0.0, 1.0), /*scale=*/2.0);
+  const Vec3 nonfiniteScale
+      = vbd::avbdQuasiNewtonProjectedDistanceDiagonal(Vec3::UnitX(), nan);
+
+  EXPECT_FALSE(nonfiniteDirection.allFinite());
+  EXPECT_FALSE(nonfiniteScale.allFinite());
 }
 
 //==============================================================================
