@@ -389,8 +389,9 @@ check-dart7-legacy-freeze = { cmd = [
 ] }
 check-dart7-legacy-freeze-meta = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--repository-conftest",
   "python/tests/unit/test_check_dart7_legacy_freeze.py",
   "-q",
 ] }
@@ -472,8 +473,8 @@ exercise-agent-scenarios = { cmd = [
 ] }
 test-ai-infra = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
@@ -1165,8 +1166,15 @@ agent-capture = { cmd = [
 # changes pixels through the real Filament renderer.
 test-agent-visual-e2e = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--pythonpath",
+  "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python",
+  "--pythonpath",
+  "python",
+  "--pythonpath",
+  "scripts",
+  "--repository-conftest",
   "python/tests/unit/test_agent_capture.py::test_run_capture_debug_layers_change_pixels_end_to_end",
   "-q",
 ], depends-on = [
@@ -1310,9 +1318,13 @@ py-ex-atlas-puppet = { depends-on = [
 ] }
 
 test = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1324,9 +1336,11 @@ test = { cmd = [
 ] }
 
 test-no-plane = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1342,9 +1356,13 @@ test-no-plane = { cmd = [
 ] }
 
 test-simulation = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L '^simulation$'",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-L",
+  "^simulation$",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2397,20 +2415,20 @@ check-lint-quick = { depends-on = [
   "check-dart7-promotion-surface",
   "check-collision-runtime-isolation",
 ] }
-test-quick = { cmd = "python scripts/run_cpp_test.py --quick", depends-on = [
+test-quick = { cmd = "python -I scripts/run_cpp_test.py --quick", depends-on = [
   "config",
 ] }
 verify-quick = { depends-on = ["check-lint-quick", "test-quick"] }
 
 # Tier 1 — pre-commit default: lint + Release lib/tests + simulation-quick + python.
 # Builds only the test targets (not examples/tutorials/docs/Debug) to stay lean.
-test-core = { cmd = "python scripts/ctest_tier.py -LE simulation", depends-on = [
+test-core = { cmd = "python -I scripts/ctest_tier.py -LE simulation", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
   ] },
 ] }
-test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L '^simulation$' --exclude-long-poles", depends-on = [
+test-simulation-quick = { cmd = "python -I scripts/ctest_tier.py -L '^simulation$' --exclude-long-poles", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2426,7 +2444,7 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L '^simulation$' 
 # long-pole CTest shards overlap the rest of the suite instead of one
 # monolithic GTest binary bounding a worker (runtimes:
 # docs/design/local_verification_pipeline.md).
-test-simulation-full = { cmd = "python scripts/ctest_tier.py -L '^simulation$'", depends-on = [
+test-simulation-full = { cmd = "python -I scripts/ctest_tier.py -L '^simulation$'", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2446,7 +2464,7 @@ verify = { depends-on = [
 ] }
 
 # Tier 2 — run every C++ test (all labels), parallel + load-aware.
-test-full = { cmd = "python scripts/ctest_tier.py", depends-on = [
+test-full = { cmd = "python -I scripts/ctest_tier.py", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2803,9 +2821,13 @@ DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 18 20
 ] }
 
 test = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2817,9 +2839,13 @@ test = { cmd = [
 ] }
 
 test-no-plane = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --label-exclude simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2831,9 +2857,13 @@ test-no-plane = { cmd = [
 ] }
 
 test-simulation = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L '^simulation$'",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-L",
+  "^simulation$",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",

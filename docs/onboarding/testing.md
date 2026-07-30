@@ -28,6 +28,25 @@ DART 7 simulation tests minus the long poles; `test-full` runs every label.)
 as an alias). Subsystem scope stays orthogonal (`test-math`, `test-io`, …), and
 the environment is always a `-e` flag (`pixi run -e cuda verify-full`).
 
+Canonical Pixi test gates are execution-guarded. Python gates run through an
+isolated interpreter, ignore every case-insensitive `PYTEST_*` control and the
+retired `DARTPY_PYTEST_ARGS`/`DARTPY_PYTEST_SOURCES` selectors, disable ambient
+plugin autoload, pin the repository config, and fail if no test body runs. The
+dartpy target may load the trusted repository `conftest.py`, but only below the
+repository root and only after explicit build/source paths are installed.
+Canonical CTest gates remove every current or future case-insensitive
+`GTEST_*` environment control and reject an empty selected inventory.
+Intentional focused selection therefore belongs in explicit task or runner
+arguments, not inherited environment variables. The Linux Debug dartpy smoke
+keeps its three-file scope through explicit guarded-runner arguments; the AI
+infrastructure check rejects tracked workflows that revive the retired
+selectors or drift that smoke path.
+
+`pixi run check-ai-infra` executes small controlled pass, hostile-environment,
+zero-body, and deliberate-failure probes for both runners. The probes are
+model-independent: a future model-upgrade audit should improve this shared
+contract and its regression cases instead of cloning a model-named test path.
+
 Build and test parallelism are load-aware by default (ninja `-l`, ctest
 `--test-load`), so several clones on one machine share the CPU without
 oversubscription. Override the hard job cap with `DART_PARALLEL_JOBS` and the
@@ -65,7 +84,7 @@ Suggested (Unverified):
 
 ```bash
 cmake --build <BUILD_DIR> --target <TARGET>
-ctest --test-dir <BUILD_DIR> --output-on-failure -R <TEST_REGEX>
+pixi run python -I scripts/ctest_tier.py -R <TEST_REGEX>
 ```
 
 Example:
@@ -74,8 +93,8 @@ Example:
 pixi run lint
 CMAKE_BUILD_PARALLEL_LEVEL=$N cmake --build build/default/cpp/Release \
   --target UNIT_gui_MeshShapeNodeMaterialUpdates -j "$N"
-CTEST_PARALLEL_LEVEL=1 ctest --test-dir build/default/cpp/Release \
-  --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates -j 1
+pixi run python -I scripts/ctest_tier.py \
+  -R UNIT_gui_MeshShapeNodeMaterialUpdates --jobs 1
 ```
 
 Signals to look for:
@@ -181,9 +200,10 @@ Do not report GPU runtime validation from that run.
   output paths explicitly so the direct run matches the in-tree dartpy build:
 
   ```bash
-  PYTHONPATH=build/default/cpp/Debug/python:build/default/cpp/Debug/python/dartpy \
-    DARTPY_RUNTIME_DIR=build/default/cpp/Debug/python/dartpy \
-    .pixi/envs/default/bin/python3.14 -u -m pytest -vv -s <TEST_PATH>::<TEST_NAME>
+  pixi run python -I scripts/run_pytest.py \
+    --pythonpath build/default/cpp/Debug/python \
+    --pythonpath build/default/cpp/Debug/python/dartpy \
+    --repository-conftest -vv -s <TEST_PATH>::<TEST_NAME>
   ```
 
   Debug builds make deformable and scene-style integration tests much more
@@ -592,8 +612,10 @@ pixi run bm --pixi-help
 For faster iteration on Python bindings without full rebuilding:
 
 ```bash
-# Point PYTHONPATH to the build artifacts (adjust path as needed)
-PYTHONPATH=build/default/cpp/Release/python pytest python/tests/unit/optimizer/
+# Point the guarded runner to the build artifacts (adjust path as needed).
+pixi run python -I scripts/run_pytest.py \
+  --pythonpath build/default/cpp/Release/python \
+  --repository-conftest python/tests/unit/optimizer/
 ```
 
 This avoids the overhead of the full `pixi run test-py` task but requires the bindings to be already built (e.g., via `pixi run build-py-dev`).

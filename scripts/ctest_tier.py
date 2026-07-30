@@ -23,6 +23,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
 try:
     from parallel_jobs import compute_load_limit, compute_parallel_jobs
 except ImportError:  # pragma: no cover - defensive fallback
@@ -33,6 +37,8 @@ except ImportError:  # pragma: no cover - defensive fallback
     def compute_load_limit() -> int | None:
         return os.cpu_count() or 1
 
+
+from test_runner_environment import sanitized_gtest_environment
 
 # Experimental tests are fast on average but have a long tail; the Tier-1 quick
 # subset skips these so it stays inside its budget. They run at the full tier.
@@ -122,7 +128,13 @@ def main(argv: list[str]) -> int:
             f"Build directory {build_dir} does not exist. Build the tests first."
         )
 
-    cmd = ["ctest", "--test-dir", str(build_dir), "--output-on-failure"]
+    cmd = [
+        "ctest",
+        "--test-dir",
+        str(build_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+    ]
     if build_config:
         cmd += ["--build-config", build_config]
 
@@ -164,7 +176,7 @@ def main(argv: list[str]) -> int:
         if excludes:
             cmd += ["-E", "|".join(f"({e})" for e in excludes)]
 
-    return subprocess.run(cmd).returncode
+    return subprocess.run(cmd, env=sanitized_gtest_environment()).returncode
 
 
 if __name__ == "__main__":

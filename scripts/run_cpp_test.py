@@ -9,6 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
 try:
     from parallel_jobs import compute_load_limit, compute_parallel_jobs
 except ImportError:  # pragma: no cover - defensive fallback
@@ -19,6 +23,8 @@ except ImportError:  # pragma: no cover - defensive fallback
     def compute_load_limit() -> int | None:
         return os.cpu_count() or 1
 
+
+from test_runner_environment import sanitized_gtest_environment
 
 COMPONENT_PREFIXES = {
     "simd": "UNIT_simd",
@@ -113,7 +119,7 @@ def run(args: argparse.Namespace) -> int:
 
     ensure_build_exists(build_dir, args.build_type)
 
-    env = os.environ.copy()
+    env = sanitized_gtest_environment()
     env["BUILD_TYPE"] = args.build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
 
@@ -135,6 +141,7 @@ def run(args: argparse.Namespace) -> int:
         "--test-dir",
         str(build_dir),
         "--output-on-failure",
+        "--no-tests=error",
     ]
 
     if args.verbose:

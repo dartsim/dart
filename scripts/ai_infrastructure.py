@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import Iterable
@@ -20,6 +23,15 @@ PROFILES = ("main", "release-6.20")
 MAX_AGENTS_BYTES = 32 * 1024
 EXCLUDED_DIRS = {".git", ".pixi", "build", "external", "node_modules"}
 AGENT_NAMES = ("dart_scout", "dart_reviewer", "dart_release_auditor")
+LEGACY_PYTEST_SELECTION_VARIABLES = (
+    "DARTPY_PYTEST_ARGS",
+    "DARTPY_PYTEST_SOURCES",
+)
+LINUX_DEBUG_PYTHON_SMOKE_TESTS = (
+    "python/tests/unit/common/test_string.py",
+    "python/tests/unit/math/test_lcp.py",
+    "python/tests/unit/test_lifetime.py",
+)
 SCENARIO_IDS = (
     "orientation",
     "small-change",
@@ -85,8 +97,17 @@ AI_PREFIXES = (
     "scripts/exercise_agent_scenarios.py",
     "scripts/install_git_hooks.py",
     "scripts/pretool_guard_bridge.py",
+    "scripts/run_cpp_test.py",
+    "scripts/run_pytest.py",
     "scripts/setup_ai.py",
     "scripts/sync_ai_commands.py",
+    "scripts/test_runner_environment.py",
+    "scripts/ctest_tier.py",
+    "cmake/DARTRunCTest.cmake",
+    "tests/CMakeLists.txt",
+    "python/tests/CMakeLists.txt",
+    "python/tests/run_pytest_with_optional_xvfb.py",
+    "python/tests/unit/test_run_pytest_with_optional_xvfb.py",
     "python/tests/unit/test_agent_capture.py",
     "python/tests/unit/gui/test_offscreen_render.py",
     "tests/test_ai_",
@@ -1038,6 +1059,815 @@ def check_ci_wiring(root: Path) -> list[str]:
     return errors
 
 
+def _command_text(command: object) -> str:
+    if isinstance(command, list):
+        return "\n".join(str(part) for part in command)
+    return command if isinstance(command, str) else ""
+
+
+def _command_tokens(command: object) -> tuple[str, ...]:
+    if isinstance(command, list):
+        return tuple(str(part) for part in command)
+    if isinstance(command, str):
+        try:
+            return tuple(shlex.split(command))
+        except ValueError:
+            return ()
+    return ()
+
+
+def _task_command_definitions(
+    data: object,
+    task_name: str,
+    path: tuple[str, ...] = (),
+) -> list[tuple[str, object]]:
+    definitions: list[tuple[str, object]] = []
+    if isinstance(data, dict):
+        for key, value in data.items():
+            child_path = (*path, str(key))
+            if key == task_name and isinstance(value, dict) and "cmd" in value:
+                definitions.append((".".join(child_path), value["cmd"]))
+            definitions.extend(_task_command_definitions(value, task_name, child_path))
+    elif isinstance(data, list):
+        for index, value in enumerate(data):
+            definitions.extend(
+                _task_command_definitions(value, task_name, (*path, str(index)))
+            )
+    return definitions
+
+
+def _require_task_prefix(
+    pixi: dict,
+    task_name: str,
+    prefix: tuple[str, ...],
+    errors: list[str],
+) -> None:
+    definitions = _task_command_definitions(pixi, task_name)
+    if not definitions:
+        errors.append(f"pixi.toml: missing command definition for {task_name!r}")
+        return
+    for location, command in definitions:
+        tokens = _command_tokens(command)
+        if tokens[: len(prefix)] != prefix:
+            errors.append(f"pixi.toml: {location} must start with {' '.join(prefix)!r}")
+
+
+def _require_file_markers(
+    root: Path,
+    relative: str,
+    markers: tuple[str, ...],
+    errors: list[str],
+    *,
+    forbidden: tuple[str, ...] = (),
+) -> None:
+    path = root / relative
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        errors.append(f"{relative}: unable to read: {exc}")
+        return
+    for marker in markers:
+        if marker not in content:
+            errors.append(f"{relative}: missing test-runner marker {marker!r}")
+    for marker in forbidden:
+        if marker in content:
+            errors.append(f"{relative}: forbidden test-runner marker {marker!r}")
+
+
+def _cmake_command_details(text: str) -> list[tuple[str, str]]:
+    """Parse CMake commands while excluding comments and preserving order."""
+
+    def bracket_end(offset: int) -> int | None:
+        match = re.match(r"\[(=*)\[", text[offset:])
+        if match is None:
+            return None
+        delimiter = "]" + match.group(1) + "]"
+        end = text.find(delimiter, offset + match.end())
+        return len(text) if end < 0 else end + len(delimiter)
+
+    def skip_comment(offset: int) -> int:
+        bracket = bracket_end(offset + 1) if offset + 1 < len(text) else None
+        if bracket is not None:
+            return bracket
+        newline = text.find("\n", offset + 1)
+        return len(text) if newline < 0 else newline + 1
+
+    commands: list[tuple[str, str]] = []
+    identifier = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+    offset = 0
+    while offset < len(text):
+        if text[offset] == "#":
+            offset = skip_comment(offset)
+            continue
+        match = identifier.match(text, offset)
+        if match is None:
+            offset += 1
+            continue
+        name = match.group(0).lower()
+        cursor = match.end()
+        while cursor < len(text):
+            if text[cursor].isspace():
+                cursor += 1
+                continue
+            if text[cursor] == "#":
+                cursor = skip_comment(cursor)
+                continue
+            break
+        if cursor >= len(text) or text[cursor] != "(":
+            offset = match.end()
+            continue
+
+        depth = 1
+        cursor += 1
+        arguments: list[str] = []
+        while cursor < len(text) and depth:
+            character = text[cursor]
+            if character == "#":
+                cursor = skip_comment(cursor)
+                arguments.append(" ")
+                continue
+            if character == '"':
+                start = cursor
+                cursor += 1
+                while cursor < len(text):
+                    if text[cursor] == "\\" and cursor + 1 < len(text):
+                        cursor += 2
+                        continue
+                    cursor += 1
+                    if text[cursor - 1] == '"':
+                        break
+                arguments.append(text[start:cursor])
+                continue
+            bracket = bracket_end(cursor) if character == "[" else None
+            if bracket is not None:
+                arguments.append(text[cursor:bracket])
+                cursor = bracket
+                continue
+            if character == "(":
+                depth += 1
+                arguments.append(character)
+                cursor += 1
+                continue
+            if character == ")":
+                depth -= 1
+                if depth:
+                    arguments.append(character)
+                cursor += 1
+                continue
+            arguments.append(character)
+            cursor += 1
+        commands.append((name, " ".join("".join(arguments).split())))
+        offset = cursor
+    return commands
+
+
+def _cmake_argument_tokens(arguments: str) -> list[str]:
+    """Split normalized CMake arguments while keeping quoted values opaque."""
+    tokens: list[str] = []
+    offset = 0
+    while offset < len(arguments):
+        while offset < len(arguments) and arguments[offset].isspace():
+            offset += 1
+        if offset >= len(arguments):
+            break
+        token: list[str] = []
+        while offset < len(arguments) and not arguments[offset].isspace():
+            if arguments[offset] == '"':
+                offset += 1
+                while offset < len(arguments):
+                    if arguments[offset] == "\\" and offset + 1 < len(arguments):
+                        token.append(arguments[offset + 1])
+                        offset += 2
+                        continue
+                    if arguments[offset] == '"':
+                        offset += 1
+                        break
+                    token.append(arguments[offset])
+                    offset += 1
+                continue
+            token.append(arguments[offset])
+            offset += 1
+        tokens.append("".join(token))
+    return tokens
+
+
+def _check_ctest_runner_commands(root: Path, errors: list[str]) -> None:
+    """Require exact lexical flow for the security-sensitive CTest wrapper."""
+    relative = "cmake/DARTRunCTest.cmake"
+    try:
+        commands = _cmake_command_details((root / relative).read_text(encoding="utf-8"))
+    except OSError as exc:
+        errors.append(f"{relative}: unable to inspect canonical runner: {exc}")
+        return
+    actual = tuple(
+        (name, tuple(_cmake_argument_tokens(arguments))) for name, arguments in commands
+    )
+    expected = (
+        (
+            "if",
+            (
+                "NOT",
+                "DEFINED",
+                "DART_CTEST_COMMAND",
+                "OR",
+                "DART_CTEST_COMMAND",
+                "STREQUAL",
+                "",
+            ),
+        ),
+        (
+            "message",
+            (
+                "FATAL_ERROR",
+                "DART_CTEST_COMMAND must name the configured CTest executable",
+            ),
+        ),
+        ("endif", ()),
+        (
+            "execute_process",
+            (
+                "COMMAND",
+                "${CMAKE_COMMAND}",
+                "-E",
+                "environment",
+                "OUTPUT_VARIABLE",
+                "_dart_test_environment",
+                "RESULT_VARIABLE",
+                "_dart_environment_result",
+            ),
+        ),
+        ("if", ("NOT", "_dart_environment_result", "EQUAL", "0")),
+        ("message", ("FATAL_ERROR", "Failed to inspect the test environment")),
+        ("endif", ()),
+        (
+            "string",
+            (
+                "REPLACE",
+                "rn",
+                "n",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        (
+            "string",
+            (
+                "REPLACE",
+                "r",
+                "n",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        (
+            "string",
+            (
+                "REPLACE",
+                ";",
+                "\\;",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        (
+            "string",
+            (
+                "REPLACE",
+                "n",
+                ";",
+                "_dart_test_environment",
+                "${_dart_test_environment}",
+            ),
+        ),
+        ("set", ("_dart_gtest_unsets",)),
+        (
+            "foreach",
+            ("_dart_environment_entry", "IN", "LISTS", "_dart_test_environment"),
+        ),
+        (
+            "string",
+            ("FIND", "${_dart_environment_entry}", "=", "_dart_separator"),
+        ),
+        ("if", ("_dart_separator", "GREATER", "0")),
+        (
+            "string",
+            (
+                "SUBSTRING",
+                "${_dart_environment_entry}",
+                "0",
+                "${_dart_separator}",
+                "_dart_name",
+            ),
+        ),
+        ("string", ("TOUPPER", "${_dart_name}", "_dart_name_upper")),
+        ("if", ("_dart_name_upper", "MATCHES", "^GTEST_")),
+        ("list", ("APPEND", "_dart_gtest_unsets", "--unset=${_dart_name}")),
+        ("endif", ()),
+        ("endif", ()),
+        ("endforeach", ()),
+        (
+            "set",
+            ("_dart_ctest_arguments", "--output-on-failure", "--no-tests=error"),
+        ),
+        (
+            "if",
+            (
+                "DEFINED",
+                "DART_CTEST_CONFIGURATION",
+                "AND",
+                "NOT",
+                "DART_CTEST_CONFIGURATION",
+                "STREQUAL",
+                "",
+            ),
+        ),
+        (
+            "list",
+            (
+                "APPEND",
+                "_dart_ctest_arguments",
+                "-C",
+                "${DART_CTEST_CONFIGURATION}",
+            ),
+        ),
+        ("endif", ()),
+        (
+            "execute_process",
+            (
+                "COMMAND",
+                "${CMAKE_COMMAND}",
+                "-E",
+                "env",
+                "${_dart_gtest_unsets}",
+                "${DART_CTEST_COMMAND}",
+                "${_dart_ctest_arguments}",
+                "COMMAND_ERROR_IS_FATAL",
+                "ANY",
+            ),
+        ),
+    )
+    if actual != expected:
+        errors.append(
+            f"{relative}: commands and lexical control flow must exactly match "
+            "the canonical clean-environment runner"
+        )
+
+
+def check_test_runner_contract(root: Path) -> list[str]:
+    """Validate canonical task wiring and shared execution-safety invariants."""
+
+    errors: list[str] = []
+    workflow_root = root / ".github" / "workflows"
+    for workflow_path in sorted(workflow_root.glob("*.y*ml")):
+        try:
+            workflow_text = workflow_path.read_text()
+        except OSError as exc:
+            errors.append(f"{workflow_path.relative_to(root)}: unable to read: {exc}")
+            continue
+        for legacy_selector in LEGACY_PYTEST_SELECTION_VARIABLES:
+            if legacy_selector in workflow_text:
+                errors.append(
+                    f"{workflow_path.relative_to(root)}: legacy pytest selector "
+                    f"{legacy_selector!r} must not control a tracked workflow"
+                )
+
+    linux_workflow_path = workflow_root / "ci_ubuntu.yml"
+    try:
+        linux_workflow = linux_workflow_path.read_text()
+    except OSError as exc:
+        errors.append(f".github/workflows/ci_ubuntu.yml: unable to read: {exc}")
+    else:
+        debug_step_name = "- name: Run Debug Python tests"
+        debug_step = linux_workflow.partition(debug_step_name)[2].partition(
+            "\n  build-asserts:"
+        )[0]
+        for marker in (
+            "pixi run build-py-dev ON Debug",
+            "pixi run python -I scripts/run_pytest.py",
+            "--pythonpath build/default/cpp/Debug/python",
+            "--pythonpath build/default/cpp/Debug/python/dartpy",
+            "--repository-conftest",
+            *LINUX_DEBUG_PYTHON_SMOKE_TESTS,
+            "-vv --tb=short",
+        ):
+            if marker not in debug_step:
+                errors.append(
+                    ".github/workflows/ci_ubuntu.yml: Debug Python smoke must "
+                    f"use explicit guarded-runner marker {marker!r}"
+                )
+        selected_smoke_tests = tuple(
+            re.findall(
+                r"(?m)^\s*(python/tests/[A-Za-z0-9_./-]+\.py)\s*\\?\s*$",
+                debug_step,
+            )
+        )
+        if selected_smoke_tests != LINUX_DEBUG_PYTHON_SMOKE_TESTS:
+            errors.append(
+                ".github/workflows/ci_ubuntu.yml: Debug Python smoke must "
+                "select exactly the three canonical smoke files"
+            )
+
+    pixi = _load_toml(root / "pixi.toml", errors)
+    pytest_prefix = ("python", "-I", "scripts/run_pytest.py")
+    for task_name in (
+        "check-dart7-legacy-freeze-meta",
+        "test-ai-infra",
+        "test-agent-visual-e2e",
+    ):
+        _require_task_prefix(pixi, task_name, pytest_prefix, errors)
+    for task_name in (
+        "test",
+        "test-no-plane",
+        "test-simulation",
+        "test-core",
+        "test-simulation-quick",
+        "test-simulation-full",
+        "test-full",
+    ):
+        _require_task_prefix(
+            pixi,
+            task_name,
+            ("python", "-I", "scripts/ctest_tier.py"),
+            errors,
+        )
+    _require_task_prefix(
+        pixi,
+        "test-quick",
+        ("python", "-I", "scripts/run_cpp_test.py"),
+        errors,
+    )
+
+    visual_definitions = _task_command_definitions(pixi, "test-agent-visual-e2e")
+    for location, command in visual_definitions:
+        tokens = _command_tokens(command)
+        if "--repository-conftest" not in tokens or tokens.count("--pythonpath") < 3:
+            errors.append(
+                f"pixi.toml: {location} must pass repository conftest and "
+                "explicit build/source Python paths"
+            )
+
+    python_definitions = _task_command_definitions(pixi, "test-py")
+    if not python_definitions:
+        errors.append("pixi.toml: missing command definition for 'test-py'")
+    for location, command in python_definitions:
+        text = _command_text(command)
+        uses_guarded_target = "scripts/pixi_test_py.py" in text or (
+            "scripts/cmake_build.py" in text and "--target pytest" in text
+        )
+        if not uses_guarded_target or "python -m pytest" in text:
+            errors.append(
+                f"pixi.toml: {location} must use the guarded CMake pytest target"
+            )
+
+    _require_file_markers(
+        root,
+        "scripts/run_pytest.py",
+        (
+            "if not sys.flags.isolated:",
+            'name.upper().startswith("PYTEST_")',
+            "name.upper() in LEGACY_SELECTION_VARIABLES",
+            'os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"',
+            'os.environ.pop("PYTHONPATH", None)',
+            'str(ROOT / "pyproject.toml")',
+            '"--confcutdir"',
+            '"--noconftest"',
+            "plugins=[guard]",
+            "guard.executed == 0",
+        ),
+        errors,
+    )
+    _require_file_markers(
+        root,
+        "scripts/test_runner_environment.py",
+        (
+            "name.upper().startswith(normalized)",
+            'return sanitized_environment(("GTEST_",), source)',
+        ),
+        errors,
+    )
+    for relative in ("scripts/ctest_tier.py", "scripts/run_cpp_test.py"):
+        _require_file_markers(
+            root,
+            relative,
+            (
+                '"--no-tests=error"',
+                "sanitized_gtest_environment()",
+            ),
+            errors,
+        )
+    _require_file_markers(
+        root,
+        "python/tests/run_pytest_with_optional_xvfb.py",
+        (
+            'name.upper().startswith("PYTEST_")',
+            "name.upper() in LEGACY_SELECTION_VARIABLES",
+            "str(GUARDED_RUNNER)",
+            '"-I"',
+            '"--repository-conftest"',
+        ),
+        errors,
+        forbidden=(
+            'os.environ.get("DARTPY_PYTEST_ARGS"',
+            'os.environ.get("DARTPY_PYTEST_SOURCES"',
+            '"-m", "pytest"',
+        ),
+    )
+    _require_file_markers(
+        root,
+        "python/tests/CMakeLists.txt",
+        (
+            "dartpy_guarded_pytest_runner",
+            "${Python3_EXECUTABLE} -I",
+            "--pythonpath",
+            "${dartpy_pytest_runner}",
+        ),
+        errors,
+    )
+    _require_file_markers(
+        root,
+        "cmake/DARTRunCTest.cmake",
+        (
+            '"${CMAKE_COMMAND}" -E environment',
+            'string(TOUPPER "${_dart_name}" _dart_name_upper)',
+            'if(_dart_name_upper MATCHES "^GTEST_")',
+            'list(APPEND _dart_gtest_unsets "--unset=${_dart_name}")',
+            "--no-tests=error",
+            "COMMAND_ERROR_IS_FATAL ANY",
+        ),
+        errors,
+    )
+    _require_file_markers(
+        root,
+        "tests/CMakeLists.txt",
+        (
+            "tests_and_run",
+            "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}",
+            "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
+            "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake",
+        ),
+        errors,
+    )
+    _check_ctest_runner_commands(root, errors)
+    return errors
+
+
+def _probe_output(result: subprocess.CompletedProcess[str]) -> str:
+    output = (result.stdout + result.stderr).strip()
+    return output[-2000:] if output else "(no output)"
+
+
+def _run_pytest_semantic_probes(root: Path, probe_root: Path) -> list[str]:
+    errors: list[str] = []
+    prefix = "Pytest runner semantic probe"
+    runner = root / "scripts" / "run_pytest.py"
+    if not runner.is_file():
+        return [f"{prefix}: scripts/run_pytest.py is missing"]
+
+    controlled = probe_root / "controlled"
+    hostile = probe_root / "hostile"
+    controlled.mkdir()
+    hostile.mkdir()
+    (controlled / "runner_probe_value.py").write_text(
+        'VALUE = "controlled"\n', encoding="utf-8"
+    )
+    (hostile / "runner_probe_plugin.py").write_text(
+        "def pytest_collection_modifyitems(items):\n" "    items.clear()\n",
+        encoding="utf-8",
+    )
+    sentinel = probe_root / "pytest-body-ran"
+    passing = probe_root / "test_runner_pass.py"
+    passing.write_text(
+        "from pathlib import Path\n"
+        "from runner_probe_value import VALUE\n\n"
+        "def test_runner_body_executes():\n"
+        '    assert VALUE == "controlled"\n'
+        f"    Path({str(sentinel)!r}).write_text('ran', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    hostile_environment = os.environ.copy()
+    hostile_environment.update(
+        {
+            "PYTEST_ADDOPTS": "--collect-only",
+            "PYTEST_PLUGINS": "runner_probe_plugin",
+            "PyTeSt_FutureSelector": "skip-everything",
+            "DARTPY_PYTEST_ARGS": "-k nothing",
+            "DARTPY_PYTEST_SOURCES": str(probe_root / "missing.py"),
+            "PYTHONPATH": str(hostile),
+        }
+    )
+    command = [
+        sys.executable,
+        "-I",
+        str(runner),
+        "--pythonpath",
+        str(controlled),
+        str(passing),
+        "-q",
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            cwd=root,
+            env=hostile_environment,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return [f"{prefix}: controlled hostile-environment run failed: {exc}"]
+    if (
+        result.returncode != 0
+        or not sentinel.is_file()
+        or sentinel.read_text(encoding="utf-8") != "ran"
+    ):
+        errors.append(
+            f"{prefix}: hostile ambient controls prevented a real test body: "
+            f"{_probe_output(result)}"
+        )
+
+    sentinel.unlink(missing_ok=True)
+    collect_result = subprocess.run(
+        [*command, "--collect-only"],
+        cwd=root,
+        env=hostile_environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if collect_result.returncode == 0 or sentinel.exists():
+        errors.append(f"{prefix}: explicit collection-only run did not fail closed")
+
+    failing = probe_root / "test_runner_failure.py"
+    failing.write_text(
+        "def test_runner_failure():\n"
+        "    raise AssertionError('intentional runner probe failure')\n",
+        encoding="utf-8",
+    )
+    failure_result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            str(runner),
+            "--pythonpath",
+            str(controlled),
+            str(failing),
+            "-q",
+        ],
+        cwd=root,
+        env=hostile_environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if failure_result.returncode == 0:
+        errors.append(f"{prefix}: failing test body returned success")
+    return errors
+
+
+def _cmake_path(path: Path) -> str:
+    return str(path.resolve()).replace("\\", "/").replace('"', '\\"')
+
+
+def _run_ctest_wrapper(
+    cmake: str,
+    ctest: str,
+    wrapper: Path,
+    build_dir: Path,
+    environment: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            cmake,
+            f"-DDART_CTEST_COMMAND={ctest}",
+            "-P",
+            str(wrapper),
+        ],
+        cwd=build_dir,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+
+def _run_ctest_semantic_probes(root: Path, probe_root: Path) -> list[str]:
+    errors: list[str] = []
+    prefix = "CTest runner semantic probe"
+    cmake = shutil.which("cmake")
+    ctest = shutil.which("ctest")
+    wrapper = root / "cmake" / "DARTRunCTest.cmake"
+    if cmake is None or ctest is None:
+        return [f"{prefix}: active CMake and CTest executables are required"]
+    if not wrapper.is_file():
+        return [f"{prefix}: cmake/DARTRunCTest.cmake is missing"]
+
+    source = probe_root / "ctest-source"
+    build = probe_root / "ctest-build"
+    source.mkdir()
+    body = source / "body.py"
+    sentinel = probe_root / "ctest-body-ran"
+    body.write_text(
+        "import os\n"
+        "import sys\n"
+        "from pathlib import Path\n\n"
+        "if any(name.upper().startswith('GTEST_') for name in os.environ):\n"
+        "    raise SystemExit(0)\n"
+        "if os.environ.get('DART_TEST_RUNNER_PROBE_FAIL') == '1':\n"
+        "    raise SystemExit(9)\n"
+        "Path(sys.argv[1]).write_text('ran', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.19)\n"
+        "project(dart_test_runner_probe NONE)\n"
+        "enable_testing()\n"
+        "add_test(\n"
+        "  NAME test_runner_body\n"
+        f'  COMMAND "{_cmake_path(Path(sys.executable))}" '
+        f'"{_cmake_path(body)}" "{_cmake_path(sentinel)}"\n'
+        ")\n",
+        encoding="utf-8",
+    )
+    configure = subprocess.run(
+        [cmake, "-S", str(source), "-B", str(build)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if configure.returncode != 0:
+        return [
+            f"{prefix}: controlled project did not configure: "
+            f"{_probe_output(configure)}"
+        ]
+
+    hostile_environment = os.environ.copy()
+    hostile_environment.update(
+        {
+            "GTEST_FILTER": "-*",
+            "gtest_future_selector": "skip-everything",
+        }
+    )
+    result = _run_ctest_wrapper(cmake, ctest, wrapper, build, hostile_environment)
+    if (
+        result.returncode != 0
+        or not sentinel.is_file()
+        or sentinel.read_text(encoding="utf-8") != "ran"
+    ):
+        errors.append(
+            f"{prefix}: hostile ambient controls prevented a real test body: "
+            f"{_probe_output(result)}"
+        )
+
+    failing_environment = hostile_environment.copy()
+    failing_environment["DART_TEST_RUNNER_PROBE_FAIL"] = "1"
+    failure_result = _run_ctest_wrapper(
+        cmake, ctest, wrapper, build, failing_environment
+    )
+    if failure_result.returncode == 0:
+        errors.append(f"{prefix}: failing test body returned success")
+
+    empty_source = probe_root / "ctest-empty-source"
+    empty_build = probe_root / "ctest-empty-build"
+    empty_source.mkdir()
+    (empty_source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.19)\n"
+        "project(dart_empty_test_runner_probe NONE)\n"
+        "enable_testing()\n",
+        encoding="utf-8",
+    )
+    empty_configure = subprocess.run(
+        [cmake, "-S", str(empty_source), "-B", str(empty_build)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if empty_configure.returncode != 0:
+        errors.append(
+            f"{prefix}: empty controlled project did not configure: "
+            f"{_probe_output(empty_configure)}"
+        )
+    else:
+        empty_result = _run_ctest_wrapper(
+            cmake, ctest, wrapper, empty_build, hostile_environment
+        )
+        if empty_result.returncode == 0:
+            errors.append(f"{prefix}: empty CTest inventory returned success")
+    return errors
+
+
+def check_test_runner_semantics(root: Path) -> list[str]:
+    """Execute bounded probes for sanitization, test bodies, and failures."""
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="dart-test-runner-") as temp:
+            probe_root = Path(temp)
+            errors = _run_pytest_semantic_probes(root, probe_root)
+            errors.extend(_run_ctest_semantic_probes(root, probe_root))
+            return errors
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return [f"Test runner semantic probes failed: {exc}"]
+
+
 def scenario_path(root: Path, kind: str, route: str) -> Path:
     if kind in {"workflow", "domain_skill"}:
         return root / ".agents" / "skills" / route / "SKILL.md"
@@ -1485,6 +2315,15 @@ def run_checks(root: Path, profile: str) -> list[str]:
     errors: list[str] = []
     for check in checks:
         errors.extend(check(root))
+    return sorted(set(errors))
+
+
+def run_completion_checks(root: Path, profile: str) -> list[str]:
+    """Run static AI checks plus bounded canonical-runner execution probes."""
+
+    errors = run_checks(root, profile)
+    errors.extend(check_test_runner_contract(root))
+    errors.extend(check_test_runner_semantics(root))
     return sorted(set(errors))
 
 
