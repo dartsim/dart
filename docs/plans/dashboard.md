@@ -10,11 +10,13 @@ Priority order is document order. Active implementation handoff remains in
 
 - Owner doc: [dependency minimization](../dev_tasks/dart6_dependency_minimization/README.md)
 - Status: Active
-- Horizon: Now
+- Horizon: Later
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Continue the native-collision port sequence from the
-  dependency-minimization task, using DART 7 as reference evidence only and
-  proving every release-branch compatibility surface directly.
+- Next step: Publish the completed documentation-only #3381 closeout after
+  explicit maintainer approval. DART 6.20 then stops with canonical detector
+  `"dart"` but FCL still the default and a core dependency. Resume the
+  default-flip and FCL-decoupling phases only on an explicitly authorized
+  future release line.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

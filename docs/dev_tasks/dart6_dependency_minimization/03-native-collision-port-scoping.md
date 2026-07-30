@@ -1,11 +1,12 @@
 # Scoping: Native collision detector port (DART 7 -> DART 6.20)
 
-> **Status: EXECUTION PLAN / CURRENT RESUME MAP (2026-07-29)** - PR #3381
-> consolidates the DART-owned engine into `DARTCollisionDetector`; `"dart"` is
-> the sole canonical key and the unreleased interim `"native"` key is removed.
-> FCL remains the DART 6.20 default and a core dependency. This document keeps
-> the historical phase evidence, but any default flip or FCL decoupling is now
-> later-release work gated on the full acceptance envelope.
+> **Status: DART 6.20 CONSOLIDATION COMPLETE / LATER PHASES DEFERRED
+> (2026-07-30).** PR #3381 merged the DART-owned engine into
+> `DARTCollisionDetector`; `"dart"` is the sole canonical key and the
+> unreleased interim `"native"` key is removed. FCL remains the DART 6.20
+> default and a core dependency. This document keeps the historical phase
+> evidence, but any default flip or FCL decoupling is later-release work gated
+> on the full acceptance envelope and explicit maintainer authorization.
 
 ## Why (the real dependency win)
 
@@ -17,7 +18,7 @@ the consolidated `dart` detector to become the default, as DART 7 did
 consolidation only: remain **gz-compatible**, preserve FCL as the default, and
 prove that FCL/Bullet/ODE paths incur no runtime regression.
 
-## Current evidence refresh (2026-07-09)
+## Current evidence refresh (2026-07-30)
 
 Refs checked:
 
@@ -27,23 +28,35 @@ Refs checked:
   `1e6a8332a730a994450c14ee8a780780c5e069bb`.
 - #3281 later merged via `f1916fd843f931eb7304b9a9dc8089eaf3586b38` on
   `origin/release-6.20` = `135cc8f20765d39040e3e3ae87536dabac8f5401`.
-- Current `origin/release-6.20`: `613241385ae58fed2d2a47e9ff53beb2972d4b76`
-  after #3364 and the performance-generalization handoff update.
-- Current `origin/main`: `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
+- Current `origin/release-6.20`:
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`, after #3406's
+  formatter-only post-merge lint repair.
+- PR #3381 verified squash merge:
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`.
+- PR #3381 exact reviewed head:
+  `64d476b68ad5ae0dcca4e98abb9bba15b6962b87`.
+- Current `origin/main`:
+  `83110ef54abf41f54c1e03500e49c1c12c305b8a`.
 - Related remote heads: `feature/native-occupancy-grid`,
   `task/native-collision-performance-exec`,
   `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
   `fix/gz-physics-joint-detach-6.20`.
 
-Historical conclusion at that refresh:
+Current conclusion:
 
-- `release-6.20` contained the phase-1 native math core, phase-2 DART 6
-  detector adapter, interim `"native"` factory key, phase-3 capability parity
-  pieces, native dashboard rows, and #3364's solver-facing manifold
-  optimization. PR #3381 supersedes that interim public naming with the sole
-  canonical `"dart"` key.
-- It still has no default flip: the default path still resolves through FCL,
-  and FCL remains a core dependency until phases 6 and 7.
+- `release-6.20` contains the consolidated DART-owned detector under the sole
+  public key `"dart"`. The former `dart/collision/native/` sources now live
+  under `dart/collision/dart/`; only their internal implementation namespace
+  retains the word `native`.
+- It has no default flip: both `ConstraintSolver` constructors and the complete
+  default-selection surface still resolve through FCL. FCL remains a core
+  dependency until a future phase 6 is accepted and phase 7 is executed.
+- The FCL, Bullet, and ODE implementations, package components, dependencies,
+  and default-selection paths are source-identical to the PR parent. The
+  released `DARTCollide` surface and detector/group/object layouts are
+  preserved.
+- Remaining general collision/solver performance work is owned by
+  `docs/dev_tasks/dart6_performance_generalization/`, not this lane.
 - DART 7 source/reference PRs remain #2652 (native default), #2688 (coverage and
   performance superset), and #2700 (native CCD). Use these as reference only;
   do not copy the EnTT/C++23 world plumbing directly into DART 6.
@@ -95,7 +108,7 @@ detectors legitimately produce different hashes, but a new native detector must
 be internally stable and must stay within documented tolerance envelopes against
 the incumbent for each capability.
 
-## What DART 7 provides (the source) - `dart/collision/native/` (~80 files)
+## Historical DART 7 source — `dart/collision/native/` (~80 files)
 
 - **Broadphase:** AABB-tree, brute-force, spatial-hash, sweep-and-prune (`broad_phase/`).
 - **Narrowphase:** GJK + MPR (`Gjk.cpp`, `Mpr.cpp`), box-box SAT + face-clip + contact-reduction (`narrow_phase/box_box/`), sphere/box/capsule/cylinder/plane/mesh pairs, convex-convex, `Distance.cpp`, `raycast.cpp`, `ccd.cpp`/`primitive_ccd.cpp`.
@@ -106,14 +119,24 @@ the incumbent for each capability.
   **header-only facades** (`collision/{fcl,ode}/compat/`) over native; no
   external collision deps.
 
-## The target (DART 6.20) - `dart/collision/`
+## Historical pre-port DART 6.20 target — `dart/collision/`
 
 - Clean factory interface: `CollisionDetector` (virtuals: `collide×2`, `distance×2`, `raycast`, `createCollisionGroup`, `createCollisionObject`, `refreshCollisionObject`, `getType`, `cloneWithoutCollisionObjects`), `CollisionGroup`, `CollisionObject`, `CollisionResult`, `Contact`, `CollisionOption`.
-- Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** created in *both* `ConstraintSolver` constructors via `FCLCollisionDetector::create()` - `dart/constraint/ConstraintSolver.cpp:416` & `:433`; core), `ode`, `bullet`.
-- FCL coupling to break: default detector, `VoxelGridShape`/octree (only FCL, via `fcl::OcTree`), distance queries (**FCL-only** - Bullet/ODE/DART `distance()` are warn-and-return stubs).
-- Capability incumbents (verified in-tree, for parity targeting): **distance -> FCL only** (`::fcl::distance`; others stub), **raycast -> Bullet only** (only `BulletCollisionDetector` overrides `raycast()`; FCL/ODE/DART fall back to the base "not supported"), **VoxelGrid/octree -> FCL only**.
+- Detectors at the original scoping baseline: **`dart`** (basic,
+  narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`**
+  (full; **hardcoded default** created in *both* `ConstraintSolver`
+  constructors via `FCLCollisionDetector::create()` -
+  `dart/constraint/ConstraintSolver.cpp:416` & `:433`; core), `ode`, `bullet`.
+- FCL coupling at that baseline: default detector, `VoxelGridShape`/octree
+  (only FCL, via `fcl::OcTree`), and distance queries (**FCL-only**;
+  Bullet/ODE/DART `distance()` were warn-and-return stubs).
+- Capability incumbents at that baseline (for parity targeting):
+  **distance -> FCL only** (`::fcl::distance`; others stub),
+  **raycast -> Bullet only** (only `BulletCollisionDetector` overrode
+  `raycast()`; FCL/ODE/DART fell back to the base "not supported"), and
+  **VoxelGrid/octree -> FCL only**.
 
-## The DART 6 vs DART 7 gap (dominant effort/risk)
+## Historical DART 6 vs DART 7 gap
 
 The port is **not a copy**:
 1. **EnTT (ECS):** DART 7's `native` (`collision_world`, `comps/`) is built on EnTT - a dependency DART 6.20 does not have. Pulling EnTT in would *add* a dependency (defeats the goal), so the ECS-backed parts must be **reworked to plain C++17** (object-oriented `CollisionGroup`/`CollisionObject`) - significant.
@@ -210,23 +233,27 @@ Success means **both**:
    layout, scratch caches, broadphase pair pruning, manifold reuse, scene-local
    allocation control, optional SIMD from #3229, and thread-safe contact
    aggregation. Every optimization PR carries parent-vs-PR and detector-vs-
-   detector tables. **Started: #3362 added native dashboard rows; #3364 capped
-   solver-facing manifolds and made native faster than DART/FCL/Bullet on the
-   120-object contact-container row in that run. Next session must refresh this
-   evidence on the current base and either close Phase 4 or land one cohesive
-   measured follow-up.**
+   detector tables. **Closed for this lane:** #3362 added dashboard rows,
+   #3364 capped solver-facing manifolds, #3368 added the AABB-tree broadphase,
+   and #3381 consolidated the engine with exact incumbent-backend
+   no-regression evidence. Remaining general performance packets belong to
+   the performance-generalization task.
 5. **Compatibility facade decision.** Decide whether Bullet/ODE/FCL components
    stay real optional components or become facade-over-native compatibility
    components. This phase must prove gz subclassing still works, not just
-   `find_package`.
-6. **Default flip.** Flip native in *both* `ConstraintSolver` constructors
+   `find_package`. **Decision 1 complete:** #3381 established `"dart"` as the
+   sole DART-owned backend. The future facade implementation and ODE/gz
+   ratification point remain pending.
+6. **Default flip.** Flip the consolidated `dart` detector in *both*
+   `ConstraintSolver` constructors
    (`ConstraintSolver.cpp:416` & `:433`) and confirm runtime
    `setCollisionDetector` remains unaffected. Require the full A/B packet,
    `pixi run test-all`, and `pixi run -e gazebo test-gz` before merge.
+   **Deferred beyond DART 6.20.**
 7. **FCL decoupling.** Only after the default flip is green, drop FCL from the
    `dart` target and `DART_PKG_EXTERNAL_DEPS`, move Bullet/ODE/FCL packages out
    of the default build, and update package/export docs. This is the dependency
-   win.
+   win. **Pending on a future release after phase 6.**
 
 ## Risks / open questions (for maintainer)
 
@@ -255,22 +282,32 @@ Success means **both**:
    verdict plus the phase-6 acceptance envelope.
 5. ~~Phase 1 (#3281) has landed as an internal-only, no-default-change math
    core. Do not start Phase 2/default-adapter work until this phase-0 packet is
-   accepted.~~ **Superseded:** phases 2 and 3 are merged, and Phase 4 has begun.
-6. Current next packet: refresh Phase 4 performance evidence on current
-   `origin/release-6.20`. If #3364's native rows still satisfy the bar, record a
-   Phase 4 closeout and move to Phase 5. If not, implement one cohesive measured
-   follow-up with parent-vs-PR and detector-vs-detector tables.
-7. After Phase 4 closeout, run the Phase 5 facade decision. Prefer clean,
-   long-term interfaces over header-compatibility shims; preserve gz-physics and
-   gz-sim behavior where they actually depend on subclassing, component names,
-   detector factory keys, or contact semantics.
+   accepted.~~ **Superseded:** phases 2 and 3 merged, Phase 4 closed for this
+   lane, and the DART 6.20 consolidation is complete.
+6. ~~Close Phase 4 and execute the canonical-backend part of Phase 5.~~
+   **Done:** #3368 and #3381. PR #3381 preserves FCL as the 6.20 default,
+   removes the unreleased `"native"` selector, keeps FCL/Bullet/ODE paths
+   structurally unchanged, and carries local C++/Python/gz/ABI/visual plus
+   incumbent-backend no-regression evidence.
+7. ~~Finish the post-merge evidence/docs closeout.~~ **Done locally
+   2026-07-30:** exact-head Linux run `30510684936` completed successfully
+   with all six jobs green, including Release, AddressSanitizer, install,
+   coverage, assertions, Eigen alignment, and AI infrastructure. The verified
+   Release visual artifact has passing FCL/DART manifests, zero skipped
+   contacts, and manually accepted images. #3406's macOS Release and Debug
+   jobs both passed the Black lint step that failed on the squash merge. The
+   documentation-only closeout branch remains unpublished pending explicit
+   maintainer approval.
+8. After that, stop implementation on `release-6.20`. Resume phases 6 and 7
+   only when a future release line and milestone exist and a maintainer
+   explicitly authorizes the default-flip proposal.
 
 ## Recommendation
 
-Feasible and the right end-state, but still **XL**. The branch is past the
-initial port risk: phases 0-3 are merged and Phase 4 has begun. Do not jump
-directly to the default flip. First close Phase 4 with current benchmark
-evidence, then make the Phase 5 facade decision with gz compatibility proof.
-Only after that should Phase 6 flip the default in both `ConstraintSolver`
-constructors, and only after a green default-flip packet should Phase 7 remove
-FCL from the core dependency surface.
+The DART 6.20 deliverable is complete: phases 0–3 landed, Phase 4 closed for
+this lane, and Phase 5's canonical-backend decision shipped in #3381 while FCL
+remained the default. The dependency end-state is still **XL** and incomplete:
+phase 6 must be proposed and proven on an authorized later release, then phase
+7 may remove FCL from the core dependency surface and implement the approved
+compatibility facades. Do not use the completed consolidation as permission to
+jump those release gates.

@@ -5,6 +5,12 @@
 > This packet freezes the incumbent-detector evidence envelope that the
 > native detector (phases 1–6) must be judged against, and records the
 > default-flip verdict for the current tip.
+>
+> **Historical closure (2026-07-30):** PR #3381 merged the newer DART-owned
+> engine into the canonical `"dart"` detector but deliberately kept FCL as the
+> DART 6.20 default. Preserve the rows below as phase-time evidence. A future
+> default-flip proposal must recapture on its own parent and compare within that
+> same recapture; these timings are not current-release performance proof.
 
 ## Capture context
 

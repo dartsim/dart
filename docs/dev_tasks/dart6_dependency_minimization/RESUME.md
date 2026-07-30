@@ -1,340 +1,193 @@
 # RESUME — DART 6.20 dependency minimization
 
-Read [README.md](README.md) first (overall SSOT), then
+Read [README.md](README.md) first, then
 [03-native-collision-port-scoping.md](03-native-collision-port-scoping.md)
-(the plan of record for the remaining work), then refresh
-[04-orchestration-dashboard.md](04-orchestration-dashboard.md) before
-claiming anything.
+for the execution contract,
+[08-phase5-facade-decision.md](08-phase5-facade-decision.md) for the backend
+lifecycle decision, and
+[04-orchestration-dashboard.md](04-orchestration-dashboard.md) for live lane
+status.
 
-## Where the task stands
+## Current reality
 
-Every workstream except the **native collision port** is complete:
+Verified 2026-07-30:
 
-- Dependency-reduction lane: complete (#3105 optimizer removal, #3107 plans).
-- Native-replacement lane: complete (#3076 convhull, #3078 ikfast, #3081
-  imgui, #3088 odelcpsolver, #3116 GLUT+lodepng, #3122 dart/integration).
-- Native-collision-port lane (this folder's remaining executable work):
-  phases 0–7 in `03-native-collision-port-scoping.md`. The perf task
-  (`../dart6_performance_generalization/`) tracks this lane as **WS-F,
-  external owner** — sequencing hooks: its WP-PG.42 (SoA broadphase) is
-  gated on this lane's phase status; its D8 decision (manifold reduction)
-  is re-cut at this lane's phase 3; its WS-B depth is re-reviewed at this
-  lane's phase 5.
+- `origin/release-6.20` is
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`.
+- [PR #3381](https://github.com/dartsim/dart/pull/3381), **Consolidate
+  DART-owned collision detection**, merged at `2026-07-30T04:38:18Z`.
+  Its exact reviewed head was
+  `64d476b68ad5ae0dcca4e98abb9bba15b6962b87`, and its squash merge was
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`.
+- PR #3406 then Black-formatted `scripts/agent_capture.py` to repair the
+  post-merge lint failure created when #3381's new file met #3405's wider
+  Black scope. It changed formatting only, not detector behavior.
+- The DART-owned engine now has one public identity:
+  `DARTCollisionDetector` with factory key `"dart"`. The unreleased
+  `"native"` key, public class family, dartpy binding, and benchmark name were
+  removed rather than retained as aliases.
+- `dart::collision::native` remains only an internal implementation namespace
+  under `dart/collision/dart/`; it is not a public detector selector.
+- FCL remains the DART 6.20 built-in default. Both
+  `ConstraintSolver` constructors still create
+  `FCLCollisionDetector`, `WorldConfig` still defaults to
+  `CollisionDetectorType::Fcl`, and the package/dependency surface remains
+  FCL-required.
+- The PR changed no source under `dart/collision/{fcl,bullet,ode}`, no
+  default-selection source, and no package/dependency metadata.
+- Only `release-6.19` and `release-6.20` exist remotely, and the only open
+  DART 6 milestone is `DART 6.20.0`. Do not begin phase 6 or phase 7 on
+  `release-6.20`.
 
-## Next step
+This task folder remains active because the later-release default-flip and
+dependency-decoupling phases are real work. The completed DART 6.20 slice is
+not permission to perform either change on this branch.
 
-**Current execution (2026-07-29): finish PR #3381 before later phases.**
-The consolidation keeps FCL as the DART 6.20 default, removes the unreleased
-`"native"` selector entirely, and preserves the released
-`dart/collision/dart/DARTCollide.hpp` API through thin wrappers over the
-consolidated detector. Address every current-head review finding, merge the
-latest `origin/release-6.20`, rerun no-cache C++/Python/gz and installed-header
-gates, push, request a fresh Codex review, and monitor the exact head to a
-terminal result. Do not start a 6.20 default flip or dependency removal.
-The exact-head CI evidence must include an explicit `DARTCollisionDetector`
-capture for ellipsoid/capsule/cone contacts. Use numerical parity and
-allocation tests for soft bodies, and exact hit/sort/filter tests for raycast;
-rendered pixels are not evidence for those contracts.
+The historical default-environment OSG demotion is a separate held proposal,
+not an implicit remaining phase. #3116 removed GLUT and `lodepng` while
+retaining OSG; #3393 proved the C++ no-OSG configuration. OSG and ImGui remain
+in the default Pixi environment, and dartpy still hard-requires
+`dart-gui-osg`. Do not implement that split without fresh maintainer scope
+covering dartpy, published wheels, and the installed GUI component.
 
-Local review-fix candidate evidence captured on 2026-07-29, after merging
-`origin/release-6.20` at `6c88ac1d774` but before publishing the merge commit:
+## DART 6.20 delivery status
 
-- no-cache Release build, all 155 C++ tests, and all 223 dartpy tests pass;
-- `check-lint`, AI command/infrastructure checks, 357 focused AI tests, and all
-  seven AI scenario probes pass;
-- the pinned downstream aggregate passes all 199 gz-physics tests, all four
-  gz-physics performance/symbol checks, and gz-sim
-  `INTEGRATION_entity_system`;
-- the two Linux visual-smoke scenes pass their image/view verdicts and the four
-  engine-rendered overlay regressions; the explicit shape-contact capture
-  reports detector `"dart"`, ellipsoid/capsule/cone contacts, no camera issues,
-  and zero skipped contacts;
-- exact old-header/current-library canaries preserve the pre-consolidation
-  6.20 detector/group/object sizes (`32/376/320`) and pass guarded
-  construction, clone, update, collision, and destruction 20/20; the released
-  6.19.4 detector header also passes 20/20. All ten historical `DARTCollide`
-  symbols remain exported, and the private object sidecar header is not
-  installed;
-- two alternating five-repetition, same-core contact-container A/Bs show no
-  measurable incumbent-backend regression: base/head medians are ODE
-  `868/867-868 ms`, FCL `257/255-256 ms`, and Bullet `267/266 ms`, with
-  identical contact counts (`205/81/90`). CPU scaling was enabled, so only a
-  regression beyond noise would be claimable; none was observed.
+| Phase | Deliverable | Status |
+| --- | --- | --- |
+| 0 | Incumbent baseline and acceptance envelope | Complete, #3271 |
+| 1 | C++17/no-EnTT collision math core | Complete, #3281 |
+| 2 | DART 6 detector adapter and shape-pair coverage | Complete through #3350 |
+| 3 | Distance, raycast, voxel, CCD, and manifold parity | Complete through #3360 |
+| 4 | Evidence-driven detector performance | Closed for this lane: #3362, #3364, and #3368 landed; remaining general performance work belongs to the performance-generalization task |
+| 5 | Canonical backend decision | Decision 1 executed by #3381: consolidate into `"dart"` and remove the unreleased `"native"` selector |
+| 6 | Default flip | Deferred beyond DART 6.20; no implementation branch or milestone exists |
+| 7 | FCL decoupling and backend facades | Pending after an accepted phase-6 flip on a future release |
 
-This is local candidate evidence, not exact-pushed-head evidence. Publication,
-a fresh top-level Codex review request, hosted CI/artifact inspection, and any
-new current-head finding remain required.
+## PR #3381 acceptance evidence
 
-The review of pushed head `fd96521bb14` found one additional P2: old 6.20
-headers inline the DART group/object destructors, so sidecar cleanup could not
-depend on new out-of-line destructor bodies. The correction anchors group and
-object sidecar ownership in the released-layout `mCollisionDetector` and
-`mCachedShape` shared-pointer members instead, restores the inline/defaulted
-destructors, and adds a direct sidecar-count regression covering a stack group,
-a downstream-style object subclass, and a shape swap. It was published as
-`af2ac200e26`, and its review thread was resolved.
+The exact head satisfies the DART 6.20 contract:
 
-Fresh Codex review `4814689190` of that exact head then found one further P2:
-the four function-local one-time shape-warning sets could race when independent
-worlds converted unsupported or malformed shapes concurrently. The correction
-routes all four warning categories through one mutex-protected
-registry while leaving supported-shape paths lock-free, and adds an eight-thread
-regression that repeatedly exercises every warning category. The complete
-43-test consolidated-engine target passes in Release and assertions-enabled
-builds. It was published as `2f2d45d99da`, and its review thread was resolved.
+- Fresh top-level Codex review reported no major issues on
+  `64d476b68a`; all ten review threads are resolved.
+- Review `4812900603`'s two findings are present in the merged source: the
+  installed `DARTCollide` header and wrapper symbols remain available, and
+  ellipsoid conversion passes its generated triangle faces into `ConvexShape`
+  instead of recomputing them from all vertex triples.
+- No-cache Release build, 155/155 C++ tests, 223/223 dartpy tests, and the
+  43-test consolidated detector target in Release and assertions-enabled
+  configurations passed.
+- `pixi run lint`, no-cache `pixi run check-lint`, AI
+  command/infrastructure checks, 357 focused AI tests, and seven AI scenarios
+  passed.
+- The pinned downstream aggregate passed 199/199 gz-physics tests, 4/4
+  plugin/performance checks, and the gz-sim entity-system integration test.
+- Pre-consolidation 6.20 headers against the new library preserved detector,
+  group, and object sizes (`32/376/320`) and passed 20/20 guarded lifecycle
+  runs. The released 6.19.4 detector header also passed 20/20.
+- All ten released `DARTCollide` symbols remain exported.
+- Alternating, same-core incumbent-backend A/Bs observed no FCL, ODE, or
+  Bullet regression. Contact counts were identical; base/head medians were
+  ODE `868/867-868 ms`, FCL `257/255-256 ms`, and Bullet `267/266 ms`.
+  CPU scaling was enabled, so this is a no-regression result, not a speedup
+  claim.
+- Direct FCL and DART visual captures passed their text and image-quality
+  oracles, including explicit ellipsoid/capsule/cone contacts and zero skipped
+  contacts. Engine-rendered overlay regressions passed.
+- The exact-head hosted Release job also passed its visual smoke and uploaded
+  `agent-visual-smoke` artifact `8748503596`. Its FCL `box_on_ground` and DART
+  `dart_shape_contacts` manifests both report `pass: true` and
+  `skipped_contacts: 0`; manual inspection confirmed visible geometry, contact
+  arrows, labels, and collision bounds rather than blank or failed captures.
 
-Fresh Codex review `4814842827` of that exact head found another P2: the
-single-thread two-group Cartesian walk sent disjoint pairs to narrowphase
-without the AABB rejection already present in the parallel branch. The current
-candidate rejects disjoint pairs before collision filters and narrowphase in
-both paths, matching the released detector's broadphase ordering. Its
-regression constructs eight isolated cross-group overlaps and verifies that
-serial and parallel queries both visit exactly eight candidates rather than all
-64 Cartesian pairs. The focused detector target passes in Release and
-assertions-enabled builds. Fresh no-cache gates also pass all 155 C++ tests,
-all 223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
-gz-physics performance/symbol checks, and the gz-sim entity-system integration
-test. This implementation-only correction changes no header or ABI surface. It
-remains candidate evidence until publication; exact-head hosted CI, artifact
-inspection, and fresh Codex review remain mandatory.
+At merge time, exact-head hosted CI was nonterminal. It is now complete:
+Linux run `30510684936` finished successfully at
+`2026-07-30T06:21:21Z`; Debug, coverage, Release, assertions-enabled, Eigen
+alignment, and AI infrastructure all passed. Release includes the visual
+smoke, AddressSanitizer, and install gates. The final named PR rollup is 18
+successes, one expected skipped documentation deploy, zero pending, and zero
+failures.
 
-**Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
-[05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw
-evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head
-`1e6a8332a730` after merging `release-6.20` = `949a9c2ff5ed`, with the
-verdict "native default NOT allowed at this tip" and the phase-6 acceptance
-envelope. Consume the committed row summaries and verdict for phase-1
-sequencing; do **not** re-run the matrix just to start phase 1. For any
-phase-6/default-flip tolerance gate, retrieve JSONL scene dumps matching
-the recorded SHA-256 digests or recapture dumps on the flip PR's parent
-and compare within that same recapture.
+The squash-merge push exposed one non-collision integration failure: both
+macOS jobs stopped in `Check Lint` because #3405 made Black inspect
+`scripts/agent_capture.py`, whose #3381 line wrapping predated that wider
+scope. PR #3406 applied Black's output and is now the release tip. The
+In the `ac7b9462612` push matrix, macOS Release and Debug both passed
+`Check Lint` (`2026-07-30T05:48:49Z` and `06:00:23Z`) and continued into
+tests. That directly clears the merge-time formatter regression. The wider
+release-tip matrix remained nonterminal at the `06:22Z` snapshot, so it is
+not represented as a fully green matrix or substituted for #3381's terminal
+exact-head evidence.
 
-**Phases 0 and 1 are merged** (#3271 phase-0 packet, #3281 phase-1 native
-math core — C++17, no EnTT, internal-only; FCL stays default). Follow-ups
-fixed the `maxNumContacts==0` contract in native sphere-sphere on both
-release-6.20 (#3298) and main (#3283).
+## Immediate next action
 
-**Phase 2 is complete.** The execution plan (merged, #3302) is
-[07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
-internal, non-default `dart::collision::NativeCollisionDetector` that
-bridges DART 6's `CollisionDetector`/`CollisionGroup`/`CollisionObject`
-contract to the ported `dart::collision::native` engine (BruteForce
-broadphase → narrowphase dispatcher → DART 6 `Contact`), **bypassing the
-EnTT world layer** by reusing DART 6's existing `shared_ptr`-based object
-manager. FCL stays default; no new dependency; C++17. The plan slices
-phase 2 into PRs **P1–P9** (+ P10 coverage), each gz-gated and
-scope-diff-guarded.
+1. Obtain explicit maintainer approval before pushing
+   `docs/dependency-minimization-closeout` or opening its documentation PR.
+2. If published, manage that documentation-only PR through review and CI
+   without adding collision behavior, defaults, or dependency changes.
+3. Otherwise, wait for a future DART 6 release line and milestone plus explicit
+   authorization before resuming phases 6 or 7.
 
-- **P1** (BroadPhase base + BruteForce): **#3303** — **merged**.
-- **P2** (narrowphase dispatcher, sphere/box only): **#3306** — **merged**
-  (`dart/collision/native/narrow_phase/NarrowPhase.{hpp,cpp}` now on
-  `release-6.20`).
-- **P3a** (adapter skeleton + sphere/box shape conversion, intentionally
-  unregistered): **#3318** — **merged**.
-- **P3b** (bridge translation + `"native"` registration + `sphere_box` +
-  parity): **#3319** — **merged**.
-- **P4** (capsule primitive pairs): **#3321** — **merged**.
-- **P5** (convex foundation + capsule-capsule): **#3322** — **merged**.
-- **P6** (cylinder collision pairs): **#3324** — **merged**.
-- **P7** (mesh collision pairs): **#3325** — **merged**.
-- **P8/P9** (distance module + plane primitive/convex coverage): **#3343** —
-  **merged**.
-- **P10** (mixed-scene FCL/DART/native parity coverage): **#3350** —
-  **merged**.
-- **D1** (native detector distance adapter + native basename normalization):
-  **#3352** — **merged**.
-- **D2** (native detector raycast adapter + native-vs-Bullet raycast
-  benchmarks): **#3355** — **merged**.
-- **D3** (native VoxelGrid/compound support): **#3358** — **merged**.
-- **D4** (native CCD support): **#3359** — **merged**.
-- **D5** (native persistent manifold cache + cached-impulse seed/write-back):
-  **#3360** — **merged**.
-- **P11** (native contact-container dashboard rows): **#3362** — **merged**.
-- **D6** (solver-facing native manifold cap with performance evidence):
-  **#3364** — **merged**.
+There is no further collision-backend implementation authorized on
+`release-6.20`.
 
-**Phase 4 continues (2026-07-10 refresh).** After #3364, the AABB-tree
-broadphase PR (#3368, `feature/native-aabb-tree-broadphase`) replaced the
-O(n^2) BruteForce pair loop with DART 7's dynamic AABB tree while keeping all
-eight native guard rows bit-identical (fat-AABB cull + tight-AABB filter +
-sorted pair order): S2 settled-3k 0.0809 -> 0.0340 ms/step (now ties the
-`dart` detector), S3 active-3k 34.63 -> 12.28 ms/step, S4 generated-900
-0.125 -> 0.072, GB 120/4/1 1404 -> 1232 ms; gz gate green on the branch.
-Artifacts: `/tmp/audit_head_20260710T011207Z` (parent full matrix incl.
-native rows) and `/tmp/aabbtree_ab_20260710T022954Z` (branch A/B).
+## Later-release resume gate
 
-Remaining measured Phase 4 gaps against the phase-6 envelope (native >=
-fastest incumbent per row):
+When a maintainer creates and authorizes the proposing release line:
 
-1. S3 active-3k: native 12.28 vs dart 9.14 ms/step (16-thread) — remaining
-   delta is narrowphase/manifold-cache side; profile on a quiet host first.
-2. Small scenes: native ~1.21 vs dart 1.06 ms/step on S1-60; ~40% slower
-   than dart on a small MJCF arm-scene bisect. Native small-scene collide
-   overhead packet.
-3. S6 dense-pile resting profile: RESOLVED as a documented re-scope
-   (2026-07-11, maintainer-authorized best-path with self-run A/B). Five
-   approaches were falsified with evidence: naive cap-4 (creep 0.158 m,
-   S1-120 +102%), an ERV dead-zone inside the resting band (reintroduced
-   #3209 creep: the 0.1 ERV push is simultaneously the anti-creep mechanism
-   and the jitter pump), split impulse as shipped (untuned; pen 0.182),
-   all cached-state toggles (warm-start/friction-basis/refresh-threshold:
-   zero effect; the Dantzig fallback fires ~1/89k solves so impulse seeds
-   are inert), and quad-area 4th point + cap 4 (fixed the naive-cap-4
-   degeneracy and produced the only transient rest ever observed — 5/71 at
-   20k steps — but 40k-horizon re-wakes to 0/71). Meanwhile the REAL
-   acceptance surfaces all rest BETTER under native than legacy dart:
-   S2 gz 3k 3003/3003, S4 900/900 (dart: 600/900), S5 90/90 (dart: 60/90);
-   legacy dart itself fails the S6 fixture on 1/5 seeds, and rolling-shape
-   piles never rest under ANY detector (physically correct without rolling
-   resistance). The consolidated-detector S6 acceptance row becomes:
-   bounded max_penetration within the dense-island band (anti-creep, the
-   actual #3209 finding: 0.005 at 40k steps vs 0.36 unbounded pre-D7) +
-   finite + documented non-resting attributable to rolling dynamics. A
-   rolling-resistance contact parameter (condim>=4 analog; D7-style
-   adaptive defaults) graduates to a designed 6.21 feature. Salvage: the
-   quad-area 4th-point criterion fix for the manifold cache is
-   independently correct (the volume criterion degenerates on coplanar
-   face manifolds) and ships separately with its own hash A/B (cap stays
-   3); probe branch exp/quadcap4-manifold; artifacts
-   ~/dart-bench-artifacts/ (note: earlier /tmp artifact paths in this file
-   were lost to a host reboot; the numbers are preserved here and in the
-   PR bodies).
+1. Refresh all branch, package, milestone, gz-physics, and installed-component
+   evidence. Do not reuse 6.20 timing numbers as current proof.
+2. Re-capture the phase-0 matrix on the default-flip PR parent and compare the
+   candidate within that same capture. Preserve finite state, determinism,
+   contact caps, scene-dump tolerances, and capability parity.
+3. Prove the consolidated `"dart"` detector meets the accepted performance bar
+   without using sleeping, contact loss, or changed physics to hide a
+   regression.
+4. Change the complete default surface together: both `ConstraintSolver`
+   constructors, `WorldConfig`, `World` selection behavior, and parser
+   fallbacks. Run full C++/Python, installed-prefix, ABI, visual, and
+   gz-physics/gz-sim gates.
+5. Only after that flip is accepted may phase 7 decouple FCL from core,
+   rebuild the FCL/Bullet/ODE compatibility components as approved facades,
+   and remove external packages.
 
-**Phase 5 decision is active (maintainer-directed 2026-07-10):**
-[08-phase5-facade-decision.md](08-phase5-facade-decision.md) — the native
-engine merges INTO the dart detector (`dart/collision/native/` folds into
-`dart/collision/dart/`, `NativeCollisionDetector` merges into
-`DARTCollisionDetector`, canonical key `"dart"`; the interim `"native"` key
-never shipped and is removed in the consolidation PR). A later release may
-deprecate
-FCL/Bullet/ODE via messaged attributes on create()/ctors; 6.22 removes the
-external deps with facades over the dart detector (only
-`OdeCollisionDetector` needs subclassability for gz). Remaining ratification
-point: facade-vs-coordinated-gz-change for ODE. Note doc 03's
-ConstraintSolver line numbers were stale: the FCL ctor sites are
-`ConstraintSolver.cpp:416` and `:433`. The maintainer also set a total PR
-budget for the whole effort (prefer fewer, larger cohesive PRs; ~10-20 total
-across both dev tasks).
-
-Historical context for #3364 (superseded rows above):
-
-Measured on `origin/release-6.20` parent `43e419638986` vs #3364:
-
-| Benchmark row | Parent native | Slice native | Delta | Contacts |
-| --- | ---: | ---: | ---: | ---: |
-| `BM_ContactContainerActive/60/4/1_mean` | 202.383 ms | 202.918 ms | -0.3% | 84 -> 80 |
-| `BM_ContactContainerActive/60/4/16_mean` | 204.547 ms | 203.067 ms | +0.7% | 84 -> 80 |
-| `BM_ContactContainerActive/120/4/1_mean` | 2268.942 ms | 1118.032 ms | +50.7% | 282 -> 251 |
-| `BM_ContactContainerActive/120/4/16_mean` | 2202.924 ms | 1124.906 ms | +48.9% | 282 -> 251 |
-| `BM_ContactContainerActive/120/4/4_mean` | 2193.106 ms | 1167.577 ms | +46.8% | 282 -> 251 |
-| `BM_ContactContainerDeactivation/60/4/16/iterations:1_mean` | 30.589 ms | 29.391 ms | +3.9% | 101 -> 97 |
-
-Post-#3364 detector comparison on `BM_ContactContainerActive/120/*/1_mean`:
-native 1118.032 ms / 251 contacts, DART 1452.013 ms / 242 contacts, FCL
-1475.995 ms / 243 contacts, Bullet 1544.000 ms / 256 contacts.
-
-Fresh-agent resume path:
-
-1. Start from current `origin/release-6.20`; verify #3364 is merged before doing
-   any new work. Do not reopen `feature/native-phase4-solver-manifolds`.
-2. Re-run the contact-container dashboard and focused profile rows on the latest
-   base. If native still clears the Phase 4 performance bar, record a Phase 4
-   closeout packet and move to Phase 5. If not, do **one cohesive** follow-up PR
-   for the next measured hot path rather than several small PRs.
-3. Candidate Phase 4 follow-ups remain broadphase pair pruning, scratch/cache
-   reuse, manifold reuse beyond #3364, scene-local allocation control, optional
-   SIMD from #3229, and thread-safe contact aggregation. Every performance PR
-   needs parent-vs-PR and detector-vs-detector evidence in the style of #3307.
-4. Phase 5 is the compatibility facade decision: decide whether Bullet/ODE/FCL
-   components stay real optional components or become facade-over-native
-   compatibility components. Preserve gz-physics/gz-sim ABI/API expectations,
-   especially subclassing of `BulletCollisionDetector` and `OdeCollisionDetector`.
-5. Phase 6 is deferred beyond DART 6.20. A later default-flip proposal must
-   change both `ConstraintSolver` constructors and must not proceed until the
-   full A/B packet, scene-dump tolerance checks, local tests, and Gazebo gate
-   pass on its current base.
-6. Phase 7 is the actual dependency win: only after the default flip is accepted,
-   decouple FCL from the core `dart` target and package dependency surface, then
-   move Bullet/ODE/FCL packages out of default paths with package/export smoke
-   tests.
-
-Do **not** add a `CollisionDetectorType::Native` enum or touch `World` detector
-defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
-dependency/package metadata before the explicit phase that owns it; FCL remains
-the default until phase 6.
-
-**Detector consolidation executed (2026-07-11):** per maintainer direction
-2026-07-10, recorded in
-[08-phase5-facade-decision.md](08-phase5-facade-decision.md), the native
-engine merged INTO the dart detector: `dart/collision/native/` no longer
-exists (folded into `dart/collision/dart/`), and
-`dart::collision::NativeCollisionDetector`/`Group`/`Object` are gone —
-`DARTCollisionDetector`/`Group`/`Object` now denote the former native
-engine, with `"dart"` as the only factory key; the unreleased `"native"` key
-is removed without a transition alias. This is separate from the phase-6 default
-flip, which is still pending and out of scope here. The legacy
-narrowphase-only `DARTCollisionDetector` implementation was deleted as part
-of this merge. Its released `DARTCollide.{hpp,cpp}` entry points remain as
-thin compatibility wrappers over the consolidated detector. The two capability
-gaps this opened were closed on the same branch before the flip PR:
-SoftMeshShape support was ported into the consolidated detector
-(`SoftCollision.*`, soft gates green with zero steady-state allocations,
-serial soft-soft only) and EllipsoidShape gained a native conversion (exact
-sphere for equal radii, icosphere convex hull otherwise).
-
-**Historical state (2026-07-18):** the consolidation plus phase-6 default flip
-was carried by **PR #3381** (`feature/dart-detector-consolidation`, milestone
-DART 6.20.0) at head `ebf33416626`. Earlier branch heads also carried MJCF
-plane/stacked-axis behavior changes; those unrelated parser changes are
-removed from the final consolidation scope. On
-2026-07-18 the branch was refreshed by merging `origin/release-6.20`
-(= `75306efe770`; two non-overlapping commits, #3388 pixi lockfile and
-#3390 script formatting) because branch protection requires up-to-date
-branches; CI re-runs on the new head. Maintainer decisions recorded
-2026-07-18: the PR **merge itself stays with the maintainer** (agent keeps
-the branch green and merge-ready), and this task folder stays **ACTIVE**
-after the merge (refresh docs; do not retire yet). Post-merge next steps:
-apply the prepared post-merge doc map
-(`~/dart-bench-artifacts/pr3381-next-packet-ad97d7c-20260713/post-merge-doc-map.md`),
-then phase 7 (FCL decoupling from core) remains the pending dependency win,
-ratified for the 6.22 cycle (6.21 deprecations → 6.22 facades); the ODE
-facade-vs-coordinated-gz ratification point is still open.
-
-**Update 2026-07-23:** the maintainer directed that PR #3381 must
-**not** change the default collision detector yet. The phase-6
-default flip described above has been **reverted**: the
-`ConstraintSolver` ctors, `WorldConfig::collisionDetector`,
-`World::resolveCollisionDetector`, and `SkelParser`'s fallback are
-back to the FCL default, byte-for-byte with `origin/release-6.20`,
-and the default-driven test expectations were restored to FCL
-values. **PR #3381 now ships the consolidation only** — the native
-engine folded into `DARTCollisionDetector` (sole canonical key `"dart"`),
-soft-body + ellipsoid + cone + capsule coverage, released `DARTCollide`
-adapters, and the
-built-in default remains **`fcl`**. The default flip is deferred to
-a later PR, still gated on the phase-6 acceptance envelope. The
-facts above that remain true: the task folder stays **ACTIVE**, the
-PR merge stays with the maintainer, and the milestone is still
-DART 6.20.0.
-
-See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact Phase 4 next steps).
+Open design decision: whether `OdeCollisionDetector` becomes a subclassable
+facade over the DART engine or follows a coordinated gz-physics change that
+first removes `GzOdeCollisionDetector` inheritance. Preserve all four factory
+keys and the installed component names either way.
 
 ## Standing constraints
 
-- gz gate every phase: `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
-- `pixi run test-all` builds only — runtime coverage is `pixi run test` +
-  `pixi run test-py` (maintainer clarification, see `02`).
-- Shared hot files (`pixi.toml`/`pixi.lock`): merge `origin/release-6.20`
-  before pushing; never rebase a published PR branch.
-- Prefer fewer PRs from phase 3 onward: group cohesive capability wiring,
-  parity tests, and mechanical native-file cleanup in one PR when validation
-  remains tractable; split only for real review or risk boundaries.
-- Topic branches: `git switch --no-track -c <type>/<topic>
-  origin/release-6.20`.
-- FCL default detector is created in *both* `ConstraintSolver`
-  constructors (`dart/constraint/ConstraintSolver.cpp`, lines 336/353 as
-  of `1e6a8332a730`; still FCL after #3281) — the phase-6 flip must change
-  both.
-- Do not pick up perf-lane packets (WP-PG.*) from this folder; that lane
-  has its own owner and dashboard.
+- FCL is the DART 6.20 default. Do not change it in this task on this branch.
+- Public selector `"native"` does not exist and must not be reintroduced.
+- Keep C++17, pybind11, installed DART 6 headers/components, released class
+  layouts, and gz-physics/gz-sim behavior.
+- Run `pixi run lint` before every commit.
+- Use `pixi run test` and `pixi run test-py` for runtime coverage;
+  `pixi run test-all` only builds.
+- Run the Gazebo gate for collision, constraint, package, or default-selection
+  changes:
+
+  ```bash
+  N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
+  DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N \
+    pixi run -e gazebo test-gz
+  ```
+
+- Merge the latest target branch into an already-published PR branch; never
+  rebase or force-push it without explicit maintainer approval.
+- Do not pick up `WP-PG.*` packets from this folder. Remaining general
+  performance work is owned by
+  `docs/dev_tasks/dart6_performance_generalization/`.
+
+## Historical evidence
+
+- Phase-0 summary and acceptance envelope:
+  [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md).
+- Raw row summaries, capture driver, analyzer, and scene-dump digests:
+  [05-artifacts.md](05-artifacts.md).
+- Phase-1 port contract:
+  [06-phase1-port-packet.md](06-phase1-port-packet.md).
+- Historical phase-2 adapter plan:
+  [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md).
+- Backend lifecycle decision:
+  [08-phase5-facade-decision.md](08-phase5-facade-decision.md).

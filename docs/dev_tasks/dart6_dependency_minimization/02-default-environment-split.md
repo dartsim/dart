@@ -13,6 +13,28 @@
 > working-directory name — those are per-machine and meaningless to other
 > developers._
 
+## Current release reconciliation (2026-07-30)
+
+This file preserves the 2026-06 lane handoff and its maintainer decisions. A
+current-tree and merged-PR audit confirms:
+
+- #3116 removed GLUT/freeglut and `lodepng`; it retained OSG as the supported
+  GUI component.
+- OSG and ImGui remain root dependencies in `pixi.toml`, and the default
+  `config` task still enables dartpy and GUI OSG.
+- `python/dartpy/CMakeLists.txt` still includes `dart-gui-osg` in its required
+  library list and fails when that target is absent.
+- #3393 added assertions/ASan coverage with OpenSceneGraph discovery forcibly
+  disabled, proving that the C++ build honors `DART_BUILD_GUI_OSG=OFF`. It did
+  not demote OSG from the default environment or change dartpy packaging.
+- No active PR or later maintainer decision supersedes the 2026-06-21 decision
+  to hold all interim Pixi demotions.
+
+Consequently, GUI/OSG demotion is neither completed nor currently executable
+from this task. It requires fresh maintainer authorization and a new scoped
+topic branch; the old lane name is historical ownership evidence, not an
+active implementation queue.
+
 ## Scope (evolved)
 
 This lane started as a "default-environment split" — demoting heavy optional
@@ -78,7 +100,7 @@ are documented breaking changes for 6.20.
 | **ipopt, nlopt, pagmo, snopt** | deprecated optimizer backends | ✅ **REMOVED** — extracted to [dart-optimization](https://github.com/dartsim/dart-optimization); merged #3105. |
 | **boost (`libboost-devel`)** | declared for pagmo (now gone), but still pulled by `openscenegraph → collada-dom` | **Not independently removable** — OSG keeps boost in the default env, so dropping the explicit entry is cosmetic. DART has no boost usage; it drops out **with the GUI/OSG demotion** (slice 3). |
 | bullet-cpp, libode | optional collision backends; gz-physics uses them | **Demotion abandoned** (#3106 closed). Folds into the native-collision initiative (native-collision-port lane). |
-| openscenegraph, freeglut, imgui (GUI) | `DART_BUILD_GUI_OSG=ON` pulls them | **Owned by the native-replacement lane** (blocker below). |
+| openscenegraph, imgui (GUI) | `DART_BUILD_GUI_OSG=ON` pulls them; freeglut was removed in #3116 | **Held by the 2026-06-21 maintainer decision.** Historical owner: native-replacement lane. Fresh scope is required (blocker below). |
 | octomap | optional, but in exported `DART_PKG_EXTERNAL_DEPS` | **Keep** — demotion changes installed headers (`config.hpp`/`VoxelGridShape.hpp`) + the `dart.pc` contract. |
 
 ## Done
@@ -140,13 +162,15 @@ lane* — this lane takes no further action on them.
   scoping artifact (`03-native-collision-port-scoping.md`, merged in #3107) is the
   hand-off reference; this lane takes no further action.
 
-### GUI stack (OSG/GLUT/imgui) — native-replacement lane
+### GUI stack (OSG/imgui) — held; historical native-replacement owner
 
-- **Owned by the native-replacement lane.** Blocker: default `config` sets
+- **No active implementation owner or authorization.** Blocker: default `config` sets
   `-DDART_BUILD_DARTPY=ON`, and `python/dartpy/CMakeLists.txt` *hard-requires*
   `dart-gui-osg` via `FATAL_ERROR` (not `if(TARGET)`-guarded). Demotion needs that
-  guard + a Windows wheel-publish repoint + keeping GUI in the publishing env;
-  coordinate with the native-replacement lane's imgui branch.
+  guard plus conditional exclusion of OSG binding sources, a Windows
+  wheel-publish repoint, and keeping GUI in the publishing env. PR #3393
+  independently proves the no-OSG C++ path, but does not resolve the dartpy or
+  publishing contract.
 
 ## Validation gates (select by touched surface)
 
@@ -167,9 +191,11 @@ lane* — this lane takes no further action on them.
    (`config.hpp`, `VoxelGridShape.hpp`) and the `dart.pc` `Requires` contract.
    A true-optional `VoxelGridShape` componentization is a separate future effort
    — file a tracking issue? (defaulting to no for now).
-2. **GUI demotion — moved to the native-replacement lane.** (The `if(TARGET)`
-   guard for dartpy's `dart-gui-osg` requirement + Windows wheel-publish repoint
-   is that lane's call.)
+2. **GUI demotion — held.** Historical ownership moved to the
+   native-replacement lane, but the 2026-06-21 maintainer decision held all
+   interim Pixi demotions. The dartpy source/target guard, wheel-publish
+   repoint, and preservation of the public `gui-osg` surface require fresh
+   maintainer scope.
 3. **Native collision backport — moved to the native-collision-port lane.**
    Scoping (gz-compat matrix, feature-parity matrix, benchmark plan) is captured
    in `03-native-collision-port-scoping.md`; execution is not this lane's.
@@ -205,6 +231,11 @@ lane* — this lane takes no further action on them.
   is now owned by the **native-collision-port lane** and the GUI/OSG demotion by
   the **native-replacement lane**; both removed from this lane's scope. **This
   dependency-reduction lane is complete** — no remaining executable work.
+- 2026-07-30: Reconciled the historical handoff against current
+  `release-6.20`. #3116 removed GLUT, not OSG. #3393 hardened the optional
+  no-OSG C++ build, while OSG/ImGui remain in the default Pixi environment and
+  dartpy still hard-requires `dart-gui-osg`. No later authorization or active
+  PR supersedes the hold.
 
 ## Resume prompt
 
@@ -213,8 +244,9 @@ lane* — this lane takes no further action on them.
 > native-collision scoping docs (#3107, merged). All other levers are owned by
 > other lanes or non-removable: the **native-collision port** is owned by the
 > native-collision-port lane (scoped in `03-native-collision-port-scoping.md`); the
-> **GUI/OSG demotion** (which also drops boost + collada-dom + freeglut) is owned
-> by the **native-replacement lane**; **boost** is not independently removable
+> **GUI/OSG demotion** (which also drops boost + collada-dom + freeglut) is
+> historically owned by the **native-replacement lane**, but is currently held
+> and has no active implementation owner; **boost** is not independently removable
 > (`openscenegraph → collada-dom → libboost`). **Do not** pick up the native-port
 > or GUI/OSG work in this lane (avoids overlap). If reactivated, get a fresh
 > maintainer scope first. Feature-env CI (if any) must use `test`/`test-py`,
