@@ -697,6 +697,20 @@ def _copy_test_gate_contract(root: Path) -> None:
         )
 
 
+def _replace_required_pytest_command(cmake: Path, replacement: str) -> None:
+    marker = (
+        "    COMMAND\n"
+        "      ${CMAKE_COMMAND} -E env "
+        '"PYTHONPATH=${DART_PYTHONPATH}" "PYTEST_ADDOPTS="\n'
+        '      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" "PYTEST_PLUGINS="\n'
+        '      "${Python3_EXECUTABLE}" -m pytest -c\n'
+        '      "${PROJECT_SOURCE_DIR}/pyproject.toml" ${dartpy_test_files} -v\n'
+    )
+    text = cmake.read_text(encoding="utf-8")
+    assert marker in text
+    cmake.write_text(text.replace(marker, replacement, 1), encoding="utf-8")
+
+
 @pytest.mark.parametrize(
     ("relative", "marker"),
     [
@@ -1110,31 +1124,17 @@ def test_test_gate_contract_rejects_quoted_pytest_target_spoof(tmp_path):
 def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/tests/CMakeLists.txt"
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8").replace(
-            (
-                "    COMMAND\n"
-                "      ${CMAKE_COMMAND} -E env\n"
-                '      "PYTHONPATH=${DART_PYTHONPATH}"\n'
-                '      "PYTEST_ADDOPTS="\n'
-                '      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1"\n'
-                '      "PYTEST_PLUGINS="\n'
-                '      "${Python3_EXECUTABLE}" -m pytest -c\n'
-                '      "${PROJECT_SOURCE_DIR}/pyproject.toml" '
-                "${dartpy_test_files} -v\n"
-            ),
-            (
-                "    COMMAND ${CMAKE_COMMAND} -E echo\n"
-                '      "COMMAND ${CMAKE_COMMAND} -E env '
-                "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
-                "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
-                "${Python3_EXECUTABLE} -m pytest -c "
-                "${PROJECT_SOURCE_DIR}/pyproject.toml "
-                '${dartpy_test_files} -v"\n'
-            ),
-            1,
+    _replace_required_pytest_command(
+        cmake,
+        (
+            "    COMMAND ${CMAKE_COMMAND} -E echo\n"
+            '      "COMMAND ${CMAKE_COMMAND} -E env '
+            "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
+            "${Python3_EXECUTABLE} -m pytest -c "
+            "${PROJECT_SOURCE_DIR}/pyproject.toml "
+            '${dartpy_test_files} -v"\n'
         ),
-        encoding="utf-8",
     )
     errors = []
 
@@ -1150,30 +1150,16 @@ def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
 def test_test_gate_contract_rejects_bracket_pytest_command_spoof(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/tests/CMakeLists.txt"
-    cmake.write_text(
-        cmake.read_text(encoding="utf-8").replace(
-            (
-                "    COMMAND\n"
-                "      ${CMAKE_COMMAND} -E env\n"
-                '      "PYTHONPATH=${DART_PYTHONPATH}"\n'
-                '      "PYTEST_ADDOPTS="\n'
-                '      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1"\n'
-                '      "PYTEST_PLUGINS="\n'
-                '      "${Python3_EXECUTABLE}" -m pytest -c\n'
-                '      "${PROJECT_SOURCE_DIR}/pyproject.toml" '
-                "${dartpy_test_files} -v\n"
-            ),
-            (
-                "    [=[COMMAND ${CMAKE_COMMAND} -E env "
-                "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
-                "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
-                "${Python3_EXECUTABLE} -m pytest -c "
-                "${PROJECT_SOURCE_DIR}/pyproject.toml "
-                "${dartpy_test_files} -v]=]\n"
-            ),
-            1,
+    _replace_required_pytest_command(
+        cmake,
+        (
+            "    [=[COMMAND ${CMAKE_COMMAND} -E env "
+            "PYTHONPATH=${DART_PYTHONPATH} PYTEST_ADDOPTS= "
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
+            "${Python3_EXECUTABLE} -m pytest -c "
+            "${PROJECT_SOURCE_DIR}/pyproject.toml "
+            "${dartpy_test_files} -v]=]\n"
         ),
-        encoding="utf-8",
     )
     errors = []
 
