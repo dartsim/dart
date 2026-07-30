@@ -262,6 +262,40 @@ def cmake_code_without_comments(text: str) -> str:
     return "\n".join(line.split("#", maxsplit=1)[0] for line in text.splitlines())
 
 
+def cmake_line_scopes(text: str) -> dict[str, list[tuple[str, ...]]]:
+    """Map single-line CMake commands to their enclosing control scopes."""
+    scopes: dict[str, list[tuple[str, ...]]] = {}
+    stack: list[tuple[str, str]] = []
+    opener = re.compile(
+        r"^(if|function|macro|foreach|while)\s*\((.*)\)\s*$",
+        flags=re.IGNORECASE,
+    )
+    closer = re.compile(
+        r"^end(if|function|macro|foreach|while)\s*\(.*\)\s*$",
+        flags=re.IGNORECASE,
+    )
+    branch = re.compile(r"^(else|elseif)\s*\((.*)\)\s*$", flags=re.IGNORECASE)
+    for raw_line in cmake_code_without_comments(text).splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if match := opener.fullmatch(line):
+            stack.append((match.group(1).lower(), match.group(2).strip()))
+            continue
+        if closer.fullmatch(line):
+            if stack:
+                stack.pop()
+            continue
+        if match := branch.fullmatch(line):
+            if stack and stack[-1][0] == "if":
+                condition = stack[-1][1]
+                stack[-1] = (match.group(1).lower(), condition)
+            continue
+        context = tuple(f"{kind}:{value}" for kind, value in stack)
+        scopes.setdefault(line, []).append(context)
+    return scopes
+
+
 def has_shell_control_syntax(command: str) -> bool:
     """Reject syntax that can hide another command from token validation."""
     if re.search(r"[\r\n;&|<>`]|[$][(]", command.strip()) is not None:
@@ -859,10 +893,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             )
 
     graph_markers = {
-        "CMakeLists.txt": (
-            "list(APPEND all_target_candidates tests_and_run pytest)",
-            "add_custom_target(ALL DEPENDS ${all_targets})",
-        ),
+        "CMakeLists.txt": ("add_custom_target(ALL DEPENDS ${all_targets})",),
         "tests/CMakeLists.txt": (
             "tests_and_run",
             "${CMAKE_CTEST_COMMAND} --output-on-failure",
@@ -883,6 +914,11 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         code = cmake_code_without_comments(text)
         for marker in markers:
             if marker not in code:
+                errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
+        if relative == "CMakeLists.txt":
+            marker = "list(APPEND all_target_candidates tests_and_run pytest)"
+            expected_scope = ("if:BUILD_TESTING",)
+            if expected_scope not in cmake_line_scopes(text).get(marker, []):
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
 
     dependencies = pixi.get("dependencies")

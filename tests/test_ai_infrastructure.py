@@ -912,6 +912,35 @@ def test_test_gate_contract_rejects_commented_runtime_graph(tmp_path):
     )
 
 
+@pytest.mark.parametrize(
+    "replacement",
+    (
+        'message("list(APPEND all_target_candidates tests_and_run pytest)")',
+        (
+            "if(FALSE)\n"
+            "  list(APPEND all_target_candidates tests_and_run pytest)\n"
+            "endif()"
+        ),
+    ),
+)
+def test_test_gate_contract_rejects_inactive_runtime_graph(tmp_path, replacement):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    marker = "list(APPEND all_target_candidates tests_and_run pytest)"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(marker, replacement, 1),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"CMakeLists.txt: missing `test-all` graph marker `{marker}`" in error
+        for error in errors
+    )
+
+
 def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "tests/CMakeLists.txt"
