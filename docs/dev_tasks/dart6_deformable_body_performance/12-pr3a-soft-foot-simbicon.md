@@ -64,14 +64,23 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   point-mass state, the gait phase, the contact bookkeeping, the world clock and
   resting snapshots, and rebuilding the collision detector's incremental
   broadphase.
-- **Push recovery: soft withstands ≥ rigid** — `maxRecoverablePush(Soft) >=
-  maxRecoverablePush(Rigid)` (paper: soft withstands larger perturbations), or a
-  push magnitude that fells rigid but not soft.
-- **Equal mass**: the rigid and soft bipeds weigh the same. A `<soft_shape>`'s
-  `<total_mass>` is added on top of its link mass, so the soft feet's link mass
-  and inertia are scaled down to compensate; otherwise the soft biped is a
-  kilogram heavier and the contact and push gates measure ground load rather
-  than deformability.
+- **Push recovery: measured, currently NOT reproducing.** Once the two models
+  are made comparable, `maxRecoverablePush` gives soft 4000 N against rigid
+  8000 N, so the paper's "withstands larger perturbations" does not hold with
+  the shipped soft-feet asset. The gate records both thresholds and asserts only
+  that neither saturated the sweep. A stiffness sweep shows the cause is the
+  asset's compliance, not the contact model: at kv 1e6 / damp 5e3 the soft feet
+  recover 12000 N and do beat rigid, against the shipped kv 5e4 / damp 1e3.
+  **Open decision for a maintainer**: retune the shared asset, override the
+  stiffness scene-locally, or accept the negative result. Until then this row is
+  carried by the contact-count claim only.
+- **Comparable models**: the rigid and soft bipeds must weigh the same and
+  present the same number of foot collision surfaces, normalized on the loaded
+  instance rather than in the shared `dart://sample` asset. A `<soft_shape>`'s
+  `<total_mass>` is added on top of its link mass, and its generated
+  `SoftMeshShape` is collidable in addition to the link's rigid STL collision
+  mesh; without correcting both, the gates measure ground load and duplicated
+  geometry rather than deformability.
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required
