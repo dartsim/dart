@@ -69,16 +69,19 @@ We record raw rows + revision SHA + host state (the existing
 `bm-soft-body-paired` discipline), never a manual disposition over a
 machine-readable FAIL.
 
-## 4. Current state (milestone 1 = #3382)
+## 4. Current state (next milestone = PR-3a)
 
-Implemented and in review (see README work-packet table): adaptive contact
-activation (WP-DB.05), soft face-interior contacts (WP-DB.08), DART-owned soft
-collision, coupled-equation correctness (WP-DB.04), stability/CoP/LCP
-gates (WP-DB.02), CPU cache/data-layout slices (WP-DB.06), representative
-`soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
-`ConstraintSolver` hot-path zero-overhead correction. These already satisfy the
+The release branch contains adaptive contact activation (WP-DB.05), soft
+face-interior contacts (WP-DB.08), coupled-equation correctness (WP-DB.04),
+stability/CoP/LCP gates (WP-DB.02), CPU cache/data-layout slices (WP-DB.06),
+representative `soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
+`ConstraintSolver` hot-path zero-overhead correction. These satisfy the
 Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 **LCP-robustness** rows.
+
+No prerequisite integration or removal remains. The next implementation
+milestone is PR-3a soft-foot SIMBICON
+(`12-pr3a-soft-foot-simbicon.md`).
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
@@ -93,14 +96,14 @@ Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 
 ## 6. PR structure
 
-- **PR 1 — #3382** (milestone 1, in review): performance/compat slice + the
-  three already-satisfied Jain/Liu rows. Merge as-is.
-- **PR 2 — Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend
-  was removed on 2026-07-29 and retargeted to DART 7 (`decisions.md`). Do not
-  start it here.
-- **PR 3 — Jain/Liu parity**: SIMBICON controller infra + soft-foot locomotion +
-  hand scenes + flexible-foot comparison. Splittable (3a controller infra,
-  3b locomotion, 3c hands, 3d flexible-foot).
+- **Landed foundation**: the performance/compatibility slice and the three
+  already-satisfied Jain/Liu rows are part of the release branch.
+- **Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend was
+  removed on 2026-07-29 and retargeted to DART 7 (`decisions.md`). Do not start
+  it here.
+- **Active Jain/Liu series**: begin with PR-3a soft-foot SIMBICON, then continue
+  with locomotion (3b), hand scenes (3c), and the flexible-foot comparison
+  (3d).
 
 PR-3 reuses the point-mass `SoftBodyNode` and the adaptive activation already
 shipped, so the remaining work is controllers, models, and scenes rather than new
@@ -184,19 +187,18 @@ What must be **built/authored** for PR-3:
 
 ## 10. Sequencing (DART 6)
 
-1. Land the FEM removal (#3407).
-2. **PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`): aim the
+1. **PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`): aim the
    existing GUI-free `atlas_simbicon` controller at
    `atlas_v3_no_head_soft_feet.sdf` plus a ground plane, and add the
    rigid-vs-soft push-recovery threshold, contact-count, and finite-state gates.
    The controller, the asset, and the scene/model-test pattern all already
    exist, so this is assembly and gating rather than new dynamics.
-3. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
+2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
    hand/arm models that must be authored and their manipulation scenes, then the
    four-link flexible-foot comparison.
-4. Confirm the competitive-envelope definition (§8) before the
+3. Confirm the competitive-envelope definition (§8) before the
    performance-acceptance stage.
-5. Per-row acceptance plus at least two clean independent reviews and a durable
+4. Per-row acceptance plus at least two clean independent reviews and a durable
    demo artifact for each behavior-bearing row; promote durable facts to their
    owners; retire the task folder only when every remaining row has one.
 

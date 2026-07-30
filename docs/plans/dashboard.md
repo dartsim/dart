@@ -6,20 +6,6 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
 
-### PLAN-620: Dependency Minimization And Collision Backends
-
-- Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)
-- Status: Active
-- Horizon: Later
-- Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Wait for an explicitly authorized future release line and
-  milestone before proposing the default flip. DART 6.20 stops with
-  `DARTCollisionDetector` selected by `"dart"` while FCL remains the default
-  and a core dependency.
-- Gate: `pixi run lint`; default configure/build; component/package smoke for
-  touched dependencies; `pixi run -e gazebo test-gz` when collision,
-  constraint, package, or default-solver behavior can affect gz-physics.
-
 ### PLAN-621: Active Contact Performance Generalization
 
 - Owner doc: [performance generalization](../dev_tasks/dart6_performance_generalization/README.md)
@@ -65,3 +51,17 @@ Priority order is document order. Active implementation handoff remains in
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
   multi-thread determinism/scaling evidence; allocation gates and Gazebo
   coverage before any collision, constraint, or backend-default change.
+
+### PLAN-620: Dependency Minimization And Collision Backends
+
+- Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)
+- Status: Parked
+- Horizon: Parked
+- Dimension: Compatibility, dependency footprint, and downstream support.
+- Next step: Wait for an explicitly authorized future release line and
+  milestone before proposing the default flip. DART 6.20 stops with
+  `DARTCollisionDetector` selected by `"dart"` while FCL remains the default
+  and a core dependency.
+- Gate: `pixi run lint`; default configure/build; component/package smoke for
+  touched dependencies; `pixi run -e gazebo test-gz` when collision,
+  constraint, package, or default-solver behavior can affect gz-physics.
