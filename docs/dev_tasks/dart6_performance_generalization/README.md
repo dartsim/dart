@@ -7,7 +7,8 @@
 > mostly-resting 3k-shapes regime; this round targets the **general active
 > contact-rich regime**, the **gz-default ODE backend**, the **penetration-creep
 > root cause that prevents piles from sleeping**, and **large-island solver
-> scalability**, while coordinating with the native collision port.
+> scalability**, while coordinating with the built-in `dart` collision
+> detector.
 > Baseline branch point: `origin/release-6.20` @ `70b92010311` (includes
 > #3209 benchmark, #3229 dart/simd, #3230 dashboard, #3226 deactivation gate).
 
@@ -36,15 +37,15 @@ while any required evidence above is missing.
 
 ## Why this round exists
 
-Round 1 made settled scenes fast (3k_shapes DART-native RTF ~81, hash
+Round 1 made settled scenes fast (3k_shapes `dart` detector RTF ~81, hash
 `0x131b6af79a44ff90`, 3003/3003 resting; ODE RTF 0.05 → 18.1). What it did
 not claim, and what the #3209 benchmark + PR body make measurable and
 explicit, is the **active** regime and why scenes stay active:
 
-- Active 120-body container: DART-native RTF ≈ 0.036, ODE ≈ 0.021; 16
+- Active 120-body container: `dart` detector RTF ≈ 0.036, ODE ≈ 0.021; 16
   threads change almost nothing (see
   [01-baseline-evidence.md](01-baseline-evidence.md)).
-- Profile smoke (active 60-body, native): the Dantzig LCP solve scope ≈ 66%
+- Profile smoke (active 60-body, `dart`): the Dantzig LCP solve scope ≈ 66%
   of step time, collision ≈ 8%. Caveat: this maps to the solver's own
   profile scope; WP-PG.01/WP-PG.10 must record the `Construct LCP` vs
   solve-proper split before WS-A effort is committed.
@@ -73,7 +74,7 @@ explicit, is the **active** regime and why scenes stay active:
 | WS-C | Dynamics batching + allocation | [04-dynamics-batching-lane.md](04-dynamics-batching-lane.md) | PG.30–PG.33 | Single-free-body fast paths, scratch retention, frame-arena discipline, SoA cohorts |
 | WS-D | SIMD enablement | [05-simd-enablement-lane.md](05-simd-enablement-lane.md) | PG.40–PG.42 | Make merged `dart/simd` (#3229) earn its keep at proven seams; FP/ISA contracts first |
 | WS-E | Infra + evidence | [06-infra-evidence-lane.md](06-infra-evidence-lane.md) | PG.01–PG.04 | Durable baselines, profiling doc, benchmark matrix extensions, executor tooling |
-| WS-F | Native collision port | [../dart6_dependency_minimization/03-native-collision-port-scoping.md](../dart6_dependency_minimization/03-native-collision-port-scoping.md) | phases 0–7 | **External owner** — 8-phase port plan (#3234). Tracked here for sequencing only; do not duplicate its packets |
+| WS-F | DART collision backend | [DART 6 collision backends](../../design/dart6_collision_backends.md) | lifecycle | Delivered for DART 6.20 by #3381; any default or dependency change is later-release work |
 | WS-G | MuJoCo cross-engine comparison | [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md) | harness + gap packets | Maintainer-directed generalization bar: DART must outperform MuJoCo across arms, humanoids, many-object, sleeping, and highly dynamic workloads (full pipelines; no sleep-shortcut wins on dynamic classes) |
 
 Status across lanes lives in
@@ -85,13 +86,13 @@ claiming any packet that overlaps them**.
 
 ## Success criteria (provisional until WP-PG.01 re-baselines; maintainer ratifies)
 
-1. **Primary fixture** (active container, native detector, 1 thread,
+1. **Primary fixture** (active container, `dart` detector, 1 thread,
    120 objects): cumulative default-on packets reach **RTF ≥ 3× the round-2
    baseline** (0.036 → ≥ 0.108) with all guard hashes stable.
 2. **Pile-sleep outcome** (the gz-visible #3056 closer, needs D7/WP-PG.15):
    the S6 creep reproducer (71-object container, 20 s) ends with bounded
    `max_penetration` and all bodies resting under default settings.
-3. **No regressions**: settled 3k native stays ≥ round-2 baseline RTF
+3. **No regressions**: settled 3k `dart` stays ≥ round-2 baseline RTF
    within noise (±5%); settled 3k ODE row does not regress; every guard
    scene keeps bit-identical hashes for untouched detectors.
 4. **General evidence trigger**: issue-specific wins are insufficient. The
@@ -146,8 +147,8 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
 - `pixi run -e gazebo test-gz` for anything touching collision, constraint,
   solver, `World::step`, or public headers.
 - Determinism guard: `contact_benchmark` final-state hash + contact/pair/
-  resting counts vs the recorded baseline for **every** detector (DART
-  native, FCL, Bullet, ODE) — untouched backends must be bit-identical.
+  resting counts vs the recorded baseline for **every** detector (`dart`,
+  FCL, Bullet, ODE) — untouched backends must be bit-identical.
 - Benchmark evidence in the #3307 format: every performance PR must carry a
   PR-body performance report, not just a small timing table. The report must
   include the benchmark evidence head, parent/current-base comparison commits,
@@ -159,8 +160,8 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
   as diagnostic instead of counting them as winners/regressions. ODE rows are
   only valid with `--max-contacts-per-pair 4` (#3209 finding 3). RTF-only or
   best-row-only acceptance is banned.
-- Packet metadata: compiler, CPU/governor, pixi env, exact commands,
-  which optional detectors were built (per the native-port scoping doc).
+- Packet metadata: compiler, CPU/governor, pixi env, exact commands, and
+  which optional detectors were built (per the collision-backend design).
 - `pixi run test-eigen-overalignment` when allocation/alignment changes.
 
 ## Sequencing
@@ -178,8 +179,9 @@ Evidence-gated:               WP-PG.13 (only if PG.10's island census shows
                               groups coarser than contact connectivity)
 Decision-gated:               WP-PG.04 (D4), WP-PG.23 (D8),
                               WP-PG.33 (PG.30; D1/D2 for the SIMD variant)
-WS-F (native port) runs its own phases 0–7; its phase 4 consumes WS-D
-kernels; WS-B depth is re-reviewed at its phase 5/6 (D5).
+WS-F shipped as the built-in `dart` detector through #3381. It has no active
+performance-generalization packet; later default or dependency changes follow
+the collision-backend lifecycle design.
 ```
 
 One packet = one branch (`wp-pg-<nn>-<slug>`) = one PR
@@ -197,7 +199,7 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   compute_backend_research.md "Pattern B": threads + SIMD + allocation
   discipline + islanding granularity).
 - Split-impulse tuning (off by default in 6.20).
-- Porting DART 7 world plumbing (EnTT) — see native-port scoping doc.
+- Porting DART 7 collision-world plumbing (EnTT).
 - Re-attempting the measured-and-rejected round-1 experiments (see the
   prior-art inventory in 01-baseline-evidence.md) without new evidence.
 
@@ -240,11 +242,11 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   separate default-off large-island solve-side option.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
-  reduction/selection ("mines #2366 and DART 7 native collision"; recorded
-  FCL evidence: 2.6× RTF from per-pair capping). Options: pursue now as a
-  behavior-changing packet on the ODE/FCL wrappers, or defer to WS-F
-  phase 3 (native engine) with the risk that WS-F slips. Deciding *not*
-  to do it now must be recorded as a decision, not an omission.
+  reduction/selection (recorded FCL evidence: 2.6× RTF from per-pair
+  capping). The DART-owned detector now has its own contact-manifold policy;
+  the remaining decision is whether to pursue a behavior-changing packet on
+  the ODE/FCL wrappers. Deciding *not* to do it now must be recorded as a
+  decision, not an omission.
 
 ## Closeout plan (promotion targets, decided up front)
 
@@ -259,7 +261,8 @@ outputs and their owners:
 - Compatibility decisions (D1–D8 outcomes) → `docs/onboarding/`
   release-management/compatibility notes.
 - Per-PR evidence tables → PR bodies + CHANGELOG entries.
-- Anything native-collision → the dep-min scoping doc (its owner).
+- Collision-backend lifecycle decisions →
+  `docs/design/dart6_collision_backends.md`.
 - Prior-art verdicts on the `origin/perf/dart6-*` experiment branches →
   recorded in the issue or onboarding notes; dead branches deleted from
   origin with maintainer approval.

@@ -1,10 +1,9 @@
 # DART vs MuJoCo Comparison Harness (v1)
 
 This package benchmarks DART against MuJoCo across a fixed scene matrix so
-that native-collision-detector performance work (see
-`docs/dev_tasks/dart6_dependency_minimization/`) has a concrete, reproducible
-"do we actually win?" signal instead of only internal before/after
-comparisons.
+that performance work on the built-in `dart` collision detector (see
+`docs/design/dart6_collision_backends.md`) has a concrete, reproducible "do we
+actually win?" signal instead of only internal before/after comparisons.
 
 It is a **v1**: the scene matrix, step counts, and drive-torque magnitudes
 below are considered reasonable starting defaults, not values validated

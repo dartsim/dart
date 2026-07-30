@@ -34,7 +34,7 @@ Near-term work should favor:
 
 - dependency-footprint reduction that preserves package and downstream
   compatibility;
-- native collision parity and evidence before any default flip;
+- `dart` detector parity and evidence before any default flip;
 - active contact performance and determinism in the gz-visible regimes;
 - deformable-body stability and CPU performance evidence;
 - release-branch CI, Gazebo, and documentation gates that catch the real

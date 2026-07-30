@@ -24,7 +24,7 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 - Criterion 4 (general evidence): the maintainer broadened the bar to
   cross-engine evidence vs MuJoCo across DART's major workloads. New lane
   **WS-G**: [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
-  Harness + mujoco pixi env + dartpy native binding: PR #3367. The earlier
+  Harness + mujoco pixi env + compiled dartpy binding: PR #3367. The earlier
   prototype ant result is deferred because its exact command, artifact, and
   engine SHAs were not retained; do not count it as accepted cross-engine
   evidence. Reproducible standings, gaps, and root causes are recorded in the
@@ -32,11 +32,11 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
   fidelity work; the WP-SS small-scene-overhead family remains.
 - Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
   (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
-  native detector's O(n^2) broadphase with bit-identical guards.
+  `dart` detector's O(n^2) broadphase with bit-identical guards.
 
 #3366, #3367, #3368, and #3369 have merged; docs refresh is this PR. Re-baseline
-the WS-G and native Phase 4 rows on the current merged base before cutting the
-next evidence-driven packet.
+the WS-G and `dart` detector rows on the current merged base before cutting
+the next evidence-driven packet.
 
 A fresh session should start from current `origin/release-6.20` (the audited
 head above or later; re-fetch — the maintainer merges frequently), read this
@@ -44,10 +44,7 @@ README plus the lane docs, and continue from the WS-G lane on the merged base
 rather than redoing the completed audit. The maintainer's
 north-star requirement is broader than "latest packet merged": finish issue
 #3056 on DART 6.20 with cross-engine evidence (WS-G) showing the result is
-general, and respect the 2026-07-10 maintainer directives — the native
-engine merges INTO the dart detector (see the dep-min Phase 5 decision doc)
-and the whole remaining effort should land in few, large, cohesive PRs
-(total budget across both dev tasks roughly 10-20).
+general. The whole remaining effort should land in a few large, cohesive PRs.
 
 Do not open a small follow-up PR merely because a packet exists. Prefer one
 consolidated evidence/closeout branch unless the audit identifies a real
@@ -94,7 +91,7 @@ WP-PG.32 is closed in this tracker as delivered by merged PRs #3297 and #3307:
 `FrameAllocator`, World-owned `MemoryManager` preparation, frame-scratch
 capacity/overflow counters, `FrameStlAllocator`, DART-owned
 solver/collision/profiler scratch reuse, and `INTEGRATION_StepAllocation`
-native and soft allocation gates are already on `release-6.20`. The
+`dart` detector and soft allocation gates are already on `release-6.20`. The
 `wp-pg-32-frame-allocation-gate` branch should not be resumed as a new
 implementation packet after its PR lands.
 
@@ -216,7 +213,7 @@ option-off/option-on evidence.
   and boxed-LCP stage split, plus runtime-gated solver recording for
   allocation-sensitive non-profile runs. Local profile artifact:
   `/tmp/wp_pg10_profile_20260707T132241`; local guard artifact:
-  `/tmp/wp_pg10_guard_20260707T132321`. Native S1-S5 hashes matched the guard
+  `/tmp/wp_pg10_guard_20260707T132321`. DART S1-S5 hashes matched the guard
   references; S1 120-object dart/ode rows and S2-S5 all-detector rows matched
   current-base parent. The old S4/S5 FCL guard hashes had already drifted on
   unmodified `origin/release-6.20` (`S4_fcl = 0xea9b68f8b062600d`,
@@ -285,10 +282,10 @@ option-off/option-on evidence.
   `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`, and S6 GUI
   capture `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing
   non-blank `image-verdict`.
-  Focused tests passed: `INTEGRATION_StepAllocation` native allocation gates,
+  Focused tests passed: `INTEGRATION_StepAllocation` DART allocation gates,
   `test_SplitImpulse` shallow-support guards, `test_Issue1445`, full
-  `test_IslandDeactivation`, and full `NativeCollisionDetector.*`.
-  CI failures on the old PR head were traced to `test_NativeCollisionDetector`
+  `test_IslandDeactivation`, and full `DARTCollisionDetector.*`.
+  CI failures on the old PR head were traced to `test_DARTCollisionDetector`
   helper filters needing `final` under clang/libc++ warning-as-error builds;
   that test-only fix landed through the refreshed base.
 - 2026-07-08: An attempted overhead trim for the dense-island World sleep
@@ -307,7 +304,7 @@ option-off/option-on evidence.
   rest-veto tolerance only to dense islands and analytic `PlaneShape` contacts.
   Focused rechecks passed: `test_SdfParser
   --gtest_filter='SdfParser.PlaneShapeBulletWorldSettles' --gtest_repeat=3`,
-  `INTEGRATION_StepAllocation` native allocation gates, `test_SplitImpulse`
+  `INTEGRATION_StepAllocation` DART allocation gates, `test_SplitImpulse`
   shallow-support guards, `test_Issue1445`, and full `test_IslandDeactivation`.
 - Final pre-push gates for the current candidate passed locally after the Codex
   review fix and public-query cleanup: `pixi run lint`,
@@ -405,5 +402,5 @@ option-off/option-on evidence.
   re-scope, WP-PG.13 premise correction, success criteria added).
 - 2026-07-05: WP-PG.40 standalone PR #3270 closed per maintainer
   direction. WP-PG.42 claimed on `wp-pg-42-soa-broadphase-simd`; live
-  WS-F check found #3281 merged only internal native collision math, so
+  WS-F check found #3281 merged only internal collision math, so
   this branch remains the DART 6 detector SIMD-consumer path.
