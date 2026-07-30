@@ -114,7 +114,10 @@ the sidecar's count of any filtered DART 6 sentinel contacts, then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, core OSG debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end
-to end without a display-dependent skip.
+to end without a display-dependent skip. The consolidated `dart` detector's
+multi-shape smoke uses an x-orthogonal camera selected by native semantic image
+inspection so cone, capsule, ellipsoid, and ground labels remain individually
+readable alongside their contact markers and collision bounds.
 
 - Active camera control, view quality, and debug overlays (agent evidence):
 

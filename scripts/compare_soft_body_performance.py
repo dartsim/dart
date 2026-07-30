@@ -34,8 +34,7 @@ HARNESS_FILES = [
 REFERENCE_DETECTOR = "dart"
 UNSUPPORTED_SHAPE_WARNING_FRAGMENTS = [
     "not supported by dartcollisiondetector",
-    "not supported by nativecollisiondetector",
-    "shape will be skipped by the native adapter",
+    "skipped by dartcollisiondetector",
     "unsupported shape type",
     "always get penetrated",
 ]
@@ -114,10 +113,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--current", default="HEAD")
     parser.add_argument("--parent", default="HEAD^1")
     parser.add_argument("--base")
-    parser.add_argument("--detectors", default="fcl,dart,native,bullet,ode")
+    parser.add_argument("--detectors", default="fcl,dart,bullet,ode")
     parser.add_argument(
         "--expected-fastest-detector",
-        default="native",
+        default="dart",
         help=(
             "Detector expected to be the fastest eligible current-row backend. "
             f"The checksum reference remains {REFERENCE_DETECTOR}."
@@ -744,6 +743,7 @@ def evaluate_detector_equivalence(
     tolerance: float,
     output_dir: Path,
     thread_count: int = 1,
+    reference_detector: str = REFERENCE_DETECTOR,
 ) -> tuple[dict[str, dict[str, object]], list[str]]:
     detector_results: dict[str, dict[str, object]] = {}
     eligible = []
@@ -753,14 +753,14 @@ def evaluate_detector_equivalence(
         checksum, output = run_headless_checksum(
             current,
             headless_binary,
-            REFERENCE_DETECTOR,
+            reference_detector,
             scene,
             steps,
             output_dir,
             thread_count,
         )
         if checksum is None:
-            detector_results[REFERENCE_DETECTOR] = {
+            detector_results[reference_detector] = {
                 "eligible": False,
                 "reason": f"reference detector failed for {scene}",
                 "details": output.splitlines()[-1] if output else "failed",
@@ -769,7 +769,7 @@ def evaluate_detector_equivalence(
         reference_by_scene[scene] = checksum
 
     for detector in detectors:
-        if detector == REFERENCE_DETECTOR:
+        if detector == reference_detector:
             detector_results[detector] = {
                 "eligible": True,
                 "reason": "reference detector",

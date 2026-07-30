@@ -150,7 +150,7 @@ COLLISION_DETECTOR=fcl pixi run bm-soft-body -- \
 
 The benchmark rows cover `adaptive_deformable`, `soft_cubes`, `soft_bodies`,
 and `soft_open_chain` at one and sixteen simulation threads. Use
-`COLLISION_DETECTOR=dart` for the native DART detector and
+`COLLISION_DETECTOR=dart` for the built-in DART detector and
 `COLLISION_DETECTOR=fcl` for FCL comparisons. Other registered detectors may be
 useful diagnostics, but they are not the apples-to-apples soft-body performance
 baseline unless the row proves equivalent soft-shape coverage.
@@ -267,7 +267,7 @@ caps measure a different detector behavior on this branch.
 
 ## Remaining Deformable Gates
 
-Do not treat the native detector as the default deformable collision backend
+Do not treat the built-in `dart` detector as the default deformable collision backend
 until same-host evidence shows representative soft scenes are correct and at
 least as fast as FCL in apples-to-apples rows. The remaining DART 6.20
 deformable-body gates are:
@@ -281,7 +281,7 @@ deformable-body gates are:
   catch divergent soft-body state;
 - complete paper-parity scenes or approved representative substitutes for the
   Kim/Pollard and Jain/Liu soft-body references;
-- extend native soft collision beyond the current primitive and retained
+- extend DART soft collision beyond the current primitive and retained
   soft-face lanes to fuller triangle/contact-neighborhood coverage;
 - continue measured point-mass data-layout work toward contiguous,
   allocation-free, SIMD-eligible phase data before adding `dart/simd/` kernels;

@@ -126,8 +126,9 @@ The final DART 7 comparison point is
 `83110ef54abf41f54c1e03500e49c1c12c305b8a`. Its tree is identical to the
 reviewed head `b507b288e8de267f0a3518e5bde2efb948337291`; no squash or merge drift
 changed the audited implementation. The DART 6 comparison was then refreshed
-against `release-6.20` at `f7c835bcbec1ea0a3eddd7c2b017f6ff995ac5b5`
-([#3405](https://github.com/dartsim/dart/pull/3405)).
+against `release-6.20` at `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`
+([#3381](https://github.com/dartsim/dart/pull/3381)), after the DART-owned
+collision engine was consolidated into `DARTCollisionDetector`.
 
 The resulting branch verdict is:
 
@@ -141,8 +142,12 @@ The resulting branch verdict is:
 - **Adapt:** implement the DART 7 Filament/nanobind/viewer intent through the
   established DART 6 C++17, pybind11, OSG `OffscreenViewer`,
   `agent_capture.py`, `agent_view_quality.py`, and core `DebugOverlay` path.
-  The release-only contact snapshot and same-camera overlay checks strengthen
-  that adapted path; they are not missing main APIs.
+  The visual fixtures and raycast fallback use the consolidated
+  `DARTCollisionDetector`; the release-only owned contact snapshots and
+  same-camera overlay checks strengthen that adapted path, and semantic image
+  inspection pins the multi-shape smoke to an orthogonal camera where its
+  labels and contact markers remain readable. None depends on the removed
+  temporary `NativeCollisionDetector` name; they are not missing main APIs.
 - **Omit:** do not import DART 7-only viewer C++ APIs, nanobind
   descriptor/stub machinery, trajectory/scene-dump tools, C++23 surfaces, or
   clean-break simulation architecture. Those surfaces do not exist on the

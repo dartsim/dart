@@ -94,10 +94,10 @@ def _load_factory(spec: str) -> Callable[[], Any]:
     return target
 
 
-def _box_skeleton(
+def _shape_skeleton(
     dart: Any,
     name: str,
-    size: tuple[float, float, float],
+    shape: Any,
     position: tuple[float, float, float],
     *,
     static: bool = False,
@@ -109,7 +109,6 @@ def _box_skeleton(
     else:
         joint, body = skeleton.createFreeJointAndBodyNodePair()
     body.setName(name)
-    shape = dart.dynamics.BoxShape(np.asarray(size, dtype=float))
     shape_node = body.createShapeNode(shape)
     shape_node.createVisualAspect().setColor(list(color))
     shape_node.createCollisionAspect()
@@ -125,6 +124,25 @@ def _box_skeleton(
     return skeleton
 
 
+def _box_skeleton(
+    dart: Any,
+    name: str,
+    size: tuple[float, float, float],
+    position: tuple[float, float, float],
+    *,
+    static: bool = False,
+    color: tuple[float, float, float] = (0.35, 0.55, 0.85),
+) -> Any:
+    return _shape_skeleton(
+        dart,
+        name,
+        dart.dynamics.BoxShape(np.asarray(size, dtype=float)),
+        position,
+        static=static,
+        color=color,
+    )
+
+
 def _make_box_on_ground(dart: Any) -> Any:
     world = dart.simulation.World()
     world.addSkeleton(
@@ -138,6 +156,57 @@ def _make_box_on_ground(dart: Any) -> Any:
         )
     )
     world.addSkeleton(_box_skeleton(dart, "box", (0.2, 0.2, 0.2), (0.0, 0.0, 0.35)))
+    return world
+
+
+def _make_dart_box_on_ground(dart: Any) -> Any:
+    world = _make_box_on_ground(dart)
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    return world
+
+
+def _make_dart_shape_contacts(dart: Any) -> Any:
+    world = dart.simulation.World()
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    world.addSkeleton(
+        _box_skeleton(
+            dart,
+            "ground",
+            (2.4, 1.2, 0.1),
+            (0.0, 0.0, -0.05),
+            static=True,
+            color=(0.75, 0.75, 0.78),
+        )
+    )
+
+    shape_specs = (
+        (
+            "ellipsoid",
+            dart.dynamics.EllipsoidShape(np.asarray((0.36, 0.28, 0.5))),
+            (-0.6, 0.0, 0.65),
+            (0.35, 0.62, 0.90),
+        ),
+        (
+            "capsule",
+            dart.dynamics.CapsuleShape(0.13, 0.34),
+            (0.0, 0.0, 0.65),
+            (0.48, 0.78, 0.48),
+        ),
+        (
+            "cone",
+            dart.dynamics.ConeShape(0.2, 0.5),
+            (0.6, 0.0, 0.65),
+            (0.88, 0.52, 0.34),
+        ),
+    )
+    for name, shape, position, color in shape_specs:
+        world.addSkeleton(
+            _shape_skeleton(dart, name, shape, position, static=False, color=color)
+        )
     return world
 
 
@@ -187,6 +256,8 @@ def _make_two_body_contact(dart: Any) -> Any:
 
 _BUILTIN_SCENES: dict[str, Callable[[Any], Any]] = {
     "box_on_ground": _make_box_on_ground,
+    "dart_box_on_ground": _make_dart_box_on_ground,
+    "dart_shape_contacts": _make_dart_shape_contacts,
     "box_stack": _make_box_stack,
     "two_body_contact": _make_two_body_contact,
 }
@@ -426,9 +497,16 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         world.step()
         if tracker is not None:
             tracker.sample()
+    # getLastCollisionResult() is exposed to Python as a result object whose
+    # getContacts() entries reference its contact storage. Keep that owner
+    # alive through rendering; chaining the calls would leave dangling Contact
+    # wrappers as soon as the temporary result object is destroyed.
+    last_collision_result = (
+        world.getLastCollisionResult() if "contacts" in args.layers else None
+    )
     contacts = (
-        _snapshot_contacts(world.getLastCollisionResult().getContacts())
-        if "contacts" in args.layers
+        _snapshot_contacts(last_collision_result.getContacts())
+        if last_collision_result is not None
         else []
     )
 
@@ -568,9 +646,12 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 world.step()
                 if tracker is not None:
                     tracker.sample()
+            last_collision_result = (
+                world.getLastCollisionResult() if "contacts" in args.layers else None
+            )
             contacts = (
-                _snapshot_contacts(world.getLastCollisionResult().getContacts())
-                if "contacts" in args.layers
+                _snapshot_contacts(last_collision_result.getContacts())
+                if last_collision_result is not None
                 else []
             )
             camera = _sweep_camera(base, sweep * frame / max(args.motion_frames - 1, 1))
@@ -607,6 +688,9 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     sidecar = {
         "schema_version": SCHEMA_VERSION,
         "scene": scene_id,
+        "collision_detector": world.getConstraintSolver()
+        .getCollisionDetector()
+        .getType(),
         "steps": args.steps,
         "size": [args.width, args.height],
         "fovy_deg": args.fovy_deg,

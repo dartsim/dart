@@ -73,7 +73,9 @@
     framing, deterministic semantic-review targets and bundles, and fail-closed
     evidence publication. Release evidence is content-addressed and records its
     path/size/digest/URL bindings so later or partially retried publications
-    cannot replace bytes behind earlier PR URLs.
+    cannot replace bytes behind earlier PR URLs. The required consolidated-DART
+    detector smoke also uses a semantically inspected orthogonal view that keeps
+    its shape labels, contact markers, and collision bounds readable.
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
@@ -181,6 +183,15 @@
 
 * Collision
 
+  * Consolidate the experimental DART-owned collision engine into the built-in
+    `dart` detector and add the soft-body, ellipsoid, cone, and capsule
+    coverage the `dart` detector was missing. The temporary `native` factory
+    key is removed before release, leaving `dart` as the only name. The
+    released `DARTCollide` entry points and detector ABI remain compatible, as
+    do the pre-consolidation 6.20 group and object layouts. The `dart` detector
+    remains opt-in; the built-in default is unchanged (`fcl`):
+    [#3381](https://github.com/dartsim/dart/pull/3381)
+
   * Speed up many-object DART-native collision queries by replacing the
     quadratic brute-force broadphase with a dynamic AABB tree, while preserving
     deterministic result ordering and streaming boolean-query early exits:
@@ -227,11 +238,9 @@
     single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Let the direct `native` collision detector participate in soft-body scenes
-    by routing `SoftMeshShape` and `EllipsoidShape` pairs through cached
-    DART-native fallback collision objects instead of skipping them, while
-    keeping native broadphase traversal cache-friendly for small dynamic
-    groups:
+  * Add `SoftMeshShape` and `EllipsoidShape` collision support to the built-in
+    `dart` detector, with cached soft geometry and a cache-friendly broadphase
+    for small dynamic groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up primitive DART-native plane collision dispatch by caching a compact
@@ -560,9 +569,9 @@
 
 * Python
 
-  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
-    split-process DART-vs-MuJoCo comparison harness with deterministic
-    generated contact scenes and a pinned MuJoCo Pixi environment:
+  * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
+    deterministic generated contact scenes, selectable DART collision
+    detectors, and a pinned MuJoCo Pixi environment:
     [#3367](https://github.com/dartsim/dart/pull/3367)
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain

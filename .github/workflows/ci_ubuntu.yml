@@ -141,15 +141,34 @@ jobs:
         run: |
           rm -rf /tmp/dart-agent-visual-smoke
           xvfb-run -a -s '-screen 0 640x480x24' \
-            pixi run agent-capture -- \
+            bash -eu -o pipefail <<'VISUAL_SMOKE'
+          pixi run agent-capture -- \
               --scene box_on_ground --steps 250 --focus box --auto-views 1 \
               --layers contacts collision_bounds labels \
               --width 320 --height 240 \
               --out /tmp/dart-agent-visual-smoke --prefix smoke
           pixi run image-verdict -- \
             /tmp/dart-agent-visual-smoke/smoke_auto0.png
+          pixi run agent-capture -- \
+              --scene dart_shape_contacts --steps 500 \
+              --camera-azimuth 1.5708 --camera-elevation 0.35 \
+              --camera-distance 4.5 --camera-target 0 0 0.2 \
+              --layers contacts collision_bounds labels \
+              --width 640 --height 480 \
+              --out /tmp/dart-agent-visual-smoke --prefix dart
+          pixi run image-verdict -- \
+            /tmp/dart-agent-visual-smoke/dart_main.png
+          VISUAL_SMOKE
           xvfb-run -a -s '-screen 0 640x480x24' \
             pixi run test-agent-debug-overlay
+
+      - name: Upload agent visual verification evidence
+        if: matrix.build_type == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-visual-smoke
+          path: /tmp/dart-agent-visual-smoke
+          if-no-files-found: error
 
       - name: Test with AddressSanitizer
         if: matrix.build_type == 'Release'
