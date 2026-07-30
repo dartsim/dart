@@ -58,7 +58,16 @@
 namespace {
 
 constexpr std::size_t kMaxArrows = 256;
-constexpr double kTimeStep = 0.001;
+
+/// Drives one update() with no contacts. update() is what re-derives the
+/// scene-dependent references, so this is how a test advances the layout the
+/// way ContactVisualizer does.
+void pump(
+    dart_demos::ContactArrowLayout& layout,
+    const dart::simulation::WorldPtr& world)
+{
+  layout.update(*world, {}, kMaxArrows);
+}
 
 //==============================================================================
 dart::collision::Contact makeContact(
@@ -79,6 +88,7 @@ dart::simulation::WorldPtr makeBoxOnGround(
 {
   auto world = dart::simulation::World::create("box_on_ground");
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(0.001);
 
   auto ground = dart::dynamics::Skeleton::create("ground");
   auto* groundBody
@@ -139,7 +149,7 @@ TEST(ContactArrowLayoutTest, ArrowsStayAnchoredToTheirContactPoints)
     world->step();
 
     const auto& contacts = world->getLastCollisionResult().getContacts();
-    const auto& arrows = layout.update(contacts, kMaxArrows, kTimeStep);
+    const auto& arrows = layout.update(*world, contacts, kMaxArrows);
     if (arrows.empty())
       continue;
     sawContact = true;
@@ -218,7 +228,7 @@ TEST(ContactArrowLayoutTest, ArrowLengthOrdersByForceMagnitude)
       makeContact(Eigen::Vector3d(2.0, 0.0, 0.0), 25.0 * up),
   };
 
-  const auto& arrows = layout.update(contacts, kMaxArrows, kTimeStep);
+  const auto& arrows = layout.update(*world, contacts, kMaxArrows);
   ASSERT_EQ(arrows.size(), 3u);
 
   const double longest = (arrows[0].head - arrows[0].tail).norm();
@@ -257,7 +267,7 @@ TEST(ContactArrowLayoutTest, DropsNonFiniteAndNegligibleContacts)
       makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
   };
 
-  const auto& arrows = layout.update(contacts, kMaxArrows, kTimeStep);
+  const auto& arrows = layout.update(*world, contacts, kMaxArrows);
   ASSERT_EQ(arrows.size(), 1u) << "only the one finite, non-negligible contact "
                                   "should be laid out";
   EXPECT_TRUE(arrows[0].head.allFinite());
@@ -272,7 +282,6 @@ TEST(ContactArrowLayoutTest, ReferenceForceRecoversAfterASpike)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
-  world->setTimeStep(0.001);
   dart_demos::ContactArrowLayout layout;
   layout.resetForWorld(*world);
 
@@ -281,20 +290,20 @@ TEST(ContactArrowLayoutTest, ReferenceForceRecoversAfterASpike)
   const std::vector<dart::collision::Contact> resting
       = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 25.0, 0.0))};
 
-  layout.update(spike, kMaxArrows, kTimeStep);
+  layout.update(*world, spike, kMaxArrows);
   const double duringSpike = layout.getReferenceForce();
   EXPECT_NEAR(duringSpike, 5000.0, 1e-9);
 
   // Immediately after the spike the resting contact is a sliver, as it should
   // be -- it really is tiny next to what just happened.
-  layout.update(resting, kMaxArrows, kTimeStep);
+  layout.update(*world, resting, kMaxArrows);
   EXPECT_LT(layout.getArrows().front().normalizedMagnitude, 0.01);
 
   // One decay time later it is readable again.
   const int stepsPerDecayTime = static_cast<int>(
-      dart_demos::ContactArrowLayout::kForceDecayTime / kTimeStep);
+      dart_demos::ContactArrowLayout::kForceDecayTime / world->getTimeStep());
   for (int step = 0; step < 4 * stepsPerDecayTime; ++step)
-    layout.update(resting, kMaxArrows, kTimeStep);
+    layout.update(*world, resting, kMaxArrows);
 
   EXPECT_LT(layout.getReferenceForce(), duringSpike);
   EXPECT_GT(layout.getArrows().front().normalizedMagnitude, 0.2)
@@ -355,7 +364,7 @@ TEST(ContactArrowLayoutTest, IgnoresNoncollidableBodies)
   // any contact.
   const std::vector<dart::collision::Contact> contacts
       = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 30.0, 0.0))};
-  const auto& arrows = withPool.update(contacts, kMaxArrows, kTimeStep);
+  const auto& arrows = withPool.update(*world, contacts, kMaxArrows);
   ASSERT_EQ(arrows.size(), 1u);
   EXPECT_NEAR(arrows[0].normalizedMagnitude, 1.0, 1e-12)
       << "the idle pool's mass raised the force floor";
@@ -382,11 +391,12 @@ TEST(ContactArrowLayoutTest, DecayFollowsTheLiveTimestep)
   // Same elapsed simulated time, ten times the timestep, so a tenth of the
   // steps: the reference must land in the same place.
   const auto referenceAfter = [&](double dt, int steps) {
+    world->setTimeStep(dt);
     dart_demos::ContactArrowLayout layout;
     layout.resetForWorld(*world);
-    layout.update(spike, kMaxArrows, dt);
+    layout.update(*world, spike, kMaxArrows);
     for (int s = 0; s < steps; ++s)
-      layout.update(resting, kMaxArrows, dt);
+      layout.update(*world, resting, kMaxArrows);
     return layout.getReferenceForce();
   };
 
@@ -409,6 +419,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
 {
   auto world = dart::simulation::World::create("empty_but_ground");
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(0.001);
   auto ground = dart::dynamics::Skeleton::create("ground");
   auto* groundBody
       = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
@@ -428,8 +439,8 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
       layout.getReferenceLength(),
       dart_demos::ContactArrowLayout::kFallbackReferenceLength);
 
-  // A no-op refresh must not disturb anything.
-  layout.refreshForWorld(*world);
+  // A no-op update must not disturb anything.
+  pump(layout, world);
   EXPECT_DOUBLE_EQ(
       layout.getReferenceLength(),
       dart_demos::ContactArrowLayout::kFallbackReferenceLength);
@@ -452,16 +463,18 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
   // The peak the layout has been tracking survives the refresh.
   const std::vector<dart::collision::Contact> contacts = {
       makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 900.0, 0.0))};
-  layout.update(contacts, kMaxArrows, kTimeStep);
+  layout.update(*world, contacts, kMaxArrows);
   const double trackedForce = layout.getReferenceForce();
   ASSERT_NEAR(trackedForce, 900.0, 1e-9);
 
-  layout.refreshForWorld(*world);
+  pump(layout, world);
 
   EXPECT_GT(layout.getReferenceLength(), 0.25)
       << "the spawned cube did not reach the arrow scale";
-  EXPECT_GE(layout.getReferenceForce(), trackedForce)
-      << "refreshing discarded the force reference being tracked";
+  // Within one step's decay of what it was: re-deriving the scale must not
+  // throw the tracked peak away and drop back to the floor.
+  EXPECT_GT(layout.getReferenceForce(), 0.99 * trackedForce)
+      << "re-deriving the scale discarded the force reference being tracked";
 
   std::cout << "contact_arrow_refresh  ground_only_ref_len="
             << dart_demos::ContactArrowLayout::kFallbackReferenceLength
@@ -509,7 +522,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenCollidabilityChanges)
   projectile->getJoint(0)->setPositions(launched);
   projectileBody->setCollidable(true);
 
-  layout.refreshForWorld(*world);
+  pump(layout, world);
   const double activeLength = layout.getReferenceLength();
   EXPECT_GT(activeLength, parkedLength)
       << "an active projectile never reached the arrow scale";
@@ -517,7 +530,7 @@ TEST(ContactArrowLayoutTest, RefreshesWhenCollidabilityChanges)
   // Repark it and the scale comes back.
   projectile->getJoint(0)->setPositions(parked);
   projectileBody->setCollidable(false);
-  layout.refreshForWorld(*world);
+  pump(layout, world);
   EXPECT_DOUBLE_EQ(layout.getReferenceLength(), parkedLength)
       << "reparking the projectile left the arrow scale stretched";
 
@@ -547,7 +560,7 @@ TEST(ContactArrowLayoutTest, RejectsForcesThatOverflowUnderNorm)
   ASSERT_FALSE(std::isfinite(Eigen::Vector3d::Constant(huge).norm()))
       << "this contact no longer overflows under norm()";
 
-  const auto& arrows = layout.update(contacts, kMaxArrows, kTimeStep);
+  const auto& arrows = layout.update(*world, contacts, kMaxArrows);
   ASSERT_EQ(arrows.size(), 1u) << "the overflowing contact should be dropped";
   EXPECT_TRUE(arrows[0].head.allFinite());
   EXPECT_TRUE(std::isfinite(layout.getReferenceForce()));
@@ -555,7 +568,7 @@ TEST(ContactArrowLayoutTest, RejectsForcesThatOverflowUnderNorm)
   // And the reference must not have been poisoned for later steps.
   const std::vector<dart::collision::Contact> normal
       = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 40.0, 0.0))};
-  const auto& later = layout.update(normal, kMaxArrows, kTimeStep);
+  const auto& later = layout.update(*world, normal, kMaxArrows);
   ASSERT_EQ(later.size(), 1u);
   EXPECT_TRUE(later[0].head.allFinite());
   EXPECT_NEAR(later[0].normalizedMagnitude, 1.0, 1e-12);
@@ -579,15 +592,14 @@ TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
   // A small contact is compressed against that floor, as it should be.
   const std::vector<dart::collision::Contact> small
       = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 5.0, 0.0))};
-  layout.update(small, kMaxArrows, kTimeStep);
+  layout.update(*world, small, kMaxArrows);
   EXPECT_LT(layout.getArrows().front().normalizedMagnitude, 0.2);
 
   // Switch gravity off. There is no weight left to carry, so that same contact
   // must become readable instead of staying crushed by the old floor.
   world->setGravity(Eigen::Vector3d::Zero());
-  layout.refreshForWorld(*world);
   for (int s = 0; s < 3000; ++s) // let the tracked peak decay away
-    layout.update(small, kMaxArrows, kTimeStep);
+    layout.update(*world, small, kMaxArrows);
   const double zeroGravityReference = layout.getReferenceForce();
   EXPECT_LT(zeroGravityReference, weightedFloor);
   EXPECT_NEAR(layout.getArrows().front().normalizedMagnitude, 1.0, 1e-9)
@@ -595,7 +607,7 @@ TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
 
   // Switch it back on and the floor returns.
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-  layout.refreshForWorld(*world);
+  pump(layout, world);
   EXPECT_NEAR(layout.getReferenceForce(), weightedFloor, 1e-9)
       << "the floor did not come back when gravity was restored";
 

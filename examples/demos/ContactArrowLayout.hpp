@@ -102,30 +102,22 @@ public:
   /// used then.
   void resetForWorld(const dart::simulation::World& world);
 
-  /// Re-derives the scene-dependent references if the world's set of bodies has
-  /// changed since the last call, and does nothing otherwise. Scenes such as
-  /// `add_delete_skels` and `rigid_shapes` spawn and remove skeletons while
-  /// running, so a scale derived only at install time would be stuck on
-  /// whatever the world held at startup.
-  ///
-  /// Unlike resetForWorld() this keeps the force reference it has been
-  /// tracking, so adding a body does not discard the current peak; it is only
-  /// raised if the new floor demands it. Cheap enough to call every step.
-  void refreshForWorld(const dart::simulation::World& world);
-
   /// Lays out at most `maxArrows` arrows for `contacts` and returns them.
   ///
-  /// `timeStep` is the world's current timestep, passed in per call rather than
-  /// captured in resetForWorld() because the demo host lets it change while a
-  /// scene runs; it sets how fast the force reference decays.
+  /// Takes the world rather than the pieces it needs from it, because every one
+  /// of those pieces is live: scenes spawn and remove skeletons, toggle
+  /// collidability, change gravity, and change the timestep while running. A
+  /// caller that passed them separately would have to remember to re-read each
+  /// one every step, and forgetting silently freezes the scale at whatever it
+  /// was when the scene was installed.
   ///
   /// Contacts with a non-finite point or force, and contacts carrying
   /// negligible force, are dropped rather than laid out, so the result is
   /// often shorter than `contacts`.
   const std::vector<ContactArrow>& update(
+      const dart::simulation::World& world,
       const std::vector<dart::collision::Contact>& contacts,
-      std::size_t maxArrows,
-      double timeStep);
+      std::size_t maxArrows);
 
   /// The arrows produced by the most recent update().
   const std::vector<ContactArrow>& getArrows() const
@@ -146,6 +138,11 @@ public:
   }
 
 private:
+  /// Re-derives the scene-dependent references when the world has changed in a
+  /// way that affects them, and does nothing otherwise. Called by update() so
+  /// it cannot be skipped.
+  void refreshForWorld(const dart::simulation::World& world);
+
   std::vector<ContactArrow> mArrows;
 
   /// Cheap stand-in for "the set of bodies changed": skeleton count, body

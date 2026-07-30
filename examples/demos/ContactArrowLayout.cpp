@@ -209,10 +209,13 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
 
 //==============================================================================
 const std::vector<ContactArrow>& ContactArrowLayout::update(
+    const dart::simulation::World& world,
     const std::vector<dart::collision::Contact>& contacts,
-    std::size_t maxArrows,
-    double timeStep)
+    std::size_t maxArrows)
 {
+  refreshForWorld(world);
+
+  const double timeStep = world.getTimeStep();
   mArrows.clear();
 
   const std::size_t count = std::min(contacts.size(), maxArrows);
