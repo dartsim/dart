@@ -402,7 +402,8 @@ compatibility remains on the active DART 6 LTS branch._
   or a new tag.
   Corrected the shared box-stack evidence fixture so it starts with shallow
   contacts instead of deep interpenetration.
-  ([#3403](https://github.com/dartsim/dart/pull/3403))
+  ([#3403](https://github.com/dartsim/dart/pull/3403),
+  [#3411](https://github.com/dartsim/dart/pull/3411))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code
   and Codex pre-tool guards enforcing the same policy during agent sessions;
