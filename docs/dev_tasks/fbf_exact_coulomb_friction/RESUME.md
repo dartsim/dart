@@ -1,6 +1,6 @@
 # Resume: FBF exact Coulomb friction
 
-## 2026-07-29 Current-Head Execution Checkpoint
+## 2026-07-29 Post-Merge Execution Checkpoint
 
 This section supersedes every older branch-head, current-binary, active-capture,
 Figure 3, Figure 8, attachment, and CI statement below. The task remains active
@@ -13,12 +13,13 @@ benchmark, GUI example, physical outcome, or performance result.
 
 Current branch and evidence runtime:
 
-- Branch `research/fbf-friction-release620` is clean at pushed checkpoint
-  `333a809f14a2e8b5f9837c74dcef13c77ca8fd76`. It contains
-  `origin/release-6.20` checkpoint `d65e88ebda4` through merge `d209da2cbf1`.
-  After the visual seal, the target advanced to `6c88ac1d774` through PR #3382.
-  Merge that target before the next push; the rebuilt runtime will have a new
-  identity, so do not call the `333a` evidence post-merge-binary evidence.
+- Branch `research/fbf-friction-release620` has immutable post-merge
+  code/runtime checkpoint
+  `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df`. It contains current
+  `origin/release-6.20` checkpoint
+  `6c88ac1d774a702b494643fb598be6b8af9385e1` through that merge checkpoint.
+  Documentation-only descendants do not change this runtime identity; query
+  the live branch/PR head instead of assuming `6fb4` is still HEAD.
 - PR #3377 is open and draft with 264 net changed files. The current net tree
   tracks no generated task assets or raw capture output. The scalable
   `docs/dev_tasks/.gitignore` role rule ignores every task's `assets/` subtree;
@@ -27,15 +28,23 @@ Current branch and evidence runtime:
 - Of the 110 net `data/` paths, 101 small OBJ files are the source-pinned
   masonry stones required by the installed Figure 8 demo. They total roughly
   404 KiB and are source/runtime inputs, not generated evidence.
-- The current `dart-demos` SHA-256 is
+- The rebuilt post-merge `dart-demos` SHA-256 is
+  `d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363`;
+  the exact build-tree `libdart.so.6.19.4` SHA-256 is
+  `caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5`.
+  The merge passed `pixi run lint`, all 166 C++ tests, the 34-scene FBF
+  documentation validator, `check-ai-commands`, and the AI infrastructure
+  doctor.
+- The captured-checkpoint `dart-demos` SHA-256 is
   `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`;
   the exact build-tree `libdart.so.6.19.4` SHA-256 is
   `3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`.
   Visual-evidence schema v3 binds the demo, 61 regular resolved libraries,
   eight build-tree libraries, and the exact core DART library before and after
-  capture.
+  capture at `333a809f14a`. Those records and uploaded bytes are not
+  post-merge current-binary reuse evidence.
 
-Fresh current-runtime visual evidence is under the ignored
+Fresh captured-checkpoint visual evidence is under the ignored
 `assets/pr_media_current_head_333a/` root:
 
 - Figure 3 backspin exact and boxed each complete 240/240 steps and pass
@@ -85,26 +94,27 @@ GitHub media state:
 - All 16 intended H.264/yuv420p clips are referenced from the draft PR through
   `github.com/user-attachments/assets/...` URLs. Each was re-downloaded from
   its PR-facing URL and matched its full recorded SHA-256. Slot 09 now uses the
-  fresh schema-v3 current-runtime group (`438b02b2...`) at user attachment
+  fresh schema-v3 captured-runtime group (`438b02b2...`) at user attachment
   `af9d80bf...`; the historical provisional bytes were replaced. The verified
   URL/hash ledger is in
   [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md).
 
-Current hosted CI is mutable. At the inspected `333a809f14a` head, most
-reported jobs pass or remain in progress. macOS `arm64-Debug` alone failed in
-the untouched randomized `JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion
-test. The base-branch job passed and a local 1,000-repeat focused run passed;
-treat this as an unrelated likely random/singularity flake unless it reproduces
-on the next content checkpoint. Do not patch the exact-FBF branch for it
-without contrary evidence.
+Current hosted CI is mutable. Checks for `6fb4d0dbd8c` were queued at the last
+query; query the live current head for a verdict. At the prior
+`333a809f14a` head, macOS
+`arm64-Debug` alone failed in the untouched randomized
+`JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion test. The base-branch job
+passed and a local 1,000-repeat focused run passed. Do not carry that
+classification forward or patch the exact-FBF branch without current-head
+evidence.
 
 The first post-capture matched performance attempt is retained only at
 `/tmp/fbf-mark26-current-head-rerun`. It has the exact mark26 measured-work
 fingerprint and passes affinity, residency, solver, and physical-outcome gates,
 but ran under sustained GUI/editor load immediately after the five-hour visual
 capture with an 82 C package. Its 12.924/12.321 ms means and 1.0489x speedup
-are a host-contention diagnostic, not replacement evidence. Rerun once after
-the target merge/rebuild and a declared cool/low-load gate.
+are a host-contention diagnostic, not replacement evidence. The target
+merge/rebuild is complete; rerun only after a declared cool/low-load gate.
 
 Next:
 
@@ -112,14 +122,16 @@ Next:
    the passing 16-URL PR reference/download/hash audit.
 2. Run the isolated matched one-/four-core performance rerun and synchronize
    only the narrow non-paper throughput claims it proves.
-3. Merge fetched `origin/release-6.20` at `6c88ac1d774` before the next
-   checkpoint push, run the required lint/build/focused gates, and keep the PR
-   draft until the remaining paper-parity and review gates are honestly
-   resolved.
+3. Decide whether completion requires a full post-merge visual reseal. Until
+   one exists, keep every schema-v3 upload labeled as captured at `333a`, not
+   as current-head binary evidence.
+4. Keep the PR draft until the remaining paper-parity, CI, and review gates are
+   honestly resolved.
 
-## Current Checkpoint
+## Archived 2026-07-27 Checkpoint
 
-This task is active and incomplete as of 2026-07-27. Start with
+The section below is retained as a historical snapshot. This task was active
+and incomplete as of 2026-07-27. Start with
 [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md); it is the authoritative truth
 ledger.
 

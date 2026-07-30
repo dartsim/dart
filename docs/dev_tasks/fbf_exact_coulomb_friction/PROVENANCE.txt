@@ -5,9 +5,22 @@ Original paper/media snapshot date: 2026-07-12
 Public-source availability addendum: 2026-07-18
 Current-source incline sweep addendum: 2026-07-19
 Current-runtime closure and PR-media addendum: 2026-07-29
+Post-merge runtime addendum: 2026-07-29
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
 
-The 2026-07-29 visual checkpoint binds dart-demos SHA-256
+The immutable post-merge code/runtime checkpoint is
+6fb4d0dbd8cff445f5656e31bcdec7e9f09938df. It contains release target
+6c88ac1d774a702b494643fb598be6b8af9385e1. Its rebuilt dart-demos SHA-256 is
+d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363 and
+its exact build-tree libdart.so.6.19.4 SHA-256 is
+caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5.
+The merge resolution passed lint, all 166 C++ tests, the 34-scene FBF
+documentation validator, and AI-workflow consistency checks. No schema-v3
+visual reseal has been captured against this post-merge binary.
+Documentation-only descendants do not change this runtime identity; query Git
+for the live branch head.
+
+The 2026-07-29 captured-checkpoint visual evidence binds dart-demos SHA-256
 3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750,
 exact build-tree libdart.so.6.19.4 SHA-256
 3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926,
@@ -15,11 +28,13 @@ exact build-tree libdart.so.6.19.4 SHA-256
 capture. Fresh Figure 3 and Figure 8 schema-v3 bundles pass their narrow
 capture/reuse/manual gates. All 16 intended PR user attachments are referenced
 and were re-downloaded byte-for-byte against their recorded SHA-256 values.
-Slot 09 is the fresh schema-v3 current-runtime ten-level group
+Slot 09 is the fresh schema-v3 captured-runtime ten-level group
 (SHA-256 438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d);
 both members and the group pass standalone verification and full decode, and
 the PR-facing download matches byte-for-byte. Generated media remains ignored
-local evidence and is not tracked by Git.
+local evidence and is not tracked by Git. These records were captured at
+333a809f14a2e8b5f9837c74dcef13c77ca8fd76 and are not current-head binary
+reuse evidence after the 6fb4 merge.
 
 1. Paper and project page
 -------------------------

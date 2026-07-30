@@ -1,6 +1,6 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-29 current-head execution
+Use the first prompt below. It reflects the 2026-07-29 post-merge execution
 checkpoint in [RESUME.md](RESUME.md) and supersedes the archived 2026-07-22
 prompt later in this file.
 
@@ -22,17 +22,33 @@ supersede all older branch-head, capture, attachment, and CI statements.
 Current durable branch:
 
   branch research/fbf-friction-release620
-  pushed HEAD 333a809f14a2e8b5f9837c74dcef13c77ca8fd76
-  latest merged release-6.20 checkpoint d65e88ebda4
-  merge checkpoint d209da2cbf1
-  fetched target now 6c88ac1d774 (PR #3382), not yet merged
+  post-merge code/runtime checkpoint
+    6fb4d0dbd8cff445f5656e31bcdec7e9f09938df
+  latest merged release-6.20 checkpoint
+    6c88ac1d774a702b494643fb598be6b8af9385e1
+  merge checkpoint 6fb4d0dbd8c
 
-PR #3377 is open, draft, and had 264 net changed files at the last live query.
+Documentation-only descendants do not change that runtime identity. Query the
+live branch/PR head rather than assuming the checkpoint is still HEAD.
+PR #3377 is open and draft; it had 264 net changed files at the last query.
+Its hosted checks must be queried live before classification.
 It must remain draft. The current net tree tracks no generated task assets or
 raw capture output. docs/dev_tasks/.gitignore uses the scalable role-based
 **/assets/ rule. Do not add broad *.png, *.csv, *.obj, or similar ignores:
 runtime source assets would be hidden. The 101 masonry OBJ files are required
 source-pinned demo inputs, not generated data.
+
+Post-merge current runtime:
+
+  dart-demos SHA-256
+  d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363
+
+  exact build-tree libdart.so.6.19.4 SHA-256
+  caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5
+
+The merge resolution passed pixi run lint, all 166 C++ tests, the 34-scene FBF
+documentation validator, check-ai-commands, and the AI infrastructure doctor.
+No full visual reseal has run against this new binary.
 
 Captured 333a evidence runtime:
 
@@ -44,9 +60,11 @@ Captured 333a evidence runtime:
 
 Visual evidence schema v3 binds the demo, 61 regular libraries, eight
 build-tree libraries, and the exact core DART library before and after capture.
-No visual capture is currently active.
+These records and all uploaded bytes remain valid for captured checkpoint
+333a809f14a, but they are not post-merge current-binary reuse evidence. No
+visual capture is currently active.
 
-Fresh current-runtime evidence is under ignored
+Fresh captured-checkpoint evidence is under ignored
 assets/pr_media_current_head_333a/:
 
 - Figure 3 exact and boxed complete 240/240 and pass independent verification
@@ -76,23 +94,24 @@ assets/pr_media_current_head_333a/:
 
 All 16 GitHub user attachments are referenced from the draft PR and were
 re-downloaded from their PR-facing URLs; all match their full recorded SHA-256
-values. Slot 09 is now the fresh schema-v3 current-runtime group
+values. Slot 09 is now the fresh schema-v3 captured-runtime group
 (`438b02b2...`) at user attachment `af9d80bf...`; the historical provisional
 bytes were replaced.
 PAPER_DEMO_VIDEO_MATRIX.md owns the verified URL/hash ledger.
 
-At the last query, current-head CI had one failure: macOS arm64-Debug failed an
-untouched randomized JOINTS.CONVENIENCE_FUNCTIONS transform test. The base
-passed and the local focused test passed 1,000 repeats, so do not patch this
-branch unless a fresh run supplies contrary evidence.
+At the prior 333a head, macOS arm64-Debug alone failed an untouched randomized
+JOINTS.CONVENIENCE_FUNCTIONS transform test. The base passed and the local
+focused test passed 1,000 repeats. Fresh 6fb4 checks are queued, so do not carry
+the prior classification forward without current-head evidence.
 
 The first post-capture matched performance attempt is retained only at
 /tmp/fbf-mark26-current-head-rerun. It has the same measured-work fingerprint
 as mark26 and passes affinity, residency, solver, and outcome gates, but ran
 under sustained GUI/editor load immediately after the five-hour capture with an
 82 C package. Treat its 12.924/12.321 ms means and 1.0489x speedup as a
-host-contention diagnostic, not publishable replacement evidence. Rerun once
-after merging/rebuilding and meeting a declared cool/low-load gate.
+host-contention diagnostic, not publishable replacement evidence. The
+merge/rebuild is complete; rerun only after meeting a declared cool/low-load
+gate.
 
 Immediate order:
 
@@ -100,8 +119,9 @@ Immediate order:
    roots and the passing 16-URL PR reference/download/hash audit.
 2. Run the isolated matched one-/four-core performance rerun and synchronize
    only the narrow non-paper throughput claims it actually proves.
-3. Merge fetched origin/release-6.20 `6c88ac1d774` before the next push; run lint,
-   build, focused tests, and the fail-closed evidence validators.
+3. Decide whether completion requires a full post-merge visual reseal. Until
+   one exists, label all uploaded schema-v3 media as captured at 333a, never as
+   current-head binary evidence.
 4. Keep all exact/boxed policy asymmetry and Figure 8 frozen-prefix claim
    boundaries explicit. Continue the full 29-row parity, performance, CI, and
    review closeout; do not retire the task folder early.

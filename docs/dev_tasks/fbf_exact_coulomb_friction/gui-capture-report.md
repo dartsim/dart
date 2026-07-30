@@ -2,11 +2,16 @@
 
 ## Current Status
 
-The 2026-07-29 current-runtime checkpoint supersedes older upload/current-head
-statements below. Schema-v3 evidence under ignored
+The 2026-07-29 captured-checkpoint evidence supersedes older upload statements
+below. Schema-v3 evidence under ignored
 `assets/pr_media_current_head_333a/` binds `dart-demos` SHA-256
 `3d685d2c...`, core DART SHA-256 `3b66436b...`, 61 regular libraries, and
-eight build-tree libraries before and after capture.
+eight build-tree libraries before and after capture at `333a809f14a`.
+Post-merge code/runtime checkpoint `6fb4d0dbd8c` rebuilds to demo/core SHA-256 values
+`d9932f4c...` / `caf402af...`; no full visual reseal has run against that
+binary. Documentation-only descendants do not change this identity. The
+uploaded bytes remain audited captured-checkpoint artifacts, not post-merge
+current-binary reuse evidence.
 
 - Fresh Figure 3 exact and boxed members complete 240/240 and independently
   verify. Their checker-textured sphere makes changing orientation and
@@ -18,14 +23,14 @@ eight build-tree libraries before and after capture.
   collapses. Clip/panel hashes are `5e83527d...` / `d6782a65...`. This is
   blocker media, not a complete exact trajectory or paper/superiority result.
 - Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
-  unchanged runtime. Standalone verification, full decode, and manual
+  unchanged captured runtime. Standalone verification, full decode, and manual
   panel/keyframe inspection pass. Exact/boxed/group hashes are `19637c42...`,
   `d8066f89...`, and `438b02b2...`. Exact alone requests continuation and no
   automated semantic outcome exists, so the group is policy-asymmetric
   presentation rather than solver-only, superiority, or parity evidence.
 - All 16 user attachments are referenced from the draft PR and were
   re-downloaded from their PR-facing URLs; all match their full recorded
-  SHA-256 values. Slot 09 is now the fresh schema-v3 current-runtime group at
+  SHA-256 values. Slot 09 is now the fresh schema-v3 captured-runtime group at
   user attachment `af9d80bf...`; the historical provisional bytes were
   replaced.
 

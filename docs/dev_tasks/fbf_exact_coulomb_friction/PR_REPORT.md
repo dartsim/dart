@@ -1,34 +1,42 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
-## 2026-07-29 Current-Head Update
+## 2026-07-29 Post-Merge Code And Runtime Update
 
 This section supersedes every older current-head, active-capture, Figure 3,
 Figure 8, upload, branch, and CI statement below.
 
-- Pushed head `333a809f14a2e8b5f9837c74dcef13c77ca8fd76` contains
-  `release-6.20` checkpoint `d65e88ebda4` through merge `d209da2cbf1`.
-  After the visual seal, the target advanced to `6c88ac1d774` through PR #3382;
-  it must be merged before the next push and will create a new binary identity.
-  PR #3377 is open and draft with 264 net changed files.
+- Immutable code/runtime checkpoint
+  `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df` contains current
+  `release-6.20` checkpoint
+  `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
+  merge. Documentation-only descendants do not change the binary identity.
+  PR #3377 is open and draft; it had 264 net changed files at the last live
+  query. Requery its mutable head, checks, and review state.
+- The merge resolution passed `pixi run lint`, all 166 C++ tests, all 34 FBF
+  scene-documentation checks, `check-ai-commands`, and the AI infrastructure
+  doctor. The rebuilt post-merge demo/core SHA-256 values are
+  `d9932f4c...` / `caf402af...`.
 - The PR tree tracks no generated task assets, raw capture output, CSV, JSON,
   PNG, MP4, logs, stdout/stderr, NPY, or NPZ evidence. The scalable
   `docs/dev_tasks/.gitignore` policy ignores every task's role-based
   `**/assets/` subtree. The 101 source-pinned Figure 8 masonry OBJ files are
   required runtime inputs, not generated data; broad extension ignores would
   incorrectly hide them and the Figure 3 checker/runtime meshes.
-- Visual-evidence schema v3 binds the current demo
+- Visual-evidence schema v3 binds the captured-checkpoint demo
   (`3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`),
   61 regular runtime libraries, eight build-tree libraries, and the exact core
   DART library
   (`3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`)
-  before and after capture.
-- Fresh current-runtime Figure 3 exact and boxed captures complete 240/240,
+  before and after capture. These records were captured at `333a809f14a`;
+  they remain audited uploaded bytes but are not post-merge current-binary
+  reuse evidence.
+- Fresh captured-checkpoint Figure 3 exact and boxed captures complete 240/240,
   pass independent verification and the bounded outcome slice, and use the
   requested checker-textured sphere so orientation and backspin are visibly
   apparent. Exact/group MP4 SHA-256 values are `b2c268aa...` and
   `e321c711...`. Both solvers pass; no superiority or paper-parity result is
   claimed.
-- Fresh current-runtime Figure 8 is sealed and independently verified as
+- Fresh captured-checkpoint Figure 8 is sealed and independently verified as
   `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Exact fails
   closed at `iteration_cap` after completed step 209 and freezes only its last
   valid step-208 image; boxed completes 1,600/1,600 but collapses and fails the
@@ -36,7 +44,8 @@ Figure 8, upload, branch, and CI statement below.
   `d6782a65...`, and `2293baf6...`. This is a frozen-prefix blocker
   diagnostic, not a complete exact trajectory, historical Figure 8 invocation,
   solver-superiority result, or paper-parity result.
-- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
+- Fresh captured-checkpoint ten-level exact and boxed members each complete
+  3,200/3,200 from the
   same unchanged runtime. Exact records 7,702/7,702 solves, zero
   failures/fallbacks, 2,427 plateau accepts, and 763 max-iteration accepts.
   Exact/boxed/group clip SHA-256 values are `19637c42...`, `d8066f89...`, and
@@ -54,28 +63,36 @@ Figure 8, upload, branch, and CI statement below.
 - All 16 intended H.264/yuv420p clips are referenced from the draft PR through
   GitHub user-attachment URLs. Each was re-downloaded from its PR-facing URL
   and matched its full recorded SHA-256. Slot 09 now uses the fresh schema-v3
-  current-runtime group (`438b02b2...`) at user attachment `af9d80bf...`; the
+  captured-runtime group (`438b02b2...`) at user attachment `af9d80bf...`; the
   historical provisional bytes were replaced.
   [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns the verified
   URL/hash ledger.
-- At the inspected current head, most hosted jobs passed or remained active.
-  macOS `arm64-Debug` alone failed in the untouched randomized
+- At the prior `333a809f14a` head, macOS `arm64-Debug` alone failed in the
+  untouched randomized
   `JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion test. The base branch
   passed and the focused test passed 1,000 local repeats, so this is currently
-  classified as an unrelated likely random/singularity flake pending the next
-  content-triggered run.
+  classified as an unrelated likely random/singularity flake. Fresh
+  checks for `6fb4d0dbd8c` were queued at the last query; use only live
+  current-head results for the next classification.
 - The first post-capture matched performance attempt preserves the exact
   mark26 measured-work fingerprint and passes affinity, residency, solver, and
   outcome gates, but it ran under sustained GUI/editor load immediately after
   the five-hour capture with an 82 C package. Its 12.924/12.321 ms means and
   1.0489x speedup are a host-contention diagnostic, not replacement evidence.
-  Rerun after target merge/rebuild and a declared cool/low-load gate.
+  The target merge/rebuild is complete. Rerun only after a declared
+  cool/low-load gate.
 
 The direct coverage answer remains **No**: the branch does not reproduce every
 paper test, benchmark, GUI example, physical outcome, or performance result.
 Historical renderer/golden recovery, strict card-house and arch convergence,
 matched paper timing, and apples-to-apples source/backend claims remain open or
 blocked. Keep PR #3377 draft.
+
+> **Historical-snapshot rule:** The chronological record below preserves the
+> wording used at each dated checkpoint. Any later phrase such as
+> "current-head" or "post-merge" is scoped to that historical checkpoint, not
+> to the live branch. The update above is authoritative; query mutable GitHub
+> state before reporting it.
 
 This is the PR-facing status report for the DART 6.20 exact-Coulomb FBF work.
 It states what the current branch demonstrates and, just as importantly, what
