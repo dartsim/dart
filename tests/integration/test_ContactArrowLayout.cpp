@@ -398,3 +398,74 @@ TEST(ContactArrowLayoutTest, DecayFollowsTheLiveTimestep)
   std::cout << "contact_arrow_decay  dt=0.001 after 0.5 s -> " << fine
             << " N   dt=0.01 after 0.5 s -> " << coarse << " N\n";
 }
+
+//==============================================================================
+// Scenes such as `add_delete_skels` and `rigid_shapes` spawn and remove bodies
+// while running. A scale derived only at install time would stay stuck on
+// whatever the world held at startup -- for `add_delete_skels` that is a bare
+// welded ground, so every spawned cube would be annotated with fallback-sized
+// arrows and a near-zero force floor.
+TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
+{
+  auto world = dart::simulation::World::create("empty_but_ground");
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  auto ground = dart::dynamics::Skeleton::create("ground");
+  auto* groundBody
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  groundBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(20.0, 0.2, 20.0)));
+  world->addSkeleton(ground);
+
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  // Nothing mobile yet, so the fallback is all there is to go on.
+  EXPECT_DOUBLE_EQ(
+      layout.getReferenceLength(),
+      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+
+  // A no-op refresh must not disturb anything.
+  layout.refreshForWorld(*world);
+  EXPECT_DOUBLE_EQ(
+      layout.getReferenceLength(),
+      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+
+  // Spawn a cube, the way add_delete_skels does on 'q'.
+  auto cube = dart::dynamics::Skeleton::create("cube");
+  auto* cubeBody
+      = cube->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  cubeBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(1.2)));
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(4.0);
+  cubeBody->setInertia(inertia);
+  world->addSkeleton(cube);
+
+  // The peak the layout has been tracking survives the refresh.
+  const std::vector<dart::collision::Contact> contacts = {
+      makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 900.0, 0.0))};
+  layout.update(contacts, kMaxArrows, kTimeStep);
+  const double trackedForce = layout.getReferenceForce();
+  ASSERT_NEAR(trackedForce, 900.0, 1e-9);
+
+  layout.refreshForWorld(*world);
+
+  EXPECT_GT(layout.getReferenceLength(), 0.25)
+      << "the spawned cube did not reach the arrow scale";
+  EXPECT_GE(layout.getReferenceForce(), trackedForce)
+      << "refreshing discarded the force reference being tracked";
+
+  std::cout << "contact_arrow_refresh  ground_only_ref_len="
+            << dart_demos::ContactArrowLayout::kFallbackReferenceLength
+            << " m  after_cube_spawn=" << layout.getReferenceLength()
+            << " m  tracked_force_kept=" << layout.getReferenceForce()
+            << " N\n";
+}

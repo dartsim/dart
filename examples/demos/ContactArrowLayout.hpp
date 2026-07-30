@@ -102,6 +102,17 @@ public:
   /// used then.
   void resetForWorld(const dart::simulation::World& world);
 
+  /// Re-derives the scene-dependent references if the world's set of bodies has
+  /// changed since the last call, and does nothing otherwise. Scenes such as
+  /// `add_delete_skels` and `rigid_shapes` spawn and remove skeletons while
+  /// running, so a scale derived only at install time would be stuck on
+  /// whatever the world held at startup.
+  ///
+  /// Unlike resetForWorld() this keeps the force reference it has been
+  /// tracking, so adding a body does not discard the current peak; it is only
+  /// raised if the new floor demands it. Cheap enough to call every step.
+  void refreshForWorld(const dart::simulation::World& world);
+
   /// Lays out at most `maxArrows` arrows for `contacts` and returns them.
   ///
   /// `timeStep` is the world's current timestep, passed in per call rather than
@@ -137,9 +148,16 @@ public:
 private:
   std::vector<ContactArrow> mArrows;
 
+  /// Cheap stand-in for "the set of bodies changed": skeleton count, body
+  /// count and degree-of-freedom count together. World exposes no signal for
+  /// this, and a full re-derivation every step would let the arrow scale drift
+  /// with ordinary motion.
+  static std::size_t sceneFingerprint(const dart::simulation::World& world);
+
   double mReferenceLength = kFallbackReferenceLength;
   double mReferenceForce = 1.0;
   double mFloorForce = 1.0;
+  std::size_t mSceneFingerprint = 0;
 };
 
 } // namespace dart_demos

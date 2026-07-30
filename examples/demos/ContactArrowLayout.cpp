@@ -101,9 +101,37 @@ bool accumulateBodyExtent(
 } // namespace
 
 //==============================================================================
+std::size_t ContactArrowLayout::sceneFingerprint(
+    const dart::simulation::World& world)
+{
+  std::size_t fingerprint = world.getNumSkeletons();
+  for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
+    const auto& skeleton = world.getSkeleton(i);
+    if (!skeleton)
+      continue;
+    fingerprint = fingerprint * 131 + skeleton->getNumBodyNodes();
+    fingerprint = fingerprint * 131 + skeleton->getNumDofs();
+  }
+  return fingerprint;
+}
+
+//==============================================================================
+void ContactArrowLayout::refreshForWorld(const dart::simulation::World& world)
+{
+  const std::size_t fingerprint = sceneFingerprint(world);
+  if (fingerprint == mSceneFingerprint)
+    return;
+
+  const double trackedForce = mReferenceForce;
+  resetForWorld(world);
+  mReferenceForce = std::max(trackedForce, mFloorForce);
+}
+
+//==============================================================================
 void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
 {
   mArrows.clear();
+  mSceneFingerprint = sceneFingerprint(world);
 
   Eigen::Vector3d min
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
