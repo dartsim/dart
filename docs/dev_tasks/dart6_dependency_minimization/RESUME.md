@@ -3,7 +3,7 @@
 Read [README.md](README.md) first, then
 [03-native-collision-port-scoping.md](03-native-collision-port-scoping.md)
 for the execution contract,
-[08-phase5-facade-decision.md](08-phase5-facade-decision.md) for the backend
+[08-backend-lifecycle-decision.md](08-backend-lifecycle-decision.md) for the backend
 lifecycle decision, and
 [04-orchestration-dashboard.md](04-orchestration-dashboard.md) for live lane
 status.
@@ -13,21 +13,17 @@ status.
 Verified 2026-07-30:
 
 - `origin/release-6.20` is
-  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`.
-- [PR #3381](https://github.com/dartsim/dart/pull/3381), **Consolidate
-  DART-owned collision detection**, merged at `2026-07-30T04:38:18Z`.
+  `2ffe228c14c67e120d2a946ce9d36e8a9658044f` at this refresh.
+- [PR #3381](https://github.com/dartsim/dart/pull/3381) merged at
+  `2026-07-30T04:38:18Z`.
   Its exact reviewed head was
   `64d476b68ad5ae0dcca4e98abb9bba15b6962b87`, and its squash merge was
   `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`.
 - PR #3406 then Black-formatted `scripts/agent_capture.py` to repair the
   post-merge lint failure created when #3381's new file met #3405's wider
   Black scope. It changed formatting only, not detector behavior.
-- The DART-owned engine now has one public identity:
-  `DARTCollisionDetector` with factory key `"dart"`. The unreleased
-  `"native"` key, public class family, dartpy binding, and benchmark name were
-  removed rather than retained as aliases.
-- `dart::collision::native` remains only an internal implementation namespace
-  under `dart/collision/dart/`; it is not a public detector selector.
+- The DART-owned backend is `DARTCollisionDetector`, selected by factory key
+  `"dart"` and implemented under `dart/collision/dart/`.
 - FCL remains the DART 6.20 built-in default. Both
   `ConstraintSolver` constructors still create
   `FCLCollisionDetector`, `WorldConfig` still defaults to
@@ -59,7 +55,7 @@ covering dartpy, published wheels, and the installed GUI component.
 | 2 | DART 6 detector adapter and shape-pair coverage | Complete through #3350 |
 | 3 | Distance, raycast, voxel, CCD, and manifold parity | Complete through #3360 |
 | 4 | Evidence-driven detector performance | Closed for this lane: #3362, #3364, and #3368 landed; remaining general performance work belongs to the performance-generalization task |
-| 5 | Canonical backend decision | Decision 1 executed by #3381: consolidate into `"dart"` and remove the unreleased `"native"` selector |
+| 5 | Canonical backend decision | Current `DARTCollisionDetector` architecture accepted in #3381 |
 | 6 | Default flip | Deferred beyond DART 6.20; no implementation branch or milestone exists |
 | 7 | FCL decoupling and backend facades | Pending after an accepted phase-6 flip on a future release |
 
@@ -74,14 +70,14 @@ The exact head satisfies the DART 6.20 contract:
   ellipsoid conversion passes its generated triangle faces into `ConvexShape`
   instead of recomputing them from all vertex triples.
 - No-cache Release build, 155/155 C++ tests, 223/223 dartpy tests, and the
-  43-test consolidated detector target in Release and assertions-enabled
+  43-test DART detector target in Release and assertions-enabled
   configurations passed.
 - `pixi run lint`, no-cache `pixi run check-lint`, AI
   command/infrastructure checks, 357 focused AI tests, and seven AI scenarios
   passed.
 - The pinned downstream aggregate passed 199/199 gz-physics tests, 4/4
   plugin/performance checks, and the gz-sim entity-system integration test.
-- Pre-consolidation 6.20 headers against the new library preserved detector,
+- Older 6.20 headers against the new library preserved detector,
   group, and object sizes (`32/376/320`) and passed 20/20 guarded lifecycle
   runs. The released 6.19.4 detector header also passed 20/20.
 - All ten released `DARTCollide` symbols remain exported.
@@ -120,12 +116,10 @@ exact-head evidence.
 
 ## Immediate next action
 
-1. Obtain explicit maintainer approval before pushing
-   `docs/dependency-minimization-closeout` or opening its documentation PR.
-2. If published, manage that documentation-only PR through review and CI
-   without adding collision behavior, defaults, or dependency changes.
-3. Otherwise, wait for a future DART 6 release line and milestone plus explicit
-   authorization before resuming phases 6 or 7.
+1. Manage [PR #3409](https://github.com/dartsim/dart/pull/3409) through review
+   and CI without adding collision behavior, defaults, or dependency changes.
+2. After it lands, wait for a future DART 6 release line and milestone plus
+   explicit authorization before resuming phases 6 or 7.
 
 There is no further collision-backend implementation authorized on
 `release-6.20`.
@@ -139,7 +133,7 @@ When a maintainer creates and authorizes the proposing release line:
 2. Re-capture the phase-0 matrix on the default-flip PR parent and compare the
    candidate within that same capture. Preserve finite state, determinism,
    contact caps, scene-dump tolerances, and capability parity.
-3. Prove the consolidated `"dart"` detector meets the accepted performance bar
+3. Prove the `"dart"` detector meets the accepted performance bar
    without using sleeping, contact loss, or changed physics to hide a
    regression.
 4. Change the complete default surface together: both `ConstraintSolver`
@@ -158,7 +152,7 @@ keys and the installed component names either way.
 ## Standing constraints
 
 - FCL is the DART 6.20 default. Do not change it in this task on this branch.
-- Public selector `"native"` does not exist and must not be reintroduced.
+- `"dart"` remains the DART-owned detector key.
 - Keep C++17, pybind11, installed DART 6 headers/components, released class
   layouts, and gz-physics/gz-sim behavior.
 - Run `pixi run lint` before every commit.
@@ -190,4 +184,4 @@ keys and the installed component names either way.
 - Historical phase-2 adapter plan:
   [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md).
 - Backend lifecycle decision:
-  [08-phase5-facade-decision.md](08-phase5-facade-decision.md).
+  [08-backend-lifecycle-decision.md](08-backend-lifecycle-decision.md).

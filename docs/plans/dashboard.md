@@ -6,17 +6,16 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
 
-### PLAN-620: Dependency Minimization And Native Collision
+### PLAN-620: Dependency Minimization And Collision Backends
 
 - Owner doc: [dependency minimization](../dev_tasks/dart6_dependency_minimization/README.md)
 - Status: Active
 - Horizon: Later
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Publish the completed documentation-only #3381 closeout after
-  explicit maintainer approval. DART 6.20 then stops with canonical detector
-  `"dart"` but FCL still the default and a core dependency. Resume the
-  default-flip and FCL-decoupling phases only on an explicitly authorized
-  future release line.
+- Next step: Complete the documentation-only #3381 closeout in #3409. DART
+  6.20 then stops with `DARTCollisionDetector` selected by `"dart"` while FCL
+  remains the default and a core dependency. Resume the default-flip and
+  FCL-decoupling phases only on an explicitly authorized future release line.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.

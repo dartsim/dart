@@ -28,22 +28,21 @@ PR #3381 on 2026-07-30.
 
 ## Current Branch State
 
-- `origin/release-6.20` currently points at
-  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`. That tip contains the
+- `origin/release-6.20` pointed at
+  `2ffe228c14c67e120d2a946ce9d36e8a9658044f` when this closeout was
+  refreshed. That tip contains the
   `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5` squash merge of
-  [PR #3381](https://github.com/dartsim/dart/pull/3381) plus #3406's
-  formatter-only post-merge lint repair.
+  [PR #3381](https://github.com/dartsim/dart/pull/3381) and subsequent
+  release-branch maintenance.
 - `origin/main` currently points at
   `83110ef54abf41f54c1e03500e49c1c12c305b8a`.
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
   package version (`6.19.4`).
 - DART 6.20 intentionally uses the release lane while package version metadata
   catches up to the branch/milestone naming.
-- Collision status: PR #3381 consolidated the DART-owned engine into
-  `DARTCollisionDetector`, with `"dart"` as its only factory key. The interim
-  `"native"` key was introduced only on the unreleased 6.20 branch and was
-  removed rather than carried as an alias. FCL remains the 6.20 default and a
-  core dependency; the FCL, Bullet, and ODE implementations, components,
+- Collision status: `DARTCollisionDetector` is the DART-owned backend and
+  `"dart"` is its factory key. FCL remains the 6.20 default and a core
+  dependency; the FCL, Bullet, and ODE implementations, components,
   dependencies, and default-selection paths are unchanged.
 - Remaining collision-dependency work is deliberately later-release work.
   Phase 6 must first prove and receive approval for a default flip on its
@@ -61,13 +60,12 @@ PR #3381 on 2026-07-30.
   commit and every completed earlier dependency-minimization slice is an
   ancestor of the current release tip. PR #3106 is the deliberate exception:
   its Bullet/ODE-only Pixi demotion was closed unmerged by maintainer decision.
-- Local post-merge closeout is on
-  `docs/dependency-minimization-closeout`, one unpublished documentation-only
-  commit ahead of `origin/release-6.20`. It has no upstream or PR; publishing
-  it requires explicit maintainer approval.
+- Documentation closeout is tracked by
+  [PR #3409](https://github.com/dartsim/dart/pull/3409) on
+  `docs/dependency-minimization-closeout`.
 
 The durable architecture and compatibility rationale now lives in
-[DART 6 Collision Backend Consolidation](../../design/dart6_collision_backend_consolidation.md).
+[DART 6 Collision Backends](../../design/dart6_collision_backends.md).
 
 ## DART 6 Dependency Inventory
 
@@ -245,11 +243,11 @@ Default Pixi/package metadata for optional components
 FCL in DART 6 core
 
 - Risk: high.
-- Status: deliberately retained in DART 6.20. PR #3381 consolidated the
-  DART-owned engine but kept FCL as the default and core dependency.
+- Status: deliberately retained in DART 6.20. PR #3381 completed the
+  DART-owned detector but kept FCL as the default and core dependency.
 - Later plan: do not remove FCL until a future release accepts the complete
   default flip and then passes the phase-7 package, API, ABI, and gz gates.
-- Validation: native-collision parity, installed package/component smokes, full
+- Validation: DART detector parity, installed package/component smokes, full
   collision tests, dartpy coverage, and Gazebo.
 
 Bullet and ODE collision components
@@ -316,10 +314,9 @@ OpenSceneGraph and GLUT GUI dependencies
    explicit patched-fetch fallback landed in #3081.
 5. **GLUT-to-OSG migration and screenshot cleanup: complete.** GLUT and
    `lodepng` were removed in #3116 after supported behavior moved to OSG.
-6. **Collision detector consolidation: complete for DART 6.20.** PR #3381
-   consolidated the DART-owned implementation behind
-   `DARTCollisionDetector`, retained only the canonical `"dart"` factory key,
-   and preserved FCL as the default and core dependency. Performance
+6. **DART-owned collision backend: complete for DART 6.20.** PR #3381
+   established `DARTCollisionDetector` behind the canonical `"dart"` factory
+   key and preserved FCL as the default and core dependency. Performance
    exploration is closed for this lane. The default flip and FCL dependency
    decoupling remain ordered later-release phases.
 7. **LCP solver cleanup: complete.** The production `odelcpsolver` tree was
@@ -350,8 +347,8 @@ Select gates by touched surface:
 
 ## Non-Goals
 
-- Do not port the full DART 7 GUI, C++23 architecture, or native-collision stack
-  into DART 6 as part of this cleanup.
+- Do not port the full DART 7 GUI or C++23 backend architecture into DART 6 as
+  part of this cleanup.
 - Do not remove DART 6 public package components or installed include paths
   without an explicit compatibility decision.
 - Do not treat deletion of `dart/external/` as evidence that runtime behavior is
@@ -386,5 +383,4 @@ Resolved decisions remain part of the acceptance record:
   preserved.
 - GLUT and `lodepng` were removed only after supported behavior moved to OSG;
   that migration did not demote OSG itself.
-- The temporary public `"native"` factory key was removed before release;
-  `"dart"` is the sole DART-owned detector key.
+- `"dart"` is the DART-owned detector key.

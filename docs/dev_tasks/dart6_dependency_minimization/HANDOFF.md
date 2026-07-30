@@ -7,10 +7,10 @@
 
 ## Outcome
 
-The executable DART 6.20 collision-consolidation slice is merged.
+The executable DART 6.20 DART-owned collision-backend slice is merged.
 
 - Release tip:
-  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`.
+  `2ffe228c14c67e120d2a946ce9d36e8a9658044f` at this refresh.
 - Merge:
   [PR #3381](https://github.com/dartsim/dart/pull/3381), merged
   `2026-07-30T04:38:18Z` as
@@ -19,12 +19,6 @@ The executable DART 6.20 collision-consolidation slice is merged.
   `64d476b68ad5ae0dcca4e98abb9bba15b6962b87`.
 - Public DART-owned detector:
   `DARTCollisionDetector`, canonical factory key `"dart"`.
-- Removed pre-release surface:
-  `"native"` factory key, `NativeCollisionDetector` class family, dartpy
-  binding, and benchmark name. There is no compatibility alias.
-- Internal detail:
-  the `dart::collision::native` namespace remains under
-  `dart/collision/dart/`; it is not a public selector.
 - DART 6.20 default:
   FCL, unchanged.
 - Post-merge lint repair:
@@ -40,11 +34,11 @@ and all ten historical symbols remain available through adapters.
 | Phase | Status |
 | --- | --- |
 | 0 — baseline packet | Complete, #3271 |
-| 1 — native math core | Complete, #3281 |
+| 1 — collision math core | Complete, #3281 |
 | 2 — DART 6 adapter and pair coverage | Complete through #3350 |
 | 3 — distance/raycast/voxel/CCD/manifolds | Complete through #3360 |
-| 4 — measured detector optimization | Closed for this lane after #3362, #3364, #3368, and consolidation; remaining general performance work is owned by the performance-generalization task |
-| 5 — canonical backend decision | Decision 1 complete in #3381; future facade lifecycle remains designed but unimplemented |
+| 4 — measured detector optimization | Closed for this lane after #3362, #3364, #3368, and #3381; remaining general performance work is owned by the performance-generalization task |
+| 5 — canonical backend decision | Current architecture accepted in #3381; future facade lifecycle remains designed but unimplemented |
 | 6 — default flip | Deferred beyond DART 6.20 |
 | 7 — FCL decoupling and external-backend facades | Pending after a future accepted default flip |
 
@@ -76,7 +70,7 @@ Review:
 Local exact-head gates:
 
 - 155/155 C++ tests and 223/223 dartpy tests.
-- 43/43 consolidated-engine tests in Release and assertions-enabled builds.
+- 43/43 DART detector tests in Release and assertions-enabled builds.
 - `pixi run lint`, no-cache `pixi run check-lint`, 357 focused AI tests, and
   seven AI scenarios.
 - 199/199 gz-physics tests, 4/4 plugin/performance checks, and the gz-sim
@@ -129,16 +123,16 @@ continued into tests. This clears the formatter regression. The wider
 release-tip matrix remained nonterminal at the `06:22Z` snapshot and is not
 claimed as a fully green matrix.
 
-The local documentation closeout is one unpublished commit on
-`docs/dependency-minimization-closeout`, with no upstream and no PR.
+The documentation closeout is
+[PR #3409](https://github.com/dartsim/dart/pull/3409) on
+`docs/dependency-minimization-closeout`.
 
 ## Exact next action
 
-1. Obtain explicit maintainer approval before pushing the local closeout
-   branch or opening its documentation PR.
-2. If published, manage that documentation-only PR through review and CI.
-3. Otherwise, wait for an explicitly authorized future DART 6 release before
-   resuming phases 6 or 7.
+1. Manage PR #3409 through review and CI without changing collision behavior,
+   defaults, or dependencies.
+2. After it lands, wait for an explicitly authorized future DART 6 release
+   before resuming phases 6 or 7.
 
 After that, stop DART 6.20 collision-backend implementation. No default flip,
 facade conversion, component removal, or dependency removal is authorized on
@@ -165,10 +159,10 @@ gz-physics change that removes that inheritance first.
 
 - FCL remains the DART 6.20 default in both `ConstraintSolver` constructors,
   `WorldConfig`, `World`, and parser fallback behavior.
-- Factory key `"native"` must remain unsupported.
+- `"dart"` remains the DART-owned detector key.
 - Preserve C++17, pybind11, installed headers/components, released class
   layouts, and gz-physics/gz-sim behavior.
-- Keep FCL/Bullet/ODE runtime paths structurally isolated from DART-detector
+- Keep FCL/Bullet/ODE runtime paths structurally isolated from DART detector
   implementation work.
 - Every future collision/default/package PR requires the Gazebo gate.
 - Performance gains may not come from lost contacts, altered sleeping,
@@ -186,5 +180,5 @@ gz-physics change that removes that inheritance first.
   port rules.
 - [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): historical
   adapter execution plan.
-- [08-phase5-facade-decision.md](08-phase5-facade-decision.md): backend
-  consolidation and later facade lifecycle decision.
+- [08-backend-lifecycle-decision.md](08-backend-lifecycle-decision.md):
+  current backend architecture and later lifecycle decision.

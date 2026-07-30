@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; historical GUI/OSG + GLUT scope | External replacements + **GLUT/lodepng removal done** (#3116 merged); OSG demotion held by the #3107 maintainer decision |
-| **Native-collision-port lane** | Consolidate the DART-owned detector while preserving the DART 6.20 compatibility boundary; later make FCL/Bullet/ODE optional | DART 6.20 slice complete through #3381: phases 0–3 landed, phase 4 closed for this lane, and phase 5's canonical `"dart"` decision executed. FCL remains the 6.20 default; phases 6 and 7 are deferred to an authorized later release |
+| **DART collision-backend lane** | Establish the DART-owned detector while preserving the DART 6.20 compatibility boundary; later make FCL/Bullet/ODE optional | DART 6.20 slice complete through #3381: phases 0–3 landed, phase 4 closed for this lane, and phase 5's canonical `"dart"` decision executed. FCL remains the 6.20 default; phases 6 and 7 are deferred to an authorized later release |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -116,14 +116,14 @@
 - **#3364** phase-4 solver-facing native manifold cap with parent-vs-PR and
   detector-vs-detector evidence (merged 2026-07-09).
 - **#3368** AABB-tree broadphase (merged 2026-07-11) — replaced the quadratic
-  pair walk while preserving the native guard rows.
+  pair walk while preserving the DART-detector guard rows.
 - **#3370** performance/dependency evidence refresh (merged 2026-07-11).
-- **#3381** detector consolidation (merged 2026-07-30, squash
+- **#3381** DART collision backend (merged 2026-07-30, squash
   `46719bfbd75`) — moved the DART-owned engine under
-  `DARTCollisionDetector` and factory key `"dart"`, removed the unreleased
-  `"native"` public surface, retained FCL as the 6.20 default, preserved
-  released `DARTCollide`/layout compatibility, and left the FCL/Bullet/ODE
-  implementations, components, dependencies, and default paths unchanged.
+  `DARTCollisionDetector` and factory key `"dart"`, retained FCL as the 6.20
+  default, preserved released `DARTCollide`/layout compatibility, and left the
+  FCL/Bullet/ODE implementations, components, dependencies, and default paths
+  unchanged.
 - **#3283** main-branch dual for the native sphere-sphere binary-check fix
   (merged 2026-07-07).
 
@@ -140,7 +140,7 @@
 
 ### 🔄 Open — monitoring (checked 2026-07-30)
 
-- No native-collision release PR remains open.
+- No DART collision-backend release PR remains open.
 - Exact head `64d476b68a` received a clean final Codex review and all ten
   review threads are resolved. Linux run `30510684936` completed successfully
   at `2026-07-30T06:21:21Z`; all six jobs passed, including Release,
@@ -156,8 +156,9 @@
   passed `Check Lint` and continued into tests, clearing the formatter
   regression. The wider release-tip matrix remained nonterminal at the
   `06:22Z` snapshot and is not claimed as fully green.
-- The documentation-only closeout is one unpublished local commit on
-  `docs/dependency-minimization-closeout`; it has no upstream or PR.
+- The documentation-only closeout is
+  [PR #3409](https://github.com/dartsim/dart/pull/3409) on
+  `docs/dependency-minimization-closeout`.
 - **Phase 4** is closed for this lane. Remaining measured performance work is
   tracked by the performance-generalization lane (WS-G), not here.
 - **Phase 5 Decision 1** is complete: `"dart"` is the sole DART-owned factory
@@ -177,12 +178,10 @@ _(Note for automated reviewers: a just-merged PR can briefly still show "Open" o
 due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and `git log`
 before treating it as an open/active PR.)_
 
-### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
-- **Current state:** DART 6.20 contains the consolidated engine under the
-  canonical `"dart"` detector and rejects the unreleased `"native"` selector.
-  The former engine internals now live under `dart/collision/dart/`; their
-  internal namespace is not a public selector. The merge does not make the
-  default FCL-optional.
+### 🛠️ DART collision-backend lane (the largest dependency lever — FCL/Bullet/ODE)
+- **Current state:** DART 6.20 contains `DARTCollisionDetector` under
+  `dart/collision/dart/`, selected by canonical key `"dart"`. This does not make
+  the default FCL-optional.
   `release-6.20` still uses FCL as the default detector — created in *both*
   `ConstraintSolver` constructors.
 - **Phase 0 (captured 2026-07-04, recaptured 2026-07-05):** all
@@ -190,20 +189,20 @@ before treating it as an open/active PR.)_
   dashboard capture path); the baseline packet is recorded in
   `05-phase0-baseline-packet.md` (raw evidence: `05-artifacts.md`) on
   `1e6a8332a730` after merging `origin/release-6.20` = `949a9c2ff5ed`, with
-  the verdict "native default NOT allowed at this tip" and the phase-6
+  the verdict "`dart` default NOT allowed at this tip" and the phase-6
   acceptance envelope. Consume the committed summaries for phase-1
   sequencing. For the phase-6 tolerance gate, retrieve JSONL dumps matching
   the recorded SHA-256 digests or recapture dumps on the flip PR's parent
   and compare within that same recapture.
 - **Phase 2 status:** P1-P10 are merged: broadphase, dispatcher, adapter bridge,
-  `"native"` registration, sphere/box/capsule/convex/cylinder/mesh/plane
-  coverage, distance helpers, mixed-scene parity, and associated parity/
+  sphere/box/capsule/convex/cylinder/mesh/plane coverage, distance helpers,
+  mixed-scene parity, and associated parity/
   performance tests. **Phase 3 D1-D4 are merged (#3352/#3355/#3358/#3359):**
-  native detector distance, raycast, VoxelGrid/compound wiring, and CCD support
+  DART detector distance, raycast, VoxelGrid/compound wiring, and CCD support
   against the incumbent support gaps. **Phase 3 D5 is merged (#3360):**
   persistent manifold cache/reuse and cached-impulse seed/write-back.
   **Phase 4 is closed for this lane:** #3362/#3364/#3368 and #3381 provide the
-  dashboard, manifold, broadphase, consolidation, and incumbent-backend
+  dashboard, manifold, broadphase, DART-backend, and incumbent-backend
   no-regression evidence. General follow-up performance work moved to WS-G.
 - **Phase 5 status:** canonical backend/naming is executed. The
   FCL/Bullet/ODE facade lifecycle remains designed but unimplemented, with the
@@ -219,7 +218,7 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline (2026-07-30): `origin/release-6.20` =
-     `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`.
+     `2ffe228c14c67e120d2a946ce9d36e8a9658044f`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - Remote mutations are maintainer-owned unless the maintainer explicitly
@@ -234,8 +233,8 @@ before treating it as an open/active PR.)_
    Windows `Install`-step and coverage `Build with coverage` failures
    reproduced on base pushes, and FreeBSD ssh exit-8 / runner `Setup pixi`
    failures are infra flakes that clear on re-run.
-4. **Native-collision lane: preserve the release boundary.** The DART 6.20
-   consolidation is merged and FCL remains the default. Do not start a default
+4. **DART collision-backend lane: preserve the release boundary.** The DART
+   6.20 backend is complete and FCL remains the default. Do not start a default
    flip, facade conversion, or dependency removal without a future release
    line and explicit maintainer authorization. Do not treat
    `feature/native-occupancy-grid` or
@@ -263,19 +262,18 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-30):** no open native-collision release PR. #3381 is
-  merged and its exact-head Linux run is terminal green. #3406's two macOS
-  jobs cleared the merge-time lint failure; the wider release-tip push matrix
-  was still nonterminal at the closeout snapshot. The only local queue item is
-  publishing the documentation closeout after explicit maintainer approval.
-  The former
+- **Open queue (2026-07-30):** no open DART collision-backend implementation
+  PR. #3381 is merged and its exact-head Linux run is terminal green. #3406's
+  two macOS jobs cleared the merge-time lint failure; the wider release-tip
+  push matrix was still nonterminal at the closeout snapshot. The only current
+  queue item is completing documentation PR #3409. The former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
   #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360/#3362/#3364
   lane milestones, main-branch dual #3283, workflow rename #3357, and MSVC
   policy #3348 are merged.
 - **Largest remaining win:** a later-release default flip followed by FCL
   decoupling and FCL/Bullet/ODE compatibility facades. DART 6.20 provides the
-  consolidated engine and parity base, but explicitly does not perform those
+  DART detector and parity base, but explicitly does not perform those
   late-phase changes.
 - **Separate held reduction:** OSG/ImGui default-environment demotion remains
   unimplemented and requires fresh maintainer authorization. It is not an
