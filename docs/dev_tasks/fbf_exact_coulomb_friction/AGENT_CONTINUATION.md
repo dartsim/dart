@@ -14,6 +14,96 @@ tests, benchmarks, and GUI examples from the paper?" is:
 No.
 ```
 
+## 2026-07-30 Current-Head API And Figure 3 Checkpoint
+
+This section supersedes the 2026-07-29 branch-head, API-default, Figure 3,
+host-load, CI, and next-action statements below.
+
+- The pushed branch and draft PR #3377 are at
+  `91eea8541b8908f00a3d21717f0bb832320490ec`. That merge contains
+  `origin/release-6.20` tip
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. At the last live query the PR
+  was open, draft, and mergeable; its new current-head check suite was queued.
+  Keep it draft and do not trigger `@codex review`.
+- The PR body now has a before/after `API and defaults` section. Existing
+  `World::create()` behavior remains the default:
+  `BoxedLcpConstraintSolver` with the world's normal FCL/primitive collision
+  detector. Exact-Coulomb FBF is opt-in by replacing the world constraint
+  solver with `ExactCoulombFbfConstraintSolver`. Within that opt-in solver,
+  `fallbackToBoxedLcp` defaults to `true`. Source continuation, source inner
+  initialization, colored BGS, and participant affinity default off;
+  warm-start/adaptive persistence, contact-row Delassus, and post-correction
+  cone projection default on. `DARTCollisionDetector` defaults to `Compact`;
+  `FourPointPlanar` is an explicit paper/demo scene policy.
+- A cache-enabled current-head rebuild passed for `dart-demos`,
+  `fbf_paper_trace`, and the focused exact-FBF/collision targets. Eleven
+  focused C++ tests pass, the visual-evidence suite passes 478/478, and the
+  compact coverage audit remains 29 rows (`24 partial`, `5 blocked`,
+  `0 complete`). Current binary SHA-256 values are
+  `9e4f6c37eff34ba450763a2ef47eaab198508c89ad3e03156685620a7c17dc2f`
+  (`dart-demos`),
+  `0ff1c992e9c2d2304c7c314ffff4cfa84ab37ba4c812207edcd4a48e76bbb0ea`
+  (`libdart.so.6.19.4`), and
+  `d0d65b48833d04a68375ddf0c21e6a6464cc6fe795ab49574f641bdaae4e9a3b`
+  (`fbf_paper_trace`). The visual runtime-closure digest is
+  `e6f5771523363ebdf4f11887dc5a82b3d563a3e85cf0268346d999b169292a6c`.
+- A fresh exact/boxed Figure 3 capture ran after the `91eea854` merge against
+  those binaries. Its ignored root is
+  `assets/pr_media_current_head_cfd865/`; the directory name was selected
+  before the final target merge and must not be treated as the runtime
+  identity. The capture summary SHA-256 is
+  `88b9a50830d330936cfb0e14034973b92047a1957dceac2d5d9d0ae9768baba5`.
+  Both lanes complete 240 steps / 241 states and pass the bounded outcome
+  slice. Exact/boxed/group MP4 SHA-256 values are byte-identical to the
+  existing attachment bytes:
+  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`,
+  `dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`,
+  and
+  `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+  Manual panel/keyframe inspection confirms that the ivory/charcoal checker
+  facets are legible and visibly change orientation; its ignored record hash
+  is `9807fac4d9a38e367c10076f80247bed1fb86520c0192972ad4fcb14c4e3881b`.
+- The separate reuse-only verification was stopped while validating PNGs
+  because the shared host reached its 100 C package limit. This interrupted
+  run is non-evidence. Do not call the current-head Figure 3 bundle
+  independently verified or fully resealed until `verify` completes in a
+  cool window. The capture itself passed capture-time frame, media-decode,
+  runtime-closure, and outcome validation.
+- Both Figure 3 solvers pass. No solver superiority or equivalence,
+  source-backend/full-trajectory equivalence, signed-rate proof from video,
+  historical-renderer/golden parity, timing result, Figure 3 parity, or paper
+  parity follows.
+- The scalable `docs/dev_tasks/.gitignore` `**/assets/` rule ignores this
+  capture and other generated evidence. The current net PR tree contains no
+  task `assets/` or generated evidence/raw-output paths. The large published
+  topic history still contains 492 historical evidence blobs; final
+  integration needs a true squash unless a separate, explicitly approved
+  clean-history reconstruction is chosen.
+
+Next, do documentation-only handoff work until the host is cool. Then complete
+the Figure 3 reuse-only verification, followed by the declared cool/quiet
+one-/four-core packet, fresh Figure 8 finalize/seal/verify, and the roughly
+five-hour paired ten-level run from one unchanged pushed head. Before another
+commit, fetch and merge an advanced target if needed, run mandatory
+`pixi run lint`, rerun proportionate gates, checkpoint, and push. Review videos
+remain GitHub user attachments, never tracked repository files.
+
+The performance packet's declared host gate requires two samples at least
+60 seconds apart with package temperature at or below 60 C, one-minute load at
+or below 1.0, and no competing process above 5% CPU on logical CPUs 8, 10, 12,
+or 14. Figure 3 reuse verification and visual capture do not create timing
+evidence, but they must still wait until the package is below the thermal alarm
+and unrelated build saturation has cleared.
+
+This section plus the matching `RESUME.md`, `HANDOFF.md`, `README.md`, and
+`docs/dev_tasks/.gitignore` updates form a documentation-only checkpoint; they
+do not change the runtime hashes above. If they remain modified in the
+worktree, preserve them. Once the host is cool, inspect them, run
+`pixi run lint`, rerun `git diff --check`, and make the authorized
+documentation checkpoint before resuming CPU-heavy evidence work. If the
+worktree is clean, query the live branch for the resulting documentation-only
+commit.
+
 The current work reconstructs the method in DART. The authors' public
 Warp/Newton reference implementation is pinned at
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. DART now has separately named

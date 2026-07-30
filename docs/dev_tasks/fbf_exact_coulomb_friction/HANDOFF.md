@@ -1,7 +1,7 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-29 post-target compact
-coverage checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
+Use the first prompt below. It reflects the 2026-07-30 current-head
+checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
 prompt later in this file.
 
 ```text
@@ -23,21 +23,23 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Minimum integrated checkpoint:
+Minimum pushed code/runtime checkpoint:
 
-  3aee836ff62d80fcbbaacd39d54134c7af7d3061
+  91eea8541b8908f00a3d21717f0bb832320490ec
 
 It contains release-6.20 tip
-2ffe228c14c67e120d2a946ce9d36e8a9658044f, including removal of the
-volumetric FEM subsystem. Query the live branch and PR #3377 for the later
-coverage checkpoint and hosted checks. Keep the PR draft and do not trigger
-@codex review.
+aaf1e5f64dd47f0350ea1b395bf257bb77b36829. Query the live branch and PR
+#3377 before acting. At handoff the PR is open, draft, mergeable, and its
+current-head checks are queued. Keep it draft and do not trigger @codex
+review.
 
-Earlier integration commit da135c99c30 merges topic parent
-ca806fb72358c8e696787a3dead8d9dbc49333b2 with collision-consolidation target
-46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5. Later merge checkpoint 3aee836ff62
-incorporates release-6.20 tip 2ffe228c14c. Query the live branch and draft PR
-#3377; do not assume any recorded hash is still HEAD.
+The matching 2026-07-30 updates in AGENT_CONTINUATION.md, HANDOFF.md,
+README.md, RESUME.md, and docs/dev_tasks/.gitignore form a documentation-only
+follow-up and do not change the runtime hashes below. If those five files
+remain modified, preserve them. After cooldown, inspect them, run pixi run
+lint and git diff --check, then create and push the authorized documentation
+checkpoint before CPU-heavy evidence work. If the worktree is clean, query
+the live branch for that later documentation-only commit.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -47,20 +49,35 @@ paper/demo lanes explicitly select FourPointPlanar; the consolidated detector's
 global default remains Compact. The stable evidence/CLI string "native" is a
 schema label for DART-owned policy, not a collision-detector factory key.
 
-Before the later 2ffe228c target merge, the focused collision-consolidation
-gates passed:
+The PR body now contains an "API and defaults" section. Existing behavior is
+the default:
 
-- UNIT_collision_dart_engine;
-- all 75 test_ConstraintSolver cases;
-- test_ExactCoulombFbfConstraintSolver;
-- UNIT_math_ExactCoulombFbfSolver;
-- the default test_ExactCoulombFbfPaperFixtures suite;
-- INTEGRATION_StepAllocation;
-- 695 affected Python tests, including the freshly rebuilt dartpy consolidated
-  detector binding and GUI capture helpers;
-- a 60-step exact backspin trace with zero fallbacks; and
-- a fresh ten-step off-screen author-backspin smoke with nine exact solves,
-  zero failures, zero fallbacks, and residual 7.1534829981547423e-7.
+- World::create() installs BoxedLcpConstraintSolver and retains the normal
+  FCL/primitive collision detector;
+- ExactCoulombFbfConstraintSolver is installed explicitly to opt in;
+- fallbackToBoxedLcp defaults true inside that opt-in solver;
+- source continuation, source inner initialization, colored BGS, and
+  participant affinity default off;
+- warm-start/adaptive persistence, contact-row Delassus, and post-correction
+  cone projection default on; and
+- DARTCollisionDetector defaults Compact. FourPointPlanar is a paper/demo
+  scene policy, not a new global default.
+
+The current-head cache-enabled build of dart-demos, fbf_paper_trace, and the
+focused exact/collision targets passes. Eleven focused C++ tests and all 478
+visual-evidence tests pass. audit-coverage remains 29 canonical rows = 24
+partial + 5 blocked + 0 complete.
+
+Current runtime hashes:
+
+- dart-demos:
+  9e4f6c37eff34ba450763a2ef47eaab198508c89ad3e03156685620a7c17dc2f
+- libdart.so.6.19.4:
+  0ff1c992e9c2d2304c7c314ffff4cfa84ab37ba4c812207edcd4a48e76bbb0ea
+- fbf_paper_trace:
+  d0d65b48833d04a68375ddf0c21e6a6464cc6fe795ab49574f641bdaae4e9a3b
+- visual runtime closure:
+  e6f5771523363ebdf4f11887dc5a82b3d563a3e85cf0268346d999b169292a6c
 
 Three synthetic reduced-contact masonry-arch diagnostics no longer converge
 with the consolidated box-box manifold. They remain explicit expected-failing
@@ -72,15 +89,29 @@ Every pre-46719 performance packet, Figure 8 capture, and ten-level capture
 binds an older collision runtime. The interrupted cross-head ten-level
 exact/partial-boxed pair is non-evidence and must never be combined or resumed.
 
-Figure 3 root assets/pr_media_current_head_3cfafc/ is valid capture-time
-evidence for checkpoint 3cfafc70ec1, not for the later target merge. Exact,
-boxed, and their synchronized checker group passed capture and independent
-verification; both lanes completed 240 steps and passed the bounded source
-outcome slice. The clip hashes are b2c268aa337f..., dc3228e2aa8c..., and
-e321c711eae7.... Manual inspection confirmed visible checker-orientation
-change. Rebuild and reseal it before a current-head claim. Even when current,
-it proves no superiority, equivalence, source-backend/full-trajectory,
-renderer/golden, timing, Figure 3, or paper parity.
+Fresh Figure 3 capture-time validation passes under ignored
+assets/pr_media_current_head_cfd865/. That root name was chosen before the
+final target merge; the capture itself ran after 91eea854 and binds the current
+hashes above. Exact and boxed each complete 240 steps / 241 states and pass the
+bounded source outcome. Exact/boxed/group MP4 SHA-256 values are:
+
+- b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30
+- dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f
+- e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b
+
+They are byte-identical to existing PR attachments. Manual panel/keyframe
+inspection confirms crisp checker facets and visible orientation changes.
+The capture summary hash is 88b9a50830d3..., and the manual record hash is
+9807fac4d9a3....
+
+The separate reuse-only verify run was interrupted during PNG validation when
+the shared host reached 100 C. It is non-evidence. Do not call the current-head
+Figure 3 bundle independently verified or fully resealed until verify
+completes in a cool window. The capture-time runner itself passed frame,
+full-decode, runtime-closure, and outcome validation. Both solvers pass, so
+there is no superiority, equivalence, source-backend/full-trajectory,
+renderer/golden, signed-rate-from-video, timing, Figure 3, or paper-parity
+claim.
 
 The compact tracked paper-coverage-contract.json replaces the deleted
 asset-coupled manifest. Run:
@@ -96,9 +127,10 @@ does not make the evidence complete.
 
 Remaining order:
 
-1. publish a stable checkpoint, rebuild, and freshly reseal Figure 3;
-2. run the isolated matched one-/four-core packet only after a declared cool,
-   low-load host gate;
+1. after a cool window, complete Figure 3 reuse-only verification;
+2. run the isolated matched one-/four-core packet only after two samples at
+   least 60 seconds apart show package temperature <= 60 C, one-minute
+   load <= 1.0, and no process above 5% CPU on logical CPUs 8, 10, 12, or 14;
 3. freshly capture and independently verify Figure 8;
 4. run the roughly five-hour paired ten-level exact/boxed capture from one
    unchanged head; and

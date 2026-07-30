@@ -1,5 +1,70 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-30 Current-Head Resume Point
+
+This section supersedes every older branch-head, API-default, Figure 3,
+performance-host, CI, and immediate-next-step statement below. The task is
+still active and incomplete.
+
+- Branch `research/fbf-friction-release620` and draft PR #3377 are pushed at
+  `91eea8541b8908f00a3d21717f0bb832320490ec`, merging current
+  `origin/release-6.20`
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. The last live PR query showed
+  OPEN, draft, mergeable, with the new head's checks queued. Keep it draft and
+  do not request review.
+- The PR description now includes the public before/after API and defaults.
+  Default `World::create()` behavior remains `BoxedLcpConstraintSolver` and
+  the normal FCL/primitive detector. Callers opt into exact-Coulomb FBF by
+  installing `ExactCoulombFbfConstraintSolver`; its boxed fallback defaults
+  on. `DARTCollisionDetector` remains `Compact` by default, while paper/demo
+  scenes explicitly select `FourPointPlanar` where required.
+- The cache-enabled current-head focused build passes. Eleven focused C++
+  tests pass, the visual-evidence suite passes 478/478, and `audit-coverage`
+  remains 29 rows = 24 partial + 5 blocked + 0 complete. The current
+  demo/core/trace hashes are `9e4f6c37...`, `0ff1c992...`, and
+  `d0d65b48...`; the visual runtime-closure digest is `e6f57715...`.
+- Fresh current-head Figure 3 capture-time validation passes for exact, boxed,
+  and the labeled pair under ignored
+  `assets/pr_media_current_head_cfd865/`. The root's label predates the final
+  target merge; trust its bound hashes, not the directory suffix. Both lanes
+  complete 240/240 and the exact/boxed/group MP4 hashes remain
+  `b2c268aa...`, `dc3228e2...`, and `e321c711...`, byte-identical to the
+  existing PR attachment streams. Manual inspection confirms the checker
+  texture is legible and visibly rotates.
+- The reuse-only `verify` command was interrupted when the shared package
+  reached 100 C. Treat that attempt as non-evidence and do not call this
+  current-head bundle independently verified or fully resealed yet. Both
+  solvers pass the bounded slice, so no superiority, equivalence, backend,
+  full-trajectory, renderer/golden, timing, Figure 3, or paper-parity claim
+  follows.
+- The current net PR tree has no task-generated `assets/` or raw evidence
+  outputs. Generated task data remains covered by the scalable role-based
+  `docs/dev_tasks/.gitignore` `**/assets/` rule. Historical topic commits still
+  contain 492 old evidence blobs, so a true squash is required to avoid
+  importing that history. No history rewrite or force-push is authorized.
+
+Resume only after a cool window: rerun Figure 3 `verify`; then run the declared
+cool/quiet CPU packet, fresh Figure 8 blocker capture/finalize/seal/verify, and
+the paired ten-level capture from one unchanged head. Keep all videos outside
+Git and publish changed bytes only as GitHub user attachments. Before any
+commit, merge a newly advanced target, run mandatory `pixi run lint`, rerun
+proportionate tests, checkpoint, and push.
+
+For the CPU packet, require two host samples at least 60 seconds apart with
+package temperature at or below 60 C, one-minute load at or below 1.0, and no
+competing process above 5% CPU on logical CPUs 8, 10, 12, or 14. Figure 3
+verification and later visual captures are not timing evidence, but still wait
+until the package is below its thermal alarm and unrelated build saturation
+has cleared.
+
+The 2026-07-30 updates in `AGENT_CONTINUATION.md`, `HANDOFF.md`, `README.md`,
+this file, and `docs/dev_tasks/.gitignore` form a documentation-only
+checkpoint and do not change the runtime hashes above. If those five files
+remain modified, preserve them; after cooldown, review them, run
+`pixi run lint` and `git diff --check`, then create and push the authorized
+documentation checkpoint before CPU-heavy evidence work. If the worktree is
+clean, query the live branch for that later documentation-only commit.
+
 ## 2026-07-29 Post-target Coverage Checkpoint
 
 This section supersedes the branch-head, Figure 3 currentness, CI, and
