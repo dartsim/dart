@@ -32,7 +32,7 @@ on the maintained DART 6 branch:
   dynamics, and contact-aware inverse dynamics rows.
 * **Contact and collision** - stacked-box world-step rows when the Bullet
   collision target is available.
-* **Contact-rich container** - active DART-native and ODE
+* **Contact-rich container** - active ``dart`` and ODE detector
   ``BM_ContactContainerActive`` rows from the DART 6 contact-container
   benchmark.
 * **Deformable bodies** - steady-state ``BM_SoftBodyStep`` rows for the

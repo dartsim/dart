@@ -4,7 +4,7 @@
 dynamics/collision/constraint code. This lane makes it earn its keep at
 proven seams — following main's `lie_group_batch.md` discipline (free
 functions, 4-wide batches, `simd::cross3` for cross products, scalar
-tail) and the native-port scoping rule ("SIMD is an optimization packet,
+tail) and the collision-backend scoping rule ("SIMD is an optimization packet,
 not a substitute": scalar correctness first, measured before/after
 always).
 
@@ -20,9 +20,9 @@ DART 6 packaged default at baseline ISA, extends `ci_simd.yml` so the
 DART detector builds/runs under scalar/SSE4.2/AVX/AVX2, and starts
 WP-PG.42 with AVX-width SIMD-screened finite broadphase candidate
 batches while scalar/SSE/NEON builds keep the previous scalar sweep shape.
-WS-F phase 1 (#3281) has landed only the internal native collision math
-core; there is still no DART 6 detector adapter or phase-4 native
-broadphase SIMD work, so this slice does not duplicate WS-F.
+At that snapshot, WS-F phase 1 (#3281) had landed only the internal collision
+math core; the later detector consolidation was not yet present, so this slice
+did not duplicate WS-F.
 
 Local evidence (2026-07-05, js workstation, GCC 15.2, CPU scaling enabled;
 treat small deltas as noisy): `origin/release-6.20@c371060c9fa` was compared
@@ -38,7 +38,7 @@ profiler-label edit, the default DART rows were 60/1 341 ms, 60/16 340 ms,
 120/1 3939 ms, and 120/16 3881 ms, still below the recorded default baseline
 120 rows (4152 ms and 4110 ms). AVX2 builds exercise the batch loop; post-edit
 macro rows were 60/1 249 ms, 60/16 254 ms, 120/1 2965 ms, and 120/16 2977 ms,
-with counters unchanged. A profiled native contact-container sample shows the
+with counters unchanged. A profiled `dart` contact-container sample shows the
 new finite-finite same-group sweep scope is material on the 60-object row
 (24.34 ms / 7.18% of 200 profiled steps) and visible but solver-dominated on
 the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
@@ -88,12 +88,12 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
 #### WP-PG.42 — SoA broadphase sweep batching (coordinate with WS-F)
 
 - Status: done — #3299 (`wp-pg-42-soa-broadphase-simd`)
-- Objective: split the DART-native detector's `BroadphaseEntry` into SoA
+- Objective: split the DART detector's `BroadphaseEntry` into SoA
   min/max arrays and batch the y/z overlap tests inside the x-sweep
   (`DARTCollisionDetector.cpp:2329-2347`) with `dart/simd`; version-gate
   AABB recomputation for resting objects (`:1710`).
 - Value: broadphase share on active large scenes; also a template for the
-  native-port optimization phase.
+  DART-detector optimization phase.
 - Scope: `dart/collision/dart/*` cpp; SoA scratch internal to the
   detector. Prior art: `origin/perf/dart6-broadphase-cache-refresh`,
   `perf/dart6-lazy-dart-shape-cache`, and
@@ -101,10 +101,10 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
   refresh ideas in round 1 with unrecorded outcomes — mine and measure
   them (see 01-baseline-evidence.md prior-art inventory) before writing
   new code.
-- Non-goals: duplicating WS-F phase-4 work — if the native port's
-  broadphase supersedes this detector, this packet moves there. Check the
+- Non-goals: duplicating WS-F work — if the consolidated DART broadphase
+  supersedes this detector path, this packet moves there. Check the
   orchestration dashboard before claiming.
-- Acceptance evidence: bit-identical native-detector outcomes; broadphase
+- Acceptance evidence: bit-identical DART-detector outcomes; broadphase
   stage share before/after (WP-PG.10 scopes); coordination note with
   WS-F recorded.
 - Completion evidence: merged as PR #3299 with AVX-width SIMD-screened

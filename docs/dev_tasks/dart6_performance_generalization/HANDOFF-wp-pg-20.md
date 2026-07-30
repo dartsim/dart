@@ -22,9 +22,9 @@ packet.
 Hard rules:
 - **Evidence-based only.** Every perf PR must carry a benchmark table with three
   columns — *very-first-baseline* vs *base/parent* vs *this-PR* — for **ODE and
-  native (DART) collision** cases. Do all necessary A/B testing. Call out
+  `dart` collision** cases. Do all necessary A/B testing. Call out
   "unknown unknowns" explicitly.
-- **Backward compatibility for gz-physics / gz-sim is CRITICAL.** ODE and native
+- **Backward compatibility for gz-physics / gz-sim is CRITICAL.** ODE and DART
   collision results must stay **bit-identical** (determinism guard) unless a
   behavior change is explicitly justified.
 - **Fewer, bolder PRs.** No evidence-only / intermediate-scaffold PRs (the user
@@ -159,7 +159,7 @@ be clean.
 `01-baseline-evidence.md`. Use the same `contact_benchmark` ODE scenes (RTF +
 Avg Step Time) plus the GB rows:
 `BM_INTEGRATION_contact_container --benchmark_filter='BM_ContactContainerActive/120/1/1$' --benchmark_repetitions=5 --benchmark_report_aggregates_only=true`
-(and `120/1/16` if desired). Expect WP-PG.20 ≥ base on ODE rows; native (DART)
+(and `120/1/16` if desired). Expect WP-PG.20 ≥ base on ODE rows; `dart`
 rows unchanged. Build targets (NEVER `--target ALL`):
 `pixi run cmake --build build/default/cpp/Release --target contact_benchmark BM_INTEGRATION_contact_container --parallel 8`.
 
@@ -226,8 +226,10 @@ future performance PRs that change runtime behavior.
   still broken; if so a replacement may be needed. (#3267 for a prior instance
   was merged.)
 - Plan lanes still open: WS-B (ODE backend), WS-C (dynamics batching/alloc),
-  WS-D (SIMD), WS-F native collision port (#3234, external owner). See
-  `README.md` + `07-orchestration-dashboard.md` in this folder.
+  and WS-D (SIMD). The built-in `dart` collision backend shipped through
+  #3381; later lifecycle work is owned by
+  `docs/design/dart6_collision_backends.md`. See `README.md` and
+  `07-orchestration-dashboard.md` in this folder.
 - Open maintainer decisions: D3 (matrix-free large-island solver), D7
   (penetration-creep pile-sleep closer).
 

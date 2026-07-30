@@ -120,9 +120,9 @@ Remaining profile signal after this slice:
   per-point heap ownership, or SIMD layout. Those remain separate layout work,
   ideally coordinated with `origin/dart6-memory-hardening` once that branch is
   available on the current release base.
-- This slice is FCL-specific because current DART 6 soft collision already goes
-  through FCL. It is not the desired end state. The native-first collision lane
-  is tracked separately in `05-native-collision-deformable-lane.md`.
+- This slice is FCL-specific. The built-in `dart` detector now owns the DART
+  soft-contact path; its remaining coverage and scaling contract lives in
+  `docs/design/dart6_deformable_body.md`.
 
 ## Scalar parent-term cache slice
 
@@ -188,7 +188,8 @@ Scene: `soft_bodies`, 200 steps, checkpoint 100, scalar Release build
 | `SoftBodyNode::updateBiasForce` | 7.807 ms | 7.835 ms |
 | `SoftBodyNode::updateArtInertia` | 2.851 ms | 3.695 ms |
 
-The step-200 checksum row matched the earlier native `soft_bodies` diagnostic:
+The step-200 checksum row matched the earlier `dart`-detector `soft_bodies`
+diagnostic:
 `skelPosL1=1.3242580728329107`, `pointPosL1=0.12844450735027887`,
 `pointVelL1=6.748189952654168`, and
 `pointWorldPosL1=189.54545901295526`. The absolute elapsed row and focused
@@ -219,7 +220,8 @@ point-mass kinematics preflight used by the bias-force path:
   those overloads, while the legacy protected `PointMass` methods keep their
   lazy cache checks.
 
-A native `soft_bodies` 200-step single-thread smoke after this slice preserved
+A `dart`-detector `soft_bodies` 200-step single-thread smoke after this slice
+preserved
 the same step-200 checksum row:
 `skelPosL1=1.3242580728329107`, `pointPosL1=0.12844450735027887`,
 `pointVelL1=6.748189952654168`, and
@@ -250,7 +252,8 @@ remaining storage problem is unchanged: point masses are still heap-owned
 objects behind `std::vector<PointMass*>`, and SIMD still needs a retained
 phase-input facade or SoA storage before it should be introduced.
 
-A native `soft_bodies` 200-step smoke after this slice preserved identical
+A `dart`-detector `soft_bodies` 200-step smoke after this slice preserved
+identical
 step-200 checksum rows for `THREADS=1` and `THREADS=4`:
 `skelPosL1=1.3242580728329107`,
 `pointPosL1=0.12844450735027885`,
@@ -292,7 +295,7 @@ Focused verification after this slice:
 - `test_SoftDynamics` passed.
 - `StepAllocation.*Soft*` passed all 12 rows with zero `operator new`, zero raw
   `malloc`, and zero counted base allocator growth in the measured windows.
-- Native `soft_bodies` 200-step checksum rows matched exactly between
+- `dart`-detector `soft_bodies` 200-step checksum rows matched exactly between
   `THREADS=1` and `THREADS=4`:
   `skelPosL1=1.3242580728329107`,
   `pointPosL1=0.12844450735027885`,
@@ -326,7 +329,7 @@ Focused verification after this slice:
 - `test_SoftDynamics` passed, including representative public
   matrix/vector-equation checks.
 - `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
-- Native `soft_bodies` 200-step checksum rows matched exactly between
+- `dart`-detector `soft_bodies` 200-step checksum rows matched exactly between
   `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
   phase-view slice.
 
@@ -352,7 +355,7 @@ Focused verification after this slice:
 
 - `test_SoftDynamics` passed.
 - `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
-- Native `soft_bodies` 200-step checksum rows matched exactly between
+- `dart`-detector `soft_bodies` 200-step checksum rows matched exactly between
   `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
   phase-view slice.
 
@@ -379,10 +382,10 @@ Focused verification after this slice:
 - `test_SoftDynamics` passed.
 - `INTEGRATION_StepAllocation` passed.
 - `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
-- Native `soft_bodies` 200-step checksum rows matched exactly between
+- `dart`-detector `soft_bodies` 200-step checksum rows matched exactly between
   `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
   phase-view slice.
-- Current-only benchmark repeats showed lower native CPU time than the earlier
+- Current-only benchmark repeats showed lower `dart` CPU time than the earlier
   pre-span current summary on most tracked rows, but parent/base threshold
   evidence remains open and noisy enough that this slice is not a final
   speedup claim.
@@ -414,7 +417,8 @@ Focused verification after this slice:
 - `test_SoftDynamics` passed.
 - `INTEGRATION_StepAllocation` passed.
 - `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
-- Native `soft_bodies` 200-step checksum rows matched between `THREADS=1` and
+- `dart`-detector `soft_bodies` 200-step checksum rows matched between
+  `THREADS=1` and
   `THREADS=4`.
 - Current-only benchmark repeats improved most rows relative to the prior
   span-backed current binary. The later articulated-inertia correction below
@@ -452,8 +456,8 @@ Focused verification after this correction:
   and `THREADS=16` preserved the expected checksum.
 - `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/`
   records a two-cycle current/parent/base comparison. The evaluator verdict is
-  `PASS`, FCL and native are checksum-equivalent on the correctness scenes,
-  and the native detector wins every tracked current scene/thread row. A few
+  `PASS`, FCL and `dart` are checksum-equivalent on the correctness scenes,
+  and the `dart` detector wins every tracked current scene/thread row. A few
   current-vs-parent/base CPU mean rows remain within host-load noise, so this
   is not final threshold-quality evidence; rerun on an exclusive idle host
   before claiming every row beats the base and parent.
@@ -488,12 +492,12 @@ Focused verification after this slice:
 - `pixi run ctest --test-dir build/default/cpp/Release -R
   'test_SoftDynamics$|INTEGRATION_StepAllocation$' --output-on-failure`
   passed.
-- FCL `soft_cubes` and native threaded `soft_bodies` 200-step checksum smokes
+- FCL `soft_cubes` and threaded `dart` `soft_bodies` 200-step checksum smokes
   preserved the expected step-200 values.
 - `pixi run lint` passed before the commit.
 - `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/`
-  records a current/parent/base comparison with evaluator `PASS`, FCL/native
-  checksum equivalence on the correctness scenes, and native `dart` as the
+  records a current/parent/base comparison with evaluator `PASS`, FCL/`dart`
+  checksum equivalence on the correctness scenes, and `dart` as the
   winner for every tracked current scene/thread row.
 - The broad comparison still reported a positive mean on
   `dart/soft_open_chain/1` against the parent. Targeted reruns of that exact
@@ -539,7 +543,7 @@ Relevant lessons from that branch:
 - It adds `World`-owned memory management and step-allocation gates.
 - Its own task explicitly excludes a hard zero-allocation gate for the
   soft-body path, allowing only cheap pooling improvements.
-- Its timing evidence proves zero allocations on native rigid paths but warns
+- Its timing evidence proves zero allocations on DART-owned rigid paths but warns
   against broad speedup claims; some Google Benchmark rows regressed while the
   long-running `boxes_headless` loop improved.
 
@@ -556,16 +560,17 @@ Decision for this deformable-body branch:
   and per-step allocation hardening dependency; it is not by itself a stable
   speedup claim.
 
-## Native soft allocation gate
+## DART soft allocation gate
 
-The local branch now adds native soft-body coverage to
+The local branch now adds DART soft-body coverage to
 `tests/integration/test_StepAllocation.cpp`. The first test scene builds a
 3x3x3 soft box over a ground box, forces `CollisionDetectorType::Dart`, and
 uses the memory-hardening branch's counted world allocator and frame scratch
 surfaces. A follow-up scene stacks two 3x3x3 soft boxes on the ground so the
-measured window exercises native soft-soft contacts as well as soft-ground
+measured window exercises DART soft-soft contacts as well as soft-ground
 contacts. A third gate loads `dart://sample/skel/softBodies.skel`, transfers
-the parsed soft skeletons into a counted native world without cloning
+the parsed soft skeletons into a counted world using the `dart` detector
+without cloning
 `SoftMeshShape`, and measures a representative SKEL-authored soft-dynamics
 window. That SKEL window has no contacts in the measured range, so it is an
 allocation gate for soft-body stepping rather than a contact-solving gate.
@@ -612,8 +617,8 @@ steady-state allocation behavior:
   storage and copies generalized positions by scalar index, avoiding
   per-step temporary `Eigen::VectorXd` allocations for no-contact soft scenes.
 
-This gate proves the current native soft-box contact lane can step without
-heap growth after preparation, and that a small native soft-soft stack can run
+This gate proves the current DART soft-box contact lane can step without
+heap growth after preparation, and that a small DART soft-soft stack can run
 steady-state steps without heap growth after warmup. It also proves
 representative `softBodies.skel` and `soft_open_chain.skel` no-contact
 soft-dynamics windows and a contact-producing `soft_cubes.skel` window are
@@ -630,7 +635,7 @@ connectivity for `updateBiasForce`/`updateArtInertia`, in three variants
 (full mirror, guarded topology refresh, narrow mirror).
 
 Result: **rejected on measurement**. Baseline `soft_bodies` 200-step
-single-thread native-lane elapsed median was 13.691 ms (5 runs, loaded
+single-thread `dart`-detector elapsed median was 13.691 ms (5 runs, loaded
 host); the variants measured 17.551 ms, 18.558 ms, and 17.284 ms — all
 consistently worse, because the per-step mirror copy costs more than the
 pointer-chasing it removes at these point counts. One variant also initially
@@ -653,7 +658,7 @@ claims could not be measured. Conditional
 `updateVelocity` — no-ops when the profiler is not recording, so the
 `INTEGRATION_StepAllocation` windows stay allocation-free (the unconditional
 form measured by the earlier executor tripped them). First captured rows on
-the native-lane `soft_bodies` 200-step run: `updateBiasForce` 4.88 ms
+the `dart`-detector `soft_bodies` 200-step run: `updateBiasForce` 4.88 ms
 (59.3% recorded share, 1000 calls) with nested `updateArtInertia` 3.12 ms
 (37.9%), `updateVelocity` 0.45 ms, `updateTransform` 0.27 ms — on this lane
 the point-mass dynamics phases, not collision refresh, now dominate.
@@ -667,7 +672,7 @@ Combined with the retained-mirror measured reject above (copy cost dominates
 at these point counts), an arena is unlikely to pay for its lifecycle
 complexity (clone, shrink, addPointMass growth with address stability).
 Revisit only if the new profiler rows show pointer-chase stalls dominating a
-phase after the activation and native-kernel packets land.
+phase after the activation and DART-kernel packets land.
 
 1. Extend the internal phase view into retained SoA scratch that can expose
    contiguous spans of point positions, velocities, accelerations, forces,

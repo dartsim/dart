@@ -60,7 +60,7 @@ final-state hashes on all guard scenes for default-on packets.
   unmodified parent (`S4_fcl = 0xea9b68f8b062600d`, `S5_fcl =
   0x8277be4f0c14212`); the WP-PG.10 branch reproduced the same parent values.
   Final local verification passed `UNIT_common_Profile`,
-  `INTEGRATION_StepAllocation` (native DART measured allocation gates reported
+  `INTEGRATION_StepAllocation` (DART-owned measured allocation gates reported
   zero operator-new/raw-malloc/base-allocator growth), capped `ALL`, and
   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
 

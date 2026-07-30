@@ -304,7 +304,7 @@ SoftBodyNode::UniqueProperties soft_properties;
 
 Later we will combine this with a standard ``BodyNode::Properties`` struct, but
 for now let's fill it in. Up above we defined an enumeration for a couple
-different SoftBodyNode types. There is no official DART-native enumeration
+different SoftBodyNode types. There is no official DART-provided enumeration
 for this, we created our own to use for this function. We'll want to fill in
 the ``SoftBodyNode::UniqueProperties`` struct based off of this enumeration:
 
