@@ -253,7 +253,13 @@ Eigen::VectorXd stateVector(const Model& model)
     numPoints += model.atlas->getSoftBodyNode(i)->getNumPointMasses();
 
   Eigen::VectorXd state(positions.size() + velocities.size() + 6 * numPoints);
-  state << positions, velocities;
+
+  // Assigned by segment rather than with a comma initializer: the vector is
+  // longer than these two pieces, and a comma initializer that does not fill
+  // the whole vector aborts under Eigen's assertions, which the Debug test
+  // configurations enable.
+  state.head(positions.size()) = positions;
+  state.segment(positions.size(), velocities.size()) = velocities;
 
   Eigen::Index offset = positions.size() + velocities.size();
   for (std::size_t i = 0; i < model.atlas->getNumSoftBodyNodes(); ++i) {
