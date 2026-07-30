@@ -44,10 +44,27 @@
 #include <stdexcept>
 #include <string>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
 namespace fem {
 namespace detail {
+
+//==============================================================================
+/// Returns the Lame parameters of an isotropic linear-elastic solid.
+///
+/// Shared by construction and by validation, so the values checked for
+/// admissibility are exactly the ones the body goes on to use.
+inline void computeLameParameters(
+    const Material& material, double& shearModulus, double& lameLambda)
+{
+  const double youngsModulus = material.mYoungsModulus;
+  const double poissonRatio = material.mPoissonRatio;
+  shearModulus = youngsModulus / (2.0 * (1.0 + poissonRatio));
+  lameLambda = youngsModulus * poissonRatio
+               / ((1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio));
+}
 
 //==============================================================================
 /// Owns the node state of one deformable body and advances it once per step.
@@ -65,13 +82,7 @@ public:
     mMasses.setZero(static_cast<int>(numNodes));
     mFixed.assign(numNodes, 0);
 
-    // Lame parameters of an isotropic linear-elastic solid, from Young's
-    // modulus and Poisson's ratio.
-    const double youngsModulus = mMaterial.mYoungsModulus;
-    const double poissonRatio = mMaterial.mPoissonRatio;
-    mShearModulus = youngsModulus / (2.0 * (1.0 + poissonRatio));
-    mLameLambda = youngsModulus * poissonRatio
-                  / ((1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio));
+    computeLameParameters(mMaterial, mShearModulus, mLameLambda);
 
     for (std::size_t i = 0; i < numNodes; ++i) {
       mPositions.segment<3>(static_cast<int>(3 * i)) = mMesh.getRestPosition(i);
@@ -454,19 +465,28 @@ std::shared_ptr<DeformableBody> DeformableBody::create(
   // leaving every node massless or negative and the body permanently inert
   // while still reporting itself attached and healthy. These comparisons are
   // written so that a NaN is rejected too.
-  if (!(material.mDensity > 0.0)) {
+  // Each comparison is written so that a NaN fails it, and each finite check
+  // additionally rejects an infinity. An infinite modulus would otherwise pass
+  // a bare positivity test, make both Lame parameters infinite, and then
+  // multiply them by a zero strain at rest, so the very first step would fill
+  // every node with NaN.
+  if (!(material.mDensity > 0.0) || !std::isfinite(material.mDensity)) {
     throw std::invalid_argument(
-        "DeformableBody::create: material density must be positive");
+        "DeformableBody::create: material density must be positive and finite");
   }
 
-  if (!(material.mLinearDamping >= 0.0)) {
+  if (!(material.mLinearDamping >= 0.0)
+      || !std::isfinite(material.mLinearDamping)) {
     throw std::invalid_argument(
-        "DeformableBody::create: material linear damping must not be negative");
+        "DeformableBody::create: material linear damping must be non-negative "
+        "and finite");
   }
 
-  if (!(material.mYoungsModulus > 0.0)) {
+  if (!(material.mYoungsModulus > 0.0)
+      || !std::isfinite(material.mYoungsModulus)) {
     throw std::invalid_argument(
-        "DeformableBody::create: material Young's modulus must be positive");
+        "DeformableBody::create: material Young's modulus must be positive and "
+        "finite");
   }
 
   // Outside (-1, 0.5) the Lame parameter lambda is negative or divergent, so
@@ -475,6 +495,17 @@ std::shared_ptr<DeformableBody> DeformableBody::create(
     throw std::invalid_argument(
         "DeformableBody::create: material Poisson's ratio must lie strictly "
         "between -1 and 0.5");
+  }
+
+  // A ratio just short of 0.5, or a very large modulus, can still overflow the
+  // derived parameters even though each input passed on its own.
+  double shearModulus = 0.0;
+  double lameLambda = 0.0;
+  detail::computeLameParameters(material, shearModulus, lameLambda);
+  if (!std::isfinite(shearModulus) || !std::isfinite(lameLambda)) {
+    throw std::invalid_argument(
+        "DeformableBody::create: material yields non-finite Lame parameters; "
+        "reduce Young's modulus or move Poisson's ratio away from 0.5");
   }
 
   return std::shared_ptr<DeformableBody>(new DeformableBody(mesh, material));

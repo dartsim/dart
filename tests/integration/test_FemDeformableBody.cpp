@@ -546,6 +546,42 @@ TEST(FemDeformableBody, RejectsNonPhysicalMaterials)
       std::invalid_argument);
 
   EXPECT_NO_THROW(fem::DeformableBody::create(mesh, fem::Material()));
+
+  // A bare positivity test would accept an infinity, whose Lame parameters are
+  // infinite; multiplied by the zero strain of the rest pose they would produce
+  // NaN forces on every node at the very first step.
+  const double infinity = std::numeric_limits<double>::infinity();
+  const double notANumber = std::numeric_limits<double>::quiet_NaN();
+
+  for (const double bad : {infinity, notANumber}) {
+    fem::Material modulus;
+    modulus.mYoungsModulus = bad;
+    EXPECT_THROW(
+        fem::DeformableBody::create(mesh, modulus), std::invalid_argument);
+
+    fem::Material density;
+    density.mDensity = bad;
+    EXPECT_THROW(
+        fem::DeformableBody::create(mesh, density), std::invalid_argument);
+
+    fem::Material damping;
+    damping.mLinearDamping = bad;
+    EXPECT_THROW(
+        fem::DeformableBody::create(mesh, damping), std::invalid_argument);
+
+    fem::Material ratio;
+    ratio.mPoissonRatio = bad;
+    EXPECT_THROW(
+        fem::DeformableBody::create(mesh, ratio), std::invalid_argument);
+  }
+
+  // Individually admissible inputs whose derived Lame parameters still
+  // overflow.
+  fem::Material overflowing;
+  overflowing.mYoungsModulus = 1.0e308;
+  overflowing.mPoissonRatio = 0.4999999999999999;
+  EXPECT_THROW(
+      fem::DeformableBody::create(mesh, overflowing), std::invalid_argument);
 }
 
 //==============================================================================
