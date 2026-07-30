@@ -1,8 +1,9 @@
 # DART 6 Collision Backends
 
 This document owns the durable architecture and compatibility boundaries for
-collision backends on DART 6.20. Active sequencing and verification evidence
-live in the dependency-minimization plan and task documents.
+collision backends on DART 6.20. Later-release sequencing lives in the plan
+dashboard; implementation history remains available through Git and the
+linked pull requests.
 
 ## Current architecture
 
@@ -93,8 +94,7 @@ Performance alone is insufficient evidence for any stage.
 
 ## Evidence owners
 
-- Active plan and acceptance evidence:
-  `docs/dev_tasks/dart6_dependency_minimization/`.
 - Release roadmap state: `docs/plans/dashboard.md`.
 - Collision performance methodology: `docs/onboarding/profiling.md`.
 - Verification and downstream gates: `docs/ai/verification.md`.
+- Released behavior: detector-specific tests and the DART 6.20 changelog.

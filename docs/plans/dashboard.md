@@ -8,14 +8,14 @@ Priority order is document order. Active implementation handoff remains in
 
 ### PLAN-620: Dependency Minimization And Collision Backends
 
-- Owner doc: [dependency minimization](../dev_tasks/dart6_dependency_minimization/README.md)
+- Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)
 - Status: Active
 - Horizon: Later
 - Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Complete the documentation-only #3381 closeout in #3409. DART
-  6.20 then stops with `DARTCollisionDetector` selected by `"dart"` while FCL
-  remains the default and a core dependency. Resume the default-flip and
-  FCL-decoupling phases only on an explicitly authorized future release line.
+- Next step: Wait for an explicitly authorized future release line and
+  milestone before proposing the default flip. DART 6.20 stops with
+  `DARTCollisionDetector` selected by `"dart"` while FCL remains the default
+  and a core dependency.
 - Gate: `pixi run lint`; default configure/build; component/package smoke for
   touched dependencies; `pixi run -e gazebo test-gz` when collision,
   constraint, package, or default-solver behavior can affect gz-physics.
@@ -51,13 +51,14 @@ Priority order is document order. Active implementation handoff remains in
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: land the removal (#3407). Then continue the Jain/Liu lane on DART 6,
-  starting with PR-3a soft-foot SIMBICON, which reuses the existing
+- Next step: continue the Jain/Liu lane on DART 6 with PR-3a soft-foot
+  SIMBICON, which reuses the existing
   `atlas_simbicon` controller and the soft-feet Atlas asset
   (`12-pr3a-soft-foot-simbicon.md`). **Do not restart the volumetric FEM
   subsystem on `release-6.20`.** Still open: the competitive-envelope
-  definition, the four-link flexible-foot comparison, WP-DB.07 scaling, WP-DB.08
-  native-owned/default coverage, a valid `bm-soft-body-paired` artifact or an
+  definition, the four-link flexible-foot comparison, WP-DB.07 scaling,
+  WP-DB.08 DART-owned/pre-default coverage, a valid `bm-soft-body-paired`
+  artifact or an
   approved disposition, and the separate `main` PR for the zero-DoF soft
   point-mass assertion. New GUI examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless

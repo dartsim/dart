@@ -25,7 +25,7 @@ its own: the competitive-envelope definition (§8).
 DART 6 reproduces every **Jain/Liu 2011** demo/example, each
 with (a) a runnable DART scene, (b) deterministic correctness/stability evidence,
 (c) CPU performance matching the paper's real-time/near-real-time character on a
-normalized target, and (d) native-vs-FCL parity for collision-dependent rows —
+normalized target, and (d) `dart`-versus-FCL parity for collision-dependent rows —
 while adding **zero overhead to pure rigid-body simulation** and preserving
 `release-6.20` public API/ABI (new behavior is opt-in, layout-neutral).
 
@@ -72,8 +72,8 @@ machine-readable FAIL.
 ## 4. Current state (milestone 1 = #3382)
 
 Implemented and in review (see README work-packet table): adaptive contact
-activation (WP-DB.05), soft face-interior contacts (WP-DB.08), native soft
-collision lanes, coupled-equation correctness (WP-DB.04), stability/CoP/LCP
+activation (WP-DB.05), soft face-interior contacts (WP-DB.08), DART-owned soft
+collision, coupled-equation correctness (WP-DB.04), stability/CoP/LCP
 gates (WP-DB.02), CPU cache/data-layout slices (WP-DB.06), representative
 `soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
 `ConstraintSolver` hot-path zero-overhead correction. These already satisfy the
@@ -252,7 +252,7 @@ Proposed additive design (no existing-layout/vtable change):
 - **Skeleton coupling**: one-way (prescribed skeleton drives embedded FEM) →
   Fatman; two-way (FEM reaction affects skeleton + environment) → starfish/fish/
   worm, via the coupling constraint from seam #2.
-- **Collision**: FEM surface point-triangle contact through the native detector
+- **Collision**: FEM surface point-triangle contact through the `dart` detector
   (extending the WP-DB.08 soft lanes) for the obstacle-escape row.
 
 Zero-rigid-overhead: the FEM work is naturally size-gated (no FEM bodies ⇒ no
