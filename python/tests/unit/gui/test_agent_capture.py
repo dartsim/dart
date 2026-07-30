@@ -7,9 +7,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import dartpy as dart
+import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[4]
 SCRIPTS = ROOT / "scripts"
@@ -67,10 +67,7 @@ def _changed_pixel_count(first, second, tolerance=8):
     assert first.height == second.height
     return sum(
         any(
-            abs(
-                first.pixels[pixel * 3 + channel]
-                - second.pixels[pixel * 3 + channel]
-            )
+            abs(first.pixels[pixel * 3 + channel] - second.pixels[pixel * 3 + channel])
             > tolerance
             for channel in range(3)
         )
@@ -88,9 +85,7 @@ def test_reproduce_command_records_focus_framing_margin():
 
 
 def test_reproduce_command_records_claim_specific_factory():
-    command = agent_capture._reproduce_command(
-        _args(factory="claim_scene:make_world")
-    )
+    command = agent_capture._reproduce_command(_args(factory="claim_scene:make_world"))
     assert "--factory claim_scene:make_world" in command
     assert "--scene" not in command
 
@@ -160,9 +155,7 @@ def test_main_reports_invalid_factory_without_traceback(
 
 
 def test_reproduce_command_prefers_explicit_distance():
-    command = agent_capture._reproduce_command(
-        _args(focus="box", camera_distance=2.5)
-    )
+    command = agent_capture._reproduce_command(_args(focus="box", camera_distance=2.5))
     assert "--camera-distance 2.5" in command
     assert "--frame-margin" not in command
 
@@ -222,6 +215,64 @@ def test_prestep_layers_defer_unseeded_trajectory():
     ) == ["trajectories"]
 
 
+def test_contact_snapshot_owns_values_after_collision_result_changes():
+    class Contact:
+        point = np.array([1.0, 2.0, 3.0])
+        normal = np.array([0.0, 0.0, 1.0])
+        force = np.array([0.0, 0.0, 42.0])
+
+    source = Contact()
+    snapshot = agent_capture._snapshot_contacts([source])[0]
+    source.point[:] = 0.0
+    source.normal[:] = 0.0
+    source.force[:] = 0.0
+
+    assert snapshot.point.tolist() == [1.0, 2.0, 3.0]
+    assert snapshot.normal.tolist() == [0.0, 0.0, 1.0]
+    assert snapshot.force.tolist() == [0.0, 0.0, 42.0]
+
+
+def test_review_targets_include_representative_temporal_frames():
+    artifacts = [
+        {"kind": "still", "path": "capture.png"},
+        {"kind": "turntable", "path": "turntable", "frames": 5},
+        {"kind": "motion", "path": "motion", "frames": 2},
+    ]
+
+    assert agent_capture._review_inspection_targets(artifacts) == [
+        {
+            "path": "capture.png",
+            "source_kind": "still",
+            "phase": "static",
+        },
+        {
+            "path": "turntable/turn0000.png",
+            "source_kind": "turntable",
+            "phase": "start",
+        },
+        {
+            "path": "turntable/turn0002.png",
+            "source_kind": "turntable",
+            "phase": "middle",
+        },
+        {
+            "path": "turntable/turn0004.png",
+            "source_kind": "turntable",
+            "phase": "end",
+        },
+        {
+            "path": "motion/frame0000.png",
+            "source_kind": "motion",
+            "phase": "start",
+        },
+        {
+            "path": "motion/frame0001.png",
+            "source_kind": "motion",
+            "phase": "middle/end",
+        },
+    ]
+
+
 def test_builtin_scenes_construct_and_step():
     dartpy_module = agent_capture._import_dartpy()
     for name, factory in agent_capture._BUILTIN_SCENES.items():
@@ -256,11 +307,23 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
         if "off-screen GL context" in str(error):
             pytest.fail(str(error))
         raise
-    assert sidecar["schema_version"] == "dart.agent_capture/v1"
+    assert sidecar["schema_version"] == "dart.agent_capture/v2"
     stills = [a for a in sidecar["artifacts"] if a["kind"] == "still"]
     assert len(stills) == 1
     assert (tmp_path / stills[0]["path"]).exists()
     assert stills[0]["view_report"]["schema_version"] == "dart.view_report/v1"
+    review = sidecar["review_contract"]
+    assert review["text_oracle_required"] is True
+    assert review["semantic_image_inspection_required"] is True
+    assert review["machine_checks_are_not_semantic_review"] is True
+    assert review["inspect_artifacts"] == [
+        {
+            "path": stills[0]["path"],
+            "source_kind": "still",
+            "phase": "static",
+        }
+    ]
+    assert "reconciliation_and_verdict" in review["required_record_fields"]
     assert "pixi run agent-capture" in sidecar["reproduce"]
     assert "--factory claim_capture_scene:make_world" in sidecar["reproduce"]
     saved = json.loads((tmp_path / "smoke_capture.json").read_text("utf-8"))
@@ -288,15 +351,14 @@ def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
             out=tmp_path / "combined",
             prefix="combined",
             layers=debug_layers,
+            turntable=1,
             **common,
         )
     )
     combined_artifact = combined["artifacts"][0]
     assert combined["layers"] == debug_layers
     assert plain_artifact["camera"] == combined_artifact["camera"]
-    combined_image = read_image(
-        tmp_path / "combined" / combined_artifact["path"]
-    )
+    combined_image = read_image(tmp_path / "combined" / combined_artifact["path"])
     assert _changed_pixel_count(plain_image, combined_image) >= 128
     contact_pixels = sum(
         tuple(combined_image.pixels[pixel * 3 : pixel * 3 + 3])
@@ -304,6 +366,26 @@ def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path):
         for pixel in range(combined_image.pixel_count)
     )
     assert contact_pixels >= 4
+    turntable = next(
+        artifact
+        for artifact in combined["artifacts"]
+        if artifact["kind"] == "turntable"
+    )
+    turntable_image = read_image(
+        tmp_path / "combined" / turntable["path"] / "turn0000.png"
+    )
+    for color in (
+        agent_debug_overlay.CONTACT_POINT_RGB,
+        agent_debug_overlay.CONTACT_NORMAL_RGB,
+        agent_debug_overlay.CONTACT_FORCE_RGB,
+    ):
+        assert (
+            sum(
+                tuple(turntable_image.pixels[pixel * 3 : pixel * 3 + 3]) == color
+                for pixel in range(turntable_image.pixel_count)
+            )
+            >= 4
+        ), color
 
     # Prove every CI-requested OSG layer contributes pixels independently;
     # contacts must not mask a broken collision-bounds or labels path.

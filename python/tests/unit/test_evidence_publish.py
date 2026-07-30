@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -16,14 +17,24 @@ if str(SCRIPTS) not in sys.path:
 import evidence_publish
 
 
-def _selection(tmp_path: Path) -> Path:
-    (tmp_path / "shot.png").write_bytes(b"png")
-    (tmp_path / "clip.mp4").write_bytes(b"mp4")
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _selection(tmp_path: Path, *, passing: bool = True) -> Path:
+    shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
+    shot.write_bytes(b"png")
+    clip.write_bytes(b"mp4")
     manifest = {
         "schema_version": "dart.evidence_selection/v1",
         "claims": [
             {"id": "C1", "text": "no penetration at rest", "covered": True},
-            {"id": "C2", "text": "stack stays upright", "covered": False},
+            {
+                "id": "C2",
+                "text": "stack stays upright",
+                "covered": passing,
+            },
         ],
         "selected": [
             {
@@ -34,29 +45,48 @@ def _selection(tmp_path: Path) -> Path:
                 "observe": "yellow cross at interface",
                 "quality": 0.9,
                 "bytes": 3,
-                "sha256": "0" * 64,
+                "sha256": _sha256(shot),
                 "rationale": "covers claim(s) C1; quality=0.900",
             },
             {
                 "path": "clip.mp4",
                 "kind": "video",
-                "claims": ["C1"],
+                "claims": ["C2"] if passing else ["C1"],
                 "caption": "settling clip",
                 "observe": "",
                 "quality": 0.7,
                 "bytes": 3,
-                "sha256": "1" * 64,
-                "rationale": "covers claim(s) C1; quality=0.700",
+                "sha256": _sha256(clip),
+                "rationale": (
+                    "covers claim(s) C2; quality=0.700"
+                    if passing
+                    else "covers claim(s) C1; quality=0.700"
+                ),
             },
         ],
         "rejected": [],
         "total_bytes": 6,
-        "uncovered_claims": ["C2"],
-        "pass": False,
+        "uncovered_claims": [] if passing else ["C2"],
+        "pass": passing,
     }
     path = tmp_path / "selection.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
     return path
+
+
+def _semantic_args(verdict: str = "pass") -> list[str]:
+    return [
+        "--not-proven",
+        "penetration depth tolerance",
+        "--text-oracle",
+        "settled pose and contact-count assertions passed",
+        "--visible-observation",
+        "the box is upright and the contact marker is at the interface",
+        "--reconciliation",
+        "the visible settled pose agrees with the measured oracle",
+        "--semantic-verdict",
+        verdict,
+    ]
 
 
 def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
@@ -71,10 +101,9 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
             "box_on_ground, 200 steps",
             "--limitation",
             "static frame only",
-            "--not-proven",
-            "penetration depth tolerance",
             "--reproduce",
             "pixi run agent-capture -- --scene box_on_ground --out demo",
+            *_semantic_args(),
             "--out",
             str(out),
         ]
@@ -86,7 +115,10 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
     assert "**Environment**: Linux x86_64, llvmpipe" in text
     assert "What to look for: yellow cross at interface" in text
     assert "Why this artifact" in text
-    assert "✘ (no evidence)" in text  # uncovered claim surfaces to the reviewer
+    assert "stack stays upright ✔" in text
+    assert "### Semantic review" in text
+    assert "settled pose and contact-count assertions passed" in text
+    assert "the visible settled pose agrees with the measured oracle" in text
     assert "static frame only" in text
     assert "penetration depth tolerance" in text
     assert "pixi run agent-capture" in text
@@ -107,6 +139,7 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
             "verification-media",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(out),
             "--manifest-out",
@@ -115,6 +148,8 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     )
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["schema_version"] == "dart.evidence_publication/v2"
+    assert manifest["pass"] is True
     assert manifest["uploaded"] is False
     assert "dry-run" in manifest["note"]
     text = out.read_text(encoding="utf-8")
@@ -164,6 +199,7 @@ def test_gh_release_yes_uploads_each_artifact(
             "--yes",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(out),
             "--manifest-out",
@@ -173,6 +209,7 @@ def test_gh_release_yes_uploads_each_artifact(
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
     assert manifest["uploaded"] is True
+    assert manifest["pass"] is True
     assert "note" not in manifest
     verbs = [call[:2] for call in calls]
     assert verbs[0] == ["release", "view"]
@@ -231,6 +268,7 @@ def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
             str(selection),
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(tmp_path / "x.md"),
         ]
@@ -247,8 +285,215 @@ def test_gh_release_requires_repo(tmp_path: Path) -> None:
             "gh-release",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(tmp_path / "x.md"),
         ]
     )
     assert code == 2
+
+
+def test_uncovered_selection_is_rendered_but_fails_closed(tmp_path: Path) -> None:
+    selection = _selection(tmp_path, passing=False)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 1
+    assert "✘ (no evidence)" in out.read_text(encoding="utf-8")
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert "uncovered claims: C2" in manifest["note"]
+
+
+def test_uncertain_semantic_review_fails_closed(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    manifest_out = tmp_path / "publication.json"
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            *_semantic_args("uncertain"),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 1
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert manifest["semantic_review"]["verdict"] == "uncertain"
+
+
+def test_inconsistent_passing_selection_fails_closed(tmp_path: Path) -> None:
+    selection = _selection(tmp_path, passing=False)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["pass"] = True
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+
+
+def test_stored_coverage_without_selected_artifact_fails_closed(
+    tmp_path: Path,
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    manifest["selected"][1]["claims"] = ["C1"]
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        ("hash", "changed content"),
+        ("size", "changed size"),
+        ("missing", "missing or not a regular file"),
+        ("directory", "missing or not a regular file"),
+        ("unknown-claim", "unknown claims"),
+    ],
+)
+def test_gh_release_yes_revalidates_selected_artifacts_before_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    mutation: str,
+    expected: str,
+) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    if mutation == "hash":
+        (tmp_path / "shot.png").write_bytes(b"PNG")
+    elif mutation == "size":
+        (tmp_path / "shot.png").write_bytes(b"changed")
+    elif mutation == "missing":
+        (tmp_path / "shot.png").unlink()
+    elif mutation == "directory":
+        (tmp_path / "shot.png").unlink()
+        (tmp_path / "shot.png").mkdir()
+    else:
+        manifest["selected"][0]["claims"] = ["C999"]
+        selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    calls = []
+
+    def record_gh(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("invalid evidence must not mutate GitHub")
+
+    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+        ]
+    )
+
+    assert code == 2
+    assert calls == []
+    assert expected in capsys.readouterr().err
+
+
+def test_gh_release_yes_does_not_upload_failing_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path, passing=False)
+    calls = []
+
+    def record_gh(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("invalid evidence must not mutate GitHub")
+
+    monkeypatch.setattr(evidence_publish, "_gh", record_gh)
+    manifest_out = tmp_path / "publication.json"
+
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 1
+    assert calls == []
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["uploaded"] is False
+    assert manifest["urls"] == {}
+
+
+def test_required_semantic_field_rejects_empty_value(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    args = [
+        str(selection),
+        "--environment",
+        "Linux",
+        *_semantic_args(),
+        "--out",
+        str(tmp_path / "section.md"),
+    ]
+    args[args.index("--visible-observation") + 1] = ""
+
+    with pytest.raises(SystemExit) as caught:
+        evidence_publish.main(args)
+
+    assert caught.value.code == 2

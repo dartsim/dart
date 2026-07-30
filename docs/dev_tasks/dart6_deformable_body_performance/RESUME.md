@@ -1,29 +1,33 @@
 # RESUME - DART 6 deformable body feature and performance
 
-Updated: 2026-07-23 (exact-head independent review evidence; scope elevated to
-full two-paper parity)
+Updated: 2026-07-29 (#3382 merged; M2.0 and M2.1 landed; M2.2 is next)
 
 ## Terminal state
 
-[#3382](https://github.com/dartsim/dart/pull/3382) is the representative DART 6
-release slice, targeting `release-6.20` from
-`wp-db-native-soft-fallback`. Keep this task active through exact-head CI and
-review stabilization. Do not equate landing #3382 with completion of PLAN-622:
-the paired winner artifact/disposition, competitive-envelope and flexible-foot
-decisions, WP-DB.07/WP-DB.08 follow-ups, and separate `main` assertion fix
-remain open.
+The representative DART 6 release slice
+[#3382](https://github.com/dartsim/dart/pull/3382) merged into `release-6.20` as
+`6c88ac1d774`. The M2.0 FEM integration seam is validated, and the internal-only
+M2.1 volumetric FEM foundation plus damping correction landed in
+`d68ca4e9c29` and `d65e88ebda4`. Continue from M2.2 rather than reopening PR
+stabilization. PLAN-622 remains active: paper parity, the paired artifact or
+approved disposition, competitive-envelope and flexible-foot decisions,
+WP-DB.07/WP-DB.08 follow-ups, and the separate `main` assertion fix remain
+open.
 
 ## Authoritative current state
 
-- Worktree: `/home/js/dev/dartsim/dart/task_2`
-- Branch: `wp-db-native-soft-fallback`
-- PR: #3382, open, non-draft, milestone `DART 6.20.0`
-- Published implementation head: `891f43fd590`
-- Remote branch tip: the live `origin/wp-db-native-soft-fallback` evidence
-  refresh on top of `891f43fd590`; resolve the exact SHA from the remote
-- Current target base: `origin/release-6.20@6a1d377f616`
-- Current target-base merge: `416266f60e4`; the branch is not behind the live
-  target base
+- Start new work from the current `origin/release-6.20`; at this refresh it is
+  `6c88ac1d774`.
+- #3382: merged on 2026-07-29 as `6c88ac1d774`.
+- M2.0: validated in `11-fem-integration-seam.md`.
+- M2.1: landed in `d68ca4e9c29`, with correction `d65e88ebda4`; evidence and
+  exact next increments are in `13-fem-foundation.md`.
+- Next implementation increment: M2.2 elastic element forces, energy and
+  stability gates, and the first deforming demo.
+- Parallel product lane: soft-foot SIMBICON using the existing controller and
+  soft-feet Atlas asset.
+- The former `wp-db-native-soft-fallback` checkout and heads below are
+  historical evidence, not a branch to resume.
 - Published Windows calibration: `50a254e7e56`; test-only legacy-FCL
   center-of-pressure bound change from `0.11` m to `0.13` m
 - Published ABI review fix: `9a6796596bc`; restores the released
@@ -42,12 +46,11 @@ remain open.
 
 The `c41f273d271` exact-head hosted gz-physics/gz-sim job passed. Its fresh
 Codex review found one actionable preparation-state issue, addressed by
-`891f43fd590`. Re-fetch both refs before acting; only checks and review on the
-current branch tip are authoritative after the evidence refresh.
+`891f43fd590`. These heads are retained only as historical merge evidence.
 
-## 2026-07-23 exact-head review evidence and scope elevation
+## Historical 2026-07-23 exact-head review evidence and scope elevation
 
-### PR #3382 is milestone-1 merge-ready
+### PR #3382 milestone-1 merge evidence
 
 Current head `351d4a04fb3` (docs-only atop validated implementation head
 `891f43fd590`):
@@ -439,16 +442,16 @@ builds, including `ninja ALL` in `task_3-release620-publish` and format checks i
 151 failed a thermal gate, 110 observed sibling DART work, and none was clean.
 Observed peaks were 50 sibling workloads, 1-minute load `52.61`, and `105 C`.
 The attempt was interrupted with `status: interrupted`, no timing rows,
-summary, verdict, or `COMPLETE.json`. This is the current exact-composed-head
-host blocker and explicit non-evidence; do not resume its directory or weaken
-the runner's gates.
+summary, verdict, or `COMPLETE.json`. At the time this was the
+exact-composed-head host blocker; it remains explicit non-evidence. Do not
+resume its directory or weaken the runner's gates.
 
-## Current blockers and next actions
+## Current open work and historical evidence boundaries
 
-- Published implementation head `891f43fd590` contains the Gazebo
-  zero-overhead correction and its preparation-state review fix.
-- Do not carry `c41f273d271` results forward. Classify only the current
-  branch-tip jobs and fresh top-level Codex review.
+- #3382, including the Gazebo zero-overhead correction and preparation-state
+  review fix, is in `release-6.20@6c88ac1d774`.
+- Heads such as `c41f273d271` and `891f43fd590` are historical #3382 evidence,
+  not bases or exact-head gates for new work.
 - No paired benchmark directory has `COMPLETE.json`. Interrupted and
   preflight-only directories remain explicit non-evidence and must not be
   resumed or reinterpreted.
@@ -459,24 +462,17 @@ the runner's gates.
   native-owned/preferred-default acceptance remain unmet. Their durable owners
   are `docs/design/dart6_deformable_body.md` and PLAN-622.
 - Release commit `10c6b6055e4` still needs a separate `main` PR for the
-  zero-DoF soft point-mass assertion; do not fold that work into #3382.
+  zero-DoF soft point-mass assertion.
 
 Next actions:
 
-1. #3382 is milestone-1 merge-ready (green required checks + two clean
-   independent reviews on `351d4a04fb3`). Codex is weekly-limited, so do not
-   post `@codex review` until the quota resets; the independent reviews are the
-   authoritative evidence meanwhile. Merging remains the maintainer's action
-   (not authorized here).
-2. Monitor exact-head CI to terminal state after any docs push. Rerun only
-   demonstrated infrastructure failures and investigate product failures from
-   their own exact-head logs. The non-required AppVeyor red is spurious (see the
-   2026-07-23 section) and is not a rerun target.
-3. **Full-parity plan: committed** as
+1. **#3382: merged** into `release-6.20` as `6c88ac1d774` on 2026-07-29. Do
+   not resume its old branch or repeat its stabilization loop.
+2. **Full-parity plan: committed** as
    `10-full-parity-execution-plan.md` (accepted 2026-07-23; ABI-safe additive on
    `release-6.20`, ~3-PR structure; PLAN-622 points at it). The 2026-07-11
    deferral list is retracted.
-4. **M2.0 FEM integration seam: validated** — see `11-fem-integration-seam.md`.
+3. **M2.0 FEM integration seam: validated** — see `11-fem-integration-seam.md`.
    A custom `constraint::ConstraintBase` whose `update()` DART calls every
    `solve()` (`ConstraintSolver.cpp:1077`, before the `isActive()` LCP gate) is
    the ABI-safe per-step FEM integration hook; a throwaway prototype proved the
@@ -487,18 +483,19 @@ Next actions:
    `World.cpp:1378`); one-way skeleton→FEM drive is immediate. Additive-on-
    `release-6.20` is confirmed feasible; the branch decision holds pending a
    later milestone showing otherwise.
-5. **Next build steps** (per plan §11): PR-2 **M2.1** — the tet-volume/embedded-
-   surface `Shape` + FEM node state (new additive types), then FEM dynamics; and
-   in parallel PR-3a **soft-foot SIMBICON** (reuse `examples/demos/scenes/
+4. **M2.1 FEM foundation: landed** — commits `d68ca4e9c29` and
+   `d65e88ebda4`; see `13-fem-foundation.md`.
+5. **Next build steps:** PR-2 **M2.2** — elastic element forces (linear, then
+   corotational/StVK), energy/stability gates, and the first deforming demo; in
+   parallel PR-3a **soft-foot SIMBICON** (reuse `examples/demos/scenes/
    atlas_simbicon/` + `atlas_v3_no_head_soft_feet.sdf`). Confirm the
    competitive-envelope definition (decisions.md item 2) before the
    performance-acceptance stage.
 6. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
    WP-DB.08 native-owned/default coverage, flexible-foot, and the separate
    `main` zero-DoF assertion PR remain open and now fold into the parity plan.
-7. After #3382 merges, promote remaining durable facts to owners; remove this
-   temporary task folder only when its open work has durable owners, and clean
-   branches only with explicit approval.
+7. Remove this temporary task folder only when its open work has durable
+   owners, and clean branches only with explicit approval.
 
 ## Demo integration rule
 

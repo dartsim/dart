@@ -1,10 +1,11 @@
 # Handoff - DART 6 deformable body performance
 
-Updated: 2026-07-19
+Updated: 2026-07-29
 
-This is the takeover summary for PR #3382 stabilization. `RESUME.md` owns the
-ordered commands and approval boundaries; `06-pr-evidence.md` owns detailed
-historical evidence.
+This is the historical takeover summary for PR #3382 stabilization. #3382
+merged into `release-6.20` as `6c88ac1d774`; do not resume the checkout or
+takeover order below. `RESUME.md` owns the current post-merge order, and
+`06-pr-evidence.md` owns detailed historical evidence.
 
 ## Packet contract
 
@@ -19,7 +20,7 @@ explicit.
 
 Landing #3382 does not complete the broader deformable-body objective.
 
-## Current checkout
+## Historical checkout
 
 ```text
 worktree  /home/js/dev/dartsim/dart/task_2
@@ -34,7 +35,7 @@ PR        https://github.com/dartsim/dart/pull/3382
 
 `wp-db-soft-skel-allocation-gates` is fully incorporated. Do not resume it.
 
-## Current evidence
+## Historical evidence
 
 Published head `05d9de6e3fb` includes the base merge, Windows calibration, and
 task-evidence refresh. Its exact-head API docs, Windows Release, gz-physics,
@@ -90,7 +91,7 @@ examples should continue to be integrated into `dart-demos`.
   PR.
 - PLAN-622 and this task remain active after #3382 stabilization.
 
-## Takeover order
+## Historical takeover order
 
 1. Re-fetch the base; merge again only if it advanced.
 2. Push the additive commits, update the PR body, and request one fresh

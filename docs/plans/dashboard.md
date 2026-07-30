@@ -25,8 +25,9 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Finish #3353 as the WP-PG.15/D7 evaluator and restoration PR,
-  then choose the default-fix route from its S6 evidence without retiring the
+- Next step: #3353 (WP-PG.15/D7) and #3361 (WP-PG.14/D3) are merged. Refresh
+  the WS-G cross-engine and native-collision evidence on the current
+  `release-6.20` base, then select the next measured gap without retiring the
   task while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
@@ -45,14 +46,11 @@ Priority order is document order. Active implementation handoff remains in
   rigid-body overhead**, as ABI-safe additive work on `release-6.20` in a ~3-PR
   structure. Execution plan:
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: #3382 is milestone-1 merge-ready (green required checks + two clean
-  independent reviews on `351d4a04fb3`/docs head `f334dc84529`; Codex is
-  weekly-limited, so those reviews are the authoritative evidence). Then begin
-  **M2.0**: prototype the ABI-safe FEM integration seam (custom `FemBodyNode`
-  virtuals vs `ConstraintBase` vs subclassed `ConstraintSolver`) and prove
-  pure-rigid determinism / zero-overhead is preserved — the make-or-break
-  feasibility checkpoint before PR-2's volumetric-FEM build. In parallel, PR-3a
-  soft-foot SIMBICON reuses the existing controller + soft-feet Atlas asset.
+- Next step: #3382 merged as `6c88ac1d774`; the **M2.0** ABI-safe FEM
+  integration seam and **M2.1** volumetric FEM foundation are also validated
+  and landed. Proceed with **M2.2** elastic element forces, energy/stability
+  gates, and the first deforming demo. In parallel, PR-3a soft-foot SIMBICON
+  reuses the existing controller + soft-feet Atlas asset.
   Still open and now folded into the plan: the competitive-envelope definition,
   the four-link flexible-foot comparison, WP-DB.07 scaling, WP-DB.08
   native-owned/default coverage, a valid `bm-soft-body-paired` artifact or

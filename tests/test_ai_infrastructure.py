@@ -81,7 +81,7 @@ def test_simulation_scenario_routes_text_first_and_visual_policy():
     scenarios = {scenario["id"]: scenario for scenario in _scenario_data()["scenarios"]}
     scenario = scenarios["simulation-verification"]
 
-    assert len(scenarios) == 7
+    assert len(scenarios) == 8
     assert scenario["expected_route"]["name"] == "dart-verify-sim"
     assert scenario["focused_gates"] == ["pixi run test"]
     assert scenario["full_gates"] == ["pixi run test-py", "pixi run test-all"]
@@ -101,6 +101,21 @@ def test_simulation_scenario_routes_text_first_and_visual_policy():
     assert scenario["evidence_policy"] == (
         "text-first-with-claim-tied-visual-or-documented-exception"
     )
+    assert scenario["semantic_review_policy"] == (
+        "native-image-inspection-or-image-capable-handoff-with-explicit-limitation"
+    )
+
+
+def test_model_upgrade_scenario_routes_release_audit_and_durable_context():
+    scenarios = {scenario["id"]: scenario for scenario in _scenario_data()["scenarios"]}
+    scenario = scenarios["model-upgrade"]
+
+    assert scenario["expected_route"]["name"] == "dart-model-upgrade"
+    assert scenario["specialist_agent"] == "dart_release_auditor"
+    assert "docs/plans/dashboard.md" in scenario["owner_docs"]
+    assert "docs/dev_tasks/README.md" in scenario["owner_docs"]
+    assert scenario["focused_gates"] == ["pixi run check-ai-infra"]
+    assert scenario["full_gates"] == ["pixi run test-ai-infra", "pixi run lint"]
 
 
 def test_release_maintenance_scenario_runs_release_tests():
@@ -129,6 +144,7 @@ def test_branch_profile_and_scenario_keys_match_shared_schema():
     ("mutation", "expected"),
     [
         ("policy", "wrong evidence policy"),
+        ("semantic_policy", "wrong semantic review policy"),
         ("prompt", "wrong claim-dependent prompt"),
         ("route", "must route to dart-verify-sim"),
         ("scope", "must cover simulation"),
@@ -143,6 +159,8 @@ def test_simulation_scenario_contract_mutations_are_rejected(mutation, expected)
     )
     if mutation == "policy":
         scenario["evidence_policy"] = "screenshot-only"
+    elif mutation == "semantic_policy":
+        scenario["semantic_review_policy"] = "machine-check-only"
     elif mutation == "prompt":
         scenario["prompt_class"] = "take a screenshot"
     elif mutation == "route":
@@ -184,6 +202,13 @@ def test_simulation_scenario_contract_mutations_are_rejected(mutation, expected)
         "text/geometry oracle",
         "test-agent-debug-overlay",
         "/tmp/dart-visual-evidence/capture_auto0.png",
+        "semantic inspection",
+        "native image viewer",
+        "original detail",
+        "do not average",
+        "verification-bundle",
+        "limiting horizontal or",
+        "no-bounded-renderable",
     ],
 )
 def test_simulation_skill_contract_markers_are_required(monkeypatch, marker):
@@ -265,7 +290,7 @@ def test_simulation_skill_contract_markers_are_required(monkeypatch, marker):
             "collision/contact/constraints",
         ),
         (".claude/commands/dart-fix-ci.md", "visual exception"),
-        ("docs/ai/verification.md", "required renderer is unavailable"),
+        ("docs/ai/verification.md", "required renderer"),
         ("docs/ai/verification.md", "Name the replacement"),
     ],
 )
@@ -566,6 +591,27 @@ def test_expected_agent_set_is_small_and_release_specific():
     }
 
 
+def test_model_upgrade_workflow_is_bounded_and_future_model_scalable():
+    workflow = (ROOT / ".claude" / "commands" / "dart-model-upgrade.md").read_text()
+
+    assert "workflow is itself an audit surface" in workflow
+    assert "do not clone the workflow" in workflow
+    assert "apply/adapt/omit" in workflow
+    assert "durable project context" in workflow
+    assert "representative DART 6 physics investigation" in workflow
+    assert "Images are never the" in workflow
+    assert "sole correctness oracle" in workflow
+
+
+def test_ultrawork_uses_explicit_delegation_and_lean_prompt_shape():
+    workflow = (ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text()
+
+    assert "Delegate only when the user explicitly requested it" in workflow
+    assert "execute packets serially" in workflow
+    assert "Do not repeat this workflow's logistics" in workflow
+    assert "Sol Ultra" not in workflow
+
+
 def _write_agent_profiles(root, *, malformed_instructions=False):
     agents_dir = root / ".codex" / "agents"
     agents_dir.mkdir(parents=True)
@@ -606,6 +652,110 @@ def test_boolean_codex_agent_limits_are_rejected(tmp_path):
     infra.check_codex_config(tmp_path, errors)
 
     assert ".codex/config.toml: agents.max_depth must be 1" in errors
+
+
+@pytest.mark.parametrize(
+    "key",
+    (
+        "model",
+        "model_reasoning_effort",
+        "review_model",
+        "approval_policy",
+        "sandbox_mode",
+    ),
+)
+def test_project_codex_runtime_pins_are_rejected(tmp_path, key):
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text(
+        f'{key} = "pinned"\n[agents]\nmax_threads = 4\nmax_depth = 1\n'
+    )
+    _write_agent_profiles(tmp_path)
+    errors = []
+
+    infra.check_codex_config(tmp_path, errors)
+
+    assert any("project config must not pin" in error for error in errors)
+
+
+def test_unexpected_project_codex_runtime_key_is_rejected(tmp_path):
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text(
+        'experimental_override = "on"\n'
+        "[agents]\n"
+        "max_threads = 4\n"
+        "max_depth = 1\n"
+    )
+    _write_agent_profiles(tmp_path)
+    errors = []
+
+    infra.check_codex_config(tmp_path, errors)
+
+    assert ".codex/config.toml: root keys must equal agents" in errors
+
+
+@pytest.mark.parametrize("key", ("model", "model_reasoning_effort", "review_model"))
+def test_custom_agent_model_pins_are_rejected_and_reported(tmp_path, key):
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text(
+        "[agents]\nmax_threads = 4\nmax_depth = 1\n"
+    )
+    _write_agent_profiles(tmp_path)
+    profile = tmp_path / ".codex" / "agents" / "dart_scout.toml"
+    profile.write_text(profile.read_text() + f'{key} = "pinned"\n')
+    errors = []
+
+    infra.check_codex_config(tmp_path, errors)
+    pins = infra._model_harness_inventory(tmp_path)["model_pins"]["custom_agents"]
+
+    assert any("keys must equal" in error for error in errors)
+    assert any("inherit the parent model" in error for error in errors)
+    assert pins == [
+        {
+            "path": ".codex/agents/dart_scout.toml",
+            "keys": [key],
+        }
+    ]
+
+
+def test_unexpected_custom_agent_key_is_rejected(tmp_path):
+    (tmp_path / ".codex").mkdir()
+    (tmp_path / ".codex" / "config.toml").write_text(
+        "[agents]\nmax_threads = 4\nmax_depth = 1\n"
+    )
+    _write_agent_profiles(tmp_path)
+    profile = tmp_path / ".codex" / "agents" / "dart_scout.toml"
+    profile.write_text(profile.read_text() + 'temperature = "high"\n')
+    errors = []
+
+    infra.check_codex_config(tmp_path, errors)
+
+    assert any("keys must equal" in error for error in errors)
+
+
+def test_doctor_report_inventories_model_context_and_visual_harness():
+    report = infra.doctor_report(ROOT)
+
+    assert report["schema_version"] == 1
+    assert report["profile"] == {
+        "name": "release-6.20",
+        "cpp_standard": "C++17",
+        "python_binding": "pybind11",
+        "io_namespace": "dart::utils",
+        "gui_backend": "OSG",
+    }
+    assert report["inventory"]["model_harness"]["model_pins"] == {
+        "project": [],
+        "project_agents": [],
+        "custom_agents": [],
+    }
+    assert report["inventory"]["model_harness"]["generated_skill_metadata_chars"] > 0
+    assert report["inventory"]["durable_context"]["owners"]["count"] == 5
+    visual = report["inventory"]["visual_verification"]
+    assert visual["backend"] == "OSG"
+    assert "agent-capture" in visual["tasks"]
+    assert "image-verdict" in visual["tasks"]
+    assert "verification-bundle" in visual["tasks"]
+    json.dumps(report)
 
 
 def test_malformed_hook_json_returns_errors_instead_of_tracebacks(tmp_path):

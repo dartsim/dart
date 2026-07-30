@@ -46,6 +46,79 @@ For DART 6:
 - Durable DART 6 decisions should say which compatibility surface they protect
   and which gate proves it.
 
+## Evolving Models Without Catalog Drift
+
+Model and coding-agent upgrades use one maintained `dart-model-upgrade`
+workflow rather than a new command per model family. Its intake, control
+capture, classification, comparison, verification, and closeout procedure is
+model-agnostic. A bounded target-specific routing example may be replaced when
+official guidance changes; it is not a permanent taxonomy.
+
+The audit boundary includes tracked documentation because `docs/` carries both
+in-session context and across-session project state. The durable owners are
+`docs/ai/`, `docs/plans/`, `docs/dev_tasks/`, and the handbook, design,
+release, or module references routed into a task. The audit checks discovery,
+freshness, duplication, context cost, resume quality, and usefulness to human
+maintainers as well as agent behavior.
+
+## Visual Verification North Star
+
+DART 6 visual verification follows one evidence chain:
+
+1. a text oracle establishes scene, dynamics, collision/contact, or constraint
+   correctness;
+2. core bounds and collision raycasts select and assess a claim-tied camera;
+3. the OSG offscreen renderer captures the scene with only the necessary
+   `DebugOverlay` layers;
+4. machine pixel checks establish artifact integrity or reference difference;
+5. an image-capable reviewer inspects the selected still or temporal frames and
+   records visible observations separately from the text result;
+6. publication reconciles both channels, names a pass/fail/uncertain verdict,
+   and states what the evidence does not prove.
+
+Images corroborate; the text oracle decides correctness. A passing view report
+or pixel verdict is not semantic inspection, and text/image disagreement
+cannot be averaged into a pass. The capture sidecar identifies deterministic
+static or start/middle/end inspection targets so future image-capable models can
+exercise the same contract without prompt-specific frame selection.
+
+The DART 6 implementation stays on its existing C++17, pybind11, OSG
+`OffscreenViewer`, core `DebugOverlay`, and release camera-assessment path.
+DART 7 renderer or binding internals are comparison evidence, not backport
+requirements.
+
+### Capability Lineage And Release Verdicts
+
+The release workflow is the cumulative result of these merged changes:
+
+- [#3304](https://github.com/dartsim/dart/pull/3304) established usable
+  translucent, dynamic soft-body visualization. Preserve the OSG rendering
+  behavior; its older standalone capture entrypoint has since converged into
+  `dart-demos`.
+- [#3314](https://github.com/dartsim/dart/pull/3314) added the GLX-pbuffer
+  `OffscreenViewer`, default camera, dartpy bindings, and initial
+  verdict/golden/sheet tools. Preserve the C++17/pybind11 API and adapt its
+  agent harness around viewport-aware framing and explicit missing-bounds
+  failures.
+- [#3374](https://github.com/dartsim/dart/pull/3374) added assessed viewpoints,
+  ten OSG `DebugOverlay` layers, capture sidecars, and claim-tied
+  selection/publication. Preserve the core OSG path and improve the evidence
+  contract rather than adding image-space annotations.
+- [#3385](https://github.com/dartsim/dart/pull/3385) made claim-specific World
+  factories and engine-rendered overlay checks non-skippable under Xvfb.
+  Preserve the same-camera A/B and per-layer pixel gates.
+
+The DART 7 lineage in
+[#3313](https://github.com/dartsim/dart/pull/3313),
+[#3320](https://github.com/dartsim/dart/pull/3320),
+[#3371](https://github.com/dartsim/dart/pull/3371), and
+[#3386](https://github.com/dartsim/dart/pull/3386) remains comparison evidence.
+The release adapts portable text/image handoff and semantic-review contracts,
+including a hashed verification bundle and fail-closed publication. It omits
+Filament, nanobind, DART 7 renderer descriptors, and main-only camera/viewer
+types. This apply/adapt/omit record prevents a later model upgrade from
+mistaking intentional branch differences for drift.
+
 ## Intentional Non-Adoption
 
 `docs/python_api/` from DART 7 is not adopted in this AI-infra change. On this

@@ -121,6 +121,48 @@
       ]
     },
     {
+      "id": "model-upgrade",
+      "prompt_class": "audit or update DART 6.20 AI infrastructure for a named model, reasoning mode, or coding-agent release",
+      "start_dir": "docs/ai",
+      "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-model-upgrade",
+        "path": ".agents/skills/dart-model-upgrade/SKILL.md"
+      },
+      "specialist_agent": "dart_release_auditor",
+      "owner_docs": [
+        "docs/ai/principles.md",
+        "docs/ai/components.md",
+        "docs/ai/sessions.md",
+        "docs/ai/verification.md",
+        "docs/ai/branch-profile.json",
+        "docs/information-architecture.md",
+        "docs/onboarding/ai-tools.md",
+        "docs/onboarding/release-management.md",
+        "docs/plans/dashboard.md",
+        "docs/dev_tasks/README.md"
+      ],
+      "permitted_scopes": [
+        "model and reasoning routing owner docs",
+        "durable AI context, planning, and session-handoff owners",
+        "simulation-verification workflow and OSG evidence tooling",
+        "editable workflow and domain-skill sources",
+        "generated adapters",
+        "maintained Codex runtime configuration",
+        "focused AI infrastructure scripts and tests",
+        "release-specific Python and dart/gui/osg verification code"
+      ],
+      "focused_gates": ["pixi run check-ai-infra"],
+      "full_gates": ["pixi run test-ai-infra", "pixi run lint"],
+      "recovery": ".claude/commands/dart-model-upgrade.md",
+      "forbidden_paths": [
+        "dart/io",
+        "python/dartpy/nanobind",
+        "docs/design/simulation_solver_architecture.md"
+      ]
+    },
+    {
       "id": "component-work",
       "prompt_class": "Change a DART 6.20 dartpy binding while preserving pybind11 APIs",
       "start_dir": "python/dartpy",
@@ -170,6 +212,7 @@
         "temporary claim-tied evidence"
       ],
       "evidence_policy": "text-first-with-claim-tied-visual-or-documented-exception",
+      "semantic_review_policy": "native-image-inspection-or-image-capable-handoff-with-explicit-limitation",
       "focused_gates": ["pixi run test"],
       "full_gates": ["pixi run test-py", "pixi run test-all"],
       "recovery": "docs/ai/verification.md",

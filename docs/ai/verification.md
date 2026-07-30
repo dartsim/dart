@@ -57,9 +57,10 @@ it never configures, builds, prompts, or uses the network. It does not replace
 Use `dart-verify-sim` whenever a claim depends on model/scene structure,
 dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
 or a visual example. Pair a focused text correctness oracle with an assessed,
-claim-tied capture and core `DebugOverlay` layers. If DISPLAY/Xvfb or the
-required renderer is unavailable, record that limitation. Name the replacement
-evidence; never use a screenshot as the sole correctness oracle.
+claim-tied capture, semantic inspection by an image-capable reviewer, and core
+`DebugOverlay` layers. If DISPLAY/Xvfb, the required renderer, or native image
+review is unavailable, record that limitation. Name the replacement evidence;
+never use a screenshot as the sole correctness oracle.
 
 ## Visual Verification (Headless Capture)
 
@@ -100,7 +101,8 @@ is set.
 
 The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
-reported but only gates when you pass `--require-contrast`.
+reported but only gates when you pass `--require-contrast`. This is a machine
+pixel-integrity/reference-diff result, not semantic visual review.
 
 The Release Linux CI job runs a settled-contact `agent-capture` under Xvfb with
 contacts, collision bounds, and labels, requires `image-verdict` to accept the
@@ -125,6 +127,27 @@ to end without a display-dependent skip.
       --auto-views 2 --out /tmp/evidence
   ```
 
+  The v2 capture sidecar provides deterministic native-review targets: the
+  selected still and start/middle/end frames for turntable or motion output.
+  An image-capable agent must actually open those PNGs. Use original detail for
+  small contacts, labels, bounds, or frame axes. Record the visible observation
+  separately from the text oracle; if they disagree, report fail/uncertain,
+  reframe or recapture, and investigate instead of averaging them into a pass.
+  When native image input is unavailable, hand the selected files and sidecar
+  to an image-capable reviewer and record that limitation. Package a
+  reproducible handoff with:
+
+  ```bash
+  pixi run verification-bundle -- --out /tmp/verification-bundle \
+      --question "Does the settled-contact image agree with the text oracle?" \
+      --text /tmp/evidence/capture_capture.json \
+      --text /tmp/evidence/text-oracle.json \
+      --image /tmp/evidence/capture_auto0.png
+  ```
+
+  The bundle copies and hashes the inputs and writes `vlm_prompt.md`; creating
+  it does not mean a semantic review occurred.
+
   Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
   `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
   `labels` (matching DART 7's overlay set).
@@ -134,8 +157,10 @@ to end without a display-dependent skip.
   `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
   `select_viewpoints` deterministically picks azimuth-diverse better views —
   when a report lists issues, reframe or reselect instead of shipping the
-  shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
-  dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
+  shot. Viewport fitting uses the limiting horizontal or vertical field of
+  view, and a world without bounded renderables fails explicitly rather than
+  inventing a radius. Body bounds come from the core `Shape.getBoundingBox()`
+  (now bound in dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
   the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
   grid, the world frame, contacts (implausible sentinel contact points are
   skipped and counted), body frames, velocity arrows, centers of mass,
@@ -157,12 +182,19 @@ to end without a display-dependent skip.
       --labels BEFORE AFTER --out compare.png     # also: blend, diff
   pixi run evidence-select -- candidates.json --out selection.json
   pixi run evidence-publish -- selection.json --environment "..." \
+      --text-oracle "focused test/metrics result" \
+      --visible-observation "what was seen after opening the selected PNGs" \
+      --reconciliation "how image and text agree or disagree" \
+      --semantic-verdict pass --not-proven "explicit claim boundary" \
       --out pr_section.md   # manual placeholders; gh-release needs --yes
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
-  unclaimed ones and records per-artifact rationale); media is GitHub-hosted,
-  never committed to the repository.
+  unclaimed ones and records per-artifact rationale). Publication passes only
+  when claim coverage and the semantic text/image verdict pass, and every
+  publication records at least one thing the selected evidence does not prove.
+  A `gh-release --yes` run does not upload anything when either gate fails.
+  Media is GitHub-hosted, never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

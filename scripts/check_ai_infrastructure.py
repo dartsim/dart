@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
 import shutil
@@ -58,7 +59,7 @@ SCENARIO_KEYS = {
     "recovery",
     "forbidden_paths",
 }
-SCENARIO_OPTIONAL_KEYS = {"evidence_policy"}
+SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 ROUTE_KEYS = {"kind", "name", "path"}
 CODEX_HOOK_COMMAND = (
     'repo_root="$(git rev-parse --show-toplevel)" && '
@@ -341,19 +342,40 @@ def check_codex_config(root: Path, errors: list[str]) -> None:
         except (OSError, tomllib.TOMLDecodeError) as error:
             errors.append(f"{config_path.relative_to(root)}: invalid TOML: {error}")
         else:
+            if set(config) != {"agents"}:
+                errors.append(".codex/config.toml: root keys must equal agents")
             agents = config.get("agents", {})
             if not isinstance(agents, dict):
                 errors.append(".codex/config.toml: agents must be a table")
                 agents = {}
+            if set(agents) != {"max_threads", "max_depth"}:
+                errors.append(
+                    ".codex/config.toml: agents keys must equal max_threads, "
+                    "max_depth (the compatibility spelling keeps Codex 0.144 "
+                    "strict config support)"
+                )
             if (
                 type(agents.get("max_threads")) is not int
                 or agents.get("max_threads") != 4
             ):
-                errors.append(".codex/config.toml: agents.max_threads must be 4")
+                errors.append(
+                    ".codex/config.toml: agents.max_threads must be 4 for "
+                    "Codex 0.144 compatibility"
+                )
             if type(agents.get("max_depth")) is not int or agents.get("max_depth") != 1:
                 errors.append(".codex/config.toml: agents.max_depth must be 1")
-            if "model" in config:
-                errors.append(".codex/config.toml: project config must not pin a model")
+            forbidden = {
+                "model",
+                "model_reasoning_effort",
+                "review_model",
+                "approval_policy",
+                "sandbox_mode",
+            } & set(config)
+            if forbidden:
+                errors.append(
+                    ".codex/config.toml: project config must not pin "
+                    f"{', '.join(sorted(forbidden))}"
+                )
 
     agents_dir = root / ".codex" / "agents"
     actual = {path.stem for path in agents_dir.glob("*.toml")}
@@ -372,6 +394,17 @@ def check_codex_config(root: Path, errors: list[str]) -> None:
         except (OSError, tomllib.TOMLDecodeError) as error:
             errors.append(f"{path.relative_to(root)}: invalid TOML: {error}")
             continue
+        expected_keys = {
+            "name",
+            "description",
+            "sandbox_mode",
+            "developer_instructions",
+        }
+        if set(profile) != expected_keys:
+            errors.append(
+                f"{path.relative_to(root)}: keys must equal description, "
+                "developer_instructions, name, sandbox_mode"
+            )
         for field in ("name", "description", "developer_instructions"):
             if not isinstance(profile.get(field), str) or not profile[field].strip():
                 errors.append(f"{path.relative_to(root)}: missing `{field}`")
@@ -379,7 +412,7 @@ def check_codex_config(root: Path, errors: list[str]) -> None:
             errors.append(f"{path.relative_to(root)}: name must be `{name}`")
         if profile.get("sandbox_mode") != "read-only":
             errors.append(f"{path.relative_to(root)}: sandbox_mode must be read-only")
-        if "model" in profile:
+        if {"model", "model_reasoning_effort", "review_model"} & set(profile):
             errors.append(f"{path.relative_to(root)}: inherit the parent model")
         instructions = profile.get("developer_instructions", "")
         if not isinstance(instructions, str):
@@ -1010,6 +1043,7 @@ def exercise_scenarios(
         "small-change",
         "failure-diagnosis",
         "documentation-update",
+        "model-upgrade",
         "component-work",
         "simulation-verification",
         "release-maintenance",
@@ -1158,6 +1192,61 @@ def exercise_scenarios(
                 if gate_error:
                     local_errors.append(f"{gate_field}: {gate_error}")
 
+        if scenario_id == "model-upgrade":
+            expected_prompt = (
+                "audit or update DART 6.20 AI infrastructure for a named model, "
+                "reasoning mode, or coding-agent release"
+            )
+            if scenario.get("prompt_class") != expected_prompt:
+                local_errors.append("model upgrade has the wrong trigger prompt")
+            if (kind, route_name) != ("workflow", "dart-model-upgrade"):
+                local_errors.append("model upgrade must route to dart-model-upgrade")
+            if "docs/ai/verification.md" not in owner_docs:
+                local_errors.append(
+                    "model upgrade is missing its simulation evidence owner"
+                )
+            if scenario.get("focused_gates") != ["pixi run check-ai-infra"]:
+                local_errors.append("model upgrade is missing its focused AI gate")
+            if scenario.get("full_gates") != [
+                "pixi run test-ai-infra",
+                "pixi run lint",
+            ]:
+                local_errors.append("model upgrade is missing its full AI gates")
+            workflow_path = root / ".claude/commands/dart-model-upgrade.md"
+            try:
+                workflow_text = workflow_path.read_text(encoding="utf-8")
+            except OSError:
+                workflow_text = ""
+            for marker in (
+                "Use these verdicts",
+                "existing model/settings",
+                "one lower effort",
+                "structural",
+                "Max gives one hard task more reasoning time",
+                "Ultra is for independently",
+                "Do not substitute a model",
+                "durable project context",
+                "`docs/plans/dashboard.md`",
+                "without hidden",
+                "apply/adapt/omit",
+                "`audit-only` is read-only",
+                "workflow is itself an audit surface",
+                "do not clone the workflow",
+                "representative DART 6 physics investigation",
+                "text correctness",
+                "Images are never the",
+                "text/image disagreement",
+                "C++17",
+                "pybind11",
+                "`dart::utils`",
+                "OSG",
+            ):
+                if marker not in workflow_text:
+                    local_errors.append(
+                        "dart-model-upgrade source is missing contract marker "
+                        f"{marker!r}"
+                    )
+
         if scenario_id == "simulation-verification":
             expected_scopes = {
                 "dart/simulation",
@@ -1200,6 +1289,13 @@ def exercise_scenarios(
                 local_errors.append(
                     "simulation verification has the wrong evidence policy"
                 )
+            if scenario.get("semantic_review_policy") != (
+                "native-image-inspection-or-image-capable-handoff-with-"
+                "explicit-limitation"
+            ):
+                local_errors.append(
+                    "simulation verification has the wrong semantic review policy"
+                )
             if scenario.get("focused_gates") != ["pixi run test"]:
                 local_errors.append(
                     "simulation verification is missing its focused correctness gate"
@@ -1235,6 +1331,13 @@ def exercise_scenarios(
                 "text/geometry oracle",
                 "test-agent-debug-overlay",
                 "/tmp/dart-visual-evidence/capture_auto0.png",
+                "semantic inspection",
+                "native image viewer",
+                "original detail",
+                "do not average",
+                "verification-bundle",
+                "limiting horizontal or",
+                "no-bounded-renderable",
             ):
                 if marker not in skill_text:
                     local_errors.append(
@@ -1319,7 +1422,7 @@ def exercise_scenarios(
                 "docs/ai/verification.md": (
                     "DebugOverlay",
                     "text correctness",
-                    "required renderer is unavailable",
+                    "required renderer",
                     "Name the replacement",
                 ),
             }
@@ -1397,21 +1500,364 @@ def version(command: str) -> str:
     return (result.stdout or result.stderr).strip().splitlines()[0]
 
 
-def print_doctor(root: Path) -> None:
+def _path_inventory(paths: list[Path], root: Path) -> dict[str, Any]:
+    relative = sorted(
+        path.relative_to(root).as_posix() for path in paths if path.exists()
+    )
+    return {"count": len(relative), "paths": relative}
+
+
+def _line_inventory(paths: list[Path], root: Path) -> dict[str, Any]:
+    entries = [
+        {
+            "path": path.relative_to(root).as_posix(),
+            "lines": len(
+                path.read_text(encoding="utf-8", errors="replace").splitlines()
+            ),
+        }
+        for path in paths
+        if path.is_file()
+    ]
+    longest = (
+        max(entries, key=lambda entry: (entry["lines"], entry["path"]))
+        if entries
+        else {"path": "", "lines": 0}
+    )
+    return {
+        "count": len(entries),
+        "total_lines": sum(entry["lines"] for entry in entries),
+        "longest": longest,
+    }
+
+
+def _instruction_context_inventory(root: Path) -> dict[str, Any]:
+    chains: list[dict[str, Any]] = []
+    for target in tracked_agent_files(root):
+        directory = target.parent
+        chain: list[Path] = []
+        while directory == root or root in directory.parents:
+            candidate = directory / "AGENTS.md"
+            if candidate.is_file():
+                chain.append(candidate)
+            if directory == root:
+                break
+            directory = directory.parent
+        relative_chain = [path.relative_to(root).as_posix() for path in reversed(chain)]
+        chains.append(
+            {
+                "target": target.relative_to(root).as_posix(),
+                "paths": relative_chain,
+                "bytes": sum(path.stat().st_size for path in chain),
+            }
+        )
+    largest = (
+        max(chains, key=lambda entry: (entry["bytes"], entry["target"]))
+        if chains
+        else {"target": "", "paths": [], "bytes": 0}
+    )
+    return {
+        "file_count": len(chains),
+        "largest_chain": largest,
+        "repository_limit_bytes": MAX_AGENT_INSTRUCTION_BYTES,
+    }
+
+
+def _managed_generated_skills(root: Path) -> list[Path]:
+    manifest_path = root / ".agents" / "skills" / ".dart-generated.json"
+    try:
+        manifest = read_json(manifest_path)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if (
+        not isinstance(manifest, dict)
+        or type(manifest.get("schema_version")) is not int
+        or manifest["schema_version"] != 1
+        or manifest.get("generator") != "scripts/sync_ai_commands.py"
+        or not isinstance(manifest.get("paths"), list)
+    ):
+        return []
+    managed: list[Path] = []
+    for relative in manifest["paths"]:
+        if not isinstance(relative, str) or not re.fullmatch(
+            r"[a-z0-9][a-z0-9-]*/SKILL\.md", relative
+        ):
+            continue
+        path = manifest_path.parent / relative
+        if path.is_file() and not path.is_symlink() and not path.parent.is_symlink():
+            managed.append(path)
+    return sorted(managed)
+
+
+def _generated_skill_metadata_chars(paths: list[Path]) -> int:
+    total = 0
+    for path in paths:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        frontmatter = text.split("---", 2)
+        if len(frontmatter) < 3:
+            continue
+        for line in frontmatter[1].splitlines():
+            key, separator, value = line.partition(":")
+            if separator and key.strip() in {"name", "description"}:
+                total += len(value.strip())
+    return total
+
+
+def _model_harness_inventory(root: Path) -> dict[str, Any]:
+    commands = sorted((root / ".claude" / "commands").glob("*.md"))
+    skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
+    agents = sorted((root / ".codex" / "agents").glob("*.toml"))
+    try:
+        config = read_toml(root / ".codex" / "config.toml")
+    except (OSError, tomllib.TOMLDecodeError):
+        config = {}
+
+    project_pins = sorted(
+        key
+        for key in ("model", "model_reasoning_effort", "review_model")
+        if key in config
+    )
+    agent_config = config.get("agents")
+    displayed_agent_config = (
+        {
+            str(key): (
+                value
+                if isinstance(value, (str, int, float, bool)) or value is None
+                else str(value)
+            )
+            for key, value in agent_config.items()
+        }
+        if isinstance(agent_config, dict)
+        else {}
+    )
+    project_agent_pins = sorted(
+        key
+        for key in (
+            "default_subagent_model",
+            "default_subagent_reasoning_effort",
+        )
+        if isinstance(agent_config, dict) and key in agent_config
+    )
+    custom_agent_pins: list[dict[str, Any]] = []
+    for path in agents:
+        try:
+            profile = read_toml(path)
+        except (OSError, tomllib.TOMLDecodeError):
+            profile = {}
+        pins = sorted(
+            key
+            for key in ("model", "model_reasoning_effort", "review_model")
+            if key in profile
+        )
+        if pins:
+            custom_agent_pins.append(
+                {"path": path.relative_to(root).as_posix(), "keys": pins}
+            )
+
+    return {
+        "model_pins": {
+            "project": project_pins,
+            "project_agents": project_agent_pins,
+            "custom_agents": custom_agent_pins,
+        },
+        "project_agent_config": displayed_agent_config,
+        "instruction_context": _instruction_context_inventory(root),
+        "workflow_sources": _line_inventory(commands, root),
+        "domain_skill_sources": _line_inventory(skills, root),
+        "generated_skill_metadata_chars": _generated_skill_metadata_chars(
+            _managed_generated_skills(root)
+        ),
+    }
+
+
+def _durable_context_inventory(root: Path) -> dict[str, Any]:
+    owner_paths = [
+        root / "docs" / "ai" / "north-star.md",
+        root / "docs" / "ai" / "sessions.md",
+        root / "docs" / "plans" / "dashboard.md",
+        root / "docs" / "plans" / "north-star-roadmap.md",
+        root / "docs" / "dev_tasks" / "README.md",
+    ]
+    plans = sorted((root / "docs" / "plans").glob("*.md"))
+    dev_tasks_root = root / "docs" / "dev_tasks"
+    active_tasks = (
+        sorted(
+            path
+            for path in dev_tasks_root.iterdir()
+            if path.is_dir() and not path.is_symlink()
+        )
+        if dev_tasks_root.is_dir()
+        else []
+    )
+    resume_surfaces = sorted(
+        path
+        for task in active_tasks
+        for path in task.glob("RESUME.md")
+        if path.is_file()
+    )
+    handoff_surfaces = sorted(
+        path
+        for task in active_tasks
+        for path in task.glob("HANDOFF*.md")
+        if path.is_file()
+    )
+    return {
+        "owners": _path_inventory(owner_paths, root),
+        "plans": _path_inventory(plans, root),
+        "active_dev_tasks": {
+            "count": len(active_tasks),
+            "paths": [path.relative_to(root).as_posix() for path in active_tasks],
+        },
+        "resume_surfaces": _path_inventory(resume_surfaces, root),
+        "handoff_surfaces": _path_inventory(handoff_surfaces, root),
+    }
+
+
+def _visual_verification_inventory(root: Path) -> dict[str, Any]:
+    paths = [
+        root / ".claude" / "skills" / "dart-verify-sim" / "SKILL.md",
+        root / "docs" / "ai" / "verification.md",
+        root / "scripts" / "agent_capture.py",
+        root / "scripts" / "agent_view_quality.py",
+        root / "scripts" / "evidence_select.py",
+        root / "scripts" / "evidence_publish.py",
+        root / "scripts" / "image_verdict.py",
+        root / "scripts" / "verification_bundle.py",
+        root / "python" / "dartpy" / "gui" / "osg",
+    ]
+    try:
+        tasks = collect_task_names(read_toml(root / "pixi.toml"))
+    except (OSError, tomllib.TOMLDecodeError):
+        tasks = set()
+    visual_tasks = {
+        "agent-capture",
+        "evidence-publish",
+        "evidence-select",
+        "image-verdict",
+        "test-agent-debug-overlay",
+        "verification-bundle",
+    }
+    return {
+        "backend": "OSG",
+        "paths": _path_inventory(paths, root),
+        "tasks": sorted(visual_tasks & tasks),
+        "display": os.environ.get("DISPLAY", ""),
+        "xvfb_run": shutil.which("xvfb-run") or "unavailable",
+        "semantic_review_contract": (
+            "native-image-inspection-or-image-capable-handoff"
+        ),
+    }
+
+
+def _working_tree_state(root: Path) -> str:
+    result = subprocess.run(
+        ["git", "status", "--short"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return "unavailable"
+    return "dirty" if result.stdout.strip() else "clean"
+
+
+def doctor_report(root: Path) -> dict[str, Any]:
+    root = root.resolve()
     branch = subprocess.run(
         ["git", "branch", "--show-current"],
         cwd=root,
         capture_output=True,
         text=True,
     ).stdout.strip()
-    print(f"Repository: {root}")
-    print(f"Branch: {branch or '(detached)'}")
-    print("Profile: DART 6.20 compatibility (C++17, pybind11, dart::utils, OSG)")
-    print(f"Python: {sys.version.split()[0]}")
-    print(f"Pixi: {version('pixi')}")
-    print(f"Codex: {version('codex')}")
+    errors = run_checks(root)
+    commands = sorted((root / ".claude" / "commands").glob("*.md"))
+    skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
+    generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
+    agents = sorted((root / ".codex" / "agents").glob("*.toml"))
+    return {
+        "schema_version": 1,
+        "root": str(root),
+        "branch": branch or "(detached)",
+        "profile": {
+            "name": "release-6.20",
+            "cpp_standard": "C++17",
+            "python_binding": "pybind11",
+            "io_namespace": "dart::utils",
+            "gui_backend": "OSG",
+        },
+        "working_tree": _working_tree_state(root),
+        "tools": {
+            "python": sys.version.split()[0],
+            "pixi": version("pixi"),
+            "codex": version("codex"),
+            "claude": version("claude"),
+            "opencode": version("opencode"),
+        },
+        "inventory": {
+            "source_commands": _path_inventory(commands, root),
+            "source_skills": _path_inventory(skills, root),
+            "generated_skills": {
+                **_path_inventory(generated, root),
+                "manifest": ".agents/skills/.dart-generated.json",
+            },
+            "custom_agents": _path_inventory(agents, root),
+            "model_harness": _model_harness_inventory(root),
+            "durable_context": _durable_context_inventory(root),
+            "visual_verification": _visual_verification_inventory(root),
+        },
+        "errors": errors,
+        "ok": not errors,
+    }
+
+
+def print_doctor(data: dict[str, Any]) -> None:
+    state = "PASS" if data["ok"] else "FAIL"
+    profile = data["profile"]
+    inventory = data["inventory"]
+    model_harness = inventory["model_harness"]
+    print(f"DART 6 AI doctor: {state}")
+    print(f"  repository: {data['root']}")
+    print(f"  branch: {data['branch']}")
+    print(
+        "  profile: "
+        f"{profile['name']} ({profile['cpp_standard']}, "
+        f"{profile['python_binding']}, {profile['io_namespace']}, "
+        f"{profile['gui_backend']})"
+    )
+    print(f"  working tree: {data['working_tree']}")
+    print(
+        "  inventory: "
+        f"{inventory['source_commands']['count']} commands, "
+        f"{inventory['source_skills']['count']} source skills, "
+        f"{inventory['generated_skills']['count']} generated skills, "
+        f"{inventory['custom_agents']['count']} custom agents, "
+        f"{inventory['durable_context']['active_dev_tasks']['count']} "
+        "active dev tasks"
+    )
+    project_pins = len(model_harness["model_pins"]["project"]) + len(
+        model_harness["model_pins"]["project_agents"]
+    )
+    print(
+        "  model harness: "
+        f"{project_pins} project pins, "
+        f"{len(model_harness['model_pins']['custom_agents'])} custom-agent pins, "
+        f"{model_harness['workflow_sources']['longest']['lines']}/"
+        f"{model_harness['domain_skill_sources']['longest']['lines']} "
+        "lines in longest workflow/domain skill, "
+        f"{model_harness['generated_skill_metadata_chars']} generated "
+        "skill-metadata chars"
+    )
+    visual = inventory["visual_verification"]
+    print(
+        "  visual verification: "
+        f"{visual['backend']}, {len(visual['tasks'])} tasks, "
+        f"DISPLAY={visual['display'] or '(unset)'}, xvfb-run={visual['xvfb_run']}"
+    )
+    for tool, tool_version in data["tools"].items():
+        print(f"  {tool}: {tool_version}")
     print("Trust: project agents and hooks load only after the repository is trusted")
     print("Hook inspection: use `/hooks` in Codex; git hook: `pixi run install-hooks`")
+    for error in data["errors"]:
+        print(f"  ERROR: {error}")
 
 
 def main() -> int:
@@ -1422,15 +1868,26 @@ def main() -> int:
     modes.add_argument(
         "--scenarios", action="store_true", help="exercise deterministic scenarios"
     )
+    parser.add_argument(
+        "--json", action="store_true", help="emit machine-readable doctor JSON"
+    )
     parser.add_argument("--repo-root", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     root = (args.repo_root or Path(__file__).resolve().parents[1]).resolve()
 
+    if args.json and not args.doctor:
+        parser.error("--json requires --doctor")
+
+    if args.doctor:
+        data = doctor_report(root)
+        if args.json:
+            print(json.dumps(data, indent=2, sort_keys=True))
+        else:
+            print_doctor(data)
+        return 0 if data["ok"] else 1
     if args.scenarios:
         errors = exercise_scenarios(root)
     else:
-        if args.doctor:
-            print_doctor(root)
         errors = run_checks(root)
 
     if errors:

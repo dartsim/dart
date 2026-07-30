@@ -68,6 +68,11 @@
     text-first plus claim-tied OSG visual-debugging route, while preserving
     Claude Code and OpenCode adapters.
 
+  * Add a release-tailored model-upgrade audit and strengthen agent visual
+    verification with durable-context diagnostics, viewport-aware assessed OSG
+    framing, deterministic semantic-review targets and bundles, and fail-closed
+    evidence publication.
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.

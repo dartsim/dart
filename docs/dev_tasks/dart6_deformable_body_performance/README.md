@@ -9,55 +9,26 @@ Make DART 6 deformable-body simulation feature-complete, stable, and fast
 enough to beat representative competing implementations and at least match the
 published real-time or near-real-time targets from the reference papers on CPU.
 
-## Current milestone - PR stabilization
+## Current milestone - post-#3382 parity execution
 
-The representative release slice is open as
-[#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. Published implementation head
-`891f43fd590` includes the Windows calibration, detector ABI repair, direct
-soft-cache fix, Gazebo hot-path correction, preparation-state review fix, and
-clean merge of `origin/release-6.20@6a1d377f616`.
+The representative release slice
+[#3382](https://github.com/dartsim/dart/pull/3382) merged into `release-6.20` as
+`6c88ac1d774` on 2026-07-29. Its detector ABI repair, adaptive-contact and
+native-soft lanes, Gazebo hot-path correction, demos, and review fixes are now
+baseline behavior. `06-pr-evidence.md` retains the exact historical evidence;
+do not treat its old branch heads as current checkout instructions.
 
-The published Gazebo correction removes an unintended
-`ConstraintSolverClearStateRegistry` mutex/hash lookup from every simulation
-step. Previous-step clear work now comes from solver state already retained for
-the next update, and newly inserted skeletons are sanitized outside the step
-path. The default gz-physics `GzOdeCollisionDetector` path cannot reach the
-PR's optional native/FCL/Bullet soft lanes or changed soft inverse-matrix
-fallback. A production plugin-boundary A/B measured the falling/contact world
-flat-to-faster (-0.074% mean across 20 interleaved pairs) and the empty world
-24.999% faster; the complete gz-physics 199/199 + 4/4 and gz-sim 1/1 gates pass.
-See `06-pr-evidence.md` for the structural and timing proof.
+The **M2.0** ABI-safe FEM integration seam is validated
+(`11-fem-integration-seam.md`), and the internal-only **M2.1** volumetric FEM
+foundation landed in `d68ca4e9c29` with its damping correction in
+`d65e88ebda4` (`13-fem-foundation.md`). The next FEM increment is **M2.2**:
+elastic element forces, energy/stability gates, and the first deforming demo.
+The soft-foot SIMBICON lane can proceed in parallel.
 
-Fresh review of `c41f273d271` found that preparation could erase the pending
-active-set clear signal after a manual-only solve. Commit `891f43fd590`
-preserves the active-set bookkeeping across preparation without changing
-`solve()` or the measured gz steady-state path. Its focused regression failed
-before and passes after the fix.
-
-The only product signal from the earlier `b172b2ee1db` suite was a Windows
-failure in `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`:
-legacy FCL's `default adaptive` lane measured `0.12115883267368355` m maximum
-per-step center-of-pressure displacement against the former `0.11` m bound. The
-test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
-`0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
-all force, support, spike, finite-state, and per-step guards.
-
-The published correction and review fix pass the full 57/57
-`test_ConstraintSolver` target, a focused 6/6 constraint/world/collision gate,
-14/14 native-soft zero-allocation cases, the full no-cache 154/154 C++ suite,
-199/199 gz-physics functional tests, 4/4 gz-physics performance checks, and the
-gz-sim integration test. Earlier calibration and ABI evidence remains recorded
-in `06-pr-evidence.md`; only exact current branch-tip hosted CI and review are
-authoritative.
-
-No valid final paired timing artifact exists: every attempted directory lacks
-`COMPLETE.json` because this shared host never passed the runner's admission
-gates. #3382 therefore remains a representative release slice, not completion
-of the broader PLAN-622 objective. Competitive-envelope and flexible-foot
-decisions, WP-DB.07 scaling, WP-DB.08 native-owned/default coverage, the
-separate `main` zero-DoF assertion fix, and a valid paired artifact or explicit
-maintainer disposition remain open. Exact takeover state is in `RESUME.md`.
+PLAN-622 remains active. The competitive envelope and flexible-foot decision,
+WP-DB.07 scaling, WP-DB.08 native-owned/default coverage, a valid paired
+artifact or approved disposition, and the separate `main` zero-DoF assertion
+fix remain open. Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 
@@ -138,9 +109,9 @@ below.
   rows and host-state history, alternates detector order across 20 pairs per
   row, and requires `COMPLETE.json` before any verdict is valid. Its reviewed
   protocol and deferred final command are in `06-pr-evidence.md`.
-- `06-pr-evidence.md` records the current same-host baseline-vs-branch
-  benchmark smoke rows, native/FCL headless parity evidence, and the current
-  GUI-video status for PR preparation.
+- `06-pr-evidence.md` records the historical same-host baseline-vs-branch
+  benchmark smoke rows, native/FCL headless parity evidence, and GUI-video
+  status used to prepare #3382. Its branch heads are not current instructions.
 - `docs/design/dart6_deformable_body.md` now owns the staged native-owned
   soft-kernel follow-up contract, and PLAN-622 owns the separate `main`
   zero-DoF assertion fix. These facts no longer depend on this temporary task
@@ -233,7 +204,7 @@ below.
 | Packet | Current disposition | Acceptance evidence |
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
-| WP-DB.02 stability gate | Implemented for the release slice; Windows confirmed the calibration on `05d9de6e3fb`, while final ABI-fix-head CI remains pending. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`. Commit `50a254e7e56` calibrates only the legacy-FCL CoP bound to just above one `0.125` m scene mesh interval; native and all other guards remain unchanged (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
+| WP-DB.02 stability gate | Complete for the merged release slice; final #3382 CI passed before merge. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`. Commit `50a254e7e56` calibrates only the legacy-FCL CoP bound to just above one `0.125` m scene mesh interval; native and all other guards remain unchanged (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
 | WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row remains neither implemented nor deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 | WP-DB.04 coupled equation correctness | Review fix published and thread resolved. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass on published commit `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
@@ -285,8 +256,7 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - Durable promotion has started in
   `docs/background/deformable_body_paper_targets.md`,
   `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this
-  temporary task folder, publish and stabilize #3382, obtain the remaining
-  competitive-envelope and flexible-foot decisions, preserve WP-DB.07 and
-  WP-DB.08 as explicit follow-ups, record the final paired artifact or approved
-  disposition, and verify that no required fact remains owned only by this
-  folder.
+  temporary task folder, obtain the remaining competitive-envelope and
+  flexible-foot decisions, preserve WP-DB.07 and WP-DB.08 as explicit
+  follow-ups, record the final paired artifact or approved disposition, and
+  verify that no required fact remains owned only by this folder.
