@@ -1,8 +1,120 @@
 # Fresh Session Handoff Prompt
 
-This prompt reflects the 2026-07-22 checkpoint in
-[RESUME.md](RESUME.md). Copy it into a fresh session without appending an older
-cached status summary.
+Use the first prompt below. It reflects the 2026-07-29 current-head execution
+checkpoint in [RESUME.md](RESUME.md) and supersedes the archived 2026-07-22
+prompt later in this file.
+
+```text
+Continue the active DART 6.20 exact-Coulomb FBF task in:
+
+  /home/js/dev/dartsim/dart/task_6
+
+Project home:
+
+  docs/dev_tasks/fbf_exact_coulomb_friction/
+
+The task is incomplete. The answer to whether all paper tests, benchmarks, GUI
+examples, outcomes, and performance results are covered remains "No." Read
+AGENTS.md and docs/ai/principles.md, then start with the top 2026-07-29
+checkpoint in RESUME.md and AGENT_CONTINUATION.md. Those current sections
+supersede all older branch-head, capture, attachment, and CI statements.
+
+Current durable branch:
+
+  branch research/fbf-friction-release620
+  pushed HEAD 333a809f14a2e8b5f9837c74dcef13c77ca8fd76
+  latest merged release-6.20 checkpoint d65e88ebda4
+  merge checkpoint d209da2cbf1
+  fetched target now 6c88ac1d774 (PR #3382), not yet merged
+
+PR #3377 is open, draft, and had 264 net changed files at the last live query.
+It must remain draft. The current net tree tracks no generated task assets or
+raw capture output. docs/dev_tasks/.gitignore uses the scalable role-based
+**/assets/ rule. Do not add broad *.png, *.csv, *.obj, or similar ignores:
+runtime source assets would be hidden. The 101 masonry OBJ files are required
+source-pinned demo inputs, not generated data.
+
+Captured 333a evidence runtime:
+
+  dart-demos SHA-256
+  3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750
+
+  exact build-tree libdart.so.6.19.4 SHA-256
+  3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926
+
+Visual evidence schema v3 binds the demo, 61 regular libraries, eight
+build-tree libraries, and the exact core DART library before and after capture.
+No visual capture is currently active.
+
+Fresh current-runtime evidence is under ignored
+assets/pr_media_current_head_333a/:
+
+- Figure 3 exact and boxed complete 240/240 and pass independent verification
+  and the bounded outcome slice. The sphere has the requested checker texture;
+  manual inspection confirms visibly changing orientation. Exact/group clip
+  SHA-256 values are b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30
+  and e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b.
+  Both lanes pass; no superiority or paper-parity claim follows.
+- Figure 8 is sealed, independently verified, and upload_ready=true as a
+  valid_current_dart_blocker_diagnostic. Exact stops at iteration_cap after
+  completed step 209 and freezes only the last valid step-208 image; boxed
+  completes 1,600 but fails the standing oracle and collapses. Clip/panel
+  SHA-256 values are 5e83527d2ed13218fda295b1dc30143007e012b333d63e965a765790145bb1d7
+  and d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372.
+  This is not a complete exact trajectory, historical invocation, superiority,
+  or paper-parity result.
+- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
+  same unchanged runtime. Standalone verification, full decode, and manual
+  panel/keyframe inspection pass. Exact has 7,702/7,702 solves and zero
+  failures/fallbacks. Exact/boxed/group clip SHA-256 values are
+  19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d,
+  d8066f899834303f8cbced3cc75c7e9e89716bb0f31d67011a361e0e1f1db442,
+  and 438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d.
+  Exact alone requests source continuation and no automated semantic outcome
+  exists, so the group is not strict, solver-only, superiority, or parity
+  evidence.
+
+All 16 GitHub user attachments are referenced from the draft PR and were
+re-downloaded from their PR-facing URLs; all match their full recorded SHA-256
+values. Slot 09 is now the fresh schema-v3 current-runtime group
+(`438b02b2...`) at user attachment `af9d80bf...`; the historical provisional
+bytes were replaced.
+PAPER_DEMO_VIDEO_MATRIX.md owns the verified URL/hash ledger.
+
+At the last query, current-head CI had one failure: macOS arm64-Debug failed an
+untouched randomized JOINTS.CONVENIENCE_FUNCTIONS transform test. The base
+passed and the local focused test passed 1,000 repeats, so do not patch this
+branch unless a fresh run supplies contrary evidence.
+
+The first post-capture matched performance attempt is retained only at
+/tmp/fbf-mark26-current-head-rerun. It has the same measured-work fingerprint
+as mark26 and passes affinity, residency, solver, and outcome gates, but ran
+under sustained GUI/editor load immediately after the five-hour capture with an
+82 C package. Treat its 12.924/12.321 ms means and 1.0489x speedup as a
+host-contention diagnostic, not publishable replacement evidence. Rerun once
+after merging/rebuilding and meeting a declared cool/low-load gate.
+
+Immediate order:
+
+1. Preserve the sealed schema-v3 Figure 3, Figure 8, and ten-level evidence
+   roots and the passing 16-URL PR reference/download/hash audit.
+2. Run the isolated matched one-/four-core performance rerun and synchronize
+   only the narrow non-paper throughput claims it actually proves.
+3. Merge fetched origin/release-6.20 `6c88ac1d774` before the next push; run lint,
+   build, focused tests, and the fail-closed evidence validators.
+4. Keep all exact/boxed policy asymmetry and Figure 8 frozen-prefix claim
+   boundaries explicit. Continue the full 29-row parity, performance, CI, and
+   review closeout; do not retire the task folder early.
+
+Never add AI/tool attribution to commits or PRs. Preserve unrelated worktree
+changes. Requery mutable GitHub, branch, CI, and review state before reporting
+or mutating it.
+```
+
+## Archived 2026-07-22 Prompt
+
+The following block is retained only as historical context. Do not copy it as
+the current handoff.
 
 ```text
 Continue the active DART 6.20 exact-Coulomb FBF task in:

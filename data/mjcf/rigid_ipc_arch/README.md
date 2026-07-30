@@ -1,20 +1,23 @@
-# Rigid-IPC 101-stone masonry arch (MJCF scene)
+# 101-stone masonry arch meshes and MJCF reference scene
 
-Source repository: <https://github.com/ipc-sim/rigid-ipc>, commit
+The 101 stone meshes are source-bound to the public FBF reference repository,
+<https://github.com/matthcsong/fbf-sca-2026>, commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, under
+`meshes/arch/num_stones=101/`. All 101 checked-in OBJ files are byte-identical
+to that pinned tree. The normalized `sha256sum stone-*.obj` ledger digest is
+`2841fe941dba046936e950f1875e01374259e2ddc28b5bcf40c465fd10f71993`.
+
+The FBF repository credits the geometry to the
+[Rigid-IPC dataset](https://github.com/ipc-sim/rigid-ipc). The original local
+extraction was independently pinned to Rigid-IPC commit
 `23b6ba6fbf8434056444ae106356fd2209136988` ("Write GLTF in input orientation",
-2025-06-13). License: MIT, see [`LICENSE.md`](LICENSE.md) (Copyright (c) 2021
-Zachary Ferguson and the IPC Simulation organization).
-
-Rigid-IPC implements Ferguson et al., "Intersection-free Rigid Body
-Dynamics" (SIGGRAPH 2021), and is the masonry-arch dataset credited by Song,
-Fan, Ascher, and Pai's exact-Coulomb FBF paper (SCA 2026). The FBF paper's
-own repository (`https://github.com/matthcsong/fbf-sca-2026`) returned
-HTTP 404 on 2026-07-09 (checked before and after this extraction), so this is
-the only available author-adjacent geometry source for the paper's Fig. 8
-(101-stone arch) scene.
+2025-06-13). Rigid-IPC implements Ferguson et al., "Intersection-free Rigid
+Body Dynamics" (SIGGRAPH 2021). Its MIT license is retained in
+[`LICENSE.md`](LICENSE.md) (Copyright (c) 2021 Zachary Ferguson and the IPC
+Simulation organization).
 
 Files here retain masonry-arch source geometry and provenance. They are not read
-by any DART library target and add no core dependency; see
+by any core DART library target and add no core dependency; see
 `docs/ai/principles.md` / `AGENTS.md` for the repository's compatibility-first
 policy on example data assets.
 
@@ -25,9 +28,8 @@ policy on example data assets.
   repository (an MJCF port Rigid-IPC ships itself, "reference only" per the
   extraction manifest).
 - `plane.obj`: the flat ground-plane mesh (`meshes/plane.obj` upstream).
-- `arch/num_stones=101/stone-01.obj` .. `stone-101.obj`: the 101 voussoir
-  wedge meshes (`meshes/arch/num_stones=101/` upstream), 8 vertices / 12
-  triangles each.
+- `arch/num_stones=101/stone-01.obj` .. `stone-101.obj`: the 101
+  source-bound voussoir meshes, 8 vertices / 12 triangles each.
 
 ## Adaptations from the upstream XML (attribute-only, no vertex data changed)
 
@@ -56,9 +58,10 @@ unmodified.
 
 ## Known limitations
 
-- This is Rigid-IPC's own MJCF port of the scene, not a scene
-  authored by the FBF paper itself (which remains unavailable; see above).
-  This source asset does not establish a byte-for-byte paper reproduction.
+- The XML is Rigid-IPC's MJCF port, not a scene authored by the FBF
+  paper. The OBJ geometry is byte-identical to the pinned public FBF source,
+  but the source MJCF configuration is not a byte-for-byte paper
+  reproduction.
 - Density is left at the source scene's MuJoCo per-mesh density default (`1000 kg/m^3`), matching
   Rigid-IPC's own unspecified-density default
   (`src/io/read_rb_scene.cpp:68` upstream).
