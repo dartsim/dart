@@ -5,9 +5,15 @@ using DART 7 clean-break APIs as the implementation target.
 
 ## Objective
 
-Make DART 6 deformable-body simulation feature-complete, stable, and fast
-enough to beat representative competing implementations and at least match the
-published real-time or near-real-time targets from the reference papers on CPU.
+Make DART 6 deformable-body simulation feature-complete, stable, and fast enough
+to beat representative competing in-tree implementations and at least match the
+published real-time or near-real-time CPU targets of **Jain and Liu 2011**.
+
+**DART 6 scope is the Jain/Liu lane only.** Kim and Pollard's reduced volumetric
+FEM was removed from `release-6.20` on 2026-07-29 and retargeted to DART 7,
+because the two papers need different discretizations and a compatibility
+release branch should carry one deformable model. Do not restart it here. The
+durable owner of that scope is `docs/design/dart6_deformable_body.md`.
 
 ## Current milestone - PR stabilization
 
@@ -61,21 +67,27 @@ maintainer disposition remain open. Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 
-- Kim and Pollard, "Fast Simulation of Skeleton-driven Deformable Body
-  Characters" (ACM TOG 30(5), 2011): reduced nonlinear FEM, two-way
-  skeleton/deformable/environment coupling, linear-time skeleton dynamics,
-  explicit integration, and real-time or near-real-time character demos.
+**Active for DART 6:**
+
 - Jain and Liu, "Controlling Physics-Based Characters Using Soft Contacts"
   (SIGGRAPH Asia 2011): point-mass surface flesh attached to articulated rigid
   bodies, vertex and edge springs, adaptive active surface vertices near
-  contact, and LCP contact/friction coupling for controller robustness.
+  contact, and LCP contact/friction coupling for controller robustness. This is
+  the model `SoftBodyNode` implements.
+
+**Not DART 6 work — retargeted to DART 7 on 2026-07-29:**
+
+- Kim and Pollard, "Fast Simulation of Skeleton-driven Deformable Body
+  Characters" (ACM TOG 30(5), 2011): reduced nonlinear volumetric FEM, two-way
+  skeleton/deformable/environment coupling, explicit integration. Retained here
+  only as the paper ledger. Whether a reduced FEM is still the right DART 7
+  target is open given newer solvers such as AVBD.
 
 Before this task, DART 6 `SoftBodyNode` resembled the Jain/Liu point-mass
 surface model without proving the coupled equations, adaptive activation,
 contact correctness, or a measured performance envelope. #3382 closes a
-representative release slice of those gaps; the original paper-scale,
-large-scene scaling, and native-default contracts that remain unmet stay open
-below.
+representative release slice of those gaps; the remaining **Jain/Liu** rows,
+large-scene scaling, and native-default contracts stay open below.
 
 ## Compatibility envelope
 

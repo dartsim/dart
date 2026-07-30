@@ -80,17 +80,7 @@ gates (WP-DB.02), CPU cache/data-layout slices (WP-DB.06), representative
 Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 **LCP-robustness** rows.
 
-## 5. Gap analysis (what full parity still needs)
-
-### Kim/Pollard — RETIRED from DART 6 (see Part B)
-| Row | Needs |
-| --- | --- |
-| Fatman (one-way jiggle, 4,887/60 DOF) | Volumetric FEM body + embedded surface + one-way skeleton drive |
-| Starfish (two-way jump-turn) | Two-way skeleton↔FEM↔env coupling |
-| Fish (two-way actuated jump/landing) | + internal actuation + contact during landing |
-| Worm (two-way actuated roll) at paper scale | + large-deformation-near-joints, ground contact |
-| Obstacle-escape starfish | + contact-heavy point-triangle collision, profiler breakdown |
-| CPU scaling / selective diagonalization | reduced/modal solve + SVD-based speedup, 1/multi-thread, SIMD |
+## 5. Gap analysis (what Jain/Liu parity still needs)
 
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
@@ -167,13 +157,15 @@ What must be **built/authored** for PR-3:
   keep all new work size-gated/opt-in. Regression-gate with a pure-rigid
   benchmark + the Gazebo plugin-boundary A/B (the pattern already used for the
   registry removal).
-- **Multi-core scaling (WP-DB.07)**: still-open acceptance; the larger FEM/paper
-  workloads are the natural place to demonstrate real threads>1 speedup.
+- **Multi-core scaling (WP-DB.07)**: still-open acceptance. The contact-heavy
+  Jain/Liu scenes — noisy-floor locomotion and the hand/manipulation rows, which
+  carry many simultaneous soft contacts — are the DART 6 place to demonstrate a
+  real threads>1 speedup.
 - **Competitive envelope**: `decisions.md` item 2 (in-tree backends + normalized
   paper metrics; external engines out of scope) still needs formal sign-off —
   needed to define "beat competing implementations". **Decision request.**
-- **SIMD**: apply the `dart/simd/` contract to the FEM element/modal kernels
-  where vectorizable; report SIMD-off/on.
+- **SIMD**: apply the `dart/simd/` contract to the vectorizable point-mass and
+  soft-contact kernels; report SIMD-off/on.
 
 ## 9. Risks & open decisions
 
@@ -184,9 +176,9 @@ What must be **built/authored** for PR-3:
    DART 6's per-step seam is retained in `11-fem-integration-seam.md` because it
    constrains any future per-step extension, deformable or not.
 3. **Competitive-envelope definition**: needs sign-off (see §8).
-4. **Model authoring**: Fatman/starfish/fish tet meshes, biped/hand assets, and
-   the four-link foot must be created or sourced; licensing/provenance to
-   confirm.
+4. **Model authoring**: the hand/arm assets and the four-link flexible foot must
+   be created or sourced, with licensing and provenance confirmed. No tet meshes
+   are needed; those belonged to the retired lane.
 5. **Scope realism**: this is a multi-month, multi-PR research reproduction;
    milestones are independently shippable and gated so value lands incrementally.
 
@@ -267,3 +259,13 @@ Zero-rigid-overhead: the FEM work is naturally size-gated (no FEM bodies ⇒ no
 FEM constraints/nodes ⇒ zero iterations), mirroring how the soft loops cost
 nothing when empty. Gate with the existing rigid benchmark + Gazebo
 plugin-boundary A/B.
+
+## B.2 Kim/Pollard gap ledger (retired; what was never built)
+| Row | Needs |
+| --- | --- |
+| Fatman (one-way jiggle, 4,887/60 DOF) | Volumetric FEM body + embedded surface + one-way skeleton drive |
+| Starfish (two-way jump-turn) | Two-way skeleton↔FEM↔env coupling |
+| Fish (two-way actuated jump/landing) | + internal actuation + contact during landing |
+| Worm (two-way actuated roll) at paper scale | + large-deformation-near-joints, ground contact |
+| Obstacle-escape starfish | + contact-heavy point-triangle collision, profiler breakdown |
+| CPU scaling / selective diagonalization | reduced/modal solve + SVD-based speedup, 1/multi-thread, SIMD |
