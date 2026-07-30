@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/detail/deformable_elasticity/fem_tet_element.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 
@@ -40,12 +41,14 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <vector>
 
 #include <cmath>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
 namespace common = dart::common;
+namespace compute = dart::simulation::compute;
 
 namespace {
 
@@ -1168,4 +1171,282 @@ TEST(VbdCombinedDescent, AvbdRowsHonorConvergenceDisplacement)
   EXPECT_EQ(stats.iterations, 1u);
   EXPECT_EQ(stats.vertexUpdates, 1u);
   EXPECT_NEAR(positions[0].norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(
+    VbdCombinedDescent,
+    AvbdDualUpdateRowsAreBitwiseDeterministicAcrossWorkerCounts)
+{
+  constexpr std::size_t scalarRowCount = 8193u;
+  constexpr std::size_t frictionPairCount = 8193u;
+
+  struct SolveResult
+  {
+    std::vector<Vec3> positions;
+    std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+    std::vector<vbd::AvbdPointAttachmentRow> attachments;
+    std::vector<vbd::AvbdSpringFiniteStiffnessRow> springs;
+    std::vector<vbd::AvbdHalfSpaceFrictionRow> friction;
+    std::vector<vbd::AvbdSelfContactNormalRow> selfContact;
+    std::vector<vbd::AvbdSelfContactFrictionRow> selfContactFriction;
+    vbd::BlockDescentStats stats;
+  };
+
+  const auto solve = [](std::size_t workerCount) {
+    SolveResult result;
+    result.positions
+        = {Vec3(0.3, 0.3, 0.01),
+           Vec3(0.0, 0.0, 0.0),
+           Vec3(1.0, 0.0, 0.0),
+           Vec3(0.0, 1.0, 0.0)};
+    const std::array<Vec3, 4> stepStart{
+        result.positions[0],
+        result.positions[1],
+        result.positions[2],
+        result.positions[3]};
+    const std::vector<double> masses(result.positions.size(), 1.0);
+    const std::vector<std::uint8_t> fixed = {0u, 1u, 1u, 1u};
+    std::vector<Vec3> inertialTargets = result.positions;
+    inertialTargets[0] += Vec3(0.02, -0.01, 0.005);
+
+    const std::vector<vbd::SpringElement> springElements{
+        {0u, 1u, (result.positions[0] - result.positions[1]).norm()}};
+    const auto coloring
+        = vbd::colorSprings(result.positions.size(), springElements);
+    const auto adjacency
+        = vbd::SpringAdjacency::build(result.positions.size(), springElements);
+
+    result.contacts.reserve(scalarRowCount);
+    result.attachments.reserve(scalarRowCount);
+    result.springs.reserve(scalarRowCount);
+    result.selfContact.reserve(scalarRowCount);
+    for (std::size_t i = 0u; i < scalarRowCount; ++i) {
+      const double index = static_cast<double>(i);
+
+      vbd::AvbdHalfSpaceContactRow contact;
+      contact.vertex = 0u;
+      contact.plane.normal = Vec3::UnitZ();
+      contact.plane.offset = 0.02 + 1e-6 * index;
+      contact.state.stiffness = 20.0 + 0.01 * index;
+      contact.state.lambda = 0.001 * index;
+      result.contacts.push_back(contact);
+
+      vbd::AvbdPointAttachmentRow attachment;
+      attachment.vertex = 0u;
+      attachment.target = Vec3(0.32, 0.29, 0.015);
+      attachment.axis
+          = vbd::canonicalAvbdAttachmentAxis(static_cast<std::uint8_t>(i % 3u));
+      attachment.state.stiffness = 10.0 + 0.02 * index;
+      attachment.state.lambda = -0.0005 * index;
+      result.attachments.push_back(attachment);
+
+      vbd::AvbdSpringFiniteStiffnessRow spring;
+      spring.spring = 0u;
+      spring.state.stiffness = 5.0 + 0.01 * index;
+      spring.state.lambda = 1.0 + index;
+      spring.materialStiffness = 50.0 + 0.1 * index;
+      result.springs.push_back(spring);
+
+      vbd::AvbdSelfContactNormalRow selfContact;
+      selfContact.nodes = {0u, 1u, 2u, 3u};
+      selfContact.state.stiffness = 15.0 + 0.01 * index;
+      selfContact.state.lambda = 0.00025 * index;
+      selfContact.squaredActivationDistance = 4e-4;
+      result.selfContact.push_back(selfContact);
+    }
+
+    result.friction.reserve(2u * frictionPairCount);
+    result.selfContactFriction.reserve(2u * frictionPairCount);
+    for (std::size_t pair = 0u; pair < frictionPairCount; ++pair) {
+      const double index = static_cast<double>(pair);
+
+      vbd::AvbdHalfSpaceFrictionRow first;
+      first.vertex = 0u;
+      first.stepStartPosition = result.positions[0] - Vec3(0.01, -0.005, 0.0);
+      first.axis = Vec3::UnitX();
+      first.state.stiffness = 12.0 + 0.01 * index;
+      first.state.lambda = 0.001 * index;
+      first.bounds = {-25.0, 25.0};
+      vbd::AvbdHalfSpaceFrictionRow second = first;
+      second.axis = Vec3::UnitY();
+      second.state.lambda = -0.0015 * index;
+      result.friction.push_back(first);
+      result.friction.push_back(second);
+
+      vbd::AvbdSelfContactFrictionRow selfFirst;
+      selfFirst.nodes = {0u, 1u, 2u, 3u};
+      selfFirst.stepStartPositions = stepStart;
+      selfFirst.stepStartPositions[0] -= Vec3(0.005, 0.004, 0.0);
+      selfFirst.axis = 0u;
+      selfFirst.state.stiffness = 8.0 + 0.02 * index;
+      selfFirst.state.lambda = 0.00075 * index;
+      selfFirst.bounds = {-20.0, 20.0};
+      vbd::AvbdSelfContactFrictionRow selfSecond = selfFirst;
+      selfSecond.axis = 1u;
+      selfSecond.state.lambda = -0.00025 * index;
+      result.selfContactFriction.push_back(selfFirst);
+      result.selfContactFriction.push_back(selfSecond);
+    }
+    result.contacts.back().vertex = 99u;
+    result.attachments.back().vertex = 99u;
+    result.springs.back().spring = 99u;
+    result.selfContact.back().nodes = {99u, 100u, 101u, 102u};
+    result.friction[result.friction.size() - 2u].vertex = 99u;
+    result.friction.back().vertex = 99u;
+    result.selfContactFriction[result.selfContactFriction.size() - 2u].nodes
+        = {99u, 100u, 101u, 102u};
+    result.selfContactFriction.back().nodes = {99u, 100u, 101u, 102u};
+
+    vbd::BlockDescentOptions options;
+    options.iterations = 2u;
+    options.regularization = 1e-12;
+    vbd::AvbdHalfSpaceContactOptions contactOptions;
+    contactOptions.beta = 3.0;
+    contactOptions.maxStiffness = 1000.0;
+    vbd::AvbdPointAttachmentOptions attachmentOptions;
+    attachmentOptions.beta = 4.0;
+    attachmentOptions.maxStiffness = 1000.0;
+    vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+    springOptions.beta = 2.0;
+    springOptions.maxStiffness = 1000.0;
+    vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+    frictionOptions.beta = 5.0;
+    frictionOptions.maxStiffness = 1000.0;
+    vbd::AvbdSelfContactNormalOptions selfContactOptions;
+    selfContactOptions.beta = 6.0;
+    selfContactOptions.maxStiffness = 1000.0;
+    vbd::AvbdSelfContactFrictionOptions selfContactFrictionOptions;
+    selfContactFrictionOptions.beta = 7.0;
+    selfContactFrictionOptions.maxStiffness = 1000.0;
+
+    compute::ParallelExecutor executor(std::max<std::size_t>(1u, workerCount));
+    result.stats = vbd::blockDescentMassSpringAvbdRows(
+        result.positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springElements,
+        /*fallbackSpringStiffness=*/0.0,
+        /*timeStep=*/0.02,
+        result.contacts,
+        result.attachments,
+        result.springs,
+        coloring,
+        adjacency,
+        options,
+        contactOptions,
+        attachmentOptions,
+        springOptions,
+        &result.friction,
+        &frictionOptions,
+        &result.selfContact,
+        nullptr,
+        &selfContactOptions,
+        &result.selfContactFriction,
+        &selfContactFrictionOptions,
+        workerCount == 0u ? nullptr : &executor);
+    return result;
+  };
+
+  const SolveResult serial = solve(0u);
+  const double lastIndex = static_cast<double>(scalarRowCount - 1u);
+  EXPECT_EQ(serial.contacts.back().state.lambda, 0.001 * lastIndex);
+  EXPECT_EQ(serial.attachments.back().state.lambda, -0.0005 * lastIndex);
+  EXPECT_EQ(serial.springs.back().state.lambda, 1.0 + lastIndex);
+  EXPECT_EQ(serial.selfContact.back().state.lambda, 0.00025 * lastIndex);
+  EXPECT_EQ(
+      serial.friction[serial.friction.size() - 2u].state.lambda,
+      0.001 * lastIndex);
+  EXPECT_EQ(serial.friction.back().state.lambda, -0.0015 * lastIndex);
+  EXPECT_EQ(
+      serial.selfContactFriction[serial.selfContactFriction.size() - 2u]
+          .state.lambda,
+      0.00075 * lastIndex);
+  EXPECT_EQ(
+      serial.selfContactFriction.back().state.lambda, -0.00025 * lastIndex);
+  const auto expectSame = [&](const SolveResult& parallel) {
+    ASSERT_EQ(parallel.positions.size(), serial.positions.size());
+    for (std::size_t i = 0u; i < serial.positions.size(); ++i) {
+      EXPECT_TRUE(
+          (parallel.positions[i].array() == serial.positions[i].array()).all())
+          << "position=" << i;
+    }
+    EXPECT_EQ(parallel.stats.iterations, serial.stats.iterations);
+    EXPECT_EQ(parallel.stats.vertexUpdates, serial.stats.vertexUpdates);
+    EXPECT_EQ(
+        parallel.stats.finalResidualNormSquared,
+        serial.stats.finalResidualNormSquared);
+
+    const auto expectStates = [](const auto& actual, const auto& expected) {
+      ASSERT_EQ(actual.size(), expected.size());
+      for (std::size_t i = 0u; i < expected.size(); ++i) {
+        EXPECT_EQ(actual[i].state.lambda, expected[i].state.lambda)
+            << "row=" << i;
+        EXPECT_EQ(actual[i].state.stiffness, expected[i].state.stiffness)
+            << "row=" << i;
+      }
+    };
+    expectStates(parallel.contacts, serial.contacts);
+    expectStates(parallel.attachments, serial.attachments);
+    expectStates(parallel.springs, serial.springs);
+    expectStates(parallel.friction, serial.friction);
+    expectStates(parallel.selfContact, serial.selfContact);
+    expectStates(parallel.selfContactFriction, serial.selfContactFriction);
+  };
+
+  expectSame(solve(2u));
+  expectSame(solve(4u));
+}
+
+//==============================================================================
+TEST(VbdCombinedDescent, ParallelDualUpdatePreservesNonfiniteRowFailureBehavior)
+{
+  constexpr std::size_t rowCount = 8193u;
+  constexpr std::size_t nonfiniteRow = 4096u;
+  std::vector<Vec3> positions(rowCount, Vec3(0.0, 0.01, 0.0));
+  positions[nonfiniteRow].y() = std::numeric_limits<double>::quiet_NaN();
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> serial(rowCount);
+  for (std::size_t i = 0u; i < rowCount; ++i) {
+    serial[i].vertex = static_cast<std::uint32_t>(i);
+    serial[i].state.stiffness = 10.0 + 0.001 * static_cast<double>(i);
+    serial[i].state.lambda = 0.25;
+  }
+  auto parallel = serial;
+  vbd::AvbdHalfSpaceContactOptions options;
+  options.beta = 2.0;
+  options.maxStiffness = 1000.0;
+
+  const auto update = [&](auto& rows, compute::ComputeExecutor* executor) {
+    vbd::forEachAvbdRowUpdateRange(
+        executor, rows.size(), [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            auto& row = rows[i];
+            row.state = vbd::updateAvbdHalfSpaceContactNormalRow(
+                row.state,
+                positions[row.vertex],
+                row.plane,
+                options,
+                row.previousConstraintValue,
+                row.bounds);
+          }
+        });
+  };
+
+  update(serial, nullptr);
+  compute::ParallelExecutor executor(4u);
+  update(parallel, &executor);
+
+  for (std::size_t i = 0u; i < rowCount; ++i) {
+    if (i == nonfiniteRow) {
+      EXPECT_TRUE(std::isnan(serial[i].state.lambda));
+      EXPECT_TRUE(std::isnan(parallel[i].state.lambda));
+    } else {
+      EXPECT_EQ(parallel[i].state.lambda, serial[i].state.lambda)
+          << "row=" << i;
+    }
+    EXPECT_EQ(parallel[i].state.stiffness, serial[i].state.stiffness)
+        << "row=" << i;
+  }
 }

@@ -27,6 +27,7 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
@@ -51,6 +52,7 @@
 #include <cmath>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace compute = dart::simulation::compute;
 
 namespace {
 
@@ -1472,6 +1474,232 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
   EXPECT_EQ(stats.iterations, 1u);
   EXPECT_EQ(stats.bodyUpdates, 1u);
   EXPECT_NEAR(states[0].position.norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(
+    AvbdRigidBlock,
+    RigidDualUpdateRowsAreBitwiseDeterministicAcrossWorkerCounts)
+{
+  constexpr std::size_t rowCount = 8193u;
+
+  struct SolveResult
+  {
+    std::vector<vbd::AvbdRigidBodyState> states;
+    std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+    std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs;
+    std::vector<vbd::AvbdRigidBodyPointPairDistanceSpringRow> distanceSprings;
+    std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
+    std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs;
+    vbd::AvbdRigidBlockDescentStats stats;
+  };
+
+  const auto solve = [](std::size_t workerCount) {
+    SolveResult result;
+    result.states.resize(2u);
+    result.states[1].position = Vec3(0.6, 0.2, 0.1);
+    result.states[1].orientation = rotationZ(0.08);
+    std::vector<vbd::AvbdRigidBodyState> inertialTargets = result.states;
+    inertialTargets[1].position += Vec3(0.01, -0.005, 0.002);
+    inertialTargets[1].orientation = rotationZ(0.09);
+    const std::vector<double> masses = {1.0, 2.0};
+    const std::vector<Eigen::Matrix3d> inertias{
+        Eigen::Matrix3d::Identity(), 1.5 * Eigen::Matrix3d::Identity()};
+    const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+    result.attachments.reserve(rowCount);
+    result.pointPairs.reserve(rowCount);
+    result.distanceSprings.reserve(rowCount);
+    result.angularPairs.reserve(rowCount);
+    result.frictionPairs.reserve(rowCount);
+    for (std::size_t i = 0u; i < rowCount; ++i) {
+      const double index = static_cast<double>(i);
+      const Vec3 axis = Vec3::Unit(static_cast<Eigen::Index>(i % 3u));
+
+      vbd::AvbdRigidBodyPointAttachmentRow attachment;
+      attachment.body = 1u;
+      attachment.row.localPoint = Vec3(0.01, -0.02, 0.015);
+      attachment.row.target = vbd::avbdRigidBodyWorldPoint(
+                                  result.states[1], attachment.row.localPoint)
+                              + (0.005 + 1e-6 * index) * axis;
+      attachment.row.axis = axis;
+      attachment.row.state.stiffness = 5.0 + 0.01 * index;
+      attachment.row.state.lambda = -0.0005 * index;
+      result.attachments.push_back(attachment);
+
+      vbd::AvbdRigidBodyPointPairRow pointPair;
+      pointPair.bodyA = 0u;
+      pointPair.bodyB = 1u;
+      pointPair.row.localPointA = Vec3(0.02, 0.01, -0.01);
+      pointPair.row.localPointB = Vec3(-0.01, 0.015, 0.02);
+      pointPair.row.axis = axis;
+      pointPair.row.offset = -0.1 + 1e-5 * index;
+      pointPair.row.state.stiffness = 4.0 + 0.015 * index;
+      pointPair.row.state.lambda = 0.00075 * index;
+      if (i % 2u != 0u) {
+        pointPair.row.materialStiffness = 40.0 + 0.1 * index;
+      }
+      result.pointPairs.push_back(pointPair);
+
+      vbd::AvbdRigidBodyPointPairDistanceSpringRow distanceSpring;
+      distanceSpring.bodyA = 0u;
+      distanceSpring.bodyB = 1u;
+      distanceSpring.row.localPointA = Vec3(0.01, 0.0, 0.0);
+      distanceSpring.row.localPointB = Vec3(-0.01, 0.0, 0.0);
+      distanceSpring.row.restLength
+          = vbd::avbdRigidPointPairDistanceSpringRelativePosition(
+                result.states[0], result.states[1], distanceSpring.row)
+                .norm()
+            - 0.01;
+      distanceSpring.row.state.stiffness = 3.0 + 0.01 * index;
+      distanceSpring.row.state.lambda = 100.0 + index;
+      distanceSpring.row.materialStiffness = 30.0 + 0.1 * index;
+      result.distanceSprings.push_back(distanceSpring);
+
+      vbd::AvbdRigidBodyAngularPairRow angularPair;
+      angularPair.bodyA = 0u;
+      angularPair.bodyB = 1u;
+      vbd::AvbdScalarRowState angularState;
+      angularState.stiffness = 6.0 + 0.01 * index;
+      angularState.lambda = 0.00025 * index;
+      angularPair.row = vbd::makeAvbdRigidJointAngularRow(
+          Eigen::Quaterniond::Identity(), axis, angularState);
+      angularPair.row.offset = 1e-5 * index;
+      if (i % 2u != 0u) {
+        angularPair.row.materialStiffness = 50.0 + 0.1 * index;
+      }
+      result.angularPairs.push_back(angularPair);
+
+      vbd::AvbdRigidBodyPointPairFrictionRows frictionPair;
+      frictionPair.bodyA = 0u;
+      frictionPair.bodyB = 1u;
+      vbd::AvbdScalarRowState firstState;
+      firstState.stiffness = 7.0 + 0.01 * index;
+      firstState.lambda = 0.0005 * index;
+      vbd::AvbdScalarRowState secondState = firstState;
+      secondState.lambda = -0.00075 * index;
+      const Vec3 relative = vbd::avbdRigidPointPairRelativePosition(
+          result.states[0], result.states[1], pointPair.row);
+      frictionPair.first = vbd::makeAvbdRigidContactFrictionTangentRow(
+          pointPair.row.localPointA,
+          pointPair.row.localPointB,
+          Vec3::UnitX(),
+          relative - Vec3(0.004, -0.003, 0.0),
+          /*forceLimit=*/25.0,
+          firstState);
+      frictionPair.second = vbd::makeAvbdRigidContactFrictionTangentRow(
+          pointPair.row.localPointA,
+          pointPair.row.localPointB,
+          Vec3::UnitY(),
+          relative - Vec3(0.004, -0.003, 0.0),
+          /*forceLimit=*/25.0,
+          secondState);
+      result.frictionPairs.push_back(frictionPair);
+    }
+    result.attachments.back().body = 99u;
+    result.pointPairs.back().bodyB = 99u;
+    result.distanceSprings.back().bodyB = 99u;
+    result.angularPairs.back().bodyB = 99u;
+    result.frictionPairs.back().bodyB = 99u;
+
+    vbd::AvbdRigidBlockDescentOptions options;
+    options.iterations = 2u;
+    options.regularization = 1e-12;
+    vbd::AvbdRigidPointAttachmentOptions rowOptions;
+    rowOptions.beta = 3.0;
+    rowOptions.maxStiffness = 1000.0;
+    vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+    frictionOptions.beta = 4.0;
+    frictionOptions.maxStiffness = 1000.0;
+    vbd::AvbdRigidPointPairDistanceSpringOptions distanceSpringOptions;
+    distanceSpringOptions.beta = 2.0;
+    distanceSpringOptions.maxStiffness = 1000.0;
+    vbd::AvbdRigidBodyRowIndexScratch rowIndexScratch;
+    compute::ParallelExecutor executor(std::max<std::size_t>(1u, workerCount));
+
+    result.stats = vbd::blockDescentRigidBodiesAvbdRows(
+        result.states,
+        masses,
+        inertias,
+        fixed,
+        inertialTargets,
+        /*timeStep=*/0.02,
+        result.attachments,
+        result.pointPairs,
+        result.angularPairs,
+        result.frictionPairs,
+        options,
+        rowOptions,
+        frictionOptions,
+        &rowIndexScratch,
+        result.distanceSprings,
+        distanceSpringOptions,
+        workerCount == 0u ? nullptr : &executor);
+    return result;
+  };
+
+  const SolveResult serial = solve(0u);
+  const double lastIndex = static_cast<double>(rowCount - 1u);
+  EXPECT_EQ(serial.attachments.back().row.state.lambda, -0.0005 * lastIndex);
+  EXPECT_EQ(serial.pointPairs.back().row.state.lambda, 0.00075 * lastIndex);
+  EXPECT_EQ(serial.distanceSprings.back().row.state.lambda, 100.0 + lastIndex);
+  EXPECT_EQ(serial.angularPairs.back().row.state.lambda, 0.00025 * lastIndex);
+  EXPECT_EQ(serial.frictionPairs.back().first.state.lambda, 0.0005 * lastIndex);
+  EXPECT_EQ(
+      serial.frictionPairs.back().second.state.lambda, -0.00075 * lastIndex);
+  const auto expectSame = [&](const SolveResult& parallel) {
+    ASSERT_EQ(parallel.states.size(), serial.states.size());
+    for (std::size_t i = 0u; i < serial.states.size(); ++i) {
+      EXPECT_TRUE((parallel.states[i].position.array()
+                   == serial.states[i].position.array())
+                      .all())
+          << "body=" << i << " position";
+      EXPECT_TRUE((parallel.states[i].orientation.coeffs().array()
+                   == serial.states[i].orientation.coeffs().array())
+                      .all())
+          << "body=" << i << " orientation";
+    }
+    EXPECT_EQ(parallel.stats.iterations, serial.stats.iterations);
+    EXPECT_EQ(parallel.stats.bodyUpdates, serial.stats.bodyUpdates);
+
+    const auto expectStates = [](const auto& actual, const auto& expected) {
+      ASSERT_EQ(actual.size(), expected.size());
+      for (std::size_t i = 0u; i < expected.size(); ++i) {
+        EXPECT_EQ(actual[i].row.state.lambda, expected[i].row.state.lambda)
+            << "row=" << i;
+        EXPECT_EQ(
+            actual[i].row.state.stiffness, expected[i].row.state.stiffness)
+            << "row=" << i;
+      }
+    };
+    expectStates(parallel.attachments, serial.attachments);
+    expectStates(parallel.pointPairs, serial.pointPairs);
+    expectStates(parallel.distanceSprings, serial.distanceSprings);
+    expectStates(parallel.angularPairs, serial.angularPairs);
+
+    ASSERT_EQ(parallel.frictionPairs.size(), serial.frictionPairs.size());
+    for (std::size_t i = 0u; i < serial.frictionPairs.size(); ++i) {
+      EXPECT_EQ(
+          parallel.frictionPairs[i].first.state.lambda,
+          serial.frictionPairs[i].first.state.lambda)
+          << "friction pair=" << i << " first lambda";
+      EXPECT_EQ(
+          parallel.frictionPairs[i].first.state.stiffness,
+          serial.frictionPairs[i].first.state.stiffness)
+          << "friction pair=" << i << " first stiffness";
+      EXPECT_EQ(
+          parallel.frictionPairs[i].second.state.lambda,
+          serial.frictionPairs[i].second.state.lambda)
+          << "friction pair=" << i << " second lambda";
+      EXPECT_EQ(
+          parallel.frictionPairs[i].second.state.stiffness,
+          serial.frictionPairs[i].second.state.stiffness)
+          << "friction pair=" << i << " second stiffness";
+    }
+  };
+
+  expectSame(solve(2u));
+  expectSame(solve(4u));
 }
 
 //==============================================================================

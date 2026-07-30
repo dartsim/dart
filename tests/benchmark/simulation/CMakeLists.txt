@@ -100,6 +100,11 @@ if(DART_SIMULATION_BUILD_BENCHMARKS)
   )
 
   dart_add_simulation_benchmark(
+    bm_avbd_parallel_row_update
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_avbd_parallel_row_update.cpp
+  )
+
+  dart_add_simulation_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )

@@ -5169,14 +5169,13 @@ void runVbdDeformableSolve(
       = hasRequestedAvbdMassSpringRows && vbdScratch.tets.empty()
         && !hasUnsupportedAvbdFrictionSource
         && (selfContact == nullptr || useAvbdSelfContactRows)
-        && executor.getWorkerCount() <= 1u && !options.useChebyshev
-        && options.rayleighDamping <= 0.0;
+        && !options.useChebyshev && options.rayleighDamping <= 0.0;
   const bool canUseAvbdTetMaterialRows
       = config.useAvbdFiniteStiffnessRows && !config.useAvbdContactNormalRows
         && !config.useAvbdAttachmentRows && contactPlanes.empty()
         && vbdScratch.springs.empty() && !vbdScratch.tets.empty()
-        && !hasUnsupportedAvbdFrictionSource && executor.getWorkerCount() <= 1u
-        && !options.useChebyshev && options.rayleighDamping <= 0.0;
+        && !hasUnsupportedAvbdFrictionSource && !options.useChebyshev
+        && options.rayleighDamping <= 0.0;
 
   dvbd::BlockDescentStats result;
   const auto projectAvbdSelfContactFrictionWarmStarts =
@@ -5665,7 +5664,8 @@ void runVbdDeformableSolve(
         &selfContactOptions,
         useAvbdSelfContactFrictionRows ? &vbdScratch.avbdSelfContactFrictionRows
                                        : nullptr,
-        useAvbdSelfContactFrictionRows ? &selfContactFrictionOptions : nullptr);
+        useAvbdSelfContactFrictionRows ? &selfContactFrictionOptions : nullptr,
+        &executor);
 
     for (std::size_t i = 0; i < vbdScratch.avbdContactRows.size(); ++i) {
       vbdScratch.avbdContactInventory[i].state
@@ -5941,7 +5941,8 @@ void runVbdDeformableSolve(
         useAvbdSelfContactRows ? &selfContactOptions : nullptr,
         useAvbdSelfContactFrictionRows ? &vbdScratch.avbdSelfContactFrictionRows
                                        : nullptr,
-        useAvbdSelfContactFrictionRows ? &selfContactFrictionOptions : nullptr);
+        useAvbdSelfContactFrictionRows ? &selfContactFrictionOptions : nullptr,
+        &executor);
 
     for (std::size_t i = 0; i < vbdScratch.avbdTetRows.size(); ++i) {
       vbdScratch.avbdTetInventory[i].state = vbdScratch.avbdTetRows[i].state;

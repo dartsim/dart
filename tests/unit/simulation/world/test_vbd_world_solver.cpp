@@ -755,9 +755,9 @@ TEST(VbdWorldSolver, AvbdContactNormalRowsSkipInactiveGroundRows)
 // mass-spring row path supports static contact/friction rows and explicit
 // self-contact row opt-ins, while the pure tet material row path can coexist
 // with the existing lagged VBD self-contact penalty. Mixed spring-plus-tet
-// topology, Chebyshev, Rayleigh damping, parallel execution, and unsupported
-// requested row families must keep using the existing VBD path and report no
-// AVBD rows.
+// topology, Chebyshev, Rayleigh damping, and unsupported requested row families
+// must keep using the existing VBD path and report no AVBD rows. Parallel AVBD
+// execution is covered by the dedicated World executor-parity tests.
 TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
 {
   const auto baseConfig = [] {
@@ -802,19 +802,6 @@ TEST(VbdWorldSolver, AvbdFiniteStiffnessRowsFallbackForUnsupportedEnvelopes)
     auto cfg = baseConfig();
     cfg.rayleighDamping = 0.1;
     const auto stats = run(makeChainOptions(8, 0.5), cfg);
-    expectNoAvbdRows(stats);
-  }
-  {
-    sx::World world;
-    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-    world.setTimeStep(0.01);
-    world.addDeformableBody("body", makeChainOptions(8, 0.5));
-    enableVbdConfig(world, baseConfig());
-
-    compute::DeformableDynamicsStage stage;
-    compute::ParallelExecutor executor(2);
-    stepOnce(world, stage, executor);
-    const auto stats = stage.getLastStats();
     expectNoAvbdRows(stats);
   }
 }

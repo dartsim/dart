@@ -32,15 +32,15 @@ below, so neither solver family has a paper-parity claim.
 | VBD TinyVBD             |       1 |       1 |       0 |       0 |        0 |
 | VBD project page        |       3 |       0 |       0 |       3 |        0 |
 | **VBD total**           |  **88** |  **40** |   **0** |  **48** |    **0** |
-| AVBD method             |      20 |      17 |       0 |       3 |        0 |
+| AVBD method             |      20 |      18 |       0 |       2 |        0 |
 | AVBD paper figures      |      15 |       9 |       0 |       6 |        0 |
 | AVBD paper tables       |       2 |       1 |       0 |       1 |        0 |
 | AVBD official video     |      14 |       7 |       0 |       7 |        0 |
 | AVBD demo2d             |      19 |      19 |       0 |       0 |        0 |
 | AVBD demo3d             |      14 |      14 |       0 |       0 |        0 |
 | AVBD project page       |       4 |       2 |       0 |       2 |        0 |
-| **AVBD total**          |  **88** |  **69** |   **0** |  **19** |    **0** |
-| **Grand total**         | **176** | **109** |   **0** |  **67** |    **0** |
+| **AVBD total**          |  **88** |  **70** |   **0** |  **18** |    **0** |
+| **Grand total**         | **176** | **110** |   **0** |  **66** |    **0** |
 
 `Partial` means only that at least one relevant DART artifact exists and that
 the row still records an explicit blocker. It is negative evidence against a

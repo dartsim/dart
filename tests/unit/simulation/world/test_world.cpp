@@ -3409,6 +3409,15 @@ void configureAvbdSelfContactFrictionProductionGridRowsScene(
   enableAvbdSelfContactFrictionRows(world);
 }
 
+void configureAvbdSelfContactFrictionParallelGridRowsScene(
+    dart::simulation::World& world)
+{
+  configureDeformableSelfContactFrictionGridSceneWithShape(
+      world, 21, 31, "avbd_self_contact_friction_parallel_grid");
+
+  enableAvbdSelfContactFrictionRows(world);
+}
+
 void configureVbdChebyshevSelfContactGridScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -9455,6 +9464,78 @@ TEST(World, RigidAvbdContactRowsAreActive)
   EXPECT_GT(sphere->getTranslation().z(), 0.49);
 }
 
+TEST(World, DeformableAvbdRowsRemainActiveWithParallelExecutor)
+{
+  namespace sx = dart::simulation;
+
+  sx::World sequentialWorld;
+  sx::World parallelWorld;
+  configureDeformableAvbdFiniteStiffnessRowsScene(sequentialWorld);
+  configureDeformableAvbdFiniteStiffnessRowsScene(parallelWorld);
+  auto sequentialBody
+      = sequentialWorld.getDeformableBody("avbd_finite_stiffness_spring");
+  auto parallelBody
+      = parallelWorld.getDeformableBody("avbd_finite_stiffness_spring");
+  ASSERT_TRUE(sequentialBody.has_value());
+  ASSERT_TRUE(parallelBody.has_value());
+
+  sequentialWorld.enterSimulationMode();
+  parallelWorld.enterSimulationMode();
+  sx::compute::SequentialExecutor sequentialExecutor;
+  sx::compute::DeformableDynamicsStage sequentialStage;
+  sequentialStage.execute(sequentialWorld, sequentialExecutor);
+  sx::compute::ParallelExecutor executor(4u);
+  sx::compute::DeformableDynamicsStage parallelStage;
+  parallelStage.execute(parallelWorld, executor);
+
+  const auto& stats = parallelStage.getLastStats();
+  EXPECT_EQ(stats.vbdBodyCount, 1u);
+  EXPECT_GT(stats.vbdAvbdFiniteStiffnessRows, 0u);
+  for (std::size_t node = 0u; node < 2u; ++node) {
+    EXPECT_TRUE((sequentialBody->getPosition(node).array()
+                 == parallelBody->getPosition(node).array())
+                    .all())
+        << "node=" << node << " position";
+    EXPECT_TRUE((sequentialBody->getVelocity(node).array()
+                 == parallelBody->getVelocity(node).array())
+                    .all())
+        << "node=" << node << " velocity";
+  }
+}
+
+TEST(World, RigidAvbdRowsRemainActiveWithParallelExecutor)
+{
+  namespace sx = dart::simulation;
+
+  sx::World sequentialWorld;
+  sx::World parallelWorld;
+  configureRigidAvbdContactRowsScene(sequentialWorld);
+  configureRigidAvbdContactRowsScene(parallelWorld);
+  auto sequentialSphere = sequentialWorld.getRigidBody("rigid_avbd_sphere");
+  auto parallelSphere = parallelWorld.getRigidBody("rigid_avbd_sphere");
+  ASSERT_TRUE(sequentialSphere.has_value());
+  ASSERT_TRUE(parallelSphere.has_value());
+
+  sequentialWorld.enterSimulationMode();
+  parallelWorld.enterSimulationMode();
+  ASSERT_FALSE(sequentialWorld.collide().empty());
+  ASSERT_FALSE(parallelWorld.collide().empty());
+  sequentialWorld.step();
+  sx::compute::ParallelExecutor executor(4u);
+  parallelWorld.step(executor);
+
+  EXPECT_TRUE((sequentialSphere->getTransform().matrix().array()
+               == parallelSphere->getTransform().matrix().array())
+                  .all());
+  EXPECT_TRUE((sequentialSphere->getLinearVelocity().array()
+               == parallelSphere->getLinearVelocity().array())
+                  .all());
+  EXPECT_TRUE((sequentialSphere->getAngularVelocity().array()
+               == parallelSphere->getAngularVelocity().array())
+                  .all());
+  EXPECT_GT(parallelSphere->getLinearVelocity().z(), 0.0);
+}
+
 TEST(World, RigidAvbdFixedJointRowsAreActiveWithoutContacts)
 {
   namespace sx = dart::simulation;
@@ -10352,6 +10433,96 @@ TEST(World, BakedAvbdVbdRowsDoNotMallocOnHeap)
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
+#endif
+}
+
+TEST(World, WarmedParallelAvbdDualUpdatePassIsAllocationStable)
+{
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The dispatch-sized AVBD self-contact allocation scene is too slow "
+         "under coverage instrumentation.";
+#else
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World baseAllocatorWorld(worldOptions);
+  configureAvbdSelfContactFrictionParallelGridRowsScene(baseAllocatorWorld);
+  auto& registry = sx::detail::registryOf(baseAllocatorWorld);
+  baseAllocatorWorld.enterSimulationMode();
+  sx::compute::ParallelExecutor baseAllocatorExecutor(4u);
+  baseAllocatorWorld.step(baseAllocatorExecutor);
+  baseAllocatorWorld.step(baseAllocatorExecutor);
+
+  const auto states
+      = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          registry);
+  ASSERT_EQ(states.size(), 1u);
+  ASSERT_GT(
+      states[0].selfContactRows.size(),
+      sx::detail::deformable_vbd::kAvbdParallelRowUpdateMinCount);
+
+  const auto allocationsAfterWarmup = allocator.allocationCount;
+  const auto deallocationsAfterWarmup = allocator.deallocationCount;
+  const auto alignedAllocationsAfterWarmup = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterWarmup
+      = allocator.alignedDeallocationCount;
+  for (int step = 0; step < 2; ++step) {
+    baseAllocatorWorld.step(baseAllocatorExecutor);
+  }
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterWarmup);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterWarmup);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterWarmup);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, alignedDeallocationsAfterWarmup);
+
+  const auto countGlobalAllocations = [](auto&& configureScene) {
+    sx::World world;
+    configureScene(world);
+    world.enterSimulationMode();
+    sx::compute::ParallelExecutor executor(4u);
+    world.step(executor);
+    world.step(executor);
+
+    ScopedHeapAllocationCounter heapCounter;
+    for (int step = 0; step < 2; ++step) {
+      world.step(executor);
+    }
+    heapCounter.stop();
+    return HeapAllocationSnapshot{
+        heapCounter.allocationCount(), heapCounter.allocationBytes()};
+  };
+  const auto graphFloor = countGlobalAllocations([](sx::World&) {});
+  const auto avbdGlobal = countGlobalAllocations(
+      configureAvbdSelfContactFrictionParallelGridRowsScene);
+  EXPECT_EQ(avbdGlobal.allocationCount, graphFloor.allocationCount);
+  EXPECT_EQ(avbdGlobal.allocationBytes, graphFloor.allocationBytes);
+
+  #if defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  const auto countRawAllocations = [](auto&& configureScene) {
+    sx::World world;
+    configureScene(world);
+    world.enterSimulationMode();
+    sx::compute::ParallelExecutor executor(4u);
+    world.step(executor);
+    world.step(executor);
+
+    ScopedRawHeapAllocationCounter rawCounter;
+    for (int step = 0; step < 2; ++step) {
+      world.step(executor);
+    }
+    rawCounter.stop();
+    return HeapAllocationSnapshot{
+        rawCounter.allocationCount(), rawCounter.allocationBytes()};
+  };
+  const auto rawGraphFloor = countRawAllocations([](sx::World&) {});
+  const auto avbdRaw = countRawAllocations(
+      configureAvbdSelfContactFrictionParallelGridRowsScene);
+  EXPECT_EQ(avbdRaw.allocationCount, rawGraphFloor.allocationCount);
+  EXPECT_EQ(avbdRaw.allocationBytes, rawGraphFloor.allocationBytes);
+  #endif
 #endif
 }
 

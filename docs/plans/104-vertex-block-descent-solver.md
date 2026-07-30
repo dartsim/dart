@@ -89,11 +89,13 @@ driver, a bounded half-space friction-tangent row primitive, and self-contact
 normal rows for point-triangle / edge-edge primitive directions and AVBD
 hard-row stamping. Self-contact friction tangent rows reuse lagged
 point-triangle / edge-edge tangent stencils in the combined mass-spring row
-driver, with supported World generation for serial self-contact scenes plus
+driver, with supported World generation for self-contact scenes plus
 pairwise static/dynamic switching and circular-cone projection.
 The supported mass-spring World envelope carries
 contact-normal, friction-tangent, self-contact-normal, attachment, and spring
-finite-stiffness families in one serial AVBD row solve. The supported
+finite-stiffness families in one AVBD row solve. Its primal sweep remains
+serial and deterministic, while sufficiently large independent post-primal
+dual/stiffness row inventories use deterministic CPU ranges. The supported
 frictionless pure-tetrahedral World envelope now carries finite-stiffness
 material rows with a dimensionless Lamé multiplier and separate tet-row
 diagnostics, while still using the existing lagged VBD self-contact penalty
@@ -985,18 +987,14 @@ breakable fixed point-joint, prismatic/revolute/spherical facade,
 articulated breakable-joint, and high-ratio articulated-chain slices are
 user-visible but intentionally small.
 They do not cover the AVBD source-demo or paper corpus, and the dashboard rows
-are narrow CPU public-World evidence only. The next bounded
-implementation work should prefer one of these gaps, in order:
+are narrow CPU public-World evidence only. The Section 4 post-primal
+dual/stiffness update is now a verified CPU partial over the promoted
+deformable and private free-rigid inventories; it remains open for
+articulated/unified rows, CUDA, and source-matched achieved-accuracy
+performance. The next bounded implementation work should prefer one of these
+remaining gaps, in order:
 
-1. **Parallel dual/stiffness update pass** — implement the Section 4
-   post-primal row-state update as a deterministic, allocation-stable
-   task-parallel CPU pass over the already-promoted deformable and rigid row
-   inventories. Require serial/parallel state equivalence, stable row ordering,
-   a warmed-step allocation gate, and a matched throughput packet before
-   expanding the claim. This starts the missing
-   `avbd.method.parallel_dual_stiffness_pass` row but does not close it until
-   every row family and CUDA use the same contract.
-2. **Articulated multibody AVBD extraction** — the private extractor now
+1. **Articulated multibody AVBD extraction** — the private extractor now
    classifies free rigid-body endpoints separately from multibody links, and
    explicitly hard fixed, masked revolute/prismatic, and breakable
    multibody-link point-joint configs can bridge into the variational
@@ -1154,7 +1152,7 @@ implementation work should prefer one of these gaps, in order:
    break/skip/reset endpoint-shape assertions, and explicit-anchor one-DOF
    motor reset endpoint/axis-shape assertions are current evidence rather than
    fresh next targets.
-3. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
+2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
    feature extraction and row identity so box/sphere/cylinder/capsule/plane/mesh
    contact manifolds persist across realistic rigid stacks and piles, building
    beyond the current known/unknown shape-frame feature mapping, endpoint-A/B
@@ -1199,7 +1197,7 @@ implementation work should prefer one of these gaps, in order:
    projection when contact normals rotate, then
    connect that evidence to the paper's rigid
    stacking/friction scenes.
-4. **Paper/source-demo corpus implementation** — the durable
+3. **Paper/source-demo corpus implementation** — the durable
    [`avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
    matrix now owns the 19 `avbd-demo2d` scenes, 14 `avbd-demo3d` scenes, paper
    scenes, website/video scenes, and performance packets. The first baseline row
@@ -1244,7 +1242,7 @@ implementation work should prefer one of these gaps, in order:
    finite-stiffness rows, hard multibody distance loop closures, and
    articulated per-axis compliant point-joint rows are not source-parity
    substitutes.
-5. **GPU row parity plan** — route each landed CPU row family through the
+4. **GPU row parity plan** — route each landed CPU row family through the
    private CUDA boundary only after the shared CUDA substrate and row inventory
    can preserve warm-started dual/stiffness state deterministically.
 
@@ -1291,6 +1289,26 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-07-30, the bounded AVBD Section 4 packet added a deterministic
+post-primal CPU dual/stiffness pass for the currently promoted deformable and
+private free-rigid row inventories. The serial primal/color order is unchanged;
+inventories at or below 8,192 rows stay inline, while larger independent
+contact, attachment, spring, tet-material, self-contact, angular, and paired
+friction inventories use allocation-stable persistent-worker ranges.
+Bitwise serial/2-worker/4-worker state tests cover every promoted row family,
+invalid-row no-ops, and non-finite propagation. Production `World` tests prove
+parallel executors no longer disable supported AVBD rows and that a
+dispatch-sized self-contact scene adds no warmed world-base, global-`new`, or
+raw-malloc allocation above the empty-graph floor. The final pinned
+exact-parent B-C-B-C benchmark records current 2-/4-worker speedups of
+1.66x/2.20x at 16,384 rows, 2.34x/3.77x at 32,768 rows, and 1.78x/3.90x at
+65,536 rows. These are descriptive mechanism-throughput results, not
+source-reference or paper-performance claims.
+[`avbd-parallel-dual-update-evidence.json`](104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json)
+advances `avbd.method.parallel_dual_stiffness_pass` from `missing` to
+`partial`; articulated/unified row coverage, CUDA, and source-matched
+achieved-accuracy performance remain open.
 
 On 2026-07-30, the bounded AVBD Section 3.5 quasi-Newton packet added a shared
 fixed-size column-norm kernel and applied the paper's force-scaled geometric

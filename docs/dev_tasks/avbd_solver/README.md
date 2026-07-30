@@ -23,19 +23,19 @@ This folder is the temporary working surface; the durable owner is the plan.
 - **Branch state:** active local branch
   `feature/vbd-avbd-paper-parity-contract`, based on `main` at `83110ef54ab`;
   the fail-closed contract is committed locally at `710cbfc1152`, and nothing
-  has been pushed.
-- **Current packet:** implement the Section 4 parallel dual/stiffness update
-  pass over the already-promoted CPU row inventories. The contracts contain 88
-  VBD and 88 AVBD requirements; all 176 remain incomplete until their recorded
-  correctness, solver-identity, CPU/CUDA, visual, and comparable-performance
-  predicates pass.
-- **Latest verified local packet:** `avbd.method.quasi_newton_hessian` advanced
-  from missing to partial. CPU deformable distance springs, rigid distance
-  springs, point attachments, and nonlinear point-pair joint/motor rows now
-  use the Section 3.5 column-norm model, while contact explicitly remains
-  Taylor-linearized. The row is not complete; angular/material families,
-  source adjudication, source-matched corpus evidence, CUDA, and comparable
-  achieved-accuracy performance remain open.
+  has been pushed. The Section 3.5 packet is committed locally at
+  `a78f688a178`; the Section 4 packet is the current local unpushed closeout.
+- **Current packet:** verified Section 4 parallel dual/stiffness update over
+  the already-promoted deformable and private free-rigid CPU row inventories.
+  The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
+  incomplete until their recorded correctness, solver-identity, CPU/CUDA,
+  visual, and comparable-performance predicates pass.
+- **Latest verified local packet:**
+  `avbd.method.parallel_dual_stiffness_pass` advanced from missing to partial.
+  The serial primal order is unchanged; inventories above the measured
+  8,192-row gate use deterministic, allocation-stable persistent-worker
+  ranges. The row is not complete; articulated/unified inventories, CUDA, and
+  source-matched achieved-accuracy performance remain open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -45,11 +45,16 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the fresh uncached Release/profile build, 168/168
-  selected unit tests, focused AVBD tests, and the relevant
-  world-base/global/raw allocation tests pass. Two allocator tests previously
-  recorded as pre-existing failures also pass in this build and are no longer
-  open blockers.
+- **Current local gates:** 228/228 focused compute/contact/deformable/rigid
+  tests and the three new production-World activation/allocation tests pass.
+  The complete World binary is 431/435; all four failures reproduce with the
+  same allocation counts and bytes on exact parent `a78f688a178`, so they are
+  recorded as pre-existing rather than attributed to this packet. The full
+  simulation label is 77/79 active CTest entries with only the two split
+  allocation entries failing on those same four assertions; its other two
+  listed entries are intentionally disabled. The aggregate C++ unit tier is
+  168/168. Release/profile build, lint, PLAN-104 parity, AVBD-packet, and
+  PLAN-122 allocation-matrix checks pass.
 
 ## Goal
 
@@ -80,10 +85,9 @@ numbers.
 
 ## Immediate Next Steps
 
-Begin the bounded Section 4 parallel dual/stiffness update packet below after
-the verified `avbd.method.quasi_newton_hessian` closeout. Keep every dependent
-figure/demo/performance row partial until source-matched CPU and CUDA evidence
-closes it.
+Advance PLAN-104's articulated multibody AVBD extraction gap after the verified
+Section 4 closeout. Keep every dependent figure/demo/performance row partial
+until source-matched CPU and CUDA evidence closes it.
 
 Two smaller deferred maintenance items remain valid but do not outrank the
 missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
@@ -138,7 +142,7 @@ improves 1.02%; the 2D/3D Spring mechanisms cost 2.32%/1.90% more. These are
 descriptive same-host costs, not paper/reference-performance claims. The
 120-frame software render passed pixel integrity and manual semantic review.
 
-## Active Packet: Section 4 Parallel Dual/Stiffness Update
+## Verified Local Packet: Section 4 Parallel Dual/Stiffness Update
 
 - **Value:** match Algorithm 1's additional post-primal pass without
   serializing otherwise independent AVBD rows.
@@ -154,6 +158,17 @@ descriptive same-host costs, not paper/reference-performance claims. The
 - **Claim boundary:** this can advance
   `avbd.method.parallel_dual_stiffness_pass` only to partial until all paper row
   families and CUDA share the same contract.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json`](../../plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json).
+Focused compute/deformable/rigid coverage passes 228/228, and the three new
+production-World activation/allocation tests pass. The exact-parent interleaved
+benchmark keeps 8,192 rows inline and records current 2-/4-worker speedups of
+1.66x/2.20x at 16,384 rows, 2.34x/3.77x at 32,768 rows, and 1.78x/3.90x at
+65,536 rows. These are descriptive mechanism-throughput results, not
+paper/reference-performance claims. No new render is required for this
+scheduling-only packet because bitwise serial/parallel row and production
+World state equivalence is the stronger behavior oracle.
 
 ## History
 

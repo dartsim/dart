@@ -34,6 +34,7 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
+#include <dart/simulation/detail/deformable_vbd/parallel_row_update.hpp>
 #include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 
 #include <dart/common/memory_allocator.hpp>
@@ -3534,6 +3535,12 @@ inline void avbdRigidRefreshRowIndexLayoutKeys(
 }
 
 //==============================================================================
+/// Run the rigid AVBD primal block sweep and persistent row-state update.
+///
+/// Body blocks retain deterministic serial order. When `rowUpdateExecutor` is
+/// provided, independent attachment, point-pair, distance, angular, and
+/// complete adjacent friction-pair updates use deterministic contiguous
+/// ranges; incomplete friction layouts preserve the serial fallback.
 template <
     typename AttachmentRowVector,
     typename PointPairRowVector,
@@ -3555,7 +3562,8 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     const AvbdRigidPointPairFrictionOptions& frictionOptions,
     AvbdRigidBodyRowIndexScratch* rowIndexScratch = nullptr,
     std::span<AvbdRigidBodyPointPairDistanceSpringRow> distanceSpringRows = {},
-    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {})
+    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {},
+    compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
   AvbdRigidBlockDescentStats stats;
   const std::size_t bodyCount = states.size();
@@ -4231,118 +4239,156 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       ++stats.bodyUpdates;
     }
 
-    for (AvbdRigidBodyPointAttachmentRow& indexedRow : attachmentRows) {
-      if (validBody(indexedRow.body)) {
-        indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
-            indexedRow.row.state,
-            states[indexedRow.body],
-            indexedRow.row,
-            rowOptions);
-      }
-    }
-    PointPairWorldPointCache pointPairUpdateCache;
-    for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        attachmentRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointAttachmentRow& indexedRow = attachmentRows[i];
+            if (validBody(indexedRow.body)) {
+              indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
+                  indexedRow.row.state,
+                  states[indexedRow.body],
+                  indexedRow.row,
+                  rowOptions);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        pointPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          PointPairWorldPointCache pointPairUpdateCache;
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairRow& indexedRow = pointPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+              if (rowOptions.beta >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const PointPairWorldPointCache& points
-            = pointPairWorldPoints(indexedRow, pointPairUpdateCache);
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(
-                  points.worldPointB - points.worldPointA);
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              maxStiffness);
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairDistanceSpringRow& indexedRow :
-         distanceSpringRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
-          && indexedRow.bodyB != indexedRow.bodyA) {
-        indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
-            indexedRow.row.state,
-            states[indexedRow.bodyA],
-            states[indexedRow.bodyB],
-            indexedRow.row,
-            distanceSpringOptions);
-      }
-    }
-    AngularPairConstraintCache angularPairUpdateCache;
-    for (AvbdRigidBodyAngularPairRow& indexedRow : angularPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+            const PointPairWorldPointCache& points
+                = pointPairWorldPoints(indexedRow, pointPairUpdateCache);
+            const double rawConstraintValue
+                = indexedRow.row.offset
+                  + indexedRow.row.axis.dot(
+                      points.worldPointB - points.worldPointA);
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  rowOptions.beta,
+                  maxStiffness);
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  rowOptions.alpha);
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  rowOptions.beta,
+                  indexedRow.row.bounds,
+                  rowOptions.maxStiffness);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        distanceSpringRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairDistanceSpringRow& indexedRow
+                = distanceSpringRows[i];
+            if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
+                && indexedRow.bodyB != indexedRow.bodyA) {
+              indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
+                  indexedRow.row.state,
+                  states[indexedRow.bodyA],
+                  states[indexedRow.bodyB],
+                  indexedRow.row,
+                  distanceSpringOptions);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        angularPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          AngularPairConstraintCache angularPairUpdateCache;
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyAngularPairRow& indexedRow = angularPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+              if (rowOptions.beta >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(angularPairOrientationError(
-                  indexedRow, angularPairUpdateCache));
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              std::min(
-                  indexedRow.row.materialStiffness, rowOptions.maxStiffness));
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
-      if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
-        updateAvbdRigidPointPairFrictionTangentPair(
-            indexedRows.first,
-            indexedRows.second,
-            states[indexedRows.bodyA],
-            states[indexedRows.bodyB],
-            frictionOptions);
-      }
-    }
+            const double rawConstraintValue
+                = indexedRow.row.offset
+                  + indexedRow.row.axis.dot(angularPairOrientationError(
+                      indexedRow, angularPairUpdateCache));
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  rowOptions.beta,
+                  std::min(
+                      indexedRow.row.materialStiffness,
+                      rowOptions.maxStiffness));
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  rowOptions.alpha);
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  rowOptions.beta,
+                  indexedRow.row.bounds,
+                  rowOptions.maxStiffness);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        frictionPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairFrictionRows& indexedRows
+                = frictionPairRows[i];
+            if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
+              updateAvbdRigidPointPairFrictionTangentPair(
+                  indexedRows.first,
+                  indexedRows.second,
+                  states[indexedRows.bodyA],
+                  states[indexedRows.bodyB],
+                  frictionOptions);
+            }
+          }
+        });
 
     if (convergenceSquared > 0.0 && maxStepSquared <= convergenceSquared) {
       break;

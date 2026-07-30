@@ -10,41 +10,34 @@ this file is only the current session pointer. See
 
 The exact 176-row VBD/AVBD paper-parity contract remains fail-closed, with no
 complete rows. The latest local packet advanced
-`avbd.method.quasi_newton_hessian` from missing to partial: the Section 3.5
-force-scaled column-norm diagonal now covers CPU deformable distance springs,
-rigid distance springs, rigid point attachments, and nonlinear point-pair
-joint/motor rows. Contact rows encode their intentional Taylor-linearized
-zero-curvature policy. Angular/material families, the pinned 3D spring source
-divergence, full source-corpus evidence, CUDA, and comparable paper/reference
+`avbd.method.parallel_dual_stiffness_pass` from missing to partial: the
+Section 4 post-primal update now uses deterministic persistent-worker ranges
+for sufficiently large promoted deformable and private free-rigid CPU row
+inventories. The serial primal/color order remains unchanged. Articulated and
+unified row coverage, CUDA, and comparable source-matched achieved-accuracy
 performance remain open.
 
 The durable packet is
-[`../../plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json`](../../plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json).
-It records 115 rigid and 9 deformable focused tests, full 6-DOF
-finite-difference coverage, world-base/global/raw allocation closure, a fresh
-uncached Release/profile build, 168/168 selected unit tests, exact-HEAD
-interleaved mechanism benchmarks, a 60-second Spring text oracle, and an
-assessed 120-frame software render. The method row stays partial.
+[`../../plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json`](../../plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json).
+It records bitwise serial/2-worker/4-worker coverage for every promoted row
+kind, invalid and non-finite behavior, executor nesting/concurrency/exception
+recovery, production-World activation, warmed world-base/global/raw allocation
+closure, and the exact-parent interleaved throughput benchmark. The method row
+stays partial.
 
 ## Current Branch
 
 `feature/vbd-avbd-paper-parity-contract`, based on the then-current
 `origin/main` at `83110ef54ab`. The fail-closed contract is committed locally
-at `710cbfc1152`; the branch has not been pushed.
+at `710cbfc1152`, and the Section 3.5 packet at `a78f688a178`; the branch has
+not been pushed.
 
 ## Immediate Next Step
 
-Implement `avbd.method.parallel_dual_stiffness_pass` next as a bounded
-deterministic CPU packet:
-
-- factor the post-primal dual/stiffness update over promoted deformable and
-  rigid row inventories;
-- prove serial/parallel state equivalence, row-order and thread-count
-  determinism, bounds/fracture behavior, and non-finite failure propagation;
-- add warmed-step world-base/global/raw allocation gates and matched throughput
-  measurements;
-- keep the canonical row partial until every paper row family and CUDA use the
-  same contract.
+Advance PLAN-104's articulated multibody AVBD extraction gap. Preserve the
+Section 4 claim boundary: the new CPU pass is only partial until articulated
+and unified row inventories plus CUDA use the same contract and
+source-matched achieved-accuracy evidence closes.
 
 ## Context That Would Be Lost
 
@@ -77,6 +70,6 @@ pixi run check-avbd-packets
 ```
 
 Stay in this exact worktree and branch. Start from PLAN-104's first current gap,
-the Section 4 parallel dual/stiffness pass. Verify with focused AVBD and world
-allocation tests, matched serial/parallel state evidence, the contract checker,
-and `pixi run lint`; do not push or mutate GitHub without explicit approval.
+articulated multibody AVBD extraction. Verify with focused AVBD and world
+allocation tests, matched solver-state evidence, the contract checker, and
+`pixi run lint`; do not push or mutate GitHub without explicit approval.

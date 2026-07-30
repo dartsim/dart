@@ -174,10 +174,13 @@
         },
         {
           "id": "avbd.method.parallel_dual_stiffness_pass",
-          "status": "missing",
+          "status": "partial",
           "source_locator": "Section 4, parallel dual-variable and stiffness update after each primal iteration",
-          "evidence": [],
-          "blockers": ["No complete task-parallel CPU and CUDA dual/stiffness pass spans every AVBD row family."]
+          "evidence": [
+            "docs/plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json",
+            "tests/benchmark/simulation/bm_avbd_parallel_row_update.cpp"
+          ],
+          "blockers": ["The deterministic CPU pass covers the currently promoted deformable and free-rigid row families only; complete articulated/unified row coverage, CUDA parity, and source-matched achieved-accuracy performance remain open."]
         },
         {
           "id": "avbd.method.contact_persistence",

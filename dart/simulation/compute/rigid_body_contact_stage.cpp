@@ -646,7 +646,7 @@ void RigidBodyContactStage::prepare(World& world)
 }
 
 //==============================================================================
-void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
+void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
 
@@ -719,7 +719,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             scratch.distanceSpringInventory,
             timeStep,
             scratch.solveScratch,
-            solveOptions);
+            solveOptions,
+            &executor);
     (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
         registry, scratch.snapshot, solveResult.fracturedJointIndices);
     if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
@@ -859,7 +860,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
               scratch.distanceSpringInventory,
               timeStep,
               scratch.solveScratch,
-              solveOptions);
+              solveOptions,
+              &executor);
       (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
           registry, scratch.snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u

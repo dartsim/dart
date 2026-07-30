@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <limits>
@@ -838,6 +839,162 @@ TEST(SimulationParallelExecutor, ParallelForCoversRange)
       });
   for (std::size_t i = 0; i < inlineValues.size(); ++i) {
     EXPECT_EQ(inlineValues[i], static_cast<int>(i));
+  }
+}
+
+//==============================================================================
+TEST(SimulationParallelExecutor, ParallelForSupportsCooperativeNestedRanges)
+{
+  compute::ParallelExecutor executor(4);
+  executor.setInlineThreshold(0u);
+
+  constexpr std::size_t outerCount = 32u;
+  constexpr std::size_t innerCount = 7u;
+  std::array<std::atomic<int>, outerCount * innerCount> visits{};
+
+  compute::ComputeGraph graph;
+  graph.addNode("nested_ranges", [&]() {
+    executor.parallelFor(
+        outerCount, 4u, [&](std::size_t outerBegin, std::size_t outerEnd) {
+          for (std::size_t outer = outerBegin; outer < outerEnd; ++outer) {
+            executor.parallelFor(
+                innerCount,
+                2u,
+                [&](std::size_t innerBegin, std::size_t innerEnd) {
+                  for (std::size_t inner = innerBegin; inner < innerEnd;
+                       ++inner) {
+                    visits[outer * innerCount + inner].fetch_add(
+                        1, std::memory_order_relaxed);
+                  }
+                });
+          }
+        });
+  });
+  executor.execute(graph);
+
+  for (const auto& visit : visits) {
+    EXPECT_EQ(visit.load(std::memory_order_relaxed), 1);
+  }
+}
+
+//==============================================================================
+TEST(
+    SimulationParallelExecutor,
+    ConcurrentParallelForFallsBackWithoutBlockingWorkers)
+{
+  compute::ParallelExecutor executor(4);
+  constexpr std::size_t count = 256u;
+  std::array<std::atomic<int>, count> firstVisits{};
+  std::array<std::atomic<int>, count> secondVisits{};
+  std::atomic<bool> firstRangeEntered{false};
+  std::atomic<bool> releaseFirstRange{false};
+
+  std::thread first([&]() {
+    executor.parallelFor(count, 64u, [&](std::size_t begin, std::size_t end) {
+      firstRangeEntered.store(true, std::memory_order_release);
+      while (!releaseFirstRange.load(std::memory_order_acquire)) {
+        std::this_thread::yield();
+      }
+      for (std::size_t i = begin; i < end; ++i) {
+        firstVisits[i].fetch_add(1, std::memory_order_relaxed);
+      }
+    });
+  });
+
+  while (!firstRangeEntered.load(std::memory_order_acquire)) {
+    std::this_thread::yield();
+  }
+  executor.parallelFor(count, 64u, [&](std::size_t begin, std::size_t end) {
+    for (std::size_t i = begin; i < end; ++i) {
+      secondVisits[i].fetch_add(1, std::memory_order_relaxed);
+    }
+  });
+  releaseFirstRange.store(true, std::memory_order_release);
+  first.join();
+
+  for (std::size_t i = 0; i < count; ++i) {
+    EXPECT_EQ(firstVisits[i].load(std::memory_order_relaxed), 1);
+    EXPECT_EQ(secondVisits[i].load(std::memory_order_relaxed), 1);
+  }
+}
+
+//==============================================================================
+TEST(SimulationParallelExecutor, WorkerParallelForRecoversAfterException)
+{
+  compute::ParallelExecutor executor(4);
+  executor.setInlineThreshold(0u);
+  std::atomic<bool> shouldThrow{true};
+  std::array<std::atomic<int>, 256u> visits{};
+
+  compute::ComputeGraph graph;
+  graph.addNode("throwing_range", [&]() {
+    executor.parallelFor(
+        visits.size(), 64u, [&](std::size_t begin, std::size_t end) {
+          if (shouldThrow.load(std::memory_order_relaxed) && begin == 64u) {
+            throw std::runtime_error("parallel range failure");
+          }
+          for (std::size_t i = begin; i < end; ++i) {
+            visits[i].fetch_add(1, std::memory_order_relaxed);
+          }
+        });
+  });
+
+  EXPECT_THROW(executor.execute(graph), std::runtime_error);
+  shouldThrow.store(false, std::memory_order_relaxed);
+  for (auto& visit : visits) {
+    visit.store(0, std::memory_order_relaxed);
+  }
+  EXPECT_NO_THROW(executor.execute(graph));
+
+  for (const auto& visit : visits) {
+    EXPECT_EQ(visit.load(std::memory_order_relaxed), 1);
+  }
+}
+
+//==============================================================================
+TEST(
+    SimulationParallelExecutor,
+    WarmedWorkerParallelForAddsNoHeapAllocationAboveGraphFloor)
+{
+  compute::ParallelExecutor executor(4);
+  executor.setInlineThreshold(0u);
+
+  std::atomic<bool> runRange{false};
+  std::array<int, 512> values{};
+  compute::ComputeGraph graph;
+  graph.addNode("optional_range", [&]() {
+    if (!runRange.load(std::memory_order_relaxed)) {
+      return;
+    }
+    executor.parallelFor(
+        values.size(), 64u, [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            values[i] = static_cast<int>(i + 1u);
+          }
+        });
+  });
+
+  // Warm both the graph and its persistent range-worker pool before measuring.
+  runRange.store(true, std::memory_order_relaxed);
+  executor.execute(graph);
+  executor.execute(graph);
+
+  runRange.store(false, std::memory_order_relaxed);
+  ScopedHeapAllocationCounter graphFloorCounter;
+  executor.execute(graph);
+  graphFloorCounter.stop();
+  const std::size_t graphFloor = graphFloorCounter.allocationCount();
+
+  runRange.store(true, std::memory_order_relaxed);
+  ScopedHeapAllocationCounter rangeCounter;
+  executor.execute(graph);
+  rangeCounter.stop();
+
+  EXPECT_EQ(rangeCounter.allocationCount(), graphFloor)
+      << "a warmed range invoked from an executor worker should reuse its "
+         "persistent workers and add no allocation above the graph-run floor";
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    EXPECT_EQ(values[i], static_cast<int>(i + 1u));
   }
 }
 

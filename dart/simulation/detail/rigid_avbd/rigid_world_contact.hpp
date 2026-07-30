@@ -2271,7 +2271,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdScalarRowInventory& distanceSpringInventory,
     double timeStep,
     AvbdRigidWorldContactSolveScratch& scratch,
-    const AvbdRigidWorldContactSolveOptions& options = {})
+    const AvbdRigidWorldContactSolveOptions& options = {},
+    compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
   AvbdRigidWorldContactSolveResult result{
       AvbdRigidWorldContactSolveResult::SizeAllocator{
@@ -2433,7 +2434,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       options.friction,
       &scratch.rowIndexScratch,
       distanceSpringRows,
-      options.distanceSpring);
+      options.distanceSpring,
+      rowUpdateExecutor);
 
   for (std::size_t i = 0; i < normalRowCount && i < normalInventory.size();
        ++i) {

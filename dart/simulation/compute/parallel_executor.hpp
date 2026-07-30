@@ -41,6 +41,12 @@
 namespace dart::simulation::compute {
 
 /// Experimental executor that runs ready graph nodes in parallel.
+///
+/// `parallelFor()` lazily creates and reuses a persistent range-worker pool.
+/// The caller supplies one lane and the pool supplies the remaining lanes.
+/// Concurrent or recursively nested range calls fall back to the calling
+/// thread while that pool is active, so worker callbacks never deadlock
+/// waiting on an outer range.
 class DART_SIMULATION_API ParallelExecutor final : public ComputeExecutor
 {
 public:
