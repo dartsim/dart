@@ -51,6 +51,11 @@ reversible.
 
 ## 2026-07-23 maintainer directive: full two-paper parity, deferrals retracted
 
+> **Partly superseded by the 2026-07-29 decision above.** The two-paper scope no
+> longer applies: Kim/Pollard left DART 6. What still holds from this directive
+> is the retraction of the 2026-07-11 deferral list, so every Jain/Liu row is
+> active DART 6 work, and the zero-rigid-overhead requirement.
+
 - Decision: The maintainer **retracted the 2026-07-11 approved-deferral list**
   (below) and set the task's binding goal to **full replication of both
   reference papers' demos and examples — correctness/accuracy AND performance,

@@ -119,7 +119,7 @@ The probe was reverted after capture (throwaway de-risking; the tree is clean
 and matches the pushed head). Two-way LCP coupling and the caller-driven path
 were established analytically above (mid-solve `addExtForce` is cleared at
 `World.cpp:1378`, so they are the coupling routes); an empirical two-way LCP
-demo is deferred to the first real PR-2 milestone.
+demo was never built, since the lane was retired before that point.
 
 ## Recommendation (withdrawn 2026-07-29)
 

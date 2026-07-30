@@ -1,7 +1,15 @@
 # RESUME - DART 6 deformable body feature and performance
 
-Updated: 2026-07-23 (exact-head independent review evidence; scope elevated to
-full two-paper parity)
+Updated: 2026-07-29 (Kim/Pollard removed from DART 6 and retargeted to DART 7;
+DART 6 scope is the Jain/Liu lane)
+
+> **Read this first.** DART 6 carries one deformable model. The Kim/Pollard
+> volumetric-FEM lane was removed from `release-6.20` on 2026-07-29 and
+> retargeted to DART 7; **do not restart it here.** The next DART 6 build step is
+> PR-3a soft-foot SIMBICON (`12-pr3a-soft-foot-simbicon.md`). Durable owner of
+> that scope: `docs/design/dart6_deformable_body.md`. Sections dated before
+> 2026-07-29 are historical and may describe a two-paper scope that no longer
+> applies.
 
 ## Terminal state
 
@@ -98,7 +106,13 @@ deprecated `isColliding()` flags when the prior result had contacts (required
 for equivalence; its only in-tree caller is `World::reset()`, where it is an
 improvement).
 
-### Scope elevated to full two-paper parity (2026-07-23 maintainer directive)
+### Scope elevated to full two-paper parity (2026-07-23) — SUPERSEDED
+
+> **Superseded on 2026-07-29.** The two-paper scope below no longer holds: the
+> Kim/Pollard lane was removed from DART 6 and retargeted to DART 7, so there is
+> no PR-2 and no FEM subsystem to build here. What survives from this directive
+> is the retraction of the 2026-07-11 deferral list (the Jain/Liu rows remain
+> active DART 6 work) and the zero-rigid-overhead requirement. Kept as history.
 
 The maintainer **retracted the 2026-07-11 deferral list** and set two goals
 beyond the representative slice (see `decisions.md` 2026-07-23 entry and

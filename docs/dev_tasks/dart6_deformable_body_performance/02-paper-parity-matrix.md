@@ -82,10 +82,13 @@ survives the retirement of this temporary task folder.
 
 ## Acceptance rule
 
-Paper parity is not satisfied by matching API names. Each row needs:
+This rule applies to the **Jain/Liu rows only**. The Kim/Pollard rows are out of
+DART 6 scope and are not acceptance targets here; do not apply the rule to them.
+Deferral is no longer an available outcome for any row.
 
-- a runnable DART 6 scene or benchmark, or a maintainer-approved deferral in a
-  durable owner doc,
+Parity is not satisfied by matching API names. Each active Jain/Liu row needs:
+
+- a runnable DART 6 scene or benchmark,
 - correctness/stability evidence with deterministic state or metric thresholds,
 - native-vs-FCL contact and performance evidence for any row that depends on
   deformable collision,
