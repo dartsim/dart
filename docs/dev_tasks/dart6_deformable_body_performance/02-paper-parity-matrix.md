@@ -14,7 +14,14 @@ Sources:
 - Jain and Liu ACM DOI:
   <https://dl.acm.org/doi/10.1145/2024156.2024197>
 
-## Kim and Pollard 2011
+## Kim and Pollard 2011 — retargeted to DART 7, not DART 6 scope
+
+> **These rows are not DART 6 work (decided 2026-07-29).** The volumetric FEM
+> lane was removed from `release-6.20` and retargeted to DART 7; see
+> `docs/design/dart6_deformable_body.md`. They are retained here as the paper
+> ledger, not as DART 6 acceptance targets, and are excluded from the DART 6
+> completion rule.
+
 
 The paper target is a skeleton-driven deformable character system with a
 reduced nonlinear FEM body, embedded fine surface mesh, linear-time skeleton

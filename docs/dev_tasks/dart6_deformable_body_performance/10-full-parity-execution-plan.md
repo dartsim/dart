@@ -29,9 +29,11 @@ normalized target, and (d) native-vs-FCL parity for collision-dependent rows —
 while adding **zero overhead to pure rigid-body simulation** and preserving
 `release-6.20` public API/ABI (new behavior is opt-in, layout-neutral).
 
-Done = every row of `02-paper-parity-matrix.md` meets the matrix's acceptance
-rule with ≥2 clean independent review passes and a durable demo artifact; no row
-relies on a deferral.
+Done = every **Jain/Liu** row of `02-paper-parity-matrix.md` meets the matrix's
+acceptance rule with at least two clean independent review passes and a durable
+demo artifact, and none relies on a deferral. The Kim/Pollard rows in that matrix
+are **not** part of this completion rule: they are retargeted to DART 7 and
+marked accordingly in the matrix itself.
 
 ## 2. Constraint: additive and ABI-safe on release-6.20
 

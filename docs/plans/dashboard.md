@@ -45,7 +45,8 @@ Priority order is document order. Active implementation handoff remains in
   the two papers need different discretizations and a compatibility release
   branch should not carry two parallel deformable architectures. Whether a
   reduced FEM is still the right DART 7 target is open given newer solvers such
-  as AVBD. Reasoning:
+  as AVBD. Durable owner:
+  [deformable-body design](../design/dart6_deformable_body.md); working record:
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
