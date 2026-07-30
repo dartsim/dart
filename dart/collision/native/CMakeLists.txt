@@ -88,7 +88,7 @@ if(NOT TARGET EnTT::EnTT)
   dart_find_package(EnTT)
 endif()
 if(NOT TARGET EnTT::EnTT)
-  message(FATAL_ERROR "EnTT >= 3.14 is required for dart-collision-native")
+  message(FATAL_ERROR "EnTT >= 4.0 is required for dart-collision-native")
 endif()
 
 if(NOT TARGET benchmark::benchmark)
