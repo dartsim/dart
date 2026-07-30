@@ -52,8 +52,10 @@
   #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 
+#include <array>
 #include <limits>
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -71,6 +73,38 @@ struct ConvexMeshData
   dynamics::ConvexMeshShape::Vertices vertices;
   dynamics::ConvexMeshShape::Triangles triangles;
 };
+
+enum class ShapeWarningKind : std::size_t
+{
+  MissingConvexVertices,
+  MissingMeshData,
+  InvalidMeshIndices,
+  Unsupported,
+  Count
+};
+
+void warnShapeTypeOnce(
+    ShapeWarningKind kind, const std::string& shapeType, const char* message)
+{
+  struct Registry
+  {
+    std::mutex mutex;
+    std::array<
+        std::set<std::string>,
+        static_cast<std::size_t>(ShapeWarningKind::Count)>
+        warnedShapeTypes;
+  };
+
+  static Registry registry;
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  auto& warnedShapeTypes
+      = registry.warnedShapeTypes[static_cast<std::size_t>(kind)];
+  if (!warnedShapeTypes.insert(shapeType).second)
+    return;
+
+  dtwarn << "[NativeShapeConversion] Shape type [" << shapeType << "] "
+         << message;
+}
 
 std::vector<native::ConvexShape::Face> makeConvexFacesFromTriangles(
     const std::vector<Eigen::Vector3d>& vertices,
@@ -166,12 +200,11 @@ std::unique_ptr<native::Shape> createConvexOrNull(
     std::vector<native::ConvexShape::Face> faces = {})
 {
   if (vertices.empty()) {
-    static std::set<std::string> warnedInvalidShapeTypes;
-    if (warnedInvalidShapeTypes.insert(shapeType).second) {
-      dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
-             << "] did not provide convex vertices. This shape will be "
-             << "skipped by DARTCollisionDetector.\n";
-    }
+    warnShapeTypeOnce(
+        ShapeWarningKind::MissingConvexVertices,
+        shapeType,
+        "did not provide convex vertices. This shape will be skipped by "
+        "DARTCollisionDetector.\n");
     return nullptr;
   }
 
@@ -184,12 +217,11 @@ std::unique_ptr<native::Shape> createMeshOrNull(
 {
   auto mesh = meshShape.getTriMesh();
   if (!mesh || mesh->getVertices().empty() || mesh->getTriangles().empty()) {
-    static std::set<std::string> warnedInvalidShapeTypes;
-    if (warnedInvalidShapeTypes.insert(shapeType).second) {
-      dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
-             << "] did not provide triangle mesh data. This shape will be "
-             << "skipped by DARTCollisionDetector.\n";
-    }
+    warnShapeTypeOnce(
+        ShapeWarningKind::MissingMeshData,
+        shapeType,
+        "did not provide triangle mesh data. This shape will be skipped by "
+        "DARTCollisionDetector.\n");
     return nullptr;
   }
 
@@ -211,12 +243,11 @@ std::unique_ptr<native::Shape> createMeshOrNull(
         || triangle[1] >= sourceVertices.size()
         || triangle[2] >= sourceVertices.size() || triangle[0] > maxInt
         || triangle[1] > maxInt || triangle[2] > maxInt) {
-      static std::set<std::string> warnedInvalidShapeTypes;
-      if (warnedInvalidShapeTypes.insert(shapeType).second) {
-        dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
-               << "] has triangle indices that cannot be represented by the "
-               << "native mesh adapter. This shape will be skipped.\n";
-      }
+      warnShapeTypeOnce(
+          ShapeWarningKind::InvalidMeshIndices,
+          shapeType,
+          "has triangle indices that cannot be represented by the native mesh "
+          "adapter. This shape will be skipped.\n");
       return nullptr;
     }
 
@@ -394,12 +425,11 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
   }
 #endif
 
-  static std::set<std::string> warnedShapeTypes;
-  if (warnedShapeTypes.insert(shapeType).second) {
-    dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
-           << "] is not supported by DARTCollisionDetector yet. This "
-           << "shape will be skipped.\n";
-  }
+  warnShapeTypeOnce(
+      ShapeWarningKind::Unsupported,
+      shapeType,
+      "is not supported by DARTCollisionDetector yet. This shape will be "
+      "skipped.\n");
 
   return nullptr;
 }

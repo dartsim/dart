@@ -1712,6 +1712,58 @@ TEST(DARTCollisionDetector, LeavesUnsupportedShapesNull)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, ShapeWarningsAreThreadSafe)
+{
+  auto emptyConvexMesh
+      = std::make_shared<dynamics::ConvexMeshShape::TriMeshType>();
+  const dynamics::ConvexMeshShape emptyConvex(emptyConvexMesh);
+
+  auto emptyTriMesh = std::make_shared<math::TriMesh<double>>();
+  const dynamics::MeshShape emptyMesh(Eigen::Vector3d::Ones(), emptyTriMesh);
+
+  auto invalidTriMesh = std::make_shared<math::TriMesh<double>>();
+  invalidTriMesh->addVertex(0.0, 0.0, 0.0);
+  invalidTriMesh->addVertex(1.0, 0.0, 0.0);
+  invalidTriMesh->addVertex(0.0, 1.0, 0.0);
+  invalidTriMesh->addTriangle(0u, 1u, 3u);
+  const dynamics::MeshShape invalidMesh(
+      Eigen::Vector3d::Ones(), invalidTriMesh);
+
+  const dynamics::MultiSphereConvexHullShape unsupported(
+      {{0.25, Eigen::Vector3d::Zero()},
+       {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
+
+  constexpr std::size_t kNumThreads = 8u;
+  constexpr std::size_t kIterations = 128u;
+  std::atomic<bool> start{false};
+  std::atomic<bool> allNull{true};
+  std::vector<std::thread> threads;
+  threads.reserve(kNumThreads);
+  for (std::size_t thread = 0u; thread < kNumThreads; ++thread) {
+    threads.emplace_back([&] {
+      while (!start.load(std::memory_order_acquire))
+        std::this_thread::yield();
+
+      for (std::size_t iteration = 0u; iteration < kIterations; ++iteration) {
+        const bool converted
+            = collision::detail::NativeShapeConversion::create(emptyConvex)
+              || collision::detail::NativeShapeConversion::create(emptyMesh)
+              || collision::detail::NativeShapeConversion::create(invalidMesh)
+              || collision::detail::NativeShapeConversion::create(unsupported);
+        if (converted)
+          allNull.store(false, std::memory_order_relaxed);
+      }
+    });
+  }
+
+  start.store(true, std::memory_order_release);
+  for (auto& thread : threads)
+    thread.join();
+
+  EXPECT_TRUE(allNull.load(std::memory_order_relaxed));
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ConeConvertsToConvex)
 {
   const dynamics::ConeShape cone(0.5, 2.0);

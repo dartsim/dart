@@ -65,21 +65,28 @@ This is local candidate evidence, not exact-pushed-head evidence. Publication,
 a fresh top-level Codex review request, hosted CI/artifact inspection, and any
 new current-head finding remain required.
 
-The fresh review of pushed head `fd96521bb14` found one additional P2: old
-6.20 headers inline the DART group/object destructors, so sidecar cleanup
-cannot depend on new out-of-line destructor bodies. The local follow-up
-anchors group and object sidecar ownership in the released-layout
-`mCollisionDetector` and `mCachedShape` shared-pointer members instead, restores
-the inline/defaulted destructors, and adds a direct sidecar-count regression
-covering a stack group, a downstream-style object subclass, and a shape swap.
-That regression and the complete 42-test consolidated-engine target pass in
-both Release and assertions-enabled builds. Refreshed mixed-header canaries
-still report `32/376/320` and 20/20 guarded runs; the private test accessor is
-not installed. Fresh no-cache gates also pass all 155 C++ tests, all 223
-dartpy tests, lint/check-lint, all 199 gz-physics tests, all four gz-physics
-performance/symbol checks, and the gz-sim entity-system integration test.
-This follow-up remains candidate evidence until publication; exact-head
-hosted CI, artifact inspection, and fresh Codex review remain mandatory.
+The review of pushed head `fd96521bb14` found one additional P2: old 6.20
+headers inline the DART group/object destructors, so sidecar cleanup could not
+depend on new out-of-line destructor bodies. The correction anchors group and
+object sidecar ownership in the released-layout `mCollisionDetector` and
+`mCachedShape` shared-pointer members instead, restores the inline/defaulted
+destructors, and adds a direct sidecar-count regression covering a stack group,
+a downstream-style object subclass, and a shape swap. It was published as
+`af2ac200e26`, and its review thread was resolved.
+
+Fresh Codex review `4814689190` of that exact head then found one further P2:
+the four function-local one-time shape-warning sets could race when independent
+worlds converted unsupported or malformed shapes concurrently. The current
+candidate routes all four warning categories through one mutex-protected
+registry while leaving supported-shape paths lock-free, and adds an eight-thread
+regression that repeatedly exercises every warning category. The complete
+43-test consolidated-engine target passes in Release and assertions-enabled
+builds. Fresh no-cache gates also pass all 155 C++ tests, all 223 dartpy tests,
+lint/check-lint, all 199 gz-physics tests, all four gz-physics
+performance/symbol checks, and the gz-sim entity-system integration test. This
+implementation-only correction changes no header or ABI surface. It remains
+candidate evidence until publication; exact-head hosted CI, artifact
+inspection, and fresh Codex review remain mandatory.
 
 **Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
 [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw

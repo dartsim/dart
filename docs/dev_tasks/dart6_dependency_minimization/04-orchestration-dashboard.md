@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — **PR #3381** is open and its 2026-07-29 review fixes are being validated; the phase-6 default flip was reverted 2026-07-23 and is deferred beyond 6.20 (default remains `fcl`); phase 7 (FCL decoupling) remains pending |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; AABB-tree broadphase #3368 merged; phase 4 superseded by the maintainer-directed detector consolidation — **PR #3381** is open and its latest 2026-07-29 review fix is being published; the phase-6 default flip was reverted 2026-07-23 and is deferred beyond 6.20 (default remains `fcl`); phase 7 (FCL decoupling) remains pending |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -142,12 +142,15 @@
   The local candidate passes the complete C++/dartpy/lint/AI/Gazebo/visual
   gates, exact-header ABI canaries, and alternating incumbent-backend
   performance A/Bs with no measured FCL/ODE/Bullet regression. A new
-  exact-head P2 about old inline destructors now has a local released-layout
-  lifetime-owner fix with 42/42 Release and assertions-enabled engine tests
-  plus refreshed `32/376/320` canaries. Its fresh no-cache 155-test C++,
-  223-test dartpy, and `199 + 4 + 1` Gazebo gates also pass; publication,
-  hosted artifact inspection, and another fresh current-head review are still
-  pending.
+  exact-head P2 about old inline destructors was fixed at `af2ac200e26` with a
+  released-layout lifetime owner, a direct regression, and refreshed
+  `32/376/320` canaries. Fresh review `4814689190` of that head found a separate
+  race in the four one-time shape-warning sets. The current implementation-only
+  candidate uses one mutex-protected registry and adds an eight-thread
+  all-category regression. Its 43/43 Release and assertions-enabled engine
+  tests, fresh no-cache 155-test C++, 223-test dartpy, and `199 + 4 + 1`
+  Gazebo gates pass; publication, hosted artifact inspection, and another
+  fresh current-head review are still pending.
   **Merge is the maintainer's**.
 - **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
   gaps were superseded by the consolidation and the documented S6 acceptance

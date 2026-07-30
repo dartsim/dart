@@ -12,8 +12,8 @@
 > consolidation. The phase-4/phase-5 framing below is historical: the native
 > engine has since been merged INTO the dart detector on
 > `feature/dart-detector-consolidation` (**PR #3381**). The current priority is
-> validating and publishing the 2026-07-29 review fixes; no exact-head green or
-> review-clean claim exists until that cycle completes. See RESUME.md and
+> publishing and validating the latest 2026-07-29 review fix; no exact-head
+> green or review-clean claim exists until that cycle completes. See RESUME.md and
 > `~/dart-bench-artifacts/HANDOFF-2026-07-12-consolidation.md`.
 >
 > **Update 2026-07-23:** the phase-6 default flip described above has
@@ -195,15 +195,20 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   artifact inspection, and fresh Codex review are still mandatory. The review
   of pushed head `fd96521bb14` then found that new out-of-line group/object
   destructors cannot clean sidecars for binaries built with the old inline
-  destructors. The local follow-up ties sidecar ownership to the existing
+  destructors. The correction ties sidecar ownership to the existing
   detector/cached-shape shared-pointer members, restores defaulted inline
-  destructors, and adds a direct lifetime regression. The full 42-test engine
-  target passes in Release and assertions-enabled builds; refreshed
-  `32/376/320` mixed-header canaries pass 20/20 and the private test accessor is
-  absent from the install. Fresh no-cache gates also pass all 155 C++ tests,
-  all 223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
+  destructors, and adds a direct lifetime regression. It was published as
+  `af2ac200e26`; the review thread is resolved. Its `32/376/320` mixed-header
+  canaries pass 20/20 and the private test accessor is absent from the install.
+  Fresh Codex review `4814689190` of `af2ac200e26` found a separate race in the
+  four one-time shape-warning sets. The current implementation-only candidate
+  synchronizes every warning category behind one registry mutex without
+  locking supported-shape paths and adds an eight-thread regression covering
+  all categories. The full 43-test engine target passes in Release and
+  assertions-enabled builds. Fresh no-cache gates pass all 155 C++ tests, all
+  223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
   gz-physics performance/symbol checks, and the gz-sim entity-system
-  integration test. This follow-up remains candidate evidence until
+  integration test. This latest correction remains candidate evidence until
   publication; exact-head hosted CI, artifact inspection, and fresh Codex
   review remain mandatory.
 - **Phase 4 native performance** — #3362 and #3364 are merged. Next session
