@@ -257,6 +257,8 @@ def _populate_bridge_from_world(bridge: "WorldRenderBridge", world: Any) -> None
 def _bounds_fit_camera(renderables: list[Any], size: tuple[int, int]) -> Any:
     width, height = size
     sphere = dart.gui.scene_bounding_sphere(renderables)
+    if not bool(sphere.has_bounds):
+        raise ValueError("dart.gui.render requires at least one bounded renderable")
     # Preserve the historical minimal-scene framing floor while keeping all
     # bounds, transforms, viewport projection, and fit math in dart::gui.
     sphere.radius = max(float(sphere.radius), 0.5)

@@ -222,11 +222,15 @@ struct PerspectiveProjection
 
 /// A world-space bounding sphere over a set of renderables. Produced by
 /// `sceneBoundingSphere` and consumed by the `fitOrbitCamera` helpers to
-/// auto-frame a scene. Value type only so it can cross the public GUI boundary.
+/// auto-frame a scene. `hasBounds` distinguishes a sphere computed from at
+/// least one visible, bounded renderable from the finite fallback returned for
+/// an empty or unbounded scene. Value type only so it can cross the public GUI
+/// boundary.
 struct BoundingSphere
 {
   Eigen::Vector3d center = Eigen::Vector3d::Zero();
   double radius = 0.0;
+  bool hasBounds = false;
 };
 
 /// Per-view camera overrides resolved onto a base `OrbitCamera`
@@ -385,9 +389,10 @@ DART_GUI_API OrbitCamera
 applyOrbitCameraView(OrbitCamera base, const OrbitCameraViewOptions& view);
 
 /// Computes a world-space bounding sphere over the union of the per-descriptor
-/// axis-aligned bounding boxes. Returns a small unit-radius sphere at the
-/// origin when the set is empty or degenerate so downstream framing stays
-/// finite.
+/// axis-aligned bounding boxes. Invisible descriptors and descriptors without
+/// usable finite bounds are ignored. Returns a unit-radius sphere at the origin
+/// with `hasBounds == false` when no descriptor contributes bounds, so native
+/// downstream framing stays finite while callers can fail closed.
 DART_GUI_API BoundingSphere
 sceneBoundingSphere(const std::vector<RenderableDescriptor>& descriptors);
 

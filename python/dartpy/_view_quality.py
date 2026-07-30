@@ -225,6 +225,8 @@ def frame_body(
     descriptors = _world_render_bridge._renderables_from_world(world)
     focus_descriptors, _ = _split_focus(descriptors, name)
     sphere = dart.gui.scene_bounding_sphere(focus_descriptors)
+    if not bool(sphere.has_bounds):
+        raise ValueError(f"focus {name!r} has no bounded renderables to frame")
     return _fit_bounding_sphere(
         sphere,
         azimuth=azimuth,
@@ -264,6 +266,8 @@ def select_viewpoints(
     descriptors = _world_render_bridge._renderables_from_world(world)
     focus_descriptors, _ = _split_focus(descriptors, focus)
     sphere = dart.gui.scene_bounding_sphere(focus_descriptors)
+    if not bool(sphere.has_bounds):
+        raise ValueError("select_viewpoints requires bounded focus renderables")
 
     candidates: list[ViewpointChoice] = []
     for elevation in elevations:

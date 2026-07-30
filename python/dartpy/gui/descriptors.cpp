@@ -232,7 +232,8 @@ void defGuiDescriptors(nb::module_& m)
   nb::class_<gui::BoundingSphere>(m, "BoundingSphere")
       .def(nb::init<>())
       .def_rw("center", &gui::BoundingSphere::center)
-      .def_rw("radius", &gui::BoundingSphere::radius);
+      .def_rw("radius", &gui::BoundingSphere::radius)
+      .def_rw("has_bounds", &gui::BoundingSphere::hasBounds);
 
   nb::class_<gui::OrbitCameraBasis>(m, "OrbitCameraBasis")
       .def(nb::init<>())

@@ -149,6 +149,7 @@ TEST(CameraControl, BoundingSphereUnionsDescriptorBoxes)
 
   const dart::gui::BoundingSphere single
       = dart::gui::sceneBoundingSphere(descriptors);
+  EXPECT_TRUE(single.hasBounds);
   EXPECT_TRUE(single.center.isApprox(Eigen::Vector3d::Zero()));
   // Half-diagonal of a [-1,1]^3 box = 0.5 * |(2,2,2)| = sqrt(3).
   EXPECT_NEAR(single.radius, std::sqrt(3.0), 1e-9);
@@ -157,6 +158,7 @@ TEST(CameraControl, BoundingSphereUnionsDescriptorBoxes)
       makeBox(Eigen::Vector3d(2.0, 2.0, 2.0), Eigen::Vector3d(10.0, 0.0, 0.0)));
   const dart::gui::BoundingSphere pair
       = dart::gui::sceneBoundingSphere(descriptors);
+  EXPECT_TRUE(pair.hasBounds);
   // x in [-1, 11], y,z in [-1, 1] -> center (5,0,0).
   EXPECT_TRUE(pair.center.isApprox(Eigen::Vector3d(5.0, 0.0, 0.0)));
   EXPECT_NEAR(pair.radius, 0.5 * Eigen::Vector3d(12.0, 2.0, 2.0).norm(), 1e-9);
@@ -165,9 +167,24 @@ TEST(CameraControl, BoundingSphereUnionsDescriptorBoxes)
 TEST(CameraControl, BoundingSphereEmptyIsFinite)
 {
   const dart::gui::BoundingSphere sphere = dart::gui::sceneBoundingSphere({});
+  EXPECT_FALSE(sphere.hasBounds);
   EXPECT_TRUE(sphere.center.isApprox(Eigen::Vector3d::Zero()));
   EXPECT_GT(sphere.radius, 0.0);
   EXPECT_TRUE(std::isfinite(sphere.radius));
+}
+
+TEST(CameraControl, BoundingSphereRejectsInvisibleAndUnboundedDescriptors)
+{
+  dart::gui::RenderableDescriptor unbounded;
+  dart::gui::RenderableDescriptor hidden
+      = makeBox(Eigen::Vector3d::Ones(), Eigen::Vector3d::Zero());
+  hidden.material.visible = false;
+
+  const dart::gui::BoundingSphere sphere
+      = dart::gui::sceneBoundingSphere({unbounded, hidden});
+  EXPECT_FALSE(sphere.hasBounds);
+  EXPECT_TRUE(sphere.center.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_DOUBLE_EQ(sphere.radius, 1.0);
 }
 
 TEST(CameraControl, FitDistanceMatchesFovFormula)

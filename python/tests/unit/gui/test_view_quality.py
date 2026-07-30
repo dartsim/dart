@@ -142,6 +142,23 @@ def test_focus_validation_lists_available_names():
         dart.gui.assess_view(world, camera, (320, 240), focus="nonexistent")
 
 
+def test_camera_selection_rejects_focus_without_usable_bounds(monkeypatch):
+    from dartpy import _world_render_bridge
+
+    descriptor = dart.gui.RenderableDescriptor()
+    descriptor.body_name = "marker"
+    monkeypatch.setattr(
+        _world_render_bridge,
+        "_renderables_from_world",
+        lambda _world: [descriptor],
+    )
+
+    with pytest.raises(ValueError, match="has no bounded renderables"):
+        dart.gui.frame_body(object(), "marker")
+    with pytest.raises(ValueError, match="requires bounded focus renderables"):
+        dart.gui.select_viewpoints(object(), focus="marker")
+
+
 def test_frame_region_respects_margin():
     near = dart.gui.frame_region((0.0, 0.0, 0.0), 1.0, margin=1.0)
     far = dart.gui.frame_region((0.0, 0.0, 0.0), 1.0, margin=2.0)
