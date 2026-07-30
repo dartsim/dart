@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
@@ -124,3 +126,46 @@ def test_verification_bundle_rejects_generated_filenames(tmp_path: Path) -> None
             assert "reserved artifact filename" in str(exc)
         else:
             raise AssertionError("expected ValueError")
+
+
+@pytest.mark.parametrize("failure", ("missing", "duplicate"))
+def test_failed_rerun_preserves_existing_bundle(
+    tmp_path: Path, failure: str
+) -> None:
+    original = tmp_path / "original"
+    original.mkdir()
+    scene = original / "scene.json"
+    image = original / "frame.png"
+    scene.write_text('{"version":"old"}\n', encoding="utf-8")
+    write_png(image, 2, 2, bytes((32, 64, 96)) * 4)
+    out = tmp_path / "bundle"
+    verification_bundle.build_bundle(
+        out_dir=out,
+        question="Preserve the prior evidence.",
+        text=[scene],
+        image=image,
+    )
+    before = {path.name: path.read_bytes() for path in out.iterdir()}
+
+    replacement = tmp_path / "replacement" / "scene.json"
+    replacement.parent.mkdir()
+    replacement.write_text('{"version":"new"}\n', encoding="utf-8")
+    if failure == "missing":
+        text = [replacement]
+        next_image = tmp_path / "missing.png"
+    else:
+        duplicate = tmp_path / "duplicate" / "scene.json"
+        duplicate.parent.mkdir()
+        duplicate.write_text('{"version":"duplicate"}\n', encoding="utf-8")
+        text = [replacement, duplicate]
+        next_image = image
+
+    with pytest.raises(ValueError):
+        verification_bundle.build_bundle(
+            out_dir=out,
+            question="This rerun must fail safely.",
+            text=text,
+            image=next_image,
+        )
+
+    assert {path.name: path.read_bytes() for path in out.iterdir()} == before

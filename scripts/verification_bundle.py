@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -99,20 +101,59 @@ def build_bundle(
     grid: Path | None = None,
     metadata: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    artifacts: list[dict[str, Any]] = []
-    artifact_names: set[str] = set()
-    for path in text:
-        _reserve_artifact_name(path.name, artifact_names)
-        artifacts.append(_copy_artifact(path, out_dir, "text-primary"))
-    _reserve_artifact_name(image.name, artifact_names)
-    artifacts.append(_copy_artifact(image, out_dir, "image-still"))
+    inputs = [
+        *((path, "text-primary") for path in text),
+        (image, "image-still"),
+    ]
     if grid is not None:
-        _reserve_artifact_name(grid.name, artifact_names)
-        artifacts.append(_copy_artifact(grid, out_dir, "image-grid"))
+        inputs.append((grid, "image-grid"))
+    artifact_names: set[str] = set()
+    for path, _ in inputs:
+        _reserve_artifact_name(path.name, artifact_names)
+        if not path.is_file():
+            raise ValueError(f"{path}: artifact does not exist")
+
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    if out_dir.exists() and not out_dir.is_dir():
+        raise ValueError(f"{out_dir}: bundle output is not a directory")
+
+    with tempfile.TemporaryDirectory(
+        prefix=f".{out_dir.name}.staging-",
+        dir=out_dir.parent,
+    ) as temp_dir:
+        staging_dir = Path(temp_dir) / "bundle"
+        staging_dir.mkdir()
+        manifest = _build_staged_bundle(
+            staging_dir=staging_dir,
+            question=question,
+            inputs=inputs,
+            metadata=metadata,
+        )
+        previous_dir = Path(temp_dir) / "previous"
+        if out_dir.exists():
+            os.replace(out_dir, previous_dir)
+        try:
+            os.replace(staging_dir, out_dir)
+        except OSError:
+            if previous_dir.exists():
+                os.replace(previous_dir, out_dir)
+            raise
+    return manifest
+
+
+def _build_staged_bundle(
+    *,
+    staging_dir: Path,
+    question: str,
+    inputs: list[tuple[Path, str]],
+    metadata: dict[str, str] | None,
+) -> dict[str, Any]:
+    artifacts: list[dict[str, Any]] = []
+    for path, role in inputs:
+        artifacts.append(_copy_artifact(path, staging_dir, role))
 
     prompt = _prompt(question, artifacts)
-    prompt_path = out_dir / "vlm_prompt.md"
+    prompt_path = staging_dir / "vlm_prompt.md"
     prompt_path.write_text(prompt, encoding="utf-8")
     artifacts.append(
         {
@@ -129,7 +170,7 @@ def build_bundle(
         "metadata": metadata or {},
         "artifacts": artifacts,
     }
-    (out_dir / "manifest.json").write_text(
+    (staging_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
