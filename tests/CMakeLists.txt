@@ -145,7 +145,7 @@ add_custom_target(
 if(MSVC)
   add_custom_target(
     tests_and_run
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
   )
 else()

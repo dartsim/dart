@@ -187,7 +187,14 @@ def run_checked(command: list[str], root: Path) -> int:
 
 def run_staged(root: Path) -> int:
     diff_check = subprocess.run(
-        ["git", "diff", "--cached", "--check"],
+        [
+            "git",
+            "-c",
+            "core.whitespace=cr-at-eol",
+            "diff",
+            "--cached",
+            "--check",
+        ],
         cwd=root,
         capture_output=True,
         text=True,

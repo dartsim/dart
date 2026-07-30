@@ -607,11 +607,10 @@ failed checks:
    update PLAN-622, remove the temporary task folder in the completing closeout
    change, and clean branches only with explicit approval.
 
-## Approval boundaries
+## Historical approval boundary (closed)
 
-The user authorized routine #3382 maintenance with "go ahead": additive
-commits and pushes, PR title/body updates, resolving addressed automated-review
-threads, CI reruns, and fresh automated review requests. That instruction does
-not authorize merging or closing the PR, force-pushing or rewriting history,
-requesting human reviewers, changing the base, or deleting branches. Preserve
-the no-AI-attribution commit/PR rule.
+The earlier "go ahead" authorization applied only to routine maintenance while
+#3382 was open. That PR is merged, so it grants no authority for new pushes, PR
+updates, thread resolution, CI reruns, or review requests. Any new GitHub
+mutation requires fresh explicit approval. Preserve the no-AI-attribution
+commit/PR rule.

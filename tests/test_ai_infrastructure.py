@@ -838,7 +838,40 @@ def test_test_gate_contract_requires_runtime_config_flags(tmp_path, flag):
 
     infra.check_test_gate_contract(tmp_path, errors)
 
-    assert any(f"must pin `{flag.removeprefix('-D')}`" in error for error in errors)
+    assert any(
+        f"must pin `{flag.removeprefix('-D')}` exactly once" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    "flag",
+    (
+        "-DBUILD_TESTING=ON",
+        "-DDART_BUILD_DARTPY=ON",
+        "-DDART_USE_SYSTEM_PYBIND11=ON",
+    ),
+)
+def test_test_gate_contract_rejects_conflicting_runtime_config_flags(tmp_path, flag):
+    _copy_test_gate_contract(tmp_path)
+    variable = flag.removeprefix("-D").split("=", maxsplit=1)[0]
+    pixi = tmp_path / "pixi.toml"
+    pixi.write_text(
+        pixi.read_text(encoding="utf-8").replace(
+            f"        {flag} \\\n",
+            f"        {flag} \\\n        -D{variable}=OFF \\\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"must pin `{flag.removeprefix('-D')}` exactly once" in error
+        for error in errors
+    )
 
 
 def test_test_gate_contract_requires_runtime_graph(tmp_path):
@@ -858,6 +891,46 @@ def test_test_gate_contract_requires_runtime_graph(tmp_path):
 
     assert any(
         "CMakeLists.txt: missing `test-all` graph marker" in error for error in errors
+    )
+
+
+def test_test_gate_contract_rejects_commented_runtime_graph(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "CMakeLists.txt"
+    marker = "list(APPEND all_target_candidates tests_and_run pytest)"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(marker, f"# {marker}", 1),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"CMakeLists.txt: missing `test-all` graph marker `{marker}`" in error
+        for error in errors
+    )
+
+
+def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "-C $<CONFIG>",
+            "-C ${CMAKE_BUILD_TYPE}",
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "tests/CMakeLists.txt: missing `test-all` graph marker "
+        "`${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>`" in error
+        for error in errors
     )
 
 
@@ -1811,6 +1884,37 @@ def test_native_pretool_maps_guard_failure_to_codex_block(
 
 def test_native_pretool_rejects_malformed_payload(tmp_path):
     assert bridge.forward(tmp_path, b"{}") == 2
+
+
+@pytest.mark.parametrize(
+    ("updated", "expected"),
+    (
+        (b"updated\r\n", 0),
+        (b"updated \r\n", 2),
+    ),
+)
+def test_staged_diff_check_accepts_crlf_but_rejects_trailing_space(
+    tmp_path, updated, expected
+):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "test@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "DART Test"],
+        check=True,
+    )
+    path = tmp_path / "legacy.txt"
+    path.write_bytes(b"base\r\n")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "legacy.txt"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-q", "-m", "base"], check=True
+    )
+    path.write_bytes(updated)
+    subprocess.run(["git", "-C", str(tmp_path), "add", "legacy.txt"], check=True)
+
+    assert hook.run_staged(tmp_path) == expected
 
 
 def test_mixed_staged_and_unstaged_ai_file_is_rejected(tmp_path):

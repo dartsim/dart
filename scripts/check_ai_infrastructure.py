@@ -244,6 +244,24 @@ def shell_tokens(command: str) -> list[str]:
         return []
 
 
+def cmake_cache_definition_values(command: str) -> dict[str, list[str]]:
+    """Return every value assigned to each CMake cache variable in order."""
+    definitions: dict[str, list[str]] = {}
+    for token in shell_tokens(command):
+        if not token.startswith("-D") or "=" not in token:
+            continue
+        name_with_type, value = token[2:].split("=", maxsplit=1)
+        name = name_with_type.split(":", maxsplit=1)[0]
+        definitions.setdefault(name, []).append(value)
+    return definitions
+
+
+def cmake_code_without_comments(text: str) -> str:
+    """Remove CMake bracket and line comments before contract matching."""
+    text = re.sub(r"#\[(=*)\[.*?\]\1\]", "", text, flags=re.DOTALL)
+    return "\n".join(line.split("#", maxsplit=1)[0] for line in text.splitlines())
+
+
 def has_shell_control_syntax(command: str) -> bool:
     """Reject syntax that can hide another command from token validation."""
     if re.search(r"[\r\n;&|<>`]|[$][(]", command.strip()) is not None:
@@ -825,18 +843,19 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "pixi.toml: every `config` command used by `test-all` must only "
             "configure CMake"
         )
-    required_runtime_config_flags = (
-        "-DBUILD_TESTING=ON",
-        "-DDART_BUILD_DARTPY=ON",
-        "-DDART_USE_SYSTEM_PYBIND11=ON",
+    required_runtime_config_values = (
+        ("BUILD_TESTING", "ON"),
+        ("DART_BUILD_DARTPY", "ON"),
+        ("DART_USE_SYSTEM_PYBIND11", "ON"),
     )
-    for flag in required_runtime_config_flags:
+    for variable, expected_value in required_runtime_config_values:
         if config_commands and any(
-            flag not in shell_tokens(command) for command in config_commands
+            cmake_cache_definition_values(command).get(variable) != [expected_value]
+            for command in config_commands
         ):
             errors.append(
                 "pixi.toml: every `config` command used by `test-all` must pin "
-                f"`{flag.removeprefix('-D')}`"
+                f"`{variable}={expected_value}` exactly once"
             )
 
     graph_markers = {
@@ -847,6 +866,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         "tests/CMakeLists.txt": (
             "tests_and_run",
             "${CMAKE_CTEST_COMMAND} --output-on-failure",
+            "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
         ),
         "python/tests/CMakeLists.txt": (
             "pytest",
@@ -860,8 +880,9 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         except OSError as error:
             errors.append(f"{relative}: unable to read test graph: {error}")
             continue
+        code = cmake_code_without_comments(text)
         for marker in markers:
-            if marker not in text:
+            if marker not in code:
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
 
     dependencies = pixi.get("dependencies")
