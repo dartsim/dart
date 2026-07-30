@@ -47,16 +47,21 @@ class MemoryDiagnosticsTracker
 {
 public:
   /// Reset the frame allocator at a step boundary and record the new state.
+  ///
+  /// Post-reset usage and overflow are not cached: a reset releases the
+  /// overflow allocations, and collect() reads both live, so storing zeros
+  /// here would be overwritten before any caller could observe it.
   void resetFrameScratch(common::MemoryManager& memoryManager)
   {
     memoryManager.getFrameAllocator().reset();
     ++m_cached.frameScratchResetCount;
-    m_cached.frameScratchUsedBytes = 0u;
-    m_cached.frameScratchOverflowCount = 0u;
-    m_cached.frameScratchOverflowBytes = 0u;
   }
 
-  /// Refresh cached allocator/frame counters after a simulation step.
+  /// Sample the frame-scratch high-water mark after a simulation step.
+  ///
+  /// This is the only diagnostics work on the step path, because a peak cannot
+  /// be reconstructed from a later allocator query the way capacity, usage, and
+  /// overflow can.
   void recordFrameScratch(const common::MemoryManager& memoryManager);
 
   /// Collect a value snapshot, scanning ECS storage only for this explicit
@@ -67,15 +72,13 @@ public:
       const WorldMemoryDiagnosticsOptions& options) const;
 
 private:
-  /// Hot-path state only. Rich ECS and region vectors are constructed by an
-  /// explicit collect() call and never live in every World.
+  /// Hot-path state only, and only the counters that a later allocator query
+  /// cannot recover: a running peak and a reset tally. Capacity, usage, and
+  /// overflow are read live by collect(); rich ECS and region vectors are
+  /// constructed by an explicit collect() call and never live in every World.
   struct CachedCounters
   {
-    std::size_t frameScratchCapacityBytes = 0u;
-    std::size_t frameScratchUsedBytes = 0u;
     std::size_t frameScratchPeakUsedBytes = 0u;
-    std::size_t frameScratchOverflowCount = 0u;
-    std::size_t frameScratchOverflowBytes = 0u;
     std::size_t frameScratchResetCount = 0u;
   };
 

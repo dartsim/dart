@@ -933,14 +933,15 @@ WorldEcsDiagnostics collectEcsDiagnostics(
 void MemoryDiagnosticsTracker::recordFrameScratch(
     const common::MemoryManager& memoryManager)
 {
+  // Only the running peak needs a per-step sample. Capacity, current usage,
+  // and overflow are read live in collect(), so caching them here would cost
+  // two extra cross-library allocator calls on every step for values no caller
+  // can ever observe.
   const auto& frameAllocator = memoryManager.getFrameAllocator();
-  const auto overflowBytes = frameAllocator.overflowBytes();
-  m_cached.frameScratchCapacityBytes = frameAllocator.usableCapacity();
-  m_cached.frameScratchUsedBytes = frameAllocator.used() + overflowBytes;
-  m_cached.frameScratchOverflowCount = frameAllocator.overflowCount();
-  m_cached.frameScratchOverflowBytes = overflowBytes;
-  m_cached.frameScratchPeakUsedBytes = std::max(
-      m_cached.frameScratchPeakUsedBytes, m_cached.frameScratchUsedBytes);
+  const std::size_t usedBytes
+      = frameAllocator.used() + frameAllocator.overflowBytes();
+  m_cached.frameScratchPeakUsedBytes
+      = std::max(m_cached.frameScratchPeakUsedBytes, usedBytes);
 }
 
 //==============================================================================
@@ -950,11 +951,6 @@ WorldMemoryDiagnostics MemoryDiagnosticsTracker::collect(
     const WorldMemoryDiagnosticsOptions& options) const
 {
   WorldMemoryDiagnostics diagnostics;
-  diagnostics.frameScratchCapacityBytes = m_cached.frameScratchCapacityBytes;
-  diagnostics.frameScratchUsedBytes = m_cached.frameScratchUsedBytes;
-  diagnostics.frameScratchPeakUsedBytes = m_cached.frameScratchPeakUsedBytes;
-  diagnostics.frameScratchOverflowCount = m_cached.frameScratchOverflowCount;
-  diagnostics.frameScratchOverflowBytes = m_cached.frameScratchOverflowBytes;
   diagnostics.frameScratchResetCount = m_cached.frameScratchResetCount;
   diagnostics.allocatorDebugDiagnostics = memoryManager.getDebugDiagnostics();
   diagnostics.memoryLayoutDetailsIncluded = options.includeMemoryLayoutDetails;
@@ -972,7 +968,7 @@ WorldMemoryDiagnostics MemoryDiagnosticsTracker::collect(
   diagnostics.frameScratchOverflowCount = frameAllocator.overflowCount();
   diagnostics.frameScratchOverflowBytes = overflowBytes;
   diagnostics.frameScratchPeakUsedBytes = std::max(
-      diagnostics.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
+      m_cached.frameScratchPeakUsedBytes, diagnostics.frameScratchUsedBytes);
   return diagnostics;
 }
 
