@@ -11,7 +11,7 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | --- | --- | --- |
 | Foundations | `dart/common/`, `dart/math/` | Shared utilities, resources, logging, memory, geometry, and math used by higher layers |
 | Multibody model | `dart/dynamics/` | Skeletons, bodies, joints, shapes, aspects, kinematics, and dynamics state |
-| Collision | `dart/collision/` | Collision detector abstraction plus DART-native, FCL, Bullet, and ODE integrations selected through existing components |
+| Collision | `dart/collision/` | Collision detector abstraction plus the DART-owned `dart`, FCL, Bullet, and ODE implementations selected through existing components |
 | Constraints | `dart/constraint/` | Contact and joint constraints, LCP-based solving, and solver-owned per-step state |
 | Simulation | `dart/simulation/` | `World` ownership, stepping, time integration, and orchestration of collision and constraints |
 | Model loading | `dart/utils/` | DART 6 loaders and URDF/SDF/SKEL/MJCF parsing; public loading remains under `dart::utils` |

@@ -42,8 +42,8 @@ as `##soft_mesh_alpha`, and size sliders or inputs from
 
 Changes that touch `World::step`, `World::enterSimulationMode`,
 `MemoryManager`, profiler storage, or constraint-solver scratch must preserve
-the DART-owned zero-allocation contract for same-shape native-collision
-simulation steps after preparation.
+the DART-owned zero-allocation contract for same-shape simulation steps using
+the `dart` detector after preparation.
 
 Run the focused allocation gate before broadening:
 
@@ -52,7 +52,7 @@ ctest -R '(Profile|StepAllocation)' --output-on-failure
 ```
 
 The strict global `operator new` and raw malloc-family counters are meaningful
-for native DART collision scenes. Bullet, ODE, and other external collision
+for scenes using the `dart` detector. Bullet, ODE, and other external collision
 backends may allocate internally, so their allocation coverage should be scoped
 to the World-owned base allocator surface instead of global heap counters.
 
