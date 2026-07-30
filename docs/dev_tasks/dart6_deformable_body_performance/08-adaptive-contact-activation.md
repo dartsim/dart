@@ -147,12 +147,12 @@ not silently approximated.
 
 Activation gates the point-mass dynamics phases; on its own it cannot win
 scenes dominated by collision-object refresh (the initial FCL profile
-recorded `CollisionGroup update objects` at 83% inclusive; the native lane
+recorded `CollisionGroup update objects` at 83% inclusive; the `dart` lane
 reduced but did not eliminate that structure). The packet therefore pairs
 activation with **collision-refresh gating that falls out of frozen
 geometry**: frozen points do not change local positions after linger decay,
 so the existing unchanged-position refit/cache-refresh skips (FCL soft mesh
-replace path, native soft cache) see clean regions; an all-frozen soft body
+replace path, DART soft cache) see clean regions; an all-frozen soft body
 skips flesh refresh entirely.
 
 Acceptance rows are scoped accordingly:
@@ -161,7 +161,7 @@ Acceptance rows are scoped accordingly:
    rows drop roughly proportionally to the inactive fraction on the
    representative scenes.
 2. Scene-level: activation-on beats all-active wall-clock on the
-   dynamics-weighted native-lane scenes (e.g. `adaptive_deformable`,
+   dynamics-weighted `dart`-detector scenes (e.g. `adaptive_deformable`,
    `soft_open_chain` variants with sparse contact); collision-dominated
    scenes are reported without a win claim if refresh gating does not carry
    them.

@@ -38,7 +38,7 @@ cylinder fallback floods larger caps and silently drops contacts).
   `pixi run $CB .deps/gz-sim/examples/worlds/3k_shapes.sdf --steps 3000
   --sdf-plane-shapes --quiet --checkpoint 0 --collision <det>
   --world-threads 1 --max-contacts 12000 --max-contacts-per-pair 4`
-  (deactivation default ON). Round-1 guardrail: native RTF ≈ 81, hash
+  (deactivation default ON). Round-1 guardrail: `dart` RTF ≈ 81, hash
   `0x131b6af79a44ff90`, 3003/3003 resting.
 - **S3 — active 3k**:
   same world, `--steps 300 --disable-deactivation --world-threads 16
@@ -109,9 +109,9 @@ noise, so the fixture is stable across #3226/#3230/#3241.
 | 120 / ode / 1 | 9956 | 0.021 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
 | 120 / ode / 16 | 8792 | 0.023 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
 
-60→120 objects costs ~11.9x (native) — super-quadratic scaling; threads
+60→120 objects costs ~11.9x (`dart`) — super-quadratic scaling; threads
 do not provide reliable speedup in either engine; ODE emits ~2x the
-contacts of native
+contacts of `dart`
 (physically different profiles; hashes only comparable within one
 detector). The Google Benchmark suite above reports timing/contacts only;
 it does not print pairs/finite/hash, so the S1 hash/pair/finite guard
@@ -250,7 +250,7 @@ finite-state evidence.
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
 1. **The two active regimes have opposite bottlenecks** (profile splits,
-   serial, native detector):
+   serial, `dart` detector):
    - **P1, dense pile** (container 120, one big island):
      `DantzigBoxedLcpSolver::solve` (solve-proper) = **88.1%** of step
      time; `Construct LCP` (assembly incl. unit-impulse tests) = only
@@ -266,11 +266,11 @@ finite-state evidence.
      collision 7.8%. Consequence: WS-C batching (WP-PG.30/33) and
      per-island overhead trimming (WP-PG.11 + mined single-reactive
      commits) are the levers for the many-bodies regime.
-2. **ODE active-3k is ~12x slower than native** (RTF 0.0092 vs 0.115,
+2. **ODE active-3k is ~12x slower than `dart`** (RTF 0.0092 vs 0.115,
    108 ms/step) — the WS-B lane is worth more than the settled-scene
    2.4x gap suggested.
 3. **ODE remains physically divergent** on generated scenes: S4/S5 end
-   with 0 contacts and everything resting (vs native 600/900 resting,
+   with 0 contacts and everything resting (vs `dart` 600/900 resting,
    1800 contacts) — RTF-only comparisons across detectors stay banned.
 4. **Creep confirmed on the round-2 tip** (S6): max penetration grows to
    0.362 m over 20 s (~18 mm/s), resting stays 0/71 — the WP-PG.15/D7
