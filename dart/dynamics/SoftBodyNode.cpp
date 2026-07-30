@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -41,11 +42,18 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <algorithm>
+#include <limits>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace dart {
 namespace dynamics {
@@ -128,6 +136,273 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 
 } // namespace detail
 
+namespace {
+
+template <typename StateVector>
+struct PointMassPhaseView
+{
+  using StatePointer = decltype(std::declval<StateVector&>().data());
+
+  PointMassPhaseView(
+      const std::vector<PointMass*>& _pointMasses,
+      StateVector& _states,
+      const std::vector<PointMass::Properties>& _properties)
+    : pointMasses(_pointMasses.data()),
+      states(_states.data()),
+      properties(_properties.data()),
+      count(_pointMasses.size())
+  {
+    DART_ASSERT(_states.size() == count);
+    DART_ASSERT(_properties.size() == count);
+  }
+
+  std::size_t size() const
+  {
+    return count;
+  }
+
+  PointMass* const* pointMasses;
+  StatePointer states;
+  const PointMass::Properties* properties;
+  std::size_t count;
+};
+
+template <typename StateVector>
+PointMassPhaseView<StateVector> makePointMassPhaseView(
+    const std::vector<PointMass*>& _pointMasses,
+    StateVector& _states,
+    const std::vector<PointMass::Properties>& _properties)
+{
+  return PointMassPhaseView<StateVector>(_pointMasses, _states, _properties);
+}
+
+inline void addPointForceContribution(
+    Eigen::Vector6d& _spatialForce,
+    const Eigen::Vector3d& _localPosition,
+    const Eigen::Vector3d& _force)
+{
+  _spatialForce[0]
+      += _localPosition[1] * _force[2] - _localPosition[2] * _force[1];
+  _spatialForce[1]
+      += _localPosition[2] * _force[0] - _localPosition[0] * _force[2];
+  _spatialForce[2]
+      += _localPosition[0] * _force[1] - _localPosition[1] * _force[0];
+  _spatialForce[3] += _force[0];
+  _spatialForce[4] += _force[1];
+  _spatialForce[5] += _force[2];
+}
+
+inline void addPointInertiaContribution(
+    Eigen::Matrix6d& _spatialInertia,
+    const Eigen::Vector3d& _localPosition,
+    double _mass)
+{
+  const Eigen::Matrix3d skew = math::makeSkewSymmetric(_localPosition);
+  _spatialInertia.topLeftCorner<3, 3>() -= _mass * skew * skew;
+  _spatialInertia.topRightCorner<3, 3>() += _mass * skew;
+  _spatialInertia.bottomLeftCorner<3, 3>() -= _mass * skew;
+
+  _spatialInertia(3, 3) += _mass;
+  _spatialInertia(4, 4) += _mass;
+  _spatialInertia(5, 5) += _mass;
+}
+
+struct AdaptiveContactActivationState
+{
+  void resetTransientState()
+  {
+    std::fill(mActive.begin(), mActive.end(), 1u);
+    std::fill(mSeeded.begin(), mSeeded.end(), 0u);
+    std::fill(mLingerCounters.begin(), mLingerCounters.end(), 0u);
+    mActiveCount = mActive.size();
+    mCurrentTargetAll = true;
+    mCurrentTargetStamp = 0u;
+    mForceAllActiveNextStep = true;
+    mHasPendingFrozenSeed = false;
+  }
+
+  void resize(const std::vector<PointMass::Properties>& properties)
+  {
+    const std::size_t count = properties.size();
+    mActive.assign(count, 1u);
+    mSeeded.assign(count, 0u);
+    mLingerCounters.assign(count, 0u);
+    mFrozenLocalPositions.resize(count);
+    mVisitedStamps.assign(count, 0u);
+    mRingQueue.resize(count);
+    resetTransientState();
+    mAllFrozenRestArtInertiaContribution.setZero();
+
+    for (std::size_t i = 0; i < count; ++i) {
+      mFrozenLocalPositions[i] = properties[i].mX0;
+      addPointInertiaContribution(
+          mAllFrozenRestArtInertiaContribution,
+          properties[i].mX0,
+          properties[i].mMass);
+    }
+  }
+
+  void refreshRestGeometry(const std::vector<PointMass::Properties>& properties)
+  {
+    mAllFrozenRestArtInertiaContribution.setZero();
+    const std::size_t count
+        = std::min(properties.size(), mFrozenLocalPositions.size());
+    for (std::size_t i = 0; i < count; ++i) {
+      addPointInertiaContribution(
+          mAllFrozenRestArtInertiaContribution,
+          properties[i].mX0,
+          properties[i].mMass);
+    }
+  }
+
+  std::uint32_t nextVisitStamp()
+  {
+    if (mVisitStamp == std::numeric_limits<std::uint32_t>::max()) {
+      // LCOV_EXCL_START: requires more than 2^32 activation traversals.
+      std::fill(mVisitedStamps.begin(), mVisitedStamps.end(), 0u);
+      mVisitStamp = 1u;
+      // LCOV_EXCL_STOP
+    } else {
+      ++mVisitStamp;
+    }
+
+    return mVisitStamp;
+  }
+
+  bool isActive(std::size_t index) const
+  {
+    return index < mActive.size() && mActive[index] != 0u;
+  }
+
+  bool isCurrentTarget(std::size_t index) const
+  {
+    if (mCurrentTargetAll)
+      return index < mActive.size();
+
+    return index < mVisitedStamps.size()
+           && mVisitedStamps[index] == mCurrentTargetStamp;
+  }
+
+  bool mEnabled = false;
+  std::size_t mRingCount = 2u;
+  std::size_t mLingerSteps = 8u;
+  double mVelocityTolerance = 1.0e-4;
+  double mPositionTolerance = 1.0e-4;
+
+  std::vector<unsigned char> mActive;
+  std::vector<unsigned char> mSeeded;
+  std::vector<std::size_t> mLingerCounters;
+  std::vector<Eigen::Vector3d> mFrozenLocalPositions;
+  std::vector<std::uint32_t> mVisitedStamps;
+  std::vector<std::size_t> mRingQueue;
+  std::uint32_t mVisitStamp = 1u;
+  std::uint32_t mCurrentTargetStamp = 0u;
+  bool mCurrentTargetAll = true;
+  bool mForceAllActiveNextStep = true;
+  bool mHasPendingFrozenSeed = false;
+  std::size_t mActiveCount = 0u;
+  Eigen::Matrix6d mAllFrozenRestArtInertiaContribution
+      = Eigen::Matrix6d::Zero();
+};
+
+class AdaptiveContactActivationNotifier final : public PointMassNotifier
+{
+public:
+  AdaptiveContactActivationNotifier(
+      SoftBodyNode* parentSoftBody,
+      const std::string& name,
+      AdaptiveContactActivationState& state)
+    : PointMassNotifier(parentSoftBody, name), mState(&state)
+  {
+    // Do nothing
+  }
+
+  AdaptiveContactActivationState& getState()
+  {
+    return *mState;
+  }
+
+  const AdaptiveContactActivationState& getState() const
+  {
+    return *mState;
+  }
+
+private:
+  AdaptiveContactActivationState* mState;
+};
+
+struct AdaptiveContactActivationStateRegistry
+{
+  std::mutex mMutex;
+  std::unordered_map<
+      const SoftBodyNode*,
+      std::unique_ptr<AdaptiveContactActivationState>>
+      mStates;
+};
+
+AdaptiveContactActivationStateRegistry&
+getAdaptiveContactActivationStateRegistry()
+{
+  // Keep this registry alive until process exit so a SoftBodyNode destroyed
+  // during static teardown never observes a registry that has already gone
+  // away.
+  static auto* const registry = new AdaptiveContactActivationStateRegistry;
+  return *registry;
+}
+
+AdaptiveContactActivationState& getOrCreateAdaptiveContactActivationState(
+    SoftBodyNode& softBody,
+    const std::vector<PointMass::Properties>& pointProperties)
+{
+  auto& registry = getAdaptiveContactActivationStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mMutex);
+
+  const auto found = registry.mStates.find(&softBody);
+  if (found != registry.mStates.end())
+    return *found->second;
+
+  auto state = std::make_unique<AdaptiveContactActivationState>();
+  state->resize(pointProperties);
+  AdaptiveContactActivationState* result = state.get();
+  registry.mStates.emplace(&softBody, std::move(state));
+  return *result;
+}
+
+void eraseAdaptiveContactActivationState(const SoftBodyNode* softBody)
+{
+  auto& registry = getAdaptiveContactActivationStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mMutex);
+  registry.mStates.erase(softBody);
+}
+
+AdaptiveContactActivationState& adaptiveContactActivation(
+    SoftBodyNode& softBody)
+{
+  if (auto* activation = dynamic_cast<AdaptiveContactActivationNotifier*>(
+          softBody.getNotifier())) {
+    return activation->getState();
+  }
+
+  return getOrCreateAdaptiveContactActivationState(
+      softBody, softBody.getSoftBodyNodeProperties().mPointProps);
+}
+
+const AdaptiveContactActivationState& adaptiveContactActivation(
+    const SoftBodyNode& softBody)
+{
+  if (const auto* activation
+      = dynamic_cast<const AdaptiveContactActivationNotifier*>(
+          softBody.getNotifier())) {
+    return activation->getState();
+  }
+
+  return getOrCreateAdaptiveContactActivationState(
+      const_cast<SoftBodyNode&>(softBody),
+      softBody.getSoftBodyNodeProperties().mPointProps);
+}
+
+} // namespace
+
 //==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
@@ -135,6 +410,7 @@ SoftBodyNode::~SoftBodyNode()
     delete mPointMasses[i];
 
   delete mNotifier;
+  eraseAdaptiveContactActivationState(this);
 }
 
 //==============================================================================
@@ -167,10 +443,18 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 void SoftBodyNode::setAspectState(const AspectState& state)
 {
-  if (mAspectState.mPointStates == state.mPointStates)
+  auto& activation = adaptiveContactActivation(*this);
+  const bool pointStatesChanged
+      = mAspectState.mPointStates != state.mPointStates;
+  if (!pointStatesChanged && !activation.mEnabled)
     return;
 
-  mAspectState = state;
+  if (pointStatesChanged)
+    mAspectState = state;
+
+  activation.resetTransientState();
+  // Restored state is immediately all-active so instrumentation such as
+  // getNumActivePointMasses() does not report stale pre-restore counts.
   mNotifier->dirtyTransform();
 }
 
@@ -202,6 +486,18 @@ void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
     return;
 
   setProperties(_otherSoftBodyNode.getSoftBodyNodeProperties());
+
+  const auto& otherActivation = adaptiveContactActivation(_otherSoftBodyNode);
+  auto& activation = adaptiveContactActivation(*this);
+  const bool activationWasEnabled = activation.mEnabled;
+  activation.mEnabled = otherActivation.mEnabled;
+  activation.mRingCount = otherActivation.mRingCount;
+  activation.mLingerSteps = otherActivation.mLingerSteps;
+  activation.mVelocityTolerance = otherActivation.mVelocityTolerance;
+  activation.mPositionTolerance = otherActivation.mPositionTolerance;
+  activation.resetTransientState();
+  if (activationWasEnabled || activation.mEnabled)
+    mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -259,18 +555,37 @@ SoftBodyNode::SoftBodyNode(
     mSoftShapeNode(nullptr)
 {
   createSoftBodyAspect();
-  mNotifier = new PointMassNotifier(this, getName() + "_PointMassNotifier");
-  ShapeNode* softNode
-      = createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
-          std::make_shared<SoftMeshShape>(this), getName() + "_SoftMeshShape");
-  mSoftShapeNode = softNode;
+  mNotifier = nullptr;
+  bool activationRegistered = false;
+  try {
+    auto& activation = getOrCreateAdaptiveContactActivationState(
+        *this, _properties.mPointProps);
+    activationRegistered = true;
+    mNotifier = new AdaptiveContactActivationNotifier(
+        this, getName() + "_PointMassNotifier", activation);
+    ShapeNode* softNode
+        = createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+            std::make_shared<SoftMeshShape>(this),
+            getName() + "_SoftMeshShape");
+    mSoftShapeNode = softNode;
 
-  // Dev's Note: We do this workaround (instead of just using setProperties(~))
-  // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
-  // called on this BodyNode, but that happens after construction is finished.
-  mAspectProperties = _properties;
-  configurePointMasses(softNode);
-  mNotifier->dirtyTransform();
+    // Dev's Note: We do this workaround (instead of just using
+    // setProperties(~)) because mSoftShapeNode cannot be used until
+    // init(SkeletonPtr) has been called on this BodyNode, but that happens
+    // after construction is finished.
+    mAspectProperties = _properties;
+    configurePointMasses(softNode);
+    mNotifier->dirtyTransform();
+  } catch (...) {
+    for (PointMass* pointMass : mPointMasses)
+      delete pointMass;
+    mPointMasses.clear();
+    delete mNotifier;
+    mNotifier = nullptr;
+    if (activationRegistered)
+      eraseAdaptiveContactActivationState(this);
+    throw;
+  }
 }
 
 //==============================================================================
@@ -281,6 +596,15 @@ BodyNode* SoftBodyNode::clone(
       _parentBodyNode, _parentJoint, getSoftBodyNodeProperties());
 
   clonedBn->matchAspects(this);
+
+  const auto& activation = adaptiveContactActivation(*this);
+  auto& clonedActivation = adaptiveContactActivation(*clonedBn);
+  clonedActivation.mEnabled = activation.mEnabled;
+  clonedActivation.mRingCount = activation.mRingCount;
+  clonedActivation.mLingerSteps = activation.mLingerSteps;
+  clonedActivation.mVelocityTolerance = activation.mVelocityTolerance;
+  clonedActivation.mPositionTolerance = activation.mPositionTolerance;
+  clonedActivation.resetTransientState();
 
   if (cloneNodes)
     clonedBn->matchNodes(this);
@@ -296,8 +620,13 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   std::size_t newCount = softProperties.mPointProps.size();
   std::size_t oldCount = mPointMasses.size();
 
-  if (newCount == oldCount)
+  auto& activation = adaptiveContactActivation(*this);
+  if (newCount == oldCount) {
+    activation.resize(softProperties.mPointProps);
+    if (activation.mEnabled)
+      mNotifier->dirtyTransform();
     return;
+  }
 
   // Adjust the number of PointMass objects since that has changed
   if (newCount < oldCount) {
@@ -316,6 +645,8 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   // Resize the number of States in the Aspect
   mAspectState.mPointStates.resize(
       softProperties.mPointProps.size(), PointMass::State());
+
+  activation.resize(softProperties.mPointProps);
 
   // Access the SoftMeshShape and reallocate its meshes
   if (softNode) {
@@ -404,10 +735,37 @@ double SoftBodyNode::getMass() const
 {
   double totalMass = BodyNode::getMass();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    totalMass += mPointMasses.at(i)->getMass();
+  for (const auto& pointProperty : mAspectProperties.mPointProps)
+    totalMass += pointProperty.mMass;
 
   return totalMass;
+}
+
+//==============================================================================
+void SoftBodyNode::handlePointMassMassChange()
+{
+  adaptiveContactActivation(*this).refreshRestGeometry(
+      mAspectProperties.mPointProps);
+  dirtyArticulatedInertia();
+  const SkeletonPtr& skel = getSkeleton();
+  if (skel) {
+    skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
+  incrementVersion();
+}
+
+//==============================================================================
+void SoftBodyNode::handlePointMassRestingPositionChange()
+{
+  auto& activation = adaptiveContactActivation(*this);
+  activation.refreshRestGeometry(mAspectProperties.mPointProps);
+  // Frozen hold positions and linger decay targets are relative to the rest
+  // shape, so a rest-position change re-derives the activation state from
+  // scratch.
+  activation.mForceAllActiveNextStep = true;
+  dirtyArticulatedInertia();
+  incrementVersion();
 }
 
 //==============================================================================
@@ -473,6 +831,133 @@ double SoftBodyNode::getDampingCoefficient() const
 }
 
 //==============================================================================
+void SoftBodyNode::setAdaptiveContactActivationEnabled(bool enabled)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mEnabled == enabled)
+    return;
+
+  activation.mEnabled = enabled;
+  activation.resetTransientState();
+  for (std::size_t i = 0; i < activation.mFrozenLocalPositions.size(); ++i)
+    activation.mFrozenLocalPositions[i] = mAspectProperties.mPointProps[i].mX0;
+
+  mNotifier->dirtyTransform();
+}
+
+//==============================================================================
+bool SoftBodyNode::isAdaptiveContactActivationEnabled() const
+{
+  return adaptiveContactActivation(*this).mEnabled;
+}
+
+//==============================================================================
+void SoftBodyNode::setAdaptiveContactActivationRingCount(std::size_t ringCount)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mRingCount == ringCount)
+    return;
+
+  activation.mRingCount = ringCount;
+  activation.mForceAllActiveNextStep = true;
+  if (activation.mEnabled)
+    mNotifier->dirtyTransform();
+}
+
+//==============================================================================
+std::size_t SoftBodyNode::getAdaptiveContactActivationRingCount() const
+{
+  return adaptiveContactActivation(*this).mRingCount;
+}
+
+//==============================================================================
+void SoftBodyNode::setAdaptiveContactActivationLingerSteps(
+    std::size_t lingerSteps)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mLingerSteps == lingerSteps)
+    return;
+
+  activation.mLingerSteps = lingerSteps;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
+}
+
+//==============================================================================
+std::size_t SoftBodyNode::getAdaptiveContactActivationLingerSteps() const
+{
+  return adaptiveContactActivation(*this).mLingerSteps;
+}
+
+//==============================================================================
+void SoftBodyNode::setAdaptiveContactActivationVelocityTolerance(
+    double tolerance)
+{
+  if (std::isnan(tolerance) || tolerance < 0.0) {
+    DART_WARN(
+        "[SoftBodyNode] Invalid adaptive contact activation velocity "
+        "tolerance ({}) set for soft body [{}]. The tolerance must be "
+        "non-negative; NaN and negative values are clamped to 0.",
+        tolerance,
+        getName());
+    tolerance = 0.0;
+  }
+
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mVelocityTolerance == tolerance)
+    return;
+
+  activation.mVelocityTolerance = tolerance;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
+}
+
+//==============================================================================
+double SoftBodyNode::getAdaptiveContactActivationVelocityTolerance() const
+{
+  return adaptiveContactActivation(*this).mVelocityTolerance;
+}
+
+//==============================================================================
+void SoftBodyNode::setAdaptiveContactActivationPositionTolerance(
+    double tolerance)
+{
+  if (std::isnan(tolerance) || tolerance < 0.0) {
+    DART_WARN(
+        "[SoftBodyNode] Invalid adaptive contact activation position "
+        "tolerance ({}) set for soft body [{}]. The tolerance must be "
+        "non-negative; NaN and negative values are clamped to 0.",
+        tolerance,
+        getName());
+    tolerance = 0.0;
+  }
+
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mPositionTolerance == tolerance)
+    return;
+
+  activation.mPositionTolerance = tolerance;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
+}
+
+//==============================================================================
+double SoftBodyNode::getAdaptiveContactActivationPositionTolerance() const
+{
+  return adaptiveContactActivation(*this).mPositionTolerance;
+}
+
+//==============================================================================
+std::size_t SoftBodyNode::getNumActivePointMasses() const
+{
+  const auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled)
+    return getNumPointMasses();
+
+  return activation.mActiveCount;
+}
+
+//==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
   mPointMasses.clear();
@@ -524,6 +1009,243 @@ std::size_t SoftBodyNode::getNumFaces() const
 }
 
 //==============================================================================
+void SoftBodyNode::seedAdaptiveContactActivationFace(int faceId)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled)
+    return;
+
+  if (faceId < 0 || static_cast<std::size_t>(faceId) >= getNumFaces())
+    return;
+
+  const Eigen::Vector3i& face = getFace(static_cast<std::size_t>(faceId));
+  bool seededFrozenPoint = false;
+  for (int i = 0; i < 3; ++i) {
+    const int pointIndex = face[i];
+    if (pointIndex < 0)
+      continue;
+
+    const std::size_t index = static_cast<std::size_t>(pointIndex);
+    if (index < activation.mSeeded.size()) {
+      if (activation.mSeeded[index] == 0u && !activation.isActive(index))
+        seededFrozenPoint = true;
+      activation.mSeeded[index] = 1u;
+    }
+  }
+
+  // A quiescent body (for example a weld-jointed soft link) may never
+  // re-dirty its articulated inertia, and the activation tick only runs from
+  // updateArtInertia. Record the activation event and apply the dirtying in
+  // the post-solve integration hook: dirtying here would let the constraint
+  // solver's own getArticulatedInertia() re-run the tick mid-LCP-build,
+  // consuming this step's seeds against forward dynamics that already used
+  // the prior active set.
+  if (seededFrozenPoint)
+    activation.mHasPendingFrozenSeed = true;
+}
+
+//==============================================================================
+void SoftBodyNode::seedAdaptiveContactActivationPoint(std::size_t index)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled)
+    return;
+
+  if (index >= activation.mSeeded.size())
+    return;
+
+  const bool activationEvent
+      = activation.mSeeded[index] == 0u && !activation.isActive(index);
+  activation.mSeeded[index] = 1u;
+  if (activationEvent)
+    activation.mHasPendingFrozenSeed = true;
+}
+
+//==============================================================================
+bool SoftBodyNode::isAdaptiveContactPointMassActive(std::size_t index) const
+{
+  const auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled)
+    return true;
+
+  return activation.isActive(index);
+}
+
+//==============================================================================
+void SoftBodyNode::integratePointMassPositions(double dt)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  // Deferred seed dirtying: post-solve is the single safe site, so the next
+  // step's forward dynamics runs the activation tick exactly once even for
+  // otherwise-quiescent bodies. A new contact normally wakes the skeleton so
+  // this hook runs on the seeding step; in the final solve of a
+  // sleep-candidate island the hook is skipped and the pending seed is
+  // consumed on the eventual wake step instead (deferred, never lost).
+  if (activation.mEnabled && activation.mHasPendingFrozenSeed) {
+    activation.mHasPendingFrozenSeed = false;
+    dirtyArticulatedInertia();
+  }
+  if (!activation.mEnabled) {
+    for (std::size_t i = 0; i < getNumPointMasses(); ++i)
+      getPointMass(i)->integratePositions(dt);
+    return;
+  }
+
+  for (std::size_t i = 0; i < getNumPointMasses(); ++i) {
+    if (activation.isActive(i)) {
+      getPointMass(i)->integratePositions(dt);
+    } else {
+      PointMass::State& state = mAspectState.mPointStates[i];
+      state.mPositions = activation.mFrozenLocalPositions[i]
+                         - mAspectProperties.mPointProps[i].mX0;
+      state.mVelocities.setZero();
+      state.mAccelerations.setZero();
+    }
+  }
+}
+
+//==============================================================================
+void SoftBodyNode::integratePointMassVelocities(double dt)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled) {
+    for (std::size_t i = 0; i < getNumPointMasses(); ++i)
+      getPointMass(i)->integrateVelocities(dt);
+    return;
+  }
+
+  for (std::size_t i = 0; i < getNumPointMasses(); ++i) {
+    if (activation.isActive(i)) {
+      getPointMass(i)->integrateVelocities(dt);
+    } else {
+      PointMass::State& state = mAspectState.mPointStates[i];
+      state.mPositions = activation.mFrozenLocalPositions[i]
+                         - mAspectProperties.mPointProps[i].mX0;
+      state.mVelocities.setZero();
+      state.mAccelerations.setZero();
+    }
+  }
+}
+
+//==============================================================================
+void SoftBodyNode::prepareAdaptiveContactActivationForDynamics(
+    double /*timeStep*/) const
+{
+  const auto& constActivation = adaptiveContactActivation(*this);
+  if (!constActivation.mEnabled)
+    return;
+
+  auto* self = const_cast<SoftBodyNode*>(this);
+  auto& activation = adaptiveContactActivation(*self);
+  const std::size_t count = self->getNumPointMasses();
+  if (count == 0u) {
+    activation.mActiveCount = 0u;
+    return;
+  }
+
+  DART_ASSERT(activation.mActive.size() == count);
+  DART_ASSERT(activation.mSeeded.size() == count);
+  DART_ASSERT(activation.mFrozenLocalPositions.size() == count);
+  DART_ASSERT(activation.mVisitedStamps.size() == count);
+  DART_ASSERT(activation.mRingQueue.size() == count);
+
+  bool stateChanged = false;
+  if (activation.mForceAllActiveNextStep) {
+    activation.resetTransientState();
+    activation.mForceAllActiveNextStep = false;
+    return;
+  }
+
+  const std::uint32_t stamp = activation.nextVisitStamp();
+  std::size_t queueHead = 0u;
+  std::size_t queueTail = 0u;
+  for (std::size_t i = 0; i < count; ++i) {
+    if (activation.mSeeded[i] == 0u)
+      continue;
+
+    activation.mSeeded[i] = 0u;
+    if (activation.mVisitedStamps[i] == stamp)
+      continue;
+
+    activation.mVisitedStamps[i] = stamp;
+    activation.mRingQueue[queueTail++] = i;
+  }
+
+  for (std::size_t ring = 0u; ring < activation.mRingCount; ++ring) {
+    const std::size_t ringEnd = queueTail;
+    for (; queueHead < ringEnd; ++queueHead) {
+      const std::size_t index = activation.mRingQueue[queueHead];
+      const auto& connections
+          = mAspectProperties.mPointProps[index].mConnectedPointMassIndices;
+      for (const std::size_t connectedIndex : connections) {
+        if (connectedIndex >= count)
+          continue;
+        if (activation.mVisitedStamps[connectedIndex] == stamp)
+          continue;
+
+        activation.mVisitedStamps[connectedIndex] = stamp;
+        DART_ASSERT(queueTail < activation.mRingQueue.size());
+        activation.mRingQueue[queueTail++] = connectedIndex;
+      }
+    }
+  }
+
+  activation.mCurrentTargetAll = false;
+  activation.mCurrentTargetStamp = stamp;
+
+  const double velocityToleranceSquared
+      = activation.mVelocityTolerance * activation.mVelocityTolerance;
+  const double positionToleranceSquared
+      = activation.mPositionTolerance * activation.mPositionTolerance;
+
+  std::size_t activeCount = 0u;
+  for (std::size_t i = 0; i < count; ++i) {
+    PointMass::State& state = self->mAspectState.mPointStates[i];
+    const PointMass::Properties& properties = mAspectProperties.mPointProps[i];
+    const bool inTarget = activation.isCurrentTarget(i);
+
+    if (inTarget) {
+      if (activation.mActive[i] == 0u) {
+        state.mPositions = activation.mFrozenLocalPositions[i] - properties.mX0;
+        state.mVelocities.setZero();
+        state.mAccelerations.setZero();
+        stateChanged = true;
+      }
+      activation.mActive[i] = 1u;
+      activation.mLingerCounters[i] = 0u;
+      ++activeCount;
+      continue;
+    }
+
+    if (activation.mActive[i] == 0u) {
+      state.mPositions = activation.mFrozenLocalPositions[i] - properties.mX0;
+      state.mVelocities.setZero();
+      state.mAccelerations.setZero();
+      continue;
+    }
+
+    const bool nearRest
+        = state.mVelocities.squaredNorm() <= velocityToleranceSquared
+          && state.mPositions.squaredNorm() <= positionToleranceSquared;
+    if (nearRest && activation.mLingerCounters[i] >= activation.mLingerSteps) {
+      activation.mActive[i] = 0u;
+      activation.mFrozenLocalPositions[i] = properties.mX0;
+      state.mPositions.setZero();
+      state.mVelocities.setZero();
+      state.mAccelerations.setZero();
+      stateChanged = true;
+    } else {
+      ++activation.mLingerCounters[i];
+      ++activeCount;
+    }
+  }
+
+  activation.mActiveCount = activeCount;
+  if (stateChanged)
+    self->mNotifier->dirtyTransform();
+}
+
+//==============================================================================
 void SoftBodyNode::clearConstraintImpulse()
 {
   BodyNode::clearConstraintImpulse();
@@ -543,18 +1265,18 @@ void SoftBodyNode::checkArticulatedInertiaUpdate() const
 //==============================================================================
 void SoftBodyNode::updateTransform()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateTransform");
   BodyNode::updateTransform();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Isometry3d& parentWorldTransform = getWorldTransform();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    pointMass.mX = pointStates[i].mPositions + pointProperties[i].mX0;
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mX = phase.states[i].mPositions + phase.properties[i].mX0;
     DART_ASSERT(!math::isNan(pointMass.mX));
 
     pointMass.mW = parentWorldTransform.translation()
@@ -568,21 +1290,24 @@ void SoftBodyNode::updateTransform()
 //==============================================================================
 void SoftBodyNode::updateVelocity()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateVelocity");
   BodyNode::updateVelocity();
 
   if (mNotifier->needsTransformUpdate())
     updateTransform();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Vector6d& parentSpatialVelocity = getSpatialVelocity();
   const Eigen::Vector3d parentAngularVelocity = parentSpatialVelocity.head<3>();
   const Eigen::Vector3d parentLinearVelocity = parentSpatialVelocity.tail<3>();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     pointMass.mV = parentAngularVelocity.cross(pointMass.mX)
-                   + parentLinearVelocity + pointStates[i].mVelocities;
+                   + parentLinearVelocity + phase.states[i].mVelocities;
     DART_ASSERT(!math::isNan(pointMass.mV));
   }
 
@@ -594,13 +1319,13 @@ void SoftBodyNode::updatePartialAcceleration() const
 {
   BodyNode::updatePartialAcceleration();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    pointMass.mEta = parentAngularVelocity.cross(pointStates[i].mVelocities);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mEta = parentAngularVelocity.cross(phase.states[i].mVelocities);
     DART_ASSERT(!math::isNan(pointMass.mEta));
   }
 
@@ -612,8 +1337,24 @@ void SoftBodyNode::updateAccelerationID()
 {
   BodyNode::updateAccelerationID();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateAccelerationID();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+  if (mNotifier->needsPartialAccelerationUpdate())
+    updatePartialAcceleration();
+
+  const Eigen::Vector6d& parentAcceleration = getSpatialAcceleration();
+  const Eigen::Vector3d parentAngularAcceleration
+      = parentAcceleration.head<3>();
+  const Eigen::Vector3d parentLinearAcceleration = parentAcceleration.tail<3>();
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mA = parentAngularAcceleration.cross(pointMass.mX)
+                   + parentLinearAcceleration + pointMass.mEta
+                   + phase.states[i].mAccelerations;
+    DART_ASSERT(!math::isNan(pointMass.mA));
+  }
 
   mNotifier->clearAccelerationNotice();
 }
@@ -624,11 +1365,38 @@ void SoftBodyNode::updateTransmittedForceID(
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
+
+  if (mNotifier->needsVelocityUpdate())
+    updateVelocity();
+  if (mNotifier->needsAccelerationUpdate())
+    updateAccelerationID();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
+  Eigen::Vector3d localGravity = Eigen::Vector3d::Zero();
+  if (gravityMode)
+    localGravity = getWorldTransform().linear().transpose() * _gravity;
+  const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
+
+  Eigen::Vector6d pointForceContribution = Eigen::Vector6d::Zero();
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const double mass = phase.properties[i].mMass;
+    pointMass.mF.noalias() = mass * pointMass.mA;
+    pointMass.mF
+        += parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
+    if (gravityMode)
+      pointMass.mF -= mass * localGravity;
+    DART_ASSERT(!math::isNan(pointMass.mF));
+    addPointForceContribution(
+        pointForceContribution, pointMass.mX, pointMass.mF);
+  }
 
   // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (gravityMode)
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -659,10 +1427,7 @@ void SoftBodyNode::updateTransmittedForceID(
     mF += math::dAdInvT(
         childJoint->getRelativeTransform(), childBodyNode->getBodyForce());
   }
-  for (auto& pointMass : mPointMasses) {
-    mF.head<3>() += pointMass->getLocalPosition().cross(pointMass->mF);
-    mF.tail<3>() += pointMass->mF;
-  }
+  mF += pointForceContribution;
 
   // Verification
   DART_ASSERT(!math::isNan(mF));
@@ -672,9 +1437,10 @@ void SoftBodyNode::updateTransmittedForceID(
 void SoftBodyNode::updateJointForceID(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointForceID(
-        _timeStep, _withDampingForces, _withSpringForces);
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i)
+    phase.states[i].mForces = phase.pointMasses[i]->mF;
 
   BodyNode::updateJointForceID(
       _timeStep, _withDampingForces, _withSpringForces);
@@ -697,27 +1463,59 @@ void SoftBodyNode::updateJointImpulseFD()
 //==============================================================================
 void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateArtInertia");
+  const bool adaptiveEnabled = isAdaptiveContactActivationEnabled();
+  if (adaptiveEnabled)
+    prepareAdaptiveContactActivationForDynamics(_timeStep);
+
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const double dampingCoefficient = getDampingCoefficient();
   const double vertexSpringStiffness = getVertexSpringStiffness();
   const double implicitOffset = _timeStep * dampingCoefficient
                                 + _timeStep * _timeStep * vertexSpringStiffness;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    const double mass = pointProperties[i].mMass;
-    const double massSquared = mass * mass;
-    pointMass.mPsi = 1.0 / mass;
-    pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
-    DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  const auto* activation
+      = adaptiveEnabled ? &adaptiveContactActivation(*this) : nullptr;
+  const bool allFrozen = activation && activation->mActiveCount == 0u;
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const double mass = phase.properties[i].mMass;
+      const double massSquared = mass * mass;
+      pointMass.mPsi = 1.0 / mass;
+      pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
+      DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
 
-    pointMass.mPi = mass - massSquared * pointMass.mPsi;
-    pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
-    DART_ASSERT(!math::isNan(pointMass.mPi));
-    DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
+      pointMass.mPi = mass - massSquared * pointMass.mPsi;
+      pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
+      DART_ASSERT(!math::isNan(pointMass.mPi));
+      DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
+    }
+  } else if (!allFrozen) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const double mass = phase.properties[i].mMass;
+      if (activation->isActive(i)) {
+        const double massSquared = mass * mass;
+        pointMass.mPsi = 1.0 / mass;
+        pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
+        DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
+
+        pointMass.mPi = mass - massSquared * pointMass.mPsi;
+        pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
+      } else {
+        pointMass.mPsi = 0.0;
+        pointMass.mImplicitPsi = 0.0;
+        pointMass.mPi = mass;
+        pointMass.mImplicitPi = mass;
+      }
+      DART_ASSERT(!math::isNan(pointMass.mPi));
+      DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
+    }
   }
 
   DART_ASSERT(mParentJoint != nullptr);
@@ -735,11 +1533,25 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
         mArtInertiaImplicit, child->mArtInertiaImplicit);
   }
 
-  //
-  for (const auto& pointMass : mPointMasses) {
-    _addPiToArtInertia(pointMass->getLocalPosition(), pointMass->mPi);
-    _addPiToArtInertiaImplicit(
-        pointMass->getLocalPosition(), pointMass->mImplicitPi);
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      const PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d& localPosition = pointMass.getLocalPosition();
+      _addPiToArtInertia(localPosition, pointMass.mPi);
+      _addPiToArtInertiaImplicit(localPosition, pointMass.mImplicitPi);
+    }
+  } else if (allFrozen) {
+    mArtInertia += activation->mAllFrozenRestArtInertiaContribution;
+    mArtInertiaImplicit += activation->mAllFrozenRestArtInertiaContribution;
+  } else {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      const PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d& localPosition
+          = activation->isActive(i) ? pointMass.getLocalPosition()
+                                    : activation->mFrozenLocalPositions[i];
+      _addPiToArtInertia(localPosition, pointMass.mPi);
+      _addPiToArtInertiaImplicit(localPosition, pointMass.mImplicitPi);
+    }
   }
 
   // Verification
@@ -759,6 +1571,9 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 void SoftBodyNode::updateBiasForce(
     const Eigen::Vector3d& _gravity, double _timeStep)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateBiasForce");
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
@@ -769,57 +1584,135 @@ void SoftBodyNode::updateBiasForce(
   const double vertexSpringStiffness = getVertexSpringStiffness();
   const double edgeSpringStiffness = getEdgeSpringStiffness();
   const double dampingCoefficient = getDampingCoefficient();
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  const bool adaptiveEnabled = isAdaptiveContactActivationEnabled();
 
   if (mNotifier->needsVelocityUpdate())
     updateVelocity();
   if (mNotifier->needsPartialAccelerationUpdate())
     updatePartialAcceleration();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
   checkArticulatedInertiaUpdate();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    const PointMass::State& state = pointStates[i];
-    const PointMass::Properties& properties = pointProperties[i];
-    const double mass = properties.mMass;
+  Eigen::Vector6d frozenBoundaryContribution = Eigen::Vector6d::Zero();
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const PointMass::State& state = phase.states[i];
+      const PointMass::Properties& properties = phase.properties[i];
+      const double mass = properties.mMass;
 
-    // Reset internal forces of point masses before used.
-    //
-    // Once control force for point mass is introduced, assign it to the
-    // internal force instead of always resetting the internal forces to zero.
-    mAspectState.mPointStates[i].mForces.setZero();
+      // Reset internal forces of point masses before used.
+      //
+      // Once control force for point mass is introduced, assign it to the
+      // internal force instead of always resetting the internal forces to zero.
+      phase.states[i].mForces.setZero();
 
-    pointMass.mB
-        = parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
-    if (gravityMode)
-      pointMass.mB -= mass * localGravity;
-    DART_ASSERT(!math::isNan(pointMass.mB));
+      pointMass.mB
+          = parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
+      if (gravityMode)
+        pointMass.mB -= mass * localGravity;
+      DART_ASSERT(!math::isNan(pointMass.mB));
 
-    const std::vector<std::size_t>& connections
-        = properties.mConnectedPointMassIndices;
-    const std::size_t numConnections = connections.size();
-    const double springStiffness
-        = vertexSpringStiffness + numConnections * edgeSpringStiffness;
-    pointMass.mAlpha = state.mForces - springStiffness * state.mPositions
-                       - (_timeStep * springStiffness + dampingCoefficient)
-                             * state.mVelocities
-                       - mass * pointMass.mEta - pointMass.mB;
-    for (std::size_t j = 0; j < numConnections; ++j) {
-      const std::size_t connectedIndex = connections[j];
-      DART_ASSERT(connectedIndex < pointStates.size());
-      const PointMass::State& connectedState = pointStates[connectedIndex];
-      pointMass.mAlpha += edgeSpringStiffness
-                          * (connectedState.mPositions
-                             + _timeStep * connectedState.mVelocities);
+      const std::vector<std::size_t>& connections
+          = properties.mConnectedPointMassIndices;
+      const std::size_t numConnections = connections.size();
+      const std::size_t* connectionIndices = connections.data();
+      const double springStiffness
+          = vertexSpringStiffness + numConnections * edgeSpringStiffness;
+      const double velocityScale
+          = _timeStep * springStiffness + dampingCoefficient;
+      pointMass.mAlpha = state.mForces - springStiffness * state.mPositions
+                         - velocityScale * state.mVelocities
+                         - mass * pointMass.mEta - pointMass.mB;
+      for (std::size_t j = 0; j < numConnections; ++j) {
+        const std::size_t connectedIndex = connectionIndices[j];
+        DART_ASSERT(connectedIndex < phase.size());
+        const PointMass::State& connectedState = phase.states[connectedIndex];
+        pointMass.mAlpha += edgeSpringStiffness
+                            * (connectedState.mPositions
+                               + _timeStep * connectedState.mVelocities);
+      }
+      DART_ASSERT(!math::isNan(pointMass.mAlpha));
+
+      pointMass.mBeta = pointMass.mB;
+      pointMass.mBeta.noalias()
+          += mass
+             * (pointMass.mEta + pointMass.mImplicitPsi * pointMass.mAlpha);
+      DART_ASSERT(!math::isNan(pointMass.mBeta));
     }
-    DART_ASSERT(!math::isNan(pointMass.mAlpha));
+  } else {
+    const auto& activation = adaptiveContactActivation(*this);
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      PointMass::State& state = phase.states[i];
+      const PointMass::Properties& properties = phase.properties[i];
+      const double mass = properties.mMass;
 
-    pointMass.mBeta = pointMass.mB;
-    pointMass.mBeta.noalias()
-        += mass * (pointMass.mEta + pointMass.mImplicitPsi * pointMass.mAlpha);
-    DART_ASSERT(!math::isNan(pointMass.mBeta));
+      state.mForces.setZero();
+
+      pointMass.mB
+          = parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
+      if (gravityMode)
+        pointMass.mB -= mass * localGravity;
+      DART_ASSERT(!math::isNan(pointMass.mB));
+
+      if (!activation.isActive(i)) {
+        pointMass.mAlpha.setZero();
+        pointMass.mBeta = pointMass.mB;
+        DART_ASSERT(!math::isNan(pointMass.mBeta));
+        continue;
+      }
+
+      const std::vector<std::size_t>& connections
+          = properties.mConnectedPointMassIndices;
+      const std::size_t numConnections = connections.size();
+      const std::size_t* connectionIndices = connections.data();
+      const double springStiffness
+          = vertexSpringStiffness + numConnections * edgeSpringStiffness;
+      const double velocityScale
+          = _timeStep * springStiffness + dampingCoefficient;
+      pointMass.mAlpha = state.mForces - springStiffness * state.mPositions
+                         - velocityScale * state.mVelocities
+                         - mass * pointMass.mEta - pointMass.mB;
+      for (std::size_t j = 0; j < numConnections; ++j) {
+        const std::size_t connectedIndex = connectionIndices[j];
+        DART_ASSERT(connectedIndex < phase.size());
+        const PointMass::State& connectedState = phase.states[connectedIndex];
+        pointMass.mAlpha += edgeSpringStiffness
+                            * (connectedState.mPositions
+                               + _timeStep * connectedState.mVelocities);
+
+        if (!activation.isActive(connectedIndex)) {
+          const Eigen::Vector3d reaction
+              = edgeSpringStiffness
+                * (state.mPositions + _timeStep * state.mVelocities
+                   - connectedState.mPositions
+                   - _timeStep * connectedState.mVelocities);
+          addPointForceContribution(
+              frozenBoundaryContribution,
+              activation.mFrozenLocalPositions[connectedIndex],
+              reaction);
+        }
+      }
+
+      if (!activation.isCurrentTarget(i)) {
+        const double decayStiffness = springStiffness;
+        const double decayDamping = 2.0 * std::sqrt(decayStiffness * mass);
+        pointMass.mAlpha.noalias() -= decayStiffness * state.mPositions
+                                      + decayDamping * state.mVelocities;
+      }
+
+      DART_ASSERT(!math::isNan(pointMass.mAlpha));
+
+      pointMass.mBeta = pointMass.mB;
+      pointMass.mBeta.noalias()
+          += mass
+             * (pointMass.mEta + pointMass.mImplicitPsi * pointMass.mAlpha);
+      DART_ASSERT(!math::isNan(pointMass.mBeta));
+    }
   }
 
   // Gravity force
@@ -847,11 +1740,21 @@ void SoftBodyNode::updateBiasForce(
         childBodyNode->getPartialAcceleration());
   }
 
-  //
-  for (const auto& pointMass : mPointMasses) {
-    mBiasForce.head<3>()
-        += pointMass->getLocalPosition().cross(pointMass->mBeta);
-    mBiasForce.tail<3>() += pointMass->mBeta;
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      const PointMass& pointMass = *phase.pointMasses[i];
+      addPointForceContribution(mBiasForce, pointMass.mX, pointMass.mBeta);
+    }
+  } else {
+    const auto& activation = adaptiveContactActivation(*this);
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      const PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d& localPosition
+          = activation.isActive(i) ? pointMass.mX
+                                   : activation.mFrozenLocalPositions[i];
+      addPointForceContribution(mBiasForce, localPosition, pointMass.mBeta);
+    }
+    mBiasForce += frozenBoundaryContribution;
   }
 
   // Verifycation
@@ -879,25 +1782,52 @@ void SoftBodyNode::updateAccelerationFD()
   const Eigen::Vector3d parentAngularAcceleration
       = parentAcceleration.head<3>();
   const Eigen::Vector3d parentLinearAcceleration = parentAcceleration.tail<3>();
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  DART_ASSERT(mAspectState.mPointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    const Eigen::Vector3d parentPointAcceleration
-        = parentAngularAcceleration.cross(pointMass.mX)
-          + parentLinearAcceleration;
-    const Eigen::Vector3d ddq
-        = pointMass.mImplicitPsi
-          * (pointMass.mAlpha
-             - pointProperties[i].mMass * parentPointAcceleration);
-    mAspectState.mPointStates[i].mAccelerations = ddq;
-    DART_ASSERT(!math::isNan(ddq));
+  const bool adaptiveEnabled = isAdaptiveContactActivationEnabled();
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d parentPointAcceleration
+          = parentAngularAcceleration.cross(pointMass.mX)
+            + parentLinearAcceleration;
+      const Eigen::Vector3d ddq
+          = pointMass.mImplicitPsi
+            * (pointMass.mAlpha
+               - phase.properties[i].mMass * parentPointAcceleration);
+      phase.states[i].mAccelerations = ddq;
+      DART_ASSERT(!math::isNan(ddq));
 
-    pointMass.mA = parentPointAcceleration + pointMass.mEta + ddq;
-    DART_ASSERT(!math::isNan(pointMass.mA));
+      pointMass.mA = parentPointAcceleration + pointMass.mEta + ddq;
+      DART_ASSERT(!math::isNan(pointMass.mA));
+    }
+  } else {
+    const auto& activation = adaptiveContactActivation(*this);
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d& localPosition
+          = activation.isActive(i) ? pointMass.mX
+                                   : activation.mFrozenLocalPositions[i];
+      const Eigen::Vector3d parentPointAcceleration
+          = parentAngularAcceleration.cross(localPosition)
+            + parentLinearAcceleration;
+
+      if (activation.isActive(i)) {
+        const Eigen::Vector3d ddq
+            = pointMass.mImplicitPsi
+              * (pointMass.mAlpha
+                 - phase.properties[i].mMass * parentPointAcceleration);
+        phase.states[i].mAccelerations = ddq;
+        DART_ASSERT(!math::isNan(ddq));
+
+        pointMass.mA = parentPointAcceleration + pointMass.mEta + ddq;
+      } else {
+        phase.states[i].mAccelerations.setZero();
+        pointMass.mA = parentPointAcceleration;
+      }
+      DART_ASSERT(!math::isNan(pointMass.mA));
+    }
   }
 
   mNotifier->clearAccelerationNotice();
@@ -911,13 +1841,12 @@ void SoftBodyNode::updateTransmittedForceFD()
   if (mNotifier->needsAccelerationUpdate())
     updateAccelerationFD();
 
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     pointMass.mF = pointMass.mB;
-    pointMass.mF.noalias() += pointProperties[i].mMass * pointMass.mA;
+    pointMass.mF.noalias() += phase.properties[i].mMass * pointMass.mA;
     DART_ASSERT(!math::isNan(pointMass.mF));
   }
 }
@@ -925,8 +1854,17 @@ void SoftBodyNode::updateTransmittedForceFD()
 //==============================================================================
 void SoftBodyNode::updateBiasImpulse()
 {
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasImpulseFD();
+  for (auto& pointMassPtr : mPointMasses) {
+    PointMass& pointMass = *pointMassPtr;
+    pointMass.mImpB = -pointMass.mConstraintImpulses;
+    DART_ASSERT(!math::isNan(pointMass.mImpB));
+
+    pointMass.mImpAlpha = -pointMass.mImpB;
+    DART_ASSERT(!math::isNan(pointMass.mImpAlpha));
+
+    pointMass.mImpBeta.setZero();
+    DART_ASSERT(!math::isNan(pointMass.mImpBeta));
+  }
 
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
@@ -939,12 +1877,6 @@ void SoftBodyNode::updateBiasImpulse()
         mBiasImpulse,
         childBodyNode->getArticulatedInertia(),
         childBodyNode->mBiasImpulse);
-  }
-
-  for (auto& pointMass : mPointMasses) {
-    mBiasImpulse.head<3>()
-        += pointMass->getLocalPosition().cross(pointMass->mImpBeta);
-    mBiasImpulse.tail<3>() += pointMass->mImpBeta;
   }
 
   // Verification
@@ -969,17 +1901,44 @@ void SoftBodyNode::updateVelocityChangeFD()
   const Eigen::Vector3d parentLinearVelocityChange
       = parentVelocityChange.tail<3>();
 
-  for (auto& pointMassPtr : mPointMasses) {
-    PointMass& pointMass = *pointMassPtr;
-    const Eigen::Vector3d parentPointVelocityChange
-        = parentAngularVelocityChange.cross(pointMass.mX)
-          + parentLinearVelocityChange;
-    pointMass.mVelocityChanges
-        = pointMass.mPsi * pointMass.mImpAlpha - parentPointVelocityChange;
-    DART_ASSERT(!math::isNan(pointMass.mVelocityChanges));
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  const bool adaptiveEnabled = isAdaptiveContactActivationEnabled();
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d parentPointVelocityChange
+          = parentAngularVelocityChange.cross(pointMass.mX)
+            + parentLinearVelocityChange;
+      pointMass.mVelocityChanges
+          = pointMass.mPsi * pointMass.mImpAlpha - parentPointVelocityChange;
+      DART_ASSERT(!math::isNan(pointMass.mVelocityChanges));
 
-    pointMass.mDelV = parentPointVelocityChange + pointMass.mVelocityChanges;
-    DART_ASSERT(!math::isNan(pointMass.mDelV));
+      pointMass.mDelV = parentPointVelocityChange + pointMass.mVelocityChanges;
+      DART_ASSERT(!math::isNan(pointMass.mDelV));
+    }
+  } else {
+    const auto& activation = adaptiveContactActivation(*this);
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      const Eigen::Vector3d& localPosition
+          = activation.isActive(i) ? pointMass.mX
+                                   : activation.mFrozenLocalPositions[i];
+      const Eigen::Vector3d parentPointVelocityChange
+          = parentAngularVelocityChange.cross(localPosition)
+            + parentLinearVelocityChange;
+      if (activation.isActive(i)) {
+        pointMass.mVelocityChanges
+            = pointMass.mPsi * pointMass.mImpAlpha - parentPointVelocityChange;
+        pointMass.mDelV
+            = parentPointVelocityChange + pointMass.mVelocityChanges;
+      } else {
+        pointMass.mVelocityChanges.setZero();
+        pointMass.mDelV = parentPointVelocityChange;
+      }
+      DART_ASSERT(!math::isNan(pointMass.mVelocityChanges));
+      DART_ASSERT(!math::isNan(pointMass.mDelV));
+    }
   }
 }
 
@@ -988,8 +1947,15 @@ void SoftBodyNode::updateTransmittedImpulse()
 {
   BodyNode::updateTransmittedImpulse();
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedImpulse();
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mImpF = pointMass.mImpB;
+    pointMass.mImpF.noalias() += phase.properties[i].mMass * pointMass.mDelV;
+    DART_ASSERT(!math::isNan(pointMass.mImpF));
+  }
 }
 
 //==============================================================================
@@ -997,8 +1963,50 @@ void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
   BodyNode::updateConstrainedTerms(_timeStep);
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateConstrainedTermsFD(_timeStep);
+  DART_ASSERT(_timeStep > 0.0);
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+
+  const double invTimeStep = 1.0 / _timeStep;
+  const bool adaptiveEnabled = isAdaptiveContactActivationEnabled();
+  if (!adaptiveEnabled) {
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      PointMass::State& state = phase.states[i];
+
+      state.mVelocities += pointMass.mVelocityChanges;
+      state.mAccelerations.noalias()
+          += invTimeStep * (pointMass.mVelocityChanges + pointMass.mDelV);
+      state.mForces.noalias() += invTimeStep * pointMass.mConstraintImpulses;
+      pointMass.mF.noalias() += _timeStep * pointMass.mImpF;
+
+      pointMass.mNotifier->dirtyVelocity();
+      pointMass.mNotifier->dirtyAcceleration();
+    }
+  } else {
+    const auto& activation = adaptiveContactActivation(*this);
+    for (std::size_t i = 0; i < phase.size(); ++i) {
+      PointMass& pointMass = *phase.pointMasses[i];
+      PointMass::State& state = phase.states[i];
+
+      if (activation.isActive(i)) {
+        state.mVelocities += pointMass.mVelocityChanges;
+        state.mAccelerations.noalias()
+            += invTimeStep * (pointMass.mVelocityChanges + pointMass.mDelV);
+        state.mForces.noalias() += invTimeStep * pointMass.mConstraintImpulses;
+        pointMass.mF.noalias() += _timeStep * pointMass.mImpF;
+      } else {
+        state.mPositions = activation.mFrozenLocalPositions[i]
+                           - mAspectProperties.mPointProps[i].mX0;
+        state.mVelocities.setZero();
+        state.mAccelerations.setZero();
+        state.mForces.setZero();
+      }
+
+      pointMass.mNotifier->dirtyVelocity();
+      pointMass.mNotifier->dirtyAcceleration();
+    }
+  }
 }
 
 //==============================================================================
@@ -1006,54 +2014,55 @@ void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();
 
-  //  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->updateMassMatrix();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mM_dV = mM_dV.head<3>().cross(pointMass.mX) + mM_dV.tail<3>();
+    DART_ASSERT(!math::isNan(pointMass.mM_dV));
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 {
-  BodyNode::aggregateMassMatrix(_MCol, _col);
-  //  //------------------------ PointMass Part
-  //  ------------------------------------ for (std::size_t i = 0; i <
-  //  mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
 
-  //  //----------------------- SoftBodyNode Part
-  //  ----------------------------------
-  //  //
-  //  mM_F.noalias() = mI * mM_dV;
+  //----------------------- SoftBodyNode Part ----------------------------------
+  const Eigen::Matrix6d& mI
+      = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
+  mM_F.noalias() = mI * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
 
-  //  // Verification
-  //  DART_ASSERT(!math::isNan(mM_F));
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end();
+       ++it) {
+    mM_F += math::dAdInvT(
+        (*it)->getParentJoint()->getRelativeTransform(), (*it)->mM_F);
+  }
 
-  //  //
-  //  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-  //       it != mChildBodyNodes.end(); ++it)
-  //  {
-  //    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
-  //                          (*it)->mM_F);
-  //  }
+  //------------------------ PointMass Part ------------------------------------
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mM_F.noalias() = phase.properties[i].mMass * pointMass.mM_dV;
+    DART_ASSERT(!math::isNan(pointMass.mM_F));
+    addPointForceContribution(mM_F, pointMass.mX, pointMass.mM_F);
+  }
 
-  //  //
-  //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-  //       it != mPointMasses.end(); ++it)
-  //  {
-  //    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
-  //    mM_F.tail<3>() += (*it)->mM_F;
-  //  }
+  DART_ASSERT(!math::isNan(mM_F));
 
-  //  // Verification
-  //  DART_ASSERT(!math::isNan(mM_F));
-
-  //  //
-  //  int dof = mParentJoint->getNumDofs();
-  //  if (dof > 0)
-  //  {
-  //    int iStart = mParentJoint->getIndexInTree(0);
-  //    _MCol->block(iStart, _col, dof, 1).noalias()
-  //        = mParentJoint->getRelativeJacobian().transpose() * mM_F;
-  //  }
+  const std::size_t dof = mParentJoint->getNumDofs();
+  if (dof > 0) {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _MCol.block(iStart, _col, dof, 1).noalias()
+        = mParentJoint->getRelativeJacobian().transpose() * mM_F;
+  }
 }
 
 //==============================================================================
@@ -1061,12 +2070,11 @@ void SoftBodyNode::aggregateAugMassMatrix(
     Eigen::MatrixXd& _MCol, std::size_t _col, double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
 
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
 
   //----------------------- SoftBodyNode Part ----------------------------------
   mM_F.noalias() = mI * mM_dV;
@@ -1078,39 +2086,38 @@ void SoftBodyNode::aggregateAugMassMatrix(
     mM_F += math::dAdInvT(
         (*it)->getParentJoint()->getRelativeTransform(), (*it)->mM_F);
   }
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end();
-       ++it) {
-    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
-    mM_F.tail<3>() += (*it)->mM_F;
+
+  //------------------------ PointMass Part ------------------------------------
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mM_F.noalias() = phase.properties[i].mMass * pointMass.mM_dV;
+    DART_ASSERT(!math::isNan(pointMass.mM_F));
+    addPointForceContribution(mM_F, pointMass.mX, pointMass.mM_F);
   }
   DART_ASSERT(!math::isNan(mM_F));
 
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0) {
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (std::size_t i = 0; i < dof; ++i) {
-      K(i, i) = mParentJoint->getSpringStiffness(i);
-      D(i, i) = mParentJoint->getDampingCoefficient(i);
-    }
-    int iStart = mParentJoint->getIndexInTree(0);
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
 
-    // TODO(JS): Not recommended to use Joint::getAccelerations
-    _MCol.block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getRelativeJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getAccelerations())
-          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
+    // TODO(JS): Revisit the augmented-mass spring/damping formulation.
+    auto segment = _MCol.block(iStart, _col, dof, 1);
+    segment.noalias() = mParentJoint->getRelativeJacobian().transpose() * mM_F;
+
+    const double timeStepSquared = _timeStep * _timeStep;
+    for (std::size_t i = 0; i < dof; ++i) {
+      segment(i, 0) += (_timeStep * mParentJoint->getDampingCoefficient(i)
+                        + timeStepSquared * mParentJoint->getSpringStiffness(i))
+                       * mParentJoint->getAcceleration(i);
+    }
   }
 }
 
 //==============================================================================
 void SoftBodyNode::updateInvMassMatrix()
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateInvMassMatrix();
-
   //----------------------- SoftBodyNode Part ----------------------------------
   //
   mInvM_c.setZero();
@@ -1123,13 +2130,17 @@ void SoftBodyNode::updateInvMassMatrix()
         mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
   }
 
-  //
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end();
-       ++it) {
-    mInvM_c.head<3>()
-        += (*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta);
-    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
+  //------------------------ PointMass Part ------------------------------------
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mBiasForceForInvMeta = phase.states[i].mForces;
+    addPointForceContribution(
+        mInvM_c, pointMass.mX, pointMass.mBiasForceForInvMeta);
   }
 
   // Verification
@@ -1201,9 +2212,8 @@ void SoftBodyNode::aggregateInvMassMatrix(
   //
   mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
 
-  //
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateInvMassMatrix(_InvMCol, _col);
+  // PointMass::aggregateInvMassMatrix() is intentionally a no-op in DART 6.
+  // Preserve that public behavior without dispatching once per point mass.
 }
 
 //==============================================================================
@@ -1254,12 +2264,13 @@ void SoftBodyNode::aggregateGravityForceVector(
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateGravityForceVector(_g, _gravity);
+  const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
+  Eigen::Vector3d localGravity = Eigen::Vector3d::Zero();
+  if (gravityMode)
+    localGravity = getWorldTransform().linear().transpose() * _gravity;
 
   //----------------------- SoftBodyNode Part ----------------------------------
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (gravityMode)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
     mG_F.setZero();
@@ -1271,19 +2282,28 @@ void SoftBodyNode::aggregateGravityForceVector(
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mG_F);
   }
 
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end();
-       ++it) {
-    mG_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mG_F);
-    mG_F.tail<3>() += (*it)->mG_F;
+  //------------------------ PointMass Part ------------------------------------
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    if (gravityMode)
+      pointMass.mG_F.noalias() = phase.properties[i].mMass * localGravity;
+    else
+      pointMass.mG_F.setZero();
+    DART_ASSERT(!math::isNan(pointMass.mG_F));
+    addPointForceContribution(mG_F, pointMass.mX, pointMass.mG_F);
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd g
-        = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getIndexInTree(0);
-    _g.segment(iStart, nGenCoords) = g;
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    auto segment = _g.segment(iStart, nGenCoords);
+    segment.noalias() = mParentJoint->getRelativeJacobian().transpose() * mG_F;
+    segment = -segment;
   }
 }
 
@@ -1292,63 +2312,81 @@ void SoftBodyNode::updateCombinedVector()
 {
   BodyNode::updateCombinedVector();
 
-  //  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->updateCombinedVector();
+  if (mNotifier->needsPartialAccelerationUpdate())
+    updatePartialAcceleration();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mCg_dV = pointMass.mEta + mCg_dV.head<3>().cross(pointMass.mX)
+                       + mCg_dV.tail<3>();
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateCombinedVector(
     Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity)
 {
-  BodyNode::aggregateCombinedVector(_Cg, _gravity);
-  //  //------------------------ PointMass Part
-  //  ------------------------------------ for (std::size_t i = 0; i <
-  //  mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
+  //------------------------ PointMass Part ------------------------------------
+  const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
+  Eigen::Vector3d localGravity = Eigen::Vector3d::Zero();
+  if (gravityMode)
+    localGravity = getWorldTransform().linear().transpose() * _gravity;
+  const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
 
-  //  //----------------------- SoftBodyNode Part
-  //  ----------------------------------
-  //  // H(i) = I(i) * W(i) -
-  //  //        dad{V}(I(i) * V(i)) + sum(k \in children)
-  //  dAd_{T(i,j)^{-1}}(H(k)) if (mGravityMode == true)
-  //    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
-  //  else
-  //    mFgravity.setZero();
+  //----------------------- SoftBodyNode Part ----------------------------------
+  const Eigen::Matrix6d& mI
+      = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
 
-  //  mCg_F = mI * mCg_dV;
-  //  mCg_F -= mFgravity;
-  //  mCg_F -= math::dad(mV, mI * mV);
+  if (gravityMode)
+    mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
+  else
+    mFgravity.setZero();
 
-  //  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
-  //       it != mChildBodyNodes.end(); ++it)
-  //  {
-  //    mCg_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
-  //                           (*it)->mCg_F);
-  //  }
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mCg_F = mI * mCg_dV;
+  mCg_F -= mFgravity;
+  mCg_F -= math::dad(V, mI * V);
 
-  //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-  //       it != mPointMasses.end(); ++it)
-  //  {
-  //    mCg_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mCg_F);
-  //    mCg_F.tail<3>() += (*it)->mCg_F;
-  //  }
+  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end();
+       ++it) {
+    mCg_F += math::dAdInvT(
+        (*it)->getParentJoint()->getRelativeTransform(), (*it)->mCg_F);
+  }
 
-  //  int nGenCoords = mParentJoint->getNumDofs();
-  //  if (nGenCoords > 0)
-  //  {
-  //    Eigen::VectorXd Cg = mParentJoint->getRelativeJacobian().transpose() *
-  //    mCg_F; int iStart = mParentJoint->getIndexInTree(0);
-  //    _Cg->segment(iStart, nGenCoords) = Cg;
-  //  }
+  //------------------------ PointMass Part ------------------------------------
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const double mass = phase.properties[i].mMass;
+    pointMass.mCg_F.noalias() = mass * pointMass.mCg_dV;
+    if (gravityMode)
+      pointMass.mCg_F.noalias() -= mass * localGravity;
+    pointMass.mCg_F.noalias()
+        += parentAngularVelocity.cross(mass * pointMass.mV);
+    DART_ASSERT(!math::isNan(pointMass.mCg_F));
+    addPointForceContribution(mCg_F, pointMass.mX, pointMass.mCg_F);
+  }
+
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
+  if (nGenCoords > 0) {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _Cg.segment(iStart, nGenCoords).noalias()
+        = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateExternalForces(_Fext);
-
   //----------------------- SoftBodyNode Part ----------------------------------
   mFext_F = BodyNode::mAspectState.mFext;
 
@@ -1359,19 +2397,22 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
         (*it)->mParentJoint->getRelativeTransform(), (*it)->mFext_F);
   }
 
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end();
-       ++it) {
-    mFext_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mFext);
-    mFext_F.tail<3>() += (*it)->mFext;
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    const PointMass& pointMass = *phase.pointMasses[i];
+    mFext_F.head<3>() += pointMass.mX.cross(pointMass.mFext);
+    mFext_F.tail<3>() += pointMass.mFext;
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd Fext
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _Fext.segment(iStart, nGenCoords).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getIndexInTree(0);
-    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 
@@ -1380,8 +2421,14 @@ void SoftBodyNode::clearExternalForces()
 {
   BodyNode::clearExternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->clearExtForce();
+  bool hadExternalPointForce = false;
+  for (auto* pointMass : mPointMasses) {
+    hadExternalPointForce
+        = hadExternalPointForce || !pointMass->mFext.isZero(0.0);
+    pointMass->mFext.setZero();
+  }
+  if (hadExternalPointForce)
+    dirtyExternalForces();
 }
 
 //==============================================================================
@@ -1389,8 +2436,8 @@ void SoftBodyNode::clearInternalForces()
 {
   BodyNode::clearInternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->resetForces();
+  for (auto& pointState : mAspectState.mPointStates)
+    pointState.mForces.setZero();
 }
 
 //==============================================================================

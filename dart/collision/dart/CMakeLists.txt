@@ -26,6 +26,7 @@ install(
 set(
   collision_dart_private_headers
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionGroupEngineData.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionObjectEngineData.hpp
 )
 
 set(

@@ -1,7 +1,544 @@
 # WP-DB PR evidence packet
 
+## 2026-07-22 gz-physics and gz-sim zero-overhead audit
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
+`wp-db-native-soft-fallback` to `release-6.20`. Published implementation head
+`891f43fd590` contains the Gazebo correction and its preparation-state review
+fix, and the target base is `6a1d377f616`. The preceding `c41f273d271`
+exact-head hosted gz-physics/gz-sim job passed; only checks and review on the
+current branch tip are authoritative after the evidence refresh.
+
+The downstream audit found one unconditional cost introduced by the PR:
+`ConstraintSolver::solve()` consulted a process-wide
+`ConstraintSolverClearStateRegistry` on every step. Each lookup took a mutex
+and performed an `unordered_map` lookup even for the default single-threaded,
+rigid-only worlds used by Gazebo. The local correction removes the registry
+and its constructor/destructor bookkeeping. Previous-step clear work is now
+derived from state already retained by the solver:
+
+- a non-empty previous `mActiveConstraints` means constraint impulses may need
+  clearing;
+- a non-empty previous `mCollisionResult` means colliding-body flags may need
+  clearing; and
+- a newly inserted skeleton is sanitized once in `addSkeleton()`, outside the
+  stepping hot path.
+
+The ordinary contact case uses a specialized combined clear loop, so it does
+not add a state-kind branch per skeleton. A first attempt to wrap all contact
+construction in `if (hasContacts)` was rejected: production-equivalent A/B
+timing showed that the changed compiler layout slowed sustained contact even
+though it helped empty steps. The wrapper was removed, retaining the
+no-registry correction and the existing empty-active-set early return.
+Mismatched-dependency and profiler-enabled exploratory timings are explicit
+non-evidence.
+
+Downstream reachability is narrow:
+
+- gz-physics 8 constructs `GzOdeCollisionDetector` by default in
+  `dartsim/src/EntityManagementFeatures.cc`; gz-sim 9 reaches DART through that
+  gz-physics plugin.
+- The PR's DART-native, FCL, and Bullet soft-mesh changes are not on this
+  default GzOde rigid-world path.
+- The changed `Skeleton` inverse-matrix fallback first checks for a
+  `SoftBodyNode`, and neither the gz-physics DART plugin nor the inspected
+  gz-sim physics path calls DART's inverse-mass-matrix APIs.
+- Production `libdart` contains no clear-state-registry symbol. The remaining
+  solver synchronization is guarded by opt-in multithreaded paths; the removed
+  registry no longer adds unconditional synchronization to a one-thread Gazebo
+  step.
+
+The timing oracle exercised the exact gz-physics plugin boundary, not a
+DART-only substitute. Base and local-head libraries were built with GCC 15.2,
+Release `-O3`, profiling disabled, and SIMD disabled against the same Gazebo
+environment. The executable was pinned to CPU 24, warmed each world for 1,000
+steps, timed only `World::Step`, and interleaved base/head order across 20
+pairs. The empty world used 1,000,000 measured steps; the falling/contact world
+used 50,000 measured steps and retained contact after settling.
+
+| gz-physics workload | Base mean | Local mean | Mean change | Pair result |
+| --- | ---: | ---: | ---: | ---: |
+| Empty world | 988.435 ms | 741.334 ms | -24.999% | local won 20/20 |
+| Falling/contact | 1113.639 ms | 1112.817 ms | -0.074% | local won 14/20 |
+
+The corresponding medians were 972.576 versus 731.635 ms for the empty world
+(-24.773%) and 1110.947 versus 1101.886 ms for falling/contact (-0.816%).
+Wall-clock timing cannot prove literal instruction-for-instruction zero cost,
+but the reachability and binary audit proves that the unintended unconditional
+registry work is absent, while the production plugin-boundary A/B shows no
+runtime regression in the exercised gz paths.
+
+The exact-head review of `c41f273d271` found that
+`prepareForSimulation()` temporarily rebuilds constraints without manual
+constraints and thereby erased the non-empty active-set signal used to clear a
+manual constraint's prior impulse on the next `solve()`. The retained
+regression failed before the fix and passed afterward. The correction preserves
+the active constraint vector and its classification flags across the
+preparation-only passes. It does not change `solve()` or the production
+gz-physics steady-state path, so the plugin-boundary A/B above remains an exact
+comparison of the affected hot-path code. Commit `891f43fd590` publishes that
+fix.
+
+Verification on the published correction and local review fix:
+
+```text
+full test_ConstraintSolver target                        PASS (57/57)
+focused constraint/world/collision CTest gate           PASS (6/6)
+native soft steady-state allocation gate                PASS (14/14)
+DART_DISABLE_COMPILER_CACHE=ON pixi run test             PASS (154/154)
+pixi run -e gazebo test-gz, gz-physics functional        PASS (199/199)
+pixi run -e gazebo test-gz, gz-physics performance       PASS (4/4)
+pixi run -e gazebo test-gz, gz-sim integration           PASS (1/1)
+pixi run lint                                             PASS
+git diff --check                                          PASS
+```
+
+The source change has no visual acceptance criterion: text state regressions,
+production binary reachability, plugin-boundary timing, and downstream
+functional tests are the relevant evidence. No new changelog entry is needed;
+the user-visible deformable feature and detector ABI repair are already
+documented under #3382, while this follow-up removes an internal implementation
+cost without adding an API or behavior.
+
+## 2026-07-19 current PR stabilization evidence
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
+`wp-db-native-soft-fallback` to `release-6.20`. Published head `05d9de6e3fb`
+contains the clean merge of `origin/release-6.20@75306efe770` at `834a2548fd9`,
+test-only Windows calibration `50a254e7e56`, and the evidence refresh. Local
+commit `9a6796596bc` adds the detector ABI review fix. After the next additive
+push, use the live PR head and exact-head checks as the authority.
+
+At the last refresh, exact-head API docs, Windows Release, gz-physics, AVX, and
+both Read the Docs checks had passed on `05d9de6e3fb`; additional hosted matrix
+jobs were running or queued, with no CI failure reported. Fresh top-level Codex
+review identified the `DARTCollisionDetector` layout issue addressed by
+`9a6796596bc`. There is no inline thread to resolve and no bot reply should be
+posted.
+
+Both Codecov checks passed on the earlier `b172b2ee1db` baseline: patch coverage
+`94.34783%` with 143 uncovered changed lines, and project coverage `75.17%`
+versus `73.90%` (reported `+1.26` percentage points). The comment's red patch
+marker is informational because `codecov.yml` does not make patch status a
+required threshold.
+
+At `b172b2ee1db`, Windows Release completed 150/151 tests and was the sole
+failure. The only failing test was
+`SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`; the
+legacy-FCL `default adaptive` lane measured `0.12115883267368355` m maximum
+per-step center-of-pressure displacement against the former `0.11` m cap. This
+excursion is consistent with a one-interval manifold handoff; it is not the
+earlier 300-minute link timeout.
+
+Commit `50a254e7e56` raises only the legacy-FCL cap to `0.13` m. That cap is just
+above one `0.125` m surface-mesh interval and remains below a two-cell,
+footprint-scale jump. Native remains at `0.02` m; percentile force,
+support-loss, spike, and finite-state guards are unchanged, and the per-step
+CoP assertion remains in place at the calibrated FCL threshold. Verification:
+
+```text
+focused calibrated case                           PASS (20/20)
+test_SoftDynamics                                 PASS (25/25)
+DART_DISABLE_COMPILER_CACHE=ON pixi run build     PASS (292/292)
+DART_DISABLE_COMPILER_CACHE=ON pixi run test      PASS (154/154)
+pixi run -e gazebo test-gz                        PASS (199/199 + 4/4 + 1/1)
+pixi run lint                                     PASS
+git diff --check                                  PASS
+independent post-fix reviews                      CLEAN x2
+```
+
+The correction changes test calibration only, so it requires neither a new
+benchmark nor a new visual capture. Text evidence is the correct oracle for the
+numeric per-step CoP limit. No new changelog entry is needed for this test-only
+change.
+
+The ABI review finding points at private thread-pool fields inherited from
+release commit `3e13581f67d`. They are not new relative to the current target
+base, but released tag `v6.19.4` has no derived `DARTCollisionDetector` storage;
+on x86-64 the inherited fields enlarge that installed, derivable class from 32
+to 48 bytes. Commit `9a6796596bc` restores the released header layout and
+implicit-destructor surface, owns the thread pool/count and soft-contact option
+in a forwarding manager behind the base class's existing
+`mCollisionObjectManager` pointer, and adds size/alignment assertions. A stable
+pool object, serialized resize, and atomic thread-count/soft-option publication
+preserve configuration safety without changing default serial behavior.
+
+```text
+no-cache focused dependency build                 PASS
+test_DARTCollisionDetector                         PASS (22/22)
+test_Collision                                     PASS (52/52)
+test_NonFiniteContact                              PASS (4/4)
+exact v6.19.4-header ABI canary                    PASS (20/20 processes)
+legacy/current DARTCollisionDetector size          32 / 32 bytes
+legacy derived canary offset                       32 bytes
+pixi run lint                                      PASS
+git diff --check                                   PASS
+independent post-race-fix reviews                  CLEAN x2
+```
+
+The ABI canary used the exact tag header (SHA-256
+`767e69630bdb7b912bbf1707e9d6dd2e7b487100d24974267addcf90c6b0064f`) in one
+translation unit and current headers in another. It configured four collision
+participants and soft-face contacts on the legacy-layout derived object,
+cloned it, and destroyed it with an active worker pool while preserving the
+inner canary and surrounding guards. This compatibility repair has its own
+DART 6.20 changelog entry. Exact new-head hosted CI and a fresh clean review
+remain required after push.
+
+The flagship examples are already migrated into `dart-demos` as the
+`adaptive_soft_contact` and `soft_worm` scenes under `examples/demos`; the old
+standalone executables were removed. Their GUI-free integration gates and the
+historical visual commands and verdicts are recorded below; the temporary
+capture files no longer exist and are not durable current evidence. Future GUI
+examples in this lane should use the same integrated demo host.
+
+This stabilizes a representative #3382 slice only. No paired artifact has a
+`COMPLETE.json`, and the competitive-envelope, flexible-foot, WP-DB.07,
+WP-DB.08, and separate `main` assertion-fix work keep PLAN-622 open.
+
+## Historical 2026-07-12 PR stabilization evidence
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
+`wp-db-native-soft-fallback` to `release-6.20`. At the last inspection,
+published head `551d7d34817` was mergeable and blocked on pending hosted checks.
+The current branch adds runner-test review fix `8c68e900641` and this evidence
+refresh after that inspected baseline.
+
+Published implementation commit `2ad156e7b82` fixes the original WP-DB.04
+mass-matrix review finding and adds
+`SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The
+regression failed before the production correction, then passed afterward.
+Verification on that commit:
+
+```text
+pixi run lint                                      PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run build     PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run test      PASS (152/152)
+test_SoftDynamics                                 PASS (16/16)
+INTEGRATION_StepAllocation                        PASS
+independent post-fix reviews                      CLEAN x2
+```
+
+Historical hosted check classification at `b25462ca5c0`:
+
+- Linux coverage and assert-enabled jobs fail only in `test_MjcfParser` at
+  `BodyNode::addConstraintImpulse()`; exact-base run `29178779447` fails the
+  same jobs, test, and assertion.
+- Windows run `29188317164` was cancelled at the workflow's 300-minute limit
+  while compiling/linking; `The operation was canceled.` is the primary
+  signal.
+- #3384 later fixed the exact-base `test_MjcfParser` failure, and the
+  mass-matrix review thread was resolved after the correction was published.
+
+The historical exact-base failure was addressed upstream by #3384's
+non-finite-LCP guard. After merging `4ddfe712b359`, local head `52ff108437d`
+passes `pixi run check-lint`, a no-cache 292/292 Release build, the full 152/152
+Release C++ suite, the full 213/213 Python suite, and a no-cache assert-enabled
+focused gate for `test_ConstraintSolver`, `test_ContactConstraint`, and
+`test_MjcfParser` (3/3). The only merge conflict was `CHANGELOG.md`, whose
+resolution retains both upstream and branch entries. New-head hosted CI remains
+classified by the current evidence below.
+
+Codex review of published head `92ccfce567c` found that disabling adaptive
+contact activation did not invalidate articulated-inertia caches assembled
+while points were frozen. Follow-up commit `b8fe9a23093` notifies the existing
+cache dependency chain on either mode transition and adds
+`SoftDynamicsTest.adaptiveContactActivationToggleInvalidatesArticulatedInertia`.
+The regression failed before the production fix, observing stale diagonal
+values such as `1.0` instead of a freshly recomputed `0.5`, then passed after
+the fix. Current gates are lint, 292/292 no-cache Release build, 152/152 C++,
+213/213 Python, 17/17 `test_SoftDynamics`, `git diff --check`, and two clean
+independent reviews.
+
+The pre-fix hosted snapshot on `92ccfce567c` exposed a self-hosted-runner
+workspace collision rather than a product failure. Coverage failed during Pixi
+setup after another job removed the shared `_work/dart/dart` directory; AVX2
+failed at the same boundary; Debug and gz-physics were cancelled mid-build. API
+docs, both Read the Docs builds, newest GCC/Clang, macOS arm64 Debug and
+Release, SSE4.2, AVX, and Eigen 64-byte alignment passed. Classify and rerun
+only exact-current-head failures.
+
+No benchmark was rerun for this correction because it changes immediate
+articulated-inertia query/cache correctness, not the measured `World::step` hot
+paths or the final performance claim.
+
+Codex review of published head `551d7d34817` found a test-only startup race in
+the paired-runner timeout test. The 50 ms timeout could fire before the child
+executed and flushed `started`, so the old nonempty-output assertion was not a
+valid invariant. Commit `8c68e900641` keeps production code unchanged and
+instead verifies the requested timeout plus equality between the persisted log
+and `TimeoutExpired.output`, whether empty or partial. Verification passes
+100/100 repeated focused launches, 38/38 paired-runner tests, lint, the full
+213/213 Python suite after a rebuild, `git diff --check`, and two clean
+independent reviews.
+
+At the last `551d7d34817` hosted snapshot, seven checks passed, twelve remained
+in progress, and no current-head CI failure had appeared. That suite becomes
+historical after the runner-test fix is published; classify only the exact live
+head.
+
+## 2026-07-11 final matrix and unresolved winner gate
+
+Artifact:
+`.benchmark_results/wp-db-final-6cfa4fa-parent-c743a45-base-72ebe16/summary.md`
+(current `3340e1d3df2`, parent `c743a451e96`, base `origin/release-6.20` at
+`72ebe164e8c`; full five-detector matrix, threads 1 and 16). Checksum
+eligibility: `dart` reference, `fcl` and direct `native`
+checksum-equivalent, `bullet` divergent, `ode` unsupported soft fallback.
+
+Current vs base, apples-to-apples rows (mean CPU):
+
+| Detector | Scene | Threads | Base CPU ms | Branch CPU ms | Change |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `dart` | `adaptive_deformable` | 1 | 2.931 | 3.177 | +8.4% |
+| `dart` | `adaptive_deformable` | 16 | 4.037 | 3.699 | -8.4% |
+| `dart` | `soft_bodies` | 1 | 22.986 | 20.091 | -12.6% |
+| `dart` | `soft_bodies` | 16 | 23.198 | 21.011 | -9.4% |
+| `dart` | `soft_cubes` | 1 | 6.266 | 4.980 | -20.5% |
+| `dart` | `soft_cubes` | 16 | 6.524 | 4.946 | -24.2% |
+| `dart` | `soft_open_chain` | 1 | 8.878 | 8.026 | -9.6% |
+| `dart` | `soft_open_chain` | 16 | 9.205 | 8.159 | -11.4% |
+| `fcl` | `adaptive_deformable` | 1 | 26.365 | 15.865 | -39.8% |
+| `fcl` | `adaptive_deformable` | 16 | 27.525 | 16.820 | -38.9% |
+| `fcl` | `soft_bodies` | 1 | 109.650 | 65.732 | -40.1% |
+| `fcl` | `soft_bodies` | 16 | 108.319 | 68.620 | -36.7% |
+| `fcl` | `soft_cubes` | 1 | 29.523 | 17.935 | -39.3% |
+| `fcl` | `soft_cubes` | 16 | 29.194 | 17.720 | -39.3% |
+| `fcl` | `soft_open_chain` | 1 | 49.473 | 31.117 | -37.1% |
+| `fcl` | `soft_open_chain` | 16 | 49.687 | 31.631 | -36.3% |
+
+The FCL lane (DART 6's default soft collision backend) improves 36-40% on
+every tracked row; the dart lane improves 9-24% on seven of eight rows (the
+remaining +8.4% row's 16-thread sibling improves 8.4%, and the run log shows
+sibling workloads bursting between measurement blocks, so single-row means
+on this shared host carry block noise). The threads-16 rows double as the
+WP-DB.07 per-scene multi-thread record: scaling on these small scenes stays
+flat, as documented since the baseline evidence, while thread determinism is
+bit-exact everywhere.
+
+Winner-gate analysis: the evaluator flagged direct `native` trailing
+`dart` beyond the 2% tolerance on several rows, but the three matrix-style
+measurements of that delta disagree irreconcilably (+6%, -3%, +19% across
+runs). Supporting evidence suggests a tie on two single-thread rows: per-scope
+profiler attribution shows no structural native overhead
+(`09-native-soft-kernel-port-spec.md`, stage 0), while manual A/B runs give
+median direct-native deltas of -1.0% for `soft_cubes/1` and +0.9% for
+`soft_bodies/1`. Direct native won 7/12 `soft_cubes` pairs and 6/12
+`soft_bodies` pairs. This evidence does not cover the full five-row failure,
+so the expected-fastest winner criterion remains unresolved. The native-owned
+kernel port remains the documented follow-up if a balanced final-head artifact
+does not establish the tie.
+
+Evidence limitation: the interleaved A/B values were recorded in this task
+doc and commit history. Their exact method and scratch output were later
+recovered, but they were not captured as a revision-pinned durable artifact and
+do not cover the full failed gate. The machine-readable final matrix therefore
+still reports evaluator `FAIL` for the expected-fastest component. Before
+retiring this task or presenting that override as independently reproducible,
+either capture a fresh balanced artifact with its command and raw rows or
+obtain explicit maintainer acceptance of the documented manual disposition.
+Do not silently describe the generated `summary.md` itself as passing.
+
+The original full-matrix invocation was recovered from session history:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current 3340e1d3df2 \
+  --parent c743a451e96 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart,native,bullet,ode \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-timeout 172800 \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir \
+    .benchmark_results/wp-db-final-6cfa4fa-parent-c743a45-base-72ebe16
+```
+
+The artifact resolved the mutable base ref to `72ebe164e8c`. Its 30 raw JSON
+files and logs reproduce the generated failure, but not the manual override.
+`--benchmark-run-order detector` interleaves revisions for each detector; it
+does not alternate `dart` and direct `native`. The two cycles also show large
+block drift (for example, current `dart` `soft_cubes/1` moved from 6.267 ms to
+3.693 ms, while direct `native` moved from 7.987 ms to 3.854 ms).
+
+The previously unretained scratch rows were also recovered locally. Their exact
+method ran 12 `soft_body_headless` pairs for each of `soft_cubes` and
+`soft_bodies` at one thread and 200 steps, always direct `native` first and
+`dart` second; each raw row is `native_elapsed_ms dart_elapsed_ms`. The
+recovered command was:
+
+```bash
+sp=/tmp/claude-1000/-home-js-dev-dartsim-dart-task-2/\
+4ff6f7a5-0665-41f2-a50c-ddd283c9bb27/scratchpad
+for scene in soft_cubes soft_bodies; do
+  for i in $(seq 1 12); do
+    n=$(COLLISION_DETECTOR=native THREADS=1 \
+      ./build/default/cpp/Release/tests/benchmark/integration/\
+soft_body_headless "$scene" 200 200 2>/dev/null \
+      | grep elapsed_ms | awk '{print $2}')
+    d=$(COLLISION_DETECTOR=dart THREADS=1 \
+      ./build/default/cpp/Release/tests/benchmark/integration/\
+soft_body_headless "$scene" 200 200 2>/dev/null \
+      | grep elapsed_ms | awk '{print $2}')
+    echo "$n $d"
+  done | tee "$sp/ab-$scene.txt"
+done
+```
+
+Those rows remain supporting context only because they:
+
+- use wall elapsed time rather than the evaluator's Google Benchmark CPU time;
+- use a mutable default build rather than a recorded revision-specific build;
+- omit commit and host metadata;
+- do not alternate detector order;
+- cover only two scenes at one thread, while five failed matrix rows include
+  16-thread and `soft_open_chain` cases; and
+- have wide per-pair spreads despite near-tied medians.
+
+Published commits `9a7bab76948` and `a122c5ab437` provide the required bounded
+runner through `pixi run bm-soft-body-paired`. Its full protocol:
+
+- resolves the requested revision once, requires it to be the clean current
+  HEAD, and builds that SHA in a detached dedicated Release/profile tree without
+  grafting a live-checkout harness;
+- checksum-qualifies both `dart` and direct `native` for all four scenes at
+  threads 1 and 16 before timing;
+- performs one excluded two-detector warmup immediately before 20 measured
+  pairs for each of the eight rows;
+- alternates which detector runs first, uses Google Benchmark CPU time with
+  `--benchmark_min_time=0.5s` and one repetition, and cools down for at least 10
+  seconds between pairs;
+- requires an initial continuous 600-second idle window at 1-minute load at or
+  below `1.0`; requires each pair to start with available thermal sensors below
+  `80 C` and no more than `15 C` above the idle baseline; and rejects the pair
+  if load rises by more than `0.5` or a sibling DART workload appears in any
+  before/after snapshot. Temperatures after a detector runs are observational:
+  the workload itself heats this host, detector order alternates to balance that
+  effect, and the next pair waits for the start gate again. Total sensor absence
+  remains explicit metadata and relies on the load/idle window rather than
+  inventing temperature data;
+- preserves every backend JSON/log, executable provenance, pair ratio,
+  affinity, CPU-scaling state, thermal/load snapshots, and the complete idle
+  sample history; and
+- reports the median paired delta `(native / dart) - 1` independently for every
+  row. A full PASS requires every median ratio to satisfy
+  `native / dart <= 1.02`.
+
+`COMPLETE.json` is the authoritative finalization marker and is written last.
+An interrupted, failed, or partial directory is non-evidence and must never be
+resumed. Run the final protocol from the clean final head with:
+
+```bash
+sha=$(git rev-parse --short=12 HEAD)
+pixi run bm-soft-body-paired \
+  --revision HEAD \
+  --cpu-list 0-15 \
+  --output-dir ".benchmark_results/wp-db-native-paired-${sha}"
+```
+
+No final timing artifact was captured while implementing the runner. The first
+full attempt at `8553203db25` completed its dedicated build and both-thread
+checksum qualification, then was interrupted during preflight with no raw
+timing rows, summary, verdict, or `COMPLETE.json`; its directory is explicit
+non-evidence. A bounded follow-up diagnostic used that pinned binary for one
+canonical `soft_cubes/16` invocation per detector from a clean 55-57 C start.
+`dart` heated the observed package maximum to 93 C and direct `native` to 86 C,
+while 1-minute load stayed within 0.04 and both rows were warning-free. Those
+two rows are thermal-gate design evidence only, not winner evidence. They prove
+that post-run temperature is workload-induced on this host, so only pair-start
+temperature gates validity; post-run values remain recorded and detector order
+alternates. The next pair still waits for thermal recovery.
+
+The 2026-07-12 continuation first observed 1-minute load above 34; a later
+probe still showed sibling DART builds, load `14.74`, and package temperature
+`100 C`. Deferring the final run is required by the protocol, not missing
+validation. The corrected runner passed 38/38 focused tests, 213/213 full
+Python tests, repository lint and AI-command checks, and two independent clean
+reviews.
+
+A corrected final-head attempt at `3704865daa95` then completed its dedicated
+build and all detector-equivalence rows before preflight. Across 286 host polls,
+84 failed the load gate, 74 failed a thermal gate, and 10 observed local DART
+workloads; categories overlap. The longest continuous clean interval was 141
+of 600 seconds. An explicit 11-minute interval with no task agent or tool calls
+still encountered external DART workloads and 99-100 C package temperatures.
+The attempt was interrupted with `status: interrupted`, no raw timing rows,
+summary, verdict, or `COMPLETE.json`. It is host-contamination evidence and
+explicit non-winner evidence, not a partial matrix to resume.
+
+A subsequent attempt at `babca41f70de` also completed its dedicated build and
+all detector-equivalence rows before preflight. All 12 recorded polls failed
+the load gate, six failed a thermal gate, 1-minute load reached `30.64`, and an
+observed sensor reached `102 C`. The target base then advanced through #3384,
+making the pre-merge revision stale before publication. The attempt was
+interrupted with `status: interrupted`, no raw timing rows, summary, verdict,
+or `COMPLETE.json`; it is explicit non-evidence and must not be resumed.
+
+The next attempt pinned clean merged/docs head `af7ae4ccedde`, completed its
+dedicated build and all detector-equivalence rows, then ran for 28 minutes
+overall, including 26 minutes in preflight. Independent DART worktrees
+repeatedly launched builds during that window: the runner recorded 156 polls,
+156 load failures, 151 thermal failures, 110 sibling-workload failures, zero
+clean polls, and peaks of 50 sibling DART workloads, 1-minute load `52.61`, and
+`105 C`. The attempt was interrupted with `status: interrupted`, no raw timing
+rows, summary, verdict, or `COMPLETE.json`. It is the current
+exact-composed-head host-blocker record and explicit non-evidence; do not resume
+it or weaken the admission protocol.
+
+Post-merge revalidation after composing the upstream AABB-tree broadphase
+(#3368) with the soft-fallback lane: focused battery 5/5, full suite
+152/152, 30-row checksum battery bit-identical, interleaved `soft_cubes`
+A/B still a tie (+1.1%).
+
+## 2026-07-11 reunified-branch full matrix (evaluator FAIL, evidence usable)
+
+Artifact:
+`.benchmark_results/wp-db-reunified-c743a45-parent-c0fd674-base-db255a0/summary.md`
+(current `c743a451e96`, parent `c0fd6742566` = pre-reunification tip, base
+`db255a08e8e` = `origin/release-6.20` at reunification time; detectors
+fcl,dart,native,bullet,ode; threads 1,16; 7 reps x 2 cycles; measured in
+opportunistic idle windows on the shared workstation — treat exact deltas as
+same-host evidence, not exclusive-idle thresholds).
+
+Checksum eligibility: `dart` reference; `fcl` and direct `native`
+checksum-equivalent; `bullet` divergent; `ode` unsupported soft fallback —
+both correctly diagnostic.
+
+Reunification effect (current vs parent, apples rows): faster nearly
+everywhere — `dart` rows -3.7% to -12.2%, direct `native` rows up to -10.3%
+with only noise-level positives, `fcl` mixed to -10.3%. Current vs base:
+every `dart` row -4.6% to -11.2%, every `fcl` row at-or-better. The
+reunification merge is a measured net performance win on the tracked scenes.
+
+Evaluator verdict: FAIL, isolated to the expected-fastest component. Direct
+`native` trailed `dart` beyond the 2% tie tolerance on 4 of 8 rows
+(adaptive_deformable/1 +5.9%, soft_bodies/1 +6.4%, soft_cubes/1 +6.4%,
+soft_cubes/16 +3.8%). Analysis: direct native bridges soft/ellipsoid pairs
+to the same DARTCollide kernels through cached fallback objects; the merged
+optimization slices made those shared kernels faster, so the bridge's fixed
+per-step overhead (native broadphase + fallback object update + dispatch)
+became a larger fraction of scene time. The gap grew relative to the
+pre-merge near-ties for exactly the reason the branch got faster.
+
+Consequence: the winner gate is now owned by the planned native-owned soft
+kernels (05-native-collision-deformable-lane.md "Remaining native work" item
+2) rather than further bridge shaving. The final matrix reruns on final
+history after that packet lands.
+
 Captured on 2026-07-05 from local branch
 `js/dart6-deformable-performance`.
+
+Updated on 2026-07-07 from local branch
+`wp-db-soft-skel-allocation-gates` at commits `649926d28dc` and
+`221fdf00145`, plus the follow-up native primitive-frame stability slice.
 
 ## Baseline setup
 
@@ -38,6 +575,323 @@ evidence, not final threshold-quality benchmark results. The benchmark now runs
 one warmup `World::step()` while timing is paused so the measured loop reflects
 steady-state soft-body stepping rather than one-time collision/simulation
 preparation.
+
+## 2026-07-07 correction benchmark
+
+The latest WP-DB.06 slice restores the prior two-pass
+`SoftBodyNode::updateArtInertia()` scalar timing after benchmark experiments
+showed the simplified point-mass `Pi` formula and direct cached-position
+variants could move FCL rows in the wrong direction. The retained change keeps
+the span-backed phase view and adds only a conservative
+`updateBiasForce()` connection-loop cleanup.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.2s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/summary.md`.
+- Revisions: current `649926d28dc`, parent `43347c78514`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.326 | 15.927 |
+| `adaptive_deformable` | 16 | 2.501 | 16.351 |
+| `soft_bodies` | 1 | 13.706 | 66.629 |
+| `soft_bodies` | 16 | 13.546 | 69.737 |
+| `soft_cubes` | 1 | 3.738 | 17.931 |
+| `soft_cubes` | 16 | 3.872 | 18.527 |
+| `soft_open_chain` | 1 | 5.417 | 31.537 |
+| `soft_open_chain` | 16 | 5.710 | 32.604 |
+
+This comparison is strong enough to keep the correction and to show native is
+the best current detector choice on these apples-to-apples soft-body rows. It
+is still not final all-threshold evidence: the shared workstation had other
+DART workloads during the run, and a few current-vs-parent/base CPU mean rows
+remain noise-sensitive. Before a PR claims every CPU row beats both parent and
+base, rerun the same comparison on an exclusive idle host with longer timing
+windows and refresh this evidence packet.
+
+## 2026-07-07 aggregation-temporary comparison
+
+The follow-up `221fdf00145` slice removes avoidable soft-body aggregation
+temporaries and no-op point dispatch:
+
+- dynamic diagonal `K`/`D` matrices in `aggregateAugMassMatrix()`,
+- the temporary gravity vector in `aggregateGravityForceVector()`,
+- no-op point dispatch in `aggregateInvMassMatrix()`, and
+- point-mass pointer/helper calls in mass summation and force clearing.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 5 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/summary.md`.
+- Revisions: current `221fdf00145`, parent `423f926e030`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.039 | 15.738 |
+| `adaptive_deformable` | 16 | 2.375 | 16.177 |
+| `soft_bodies` | 1 | 13.538 | 66.086 |
+| `soft_bodies` | 16 | 13.724 | 65.266 |
+| `soft_cubes` | 1 | 3.680 | 17.785 |
+| `soft_cubes` | 16 | 3.839 | 17.599 |
+| `soft_open_chain` | 1 | 5.905 | 30.072 |
+| `soft_open_chain` | 16 | 5.449 | 29.989 |
+
+The broad comparison improved every current-vs-base FCL row and every native
+row except `dart/soft_open_chain/1`, where the mean was +1.3% against base and
++7.8% against parent while the median was -0.9% against base. Targeted reruns
+of that exact row using the already-built parent/current binaries measured
+current faster than parent:
+
+| Order | Parent CPU ms | Current CPU ms | Current change |
+| --- | ---: | ---: | ---: |
+| parent then current | 4.851 | 4.795 | -1.2% |
+| current then parent, higher load | 7.662 | 7.420 | -3.2% |
+
+Treat the broad positive as workstation noise, not a code regression. Still,
+before claiming all CPU rows beat parent and base, rerun the full matrix on an
+exclusive idle host with longer benchmark windows.
+
+## 2026-07-07 native primitive-frame smoke
+
+The follow-up native collision slice classifies soft-vs-plane,
+soft-vs-sphere, and soft-vs-box point contacts in primitive-local coordinates,
+then computes the world contact point only for vertices that actually collide.
+The same slice extends `test_SoftDynamics` so the representative finite-state
+and one-thread versus four-thread final-state gate runs under both the default
+detector and `CollisionDetectorType::Dart`.
+
+Focused validation:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target test_DARTCollisionDetector test_SoftDynamics \
+    INTEGRATION_StepAllocation soft_body_headless BM_INTEGRATION_soft_body \
+  --parallel 8
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'test_DARTCollisionDetector$|test_SoftDynamics$|INTEGRATION_StepAllocation$' \
+  --output-on-failure
+```
+
+Result: all three focused CTest gates passed. FCL/native `drop_box` 200-step
+checksums remained identical; the native row measured 1.431 ms elapsed versus
+7.045 ms for FCL in this busy-host smoke. Native `soft_cubes`, `soft_bodies`,
+and `soft_open_chain` 200-step checksum rows matched exactly between
+`THREADS=1` and `THREADS=16`.
+
+Quick current-only detector-ranking smoke:
+
+```bash
+for detector in dart fcl; do
+  COLLISION_DETECTOR=$detector \
+    ./build/default/cpp/Release/bin/BM_INTEGRATION_soft_body \
+      --benchmark_filter='BM_SoftBodyStep/(0|1|2|3)/(1|16)/200$' \
+      --benchmark_min_time=0.05s \
+      --benchmark_repetitions=3 \
+      --benchmark_report_aggregates_only=true
+done
+```
+
+Google Benchmark reported CPU scaling enabled and load averages of
+2.27 / 6.96 / 9.50, so treat these rows as quick detector-ranking evidence,
+not threshold-quality parent/base evidence.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.01 | 16.4 |
+| `adaptive_deformable` | 16 | 2.41 | 17.0 |
+| `soft_cubes` | 1 | 3.69 | 17.8 |
+| `soft_cubes` | 16 | 3.68 | 17.9 |
+| `soft_bodies` | 1 | 13.8 | 68.1 |
+| `soft_bodies` | 16 | 13.6 | 63.4 |
+| `soft_open_chain` | 1 | 5.38 | 29.6 |
+| `soft_open_chain` | 16 | 5.06 | 29.8 |
+
+Native remained the fastest detector for every tracked current row in this
+smoke. The formal current/parent/base matrix still needs a committed-revision
+rerun on an idle host before this slice can support all-threshold claims.
+
+## 2026-07-08 direct-native fallback and broadphase smoke
+
+After merging `origin/release-6.20`, the direct
+`COLLISION_DETECTOR=native` factory path initially skipped `SoftMeshShape` and
+`EllipsoidShape` rows. The follow-up slice keeps those shapes in the native
+broadphase and routes their pairs through cached DART-native fallback collision
+objects. It also reuses a fallback scratch result without colliding-object
+lookup-cache bookkeeping, uses the cached plane fallback for plane/soft pairs,
+and stores brute-force native broadphase entries contiguously instead of
+fetching AABBs through a hash table in the pair loop.
+
+Focused validation:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target UNIT_collision_native_brute_force \
+    UNIT_collision_native_detector_adapter BM_INTEGRATION_soft_body \
+    soft_body_headless --parallel 4
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'UNIT_collision_native_brute_force$|UNIT_collision_native_detector_adapter$' \
+  --output-on-failure
+```
+
+Result: both focused unit tests passed. Direct native `soft_cubes` and
+`soft_bodies` 200-step headless checksums matched `COLLISION_DETECTOR=dart`,
+and the representative direct-native soft-scene benchmark emitted no
+unsupported-shape warnings.
+
+Quick detector-ranking smoke:
+
+```bash
+for detector in native dart fcl; do
+  COLLISION_DETECTOR=$detector \
+    ./build/default/cpp/Release/bin/BM_INTEGRATION_soft_body \
+      --benchmark_filter='BM_SoftBodyStep/(0|1|2|3)/(1|16)/200$' \
+      --benchmark_min_time=0.2s \
+      --benchmark_repetitions=7 \
+      --benchmark_report_aggregates_only=true
+done
+```
+
+Google Benchmark still reported CPU scaling enabled, and the FCL run had a
+noisy `soft_open_chain/16` row, so these rows remain smoke evidence rather than
+threshold-quality parent/base evidence.
+
+| Scene | Threads | Native CPU ms | DART CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 1.85 | 1.85 | 15.0 |
+| `adaptive_deformable` | 16 | 2.21 | 2.26 | 15.5 |
+| `soft_cubes` | 1 | 3.30 | 3.41 | 17.2 |
+| `soft_cubes` | 16 | 3.48 | 3.52 | 18.2 |
+| `soft_bodies` | 1 | 12.2 | 12.1 | 66.0 |
+| `soft_bodies` | 16 | 12.5 | 12.4 | 63.6 |
+| `soft_open_chain` | 1 | 4.84 | 4.73 | 28.9 |
+| `soft_open_chain` | 16 | 5.06 | 5.08 | 30.6 |
+
+The direct `native` and `dart` rows are close because direct native currently
+bridges to the same soft contact kernels for soft/ellipsoid pairs; FCL remains
+far slower on every tracked row. The formal matrix script now treats
+`native` as the expected fastest checksum-equivalent detector while keeping
+`dart` as the checksum reference, and its generated `summary.md` includes both
+the CPU-change graphs and a detector-winner graph. The next committed-revision
+comparison will fail if direct native is missing, checksum-ineligible, or not
+the winner.
+
+## 2026-07-09 direct-native hot-path handoff
+
+Commit `0ed32afba03` (`Tighten native soft fallback hot paths`) is the latest
+local code slice on branch `wp-db-native-soft-fallback`. It tightens the
+direct-native soft fallback path by:
+
+- caching fallback-shape traits until the shape identity/version changes,
+- using the cached DART fallback transform/AABB for fallback shapes,
+- avoiding persistent native manifold-cache creation until native-owned
+  manifold contacts are emitted,
+- skipping native manifold-cache refresh for soft fallback groups,
+- fusing native collision-object update and AABB collection before broadphase
+  refresh, and
+- replacing an unsafe ordered broadphase AABB update with id-checked
+  `BruteForceBroadPhase::updateRange()` plus an out-of-order ID regression.
+
+Focused validation:
+
+```bash
+pixi run lint
+pixi run cmake --build build/default/cpp/Release \
+  --target soft_body_headless BM_INTEGRATION_soft_body \
+    UNIT_collision_native_detector_adapter UNIT_collision_native_brute_force \
+    test_DARTCollisionDetector test_SoftDynamics INTEGRATION_StepAllocation \
+  --parallel 8
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'UNIT_collision_native_brute_force$|UNIT_collision_native_detector_adapter$|test_DARTCollisionDetector$|test_SoftDynamics$|INTEGRATION_StepAllocation$' \
+  --output-on-failure
+```
+
+Result: lint passed, the focused build passed, and all five focused CTest
+entries passed.
+
+A formal comparison was started with:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart,native,bullet,ode \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db08-native-soft-fallback-0ed32af-parent-40445e-base-2ba736 \
+  --keep-going
+```
+
+That run was intentionally stopped after the user asked for a handoff-only
+state update. It created current/parent/base metadata and build worktrees but
+did not produce usable `summary.md`, `raw/`, or `logs/` benchmark timing
+evidence. Do not use that partial directory for performance claims. A fresh
+agent should rerun the comparison, preferably without `--keep-going` for final
+PR evidence, and update this section with the generated table and graph
+summary only after the evaluator passes.
 
 ## Benchmark commands
 
@@ -165,7 +1019,7 @@ pointWorldPosSq 1.3492978157859996
 The native row is about 5.7x faster for this limited soft-box contact lane on
 this host. Treat the exact ratio as load-sensitive.
 
-Threaded native soft-scene smoke:
+Threaded `DARTCollisionDetector` soft-scene smoke:
 
 ```bash
 COLLISION_DETECTOR=dart THREADS=4 \
@@ -188,9 +1042,14 @@ pointWorldPosL1 213.75594489383639
 pointWorldPosSq 77.599935310371123
 ```
 
-The profile contained `DART native finite-finite soft workers`, confirming that
-the threaded native soft-soft path was exercised. This run is worker-activation
-evidence only; the host load was too high for a scaling claim.
+The historical profile contained `DART native finite-finite soft workers`,
+confirming that the `DARTCollisionDetector` worker path was exercised. The
+worker-specific scope was subsequently removed; the current broader
+`DART finite-finite pairs` scope covers both serial and parallel traversal and
+does not independently establish worker activation. This run is not evidence
+that the direct `NativeCollisionDetector` path is threaded. It is historical
+worker-activation evidence only, and the host load was too high for a scaling
+claim.
 
 ## Local validation gates
 
@@ -308,11 +1167,10 @@ Results:
 
 ## Changelog decision
 
-This branch includes user-visible performance and allocation improvements, so
-`CHANGELOG.md` carries a DART 6.20.0 Simulation entry for the World-owned
-simulation memory-management and no-steady-state-allocation preparation path.
-If maintainers require the entry to include the final PR number, add that link
-in a follow-up commit after PR publication.
+#3382 contains user-visible adaptive-contact and demo integration, so the
+existing DART 6.20.0 Dynamics and Examples bullets are retained and finalized
+with the #3382 link. The Windows CoP change is test calibration only and needs
+no separate changelog entry.
 
 ## GUI examples and visual debugging
 
@@ -348,4 +1206,138 @@ measured physics RTF, sample count, step-time range, soft-body/point-mass
 counts, skeleton/body-node counts, and current contact count. The clean capture
 keeps the same camera framing with `--hide-widget`.
 
-No new standalone GUI example or local video artifact was added by this branch.
+New flagship examples are integrated into `dart-demos`; this lane should not
+reintroduce standalone GUI executables.
+
+## 2026-07-11 flagship example evidence (WP-DB.09)
+
+Two self-contained GUI examples originally landed the mandatory demo subset
+from `decisions.md`; they were consolidated into `dart-demos` on 2026-07-13:
+
+- `adaptive_soft_contact` (Jain/Liu lane): a soft ellipsoid on
+  ground with a moving pusher, runtime adaptive-activation toggle, exact
+  active/inactive counts, and gold contact-nearest region markers. The
+  pre-consolidation 2000-step verification stayed finite with the adaptive
+  lifecycle visible (40/86 active in steady contact) and reran bit-identically.
+- `soft_worm` (Kim/Pollard worm-roll lane): a five-link chain with soft flesh
+  driven by a phase-offset sinusoidal gait. The pre-consolidation 3000-step
+  verification stayed finite with 1.637 m forward displacement (locomotion bar
+  was 0.2 m) and reran bit-identically.
+
+The following pre-consolidation captures ran on the workstation display and
+both passed `pixi run image-verdict` (non-blank):
+
+```bash
+./build/default/cpp/Release/bin/adaptive_soft_contact \
+  --headless --steps 500 --shot /tmp/claude-demo-captures/adaptive_soft_contact.png
+./build/default/cpp/Release/bin/soft_worm \
+  --headless --steps 3000 --shot /tmp/claude-demo-captures/soft_worm.png
+```
+
+The adaptive capture shows the gold active region hugging the ground ring
+and pusher side with the stats panel reporting 40 active / 46 inactive and
+32 contacts at step 500; the worm capture shows the mid-gait pose at frame
+3000 with the displacement readout. The corresponding pre-consolidation
+interactive commands were `pixi run ex adaptive_soft_contact` and
+`pixi run ex soft_worm`.
+
+## 2026-07-13 consolidated demo migration validation
+
+The two flagship examples now run as `dart-demos` scenes rather than separate
+GUI executables. Their models and controllers are GUI-free and shared by the
+host scenes and focused integration tests, which preserve the current
+reproducible numerical gates. The earlier standalone commands and results
+above remain historical evidence.
+
+```bash
+DART_DISABLE_COMPILER_CACHE=ON pixi run config
+pixi run -- cmake --build build/default/cpp/Release \
+  --target dart-demos test_AdaptiveSoftContactModel test_SoftWormModel \
+  --parallel 8
+/usr/bin/time -f 'elapsed_seconds=%e' \
+  build/default/cpp/Release/tests/integration/test_AdaptiveSoftContactModel
+/usr/bin/time -f 'elapsed_seconds=%e' \
+  build/default/cpp/Release/tests/integration/test_SoftWormModel
+build/default/cpp/Release/bin/dart-demos --list-scenes
+build/default/cpp/Release/bin/dart-demos --cycle-scenes --frames 1
+DISPLAY=:0 build/default/cpp/Release/bin/dart-demos \
+  --scene adaptive_soft_contact --headless --steps 500 \
+  --shot /tmp/pr3382-demo-migration/adaptive_soft_contact.png
+DISPLAY=:0 build/default/cpp/Release/bin/dart-demos \
+  --scene soft_worm --headless --steps 3000 \
+  --shot /tmp/pr3382-demo-migration/soft_worm.png
+pixi run image-verdict \
+  /tmp/pr3382-demo-migration/adaptive_soft_contact.png
+pixi run image-verdict /tmp/pr3382-demo-migration/soft_worm.png
+```
+
+The adaptive gate passed in 2.72 seconds. It ran fresh adaptive and all-active
+worlds for 2000 steps twice, kept all state finite, reduced the active set on
+1987 steps, made contact on 1596 steps in both worlds, finished at 37 / 86
+active point masses, stayed within the former comparison contract
+(`0.059594777286144596` maximum surface-pose delta versus the `0.25` limit),
+and reproduced checkpoint counts, contacts, pose deltas, and position checksums
+exactly. The worm gate passed in 2.30 seconds. Both
+3000-step runs remained finite, each moved 1.6374483483834361 m (above the
+0.2 m bar), and exact equality held for the repeated displacement and position
+checksum `91066.047228482203`. The current catalog lists both migrated scene
+IDs, and the cycle smoke completed all 36 registered scenes twice with one
+frame per scene. Both current captures passed the non-blank `image-verdict`;
+the adaptive capture showed its bounded ring/linger controls and 40 active /
+46 inactive point masses at frame 500, while the worm capture showed the gait
+enabled and 1.638 m displacement at frame 3000.
+
+## 2026-07-23 exact-head independent review evidence
+
+Head `351d4a04fb3` (docs-only atop validated implementation head `891f43fd590`).
+The only code delta needing review since the clean `e973a75fb96` Codex review is
+the `ConstraintSolver.cpp` registry-removal (`c41f273d271`) plus the
+preparation-state fix (`891f43fd590`). Codex code review is unavailable this
+week (maintainer-confirmed weekly limit; the 06:43Z and 07:45Z `@codex review`
+requests returned usage-limit messages), so two independent role-separated
+passes were run on the exact head and both cleared it.
+
+Pass 1 — correctness/severity review: **CLEAN / APPROVE**, no blocker or major.
+Confirmed `ConstraintSolver.hpp` is byte-for-byte unchanged (no ABI/layout/vtable
+change), the destructor stayed virtual (body became `= default`), the steady
+clear path is lock-free and allocation-free, and the dropped `if (hasContacts)`
+guard in `updateConstraints()` still reaches
+`mReusableContactConstraints.clear()` and `mReusableSoftContactConstraints.clear()`
+at zero contacts (equivalent to the removed `else`). Verified the
+`PreparationPreservesPendingConstraintImpulseClear` regression genuinely fails
+without `891f43fd590`.
+
+Pass 2 — semantic-equivalence audit: **EQUIVALENT-AND-CORRECT** for all default
+and valid-geometry simulation. Proved the new derivations
+`clearConstraintImpulses = !mActiveConstraints.empty()` and
+`clearCollidingBodies = mCollisionResult.getNumContacts() > 0u` reconstruct the
+removed registry flags for every solve-chain-reachable state (steady contact;
+contact→none cleared exactly once; add/removeSkeleton between steps; multiple
+bare `solve()`; manual-only-then-`prepareForSimulation`; split-impulse on/off),
+that `mActiveConstraints`/`mCollisionResult` are retained across steps with no
+other mutation site, and that no per-step heap allocation is added.
+
+One benign, theoretical edge was surfaced (not a blocker): a step whose contacts
+are *all* degenerate (filtered before `setColliding`) leaves `getNumContacts()>0`,
+so the next `solve()` over-clears the deprecated `isColliding()` flag versus the
+old `markedCollidingBodies` signal. It is impossible under valid geometry, only
+observable through the deprecated `setColliding`/`isColliding` surface, and in
+the safe over-clear direction (never leaves a genuine stale flag). Also noted:
+`clearLastCollisionResult()` now clears deprecated colliding flags when the prior
+result had contacts (required for equivalence; only in-tree caller is
+`World::reset()`, an improvement there).
+
+Optional, non-blocking hardening recorded as follow-ups (the fix is already
+directly regression-tested, so none is required for merge):
+
+1. an end-to-end World-level regression for the preparation fix that goes through
+   `World::addSkeleton` → `invalidateSimulationMode` → `World::step`;
+2. deriving `clearCollidingBodies` from a retained marked-body count, or a
+   one-line `ConstraintSolver.cpp:817` comment documenting the intentional
+   benign over-clear.
+
+CI on `351d4a04fb3`: all 11 required `release-6.20` checks pass on the exact SHA.
+The red `continuous-integration/appveyor/pr` is non-required and spurious (no
+`appveyor.yml` in the repo; the status exists on no other open PR or on
+`release-6.20`/`main`; empty `target_url`; posted at the push moment during
+GitHub's async mergeability recompute). It does not block merge.

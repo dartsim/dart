@@ -62,6 +62,17 @@ int collideShapeFrames(
     return 0;
 
   auto detector = DARTCollisionDetector::create();
+  for (const auto* object : {object1, object2}) {
+    if (!object)
+      continue;
+    const auto* sourceDetector = dynamic_cast<const DARTCollisionDetector*>(
+        object->getCollisionDetector());
+    if (sourceDetector
+        && sourceDetector->getSoftFaceInteriorContactsEnabled()) {
+      detector->setSoftFaceInteriorContactsEnabled(true);
+      break;
+    }
+  }
   auto group1 = detector->createCollisionGroup(frame1);
   auto group2 = detector->createCollisionGroup(frame2);
 

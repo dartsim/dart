@@ -36,6 +36,35 @@ capture for ellipsoid/capsule/cone contacts. Use numerical parity and
 allocation tests for soft bodies, and exact hit/sort/filter tests for raycast;
 rendered pixels are not evidence for those contracts.
 
+Local review-fix candidate evidence captured on 2026-07-29, after merging
+`origin/release-6.20` at `6c88ac1d774` but before publishing the merge commit:
+
+- no-cache Release build, all 155 C++ tests, and all 223 dartpy tests pass;
+- `check-lint`, AI command/infrastructure checks, 357 focused AI tests, and all
+  seven AI scenario probes pass;
+- the pinned downstream aggregate passes all 199 gz-physics tests, all four
+  gz-physics performance/symbol checks, and gz-sim
+  `INTEGRATION_entity_system`;
+- the two Linux visual-smoke scenes pass their image/view verdicts and the four
+  engine-rendered overlay regressions; the explicit shape-contact capture
+  reports detector `"dart"`, ellipsoid/capsule/cone contacts, no camera issues,
+  and zero skipped contacts;
+- exact old-header/current-library canaries preserve the pre-consolidation
+  6.20 detector/group/object sizes (`32/376/320`) and pass guarded
+  construction, clone, update, collision, and destruction 20/20; the released
+  6.19.4 detector header also passes 20/20. All ten historical `DARTCollide`
+  symbols remain exported, and the private object sidecar header is not
+  installed;
+- two alternating five-repetition, same-core contact-container A/Bs show no
+  measurable incumbent-backend regression: base/head medians are ODE
+  `868/867-868 ms`, FCL `257/255-256 ms`, and Bullet `267/266 ms`, with
+  identical contact counts (`205/81/90`). CPU scaling was enabled, so only a
+  regression beyond noise would be claimable; none was observed.
+
+This is local candidate evidence, not exact-pushed-head evidence. Publication,
+a fresh top-level Codex review request, hosted CI/artifact inspection, and any
+new current-head finding remain required.
+
 **Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
 [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw
 evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head

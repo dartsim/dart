@@ -85,6 +85,39 @@ private:
   }
 };
 
+// Keep the pre-consolidation DART 6.20 object layout. The existing DART shape
+// and soft caches remain in place; only new consolidated-engine state may live
+// externally.
+class ReleasedDARTCollisionObjectLayout : public CollisionObject
+{
+protected:
+  dynamics::ConstShapePtr mCachedShape;
+  const std::string* mCachedShapeType;
+  std::size_t mCachedShapeFrameVersion;
+  DARTCollisionObject::CachedShapeKind mCachedShapeKind;
+  Eigen::Vector3d mCachedLocalBoundsMin;
+  Eigen::Vector3d mCachedLocalBoundsMax;
+  Eigen::Vector3d mCachedLocalBoundsCenter;
+  Eigen::Vector3d mCachedLocalBoundsHalfExtents;
+  bool mHasFiniteCachedLocalBounds;
+  bool mIsCachedPlaneShape;
+  bool mUseBodyNodeWorldTransform;
+  std::size_t mCachedSoftBodyNodeVersion;
+  std::vector<Eigen::Vector3d> mCachedSoftLocalVertices;
+  std::vector<int> mCachedSoftFirstFaceByPointMass;
+  std::vector<DARTCollisionObject::CachedSoftFace> mCachedSoftFaces;
+  std::vector<DARTCollisionObject::CachedSoftFaceBvhNode>
+      mCachedSoftFaceBvhNodes;
+  std::vector<int> mCachedSoftFaceBvhIndices;
+  bool mCachedSoftFacesDirty;
+  bool mCachedSoftFaceTopologyDirty;
+};
+
+static_assert(
+    sizeof(DARTCollisionObject) == sizeof(ReleasedDARTCollisionObjectLayout));
+static_assert(
+    alignof(DARTCollisionObject) == alignof(ReleasedDARTCollisionObjectLayout));
+
 class InspectableDARTCollisionGroup final : public DARTCollisionGroup
 {
 public:

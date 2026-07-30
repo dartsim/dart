@@ -8,6 +8,9 @@ the scattered per-example programs that used to live under `examples/*`.
 Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
 counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
+The deformable-body flagship scenes are available as
+`--scene adaptive_soft_contact` and `--scene soft_worm`.
+
 ## Architecture
 
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme

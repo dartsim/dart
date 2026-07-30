@@ -92,7 +92,14 @@ import shutil
 import subprocess
 import time
 
-skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+skip_dirs = {
+    '.benchmark_results',
+    '.deps',
+    '.pixi',
+    'build',
+    'external',
+    'node_modules',
+}
 root = pathlib.Path('.')
 toml_files = []
 for path in root.rglob('*.toml'):
@@ -530,6 +537,8 @@ bm-soft-body = { cmd = """
 """, depends-on = [
   "config",
 ], env = { BUILD_TYPE = "Release" } }
+
+bm-soft-body-paired = { cmd = "python scripts/compare_soft_body_detector_pairs.py" }
 
 bm-soft-body-headless = { cmd = """
     cmake \

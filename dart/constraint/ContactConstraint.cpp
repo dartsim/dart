@@ -61,7 +61,7 @@ namespace constraint {
 
 namespace {
 
-using NativeFrictionBasisMatrix = Eigen::Matrix<double, 3, 2>;
+using FrictionBasisMatrix = Eigen::Matrix<double, 3, 2>;
 
 constexpr double kCachedFrictionBasisTolerance = 1e-6;
 constexpr double kCachedFrictionBasisToleranceSquared
@@ -116,7 +116,7 @@ bool isContactBodyNodeReactive(
 }
 
 //==============================================================================
-collision::native::CachedContact* getNativeCachedContact(
+collision::native::CachedContact* getDARTCachedContact(
     collision::Contact* contact)
 {
   if (contact == nullptr || contact->userData == nullptr)
@@ -150,7 +150,7 @@ bool isFiniteVector(const Eigen::Vector3d& vector)
 //==============================================================================
 bool hasMatchingCachedFrictionBasis(
     const collision::native::CachedContact& cached,
-    const NativeFrictionBasisMatrix& tangentBasis)
+    const FrictionBasisMatrix& tangentBasis)
 {
   if (!cached.hasCachedFrictionBasis)
     return false;
@@ -185,7 +185,7 @@ void seedCachedImpulses(
     ConstraintInfo* info,
     bool hasFrictionRows,
     bool seedFriction,
-    const NativeFrictionBasisMatrix* tangentBasis = nullptr)
+    const FrictionBasisMatrix* tangentBasis = nullptr)
 {
   info->x[0] = 0.0;
   if (hasFrictionRows) {
@@ -770,7 +770,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     }
 
     seedCachedImpulses(
-        getNativeCachedContact(mContact),
+        getDARTCachedContact(mContact),
         info,
         true,
         !isPositionPhase,
@@ -826,7 +826,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[0] += mContactSurfaceMotionVelocity.x();
     }
 
-    seedCachedImpulses(getNativeCachedContact(mContact), info, false, false);
+    seedCachedImpulses(getDARTCachedContact(mContact), info, false, false);
   }
 }
 
@@ -1055,8 +1055,8 @@ void ContactConstraint::applyImpulse(double* lambda)
       = [&](double normalImpulse,
             double frictionImpulse1,
             double frictionImpulse2,
-            const NativeFrictionBasisMatrix* frictionBasis) {
-          auto* cached = getNativeCachedContact(mContact);
+            const FrictionBasisMatrix* frictionBasis) {
+          auto* cached = getDARTCachedContact(mContact);
           if (!cached)
             return;
 

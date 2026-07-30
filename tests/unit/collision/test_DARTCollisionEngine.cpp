@@ -97,6 +97,9 @@ public:
     // Do nothing
   }
 
+  using DARTCollisionObject::getEngineAabb;
+  using DARTCollisionObject::getEngineShape;
+  using DARTCollisionObject::getEngineTransform;
   using DARTCollisionObject::updateEngineData;
 };
 
@@ -1638,20 +1641,20 @@ TEST(DARTCollisionDetector, VoxelGridOccupancyUpdatesNativeShape)
   auto object = detector->claimCollisionObject(voxelFrame.get());
   auto* nativeObject = dynamic_cast<ExposedDARTCollisionObject*>(object.get());
   ASSERT_NE(nullptr, nativeObject);
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   ASSERT_EQ(
-      native::ShapeType::Compound, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Compound, nativeObject->getEngineShape()->getType());
   const auto* emptyCompound = static_cast<const native::CompoundShape*>(
-      nativeObject->getNativeShape());
+      nativeObject->getEngineShape());
   ASSERT_EQ(0u, emptyCompound->numChildren());
 
   voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
   nativeObject->updateEngineData();
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   ASSERT_EQ(
-      native::ShapeType::Compound, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Compound, nativeObject->getEngineShape()->getType());
   const auto* occupiedCompound = static_cast<const native::CompoundShape*>(
-      nativeObject->getNativeShape());
+      nativeObject->getEngineShape());
   ASSERT_EQ(1u, occupiedCompound->numChildren());
   const Eigen::Vector3d voxelCenter
       = occupiedCompound->childTransform(0).translation();
@@ -1791,14 +1794,14 @@ TEST(DARTCollisionDetector, ClaimedObjectTracksNativeAabb)
   auto object = detector.claimCollisionObject(frame.get());
   auto* nativeObject = dynamic_cast<ExposedDARTCollisionObject*>(object.get());
   ASSERT_NE(nullptr, nativeObject);
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   EXPECT_EQ(
-      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Sphere, nativeObject->getEngineShape()->getType());
   EXPECT_EQ(
       Eigen::Vector3d(1.0, 2.0, 3.0),
-      nativeObject->getNativeTransform().translation());
-  EXPECT_EQ(Eigen::Vector3d(0.5, 1.5, 2.5), nativeObject->getNativeAabb().min);
-  EXPECT_EQ(Eigen::Vector3d(1.5, 2.5, 3.5), nativeObject->getNativeAabb().max);
+      nativeObject->getEngineTransform().translation());
+  EXPECT_EQ(Eigen::Vector3d(0.5, 1.5, 2.5), nativeObject->getEngineAabb().min);
+  EXPECT_EQ(Eigen::Vector3d(1.5, 2.5, 3.5), nativeObject->getEngineAabb().max);
 }
 
 //==============================================================================
@@ -1810,19 +1813,19 @@ TEST(DARTCollisionDetector, ShapeIdentitySwapRebuildsNativeShape)
   auto object = detector.claimCollisionObject(frame.get());
   auto* nativeObject = dynamic_cast<ExposedDARTCollisionObject*>(object.get());
   ASSERT_NE(nullptr, nativeObject);
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   EXPECT_EQ(
-      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Sphere, nativeObject->getEngineShape()->getType());
 
   frame->setShape(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(2.0, 4.0, 6.0)));
   nativeObject->updateEngineData();
 
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
-  ASSERT_EQ(native::ShapeType::Box, nativeObject->getNativeShape()->getType());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
+  ASSERT_EQ(native::ShapeType::Box, nativeObject->getEngineShape()->getType());
   EXPECT_EQ(
-      Eigen::Vector3d(-1.0, -2.0, -3.0), nativeObject->getNativeAabb().min);
-  EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), nativeObject->getNativeAabb().max);
+      Eigen::Vector3d(-1.0, -2.0, -3.0), nativeObject->getEngineAabb().min);
+  EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), nativeObject->getEngineAabb().max);
 }
 
 //==============================================================================
@@ -1834,21 +1837,21 @@ TEST(DARTCollisionDetector, SameTypeShapeSwapRebuildsNativeShape)
   auto object = detector.claimCollisionObject(frame.get());
   auto* nativeObject = dynamic_cast<ExposedDARTCollisionObject*>(object.get());
   ASSERT_NE(nullptr, nativeObject);
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   ASSERT_EQ(
-      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Sphere, nativeObject->getEngineShape()->getType());
   EXPECT_EQ(
-      Eigen::Vector3d(-0.5, -0.5, -0.5), nativeObject->getNativeAabb().min);
-  EXPECT_EQ(Eigen::Vector3d(0.5, 0.5, 0.5), nativeObject->getNativeAabb().max);
+      Eigen::Vector3d(-0.5, -0.5, -0.5), nativeObject->getEngineAabb().min);
+  EXPECT_EQ(Eigen::Vector3d(0.5, 0.5, 0.5), nativeObject->getEngineAabb().max);
 
   frame->setShape(std::make_shared<dynamics::SphereShape>(1.25));
   nativeObject->updateEngineData();
 
-  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_NE(nullptr, nativeObject->getEngineShape());
   ASSERT_EQ(
-      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+      native::ShapeType::Sphere, nativeObject->getEngineShape()->getType());
   EXPECT_EQ(
-      Eigen::Vector3d(-1.25, -1.25, -1.25), nativeObject->getNativeAabb().min);
+      Eigen::Vector3d(-1.25, -1.25, -1.25), nativeObject->getEngineAabb().min);
   EXPECT_EQ(
-      Eigen::Vector3d(1.25, 1.25, 1.25), nativeObject->getNativeAabb().max);
+      Eigen::Vector3d(1.25, 1.25, 1.25), nativeObject->getEngineAabb().max);
 }

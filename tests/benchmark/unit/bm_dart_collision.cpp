@@ -123,7 +123,7 @@ void runNarrowPhase(
   }
 
   if (!hit) {
-    state.SkipWithError("native narrow-phase benchmark case did not collide");
+    state.SkipWithError("DART narrow-phase benchmark case did not collide");
   }
 
   state.counters["contacts/iter"] = benchmark::Counter(
@@ -186,7 +186,7 @@ void runDetectorCollision(
 }
 
 #if HAVE_OCTOMAP
-void runNativeDetectorCollision(
+void runDARTDetectorCollision(
     benchmark::State& state,
     const dart::dynamics::ShapePtr& shapeA,
     const Eigen::Vector3d& translationA,
@@ -249,7 +249,7 @@ void runDetectorDistance(
   }
 }
 
-void runNativeDetectorDistance(
+void runDARTDetectorDistance(
     benchmark::State& state,
     const dart::dynamics::ShapePtr& shapeA,
     const Eigen::Vector3d& translationA,
@@ -308,7 +308,7 @@ void runDetectorRaycast(
   }
 }
 
-void runNativeDetectorRaycast(
+void runDARTDetectorRaycast(
     benchmark::State& state,
     const dart::dynamics::ShapePtr& shape,
     const Eigen::Vector3d& translation = Eigen::Vector3d::Zero())
@@ -334,7 +334,7 @@ void runBulletDetectorRaycast(
 }
 #endif
 
-void BM_NativeSphereSphere(benchmark::State& state)
+void BM_DARTNarrowPhaseSphereSphere(benchmark::State& state)
 {
   SphereShape sphereA(1.0);
   SphereShape sphereB(1.0);
@@ -347,7 +347,7 @@ void BM_NativeSphereSphere(benchmark::State& state)
       translated(1.25, 0.0, 0.0));
 }
 
-void BM_NativeSphereBox(benchmark::State& state)
+void BM_DARTNarrowPhaseSphereBox(benchmark::State& state)
 {
   SphereShape sphere(1.0);
   BoxShape box(Eigen::Vector3d::Constant(1.0));
@@ -360,7 +360,7 @@ void BM_NativeSphereBox(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
-void BM_NativeBoxBox(benchmark::State& state)
+void BM_DARTNarrowPhaseBoxBox(benchmark::State& state)
 {
   BoxShape boxA(Eigen::Vector3d::Constant(1.0));
   BoxShape boxB(Eigen::Vector3d::Constant(1.0));
@@ -373,7 +373,7 @@ void BM_NativeBoxBox(benchmark::State& state)
       translated(0.75, 0.1, 0.05));
 }
 
-void BM_NativeCapsuleSphere(benchmark::State& state)
+void BM_DARTNarrowPhaseCapsuleSphere(benchmark::State& state)
 {
   CapsuleShape capsule(0.5, 1.0);
   SphereShape sphere(0.5);
@@ -386,7 +386,7 @@ void BM_NativeCapsuleSphere(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeCapsuleBox(benchmark::State& state)
+void BM_DARTNarrowPhaseCapsuleBox(benchmark::State& state)
 {
   CapsuleShape capsule(0.5, 1.0);
   BoxShape box(Eigen::Vector3d::Constant(1.0));
@@ -399,7 +399,7 @@ void BM_NativeCapsuleBox(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
-void BM_NativeCapsuleCapsule(benchmark::State& state)
+void BM_DARTNarrowPhaseCapsuleCapsule(benchmark::State& state)
 {
   CapsuleShape capsuleA(0.5, 1.0);
   CapsuleShape capsuleB(0.5, 1.0);
@@ -412,7 +412,7 @@ void BM_NativeCapsuleCapsule(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeConvexConvex(benchmark::State& state)
+void BM_DARTNarrowPhaseConvexConvex(benchmark::State& state)
 {
   ConvexShape convexA(makeOctahedronVertices());
   ConvexShape convexB(makeOctahedronVertices());
@@ -425,7 +425,7 @@ void BM_NativeConvexConvex(benchmark::State& state)
       translated(1.5, 0.0, 0.0));
 }
 
-void BM_NativeCylinderCylinder(benchmark::State& state)
+void BM_DARTNarrowPhaseCylinderCylinder(benchmark::State& state)
 {
   CylinderShape cylinderA(0.5, 1.0);
   CylinderShape cylinderB(0.5, 1.0);
@@ -438,7 +438,7 @@ void BM_NativeCylinderCylinder(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeCylinderSphere(benchmark::State& state)
+void BM_DARTNarrowPhaseCylinderSphere(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 1.0);
   SphereShape sphere(0.5);
@@ -451,7 +451,7 @@ void BM_NativeCylinderSphere(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeCylinderBox(benchmark::State& state)
+void BM_DARTNarrowPhaseCylinderBox(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 1.0);
   BoxShape box(Eigen::Vector3d::Constant(0.5));
@@ -464,7 +464,7 @@ void BM_NativeCylinderBox(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeCylinderCapsule(benchmark::State& state)
+void BM_DARTNarrowPhaseCylinderCapsule(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 1.0);
   CapsuleShape capsule(0.5, 1.0);
@@ -477,7 +477,7 @@ void BM_NativeCylinderCapsule(benchmark::State& state)
       translated(0.75, 0.0, 0.0));
 }
 
-void BM_NativeCylinderPlane(benchmark::State& state)
+void BM_DARTNarrowPhaseCylinderPlane(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 1.0);
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
@@ -490,7 +490,7 @@ void BM_NativeCylinderPlane(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
-void BM_NativePlaneSphere(benchmark::State& state)
+void BM_DARTNarrowPhasePlaneSphere(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   SphereShape sphere(1.0);
@@ -503,7 +503,7 @@ void BM_NativePlaneSphere(benchmark::State& state)
       translated(0.0, 0.0, 0.5));
 }
 
-void BM_NativePlaneBox(benchmark::State& state)
+void BM_DARTNarrowPhasePlaneBox(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   BoxShape box(Eigen::Vector3d::Constant(1.0));
@@ -516,7 +516,7 @@ void BM_NativePlaneBox(benchmark::State& state)
       translated(0.0, 0.0, 0.5));
 }
 
-void BM_NativePlaneCapsule(benchmark::State& state)
+void BM_DARTNarrowPhasePlaneCapsule(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   CapsuleShape capsule(0.5, 2.0);
@@ -529,7 +529,7 @@ void BM_NativePlaneCapsule(benchmark::State& state)
       translated(0.0, 0.0, 1.3));
 }
 
-void BM_NativePlaneConvex(benchmark::State& state)
+void BM_DARTNarrowPhasePlaneConvex(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   ConvexShape convex(
@@ -546,7 +546,7 @@ void BM_NativePlaneConvex(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
-void BM_NativeConvexCylinder(benchmark::State& state)
+void BM_DARTNarrowPhaseConvexCylinder(benchmark::State& state)
 {
   ConvexShape convex(makeOctahedronVertices());
   CylinderShape cylinder(0.5, 1.0);
@@ -559,7 +559,7 @@ void BM_NativeConvexCylinder(benchmark::State& state)
       translated(1.25, 0.0, 0.0));
 }
 
-void BM_NativeMeshMesh(benchmark::State& state)
+void BM_DARTNarrowPhaseMeshMesh(benchmark::State& state)
 {
   MeshShape meshA = makeUnitCubeMesh();
   MeshShape meshB = makeUnitCubeMesh();
@@ -572,7 +572,7 @@ void BM_NativeMeshMesh(benchmark::State& state)
       translated(0.25, 0.0, 0.0));
 }
 
-void BM_NativeMeshSphere(benchmark::State& state)
+void BM_DARTNarrowPhaseMeshSphere(benchmark::State& state)
 {
   MeshShape mesh = makePlaneMesh();
   SphereShape sphere(0.5);
@@ -585,7 +585,7 @@ void BM_NativeMeshSphere(benchmark::State& state)
       translated(0.25, -0.25, 0.25));
 }
 
-void BM_NativeMeshBox(benchmark::State& state)
+void BM_DARTNarrowPhaseMeshBox(benchmark::State& state)
 {
   MeshShape mesh = makePlaneMesh();
   BoxShape box(Eigen::Vector3d::Constant(0.25));
@@ -598,7 +598,7 @@ void BM_NativeMeshBox(benchmark::State& state)
       translated(0.0, 0.0, 0.2));
 }
 
-void BM_NativeMeshCapsule(benchmark::State& state)
+void BM_DARTNarrowPhaseMeshCapsule(benchmark::State& state)
 {
   MeshShape mesh = makePlaneMesh();
   CapsuleShape capsule(0.25, 0.5);
@@ -611,7 +611,7 @@ void BM_NativeMeshCapsule(benchmark::State& state)
       translated(0.25, -0.25, 0.25));
 }
 
-void BM_NativeMeshConvex(benchmark::State& state)
+void BM_DARTNarrowPhaseMeshConvex(benchmark::State& state)
 {
   MeshShape mesh = makePlaneMesh();
   ConvexShape convex(makeOctahedronVertices(0.25));
@@ -625,9 +625,9 @@ void BM_NativeMeshConvex(benchmark::State& state)
 }
 
 #if HAVE_OCTOMAP
-void BM_CollisionNativeVoxelGridSphere(benchmark::State& state)
+void BM_CollisionDARTVoxelGridSphere(benchmark::State& state)
 {
-  runNativeDetectorCollision(
+  runDARTDetectorCollision(
       state,
       makeOccupiedVoxelGrid(),
       Eigen::Vector3d::Zero(),
@@ -648,9 +648,9 @@ void BM_CollisionFclVoxelGridSphere(benchmark::State& state)
 }
 #endif
 
-void BM_DistanceNativeSphereSphere(benchmark::State& state)
+void BM_DistanceDARTSphereSphere(benchmark::State& state)
 {
-  runNativeDetectorDistance(
+  runDARTDetectorDistance(
       state,
       std::make_shared<dart::dynamics::SphereShape>(0.25),
       Eigen::Vector3d::Zero(),
@@ -668,9 +668,9 @@ void BM_DistanceFclSphereSphere(benchmark::State& state)
       Eigen::Vector3d(2.0, 0.0, 0.0));
 }
 
-void BM_DistanceNativeSphereBox(benchmark::State& state)
+void BM_DistanceDARTSphereBox(benchmark::State& state)
 {
-  runNativeDetectorDistance(
+  runDARTDetectorDistance(
       state,
       std::make_shared<dart::dynamics::SphereShape>(0.25),
       Eigen::Vector3d::Zero(),
@@ -690,9 +690,9 @@ void BM_DistanceFclSphereBox(benchmark::State& state)
       Eigen::Vector3d(1.25, 0.0, 0.0));
 }
 
-void BM_DistanceNativeBoxBox(benchmark::State& state)
+void BM_DistanceDARTBoxBox(benchmark::State& state)
 {
-  runNativeDetectorDistance(
+  runDARTDetectorDistance(
       state,
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d::Constant(0.5)),
@@ -714,9 +714,9 @@ void BM_DistanceFclBoxBox(benchmark::State& state)
       Eigen::Vector3d(1.25, 0.0, 0.0));
 }
 
-void BM_DistanceNativePlaneSphere(benchmark::State& state)
+void BM_DistanceDARTPlaneSphere(benchmark::State& state)
 {
-  runNativeDetectorDistance(
+  runDARTDetectorDistance(
       state,
       std::make_shared<dart::dynamics::PlaneShape>(
           Eigen::Vector3d::UnitZ(), 0.0),
@@ -736,15 +736,15 @@ void BM_DistanceFclPlaneSphere(benchmark::State& state)
       Eigen::Vector3d(0.0, 0.0, 0.75));
 }
 
-void BM_RaycastNativeSphere(benchmark::State& state)
+void BM_RaycastDARTSphere(benchmark::State& state)
 {
-  runNativeDetectorRaycast(
+  runDARTDetectorRaycast(
       state, std::make_shared<dart::dynamics::SphereShape>(1.0));
 }
 
-void BM_RaycastNativeBox(benchmark::State& state)
+void BM_RaycastDARTBox(benchmark::State& state)
 {
-  runNativeDetectorRaycast(
+  runDARTDetectorRaycast(
       state,
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(2.0, 2.0, 2.0)));
@@ -768,44 +768,44 @@ void BM_RaycastBulletBox(benchmark::State& state)
 
 } // namespace
 
-BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeSphereBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeBoxBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCapsuleSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCapsuleBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCapsuleCapsule)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeConvexConvex)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCylinderCylinder)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCylinderSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCylinderBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCylinderCapsule)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeCylinderPlane)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativePlaneSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativePlaneBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativePlaneCapsule)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativePlaneConvex)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeConvexCylinder)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeMeshMesh)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeMeshSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeMeshBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeMeshCapsule)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_NativeMeshConvex)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseSphereSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseSphereBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseBoxBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCapsuleSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCapsuleBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCapsuleCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseConvexConvex)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCylinderCylinder)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCylinderSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCylinderBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCylinderCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseCylinderPlane)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhasePlaneSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhasePlaneBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhasePlaneCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhasePlaneConvex)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseConvexCylinder)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseMeshMesh)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseMeshSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseMeshBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseMeshCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DARTNarrowPhaseMeshConvex)->Unit(benchmark::kNanosecond);
 #if HAVE_OCTOMAP
-BENCHMARK(BM_CollisionNativeVoxelGridSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_CollisionDARTVoxelGridSphere)->Unit(benchmark::kNanosecond);
 #endif
 #if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 BENCHMARK(BM_CollisionFclVoxelGridSphere)->Unit(benchmark::kNanosecond);
 #endif
-BENCHMARK(BM_DistanceNativeSphereSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceDARTSphereSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclSphereSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_DistanceNativeSphereBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceDARTSphereBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclSphereBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_DistanceNativeBoxBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceDARTBoxBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclBoxBox)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_DistanceNativePlaneSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceDARTPlaneSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclPlaneSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_RaycastNativeSphere)->Unit(benchmark::kNanosecond);
-BENCHMARK(BM_RaycastNativeBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_RaycastDARTSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_RaycastDARTBox)->Unit(benchmark::kNanosecond);
 #if HAVE_BULLET
 BENCHMARK(BM_RaycastBulletSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_RaycastBulletBox)->Unit(benchmark::kNanosecond);

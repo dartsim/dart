@@ -32,53 +32,17 @@
 
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
+#include "dart/collision/dart/detail/DARTCollisionObjectEngineData.hpp"
 
 #include <algorithm>
-#include <memory>
-#include <mutex>
-#include <unordered_map>
 
 namespace dart {
 namespace collision {
 
 namespace {
-
-using GroupEngineDataMap = std::unordered_map<
-    const DARTCollisionGroup*,
-    std::unique_ptr<detail::DARTCollisionGroupEngineData>>;
-
-//==============================================================================
-struct GroupEngineDataRegistry
-{
-  GroupEngineDataMap groups;
-  std::mutex mutex;
-};
-
-//==============================================================================
-GroupEngineDataRegistry& getGroupEngineDataRegistry()
-{
-  static GroupEngineDataRegistry registry;
-  return registry;
-}
-
-//==============================================================================
-void createGroupEngineData(const DARTCollisionGroup* group)
-{
-  auto& registry = getGroupEngineDataRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.groups[group]
-      = std::make_unique<detail::DARTCollisionGroupEngineData>();
-}
-
-//==============================================================================
-void removeGroupEngineData(const DARTCollisionGroup* group)
-{
-  auto& registry = getGroupEngineDataRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.groups.erase(group);
-}
 
 //==============================================================================
 std::size_t assignId(detail::DARTCollisionGroupEngineData& engineData)
@@ -99,13 +63,16 @@ DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
-  createGroupEngineData(this);
+  auto* detector = static_cast<DARTCollisionDetector*>(collisionDetector.get());
+  detector->createCollisionGroupEngineData(this);
 }
 
 //==============================================================================
 DARTCollisionGroup::~DARTCollisionGroup()
 {
-  removeGroupEngineData(this);
+  auto* detector
+      = static_cast<DARTCollisionDetector*>(getCollisionDetector().get());
+  detector->removeCollisionGroupEngineData(this);
 }
 
 //==============================================================================
@@ -128,7 +95,8 @@ void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
   engineData.objectToId[object] = id;
   engineData.idToObject[id] = nativeObject;
   mCollisionObjects.push_back(object);
-  engineData.broadPhase.add(id, nativeObject->getNativeAabb());
+  engineData.broadPhase.add(
+      id, detail::DARTCollisionObjectAccessor::getAabb(nativeObject));
 }
 
 //==============================================================================
@@ -178,7 +146,9 @@ void DARTCollisionGroup::updateCollisionGroupEngineData()
   // objectToId each step; broadphase update order cannot leak into results
   // because pair queries are normalized and sorted before visitation.
   for (const auto& entry : engineData.idToObject) {
-    engineData.broadPhase.update(entry.first, entry.second->getNativeAabb());
+    engineData.broadPhase.update(
+        entry.first,
+        detail::DARTCollisionObjectAccessor::getAabb(entry.second));
   }
 }
 
@@ -191,9 +161,9 @@ void DARTCollisionGroup::updateEngineDataForCollide()
 //==============================================================================
 detail::DARTCollisionGroupEngineData& DARTCollisionGroup::getEngineData()
 {
-  auto& registry = getGroupEngineDataRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  return *registry.groups.at(this);
+  auto* detector
+      = static_cast<DARTCollisionDetector*>(getCollisionDetector().get());
+  return detector->getCollisionGroupEngineData(this);
 }
 
 } // namespace collision

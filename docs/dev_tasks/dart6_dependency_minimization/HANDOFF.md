@@ -181,6 +181,18 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   `DARTCollisionDetector` capture of ellipsoid/capsule/cone contacts. Soft-body
   deformation/contact parity and raycast hit/sort/filter behavior stay
   text-first because pixels do not prove those numerical contracts.
+  The 2026-07-29 local review-fix candidate is green on 155/155 C++ tests,
+  223/223 dartpy tests, `check-lint`, the complete AI aggregate (357 focused
+  tests plus seven scenarios), and the pinned Gazebo aggregate (199
+  gz-physics tests + four performance/symbol checks + one gz-sim integration
+  test). Mixed-header ABI canaries preserve the pre-consolidation 6.20
+  detector/group/object sizes (`32/376/320`) through 20 guarded lifecycle
+  runs, and the released 6.19.4 detector header passes 20 runs. Two alternating
+  five-repetition incumbent-backend A/Bs show no regression: ODE base/head
+  medians `868/867-868 ms`, FCL `257/255-256 ms`, Bullet `267/266 ms`, with
+  identical contact counts. Local visual smoke and all four rendered-overlay
+  regressions pass. This evidence predates publication; exact-head hosted CI,
+  artifact inspection, and fresh Codex review are still mandatory.
 - **Phase 4 native performance** — #3362 and #3364 are merged. Next session
   should either close out Phase 4 with fresh evidence or produce one cohesive
   measured follow-up PR before Phase 5.

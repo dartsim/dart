@@ -170,7 +170,7 @@ std::unique_ptr<native::Shape> createConvexOrNull(
     if (warnedInvalidShapeTypes.insert(shapeType).second) {
       dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
              << "] did not provide convex vertices. This shape will be "
-             << "skipped by the native adapter.\n";
+             << "skipped by DARTCollisionDetector.\n";
     }
     return nullptr;
   }
@@ -188,7 +188,7 @@ std::unique_ptr<native::Shape> createMeshOrNull(
     if (warnedInvalidShapeTypes.insert(shapeType).second) {
       dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
              << "] did not provide triangle mesh data. This shape will be "
-             << "skipped by the native adapter.\n";
+             << "skipped by DARTCollisionDetector.\n";
     }
     return nullptr;
   }
@@ -398,7 +398,7 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
   if (warnedShapeTypes.insert(shapeType).second) {
     dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
            << "] is not supported by DARTCollisionDetector yet. This "
-           << "shape will be skipped by the native adapter.\n";
+           << "shape will be skipped.\n";
   }
 
   return nullptr;

@@ -47,6 +47,7 @@ bool isSoftCollisionPair(
 int collideSoftPair(
     DARTCollisionObject* object1,
     DARTCollisionObject* object2,
+    bool enableFaceInteriorContacts,
     CollisionResult& result);
 
 } // namespace detail

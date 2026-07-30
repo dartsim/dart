@@ -36,13 +36,16 @@
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/dart/Fwd.hpp>
 
-#include <memory>
-
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
-class CollisionThreadPool;
+class DARTCollisionGroup;
+
+namespace detail {
+struct DARTCollisionGroupEngineData;
+struct DARTCollisionObjectEngineData;
+} // namespace detail
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -50,8 +53,6 @@ public:
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
-
-  ~DARTCollisionDetector() override;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
@@ -69,6 +70,16 @@ public:
 
   /// Returns the number of worker participants for parallel collision queries.
   std::size_t getNumCollisionThreads() const;
+
+  /// Enables contacts for primitive penetration through soft triangle
+  /// interiors when no vertex contact covers that face. This is disabled by
+  /// default to preserve legacy contact results. The
+  /// DART_SOFT_FACE_INTERIOR_CONTACTS environment variable overrides the
+  /// construction default when set to a non-empty value other than "0".
+  void setSoftFaceInteriorContactsEnabled(bool enabled);
+
+  /// Returns whether soft face-interior contacts are enabled.
+  bool getSoftFaceInteriorContactsEnabled() const;
 
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
@@ -126,10 +137,29 @@ protected:
   void notifyCollisionObjectDestroying(CollisionObject* object) override;
 
 private:
-  static Registrar<DARTCollisionDetector> mRegistrar;
+  friend class DARTCollisionGroup;
+  friend class DARTCollisionObject;
 
-  std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
-  std::size_t mNumCollisionThreads{1u};
+  class DARTCollisionObjectManager;
+
+  void createCollisionGroupEngineData(const DARTCollisionGroup* group);
+
+  void removeCollisionGroupEngineData(const DARTCollisionGroup* group);
+
+  detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
+      const DARTCollisionGroup* group);
+
+  void createCollisionObjectEngineData(const DARTCollisionObject* object);
+
+  void removeCollisionObjectEngineData(const DARTCollisionObject* object);
+
+  detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object);
+
+  const detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object) const;
+
+  static Registrar<DARTCollisionDetector> mRegistrar;
 };
 
 } // namespace collision

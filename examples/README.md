@@ -17,6 +17,11 @@ Build and run it:
 
     $ pixi run demos
 
+The flagship deformable-body scenes can be opened directly:
+
+    $ pixi run demos --scene adaptive_soft_contact
+    $ pixi run demos --scene soft_worm
+
 Soft-body scene aliases are also available for compatibility with the former
 standalone examples:
 

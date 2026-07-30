@@ -174,13 +174,13 @@
 
 * Collision
 
-  * Consolidate the experimental native collision engine into the built-in
+  * Consolidate the experimental DART-owned collision engine into the built-in
     `dart` detector and add the soft-body, ellipsoid, cone, and capsule
     coverage the `dart` detector was missing. The temporary `native` factory
     key is removed before release, leaving `dart` as the only name. The
-    released `DARTCollide` entry points remain available as thin adapters.
-    The `dart` detector remains opt-in; the built-in default is unchanged
-    (`fcl`):
+    released `DARTCollide` entry points and detector ABI remain compatible, as
+    do the pre-consolidation 6.20 group and object layouts. The `dart` detector
+    remains opt-in; the built-in default is unchanged (`fcl`):
     [#3381](https://github.com/dartsim/dart/pull/3381)
 
   * Speed up many-object DART-native collision queries by replacing the
@@ -197,6 +197,12 @@
     primitive dispatch and deterministic threaded finite-shape-vs-plane contact
     checks when the simulation thread count is greater than one:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Restore the released `DARTCollisionDetector` ABI layout after its native
+    collision thread-pool state enlarged the installed, derivable class. The
+    worker state now lives behind the collision-object manager already owned by
+    the released base layout while preserving the opt-in threaded behavior:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Speed up DART-native broadphase setup by computing transformed cached local
     bounds directly from center and half-extents instead of visiting all local
@@ -221,6 +227,11 @@
   * Reduce DART-native finite-plane collision bookkeeping by using internal
     scratch collision results that skip unused lookup caches and a direct
     single-plane pair-index path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Add `SoftMeshShape` and `EllipsoidShape` collision support to the built-in
+    `dart` detector, with cached soft geometry and a cache-friendly broadphase
+    for small dynamic groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up primitive DART-native plane collision dispatch by caching a compact
@@ -335,6 +346,15 @@
     LCP solutions are now rejected so the secondary/fail-safe zeroing path runs,
     guaranteeing finite impulses:
     [#3384](https://github.com/dartsim/dart/pull/3384)
+
+  * Add opt-in adaptive soft contact activation to `SoftBodyNode`
+    (`setAdaptiveContactActivationEnabled` plus ring-count, linger, and
+    deactivation-tolerance tuning and a `getNumActivePointMasses` counter):
+    point masses near contact stay simulated while the rest ride rigidly
+    with the parent body as rigid lumps, following Jain and Liu's soft
+    contact model. Default-off behavior is bit-identical to the previous
+    all-active dynamics:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
     option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
@@ -556,6 +576,16 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * Examples
+
+  * Add two deformable-body flagship scenes to `dart-demos`:
+    `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
+    demonstrating the adaptive contact activation API with live
+    active/inactive instrumentation, and `soft_worm`, an internally actuated
+    five-link chain with soft flesh that crawls through soft contact using a
+    phase-offset sinusoidal gait. Both support the host's headless offscreen
+    capture route, with GUI-free integration gates preserving the adaptive
+    comparison and worm-locomotion contracts:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
