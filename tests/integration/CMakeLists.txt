@@ -94,8 +94,7 @@ add_test(
 add_test(
   NAME test_ContactArrowLayout
   COMMAND
-    $<TARGET_FILE:test_ConstraintSolver>
-    --gtest_filter=ContactArrowLayoutTest.*
+    $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
 )
 set_tests_properties(
   test_AdaptiveSoftContactModel
