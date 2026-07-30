@@ -36,6 +36,8 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/DistanceFilter.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/collision/native/PersistentManifoldCache.hpp"
@@ -44,7 +46,10 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Observer.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 #include <algorithm>
 #include <array>
@@ -61,6 +66,13 @@
 
 namespace dart {
 namespace collision {
+
+static_assert(
+    sizeof(NativeCollisionDetector) == sizeof(CollisionDetector),
+    "NativeCollisionDetector must not add state to its exported ABI layout");
+static_assert(
+    alignof(NativeCollisionDetector) == alignof(CollisionDetector),
+    "NativeCollisionDetector must preserve its exported ABI alignment");
 
 namespace {
 
@@ -83,6 +95,15 @@ std::size_t getSolverFacingManifoldContactTarget(
              ? kFourPointPlanarContactTarget
              : kCompactManifoldContactTarget;
 }
+
+class ScratchCollisionResult final : public CollisionResult
+{
+public:
+  ScratchCollisionResult()
+  {
+    setCollidingObjectCacheEnabled(false);
+  }
+};
 
 //==============================================================================
 bool checkGroupValidity(
@@ -126,17 +147,102 @@ native::CollisionOption makeNativeOption(
 }
 
 //==============================================================================
+bool shouldUseDartFallback(
+    const NativeCollisionObject* object1, const NativeCollisionObject* object2)
+{
+  // DART's non-spherical ellipsoid fallback is implemented through the
+  // soft-mesh kernels. Keep unsupported ellipsoid/primitive pairs off the hot
+  // fallback bridge and let native-owned kernels handle primitive coverage.
+  return (object1 != nullptr && object1->usesSoftMeshFallbackShape())
+         || (object2 != nullptr && object2->usesSoftMeshFallbackShape());
+}
+
+//==============================================================================
+bool hasSupportedCollisionPath(
+    const NativeCollisionObject* object1, const NativeCollisionObject* object2)
+{
+  if (object1 == nullptr || object2 == nullptr)
+    return false;
+
+  if (shouldUseDartFallback(object1, object2))
+    return true;
+
+  return object1->getNativeShape() != nullptr
+         && object2->getNativeShape() != nullptr;
+}
+
+//==============================================================================
 bool shouldSkipPair(
     const NativeCollisionObject* object1,
     const NativeCollisionObject* object2,
     const CollisionOption& option)
 {
-  if (!object1->getNativeShape() || !object2->getNativeShape())
+  if (!hasSupportedCollisionPath(object1, object2))
     return true;
 
   if (option.collisionFilter
       && option.collisionFilter->ignoresCollision(object1, object2)) {
     return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool shouldUseNativeManifoldContact(
+    const CollisionObject* object1, const CollisionObject* object2)
+{
+  const auto* nativeObject1
+      = static_cast<const NativeCollisionObject*>(object1);
+  const auto* nativeObject2
+      = static_cast<const NativeCollisionObject*>(object2);
+
+  return nativeObject1->getNativeShape() != nullptr
+         && nativeObject2->getNativeShape() != nullptr;
+}
+
+//==============================================================================
+bool ownsNativeManifoldShape(const NativeCollisionObject* object)
+{
+  return object != nullptr && object->getNativeShape() != nullptr
+         && !object->usesDartFallbackShape();
+}
+
+//==============================================================================
+bool mayUseNativeManifoldContacts(
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects)
+{
+  std::size_t nativeShapeCount = 0u;
+  for (const auto& entry : objects) {
+    if (!ownsNativeManifoldShape(entry.second))
+      continue;
+
+    ++nativeShapeCount;
+    if (nativeShapeCount >= 2u)
+      return true;
+  }
+
+  return false;
+}
+
+bool mayUseNativeManifoldContacts(
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects1,
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects2)
+{
+  bool hasNativeShape1 = false;
+  for (const auto& entry : objects1) {
+    if (ownsNativeManifoldShape(entry.second)) {
+      hasNativeShape1 = true;
+      break;
+    }
+  }
+
+  if (!hasNativeShape1)
+    return false;
+
+  for (const auto& entry : objects2) {
+    if (ownsNativeManifoldShape(entry.second))
+      return true;
   }
 
   return false;
@@ -194,44 +300,51 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
 }
 
 //==============================================================================
-using ManifoldCacheMap = std::unordered_map<
-    const NativeCollisionDetector*,
-    std::unique_ptr<native::PersistentManifoldCache>>;
+struct NativeDetectorState
+{
+  std::unique_ptr<native::PersistentManifoldCache> manifoldCache;
+};
+
+using NativeDetectorStateMap
+    = std::unordered_map<const NativeCollisionDetector*, NativeDetectorState>;
 
 //==============================================================================
-struct ManifoldCacheRegistry
+struct NativeDetectorStateRegistry
 {
-  ManifoldCacheMap caches;
+  NativeDetectorStateMap states;
   std::mutex mutex;
 };
 
 //==============================================================================
-ManifoldCacheRegistry& getManifoldCacheRegistry()
+NativeDetectorStateRegistry& getNativeDetectorStateRegistry()
 {
-  static ManifoldCacheRegistry registry;
-  return registry;
+  // Detectors can be owned by static/global objects and therefore destroyed
+  // after ordinary function-local objects. Keep this registry alive through
+  // process teardown so every detector destructor can safely erase its state.
+  static auto* const registry = new NativeDetectorStateRegistry;
+  return *registry;
 }
 
 //==============================================================================
 native::PersistentManifoldCache* findManifoldCache(
     const NativeCollisionDetector* detector)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  const auto it = registry.caches.find(detector);
-  if (it == registry.caches.end())
+  const auto it = registry.states.find(detector);
+  if (it == registry.states.end())
     return nullptr;
 
-  return it->second.get();
+  return it->second.manifoldCache.get();
 }
 
 //==============================================================================
 native::PersistentManifoldCache& getOrCreateManifoldCache(
     const NativeCollisionDetector* detector)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  auto& cache = registry.caches[detector];
+  auto& cache = registry.states[detector].manifoldCache;
   if (!cache)
     cache = std::make_unique<native::PersistentManifoldCache>();
 
@@ -239,11 +352,11 @@ native::PersistentManifoldCache& getOrCreateManifoldCache(
 }
 
 //==============================================================================
-void removeManifoldCache(const NativeCollisionDetector* detector)
+void removeNativeDetectorState(const NativeCollisionDetector* detector)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.caches.erase(detector);
+  registry.states.erase(detector);
 }
 
 //==============================================================================
@@ -646,7 +759,7 @@ void attachCachedContactImpulses(
     auto& contact = result->getContact(0);
     auto* object1 = contact.collisionObject1;
     auto* object2 = contact.collisionObject2;
-    if (!object1 || !object2)
+    if (!shouldUseNativeManifoldContact(object1, object2))
       return;
 
     const auto id1 = getManifoldCacheId(object1);
@@ -747,7 +860,7 @@ void attachCachedContactImpulses(
     auto& contact = result->getContact(i);
     auto* object1 = contact.collisionObject1;
     auto* object2 = contact.collisionObject2;
-    if (!object1 || !object2)
+    if (!shouldUseNativeManifoldContact(object1, object2))
       continue;
 
     if (object1 != cachedObject1 || object2 != cachedObject2) {
@@ -794,7 +907,7 @@ void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects,
     native::PersistentManifoldCache* manifoldCache)
 {
-  if (!manifoldCache)
+  if (!manifoldCache || manifoldCache->size() == 0u)
     return;
 
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
@@ -824,7 +937,7 @@ void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects2,
     native::PersistentManifoldCache* manifoldCache)
 {
-  if (!manifoldCache)
+  if (!manifoldCache || manifoldCache->size() == 0u)
     return;
 
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
@@ -1645,6 +1758,107 @@ bool collideWithContactGap(
 }
 
 //==============================================================================
+bool emitDartFallbackContacts(
+    const CollisionResult& pairResult,
+    NativeCollisionObject* object1,
+    NativeCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "Native fallback emit");
+  const std::size_t maxPairContacts
+      = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t emittedForPair = 0u;
+
+  const std::size_t numContacts = pairResult.getNumContacts();
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    if (result.getNumContacts() >= option.maxNumContacts)
+      return true;
+
+    if (emittedForPair >= maxPairContacts)
+      return false;
+
+    auto contact = pairResult.getContact(i);
+    // DART fallback kernels currently report only penetrating contacts. Keep
+    // the adapter check in case a future kernel violates that contract.
+    // LCOV_EXCL_START: requires negative depth from a fallback kernel.
+    if (contact.penetrationDepth < 0.0
+        && !option.allowNegativePenetrationDepthContacts) {
+      continue;
+    }
+    // LCOV_EXCL_STOP
+
+    if (Contact::isZeroNormal(contact.normal))
+      continue;
+
+    contact.collisionObject1 = object1;
+    contact.collisionObject2 = object2;
+    result.addContact(contact);
+    ++emittedForPair;
+  }
+
+  return result.getNumContacts() >= option.maxNumContacts;
+}
+
+//==============================================================================
+bool processDartFallbackPair(
+    NativeCollisionObject* object1,
+    NativeCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    ScratchCollisionResult& pairResult)
+{
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "Native soft fallback pair");
+  pairResult.clear();
+  auto* dartFallback1 = object1->getDartFallbackObject();
+  auto* dartFallback2 = object2->getDartFallbackObject();
+  const bool object1Plane = object1->isPlaneShape();
+  const bool object2Plane = object2->isPlaneShape();
+  bool hit = false;
+  if (object1Plane && !object2Plane) {
+    hit = collidePlaneShape(
+              dartFallback1,
+              dartFallback2,
+              dartFallback1->getWorldTransformForCollision(),
+              dartFallback2->getWorldTransformForCollision(),
+              true,
+              pairResult)
+          != 0;
+  } else if (!object1Plane && object2Plane) {
+    hit = collidePlaneShape(
+              dartFallback2,
+              dartFallback1,
+              dartFallback2->getWorldTransformForCollision(),
+              dartFallback1->getWorldTransformForCollision(),
+              false,
+              pairResult)
+          != 0;
+  } else {
+    hit = collide(dartFallback1, dartFallback2, pairResult) != 0;
+  }
+  if (!hit)
+    return false;
+
+  collisionFound = true;
+
+  if (!result)
+    return true;
+
+  if (!option.enableContact) {
+    addPairOnlyContact(object1, object2, *result);
+    return result->getNumContacts() >= option.maxNumContacts;
+  }
+
+  return emitDartFallbackContacts(
+      pairResult, object1, object2, option, *result);
+}
+
+//==============================================================================
 bool processNativePair(
     NativeCollisionObject* object1,
     NativeCollisionObject* object2,
@@ -1652,10 +1866,17 @@ bool processNativePair(
     CollisionResult* result,
     NativeCollisionDetector::ContactManifoldMode manifoldMode,
     const ContactGapMap* contactGaps,
-    bool& collisionFound)
+    bool& collisionFound,
+    bool& nativeManifoldContactFound,
+    ScratchCollisionResult& fallbackPairResult)
 {
   if (shouldSkipPair(object1, object2, option))
     return false;
+
+  if (shouldUseDartFallback(object1, object2)) {
+    return processDartFallbackPair(
+        object1, object2, option, result, collisionFound, fallbackPairResult);
+  }
 
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
@@ -1711,6 +1932,8 @@ bool processNativePair(
     return false;
 
   collisionFound = true;
+  if (option.enableContact && result)
+    nativeManifoldContactFound = true;
 
   if (!result)
     return true;
@@ -1745,7 +1968,7 @@ NativeCollisionDetector::~NativeCollisionDetector()
 {
   eraseContactManifoldMode(this);
   eraseContactGapOverrides(this);
-  removeManifoldCache(this);
+  removeNativeDetectorState(this);
 }
 
 //==============================================================================
@@ -1884,6 +2107,9 @@ bool NativeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "NativeCollisionDetector::collide");
   if (result)
     result->clear();
 
@@ -1896,7 +2122,9 @@ bool NativeCollisionDetector::collide(
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
   const auto contactGaps = lookupContactGaps(this);
   {
-    DART_PROFILE_SCOPED_N("Native::updateEngineData");
+    DART_PROFILE_SCOPED_IF_N(
+        dart::common::profile::isProfileRecordingEnabled(),
+        "NativeCollisionGroup::updateObjects");
     nativeGroup->updateEngineData();
     if (contactGaps) {
       for (const auto& entry : nativeGroup->mIdToObject) {
@@ -1907,14 +2135,19 @@ bool NativeCollisionDetector::collide(
       }
     }
   }
-  auto& manifoldCache = getOrCreateManifoldCache(this);
-  {
-    DART_PROFILE_SCOPED_N("Native::refreshManifoldCache");
-    refreshManifoldCache(nativeGroup->mCollisionObjects, &manifoldCache);
+  native::PersistentManifoldCache* manifoldCache = nullptr;
+  const bool cacheNativeManifoldContacts
+      = option.enableContact
+        && mayUseNativeManifoldContacts(nativeGroup->mIdToObject);
+  if (cacheNativeManifoldContacts) {
+    manifoldCache = findManifoldCache(this);
+    refreshManifoldCache(nativeGroup->mCollisionObjects, manifoldCache);
   }
 
   bool collisionFound = false;
   const auto manifoldMode = getContactManifoldMode();
+  bool nativeManifoldContactFound = false;
+  ScratchCollisionResult fallbackPairResult;
   {
     DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
     const auto pairVisitor = [&](std::size_t id1, std::size_t id2) {
@@ -1927,7 +2160,9 @@ bool NativeCollisionDetector::collide(
           result,
           manifoldMode,
           contactGaps.get(),
-          collisionFound);
+          collisionFound,
+          nativeManifoldContactFound,
+          fallbackPairResult);
     };
     if (result) {
       // Result-carrying queries need the sorted, deduplicated visitation
@@ -1942,9 +2177,11 @@ bool NativeCollisionDetector::collide(
     }
   }
 
-  if (option.enableContact) {
-    DART_PROFILE_SCOPED_N("Native::attachCachedImpulses");
-    attachCachedContactImpulses(result, &manifoldCache);
+  if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+    if (!manifoldCache) {
+      manifoldCache = &getOrCreateManifoldCache(this);
+    }
+    attachCachedContactImpulses(result, manifoldCache);
   }
 
   return collisionFound;
@@ -1977,14 +2214,23 @@ bool NativeCollisionDetector::collide(
   const auto contactGaps = lookupContactGaps(this);
   nativeGroup1->updateEngineData();
   nativeGroup2->updateEngineData();
-  auto& manifoldCache = getOrCreateManifoldCache(this);
-  refreshManifoldCache(
-      nativeGroup1->mCollisionObjects,
-      nativeGroup2->mCollisionObjects,
-      &manifoldCache);
+  native::PersistentManifoldCache* manifoldCache = nullptr;
+  const bool cacheNativeManifoldContacts
+      = option.enableContact
+        && mayUseNativeManifoldContacts(
+            nativeGroup1->mIdToObject, nativeGroup2->mIdToObject);
+  if (cacheNativeManifoldContacts) {
+    manifoldCache = findManifoldCache(this);
+    refreshManifoldCache(
+        nativeGroup1->mCollisionObjects,
+        nativeGroup2->mCollisionObjects,
+        manifoldCache);
+  }
 
   bool collisionFound = false;
   const auto manifoldMode = getContactManifoldMode();
+  bool nativeManifoldContactFound = false;
+  ScratchCollisionResult fallbackPairResult;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
       if (processNativePair(
@@ -1994,16 +2240,26 @@ bool NativeCollisionDetector::collide(
               result,
               manifoldMode,
               contactGaps.get(),
-              collisionFound)) {
-        if (option.enableContact)
-          attachCachedContactImpulses(result, &manifoldCache);
+              collisionFound,
+              nativeManifoldContactFound,
+              fallbackPairResult)) {
+        if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+          if (!manifoldCache) {
+            manifoldCache = &getOrCreateManifoldCache(this);
+          }
+          attachCachedContactImpulses(result, manifoldCache);
+        }
         return collisionFound;
       }
     }
   }
 
-  if (option.enableContact)
-    attachCachedContactImpulses(result, &manifoldCache);
+  if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+    if (!manifoldCache) {
+      manifoldCache = &getOrCreateManifoldCache(this);
+    }
+    attachCachedContactImpulses(result, manifoldCache);
+  }
 
   return collisionFound;
 }
@@ -2124,7 +2380,6 @@ bool NativeCollisionDetector::raycast(
 //==============================================================================
 NativeCollisionDetector::NativeCollisionDetector() : CollisionDetector()
 {
-  getOrCreateManifoldCache(this);
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 

@@ -49,12 +49,15 @@ namespace dart {
 namespace collision {
 
 class CollisionObject;
+class CollisionResult;
 
 class DARTCollisionObject : public CollisionObject
 {
 public:
   friend class DARTCollisionDetector;
   friend class DARTCollisionGroup;
+  friend int collide(
+      CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 
   enum class CachedShapeKind
   {

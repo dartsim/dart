@@ -699,6 +699,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     return std::make_unique<BulletCollisionShape>(
         std::move(bulletCollisionShape));
   } else if (const auto softMeshShape = shape->as<SoftMeshShape>()) {
+    const_cast<SoftMeshShape*>(softMeshShape)->refreshData();
     const auto mesh = softMeshShape->getAssimpMesh();
 
     auto bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
