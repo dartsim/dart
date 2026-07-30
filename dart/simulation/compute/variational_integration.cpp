@@ -1047,23 +1047,13 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const bool hard = isHardAvbdRigidWorldPointJointConfig(config);
     const std::optional<double> compliantStiffness
         = avbdRigidWorldCompliantPointJointStiffness(config);
-    const bool usesFiniteOneDofVelocityMotor
-        = !hard
-          && (jointModel.type == comps::JointType::Revolute
-              || jointModel.type == comps::JointType::Prismatic)
-          && jointActuation.actuatorType == comps::ActuatorType::Velocity;
     if (!config.enabled || jointState.broken
         || !dvbd::isAvbdRigidWorldPointJointType(jointModel.type)
         || isTopologyMultibodyJoint(registry, jointEntity, jointModel)) {
       continue;
     }
-    // A finite masked constraint and its free-axis velocity motor need
-    // separate compliant and bounded projection rows. Until that combined
-    // contract is implemented, keep the pre-existing fail-closed behavior
-    // instead of silently dropping the configured motor.
     if (!hard
-        && (compliantScratch == nullptr || !compliantStiffness.has_value()
-            || usesFiniteOneDofVelocityMotor)) {
+        && (compliantScratch == nullptr || !compliantStiffness.has_value())) {
       continue;
     }
     if (!dvbd::detail::hasValidActiveAvbdRigidJointAxes(
@@ -1133,6 +1123,71 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                            .linear();
     }
     const Eigen::Matrix3d axisFrame = worldRotationA;
+    constraint.linearAxes = axisFrame * config.linearAxes;
+    constraint.angularAxes = axisFrame * config.angularAxes;
+    constraint.linearAxisMask = config.linearAxisMask;
+    constraint.angularAxisMask = config.angularAxisMask;
+
+    const auto configureVelocityMotorRow =
+        [&](VariationalLoopConstraint& motorConstraint) {
+          if (jointModel.type == comps::JointType::Prismatic
+              && jointActuation.actuatorType == comps::ActuatorType::Velocity
+              && jointActuation.commandVelocity.size() == 1
+              && jointActuation.commandVelocity.allFinite()) {
+            const double maxForce
+                = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
+            const std::optional<std::uint8_t> freeAxis
+                = singleInactiveVariationalLoopAxis(config.linearAxisMask);
+            if (maxForce > 0.0 && !std::isnan(maxForce)
+                && freeAxis.has_value()) {
+              motorConstraint.linearMotor = true;
+              motorConstraint.linearMotorAxis
+                  = variationalLoopAxis(motorConstraint.linearAxes, *freeAxis);
+              const Eigen::Vector3d pointA
+                  = (worldA ? Eigen::Isometry3d::Identity()
+                            : dvbd::avbdRigidWorldContactFrameWorldTransform(
+                                  registry, jointModel.parentLink))
+                    * motorConstraint.pointA;
+              const Eigen::Vector3d pointB
+                  = (worldB ? Eigen::Isometry3d::Identity()
+                            : dvbd::avbdRigidWorldContactFrameWorldTransform(
+                                  registry, jointModel.childLink))
+                    * motorConstraint.pointB;
+              const Eigen::Vector3d positionResidual = pointA - pointB;
+              motorConstraint.linearMotorReferencePosition
+                  = -motorConstraint.linearMotorAxis.dot(positionResidual);
+              motorConstraint.linearMotorTargetSpeed
+                  = jointActuation.commandVelocity[0];
+              motorConstraint.linearMotorMaxForce = maxForce;
+            }
+          }
+          if (jointModel.type == comps::JointType::Revolute
+              && jointActuation.actuatorType == comps::ActuatorType::Velocity
+              && jointActuation.commandVelocity.size() == 1
+              && jointActuation.commandVelocity.allFinite()) {
+            const double maxTorque
+                = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
+            const std::optional<std::uint8_t> freeAxis
+                = singleInactiveVariationalLoopAxis(config.angularAxisMask);
+            if (maxTorque > 0.0 && !std::isnan(maxTorque)
+                && freeAxis.has_value()) {
+              motorConstraint.angularMotor = true;
+              motorConstraint.angularMotorAxis
+                  = variationalLoopAxis(motorConstraint.angularAxes, *freeAxis);
+              const Eigen::Matrix3d rotA
+                  = worldRotationA * motorConstraint.rotationA;
+              const Eigen::Matrix3d rotB
+                  = worldRotationB * motorConstraint.rotationB;
+              const Eigen::Vector3d angularResidual
+                  = rotB * rotationLog3(rotB.transpose() * rotA);
+              motorConstraint.angularMotorReferencePosition
+                  = -motorConstraint.angularMotorAxis.dot(angularResidual);
+              motorConstraint.angularMotorTargetSpeed
+                  = jointActuation.commandVelocity[0];
+              motorConstraint.angularMotorMaxTorque = maxTorque;
+            }
+          }
+        };
 
     if (!hard) {
       VariationalCompliantLoopConstraint compliantConstraint{
@@ -1185,64 +1240,23 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
                 *compliantStiffness});
       }
       compliantScratch->constraints.push_back(std::move(compliantConstraint));
+
+      // The constrained coordinates stay in the finite-stiffness AVBD force,
+      // while the paper's free coordinate reuses the bounded projection row
+      // already used by hard one-DOF joints. Keep the hard masks empty so this
+      // companion row cannot silently make a finite coordinate rigid.
+      VariationalLoopConstraint motorConstraint = constraint;
+      motorConstraint.linearAxisMask = 0u;
+      motorConstraint.angularAxisMask = 0u;
+      configureVelocityMotorRow(motorConstraint);
+      motorConstraint.rigid = motorConstraint.angularMotor;
+      if (motorConstraint.linearMotor || motorConstraint.angularMotor) {
+        constraints.push_back(motorConstraint);
+      }
       continue;
     }
 
-    constraint.linearAxes = axisFrame * config.linearAxes;
-    constraint.angularAxes = axisFrame * config.angularAxes;
-    constraint.linearAxisMask = config.linearAxisMask;
-    constraint.angularAxisMask = config.angularAxisMask;
-    if (jointModel.type == comps::JointType::Prismatic
-        && jointActuation.actuatorType == comps::ActuatorType::Velocity
-        && jointActuation.commandVelocity.size() == 1
-        && jointActuation.commandVelocity.allFinite()) {
-      const double maxForce
-          = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
-      const std::optional<std::uint8_t> freeAxis
-          = singleInactiveVariationalLoopAxis(config.linearAxisMask);
-      if (maxForce > 0.0 && !std::isnan(maxForce) && freeAxis.has_value()) {
-        constraint.linearMotor = true;
-        constraint.linearMotorAxis
-            = variationalLoopAxis(constraint.linearAxes, *freeAxis);
-        const Eigen::Vector3d pointA
-            = (worldA ? Eigen::Isometry3d::Identity()
-                      : dvbd::avbdRigidWorldContactFrameWorldTransform(
-                            registry, jointModel.parentLink))
-              * constraint.pointA;
-        const Eigen::Vector3d pointB
-            = (worldB ? Eigen::Isometry3d::Identity()
-                      : dvbd::avbdRigidWorldContactFrameWorldTransform(
-                            registry, jointModel.childLink))
-              * constraint.pointB;
-        const Eigen::Vector3d positionResidual = pointA - pointB;
-        constraint.linearMotorReferencePosition
-            = -constraint.linearMotorAxis.dot(positionResidual);
-        constraint.linearMotorTargetSpeed = jointActuation.commandVelocity[0];
-        constraint.linearMotorMaxForce = maxForce;
-      }
-    }
-    if (jointModel.type == comps::JointType::Revolute
-        && jointActuation.actuatorType == comps::ActuatorType::Velocity
-        && jointActuation.commandVelocity.size() == 1
-        && jointActuation.commandVelocity.allFinite()) {
-      const double maxTorque
-          = dvbd::avbdRigidWorldSymmetricEffortLimit(jointModel);
-      const std::optional<std::uint8_t> freeAxis
-          = singleInactiveVariationalLoopAxis(config.angularAxisMask);
-      if (maxTorque > 0.0 && !std::isnan(maxTorque) && freeAxis.has_value()) {
-        constraint.angularMotor = true;
-        constraint.angularMotorAxis
-            = variationalLoopAxis(constraint.angularAxes, *freeAxis);
-        const Eigen::Matrix3d rotA = worldRotationA * constraint.rotationA;
-        const Eigen::Matrix3d rotB = worldRotationB * constraint.rotationB;
-        const Eigen::Vector3d angularResidual
-            = rotB * rotationLog3(rotB.transpose() * rotA);
-        constraint.angularMotorReferencePosition
-            = -constraint.angularMotorAxis.dot(angularResidual);
-        constraint.angularMotorTargetSpeed = jointActuation.commandVelocity[0];
-        constraint.angularMotorMaxTorque = maxTorque;
-      }
-    }
+    configureVelocityMotorRow(constraint);
     constraint.sourceJoint = jointEntity;
     constraint.breakForce = jointModel.breakForce;
     constraints.push_back(constraint);

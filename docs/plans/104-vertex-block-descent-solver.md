@@ -890,12 +890,20 @@ warm-starts and ramps toward the configured cap across steps.
 Passive public world-link spherical, revolute, and prismatic point joints now
 use that same persistent finite-stiffness state for their masked linear and
 angular row families: spherical rotation, revolute hinge rotation, and
-prismatic axis translation remain free. The focused
+prismatic axis translation remain free. The same masked finite rows now also
+support same-multibody movable-link endpoint pairs. Finite public revolute and
+prismatic `Velocity` joints additionally project a bounded motor-only row on
+their free coordinate while their constrained coordinates remain compliant;
+the motor-only row intentionally carries no break-force source because finite
+row load accounting is not yet complete. The focused
 `avbd_articulated_compliant_joints` py-demo, allocation gates, exact-parent
 mutation oracle, and candidate-only 3/12/48-joint benchmark are recorded in
 [`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json).
-Finite one-DOF velocity-motor coupling, same-multibody finite pairs,
-finite-row fracture accounting, CUDA, and unified soft/rigid rows remain open.
+The `avbd_articulated_compliant_motors` py-demo, allocation gates,
+exact-parent mutation oracle, docked assessed capture, and candidate-only
+2/8/32-motor benchmark are recorded in
+[`avbd-articulated-compliant-motors-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json).
+Finite-row fracture accounting, CUDA, and unified soft/rigid rows remain open.
 Free-rigid AVBD point-joint rows now also support finite linear and angular
 material stiffness through the public point-joint facade and dartpy properties;
 those rows use raw finite residuals and ramp row stiffness up to the configured
@@ -1306,6 +1314,25 @@ AVBD parity additionally requires:
 
 Relocated from the dashboard on 2026-07-03; newest first.
 
+On 2026-07-30, the articulated finite-motor packet closed two adjacent CPU
+extraction gaps: passive finite spherical/revolute/prismatic masks now support
+same-multibody movable-link pairs, and finite revolute/prismatic `Velocity`
+joints add one bounded motor-only projection row on the free coordinate while
+their constrained coordinates remain compliant. Non-cardinal off-origin C++
+oracles cover strong and tiny effort limits and fail both driven coordinates
+on exact parent `761263bbd4`; passive same-multibody behavior and all three
+warmed allocation policies pass. The
+`avbd_articulated_compliant_motors` py-demo has a text-first command/reversal
+oracle and an assessed 119-frame docking-build capture. A pinned
+candidate-only benchmark records median CPU time of 104.2 us for 2 motors,
+579.8 us for 8, and 5.803 ms for 32; the parent skipped this mechanism, so no
+speedup is claimed.
+[`avbd-articulated-compliant-motors-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json)
+keeps `avbd.method.joints_and_attachments`,
+`avbd.method.finite_stiffness_ramping`, and `avbd.method.motors` partial:
+finite-row fracture accounting, unified soft/rigid rows, CUDA, and
+source/paper achieved-accuracy performance remain open.
+
 On 2026-07-30, the articulated finite-row packet extended the CPU variational
 bridge from finite fixed rows to passive public world-link spherical,
 revolute, and prismatic point joints. Their masked constrained coordinates use
@@ -1322,7 +1349,8 @@ and 2.404 ms for 48; the parent skipped these rows, so no speedup is claimed.
 keeps `avbd.method.joints_and_attachments` and
 `avbd.method.finite_stiffness_ramping` partial: finite one-DOF motor coupling,
 same-multibody finite pairs, fracture accounting, unified soft/rigid rows,
-CUDA, and source/paper achieved-accuracy performance remain open.
+CUDA, and source/paper achieved-accuracy performance were left open by that
+packet; the adjacent finite-motor packet above closes the first two only.
 
 On 2026-07-30, the bounded AVBD Section 4 packet added a deterministic
 post-primal CPU dual/stiffness pass for the currently promoted deformable and

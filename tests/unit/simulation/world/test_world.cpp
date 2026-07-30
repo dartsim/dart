@@ -6909,6 +6909,51 @@ void configureFiniteVariationalArticulatedPointJointScene(
     joint.setConstraintProjectionPolicy(
         makeConstraintProjectionPolicy(10.0, 200.0, 400.0));
   }
+
+  const std::array<JointCase, 2> motorCases{{
+      {"pair_hinge",
+       sx::JointType::Revolute,
+       Eigen::Vector3d(1.0, 2.0, 3.0).normalized()},
+      {"pair_slider",
+       sx::JointType::Prismatic,
+       Eigen::Vector3d(1.0, -2.0, 0.5).normalized()},
+  }};
+  for (const JointCase& jointCase : motorCases) {
+    auto robot
+        = world.addMultibody(std::string(jointCase.name) + "_finite_robot");
+    auto base = robot.addLink("base");
+
+    const auto addFloatingLink = [&](std::string_view suffix, double mass) {
+      sx::JointSpec floatingSpec;
+      floatingSpec.name
+          = std::string(jointCase.name) + "_" + std::string(suffix) + "_float";
+      floatingSpec.type = sx::JointType::Floating;
+      auto link = robot.addLink(
+          std::string(jointCase.name) + "_" + std::string(suffix),
+          base,
+          floatingSpec);
+      link.setMass(mass);
+      link.setInertia(Eigen::Vector3d(0.12, 0.18, 0.24).asDiagonal());
+      return link;
+    };
+    auto parent = addFloatingLink("parent", 1.2);
+    auto child = addFloatingLink("child", 0.9);
+
+    auto joint = world.addJoint(
+        parent,
+        child,
+        makeJointSpec(
+            std::string(jointCase.name) + "_finite_motor",
+            jointCase.type,
+            jointCase.axis));
+    joint.setActuatorType(sx::ActuatorType::Velocity);
+    joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.3));
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -200.0),
+        Eigen::VectorXd::Constant(1, 200.0));
+    joint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(10.0, 200.0, 400.0));
+  }
 }
 
 void configureCompliantVariationalContactSliderScene(

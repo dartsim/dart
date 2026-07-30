@@ -1,0 +1,467 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdArticulatedCompliantMotorStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "invariants": {
+      "angular_stiffness": 2000.0,
+      "effort_limit": 800.0,
+      "endpoint_topology": "same-multibody movable-link pairs",
+      "family_instances": [
+        1,
+        4,
+        16
+      ],
+      "linear_stiffness": 2000.0,
+      "motor_types": [
+        "revolute",
+        "prismatic"
+      ],
+      "start_stiffness": 20.0,
+      "time_step": 0.005
+    },
+    "json_sha256": "34003ea6f225159524df8a4d369eb6400c2995498e39f16cfc2cd5b4a2c45ed7",
+    "rows": [
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_motors": 2.0,
+        "cpu_time": 104183.77681818184,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/1_mean",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 1.0,
+        "real_time": 104189.82909785965,
+        "repetitions": 5,
+        "revolute_motors": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_motors": 2.0,
+        "cpu_time": 104168.97386363638,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/1_median",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 1.0,
+        "real_time": 104169.62273170197,
+        "repetitions": 5,
+        "revolute_motors": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_motors": 0.0,
+        "cpu_time": 163.18712504882166,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/1_stddev",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 0.0,
+        "real_time": 169.38460490222585,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_motors": 0.0,
+        "cpu_time": 0.001566339117592277,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/1_cv",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 0.0,
+        "real_time": 0.0016257307106544191,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_motors": 8.0,
+        "cpu_time": 580115.688,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/4_mean",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 4.0,
+        "real_time": 580145.1700390318,
+        "repetitions": 5,
+        "revolute_motors": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_motors": 8.0,
+        "cpu_time": 579802.5200000001,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/4_median",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 4.0,
+        "real_time": 579805.5601189844,
+        "repetitions": 5,
+        "revolute_motors": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_motors": 0.0,
+        "cpu_time": 572.5337579209764,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/4_stddev",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 0.0,
+        "real_time": 602.4515200455039,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_motors": 0.0,
+        "cpu_time": 0.0009869303136669809,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/4_cv",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 0.0,
+        "real_time": 0.0010384496004766728,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_motors": 32.0,
+        "cpu_time": 5807382.020000002,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/16_mean",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 16.0,
+        "real_time": 5807446.700637229,
+        "repetitions": 5,
+        "revolute_motors": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_motors": 32.0,
+        "cpu_time": 5802735.800000014,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/16_median",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 16.0,
+        "real_time": 5802819.001837634,
+        "repetitions": 5,
+        "revolute_motors": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_motors": 0.0,
+        "cpu_time": 12542.13476630824,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/16_stddev",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 0.0,
+        "real_time": 12576.956752947022,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_motors": 0.0,
+        "cpu_time": 0.002159688259376509,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantMotorStep/16_cv",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 0.0,
+        "real_time": 0.0021656602981077726,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ],
+    "scale_data": [
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantMotorStep/1",
+        "compliant_motors": 2,
+        "cpu_time_per_motor_ns": 52084.48693181819,
+        "cpu_time_per_step_ns": 104168.97386363638,
+        "family_instances": 1,
+        "real_time_per_step_ns": 104169.62273170197,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantMotorStep/4",
+        "compliant_motors": 8,
+        "cpu_time_per_motor_ns": 72475.31500000002,
+        "cpu_time_per_step_ns": 579802.5200000001,
+        "family_instances": 4,
+        "real_time_per_step_ns": 579805.5601189844,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantMotorStep/16",
+        "compliant_motors": 32,
+        "cpu_time_per_motor_ns": 181335.49375000043,
+        "cpu_time_per_step_ns": 5802735.800000014,
+        "family_instances": 16,
+        "real_time_per_step_ns": 5802819.001837634,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "correctness": {
+    "allocation_tests": [
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotGrowWorldBaseAllocator",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotAllocateGlobalHeap",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotMallocOnHeap"
+    ],
+    "cpp_behavior_test": "VariationalIntegration.AvbdCompliantPublicArticulatedOneDofMotorsDriveMovableLinkPairs",
+    "cpp_passive_pair_test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksSupportMovableLinkPairs",
+    "exact_parent_mutation": {
+      "command": "build/default/cpp/Release/bin/test_variational_integration --gtest_filter=VariationalIntegration.AvbdCompliantPublicArticulatedOneDofMotorsDriveMovableLinkPairs",
+      "exit_code": 1,
+      "failed_assertions": [
+        {
+          "actual": 0.0,
+          "coordinate": "strong finite revolute motor angle",
+          "expected": 0.04
+        },
+        {
+          "actual": 1.2113526306256194e-17,
+          "coordinate": "strong finite prismatic motor travel",
+          "expected": 0.03
+        }
+      ],
+      "file": "avbd-articulated-compliant-motors-exact-parent-mutation.json",
+      "interpretation": "At the exact parent, both finite masked one-DOF joints remain passive because the assembly path deliberately skips velocity-motor projection for non-hard revolute and prismatic policies. The candidate must add the bounded free-coordinate motor row while preserving compliant constrained coordinates.",
+      "mutation": "Run the new motor behavior oracle against exact parent 761263bbd41190536ce699439ebc64f5776757b6 with only the test present; production retains the finite velocity-motor skip.",
+      "observed_result": "fail",
+      "parent_commit": "761263bbd41190536ce699439ebc64f5776757b6",
+      "sha256": "b85078e62c9c8f9437c6a6998b78576d1e9ea66d06c3744473f85fc5de73cb0d",
+      "test": "VariationalIntegration.AvbdCompliantPublicArticulatedOneDofMotorsDriveMovableLinkPairs"
+    },
+    "python_scene_test": "test_avbd_articulated_compliant_motors_demo_drives_free_coordinates"
+  },
+  "packet": "avbd_articulated_compliant_motors",
+  "performance_claim_boundary": "Candidate-only finite mechanism cost and scaling. The exact parent intentionally skipped these non-Fixed finite rows, so this packet makes no before/after speedup claim.",
+  "remaining_gates": [
+    "finite-row break-force accounting and fracture lifecycle",
+    "unified soft/rigid row solve",
+    "CUDA AVBD row parity and same-hardware benchmark packets",
+    "source-demo, paper/site/video scene, and achieved-accuracy performance closure"
+  ],
+  "reproduction": {
+    "benchmark_command": "taskset -c 18 build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter='BM_AvbdArticulatedCompliantMotorStep/(1|4|16)$' --benchmark_min_time=0.05s --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe PYTHONPATH=build/default/cpp/Release-docking/python:python BUILD_TYPE=Release-docking python scripts/capture_py_demo.py --scene avbd_articulated_compliant_motors --frames 120 --width 960 --height 540 --show-ui --view three-quarter --camera-distance 7 --camera-target 0,0,1.05 --output-dir <capture-dir>",
+    "image_verdict_command": "pixi run image-verdict -- <capture-dir>/avbd_articulated_compliant_motors.png --out <capture-dir>/image_verdict.json --meta scene=avbd_articulated_compliant_motors --meta view=three-quarter"
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "contact-free py-demo and articulated compliant-motor benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd"
+  },
+  "scene": "avbd_articulated_compliant_motors",
+  "scene_invariants": {
+    "angular_stiffness": 2000.0,
+    "effort_limit": 800.0,
+    "endpoint_topology": "same-multibody movable-link pairs",
+    "free_coordinates": {
+      "prismatic": "translation along the joint axis",
+      "revolute": "rotation about the joint axis"
+    },
+    "linear_stiffness": 2000.0,
+    "motor_types": [
+      "revolute",
+      "prismatic"
+    ],
+    "start_stiffness": 20.0,
+    "time_step": 0.005
+  },
+  "schema_version": 2,
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.method.joints_and_attachments",
+      "avbd.method.finite_stiffness_ramping",
+      "avbd.method.motors"
+    ],
+    "scope": "bounded finite-stiffness articulated revolute and prismatic velocity motors between movable links of one multibody on CPU"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 119,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "5742c18adbbe4db6a9ef06e49fccf49e0dc7027aa51e96374d9cafb6c13598ad"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000119.png",
+        "sha256": "213e45b42f7c6c7183ca8f01cbb74879a73f22355f4a27280337a2d6057925e1"
+      }
+    },
+    "image_verdict": {
+      "checks": {
+        "contrast": {
+          "bright_pixels": 755,
+          "dark_pixels": 98667,
+          "mid_pixels": 29488,
+          "p05": 23.936,
+          "p95": 161.374,
+          "pass": true,
+          "reasons": [],
+          "region": {
+            "x0": 384,
+            "x1": 931,
+            "y0": 243,
+            "y1": 486
+          },
+          "sample_count": 132921,
+          "spread": 137.438,
+          "thresholds": {
+            "bright_luminance_gt": 190.0,
+            "dark_luminance_lt": 55.0,
+            "mid_luminance_max": 170.0,
+            "mid_luminance_min": 70.0,
+            "min_bright_pixels": 664,
+            "min_dark_pixels": 664,
+            "min_mid_pixels": 332,
+            "min_spread": 90.0
+          }
+        },
+        "non_blank": {
+          "nonzero_pixels": 518400,
+          "pass": true,
+          "reasons": [],
+          "total_pixels": 518400,
+          "unique_colors_seen": 2
+        }
+      },
+      "file": "image_verdict.json",
+      "machine_scope": "pixel-integrity",
+      "metadata": {
+        "scene": "avbd_articulated_compliant_motors",
+        "view": "three-quarter"
+      },
+      "pass": true,
+      "sha256": "3720ec072a2117c3c55953009f539518f241b797fd1921aef751a2da802195b8"
+    },
+    "manifest_sha256": "e1740954fea3a7556d5cea9e1bfa3dbcee27a387921d78ebdfc90f1a5fbc8bcd",
+    "scene": "avbd_articulated_compliant_motors",
+    "screenshot": {
+      "file": "avbd_articulated_compliant_motors.png",
+      "height": 540,
+      "sha256": "213e45b42f7c6c7183ca8f01cbb74879a73f22355f4a27280337a2d6057925e1",
+      "width": 960
+    },
+    "semantic_review": {
+      "file": "visual_review.json",
+      "inspected_frames": [
+        {
+          "file": "png_frames/frame_000001.png",
+          "role": "start",
+          "sha256": "5742c18adbbe4db6a9ef06e49fccf49e0dc7027aa51e96374d9cafb6c13598ad"
+        },
+        {
+          "file": "png_frames/frame_000060.png",
+          "role": "middle",
+          "sha256": "1ce43a5c8070da33e4c50d7a20869720b4be5a67e1f89fb036a852b6f0b2905a"
+        },
+        {
+          "file": "png_frames/frame_000119.png",
+          "role": "end",
+          "sha256": "213e45b42f7c6c7183ca8f01cbb74879a73f22355f4a27280337a2d6057925e1"
+        }
+      ],
+      "limitations": "The images corroborate scene identity, finite motion, movable-link endpoints, command reversal, and gross mask behavior. They do not quantify constraint residuals, prove effort saturation, or distinguish the bounded motor-only projection row; the focused C++ and Python text oracles decide those claims.",
+      "observations": "Across the start, middle, and end frames, both same-multibody movable-link pairs remain finite, separated, and fully visible. The blue and gold revolute pair stays joined at the marked hinge while the live hinge angle changes and the command direction reverses. The green and purple prismatic pair stays aligned with its rail and joint marker without visible transverse or rotational escape. The docked AVBD panel and replay controls remain visible throughout, with zero contacts reported.",
+      "reviewer_capability": "native image input at original detail",
+      "sha256": "f072525ef5de13c00abcc0bfdff2f6143cd6dc9e9942f152fd6277f114030147",
+      "verdict": "pass"
+    },
+    "show_ui": true,
+    "ui_ready": {
+      "dropped_warmup_frames": 1,
+      "required": true
+    }
+  }
+}

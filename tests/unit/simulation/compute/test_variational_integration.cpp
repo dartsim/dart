@@ -3689,6 +3689,290 @@ FloatingLinkPair addFloatingLinkPair(sx::World& world)
 
 } // namespace
 
+// PLAN-104 AVBD articulated finite-stiffness bridge: compliant masked rows
+// must apply equal-and-opposite forces between two movable links of the same
+// multibody, not only between a link and the world. Each public joint family
+// still leaves only its paper-defined coordinate free.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedJointMasksSupportMovableLinkPairs)
+{
+  struct Motion
+  {
+    double maxTranslation = 0.0;
+    double maxAxisTranslation = 0.0;
+    double maxOrthogonalTranslation = 0.0;
+    double maxRotation = 0.0;
+    double maxAxisTilt = 0.0;
+    double maxAxisRotation = 0.0;
+  };
+
+  const auto rollout = [](sx::JointType type,
+                          const Eigen::Vector3d& axis,
+                          const Eigen::Vector3d& force,
+                          const Eigen::Vector3d& torque,
+                          bool compliant) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+    world.setTimeStep(0.002);
+
+    FloatingLinkPair pair = addFloatingLinkPair(world);
+    if (compliant) {
+      sx::Joint joint = world.addJoint(
+          pair.parent, pair.child, makeJointSpec("finite_pair", type, axis));
+      joint.setActuatorType(sx::ActuatorType::Passive);
+      joint.setConstraintProjectionPolicy(
+          makeConstraintProjectionPolicy(1000.0, 1000.0, 1000.0));
+    }
+
+    const auto applyWorldTorque = [](sx::Link& link,
+                                     const Eigen::Vector3d& worldTorque) {
+      if (worldTorque.squaredNorm() == 0.0) {
+        return;
+      }
+      const Eigen::Vector3d torqueDirection = worldTorque.normalized();
+      const Eigen::Vector3d reference
+          = std::abs(torqueDirection.dot(Eigen::Vector3d::UnitX())) < 0.9
+                ? Eigen::Vector3d::UnitX()
+                : Eigen::Vector3d::UnitY();
+      const Eigen::Vector3d lever
+          = 0.25 * torqueDirection.cross(reference).normalized();
+      const Eigen::Vector3d coupleForce
+          = worldTorque.cross(lever) / (2.0 * lever.squaredNorm());
+      const Eigen::Vector3d center = link.getWorldTransform().translation();
+      link.applyForce(
+          coupleForce,
+          center + lever,
+          /*forceInWorldFrame=*/true,
+          /*pointInWorldFrame=*/true);
+      link.applyForce(
+          -coupleForce,
+          center - lever,
+          /*forceInWorldFrame=*/true,
+          /*pointInWorldFrame=*/true);
+    };
+
+    world.enterSimulationMode();
+
+    Motion result;
+    for (int k = 0; k < 100; ++k) {
+      pair.parent.applyForce(-force);
+      pair.child.applyForce(force);
+      applyWorldTorque(pair.parent, -torque);
+      applyWorldTorque(pair.child, torque);
+      world.step();
+
+      const Eigen::Isometry3d parentTransform = pair.parent.getWorldTransform();
+      const Eigen::Isometry3d childTransform = pair.child.getWorldTransform();
+      const Eigen::Vector3d axisWorld = parentTransform.linear() * axis;
+      const Eigen::Vector3d translation
+          = childTransform.translation() - parentTransform.translation();
+      const double axisTranslation = translation.dot(axisWorld);
+      const Eigen::Matrix3d relativeRotation
+          = parentTransform.linear().transpose() * childTransform.linear();
+      result.maxTranslation
+          = std::max(result.maxTranslation, translation.norm());
+      result.maxAxisTranslation
+          = std::max(result.maxAxisTranslation, std::abs(axisTranslation));
+      result.maxOrthogonalTranslation = std::max(
+          result.maxOrthogonalTranslation,
+          (translation - axisTranslation * axisWorld).norm());
+      result.maxRotation = std::max(
+          result.maxRotation, Eigen::AngleAxisd(relativeRotation).angle());
+      result.maxAxisTilt = std::max(
+          result.maxAxisTilt,
+          (parentTransform.linear() * axis - childTransform.linear() * axis)
+              .norm());
+      result.maxAxisRotation = std::max(
+          result.maxAxisRotation,
+          std::abs(signedRotationAroundAxis(relativeRotation, axis)));
+    }
+    return result;
+  };
+
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+  const Motion freeSocket = rollout(
+      sx::JointType::Spherical,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantSocket = rollout(
+      sx::JointType::Spherical,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeSocket.maxTranslation, 5e-2);
+  ASSERT_GT(freeSocket.maxAxisRotation, 2e-2);
+  EXPECT_LT(compliantSocket.maxTranslation, 0.5 * freeSocket.maxTranslation);
+  EXPECT_GT(compliantSocket.maxAxisRotation, 0.5 * freeSocket.maxAxisRotation);
+
+  const Motion freeHinge = rollout(
+      sx::JointType::Revolute,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      0.8 * Eigen::Vector3d::UnitX() + 0.6 * Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantHinge = rollout(
+      sx::JointType::Revolute,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      0.8 * Eigen::Vector3d::UnitX() + 0.6 * Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeHinge.maxTranslation, 5e-2);
+  ASSERT_GT(freeHinge.maxAxisTilt, 2e-2);
+  ASSERT_GT(freeHinge.maxAxisRotation, 1e-2);
+  EXPECT_LT(compliantHinge.maxTranslation, 0.5 * freeHinge.maxTranslation);
+  EXPECT_LT(compliantHinge.maxAxisTilt, 0.5 * freeHinge.maxAxisTilt);
+  EXPECT_GT(compliantHinge.maxAxisRotation, 0.5 * freeHinge.maxAxisRotation);
+
+  const Eigen::Vector3d xAxis = Eigen::Vector3d::UnitX();
+  const Motion freeSlider = rollout(
+      sx::JointType::Prismatic,
+      xAxis,
+      10.0 * Eigen::Vector3d::UnitX() + 10.0 * Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantSlider = rollout(
+      sx::JointType::Prismatic,
+      xAxis,
+      10.0 * Eigen::Vector3d::UnitX() + 10.0 * Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeSlider.maxAxisTranslation, 5e-2);
+  ASSERT_GT(freeSlider.maxOrthogonalTranslation, 5e-2);
+  ASSERT_GT(freeSlider.maxRotation, 2e-2);
+  EXPECT_GT(
+      compliantSlider.maxAxisTranslation, 0.5 * freeSlider.maxAxisTranslation);
+  EXPECT_LT(
+      compliantSlider.maxOrthogonalTranslation,
+      0.5 * freeSlider.maxOrthogonalTranslation);
+  EXPECT_LT(compliantSlider.maxRotation, 0.5 * freeSlider.maxRotation);
+}
+
+// PLAN-104 AVBD articulated finite-stiffness bridge: a public one-DOF
+// velocity actuator needs a bounded motor-only projection row alongside its
+// compliant masked rows. This covers non-cardinal, off-origin revolute and
+// prismatic pairs and proves that the configured effort cap remains active.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedOneDofMotorsDriveMovableLinkPairs)
+{
+  struct Motion
+  {
+    double freePosition = 0.0;
+    double maxLinearResidual = 0.0;
+    double maxAngularResidual = 0.0;
+  };
+
+  const double dt = 0.005;
+  constexpr int steps = 20;
+  const auto rollout = [dt](
+                           sx::JointType type,
+                           const Eigen::Vector3d& axis,
+                           double targetSpeed,
+                           double effortLimit) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+    world.setTimeStep(dt);
+
+    FloatingLinkPair pair = addFloatingLinkPair(world);
+    const Eigen::Vector3d parentAnchor(0.2, 0.1, -0.05);
+    const Eigen::Vector3d childAnchor(-0.1, 0.1, -0.05);
+    Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
+    childPose.head<3>() = parentAnchor - childAnchor;
+    pair.child.getParentJoint().setPosition(childPose);
+
+    sx::Joint joint = world.addJoint(
+        pair.parent,
+        pair.child,
+        makeJointSpec("finite_motor", type, axis, parentAnchor, childAnchor));
+    joint.setActuatorType(sx::ActuatorType::Velocity);
+    joint.setCommandVelocity(Eigen::VectorXd::Constant(1, targetSpeed));
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -effortLimit),
+        Eigen::VectorXd::Constant(1, effortLimit));
+    joint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(2000.0, 2000.0, 2000.0));
+
+    world.enterSimulationMode();
+
+    Motion result;
+    for (int k = 0; k < steps; ++k) {
+      world.step();
+
+      const Eigen::Isometry3d parentTransform = pair.parent.getWorldTransform();
+      const Eigen::Isometry3d childTransform = pair.child.getWorldTransform();
+      const Eigen::Vector3d axisWorld = parentTransform.linear() * axis;
+      const Eigen::Vector3d relativeAnchor
+          = childTransform * childAnchor - parentTransform * parentAnchor;
+      const Eigen::Matrix3d relativeRotation
+          = parentTransform.linear().transpose() * childTransform.linear();
+
+      if (type == sx::JointType::Revolute) {
+        result.freePosition = signedRotationAroundAxis(relativeRotation, axis);
+        result.maxLinearResidual
+            = std::max(result.maxLinearResidual, relativeAnchor.norm());
+        result.maxAngularResidual = std::max(
+            result.maxAngularResidual,
+            (parentTransform.linear() * axis - childTransform.linear() * axis)
+                .norm());
+      } else {
+        result.freePosition = relativeAnchor.dot(axisWorld);
+        result.maxLinearResidual = std::max(
+            result.maxLinearResidual,
+            (relativeAnchor - result.freePosition * axisWorld).norm());
+        result.maxAngularResidual = std::max(
+            result.maxAngularResidual,
+            (relativeRotation - Eigen::Matrix3d::Identity()).norm());
+      }
+    }
+    return result;
+  };
+
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
+  const double hingeSpeed = 0.4;
+  const Motion strongHinge = rollout(
+      sx::JointType::Revolute, hingeAxis, hingeSpeed, /*effortLimit=*/1000.0);
+  const Motion weakHinge = rollout(
+      sx::JointType::Revolute, hingeAxis, hingeSpeed, /*effortLimit=*/1e-9);
+  EXPECT_NEAR(strongHinge.freePosition, hingeSpeed * dt * steps, 2e-3);
+  EXPECT_LT(
+      std::abs(weakHinge.freePosition),
+      0.01 * hingeSpeed * dt * static_cast<double>(steps));
+  EXPECT_LT(strongHinge.maxLinearResidual, 2e-3);
+  EXPECT_LT(strongHinge.maxAngularResidual, 2e-3);
+  EXPECT_LT(weakHinge.maxLinearResidual, 1e-6);
+  EXPECT_LT(weakHinge.maxAngularResidual, 1e-6);
+
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(1.0, -2.0, 0.5).normalized();
+  const double sliderSpeed = 0.3;
+  const Motion strongSlider = rollout(
+      sx::JointType::Prismatic,
+      sliderAxis,
+      sliderSpeed,
+      /*effortLimit=*/1000.0);
+  const Motion weakSlider = rollout(
+      sx::JointType::Prismatic,
+      sliderAxis,
+      sliderSpeed,
+      /*effortLimit=*/1e-9);
+  EXPECT_NEAR(strongSlider.freePosition, sliderSpeed * dt * steps, 2e-3);
+  EXPECT_LT(
+      std::abs(weakSlider.freePosition),
+      0.01 * sliderSpeed * dt * static_cast<double>(steps));
+  EXPECT_LT(strongSlider.maxLinearResidual, 2e-3);
+  EXPECT_LT(strongSlider.maxAngularResidual, 2e-3);
+  EXPECT_LT(weakSlider.maxLinearResidual, 1e-6);
+  EXPECT_LT(weakSlider.maxAngularResidual, 1e-6);
+}
+
 // PLAN-104 AVBD articulated bridge: simulation-entry current-pose extraction
 // now covers non-topology private point-joint entities whose endpoint is a
 // multibody link. The generated hard fixed config captures the link's design

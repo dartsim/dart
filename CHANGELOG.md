@@ -195,8 +195,10 @@ compatibility remains on the active DART 6 LTS branch._
   inventories now perform the Section 4 post-primal dual/stiffness update over
   deterministic, allocation-stable worker ranges while preserving exact serial
   row state. Passive articulated spherical, revolute, and prismatic point
-  joints now also apply masked finite-stiffness rows while preserving their
-  free coordinates.
+  joints now also apply masked finite-stiffness rows for world-link and
+  same-multibody movable-link endpoints while preserving their free
+  coordinates. Finite articulated revolute and prismatic velocity motors now
+  add bounded free-coordinate motor rows alongside those compliant masks.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default

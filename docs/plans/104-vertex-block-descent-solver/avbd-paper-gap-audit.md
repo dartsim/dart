@@ -580,9 +580,9 @@ open.
 6. **A5 - joints, motors, and fracture:** Implement ball/revolute/limited DOF
    joints, motor torque rows, attachment rows, maximum-force fracture, and
    breakage persistence. CPU hard point-joint bridges and passive finite
-   world-link fixed/spherical/revolute/prismatic masked rows are partial;
-   finite motor coupling, same-multibody finite pairs, broad fracture
-   accounting/corpus coverage, and CUDA remain open.
+   world-link/same-multibody fixed/spherical/revolute/prismatic masked rows plus
+   bounded same-multibody finite revolute/prismatic motors are partial; broad
+   finite-row fracture accounting/corpus coverage and CUDA remain open.
 7. **A6 - unified rigid/soft coupling:** Couple rigid rows and deformable VBD
    rows in one AVBD solve so soft cloth/elastic bodies interact with articulated
    rigid chains and stacks.
@@ -635,7 +635,13 @@ allocation policies pass, and
 [`avbd-articulated-compliant-joints-packet.json`](avbd-articulated-compliant-joints-packet.json)
 records solver identity, assessed capture, and candidate-only 3/12/48-joint
 scale data without a speedup claim. Finite one-DOF velocity-motor coupling,
-same-multibody finite pairs, and finite-row break-force accounting remain
+same-multibody finite pairs, and finite-row break-force accounting were the
+next three gaps from that packet. The adjacent
+[`avbd-articulated-compliant-motors-packet.json`](avbd-articulated-compliant-motors-packet.json)
+now records mutation-sensitive same-multibody passive S/R/P coverage, bounded
+finite revolute/prismatic motor rows, all three warmed allocation policies,
+an assessed docked capture, and candidate-only 2/8/32-motor scale data. The
+first two gaps are closed on CPU; finite-row break-force accounting remains
 missing. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
@@ -766,8 +772,8 @@ renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes. The next articulated mechanism
-slice should close finite one-DOF motor coupling or same-multibody finite pairs
-before treating the A5 joint-family surface as broad.
+slice should close finite-row load accounting and fracture lifecycle before
+treating the A5 joint-family surface as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

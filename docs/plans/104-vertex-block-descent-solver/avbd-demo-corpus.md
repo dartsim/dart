@@ -166,6 +166,9 @@ paper/source-demo corpus:
 | `avbd_articulated_compliant_joints` py-demo                     | Public passive finite-stiffness world-link spherical/revolute/prismatic rows with visible constrained and free coordinates   | Partial  |
 | `BM_AvbdArticulatedCompliantJointStep` dashboard row            | Candidate-only CPU cost/scaling row over 3/12/48 passive finite articulated point joints                                     | Partial  |
 | `avbd-articulated-compliant-joints-packet.json`                 | Mutation-sensitive correctness, allocation, visual, solver-identity, and candidate-only scale evidence for the finite rows   | Partial  |
+| `avbd_articulated_compliant_motors` py-demo                     | Public bounded finite-stiffness revolute/prismatic motors between same-multibody movable-link pairs                          | Partial  |
+| `BM_AvbdArticulatedCompliantMotorStep` dashboard row            | Candidate-only CPU cost/scaling row over 2/8/32 bounded finite articulated motors                                            | Partial  |
+| `avbd-articulated-compliant-motors-packet.json`                 | Mutation-sensitive motor/pair correctness, allocation, docked visual, solver-identity, and candidate-only scale evidence     | Partial  |
 | `avbd_articulated_high_ratio_chain` py-demo                     | Five-link articulated variational-chain smoke with a 200:1 heavy tip                                                         | Partial  |
 | `BM_AvbdArticulatedHighRatioChainStep` dashboard row            | Narrow CPU dashboard row for the five-link 200:1 articulated high-ratio chain smoke                                          | Partial  |
 | `avbd_paper_scale_high_ratio_chain` py-demo                     | 50-link articulated variational-chain smoke with a 50,000:1 heavy tip                                                        | Partial  |
