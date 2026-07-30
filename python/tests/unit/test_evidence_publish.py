@@ -16,6 +16,21 @@ if str(SCRIPTS) not in sys.path:
 import evidence_publish
 
 
+def _semantic_args(verdict: str = "pass") -> list[str]:
+    return [
+        "--text-oracle",
+        "metrics report zero invalid contacts",
+        "--visible-observation",
+        "the stack is upright and contact markers align with interfaces",
+        "--reconciliation",
+        "the visible layout agrees with the measured contact state",
+        "--semantic-verdict",
+        verdict,
+        "--not-proven",
+        "long-horizon stability",
+    ]
+
+
 def _selection(tmp_path: Path, passing: bool = True) -> Path:
     (tmp_path / "shot.png").write_bytes(b"png")
     (tmp_path / "clip.mp4").write_bytes(b"mp4")
@@ -77,6 +92,7 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
             "penetration depth tolerance",
             "--reproduce",
             "pixi run agent-capture -- --scene box_on_ground --out demo",
+            *_semantic_args(),
             "--out",
             str(out),
         ]
@@ -91,6 +107,10 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
     assert "static frame only" in text
     assert "penetration depth tolerance" in text
     assert "pixi run agent-capture" in text
+    assert "### Semantic review" in text
+    assert "metrics report zero invalid contacts" in text
+    assert "the stack is upright" in text
+    assert "**Verdict**: pass" in text
 
 
 def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
@@ -105,6 +125,7 @@ def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
             str(selection),
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(out),
             "--manifest-out",
@@ -134,6 +155,7 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
             "verification-media",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(out),
             "--manifest-out",
@@ -142,6 +164,7 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     )
     assert code == 0
     manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["schema_version"] == "dart.evidence_publication/v2"
     assert manifest["uploaded"] is False
     assert "dry-run" in manifest["note"]
     text = out.read_text(encoding="utf-8")
@@ -191,6 +214,7 @@ def test_gh_release_yes_uploads_each_artifact(
             "--yes",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(out),
             "--manifest-out",
@@ -257,6 +281,7 @@ def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
             str(selection),
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(tmp_path / "x.md"),
         ]
@@ -273,8 +298,63 @@ def test_gh_release_requires_repo(tmp_path: Path) -> None:
             "gh-release",
             "--environment",
             "Linux",
+            *_semantic_args(),
             "--out",
             str(tmp_path / "x.md"),
         ]
     )
     assert code == 2
+
+
+def test_uncertain_semantic_review_fails_publication(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            *_semantic_args("uncertain"),
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+    assert code == 1
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert manifest["semantic_review"]["verdict"] == "uncertain"
+    assert "semantic review verdict is uncertain" in manifest["note"]
+
+
+def test_semantic_review_rejects_empty_fields(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    args = [
+        str(selection),
+        "--environment",
+        "Linux",
+        *_semantic_args(),
+        "--out",
+        str(tmp_path / "section.md"),
+    ]
+    args[args.index("metrics report zero invalid contacts")] = " "
+    with pytest.raises(SystemExit):
+        evidence_publish.main(args)
+
+
+def test_semantic_review_requires_claim_boundary(tmp_path: Path) -> None:
+    selection = _selection(tmp_path)
+    args = [
+        str(selection),
+        "--environment",
+        "Linux",
+        *_semantic_args(),
+        "--out",
+        str(tmp_path / "section.md"),
+    ]
+    index = args.index("--not-proven")
+    del args[index : index + 2]
+    with pytest.raises(SystemExit):
+        evidence_publish.main(args)

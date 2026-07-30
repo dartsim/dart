@@ -81,6 +81,34 @@ well-defined packets through the orchestrator/executor model. For ordinary
 bounded single-session work, use `dart-new-task` unless the user explicitly
 asks for the autonomous project-home loop.
 
+## Updating Models And Coding Agents
+
+Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
+Claude/OpenCode when a request names a model, reasoning mode, Codex/tool
+release, migration, or model-compatibility audit. The workflow refreshes live
+primary guidance, captures the existing harness as a control, isolates model,
+effort, prompt, configuration, and optional-agent changes, and records
+preserve/update/remove/consolidate/add verdicts.
+
+The workflow is deliberately self-evolving. Its model-agnostic intake,
+comparison, verification, and closeout core is itself part of every audit. An
+`apply` run may improve that source when a target exposes a reusable gap, while
+replacing stale target-specific guidance instead of cloning a command or
+accumulating permanent per-model branches.
+
+Because DART is a 3D physics simulator, each model-upgrade audit also compares a
+representative physics investigation through `dart-verify-sim`. The control and
+target must use the same text correctness evidence, assessed view, and
+claim-specific visual/debug layers; unavailable rendering or image review is a
+recorded limitation, not permission to infer model quality.
+
+Do not use it for a missed already-documented rule
+(`dart-audit-agent-compliance`) or an ordinary AI-doc edit
+(`dart-docs-update`). An incomplete target starts with installed-version and
+current-official-guidance discovery. A request to pin every agent still routes
+here, but the workflow must evaluate that request instead of treating it as
+authorization for a blanket pin.
+
 ## Source Ownership
 
 | Surface                        | Role                                                                                  |
@@ -91,8 +119,10 @@ asks for the autonomous project-home loop.
 | `docs/ai/`                     | Durable AI-native mission, workflow map, session rules, and verification expectations |
 | `docs/ai/capabilities.json`    | Machine-readable capability status, category, and gate profile                        |
 | `docs/ai/branch-profile.json`  | Machine-readable branch facts, required paths, exclusions, and AI-infra gates         |
-| `docs/ai/agent-scenarios.json` | Seven deterministic fresh-session routing and verification contracts                  |
+| `docs/ai/agent-scenarios.json` | Eight deterministic fresh-session routing and verification contracts                  |
 | `docs/ai/orchestration.md`     | Orchestrator/executor roles and the work-packet contract                              |
+| `docs/plans/`                  | Living project priority, current state, next steps, and acceptance gates              |
+| `docs/dev_tasks/`              | Temporary branch/session handoff state for active multi-session work                  |
 | `docs/onboarding/ai-tools.md`  | Tool compatibility and adapter maintenance details                                    |
 | `.claude/commands/`            | Editable workflow source for DART user-invoked workflow capabilities                  |
 | `.claude/skills/`              | Editable domain-skill source for DART on-demand Agent Skills                          |
@@ -113,15 +143,15 @@ like scripts rather than regenerated.
 Run `pixi run ai-setup` once in a checkout to synchronize adapters and install
 the cross-tool Git pre-commit guard. Run `pixi run ai-doctor` at session start
 or after a discovery/setup failure; it reports versions, project trust-sensitive
-surfaces, instruction chains, skills, agents, hooks, tasks, and recovery
-commands without modifying the checkout.
+surfaces, instruction chains, skills, agents, hooks, tasks, model pins, prompt
+and skill-metadata sizes, and recovery commands without modifying the checkout.
 
 Use `pixi run check-agent-hook` for the fast staged-file structural gate,
 `pixi run test-ai-infra` for focused infrastructure tests, and
 `pixi run check-ai-infra` for the aggregate non-mutating gate. The aggregate
 also exercises deterministic orientation, small-change, failure-diagnosis,
-documentation, component, simulation-verification, and release-maintenance
-scenarios. Full build/test
+documentation, model-upgrade, component, simulation-verification, and
+release-maintenance scenarios. Full build/test
 selection remains owned by `docs/ai/verification.md` and the task-specific
 developer docs.
 
@@ -134,12 +164,19 @@ Git hook and explicit pre-commit gates remain authoritative.
 
 DART uses the two-role operating model in `docs/ai/orchestration.md`: an
 orchestrator session owns understanding, decomposition, sequencing, and review,
-while executor sessions implement one well-defined work packet at a time. No
-project model is pinned. For complex, high-value, multi-workstream work, prefer
-Codex 5.6 Sol with Ultra reasoning when available; use a lean task contract and
-delegate bounded read-only scouting or review to the project profiles in
-`.codex/agents/`. Those profiles inherit the selected parent model. Smaller
-tasks should use the lightest capable model and a focused workflow.
+while executor sessions implement one well-defined work packet at a time.
+
+No project model or reasoning effort is pinned. For the current GPT-5.6 family,
+use Sol for difficult ambiguous work, Terra for everyday or read-heavy work,
+and Luna for clear repeatable work. Max gives one hard task more reasoning
+time; Ultra is for independently parallelizable work when the user explicitly
+authorized delegation. Most tasks need neither. The read-only project profiles
+in `.codex/agents/` inherit the selected parent model.
+
+Treat this routing as versioned guidance, not a permanent model taxonomy. Run
+`dart-model-upgrade` for future model or Codex changes, keep task contracts
+lean, and select the lightest model and effort that passes representative DART
+checks.
 
 Claude Code, OpenCode, Gemini CLI, future Codex models, and human contributors
 remain supported: roles are not products, authoring and review stay separate,

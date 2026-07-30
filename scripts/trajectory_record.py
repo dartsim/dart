@@ -123,17 +123,27 @@ def _make_box_stack() -> Any:
 
     sx = _import_dartpy()
     world = sx.World(time_step=0.005, gravity=(0.0, 0.0, -9.81))
-    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.05))
-    ground.is_static = True
-    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.1)))
+    ground_half_height = 0.1
+    contact_overlap = 0.005
+    bottom_half_extent = 0.4
+    middle_half_extent = 0.3
+    top_half_extent = 0.2
 
-    # Ground top sits at z = 0; each box rests on the one below it.
-    bottom = world.add_rigid_body("box_bottom", mass=1.0, position=(0.0, 0.0, 0.2))
-    bottom.set_collision_shape(sx.CollisionShape.box((0.4, 0.4, 0.4)))
-    middle = world.add_rigid_body("box_middle", mass=0.6, position=(0.0, 0.0, 0.55))
-    middle.set_collision_shape(sx.CollisionShape.box((0.3, 0.3, 0.3)))
-    top = world.add_rigid_body("box_top", mass=0.3, position=(0.0, 0.0, 0.8))
-    top.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -ground_half_height))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, ground_half_height)))
+
+    # CollisionShape.box() takes half-extents. Keep a shallow overlap at each
+    # interface so the initial frame has deterministic contact debug evidence.
+    bottom_z = bottom_half_extent - contact_overlap
+    middle_z = bottom_z + bottom_half_extent + middle_half_extent - contact_overlap
+    top_z = middle_z + middle_half_extent + top_half_extent - contact_overlap
+    bottom = world.add_rigid_body("box_bottom", mass=1.0, position=(0.0, 0.0, bottom_z))
+    bottom.set_collision_shape(sx.CollisionShape.box((bottom_half_extent,) * 3))
+    middle = world.add_rigid_body("box_middle", mass=0.6, position=(0.0, 0.0, middle_z))
+    middle.set_collision_shape(sx.CollisionShape.box((middle_half_extent,) * 3))
+    top = world.add_rigid_body("box_top", mass=0.3, position=(0.0, 0.0, top_z))
+    top.set_collision_shape(sx.CollisionShape.box((top_half_extent,) * 3))
     return world
 
 

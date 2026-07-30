@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise seven deterministic DART workflow-routing scenarios."""
+"""Exercise eight deterministic DART workflow-routing scenarios."""
 
 from __future__ import annotations
 

@@ -1,3 +1,4 @@
 [agents]
+# Keep this documented alias while DART supports Codex 0.144.1 strict config.
 max_threads = 4
 max_depth = 1

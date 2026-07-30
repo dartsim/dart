@@ -115,6 +115,26 @@ def test_contact_trace_reports_position_normal_and_depth() -> None:
     assert abs(contact["position"][2]) < 0.2
 
 
+def test_box_stack_starts_with_shallow_contacts_at_each_interface() -> None:
+    runner = trajectory_record.resolve_world_runner(scene="box_stack")
+    contacts = [
+        trajectory_record._contact_payload(contact)
+        for contact in runner.world.collide()
+    ]
+
+    assert contacts
+    pairs = {
+        frozenset((contact["body_a"], contact["body_b"]))
+        for contact in contacts
+    }
+    assert pairs == {
+        frozenset(("box_bottom", "ground")),
+        frozenset(("box_middle", "box_bottom")),
+        frozenset(("box_top", "box_middle")),
+    }
+    assert max(contact["depth"] for contact in contacts) < 0.01
+
+
 def test_combined_trajectory_and_contact_recording_shares_runner() -> None:
     runner = trajectory_record.resolve_world_runner(scene="two_body_contact")
 

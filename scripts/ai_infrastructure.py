@@ -25,6 +25,7 @@ SCENARIO_IDS = (
     "small-change",
     "failure-diagnosis",
     "documentation-update",
+    "model-upgrade",
     "component-work",
     "simulation-verification",
     "release-maintenance",
@@ -45,7 +46,7 @@ SCENARIO_REQUIRED_KEYS = {
     "recovery",
     "forbidden_paths",
 }
-SCENARIO_OPTIONAL_KEYS = {"evidence_policy"}
+SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 PROFILE_FINGERPRINTS = {
     "main": {
         "base_ref": "origin/main",
@@ -233,13 +234,24 @@ def check_codex_config(root: Path) -> list[str]:
         return errors
     if set(agents) != {"max_threads", "max_depth"}:
         errors.append(
-            ".codex/config.toml: agents keys must equal max_depth, max_threads"
+            ".codex/config.toml: agents keys must equal "
+            "max_threads, max_depth (the compatibility spelling keeps "
+            "Codex 0.144 strict config support)"
         )
     if type(agents.get("max_threads")) is not int or agents.get("max_threads") != 4:
-        errors.append(".codex/config.toml: agents.max_threads must equal 4")
+        errors.append(
+            ".codex/config.toml: agents.max_threads must equal 4 "
+            "for Codex 0.144 compatibility"
+        )
     if type(agents.get("max_depth")) is not int or agents.get("max_depth") != 1:
         errors.append(".codex/config.toml: agents.max_depth must equal 1")
-    forbidden = {"model", "approval_policy", "sandbox_mode"} & set(data)
+    forbidden = {
+        "model",
+        "model_reasoning_effort",
+        "review_model",
+        "approval_policy",
+        "sandbox_mode",
+    } & set(data)
     if forbidden:
         errors.append(
             ".codex/config.toml: project config must not pin "
@@ -1278,6 +1290,13 @@ def validate_scenarios(
                 case_errors.append(
                     "simulation verification has the wrong evidence policy"
                 )
+            if profile == "main" and contract.get("semantic_review_policy") != (
+                "native-image-inspection-or-provider-neutral-bundle-with-"
+                "explicit-limitation"
+            ):
+                case_errors.append(
+                    "simulation verification has the wrong semantic review policy"
+                )
             skill_source = root / ".claude/skills/dart-verify-sim/SKILL.md"
             try:
                 skill_text = skill_source.read_text()
@@ -1299,6 +1318,10 @@ def validate_scenarios(
                         "visual examples",
                         "rendering is unavailable",
                         "replacement evidence",
+                        "semantic inspection",
+                        "native image viewer",
+                        "original detail",
+                        "do not average",
                     ]
                 )
             for marker in skill_markers:

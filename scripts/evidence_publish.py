@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "dart.evidence_publication/v1"
+SCHEMA_VERSION = "dart.evidence_publication/v2"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
@@ -130,6 +130,10 @@ def render_section(
     limitations: list[str],
     not_proven: list[str],
     reproduce: list[str],
+    text_oracle: str,
+    visible_observation: str,
+    reconciliation: str,
+    semantic_verdict: str,
 ) -> str:
     lines: list[str] = ["## Visual verification", ""]
     lines.append(f"**Environment**: {environment}")
@@ -160,6 +164,14 @@ def render_section(
             lines.append(f"- {detail}")
         lines.append("")
 
+    lines.append("### Semantic review")
+    lines.append("")
+    lines.append(f"- **Text oracle**: {text_oracle}")
+    lines.append(f"- **Visible observation**: {visible_observation}")
+    lines.append(f"- **Reconciliation**: {reconciliation}")
+    lines.append(f"- **Verdict**: {semantic_verdict}")
+    lines.append("")
+
     if not_proven:
         lines.append("**What this evidence does not prove**:")
         for item in not_proven:
@@ -182,6 +194,13 @@ def render_section(
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _non_empty(value: str) -> str:
+    stripped = value.strip()
+    if not stripped:
+        raise argparse.ArgumentTypeError("value must not be empty")
+    return stripped
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("selection", type=Path, help="evidence selection JSON")
@@ -195,11 +214,42 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="actually upload (gh-release backend); otherwise dry-run",
     )
-    parser.add_argument("--environment", required=True)
+    parser.add_argument("--environment", required=True, type=_non_empty)
     parser.add_argument("--configuration", default="")
-    parser.add_argument("--limitation", action="append", default=[])
-    parser.add_argument("--not-proven", action="append", default=[], dest="not_proven")
+    parser.add_argument("--limitation", action="append", default=[], type=_non_empty)
+    parser.add_argument(
+        "--not-proven",
+        action="append",
+        required=True,
+        type=_non_empty,
+        dest="not_proven",
+        help="claim boundary the selected evidence does not establish",
+    )
     parser.add_argument("--reproduce", action="append", default=[])
+    parser.add_argument(
+        "--text-oracle",
+        required=True,
+        type=_non_empty,
+        help="measured state/test result that decides correctness",
+    )
+    parser.add_argument(
+        "--visible-observation",
+        required=True,
+        type=_non_empty,
+        help="facts actually observed after opening the selected images",
+    )
+    parser.add_argument(
+        "--reconciliation",
+        required=True,
+        type=_non_empty,
+        help="how the visible observation agrees or disagrees with the text oracle",
+    )
+    parser.add_argument(
+        "--semantic-verdict",
+        choices=("pass", "fail", "uncertain"),
+        required=True,
+        help="semantic text/image verdict; only pass is publication-ready",
+    )
     parser.add_argument("--out", type=Path, required=True, help="markdown output")
     parser.add_argument("--manifest-out", type=Path, help="publication manifest JSON")
     args = parser.parse_args(argv)
@@ -232,14 +282,18 @@ def main(argv: list[str] | None = None) -> int:
             limitations=args.limitation,
             not_proven=args.not_proven,
             reproduce=args.reproduce,
+            text_oracle=args.text_oracle,
+            visible_observation=args.visible_observation,
+            reconciliation=args.reconciliation,
+            semantic_verdict=args.semantic_verdict,
         )
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(section, encoding="utf-8")
-        # The publication inherits the selection's verdict: a non-passing
-        # selection still renders its section honestly (uncovered claims show
-        # as "✘ (no evidence)"), but automation must not read the publication
-        # as ready — the manifest fails and the CLI exits non-zero.
+        # A publication is ready only when claim coverage and the semantic
+        # text/image reconciliation both pass. Failing or uncertain evidence
+        # still renders honestly, but automation must not treat it as complete.
         selection_pass = bool(selection.get("pass", False))
+        semantic_pass = args.semantic_verdict == "pass"
         manifest = {
             "schema_version": SCHEMA_VERSION,
             "backend": args.backend,
@@ -247,7 +301,13 @@ def main(argv: list[str] | None = None) -> int:
             "urls": urls,
             "section": str(args.out),
             "artifact_count": len(selection["selected"]),
-            "pass": selection_pass,
+            "semantic_review": {
+                "text_oracle": args.text_oracle,
+                "visible_observation": args.visible_observation,
+                "reconciliation": args.reconciliation,
+                "verdict": args.semantic_verdict,
+            },
+            "pass": selection_pass and semantic_pass,
         }
         if not selection_pass:
             uncovered = sorted(
@@ -260,6 +320,11 @@ def main(argv: list[str] | None = None) -> int:
                 + (f" (uncovered claims: {', '.join(uncovered)})" if uncovered else "")
                 + "; the section marks the gaps — do not treat this "
                 "publication as complete evidence"
+            )
+        elif not semantic_pass:
+            manifest["note"] = (
+                f"semantic review verdict is {args.semantic_verdict}; "
+                "do not treat this publication as complete evidence"
             )
         elif args.backend == "gh-release" and not args.yes:
             manifest["note"] = (

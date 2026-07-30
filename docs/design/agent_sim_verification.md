@@ -8,16 +8,61 @@ the way it is, backed by measured evidence.
 
 ## Problem
 
-DART's domains — articulated-body dynamics, collision, robotics — require 3D
-understanding that language models lack natively. An agent needs to inspect a
-scene, run a simulation, and decide whether the result is correct, headlessly
-and without hidden context. There is no established prior art for this exact
-task: the literature splits into VLM physical-reasoning benchmarks (which show
-models are weak at physics from images — e.g. PhysBench reports SOTA VLMs near
-40% vs ~96% human) and engine self-testing (CPU/GPU parity, conservation as a
-diagnostic). Neither is "an agent audits an engine's output," so DART's tooling
-is built conservatively and self-grounding rather than mimicking an authority
-that does not exist.
+DART's domains — articulated-body dynamics, collision, robotics — require
+state-grounded 3D understanding. Early language-only agents could not inspect
+images natively; current image-capable agents can, but pixels still do not
+expose solver state and visual physical reasoning remains weaker than measured
+state. An agent therefore needs to inspect a scene, run a simulation, and
+decide whether the result is correct, headlessly and without hidden context.
+There is no established prior art for this exact task: the literature splits
+into VLM physical-reasoning benchmarks (which show models are weak at physics
+from images — e.g. PhysBench reports SOTA VLMs near 40% vs ~96% human) and
+engine self-testing (CPU/GPU parity, conservation as a diagnostic). Neither is
+"an agent audits an engine's output," so DART's tooling is built conservatively
+and self-grounding rather than mimicking an authority that does not exist.
+
+## North-star capability contract and merged lineage
+
+The original goal was not merely "take a screenshot." A fresh agent must be
+able to discover what is in a world, measure what the simulation did, choose
+and validate a useful view, inspect the actual pixels, reconcile the visible
+observation with the measured state, and publish claim-tied evidence that a
+later agent or human can reproduce. Rendering and geometric reasoning belong
+in the backend-hidden GUI core; Python and command-line tools orchestrate those
+capabilities. This is the visual-verification instance of DART's AI-native
+north star: important project understanding and verification must survive
+agent and session boundaries as tracked evidence.
+
+The 2026-07-29 audit reconstructed that contract from merged PR bodies, code,
+tests, and durable docs:
+
+| Capability layer                                                | Merged lineage                                                                                                                                                                                                 | Acceptance owned by the layer                                                                                                         |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Reproducible maintained renderer and capture                    | [#2647](https://github.com/dartsim/dart/pull/2647), [#2687](https://github.com/dartsim/dart/pull/2687), [#2774](https://github.com/dartsim/dart/pull/2774)                                                     | Backend-hidden `dart::gui`, headless capture, and measured offscreen/render-target parity                                             |
+| Debug-observability foundations                                 | [#2690](https://github.com/dartsim/dart/pull/2690), [#2984](https://github.com/dartsim/dart/pull/2984)                                                                                                         | Core debug descriptors, collision/contact inspection, world/provider seams, and visually verified renderer fidelity                   |
+| Reproducible evidence workflow                                  | [#2992](https://github.com/dartsim/dart/pull/2992), [#3084](https://github.com/dartsim/dart/pull/3084)                                                                                                         | Capture packets/manifests and reviewable, reproducible visual evidence rather than local-only screenshots                             |
+| Durable agent/project-management contract                       | [#2986](https://github.com/dartsim/dart/pull/2986)                                                                                                                                                             | Architecture findings, plans, work packets, and verification evidence survive tool and session boundaries through tracked docs        |
+| Text correctness oracle                                         | [#2994](https://github.com/dartsim/dart/pull/2994), [#3313](https://github.com/dartsim/dart/pull/3313), [#3320](https://github.com/dartsim/dart/pull/3320)                                                     | Metrics, scene dumps/diffs, trajectories, contacts, and first-divergence evidence decide physics correctness                          |
+| Agent-facing visual loop                                        | [#3313](https://github.com/dartsim/dart/pull/3313), [#3320](https://github.com/dartsim/dart/pull/3320)                                                                                                         | Headless images corroborate text; verdict, golden, sheet, A/B, and verification-bundle tools are reproducible                         |
+| Adequate cameras, core debug layers, and claim-tied publication | [#3371](https://github.com/dartsim/dart/pull/3371)                                                                                                                                                             | Measured view adequacy, adaptive cameras, world-derived offscreen layers, deterministic capture sidecars, and claim cover/publication |
+| Workflow routing and blocking end-to-end exercise               | [#3386](https://github.com/dartsim/dart/pull/3386)                                                                                                                                                             | Relevant agent workflows discover this capability and Linux CI exercises the real renderer and debug layers                           |
+| DART 6 renderer parity                                          | [#3304](https://github.com/dartsim/dart/pull/3304), [#3314](https://github.com/dartsim/dart/pull/3314), [#3374](https://github.com/dartsim/dart/pull/3374), [#3385](https://github.com/dartsim/dart/pull/3385) | Bounded OSG/example capture, adaptive views/debug/evidence tooling, workflow routing, and required visual CI on `release-6.20`        |
+
+The current model-upgrade follow-up closes three convergence gaps exposed by that
+lineage audit: all descriptor bounds, viewport projection, and fit-distance
+math now live in `dart::gui` and are bound into Python; capture sidecars name
+representative start/middle/end sequence frames and the structured fields a
+semantic reviewer must record; and evidence publication now persists that
+text/image reconciliation and fails on a `fail` or `uncertain` semantic verdict.
+Image-capable agents must open those artifacts and reconcile them with the text
+oracle—machine pixel checks alone do not satisfy this contract.
+
+This contract does **not** silently promote every renderer wishlist item into a
+visual-verification blocker. Specular IBL, a depth-tested debug material, exact
+ID/depth-buffer visibility, and solver paths without a stable contact-force key
+remain explicit future renderer or solver work. They are limitations to name
+when relevant, not evidence that the implemented text-plus-visual loop is
+unfinished.
 
 ## Core decision: lead with text, corroborate with images
 
@@ -172,10 +217,11 @@ The follow-up workflow closes these:
 Known limits and future work: occlusion probes sample bounds corners (a
 depth/ID-buffer readback would make visibility exact), thresholds are fixed
 constants calibrated on primitive scenes, multibody/deformable layers reuse
-only the transform-based subset, inline PR video still requires the manual
-user-attachments flow, and the DART 6 port of adaptive viewpoints,
-engine-rendered debug overlays, the capture harness, and evidence tooling is
-in flight on `release-6.20` via #3374.
+only the transform-based subset, and inline PR video still requires the manual
+user-attachments flow. The DART 6 adaptive-view, engine-debug-overlay, capture,
+evidence, and required-CI port landed through #3374 and #3385; remaining branch
+differences are backend-specific capability differences, not an in-flight
+port.
 
 Contact force arrows (DART 6 parity): DART 6 draws per-contact force arrows;
 DART 7's `simulation::Contact` (`dart/simulation/body/contact.hpp`) is pure
@@ -212,6 +258,10 @@ Capabilities this policy has already driven into core: the offscreen
 `DebugScene` channel with label compositing, world-aware debug extraction
 (`extractDebugLines(World&)`, wiring the previously dead body-frame/COM
 flags), the shared projection primitive (`projectToPixels`), core view
-adequacy (`assessView`), `World::getRigidBodyNames`, and on DART 6 the
-`DebugOverlay` attachment (always-on-top lines + osgText labels) plus the
-`math::BoundingBox` binding.
+adequacy (`assessView`), world-space scene bounds (`sceneBoundingSphere`),
+viewport-aware camera fitting (`fitOrbitCameraToViewport`),
+`World::getRigidBodyNames`, and on DART 6 the `DebugOverlay` attachment
+(always-on-top lines + osgText labels) plus the `math::BoundingBox` binding.
+The Python `camera=None`, `frame_body`, `frame_region`, and adaptive-view paths
+now bind and call those core bounds/framing helpers; Python retains only focus
+name resolution and capture/search orchestration.
