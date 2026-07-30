@@ -476,23 +476,21 @@ Next actions:
    `10-full-parity-execution-plan.md` (accepted 2026-07-23; ABI-safe additive on
    `release-6.20`, ~3-PR structure; PLAN-622 points at it). The 2026-07-11
    deferral list is retracted.
-4. **M2.0 FEM integration seam: validated** — see `11-fem-integration-seam.md`.
-   A custom `constraint::ConstraintBase` whose `update()` DART calls every
-   `solve()` (`ConstraintSolver.cpp:1077`, before the `isActive()` LCP gate) is
-   the ABI-safe per-step FEM integration hook; a throwaway prototype proved the
-   hook runs 200/200, integrates deterministically, and leaves the rigid
-   trajectory bit-identical (zero perturbation), touching no production code.
-   Two-way FEM→rigid coupling must use LCP participation (`isActive()==true`) or
-   caller-driven force before `step()` (mid-solve `addExtForce` is cleared at
-   `World.cpp:1378`); one-way skeleton→FEM drive is immediate. Additive-on-
-   `release-6.20` is confirmed feasible; the branch decision holds pending a
-   later milestone showing otherwise.
-5. **Next build steps** (per plan §11): PR-2 **M2.1** — the tet-volume/embedded-
-   surface `Shape` + FEM node state (new additive types), then FEM dynamics; and
-   in parallel PR-3a **soft-foot SIMBICON** (reuse `examples/demos/scenes/
-   atlas_simbicon/` + `atlas_v3_no_head_soft_feet.sdf`). Confirm the
-   competitive-envelope definition (decisions.md item 2) before the
-   performance-acceptance stage.
+4. **The volumetric FEM lane is no longer DART 6 work.** The subsystem that the
+   M2.x milestones were building was removed from `release-6.20` and retargeted
+   to DART 7 (`decisions.md`, 2026-07-29): the two reference papers need
+   different discretizations, and DART 6 keeps only the Jain/Liu model that
+   `SoftBodyNode` implements. **Do not restart the tet/FEM build here.** The
+   implementation is preserved in `wp-db-fem-foundation` and
+   `wp-db-fem-elastic` / #3404 if it is ever revived on DART 7, where the first
+   question is whether a reduced FEM still beats newer solvers such as AVBD.
+   `11-fem-integration-seam.md` is retained only for its DART 6 facts.
+5. **Next build step: PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`),
+   which reuses the existing GUI-free `atlas_simbicon` controller with
+   `atlas_v3_no_head_soft_feet.sdf`, then the remaining Jain/Liu rows: noisy
+   floor, soft-contact walk, hand/arm manipulation, and the four-link
+   flexible-foot comparison. Confirm the competitive-envelope definition before
+   the performance-acceptance stage.
 6. Keep PLAN-622 active. The balanced paired artifact, WP-DB.07 scaling,
    WP-DB.08 native-owned/default coverage, flexible-foot, and the separate
    `main` zero-DoF assertion PR remain open and now fold into the parity plan.

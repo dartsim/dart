@@ -121,11 +121,18 @@ were established analytically above (mid-solve `addExtForce` is cleared at
 `World.cpp:1378`, so they are the coupling routes); an empirical two-way LCP
 demo is deferred to the first real PR-2 milestone.
 
-## Recommendation → branch strategy
+## Recommendation (withdrawn 2026-07-29)
 
-Proceed with the additive-on-`release-6.20` FEM backend using the
-`ConstraintBase`-hook seam: `update()` for FEM internal integration + one-way
-skeleton drive; LCP-participating constraint for two-way coupling. Re-open the
-branch decision only if a later milestone shows the ABI-safe surface blocks
-correctness/performance parity. Model-authoring scale (tet meshes, characters)
-remains a separate plan risk, not an integration-mechanism blocker.
+This document originally recommended proceeding with an additive
+volumetric-FEM backend on `release-6.20` via the `ConstraintBase` hook. **That
+recommendation is withdrawn.** The subsystem was removed from DART 6 and
+retargeted to DART 7, because the two reference papers need different
+discretizations and a compatibility release branch should not carry two parallel
+deformable architectures (`decisions.md`). Do not act on it.
+
+What survives is the mechanism knowledge above, which is about DART 6 rather
+than about FEM: the constraint solver's manual-constraint `update()` is the only
+per-step hook reachable through public API, it is silently skipped when
+automatic deactivation puts the rigid scene to rest, and forces applied
+mid-solve are cleared before the next step. Anything that later needs per-step
+work in DART 6 inherits those constraints.
