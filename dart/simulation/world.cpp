@@ -3816,8 +3816,16 @@ WorldMemoryDiagnostics World::getMemoryDiagnostics() const
 WorldMemoryDiagnostics World::getMemoryDiagnostics(
     const WorldMemoryDiagnosticsOptions& options) const
 {
+#if DART_BUILD_MEMORY_DIAGNOSTICS
   return m_storage->memoryDiagnostics.collect(
       m_memoryManager, detail::registryOf(*this), options);
+#else
+  // No step-path instrumentation is compiled in, so the frame-scratch peak and
+  // reset tally are unavailable and report zero. Everything else is still read
+  // live from the allocator and the registry at query time.
+  return detail::MemoryDiagnosticsTracker{}.collect(
+      m_memoryManager, detail::registryOf(*this), options);
+#endif
 }
 
 void World::clear()
@@ -6413,7 +6421,13 @@ void World::updateKinematics(compute::ComputeExecutor& executor)
 //==============================================================================
 void World::resetFrameScratchForStep()
 {
+#if DART_BUILD_MEMORY_DIAGNOSTICS
   m_storage->memoryDiagnostics.resetFrameScratch(m_memoryManager);
+#else
+  // Releasing the frame arena is functional, not diagnostic; only the reset
+  // tally is instrumentation, so it compiles out with the option.
+  m_memoryManager.getFrameAllocator().reset();
+#endif
 }
 
 //==============================================================================
@@ -6532,7 +6546,11 @@ bool World::tryStepCleanNoWorkDefaultPipeline()
     return false;
   }
 
+#if DART_BUILD_MEMORY_DIAGNOSTICS
   m_storage->memoryDiagnostics.resetFrameScratch(m_memoryManager);
+#else
+  m_memoryManager.getFrameAllocator().reset();
+#endif
   m_lastDeformableSolverDiagnostics = {};
   m_storage->lastStepDiagnostics = {};
   m_storage->lastContactForces.clear();
@@ -6730,7 +6748,9 @@ void World::stepPipelineOnce(
   updateDeactivationAfterStep();
   m_time += m_timeStep;
   ++m_frame;
+#if DART_BUILD_MEMORY_DIAGNOSTICS
   m_storage->memoryDiagnostics.recordFrameScratch(m_memoryManager);
+#endif
 }
 
 //==============================================================================

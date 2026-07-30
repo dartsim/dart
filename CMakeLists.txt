@@ -322,11 +322,34 @@ if(
 endif()
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(
+  DART_BUILD_MEMORY_DIAGNOSTICS
+  "Build World memory-diagnostics instrumentation into dart-simulation"
+  OFF
+  CATEGORY diagnostics
+)
+dart_option(
   DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   "Build the opt-in memory diagnostics panel for dart-demos"
   OFF
   CATEGORY diagnostics
 )
+# The demos panel reads World memory diagnostics, so it cannot report anything
+# useful unless the library instrumentation is compiled in too. Promote the
+# library option rather than letting the panel render permanently empty data.
+if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS AND NOT DART_BUILD_MEMORY_DIAGNOSTICS)
+  message(
+    STATUS
+    "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON requires "
+    "DART_BUILD_MEMORY_DIAGNOSTICS; enabling it."
+  )
+  set(
+    DART_BUILD_MEMORY_DIAGNOSTICS
+    ON
+    CACHE BOOL
+    "Build World memory-diagnostics instrumentation into dart-simulation"
+    FORCE
+  )
+endif()
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
 dart_option(DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS

@@ -736,6 +736,13 @@ public:
   /// count live entities. Component-storage sizes come from type-erased
   /// summaries and may include tombstones; packed component slots are not
   /// scanned.
+  ///
+  /// Allocator, frame-scratch, and ECS values are read live at query time and
+  /// are always available. The two step-tracked counters,
+  /// ``frameScratchPeakUsedBytes`` and ``frameScratchResetCount``, require
+  /// ``DART_BUILD_MEMORY_DIAGNOSTICS=ON``; when that build option is off they
+  /// report zero, ``World`` stores no diagnostics state, and the step path has
+  /// no compiled diagnostics instruction.
   [[nodiscard]] WorldMemoryDiagnostics getMemoryDiagnostics() const;
 
   /// Returns memory diagnostics with the requested collection detail.
