@@ -20,6 +20,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import ai_doctor  # noqa: E402
 import ai_infrastructure as infra  # noqa: E402
+import ctest_tier as ctest_runner  # noqa: E402
 import install_git_hooks  # noqa: E402
 import lint_cmake  # noqa: E402
 import lint_toml  # noqa: E402
@@ -618,7 +619,47 @@ def test_gtest_environment_sanitization_is_case_insensitive():
     assert environment == {"DART_KEEP": "1"}
 
 
+def test_ctest_tier_supports_guarded_explicit_test_tree(tmp_path, monkeypatch):
+    test_dir = tmp_path / "simd-build"
+    test_dir.mkdir()
+    observed: dict[str, object] = {}
+    monkeypatch.setenv("GTEST_FILTER", "-*")
+    monkeypatch.setenv("DART_KEEP", "1")
+    monkeypatch.setattr(ctest_runner, "compute_load_limit", lambda: None)
+    monkeypatch.setattr(ctest_runner, "resolve_jobs", lambda explicit: 1)
+
+    def fake_run(command, *, env):
+        observed["command"] = command
+        observed["env"] = env
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(ctest_runner.subprocess, "run", fake_run)
+
+    assert (
+        ctest_runner.main(
+            ["--test-dir", str(test_dir), "-R", "^UNIT_simd", "--timeout", "60"]
+        )
+        == 0
+    )
+    assert observed["command"] == [
+        "ctest",
+        "--test-dir",
+        str(test_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+        "--parallel",
+        "1",
+        "--timeout",
+        "60",
+        "-R",
+        "^UNIT_simd",
+    ]
+    assert observed["env"]["DART_KEEP"] == "1"
+    assert "GTEST_FILTER" not in observed["env"]
+
+
 RUNNER_CONTRACT_PATHS = (
+    ".github/workflows/ci_simd.yml",
     ".github/workflows/ci_ubuntu.yml",
     "pixi.toml",
     "scripts/run_pytest.py",
@@ -666,6 +707,18 @@ def _copy_runner_contract(tmp_path: Path) -> Path:
             ),
             "forbidden test-runner marker",
         ),
+        (
+            ".github/workflows/ci_ubuntu.yml",
+            "pixi run python -I scripts/run_pytest.py",
+            "pixi run -- pytest",
+            "direct pytest invocation",
+        ),
+        (
+            ".github/workflows/ci_simd.yml",
+            "pixi run python -I scripts/ctest_tier.py",
+            "pixi run -- ctest",
+            "direct ctest invocation",
+        ),
     ),
 )
 def test_runner_contract_rejects_execution_bypasses(
@@ -680,6 +733,36 @@ def test_runner_contract_rejects_execution_bypasses(
     errors = infra.check_test_runner_contract(root)
 
     assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("run_step", "expected"),
+    (
+        ("      - run: pixi run -- pytest -q tests/test_example.py\n", "pytest"),
+        (
+            "      - run: |\n"
+            "          cd build\n"
+            "          ctest -R '^UNIT_example$'\n",
+            "ctest",
+        ),
+    ),
+)
+def test_workflow_scan_rejects_direct_runner_scalar_forms(tmp_path, run_step, expected):
+    workflow = tmp_path / ".github" / "workflows" / "test.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "name: bypass\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        f"{run_step}",
+        encoding="utf-8",
+    )
+
+    errors = infra.check_workflow_test_runner_invocations(tmp_path)
+
+    assert any(f"direct {expected} invocation" in error for error in errors)
 
 
 @pytest.mark.parametrize(

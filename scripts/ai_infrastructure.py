@@ -27,6 +27,10 @@ LEGACY_PYTEST_SELECTION_VARIABLES = (
     "DARTPY_PYTEST_ARGS",
     "DARTPY_PYTEST_SOURCES",
 )
+DIRECT_WORKFLOW_TEST_RUNNERS = (
+    ("pytest", re.compile(r"\bpytest\b"), "python -I scripts/run_pytest.py"),
+    ("ctest", re.compile(r"\bctest\b"), "python -I scripts/ctest_tier.py"),
+)
 LINUX_DEBUG_PYTHON_SMOKE_TESTS = (
     "python/tests/unit/common/test_string.py",
     "python/tests/unit/math/test_lcp.py",
@@ -82,9 +86,7 @@ AI_PREFIXES = (
     ".claude/",
     ".codex/",
     ".opencode/",
-    ".github/workflows/ci_lint.yml",
-    ".github/workflows/ci_ubuntu.yml",
-    ".github/workflows/ci_windows.yml",
+    ".github/workflows/",
     "docs/README.md",
     "docs/ai/",
     "docs/design/ai_spec_kit_assessment.md",
@@ -1413,9 +1415,40 @@ def _check_ctest_runner_commands(root: Path, errors: list[str]) -> None:
         )
 
 
-def check_test_runner_contract(root: Path) -> list[str]:
-    """Validate canonical task wiring and shared execution-safety invariants."""
+def _workflow_run_lines(workflow_text: str) -> Iterable[tuple[int, str]]:
+    """Yield executable lines from workflow run scalars with source lines."""
+    lines = workflow_text.splitlines()
+    index = 0
+    while index < len(lines):
+        match = re.match(
+            r"^(?P<indent> *)(?:-\s+)?run:\s*(?P<value>.*)$",
+            lines[index],
+        )
+        if match is None:
+            index += 1
+            continue
+        value = match.group("value").strip()
+        if value.startswith(("|", ">")):
+            base_indent = len(match.group("indent"))
+            index += 1
+            while index < len(lines):
+                raw_line = lines[index]
+                if raw_line.strip():
+                    indentation = len(raw_line) - len(raw_line.lstrip())
+                    if indentation <= base_indent:
+                        break
+                    command = raw_line.lstrip().split(" #", 1)[0].rstrip()
+                    if command and not command.startswith("#"):
+                        yield index + 1, command
+                index += 1
+            continue
+        if value and not value.startswith("#"):
+            yield index + 1, value.split(" #", 1)[0].rstrip()
+        index += 1
 
+
+def check_workflow_test_runner_invocations(root: Path) -> list[str]:
+    """Reject tracked workflow commands that bypass guarded test runners."""
     errors: list[str] = []
     workflow_root = root / ".github" / "workflows"
     for workflow_path in sorted(workflow_root.glob("*.y*ml")):
@@ -1424,13 +1457,28 @@ def check_test_runner_contract(root: Path) -> list[str]:
         except OSError as exc:
             errors.append(f"{workflow_path.relative_to(root)}: unable to read: {exc}")
             continue
+        for line_number, command in _workflow_run_lines(workflow_text):
+            for runner, pattern, guarded_command in DIRECT_WORKFLOW_TEST_RUNNERS:
+                if pattern.search(command):
+                    errors.append(
+                        f"{workflow_path.relative_to(root)}:{line_number}: direct "
+                        f"{runner} invocation must use the guarded runner "
+                        f"{guarded_command!r}"
+                    )
         for legacy_selector in LEGACY_PYTEST_SELECTION_VARIABLES:
             if legacy_selector in workflow_text:
                 errors.append(
                     f"{workflow_path.relative_to(root)}: legacy pytest selector "
                     f"{legacy_selector!r} must not control a tracked workflow"
                 )
+    return errors
 
+
+def check_test_runner_contract(root: Path) -> list[str]:
+    """Validate canonical task wiring and shared execution-safety invariants."""
+
+    errors = check_workflow_test_runner_invocations(root)
+    workflow_root = root / ".github" / "workflows"
     linux_workflow_path = workflow_root / "ci_ubuntu.yml"
     try:
         linux_workflow = linux_workflow_path.read_text()
@@ -2310,6 +2358,7 @@ def run_checks(root: Path, profile: str) -> list[str]:
         lambda path: check_path_references(path, profile),
         check_generated_adapters,
         check_ci_wiring,
+        check_workflow_test_runner_invocations,
         lambda path: check_scenarios(path, profile),
     )
     errors: list[str] = []

@@ -173,12 +173,14 @@ faster; it must not be the only path.
 parity. It checks Codex agent/config/hook schema and safety, documented Pixi
 tasks and tracked paths, nested `AGENTS.md` discovery, branch-profile
 references, generated ownership, the machine-readable routing scenarios, and
-canonical pytest/CTest task wiring. Its completion path also executes bounded
-runner probes that prove hostile ambient selectors and plugins cannot turn a
-gate into collection-only or zero-body success, while deliberate test failures
-still propagate. The security-sensitive CTest wrapper also has an exact lexical
-flow contract so later audit edits cannot hide execution, reset sanitized
-arguments, or shadow the final command while retaining superficial markers.
+canonical pytest/CTest task and tracked-workflow wiring. Direct pytest/CTest
+workflow invocations are rejected so every tracked gate crosses a guarded
+runner. Its completion path also executes bounded runner probes that prove
+hostile ambient selectors and plugins cannot turn a gate into collection-only
+or zero-body success, while deliberate test failures still propagate. The
+security-sensitive CTest wrapper also has an exact lexical flow contract so
+later audit edits cannot hide execution, reset sanitized arguments, or shadow
+the final command while retaining superficial markers.
 The staged hook keeps using the structural subset; it does not run completion
 probes or project suites.
 The simulation-verification scenario is a required domain-skill route with a

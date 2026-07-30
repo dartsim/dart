@@ -96,6 +96,11 @@ def resolve_build_dir(build_type: str) -> tuple[Path, str | None]:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-type", default="Release")
+    parser.add_argument(
+        "--test-dir",
+        type=Path,
+        help="Use an explicitly configured CTest tree instead of the Pixi layout",
+    )
     parser.add_argument("-L", "--label", action="append", default=[])
     parser.add_argument("-LE", "--label-exclude", action="append", default=[])
     parser.add_argument("-R", "--tests-regex")
@@ -122,7 +127,11 @@ def resolve_jobs(explicit: int | None) -> int | None:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    build_dir, build_config = resolve_build_dir(args.build_type)
+    if args.test_dir is None:
+        build_dir, build_config = resolve_build_dir(args.build_type)
+    else:
+        build_dir = args.test_dir
+        build_config = None
     if not build_dir.exists():
         raise SystemExit(
             f"Build directory {build_dir} does not exist. Build the tests first."
