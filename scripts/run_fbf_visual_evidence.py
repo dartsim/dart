@@ -21,6 +21,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -53,6 +54,7 @@ CAPTURE_RESULT_SCHEMA_VERSIONS = (
 )
 DEMO_RUNTIME_CLOSURE_SCHEMA_VERSION = "dart.fbf_visual_runtime_closure/v1"
 SOURCE_AUDIT_SCHEMA_VERSION = "dart.fbf_visual_source_audit/v1"
+PAPER_COVERAGE_SCHEMA_VERSION = "dart.fbf_paper_coverage_contract/v1"
 SIDECAR_SCHEMA_VERSION = "dart.demos_headless_timeline/v1"
 SOLVER_LANES = ("exact", "boxed")
 SOLVER_COMPARISON_SUFFIX = "__exact_vs_boxed"
@@ -117,6 +119,13 @@ COVERAGE_MATRIX_PATH = (
     / "dev_tasks"
     / "fbf_exact_coulomb_friction"
     / "PAPER_DEMO_VIDEO_MATRIX.md"
+)
+PAPER_COVERAGE_CONTRACT_PATH = (
+    ROOT
+    / "docs"
+    / "dev_tasks"
+    / "fbf_exact_coulomb_friction"
+    / "paper-coverage-contract.json"
 )
 DEFAULT_DEMO = ROOT / "build/default/cpp/Release/bin/dart-demos"
 DEFAULT_FFMPEG = ROOT / ".pixi/envs/gazebo/bin/ffmpeg"
@@ -199,6 +208,18 @@ VIDEO_SEGMENTS = (
     ),
     SourceSegment("closing", 80, 82, "Thank You", "closing card"),
 )
+
+VIDEO_REQUIREMENT_IDS = {
+    "title": "video.01_title",
+    "backspin": "video.02_backspin",
+    "incline": "video.03_incline",
+    "turntable": "video.04_turntable",
+    "painleve": "video.05_painleve",
+    "card_house_26": "video.06_card_house",
+    "masonry_arch_25": "video.07_arch_25",
+    "masonry_arch_101": "video.08_arch_101",
+    "closing": "video.09_closing",
+}
 
 # Title and closing cards contain no simulation. Every other source-video
 # segment must have an explicit capture schedule. The author-pinned turntable
@@ -10445,8 +10466,207 @@ def run_group_output(
     return report
 
 
+def _expected_paper_requirement_kinds() -> dict[str, str]:
+    expected = {"teaser": "teaser"}
+    expected.update((f"fig.{index:02d}", "figure") for index in range(1, 11))
+    expected.update((f"table.{index:02d}", "table") for index in range(1, 8))
+    expected.update(
+        (
+            ("large_scale.arch_101", "large_scale"),
+            ("large_scale.card_house_10", "large_scale"),
+        )
+    )
+    expected.update(
+        (VIDEO_REQUIREMENT_IDS[segment.id], "video_segment")
+        for segment in VIDEO_SEGMENTS
+    )
+    return expected
+
+
+def _audit_pr_media_ledger() -> dict[str, dict[str, str]]:
+    """Read the compact registered-attachment table from the human ledger."""
+
+    if not COVERAGE_MATRIX_PATH.is_file():
+        raise FileNotFoundError(COVERAGE_MATRIX_PATH)
+    slots: dict[str, dict[str, str]] = {}
+    for line in COVERAGE_MATRIX_PATH.read_text(encoding="utf-8").splitlines():
+        cells = [cell.strip() for cell in line.strip().split("|")[1:-1]]
+        if len(cells) != 4:
+            continue
+        slot_match = re.fullmatch(r"`([0-9]{2})`", cells[0])
+        if slot_match is None:
+            continue
+        slot = slot_match.group(1)
+        if slot in slots:
+            raise ValueError(f"duplicate PR video slot {slot}")
+        caption_match = re.search(r"`([^`]+)`", cells[1])
+        hash_match = re.fullmatch(r"`([0-9a-f]{64})`", cells[2])
+        url_match = re.fullmatch(
+            r"<(https://github\.com/user-attachments/assets/[0-9a-f-]+)>",
+            cells[3],
+        )
+        if caption_match is None or hash_match is None or url_match is None:
+            raise ValueError(f"malformed PR video slot {slot}")
+        slots[slot] = {
+            "caption_key": caption_match.group(1),
+            "sha256": hash_match.group(1),
+            "url": url_match.group(1),
+        }
+    return slots
+
+
+def _audit_paper_requirement_contract() -> dict[str, Any]:
+    """Validate the source-controlled 29-row paper-coverage ledger."""
+
+    if not PAPER_COVERAGE_CONTRACT_PATH.is_file():
+        raise FileNotFoundError(PAPER_COVERAGE_CONTRACT_PATH)
+    contract = _read_json(PAPER_COVERAGE_CONTRACT_PATH)
+    if contract.get("schema_version") != PAPER_COVERAGE_SCHEMA_VERSION:
+        raise ValueError("unexpected paper coverage contract schema")
+    if contract.get("task_id") != "fbf_exact_coulomb_friction":
+        raise ValueError("paper coverage contract task identity changed")
+    if (
+        re.fullmatch(
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}", str(contract.get("snapshot_date", ""))
+        )
+        is None
+    ):
+        raise ValueError("paper coverage contract snapshot date is invalid")
+    if contract.get("completion_rule") != "PAPER_DEMO_VIDEO_MATRIX.md#completion-rule":
+        raise ValueError("paper coverage completion rule changed")
+    if (
+        contract.get("paper_source")
+        != "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf"
+        or contract.get("video_source") != "https://youtu.be/5THad4PAGmI"
+    ):
+        raise ValueError("paper coverage source identity changed")
+
+    expected_kinds = _expected_paper_requirement_kinds()
+    requirements = contract.get("requirements")
+    if not isinstance(requirements, list):
+        raise ValueError("paper coverage requirements must be a list")
+    requirement_ids = [
+        item.get("id") if isinstance(item, dict) else None for item in requirements
+    ]
+    if requirement_ids != list(expected_kinds):
+        raise ValueError("paper coverage requirement identifiers or order changed")
+
+    expected_slots = [f"{index:02d}" for index in range(1, 17)]
+    if contract.get("required_pr_video_slots") != expected_slots:
+        raise ValueError("paper coverage required PR video slots changed")
+    registered_slots = _audit_pr_media_ledger()
+    if sorted(registered_slots) != expected_slots:
+        raise ValueError("registered PR video ledger does not contain slots 01-16")
+    if len({item["url"] for item in registered_slots.values()}) != len(
+        registered_slots
+    ):
+        raise ValueError("registered PR video URLs are not unique")
+
+    segment_by_id = {segment.id: segment for segment in VIDEO_SEGMENTS}
+    status_counts = {"partial": 0, "blocked": 0, "complete": 0}
+    referenced_slots: set[str] = set()
+    for item in requirements:
+        requirement_id = item["id"]
+        if item.get("kind") != expected_kinds[requirement_id]:
+            raise ValueError(f"{requirement_id}: requirement kind changed")
+        status = item.get("status")
+        if status not in status_counts:
+            raise ValueError(f"{requirement_id}: invalid requirement status")
+        status_counts[status] += 1
+        if (
+            not isinstance(item.get("source_locator"), str)
+            or not item["source_locator"].strip()
+        ):
+            raise ValueError(f"{requirement_id}: source locator is missing")
+
+        blockers = item.get("blockers")
+        if not isinstance(blockers, list) or any(
+            not isinstance(blocker, str) or not blocker.strip() for blocker in blockers
+        ):
+            raise ValueError(f"{requirement_id}: blockers must be nonempty strings")
+        if status == "complete":
+            if blockers:
+                raise ValueError(f"{requirement_id}: complete row retains blockers")
+            completion_evidence = item.get("completion_evidence")
+            if not isinstance(completion_evidence, list) or not completion_evidence:
+                raise ValueError(
+                    f"{requirement_id}: complete row lacks completion evidence"
+                )
+        elif not blockers:
+            raise ValueError(f"{requirement_id}: incomplete row lacks blockers")
+
+        schedules = item.get("demo_schedules", [])
+        if (
+            not isinstance(schedules, list)
+            or any(not isinstance(schedule_id, str) for schedule_id in schedules)
+            or len(schedules) != len(set(schedules))
+        ):
+            raise ValueError(f"{requirement_id}: demo schedules are invalid")
+        missing_schedules = [
+            schedule_id for schedule_id in schedules if schedule_id not in SCHEDULES
+        ]
+        if missing_schedules:
+            raise ValueError(
+                f"{requirement_id}: unknown demo schedules {missing_schedules}"
+            )
+
+        slots = item.get("pr_video_slots", [])
+        if (
+            not isinstance(slots, list)
+            or any(not isinstance(slot, str) for slot in slots)
+            or len(slots) != len(set(slots))
+            or any(slot not in registered_slots for slot in slots)
+        ):
+            raise ValueError(f"{requirement_id}: PR video slots are invalid")
+        referenced_slots.update(slots)
+
+        if item["kind"] != "video_segment":
+            continue
+        segment_id = item.get("source_segment")
+        if segment_id not in segment_by_id:
+            raise ValueError(f"{requirement_id}: source segment is invalid")
+        if VIDEO_REQUIREMENT_IDS[segment_id] != requirement_id:
+            raise ValueError(f"{requirement_id}: source segment mapping changed")
+        segment = segment_by_id[segment_id]
+        if item.get("source_seconds") != [
+            segment.start_seconds,
+            segment.end_seconds,
+        ]:
+            raise ValueError(f"{requirement_id}: source time range changed")
+        required_schedules = list(REQUIRED_VIDEO_SCHEDULES.get(segment_id, ()))
+        if schedules != required_schedules:
+            raise ValueError(f"{requirement_id}: required demo schedules changed")
+
+    if sorted(referenced_slots) != expected_slots:
+        raise ValueError("paper requirements do not reference every PR video slot")
+    computed_status = (
+        "complete" if status_counts["complete"] == len(requirements) else "incomplete"
+    )
+    if contract.get("overall_status") != computed_status:
+        raise ValueError("paper coverage overall status disagrees with its rows")
+
+    return {
+        "path": str(PAPER_COVERAGE_CONTRACT_PATH),
+        "sha256": _sha256(PAPER_COVERAGE_CONTRACT_PATH),
+        "snapshot_date": contract["snapshot_date"],
+        "overall_status": computed_status,
+        "requirement_count": len(requirements),
+        "status_counts": status_counts,
+        "blocked_requirements": [
+            item["id"] for item in requirements if item["status"] == "blocked"
+        ],
+        "incomplete_requirements": [
+            item["id"] for item in requirements if item["status"] != "complete"
+        ],
+        "registered_pr_video_slot_count": len(registered_slots),
+        "registered_pr_video_slots": sorted(registered_slots),
+        "coverage_matrix_sha256": _sha256(COVERAGE_MATRIX_PATH),
+        "pass": True,
+    }
+
+
 def audit_coverage_contract() -> dict[str, Any]:
-    """Validate the in-code source-video-to-demo coverage contract."""
+    """Validate paper rows, source-video mappings, schedules, and PR media."""
 
     segment_ids = [segment.id for segment in VIDEO_SEGMENTS]
     if len(segment_ids) != len(set(segment_ids)):
@@ -10499,15 +10719,17 @@ def audit_coverage_contract() -> dict[str, Any]:
         for schedule_id in required_ids
         if SCHEDULES[schedule_id].known_gate_blockers
     ]
+    paper_requirements = _audit_paper_requirement_contract()
     return {
         "schema_version": SCHEMA_VERSION,
         "coverage_matrix": str(COVERAGE_MATRIX_PATH),
+        "paper_requirements": paper_requirements,
         "video_segments": {
-            f"video.{index:02d}_{segment.id}": (
+            VIDEO_REQUIREMENT_IDS[segment.id]: (
                 segment.start_seconds,
                 segment.end_seconds,
             )
-            for index, segment in enumerate(VIDEO_SEGMENTS, start=1)
+            for segment in VIDEO_SEGMENTS
         },
         "required_video_schedules": {
             segment_id: list(schedule_ids)
@@ -10518,7 +10740,12 @@ def audit_coverage_contract() -> dict[str, Any]:
         "schedules_without_mp4": without_mp4,
         "known_gate_blocked_schedules": gate_blocked,
         "capture_path_complete": not non_runnable and not without_mp4,
-        "evidence_complete": not non_runnable and not without_mp4 and not gate_blocked,
+        "evidence_complete": (
+            paper_requirements["overall_status"] == "complete"
+            and not non_runnable
+            and not without_mp4
+            and not gate_blocked
+        ),
         "pass": True,
     }
 
@@ -10728,6 +10955,12 @@ def _build_parser() -> argparse.ArgumentParser:
     audit_parser.add_argument("--ffmpeg", type=Path, default=DEFAULT_FFMPEG)
     audit_parser.add_argument("--ffprobe", type=Path, default=DEFAULT_FFPROBE)
     audit_parser.add_argument("--out", type=Path)
+
+    coverage_parser = subparsers.add_parser(
+        "audit-coverage",
+        help="audit paper rows, demo schedules, and registered PR video slots",
+    )
+    coverage_parser.add_argument("--out", type=Path)
     return parser
 
 
@@ -11110,7 +11343,9 @@ def _verify_existing_group(
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
-        if args.command == "audit-source":
+        if args.command == "audit-coverage":
+            payload = audit_coverage_contract()
+        elif args.command == "audit-source":
             payload = audit_sources(
                 video=args.video,
                 teaser=args.teaser,

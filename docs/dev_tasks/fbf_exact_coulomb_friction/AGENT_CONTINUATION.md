@@ -35,6 +35,41 @@ does not reproduce the source
 trajectory equivalently, all scenes source-equivalently, the historical
 renderer, Apple hardware, or paper timer boundary.
 
+## 2026-07-29 Post-target Coverage Gate
+
+This section supersedes all older branch-head, Figure 3 currentness, CI, and
+manifest claims below.
+
+- Merge checkpoint `3aee836ff62d80fcbbaacd39d54134c7af7d3061` contains target
+  `2ffe228c14c67e120d2a946ce9d36e8a9658044f`. Query the live branch and draft
+  PR #3377 after publication; do not trigger review.
+- Evidence schedules keep stable DART-owned policy label `"native"` while the
+  unoverridden consolidated frontend reports actual runtime identity `"dart"`.
+  Plans bind both fields. The visual-evidence suite passes 478/478, and
+  mandatory lint/check-lint pass.
+- `paper-coverage-contract.json` is the compact tracked truth ledger. The
+  `audit-coverage` command validates exactly 29 canonical rows (`24 partial`,
+  `5 blocked`, `0 complete`), 18 runnable required schedules, stable video
+  segment mappings, and all 16 registered GitHub user-attachment slots. Its
+  SHA-256 is `4f078f04cde7...`. This is a structural/claim-boundary pass, not an
+  evidence-completeness or paper-parity pass.
+- The old generated manifest, its 19,000-line asset-coupled validator, and its
+  200 KiB test remain intentionally deleted. Generated frames, clips, traces,
+  raw tables, and logs remain ignored under task `assets/`; do not restore or
+  commit them.
+- Figure 3 root `assets/pr_media_current_head_3cfafc/` is valid capture-time
+  evidence for checkpoint `3cfafc70ec1`, but the later target merge changes
+  the current runtime. Its exact/boxed/group clips (`b2c268aa337f...`,
+  `dc3228e2aa8c...`, `e321c711eae7...`) passed independent verification, both
+  bounded DART outcome slices passed, and decoded checker orientation visibly
+  changed. It must be freshly resealed before a current-head claim. It never
+  proves solver superiority/equivalence, paper Figure 3 parity, source backend
+  or full-trajectory equivalence, renderer/golden parity, or timing.
+
+Remaining current-runtime evidence is a rebuilt Figure 3 seal, the cool/low-load
+one-/four-core packet, Figure 8 blocker reseal, and one-head paired ten-level
+capture. Review media must be GitHub user attachments, never committed.
+
 ## 2026-07-29 Collision-Consolidation Merge Checkpoint
 
 This section is authoritative for current branch, detector, runtime-evidence,

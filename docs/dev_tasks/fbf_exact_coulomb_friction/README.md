@@ -28,6 +28,35 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-29 Post-target Coverage Checkpoint
+
+Merge checkpoint `3aee836ff62d80fcbbaacd39d54134c7af7d3061` includes current
+`release-6.20` tip `2ffe228c14c67e120d2a946ce9d36e8a9658044f`. PR #3377
+remains draft; do not request review yet.
+
+The compact tracked [paper coverage contract](paper-coverage-contract.json)
+replaces the deleted generated-asset manifest. Run:
+
+```bash
+python scripts/run_fbf_visual_evidence.py audit-coverage
+```
+
+It validates 29 canonical rows (`24 partial`, `5 blocked`, `0 complete`), 18
+required runnable schedules, stable source-video mappings, and all 16
+registered GitHub user-attachment slots. Its SHA-256 is
+`4f078f04cde7d8c74a1c75eb43072b9e94d345b2003a7c9e79720501aa0b1a27`.
+The 478 visual-evidence tests and mandatory lint/check-lint pass. This closes
+the scalable manifest-tooling gap without tracking generated frames, traces,
+raw tables, logs, or videos; it does not promote an incomplete paper row.
+
+The checker Figure 3 bundle under `assets/pr_media_current_head_3cfafc/` passed
+capture, independent verification, bounded exact/boxed outcomes, full MP4
+decode, and manual orientation-change inspection at checkpoint `3cfafc70ec1`.
+The later `2ffe228c` target merge changes the current runtime, so that bundle is
+now capture-time evidence and must be resealed before a current-head claim.
+Even when current, it proves neither solver superiority/equivalence nor source
+backend/full-trajectory, historical renderer, timing, or paper parity.
+
 ## 2026-07-29 Collision-Consolidation Merge Checkpoint
 
 This section supersedes every older branch-head, runtime-hash, performance,

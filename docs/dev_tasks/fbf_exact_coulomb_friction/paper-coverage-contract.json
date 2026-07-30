@@ -1,0 +1,471 @@
+{
+  "schema_version": "dart.fbf_paper_coverage_contract/v1",
+  "task_id": "fbf_exact_coulomb_friction",
+  "snapshot_date": "2026-07-29",
+  "overall_status": "incomplete",
+  "completion_rule": "PAPER_DEMO_VIDEO_MATRIX.md#completion-rule",
+  "paper_source": "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf",
+  "video_source": "https://youtu.be/5THad4PAGmI",
+  "required_pr_video_slots": [
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16"
+  ],
+  "requirements": [
+    {
+      "id": "teaser",
+      "kind": "teaser",
+      "status": "partial",
+      "source_locator": "Project-page teaser image and caption",
+      "blockers": [
+        "No source-matched approved DART composite or golden comparison exists."
+      ]
+    },
+    {
+      "id": "fig.01",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 1 and Section 5.1, PDF page 7",
+      "demo_schedules": [
+        "incline_author_sweep_current_source"
+      ],
+      "pr_video_slots": [
+        "01"
+      ],
+      "blockers": [
+        "The current-source DART terminal/outcome slice is not a full source-backend trajectory, external-solver comparison, historical invocation, or paper timing reproduction."
+      ]
+    },
+    {
+      "id": "fig.02",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 2 and Section 5.1, PDF page 7",
+      "demo_schedules": [
+        "incline_author_sweep_current_source"
+      ],
+      "pr_video_slots": [
+        "01"
+      ],
+      "blockers": [
+        "The current-source DART media and endpoint slice lack full-state source equivalence, matched external rows, historical renderer goldens, and paper timing."
+      ]
+    },
+    {
+      "id": "fig.03",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 3, Equation 24, and Section 5.2, PDF pages 7-8",
+      "demo_schedules": [
+        "backspin_author_current_source"
+      ],
+      "pr_video_slots": [
+        "02",
+        "16"
+      ],
+      "blockers": [
+        "Fresh exact and boxed checker media pass the bounded DART outcome slice, but source-backend and full-trajectory equivalence, historical renderer/video parity, timing, and solver superiority remain unproven."
+      ]
+    },
+    {
+      "id": "fig.04",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 4 and Section 5.3, PDF page 8",
+      "demo_schedules": [
+        "turntable_author_mu02_omega2",
+        "turntable_author_mu02_omega5",
+        "turntable_author_mu05_omega2",
+        "turntable_author_mu05_omega5"
+      ],
+      "pr_video_slots": [
+        "03",
+        "10",
+        "11",
+        "12",
+        "13"
+      ],
+      "blockers": [
+        "The source-configured DART matrix does not establish Warp/Newton state equivalence, historical renderer goldens, external-solver parity, or paper-comparable timing."
+      ]
+    },
+    {
+      "id": "fig.05",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 5 and Section 5.4, PDF page 8",
+      "demo_schedules": [
+        "painleve_author_mu05",
+        "painleve_author_mu055"
+      ],
+      "pr_video_slots": [
+        "04",
+        "05"
+      ],
+      "blockers": [
+        "The source-pinned DART adapter lacks source-backend and trajectory equivalence, historical renderer parity, comparable timing, and a valid solver-superiority basis."
+      ]
+    },
+    {
+      "id": "fig.06",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 6 and Section 5.5, PDF pages 8-9",
+      "demo_schedules": [
+        "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source"
+      ],
+      "pr_video_slots": [
+        "06"
+      ],
+      "blockers": [
+        "Strict exact FBF fails after completed step 35; the complete continuation pair is policy-asymmetric and has no automated paper-outcome, source-trajectory, backend, golden, or timing proof."
+      ]
+    },
+    {
+      "id": "fig.07",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 7 and Section 5.6, PDF page 9",
+      "demo_schedules": [
+        "masonry_arch_25_literal_standing",
+        "masonry_arch_25_author_crown_impact_current_source",
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source"
+      ],
+      "pr_video_slots": [
+        "07",
+        "14"
+      ],
+      "blockers": [
+        "Strict source-configured crown impact fails after completed step 142; continuation media is policy-asymmetric and lacks source trajectory/backend, quantitative outcome, golden, timing, and parity proof."
+      ]
+    },
+    {
+      "id": "fig.08",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 8 and Section 5.6, PDF page 9",
+      "demo_schedules": [
+        "masonry_arch_101_author_standing_current_source"
+      ],
+      "pr_video_slots": [
+        "08"
+      ],
+      "blockers": [
+        "Exact stops after completed step 209 and boxed collapses; the frozen-prefix comparison is blocker media, not a standing trajectory, historical invocation, source/backend match, golden, timing, or parity result."
+      ]
+    },
+    {
+      "id": "fig.09",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 9 and Section 6, PDF page 11",
+      "blockers": [
+        "Diagnostic histories exist, but matched paper-profile per-outer histories and source-equivalent plots for the card house and arches remain incomplete."
+      ]
+    },
+    {
+      "id": "fig.10",
+      "kind": "figure",
+      "status": "partial",
+      "source_locator": "Figure 10 and Appendix A, PDF page 13",
+      "blockers": [
+        "No paper-profile gamma sweep with matched contact-rich trajectories and validated physical outcomes exists."
+      ]
+    },
+    {
+      "id": "table.01",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 1 and Section 5.7, PDF page 10",
+      "blockers": [
+        "No apples-to-apples Table 1 workload, hardware, timer-boundary, warmup, and aggregation reproduction exists."
+      ]
+    },
+    {
+      "id": "table.02",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 2 and Section 6, PDF page 10",
+      "blockers": [
+        "Existing reduced diagnostics do not reproduce the reported full-run work shares."
+      ]
+    },
+    {
+      "id": "table.03",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 3 and Appendix A, PDF page 12",
+      "blockers": [
+        "The complete four-row matched iteration-budget experiment has not been reproduced."
+      ]
+    },
+    {
+      "id": "table.04",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 4 and Appendix A, PDF page 13",
+      "blockers": [
+        "Current gamma diagnostics are not a matched Table 4 workload and physical-outcome reproduction."
+      ]
+    },
+    {
+      "id": "table.05",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 5 and Appendix B, PDF page 14",
+      "blockers": [
+        "No current faithful eleven-row cross-solver CPU dataset with matched scenes, hardware, and timer contract exists."
+      ]
+    },
+    {
+      "id": "table.06",
+      "kind": "table",
+      "status": "partial",
+      "source_locator": "Table 6 and Appendix B, PDF page 14",
+      "blockers": [
+        "Neither large-scale DART adapter has a faithful strict completed CPU run under the historical source and timing contract."
+      ]
+    },
+    {
+      "id": "table.07",
+      "kind": "table",
+      "status": "blocked",
+      "source_locator": "Table 7 and Appendix B, PDF page 14",
+      "blockers": [
+        "The required matched GPU FBF implementation, RTX 3090 timing environment, and faithful card-house and arch external-solver runs are unavailable."
+      ]
+    },
+    {
+      "id": "large_scale.arch_101",
+      "kind": "large_scale",
+      "status": "partial",
+      "source_locator": "Figure 8, Tables 6-7, Section 5.6-5.7, and Appendix B",
+      "demo_schedules": [
+        "masonry_arch_101_author_standing_current_source"
+      ],
+      "pr_video_slots": [
+        "08"
+      ],
+      "blockers": [
+        "The current DART adapter supplies fail-closed diagnostic media but no valid standing exact trajectory, faithful historical run, matched performance, or external baseline."
+      ]
+    },
+    {
+      "id": "large_scale.card_house_10",
+      "kind": "large_scale",
+      "status": "partial",
+      "source_locator": "Tables 6-7, Section 5.7, and Appendix B",
+      "demo_schedules": [
+        "card_house_author_10_impact_current_source",
+        "card_house_author_10_impact_source_continuation_current_source"
+      ],
+      "pr_video_slots": [
+        "09",
+        "15"
+      ],
+      "blockers": [
+        "Strict exact FBF fails after completed step 31; complete continuation media is policy-asymmetric and does not recover the historical scene, strict outcome, GPU backend, or timing contract."
+      ]
+    },
+    {
+      "id": "video.01_title",
+      "kind": "video_segment",
+      "status": "blocked",
+      "source_locator": "00:00-00:02 title card",
+      "source_segment": "title",
+      "source_seconds": [
+        0,
+        2
+      ],
+      "blockers": [
+        "The title card is not a simulation demo and no approved DART replacement edit exists."
+      ]
+    },
+    {
+      "id": "video.02_backspin",
+      "kind": "video_segment",
+      "status": "partial",
+      "source_locator": "00:02-00:24 backspin segment",
+      "source_segment": "backspin",
+      "source_seconds": [
+        2,
+        24
+      ],
+      "demo_schedules": [
+        "backspin_author_current_source",
+        "backspin"
+      ],
+      "pr_video_slots": [
+        "02",
+        "16"
+      ],
+      "blockers": [
+        "Checker-textured exact and boxed DART clips are attached, but the source landing phase, 22-second semantic edit, matched external rows, renderer golden, and paper parity are missing."
+      ]
+    },
+    {
+      "id": "video.03_incline",
+      "kind": "video_segment",
+      "status": "partial",
+      "source_locator": "00:24-00:35 incline segment",
+      "source_segment": "incline",
+      "source_seconds": [
+        24,
+        35
+      ],
+      "demo_schedules": [
+        "incline",
+        "incline_author_sweep_current_source"
+      ],
+      "pr_video_slots": [
+        "01"
+      ],
+      "blockers": [
+        "DART exact/boxed media exists, but the full source semantic edit, source trajectories, matched external rows, approved goldens, and paper timing are missing."
+      ]
+    },
+    {
+      "id": "video.04_turntable",
+      "kind": "video_segment",
+      "status": "partial",
+      "source_locator": "00:35-00:50 turntable segment",
+      "source_segment": "turntable",
+      "source_seconds": [
+        35,
+        50
+      ],
+      "demo_schedules": [
+        "turntable_author_mu02_omega2",
+        "turntable_author_mu02_omega5",
+        "turntable_author_mu05_omega2",
+        "turntable_author_mu05_omega5"
+      ],
+      "pr_video_slots": [
+        "03",
+        "10",
+        "11",
+        "12",
+        "13"
+      ],
+      "blockers": [
+        "The four-cell DART edit is bounded current-source evidence, not the complete historical edit, source-backend state match, external-solver parity, golden, or real-time verdict."
+      ]
+    },
+    {
+      "id": "video.05_painleve",
+      "kind": "video_segment",
+      "status": "partial",
+      "source_locator": "00:50-01:00 Painleve segment",
+      "source_segment": "painleve",
+      "source_seconds": [
+        50,
+        60
+      ],
+      "demo_schedules": [
+        "painleve_author_mu05",
+        "painleve_author_mu055"
+      ],
+      "pr_video_slots": [
+        "04",
+        "05"
+      ],
+      "blockers": [
+        "The two DART adapter clips lack source-backend trajectory equivalence, matched external rows, historical edit/goldens, timing comparability, and a solver-superiority basis."
+      ]
+    },
+    {
+      "id": "video.06_card_house",
+      "kind": "video_segment",
+      "status": "blocked",
+      "source_locator": "01:00-01:07 card-house segment",
+      "source_segment": "card_house_26",
+      "source_seconds": [
+        60,
+        67
+      ],
+      "demo_schedules": [
+        "card_house_author_4_impact_current_source",
+        "card_house_author_4_impact_source_continuation_current_source",
+        "card_house_26"
+      ],
+      "pr_video_slots": [
+        "06"
+      ],
+      "blockers": [
+        "Strict exact FBF fails before the complete source segment; attached continuation media is policy-asymmetric and lacks a strict outcome, faithful historical edit, matched external rows, and parity."
+      ]
+    },
+    {
+      "id": "video.07_arch_25",
+      "kind": "video_segment",
+      "status": "partial",
+      "source_locator": "01:07-01:14 25-stone arch segment",
+      "source_segment": "masonry_arch_25",
+      "source_seconds": [
+        67,
+        74
+      ],
+      "demo_schedules": [
+        "masonry_arch_25_literal_standing",
+        "masonry_arch_25_author_crown_impact_current_source",
+        "masonry_arch_25_author_crown_impact_source_continuation_current_source",
+        "masonry_arch_25"
+      ],
+      "pr_video_slots": [
+        "07",
+        "14"
+      ],
+      "blockers": [
+        "Standing and continuation DART clips exist, but strict crown impact, source trajectory/backend, matched external rows, historical renderer golden, timing, and parity are missing."
+      ]
+    },
+    {
+      "id": "video.08_arch_101",
+      "kind": "video_segment",
+      "status": "blocked",
+      "source_locator": "01:14-01:20 101-stone arch segment",
+      "source_segment": "masonry_arch_101",
+      "source_seconds": [
+        74,
+        80
+      ],
+      "demo_schedules": [
+        "masonry_arch_101_author_standing_current_source"
+      ],
+      "pr_video_slots": [
+        "08"
+      ],
+      "blockers": [
+        "Exact stops after completed step 209 and boxed collapses; frozen-prefix diagnostic media cannot supply the source standing sequence, matched Kamino row, historical edit, timing, or parity."
+      ]
+    },
+    {
+      "id": "video.09_closing",
+      "kind": "video_segment",
+      "status": "blocked",
+      "source_locator": "01:20-01:22 closing card",
+      "source_segment": "closing",
+      "source_seconds": [
+        80,
+        82
+      ],
+      "blockers": [
+        "The closing card is not a simulation demo and no approved DART replacement edit exists."
+      ]
+    }
+  ]
+}

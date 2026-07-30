@@ -1,5 +1,55 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-29 Post-target Coverage Checkpoint
+
+This section supersedes the branch-head, Figure 3 currentness, CI, and
+manifest-tooling statements in every older section below. The task remains
+active and incomplete.
+
+- Merge checkpoint `3aee836ff62d80fcbbaacd39d54134c7af7d3061` incorporates
+  `origin/release-6.20` tip
+  `2ffe228c14c67e120d2a946ce9d36e8a9658044f`, which removes the volumetric FEM
+  subsystem. Query the live branch and PR #3377 after publication. Keep the PR
+  draft and do not trigger `@codex review`.
+- Source schedules retain `"native"` as the stable DART-owned policy label
+  while an unoverridden consolidated runtime reports detector identity
+  `"dart"`. Plans bind both identities. The visual-evidence suite passes
+  478/478; `pixi run lint` and `pixi run check-lint` pass.
+- The compact source-controlled
+  `paper-coverage-contract.json` replaces the deleted generated-asset
+  manifest. Run
+  `python scripts/run_fbf_visual_evidence.py audit-coverage`. The audit passes
+  29 canonical rows (`24 partial`, `5 blocked`, `0 complete`), all 18 required
+  runnable video schedules, and all 16 GitHub user-attachment ledger slots.
+  The contract SHA-256 is
+  `4f078f04cde7d8c74a1c75eb43072b9e94d345b2003a7c9e79720501aa0b1a27`.
+  A green structural audit does not make the incomplete evidence rows
+  complete.
+- Commit `259da0a4828` intentionally removed the old 19,000-line
+  asset-coupled validator, its 200 KiB test, and tracked generated evidence.
+  Do not restore them. Generated frames, traces, CSVs, and media remain under
+  ignored task `assets/`; the compact contract stores only row status,
+  fail-closed blockers, demo mappings, and PR attachment-slot references.
+- The ignored Figure 3 seal under
+  `assets/pr_media_current_head_3cfafc/` remains valid capture-time evidence
+  for runtime checkpoint `3cfafc70ec1`, not for the later `2ffe228c` target
+  merge. At capture time exact, boxed, and the synchronized checker group
+  passed independent verification; both lanes completed 240 steps and the
+  checker orientation visibly changed. Clip SHA-256 values were
+  `b2c268aa337f...`, `dc3228e2aa8c...`, and `e321c711eae7...`. Both solvers
+  passed the bounded slice, so no superiority, equivalence, source-backend
+  trajectory, historical-renderer, timing, Figure 3, or paper-parity claim
+  followed. Rebuild and reseal it before calling any media current-head
+  evidence.
+
+Next: publish a stable checkpoint, rebuild the demo/core runtime, reseal Figure
+3, run the matched one-/four-core packet only after a declared cool/low-load
+host gate, reseal Figure 8, and run the roughly five-hour paired ten-level
+capture from one unchanged pushed head. Upload changed review media through
+GitHub user attachments rather than Git, then synchronize the ledger, docs, PR
+body, and current-head CI without making the PR ready or requesting review
+early.
+
 ## 2026-07-29 Collision-Consolidation Merge Checkpoint
 
 This section supersedes every older branch-head, binary-hash, active-capture,

@@ -9630,7 +9630,7 @@ def test_media_validation_records_h264_yuv420p_probe_without_schema_drift(
     assert reports[0]["full_decode"] == "pass"
 
 
-def test_coverage_audit_checks_visual_schedules_and_source_segments():
+def test_coverage_audit_checks_paper_rows_visual_schedules_and_pr_media():
     module = _load_module()
 
     report = module.audit_coverage_contract()
@@ -9638,7 +9638,23 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
     assert report["pass"] is True
     assert report["capture_path_complete"] is True
     assert report["evidence_complete"] is False
+    assert report["paper_requirements"]["requirement_count"] == 29
+    assert report["paper_requirements"]["status_counts"] == {
+        "partial": 24,
+        "blocked": 5,
+        "complete": 0,
+    }
+    assert report["paper_requirements"]["registered_pr_video_slot_count"] == 16
+    assert report["paper_requirements"]["blocked_requirements"] == [
+        "table.07",
+        "video.01_title",
+        "video.06_card_house",
+        "video.08_arch_101",
+        "video.09_closing",
+    ]
     assert report["video_segments"]["video.04_turntable"] == (35, 50)
+    assert report["video_segments"]["video.06_card_house"] == (60, 67)
+    assert report["video_segments"]["video.08_arch_101"] == (74, 80)
     assert (
         "card_house_author_4_impact_current_source"
         in report["known_gate_blocked_schedules"]
@@ -9663,6 +9679,57 @@ def test_coverage_audit_checks_visual_schedules_and_source_segments():
     )
     assert "masonry_arch_101" not in report["known_gate_blocked_schedules"]
     assert report["required_schedule_count"] == 18
+
+
+def test_coverage_audit_rejects_noncanonical_paper_requirement_set(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    contract = json.loads(
+        module.PAPER_COVERAGE_CONTRACT_PATH.read_text(encoding="utf-8")
+    )
+    contract["requirements"].pop()
+    contract_path = tmp_path / "paper-coverage-contract.json"
+    contract_path.write_text(json.dumps(contract), encoding="utf-8")
+    monkeypatch.setattr(module, "PAPER_COVERAGE_CONTRACT_PATH", contract_path)
+
+    with pytest.raises(
+        ValueError, match="paper coverage requirement identifiers or order changed"
+    ):
+        module.audit_coverage_contract()
+
+
+def test_coverage_audit_rejects_unregistered_pr_video_slot(tmp_path, monkeypatch):
+    module = _load_module()
+    matrix = module.COVERAGE_MATRIX_PATH.read_text(encoding="utf-8")
+    matrix_path = tmp_path / "PAPER_DEMO_VIDEO_MATRIX.md"
+    matrix_path.write_text(
+        matrix.replace(
+            "https://github.com/user-attachments/assets/"
+            "715455d4-2174-4f32-be7b-f7087eabb380",
+            "https://example.com/not-a-user-attachment",
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(module, "COVERAGE_MATRIX_PATH", matrix_path)
+
+    with pytest.raises(ValueError, match="malformed PR video slot 01"):
+        module.audit_coverage_contract()
+
+
+def test_main_audit_coverage_emits_machine_readable_gate(tmp_path, capsys):
+    module = _load_module()
+    output_path = tmp_path / "coverage-audit.json"
+
+    result = module.main(["audit-coverage", "--out", str(output_path)])
+    stdout_payload = json.loads(capsys.readouterr().out)
+    stored_payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert result == 0
+    assert stdout_payload == stored_payload
+    assert stored_payload["pass"] is True
+    assert stored_payload["paper_requirements"]["requirement_count"] == 29
+    assert stored_payload["paper_requirements"]["overall_status"] == "incomplete"
 
 
 def test_audited_local_source_hashes_are_pinned():

@@ -6,7 +6,30 @@ Public-source availability addendum: 2026-07-18
 Current-source incline sweep addendum: 2026-07-19
 Current-runtime closure and PR-media addendum: 2026-07-29
 Post-merge runtime addendum: 2026-07-29
+Latest-target and compact-coverage addendum: 2026-07-29
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
+
+Latest-target boundary
+----------------------
+
+Merge checkpoint 3aee836ff62d80fcbbaacd39d54134c7af7d3061 incorporates
+release-6.20 tip 2ffe228c14c67e120d2a946ce9d36e8a9658044f. That target
+removes the volumetric FEM subsystem from core DART, so every runtime-bound
+hash and packet below is capture-time evidence until rebuilt and freshly
+sealed from a later unchanged checkpoint. In particular, the Figure 3 bundle
+captured at 3cfafc70ec1 remains valid for that capture but is not current-head
+runtime proof after 3aee836ff62.
+
+The compact source-controlled paper-coverage-contract.json replaces the
+deleted generated-asset manifest. The command
+`python scripts/run_fbf_visual_evidence.py audit-coverage` validates 29
+canonical rows (24 partial, 5 blocked, 0 complete), all 18 required runnable
+source-video schedules, and all 16 registered GitHub user-attachment slots.
+The contract SHA-256 is
+4f078f04cde7d8c74a1c75eb43072b9e94d345b2003a7c9e79720501aa0b1a27.
+This is a structural and claim-boundary gate, not paper-evidence completion.
+Generated frames, traces, raw tables, logs, and media remain ignored and are
+not represented as tracked manifest artifacts.
 
 The immutable post-merge code/runtime checkpoint is
 6fb4d0dbd8cff445f5656e31bcdec7e9f09938df. It contains release target
