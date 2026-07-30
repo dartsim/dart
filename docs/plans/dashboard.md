@@ -12,9 +12,10 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Finish #3353 as the WP-PG.15/D7 evaluator and restoration PR,
-  then choose the default-fix route from its S6 evidence without retiring the
-  task while #3056 remains open.
+- Next step: Re-baseline the WS-G cross-engine matrix and `dart` detector
+  rows on the current merged base, then use that evidence to select one
+  consolidated implementation gap or the closeout route. Keep the task active
+  while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`
