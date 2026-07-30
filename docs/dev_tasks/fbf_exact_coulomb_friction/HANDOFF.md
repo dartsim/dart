@@ -23,28 +23,27 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Fixed evidence-execution head:
+Latest pushed evidence capture head:
 
-  f36d28eea97a60ee6bfcf92c1484b91aa370ea9a
+  c1ccf49e64aec1bc6f02f1a77e0fe7133288300c
 
 Matching pushed code/runtime checkpoint:
 
   91eea8541b8908f00a3d21717f0bb832320490ec
 
-The fixed execution head is documentation-only and uses the runtime
-checkpoint below. That runtime checkpoint contains release-6.20 tip
+The capture head is a documentation-only descendant of the runtime checkpoint
+below. That runtime checkpoint contains release-6.20 tip
 aaf1e5f64dd47f0350ea1b395bf257bb77b36829. Query the live branch and PR
 #3377 before acting. At the 2026-07-30 handoff the PR is open, draft, and
-mergeable. Immediately after f36d28eea97, AI infrastructure and both Read the
-Docs contexts passed, the other reported checks were running or queued, and
-none had failed. Keep it draft, requery mutable CI, and do not trigger @codex
-review.
+mergeable, and every reported hosted check was terminal green except one
+intentional skip. Keep it draft, requery mutable CI, and do not trigger
+@codex review.
 
 Commit f36d28eea97 is the Figure 3 documentation seal and fixed execution head
 for the CPU packet; it does not change the runtime hashes below. Preserve the
-later CPU handoff edits. Before their next commit, wait for a safe host
-window, run pixi run lint and git diff --check, fetch the target, merge it if
-advanced, and then create and push the authorized checkpoint.
+later CPU and Figure 8 handoff edits. Before the next commit, run pixi run
+lint and git diff --check, fetch the target, merge it if advanced, and then
+create and push the authorized checkpoint.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -93,6 +92,30 @@ criterion was loosened.
 Every pre-46719 performance packet, Figure 8 capture, and ten-level capture
 binds an older collision runtime. The interrupted cross-head ten-level
 exact/partial-boxed pair is non-evidence and must never be combined or resumed.
+
+Fresh current-head Figure 8 evidence is complete under ignored
+assets/pr_media_current_head_c1cc/. Boxed capture and independent reuse
+verification pass at 1,600/1,600, but the standing oracle is false and the
+crown collapses. Exact stops after completed step 209 with iteration_cap;
+step 208 is the last rendered frame. The exact terminal signature is 208
+contacts, 5,000 iterations, residual/worst residual
+1.2582804496066107e-6, 342 attempts/solves, one cap acceptance, and zero exact
+failures/fallbacks.
+
+Finalize, manual inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone
+verification pass. Status is valid_current_dart_blocker_diagnostic and
+upload_ready=true. Clip/panel/metadata/manual hashes are 3d652018...,
+d6782a65..., 389e624b..., and bb14a363.... This is only a labeled
+frozen-prefix blocker diagnostic, not a complete exact trajectory, standing
+result, historical Figure 8 invocation, superiority, timing, or paper parity.
+
+The current Figure 8 clip differs from registered slot 08 (5e83527d...).
+Upload the new bytes through the GitHub browser composer and verify the
+resulting user-attachment download before changing the ledger or PR URL.
+Never commit the MP4. The paired ten-level schedule is now the next
+long-running media gate; run exact and boxed from one fresh root and one
+unchanged pushed head. Exact requests source continuation while boxed does
+not, so keep the policy asymmetry explicit and never call it a solver-only A/B.
 
 Fresh Figure 3 capture-time validation passes under ignored
 assets/pr_media_current_head_cfd865/. That root name was chosen before the

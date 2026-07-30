@@ -1,5 +1,37 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
+## 2026-07-30 Current-Head Figure 8 Update
+
+This section supersedes every older Figure 8 currency, upload, and immediate
+next-step statement below.
+
+- Ignored root `assets/pr_media_current_head_c1cc/` binds pushed head
+  `c1ccf49e64a` to unchanged runtime checkpoint `91eea8541b8`, target
+  `aaf1e5f64dd`, demo/core SHA-256 values `9e4f6c37...` / `0ff1c992...`,
+  and closure digest `e6f57715...`. Boxed capture summary
+  `c4f47108...` and independent boxed verification `3a6e4266...` pass.
+- Exact stops after completed step 209 with `iteration_cap`; step 208 is the
+  last rendered frame. The terminal signature is 208 contacts, 5,000
+  iterations, residual/worst residual `1.2582804496066107e-6`, 342
+  attempts/solves, one cap acceptance, zero exact failures, and zero boxed
+  fallbacks. Boxed completes 1,600/1,600 but fails the standing oracle and
+  visibly collapses at the crown.
+- Finalize, manual inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone
+  reuse-only verification pass. The sealed clip/panel/metadata/manual hashes
+  are `3d652018...`, `d6782a65...`, `389e624b...`, and `bb14a363...`;
+  `upload_ready=true`.
+- The hstack freezes only the last valid exact frame and labels it. This is a
+  current-DART frozen-prefix blocker diagnostic, not a complete exact
+  trajectory, solver-superiority result, historical Figure 8 invocation,
+  timing result, or paper parity.
+- The clip differs from registered slot 08 (`5e83527d...`). The source-world
+  pixels match the prior capture, but the encoded MP4 does not; a new browser
+  user-attachment upload is required. Do not relabel the existing URL as
+  current-head evidence, and do not commit the video.
+- The paired ten-level capture remains the next long-running media gate. Its
+  exact lane requests source continuation while boxed does not, so it is
+  policy-asymmetric presentation, never a solver-only A/B.
+
 ## 2026-07-30 Current-Head Figure 3 And CPU Update
 
 This section supersedes every older current-head, Figure 3, CPU, branch, raw

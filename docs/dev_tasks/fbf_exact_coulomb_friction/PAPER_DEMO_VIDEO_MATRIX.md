@@ -4,6 +4,26 @@ Status: active draft gate for PR #3377. The PR must remain draft until every
 required row below has a current GitHub-hosted video URL and passes its solver,
 physical-outcome, and claim-boundary checks.
 
+## 2026-07-30 Current-Head Figure 8 Upload Delta
+
+Fresh current-head Figure 8 evidence under ignored
+`assets/pr_media_current_head_c1cc/` passes boxed capture, independent member
+verification, exact-prefix finalization, four-time manual inspection, seal,
+and standalone sealed verification. Exact stops after completed step 209 and
+freezes only its last valid step-208 image; boxed completes 1,600 but fails the
+standing oracle and visibly collapses. The group is a labeled frozen-prefix
+blocker diagnostic only.
+
+The current clip SHA-256 is
+`3d6520189e610893588c77692c1f460c233ffa92e52125710fdafb20bbad1297`;
+panel/metadata/manual hashes are `d6782a65...`, `389e624b...`, and
+`bb14a363...`. It is not byte-identical to registered slot 08
+(`5e83527d...`). Do not change the ledger row or PR URL until the new MP4 is
+uploaded through the GitHub browser composer and the resulting
+`github.com/user-attachments/...` stream is downloaded and hash-verified.
+Until then, slot 08 remains valid historical captured-checkpoint media, not a
+current-head attachment.
+
 ## 2026-07-29 Current Attachment Ledger
 
 This section supersedes older statements below that every browser upload is

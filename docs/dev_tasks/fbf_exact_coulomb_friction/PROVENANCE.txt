@@ -7,7 +7,44 @@ Current-source incline sweep addendum: 2026-07-19
 Current-runtime closure and PR-media addendum: 2026-07-29
 Post-merge runtime addendum: 2026-07-29
 Latest-target and compact-coverage addendum: 2026-07-29
+Current-head Figure 8 addendum: 2026-07-30
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
+
+Current-head Figure 8 boundary
+-------------------------------
+
+Fresh ignored assets/pr_media_current_head_c1cc/ evidence binds pushed
+documentation head c1ccf49e64a to unchanged code/runtime checkpoint
+91eea8541b8, release target aaf1e5f64dd, dart-demos SHA-256
+9e4f6c37eff34ba450763a2ef47eaab198508c89ad3e03156685620a7c17dc2f,
+core DART SHA-256
+0ff1c992e9c2d2304c7c314ffff4cfa84ab37ba4c812207edcd4a48e76bbb0ea,
+and runtime-closure digest
+e6f5771523363ebdf4f11887dc5a82b3d563a3e85cf0268346d999b169292a6c.
+
+The boxed lane completes 1,600/1,600 and passes independent reuse
+verification, but its standing oracle is false and its crown collapses. The
+exact lane stops after completed step 209 with iteration_cap; step 208 is the
+last rendered frame. Its terminal signature is 208 contacts, 5,000 iterations,
+residual/worst residual 1.2582804496066107e-6, 342 attempts/solves, one cap
+acceptance, and zero exact failures or boxed fallbacks.
+
+Finalize, visual inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone
+reuse verification pass. The sealed clip, panel, metadata, and manual record
+SHA-256 values are
+3d6520189e610893588c77692c1f460c233ffa92e52125710fdafb20bbad1297,
+d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372,
+389e624b054f331f0ae04e6fe6b6aa2792df49836e03a62eca8fffa9d8f35b0b,
+and bb14a363e530da5daf0979da61eaca43e5779c92b5570657f858dc709cc360e1.
+Status is valid_current_dart_blocker_diagnostic and upload_ready=true.
+
+This is only a labeled frozen-prefix blocker diagnostic. It is not a complete
+exact trajectory, standing result, historical Figure 8 invocation,
+source/backend trajectory, superiority, timing, or paper parity. The new MP4
+does not match registered slot 08 (5e83527d...). A fresh GitHub browser
+user-attachment upload and download/hash verification are required; the
+existing URL remains historical captured-checkpoint media. Generated media
+stays outside Git.
 
 Latest-target boundary
 ----------------------

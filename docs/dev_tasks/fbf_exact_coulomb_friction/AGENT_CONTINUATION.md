@@ -1,7 +1,7 @@
 # Agent Continuation And Truth Ledger
 
 This is the authoritative status for the active
-`fbf_exact_coulomb_friction` dev task as of 2026-07-29. It supersedes older
+`fbf_exact_coulomb_friction` dev task as of 2026-07-30. It supersedes older
 solver, performance, geometry, GUI, PR, and completion claims in this task
 folder. Do not mark the task complete or retire the folder.
 
@@ -13,6 +13,39 @@ tests, benchmarks, and GUI examples from the paper?" is:
 ```text
 No.
 ```
+
+## 2026-07-30 Current-Head Figure 8 Seal
+
+This section supersedes every older Figure 8 currency, upload, and next-action
+statement below.
+
+- Fresh ignored root `assets/pr_media_current_head_c1cc/` binds pushed head
+  `c1ccf49e64a` to unchanged runtime checkpoint `91eea8541b8`, target
+  `aaf1e5f64dd`, demo/core hashes `9e4f6c37...` / `0ff1c992...`, and closure
+  digest `e6f57715...`.
+- Boxed capture and independent verification pass; summary hashes are
+  `c4f47108...` and `3a6e4266...`. Boxed completes 1,600/1,600 but fails the
+  standing oracle and visibly collapses at the crown.
+- Exact stops after completed step 209 with `iteration_cap`, preserving
+  step 208 as the last rendered frame. Its pinned signature is 208 contacts,
+  5,000 iterations, residual/worst residual `1.2582804496066107e-6`, 342
+  attempts/solves, one cap acceptance, and zero failures/fallbacks.
+- Finalize, four-time visual inspection, seal, and standalone reuse-only
+  verification pass. Status is `valid_current_dart_blocker_diagnostic`,
+  `upload_ready=true`. Clip/panel/metadata/manual hashes are `3d652018...`,
+  `d6782a65...`, `389e624b...`, and `bb14a363...`.
+- This freezes only the last valid exact image and is explicitly labeled. It
+  proves a current-DART blocker diagnostic only—not a complete exact
+  trajectory, standing result, historical Figure 8 invocation, superiority,
+  timing, or paper parity.
+- The new clip is not byte-identical to registered slot 08 (`5e83527d...`).
+  Keep the existing URL historical and upload the new bytes through the
+  GitHub browser composer. Never check the MP4 into Git.
+
+Next, checkpoint the documentation, then run the fresh paired ten-level
+schedule from one unchanged pushed head. Exact requests source continuation;
+boxed does not. Preserve the policy-asymmetric labels and never call the
+result a solver-only A/B. Keep PR #3377 draft and do not trigger review.
 
 ## 2026-07-30 Current-Head API, Figure 3, And CPU Checkpoint
 

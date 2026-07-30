@@ -1,5 +1,28 @@
 # FBF GUI And Video Evidence Report
 
+## 2026-07-30 Current-Head Figure 8 Seal
+
+Fresh Figure 8 evidence under ignored
+`assets/pr_media_current_head_c1cc/` binds pushed head `c1ccf49e64a` to
+unchanged runtime checkpoint `91eea8541b8` and demo/core/closure hashes
+`9e4f6c37...` / `0ff1c992...` / `e6f57715...`.
+
+Boxed capture and independent reuse verification pass at 1,600/1,600, but the
+standing oracle is false and the crown visibly collapses. Exact fails closed
+after completed step 209 with `iteration_cap`; the paired presentation freezes
+only the last valid step-208 exact frame and labels that fact. Finalize,
+inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone verification all
+pass. Status is `valid_current_dart_blocker_diagnostic`,
+`upload_ready=true`; clip/panel/metadata/manual hashes are `3d652018...`,
+`d6782a65...`, `389e624b...`, and `bb14a363...`.
+
+This is not a complete exact trajectory, standing result, historical Figure 8
+invocation, solver-superiority result, timing result, or paper parity. The new
+MP4 is not byte-identical to registered slot 08 (`5e83527d...`), so the old
+URL remains captured-checkpoint evidence and a fresh browser user-attachment
+upload is pending. Media stays outside Git. The paired ten-level capture
+remains the next long-running current-head video gate.
+
 ## Current Status
 
 The 2026-07-29 captured-checkpoint evidence supersedes older upload statements
