@@ -443,6 +443,58 @@ def test_partial_upload_refreshes_observed_remote_assets(
     assert view_count == 2
 
 
+def test_final_verification_failure_refreshes_observed_remote_assets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    shot = tmp_path / "shot.png"
+    clip = tmp_path / "clip.mp4"
+    view_count = 0
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
+        if args[:2] == ["release", "view"]:
+            view_count += 1
+            if view_count == 1:
+                return _Completed(stdout=json.dumps(_release()))
+            if view_count == 2:
+                return _Completed(stdout="{malformed")
+            return _Completed(stdout=json.dumps(_release(shot, clip)))
+        return _Completed()
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(tmp_path / "section.md"),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 2
+    failed = json.loads(manifest_out.read_text(encoding="utf-8"))
+    observed = {
+        asset["name"]: asset for asset in failed["observed_release_assets"]
+    }
+    for path in (shot, clip):
+        assert observed[_release_asset_name(path)] == {
+            **_remote_asset(path),
+            "present": True,
+        }
+    assert view_count == 3
+
+
 @pytest.mark.parametrize("alias", ["same-output", "selected-artifact"])
 def test_output_aliases_fail_before_github(
     tmp_path: Path,

@@ -373,12 +373,12 @@ def _stage_release_assets(
     return staged
 
 
-def _refresh_observed_assets_after_mutation_failure(
+def _refresh_observed_assets_after_publication_failure(
     view_arguments: list[str],
     selected_assets: dict[str, dict[str, Any]],
     attempt: _PublicationAttempt,
 ) -> None:
-    """Best-effort refresh remote state without masking the mutation failure."""
+    """Best-effort refresh remote state without masking publication failure."""
     attempt.observed_assets = []
     try:
         view = _gh(view_arguments, check=False)
@@ -475,7 +475,7 @@ def _publish_gh_release(
                     ]
                 )
             except OSError, subprocess.CalledProcessError:
-                _refresh_observed_assets_after_mutation_failure(
+                _refresh_observed_assets_after_publication_failure(
                     view_arguments,
                     selected_assets,
                     attempt,
@@ -498,14 +498,22 @@ def _publish_gh_release(
                     ]
                 )
             except OSError, subprocess.CalledProcessError:
-                _refresh_observed_assets_after_mutation_failure(
+                _refresh_observed_assets_after_publication_failure(
                     view_arguments,
                     selected_assets,
                     attempt,
                 )
                 raise
-        final_view = _gh(view_arguments)
-        _, final_assets = _parse_release_assets(final_view)
+        try:
+            final_view = _gh(view_arguments)
+            _, final_assets = _parse_release_assets(final_view)
+        except OSError, TypeError, ValueError, subprocess.CalledProcessError:
+            _refresh_observed_assets_after_publication_failure(
+                view_arguments,
+                selected_assets,
+                attempt,
+            )
+            raise
         attempt.observed_assets = _observed_selected_assets(
             final_assets, selected_assets
         )
