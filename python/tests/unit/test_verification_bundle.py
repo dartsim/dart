@@ -47,6 +47,11 @@ def test_verification_bundle_copies_artifacts_and_writes_prompt(tmp_path: Path) 
     assert (out / "grid.png").is_file()
     prompt = (out / "vlm_prompt.md").read_text(encoding="utf-8")
     assert "Use the text artifacts as the primary oracle" in prompt
+    assert "not semantic visual review" in prompt
+    assert "actually open each selected image" in prompt
+    assert "original/full detail" in prompt
+    assert "Text oracle; Visible observation; Reconciliation" in prompt
+    assert "unexplained disagreement is fail/uncertain" in prompt
     assert "Does the box rest on the ground?" in prompt
 
     disk_manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))

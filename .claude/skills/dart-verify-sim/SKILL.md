@@ -7,8 +7,9 @@ description: "DART Verify Sim: text-first and visual checks for 3D scenes and ph
 
 Load this skill when verifying that a DART 3D scene or physics simulation is
 correct — implementing, debugging, benchmarking, or reviewing dynamics,
-collision, contact, or GUI output. DART's domains need 3D understanding that
-language models lack natively; this tooling makes it checkable without a GUI.
+collision, contact, or GUI output. Modern image-capable agents can inspect a
+capture, but pixels do not expose solver state and machine image checks are not
+semantic inspection. This tooling grounds visual reasoning without a GUI.
 
 **Lead with text, corroborate with images.** Measured A/B evidence: per-step
 metrics and trajectories detect nearly all seeded physics defects; a rendered
@@ -25,13 +26,38 @@ scene diff, trajectory/contact comparison, or focused behavioral test), then
 corroborate it end to end with an assessed headless view and only the debug
 layers needed by the claim. If rendering is unavailable or genuinely
 irrelevant, record why and name the replacement evidence; never treat an image
-as the sole correctness oracle.
+as the sole correctness oracle. When the active agent accepts image input,
+actually open and semantically inspect the selected capture; a passing view
+report or `image-verdict` is not visual review.
 
 ## Full documentation
 
 [`docs/onboarding/agent-sim-verification.md`](../../../docs/onboarding/agent-sim-verification.md)
 — the durable guide. `docs/ai/verification.md` owns the gate policy;
 `docs/onboarding/profiling.md` owns text-first profiling.
+
+## Image-capable review loop
+
+GPT-5.6 Sol Max supports native image input and original-detail inspection.
+Keep this loop capability-based so a future model-upgrade audit can replace the
+target-specific note without cloning the skill.
+
+1. State one claim, its expected visible observation, and the text oracle that
+   decides correctness.
+2. Capture one assessed, claim-tied view first. Add only the debug layers needed
+   for the claim; use paired plain/debug views when an overlay could obscure the
+   underlying scene.
+3. Run `image-verdict` for artifact integrity, then open the selected local PNG
+   with the active agent's native image viewer. Use original detail for small
+   contacts, labels, bounds, or frame axes. Add a grid or another view only when
+   motion, occlusion, or ambiguity requires it.
+4. Record the visible observation separately from the text result. If they
+   disagree, do not average them into a pass: report fail/uncertain, inspect the
+   capture sidecar, reframe or recapture, and investigate the simulation state.
+5. Close with pass/fail/uncertain, artifact path, view/layers, reproduction
+   command, what the image shows, and what it does not prove. If native image
+   review is unavailable, use `verification-bundle` for an image-capable
+   reviewer and record that limitation.
 
 ## Quick commands
 
@@ -71,7 +97,7 @@ Visual (corroboration):
   upload only with `--yes` + maintainer approval)
 - `pixi run image-verdict` / `image-golden` / `image-sheet` — JSON verdict,
   golden diff, contact sheet (contrast is report-only; `--require-contrast` to
-  gate)
+  gate); these are machine pixel checks, not semantic visual review
 - `pixi run image-ab-study` — blind-judge detection deltas for single-view,
   multi-view, turntable, and annotated captures
 - `pixi run image-ab-round2` — prepare a blinded round-2 packet and score

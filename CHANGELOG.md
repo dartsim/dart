@@ -380,9 +380,11 @@ compatibility remains on the active DART 6 LTS branch._
 - Upgraded DART's AI-native contributor infrastructure for current Codex and
   GPT-5.6 with task-shaped model/reasoning guidance, reusable upgrade audits,
   machine-readable harness diagnostics, leaner prompts, bounded agents/hooks,
-  branch-aware cross-tool verification, and a required text-first plus visual
-  simulation-debugging evaluation lane. Corrected the shared box-stack evidence
-  fixture so it starts with shallow contacts instead of deep interpenetration.
+  branch-aware cross-tool verification, and a required text-first plus native
+  semantic visual simulation-debugging lane. The visual workflow now makes
+  image-capable agents inspect and reconcile captures instead of treating pixel
+  checks as scene understanding. Corrected the shared box-stack evidence fixture
+  so it starts with shallow contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code

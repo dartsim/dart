@@ -2,9 +2,10 @@
 
 How an AI agent (or any contributor) checks that a DART 3D scene and physics
 simulation behaves correctly, without a GUI. DART's domains — dynamics,
-collision, robotics — need 3D understanding that language models lack natively,
-so this page collects the text-first and visual verification tooling that makes
-that understanding checkable.
+collision, robotics — need state-grounded 3D understanding. Image-capable
+agents can inspect captures, but an image does not expose solver state and a
+machine pixel check is not semantic inspection. This page collects the
+text-first and visual tooling that makes the reasoning checkable.
 
 **Principle (measured, see below): lead with text, corroborate with images.**
 A/B evidence gathered while building this tooling showed per-step metrics and
@@ -41,6 +42,19 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
 
 ## Visual verification (corroboration)
 
+- **Native semantic review** — after view assessment and capture, an
+  image-capable agent must actually open the selected image and describe the
+  visible evidence tied to the claim. For GPT-5.6 Sol Max, use native image
+  input and original detail when contacts, labels, bounds, or frame axes are
+  small; start with one focused ~1280 px view and add another view or grid only
+  for motion, occlusion, or ambiguity. `image-verdict` checks pixels and
+  reference thresholds; its pass does not mean the scene was semantically
+  inspected. Record five fields: **claim and expected observation**, **text
+  oracle**, **visible observation**, **reconciliation and verdict**, and **not
+  proven / limitations**. Text/image disagreement is fail/uncertain until the
+  camera, artifact, or simulation state explains it. When native image input is
+  unavailable, route the artifacts through `verification-bundle` to an
+  image-capable reviewer and record the limitation.
 - **Render** — `dart.gui.render(world, camera=None, size=(w, h))` returns a
   headless RGBA image (buffer protocol; `.png_bytes()` for inline notebook
   display). `camera=None` bounds-fits the world; build an explicit camera with
@@ -101,7 +115,9 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   Habitat relative-norm and numpy SSIM). `pixi run image-golden` adds the
   golden workflow (`--update`, retries). `pixi run image-sheet` assembles a
   labeled contact-sheet grid (>=200 px tiles). Contrast is scene-dependent, so
-  it is reported but only gates pass/fail with `--require-contrast`.
+  it is reported but only gates pass/fail with `--require-contrast`. These
+  machine checks validate artifact integrity or reference deltas; they never
+  replace native semantic image review.
 - **A/B study reducer** — `pixi run image-ab-study` reduces blind-judge rows
   for single-view, multi-view, turntable, and annotated captures into detection
   deltas and false-positive rates. Treat its output as research evidence only

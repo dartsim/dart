@@ -374,6 +374,19 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         "motion_frames": args.motion_frames,
         "artifacts": artifacts,
         "reproduce": _reproduce_command(args),
+        "review_contract": {
+            "text_oracle_required": True,
+            "semantic_image_inspection_required": True,
+            "machine_checks_are_not_semantic_review": True,
+            "inspect_artifacts": [
+                artifact["path"]
+                for artifact in artifacts
+                if artifact["kind"] == "still"
+            ],
+            "recommended_detail": (
+                "original for fine contacts, labels, bounds, or frame axes"
+            ),
+        },
         "pass": True,
     }
     sidecar_path = out_dir / f"{args.prefix}_capture.json"

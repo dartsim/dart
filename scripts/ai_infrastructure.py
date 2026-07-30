@@ -46,7 +46,7 @@ SCENARIO_REQUIRED_KEYS = {
     "recovery",
     "forbidden_paths",
 }
-SCENARIO_OPTIONAL_KEYS = {"evidence_policy"}
+SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 PROFILE_FINGERPRINTS = {
     "main": {
         "base_ref": "origin/main",
@@ -1290,6 +1290,13 @@ def validate_scenarios(
                 case_errors.append(
                     "simulation verification has the wrong evidence policy"
                 )
+            if profile == "main" and contract.get("semantic_review_policy") != (
+                "native-image-inspection-or-provider-neutral-bundle-with-"
+                "explicit-limitation"
+            ):
+                case_errors.append(
+                    "simulation verification has the wrong semantic review policy"
+                )
             skill_source = root / ".claude/skills/dart-verify-sim/SKILL.md"
             try:
                 skill_text = skill_source.read_text()
@@ -1311,6 +1318,10 @@ def validate_scenarios(
                         "visual examples",
                         "rendering is unavailable",
                         "replacement evidence",
+                        "semantic inspection",
+                        "native image viewer",
+                        "original detail",
+                        "do not average",
                     ]
                 )
             for marker in skill_markers:

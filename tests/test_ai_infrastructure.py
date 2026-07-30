@@ -138,6 +138,10 @@ GUI/rendering
 visual examples
 rendering is unavailable
 replacement evidence
+semantic inspection
+native image viewer
+original detail
+do not average
 bm-boxes-headless
 Xvfb
 --factory module:callable
@@ -1480,6 +1484,21 @@ def test_simulation_scenario_requires_text_and_visual_evidence_policy(tmp_path):
     assert any("wrong evidence policy" in error for error in errors)
 
 
+def test_simulation_scenario_requires_semantic_image_review_policy(tmp_path):
+    root = make_repo(tmp_path, "main")
+    path = root / infra.SCENARIO_MANIFEST
+    data = json.loads(path.read_text())
+    scenario = next(
+        item for item in data["scenarios"] if item["id"] == "simulation-verification"
+    )
+    scenario["semantic_review_policy"] = "machine-verdict-only"
+    path.write_text(json.dumps(data))
+
+    errors = infra.check_scenarios(root, "main")
+
+    assert any("wrong semantic review policy" in error for error in errors)
+
+
 def test_main_simulation_scenario_covers_all_applicable_surfaces():
     data = json.loads((ROOT / infra.SCENARIO_MANIFEST).read_text())
     scenario = next(
@@ -1487,6 +1506,9 @@ def test_main_simulation_scenario_covers_all_applicable_surfaces():
     )
 
     assert scenario["full_gates"] == ["pixi run test-py", "pixi run test-all"]
+    assert scenario["semantic_review_policy"] == (
+        "native-image-inspection-or-provider-neutral-bundle-with-explicit-limitation"
+    )
     assert {
         "dart/simulation",
         "dart/dynamics",
@@ -1510,6 +1532,7 @@ def test_main_simulation_scenario_covers_all_applicable_surfaces():
         ("scope", "must cover simulation"),
         ("focused_gate", "focused correctness gate"),
         ("full_gate", "full correctness gates"),
+        ("semantic_review", "semantic review policy"),
     ],
 )
 def test_simulation_scenario_semantic_mutations_are_rejected(
@@ -1533,6 +1556,8 @@ def test_simulation_scenario_semantic_mutations_are_rejected(
         scenario["permitted_scopes"].remove("dart/gui")
     elif mutation == "focused_gate":
         scenario["focused_gates"] = ["pixi run test-py"]
+    elif mutation == "semantic_review":
+        scenario["semantic_review_policy"] = "image-verdict-only"
     else:
         scenario["full_gates"] = ["pixi run test-all"]
     path.write_text(json.dumps(data))
@@ -1556,6 +1581,10 @@ def test_simulation_scenario_semantic_mutations_are_rejected(
         "visual examples",
         "rendering is unavailable",
         "replacement evidence",
+        "semantic inspection",
+        "native image viewer",
+        "original detail",
+        "do not average",
     ],
 )
 def test_simulation_skill_contract_markers_are_required(tmp_path, marker):

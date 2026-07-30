@@ -201,6 +201,15 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
     assert (tmp_path / still["path"]).exists()
     assert still["view_report"]["schema_version"] == "dart.view_report/v1"
     assert "pixi run agent-capture" in sidecar["reproduce"]
+    assert sidecar["review_contract"] == {
+        "text_oracle_required": True,
+        "semantic_image_inspection_required": True,
+        "machine_checks_are_not_semantic_review": True,
+        "inspect_artifacts": [still["path"]],
+        "recommended_detail": (
+            "original for fine contacts, labels, bounds, or frame axes"
+        ),
+    }
     saved = json.loads((tmp_path / "smoke_capture.json").read_text("utf-8"))
     assert saved == sidecar
 

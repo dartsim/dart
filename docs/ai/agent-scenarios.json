@@ -172,6 +172,7 @@
         "temporary claim-tied evidence"
       ],
       "evidence_policy": "text-first-with-claim-tied-visual-or-documented-exception",
+      "semantic_review_policy": "native-image-inspection-or-provider-neutral-bundle-with-explicit-limitation",
       "focused_gates": ["pixi run test-unit"],
       "full_gates": ["pixi run test-py", "pixi run test-all"],
       "recovery": "docs/onboarding/agent-sim-verification.md",
