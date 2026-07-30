@@ -51,6 +51,8 @@
 #include "examples/demos/scenes/atlas_simbicon/StateMachine.hpp"
 #include "examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
 
+#include <dart/common/Macros.hpp>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -63,6 +65,23 @@
 namespace sfs = dart_demos::soft_foot_simbicon_model;
 
 namespace {
+
+/// Whether `body` reads as colliding the way BodyContactCondition reads it: for
+/// a SoftBodyNode the flag lives on the point masses, not on the body.
+bool readsAsColliding(dart::dynamics::BodyNode* body)
+{
+  auto* soft = dynamic_cast<dart::dynamics::SoftBodyNode*>(body);
+  if (soft) {
+    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i) {
+      if (soft->getPointMass(i)->isColliding())
+        return true;
+    }
+  }
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const bool colliding = body->isColliding();
+  DART_SUPPRESS_DEPRECATED_END
+  return colliding;
+}
 
 /// Name of the gait state the controller is currently in. stateVector() covers
 /// the physical state only, so the gait phase has to be checked separately.
@@ -170,8 +189,24 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
 
   sfs::Model model = sfs::createModel(sfs::Feet::Soft);
   sfs::applyPush(model, Eigen::Vector3d(0.0, 0.0, 400.0), 100);
-  for (int s = 0; s < 400; ++s)
+
+  // Stop with the *right* foot in contact. The walking-in-place machine starts
+  // in state 1, whose terminal condition is a BodyContactCondition on the right
+  // foot, so this is the state in which stale contact bookkeeping does damage:
+  // the first controller update after the reset would see a stance foot from
+  // before the reset and transition the gait immediately.
+  constexpr int kSettleBeforeReset = 200;
+  bool stoppedInRightFootContact = false;
+  for (int s = 0; s < 600; ++s) {
     sfs::step(model);
+    if (s >= kSettleBeforeReset && readsAsColliding(model.rightFoot)) {
+      stoppedInRightFootContact = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(stoppedInRightFootContact)
+      << "never reached a right-foot stance to reset from, so this gate would "
+         "not exercise the stale-contact path";
 
   // The run has to have actually disturbed both the physical state and the
   // gait phase, or the reset below would be trivially satisfied.
@@ -195,11 +230,46 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
   EXPECT_EQ(model.forceDuration, 0);
   EXPECT_EQ(model.externalForce, Eigen::Vector3d::Zero());
 
+  // Restoring the state is necessary but not sufficient. Contact bookkeeping --
+  // the colliding flags, the last collision result, the constraint impulses --
+  // survives a state restore, and prepareStep() runs the controller before the
+  // next solve refreshes any of it. A reset that left that bookkeeping in place
+  // would let the initial gait state's BodyContactCondition fire immediately on
+  // a stance foot from before the reset, so only stepping both models can show
+  // the reset is equivalent to a fresh one.
+  //
+  // The horizon is deliberately short. Measured divergence between a reset and
+  // a fresh model is at floating-point noise for four steps (7e-16, 2e-14,
+  // 2e-14, 4e-15) and then jumps to 0.24 at step five, when a discrete gait
+  // transition lands one step apart in the two runs. Past that point this would
+  // be measuring how chaotic a contact-rich biped is, not whether reset works.
+  // A stale-contact reset diverges on the very first step, well inside this
+  // window.
+  constexpr int kLockstepSteps = 4;
+  constexpr double kLockstepTolerance = 1e-12;
+  for (int s = 1; s <= kLockstepSteps; ++s) {
+    sfs::step(fresh);
+    sfs::step(model);
+    const double divergence
+        = (sfs::stateVector(fresh) - sfs::stateVector(model))
+              .cwiseAbs()
+              .maxCoeff();
+    EXPECT_LT(divergence, kLockstepTolerance)
+        << "a reset model diverged from a fresh model at step " << s;
+    EXPECT_EQ(gaitStateName(model), gaitStateName(fresh))
+        << "gait state diverged at step " << s;
+  }
+
   std::cout << "soft_foot_simbicon reset  disturbed_by="
             << (disturbed - startState).cwiseAbs().maxCoeff() << " gait "
-            << startGait << "->" << disturbedGait << "->"
-            << gaitStateName(model) << "  residual_after_reset="
-            << (resetState - startState).cwiseAbs().maxCoeff() << "\n";
+            << startGait << "->" << disturbedGait << "->" << startGait
+            << "  residual_after_reset="
+            << (resetState - startState).cwiseAbs().maxCoeff()
+            << "  lockstep_divergence_over_" << kLockstepSteps << "_steps="
+            << (sfs::stateVector(fresh) - sfs::stateVector(model))
+                   .cwiseAbs()
+                   .maxCoeff()
+            << "\n";
 }
 
 //==============================================================================

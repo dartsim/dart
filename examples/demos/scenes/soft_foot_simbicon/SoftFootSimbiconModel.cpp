@@ -296,6 +296,22 @@ void resetModel(Model& model)
   stateMachine->transiteTo(stateMachine->getInitialState(), now);
   stateMachine->begin(now);
 
+  // Contact bookkeeping outlives the state above. The per-body and
+  // per-point-mass colliding flags, the last collision result, and the
+  // constraint impulses all still describe the pre-reset frame, and
+  // prepareStep() runs the controller before the next solve refreshes them --
+  // so the initial gait state's BodyContactCondition would fire on a stance
+  // foot that no longer exists.
+  //
+  // The colliding flags are themselves deprecated in DART 6, but the SIMBICON
+  // terminal conditions this demo reuses still read them, so the reset has to
+  // clear them the same way.
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  model.atlas->clearCollidingBodies();
+  DART_SUPPRESS_DEPRECATED_END
+  model.atlas->clearConstraintImpulses();
+  model.world->getConstraintSolver()->clearLastCollisionResult();
+
   model.externalForce.setZero();
   model.forceDuration = 0;
 }
