@@ -28,6 +28,43 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-30 Current-Head Figure 8 Seal
+
+This section supersedes every older Figure 8 currency, upload, and immediate
+next-step statement below.
+
+Fresh Figure 8 evidence under ignored
+`assets/pr_media_current_head_c1cc/` binds pushed documentation head
+`c1ccf49e64a` to unchanged code/runtime checkpoint `91eea8541b8`, current
+target `aaf1e5f64dd`, `dart-demos` SHA-256 `9e4f6c37...`, core DART SHA-256
+`0ff1c992...`, and runtime-closure digest `e6f57715...`. The complete boxed
+capture, independent member verification, expected exact-prefix finalizer,
+manual inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone sealed
+verification all pass.
+
+Exact fails closed after completed step 209 with reason `iteration_cap`; the
+last rendered step is 208. Its terminal signature is 208 contacts, 5,000
+iterations, residual/worst residual `1.2582804496066107e-6`, 342 exact
+attempts/solves, one accepted-at-cap solve, and zero exact failures or boxed
+fallbacks. Boxed completes 1,600/1,600, but the standing oracle is false and
+the crown visibly collapses. The comparison freezes only the exact last-valid
+frame and labels that presentation explicitly. It is a valid current-DART
+blocker diagnostic, never a complete exact trajectory, solver-superiority
+result, historical Figure 8 invocation, timing result, or paper parity.
+
+The sealed clip/panel/metadata/manual-inspection SHA-256 values are
+`3d652018...`, `d6782a65...`, `389e624b...`, and `bb14a363...`.
+The new clip is not byte-identical to registered slot 08 (`5e83527d...`), even
+though the world-view source pixels match the prior capture. A fresh GitHub
+user-attachment upload through the browser composer is therefore required;
+the existing URL remains historical captured-checkpoint evidence and must not
+be relabeled current-head. Videos and raw evidence remain outside Git.
+
+The paired ten-level exact/boxed capture is now the next long-running media
+gate. It must start from one fresh output root and one unchanged pushed head;
+exact explicitly requests source continuation while boxed does not, so the
+result is policy-asymmetric presentation rather than a solver-only A/B.
+
 ## 2026-07-30 Current-Head Checkpoint
 
 The fixed evidence-execution head is documentation-only commit

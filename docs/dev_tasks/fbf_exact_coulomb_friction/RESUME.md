@@ -1,5 +1,51 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-30 Figure 8 Resume Point
+
+This section supersedes every older Figure 8 currency, upload, and immediate
+next-step statement below. The task remains active and incomplete.
+
+- Fresh ignored root `assets/pr_media_current_head_c1cc/` binds pushed
+  documentation head `c1ccf49e64a` to unchanged code/runtime checkpoint
+  `91eea8541b8`, target `aaf1e5f64dd`, demo/core hashes
+  `9e4f6c37...` / `0ff1c992...`, and runtime-closure digest `e6f57715...`.
+- Boxed capture and independent reuse verification pass. Summary hashes are
+  `c4f4710871dcddda9e5eb5ca5e788a9dc8aca01496c133157c57cd26ae402560`
+  and
+  `3a6e4266d916e807dce978bfd6b38863177a5983e141bcadedce70f2a75a97e9`.
+  Boxed completes 1,600/1,600 but fails the standing oracle and visibly
+  collapses at the crown.
+- Exact fails closed after completed step 209 with reason `iteration_cap`;
+  step 208 is the last rendered frame. Its timeline SHA-256 is
+  `4d28b5729c089cab61411bceb3018a4708247151e210e6df4f33840d1344216c`.
+  The terminal signature is 208 contacts, 5,000 iterations,
+  residual/worst residual `1.2582804496066107e-6`, 342 attempts/solves, one
+  cap acceptance, zero exact failures, and zero boxed fallbacks.
+- Finalize, visual inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone
+  reuse-only verification pass. The final status is
+  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Clip, panel,
+  metadata, and manual-inspection SHA-256 values are
+  `3d6520189e610893588c77692c1f460c233ffa92e52125710fdafb20bbad1297`,
+  `d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`,
+  `389e624b054f331f0ae04e6fe6b6aa2792df49836e03a62eca8fffa9d8f35b0b`,
+  and
+  `bb14a363e530da5daf0979da61eaca43e5779c92b5570657f858dc709cc360e1`.
+- This is only a frozen-prefix blocker diagnostic. It is not a complete exact
+  trajectory, strict standing result, historical Figure 8 invocation,
+  solver-superiority result, timing result, or paper parity.
+- The new MP4 differs from registered slot 08 (`5e83527d...`). All cropped
+  source-world pixels match the prior capture, but the encoded stream does
+  not. Upload the new bytes through the GitHub browser composer; do not commit
+  them and do not relabel the existing URL current-head.
+
+Next, checkpoint these documentation changes, then run the paired ten-level
+exact/boxed schedule from one fresh root and one unchanged pushed head. Exact
+explicitly requests source continuation while boxed does not; preserve that
+policy asymmetry in labels and claims. After capture, run independent
+verification, full decode, and manual panel/keyframe inspection. A changed
+group hash requires another browser user-attachment upload. Keep PR #3377
+draft and do not trigger `@codex review`.
+
 ## 2026-07-30 Current-Head Resume Point
 
 This section supersedes every older branch-head, API-default, Figure 3,

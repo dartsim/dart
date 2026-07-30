@@ -11,6 +11,31 @@ not evidence completion. The broader visual workflow declares 33 runnable
 schedules, 30 of which encode MP4; the additional schedules include DART-only
 diagnostics rather than canonical paper/video rows.
 
+## 2026-07-30 Figure 8 Current-Head Currency Boundary
+
+Fresh ignored `assets/pr_media_current_head_c1cc/` evidence binds pushed
+documentation head `c1ccf49e64a` to unchanged runtime checkpoint
+`91eea8541b8`, current target `aaf1e5f64dd`, demo/core SHA-256 values
+`9e4f6c37...` / `0ff1c992...`, and closure digest `e6f57715...`.
+
+Boxed capture and independent verification complete 1,600/1,600 but the
+standing oracle is false and the crown collapses. Exact fails closed after
+completed step 209 with `iteration_cap`; only its last valid step-208 image is
+frozen. Finalize, inspection at 0.0/0.9/3.3/6.6 seconds, seal, and standalone
+verification pass. The sealed group is
+`valid_current_dart_blocker_diagnostic`, `upload_ready=true`, with
+clip/panel/metadata/manual hashes `3d652018...`, `d6782a65...`,
+`389e624b...`, and `bb14a363...`.
+
+This closes Figure 8 runtime currency only as a blocker diagnostic. It does
+not supply a complete exact trajectory, strict standing result, historical
+invocation, source/backend trajectory, superiority, timing, Figure 8 parity,
+or paper parity. The MP4 differs from registered slot 08 (`5e83527d...`), so
+a fresh browser user-attachment upload is required before the PR can point to
+current-head bytes. The paired ten-level schedule still requires a fresh
+current-head run and remains policy-asymmetric because only exact requests
+source continuation.
+
 ## 2026-07-30 Current-Head Currency Boundary
 
 Fixed evidence-execution head `f36d28eea97` uses code/runtime checkpoint
