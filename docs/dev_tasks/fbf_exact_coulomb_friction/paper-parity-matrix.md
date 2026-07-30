@@ -11,6 +11,20 @@ not evidence completion. The broader visual workflow declares 33 runnable
 schedules, 30 of which encode MP4; the additional schedules include DART-only
 diagnostics rather than canonical paper/video rows.
 
+## 2026-07-30 Current-Head Currency Boundary
+
+Fixed evidence-execution head `f36d28eea97` uses code/runtime checkpoint
+`91eea8541b8`, which contains release target `aaf1e5f64dd`. Fresh Figure 3
+exact, boxed, and paired checker media pass both capture-time and independent
+reuse verification against the current demo/core/runtime closure. A fresh
+clean-head matched one-/four-core packet also passes its preregistered
+cool/quiet host gate and all trajectory, outcome, residual, affinity, and
+scaling gates. It records validated `1.426761x` scaling for the explicitly
+non-paper colored-BGS literal-wedge workload; paper timing remains null.
+Figure 8 and the paired ten-level media still require fresh execution from
+this runtime lineage. Query the live branch for later documentation-only
+commits and mutable CI.
+
 ## 2026-07-29 Post-target Currency Boundary
 
 Merge checkpoint `3aee836ff62` incorporates release target `2ffe228c14c`.
@@ -188,8 +202,12 @@ The existing boxed-LCP solver remains DART's default. Exact FBF is opt-in.
 
 ## Current CPU Matrices
 
-The locally sealed non-paper literal-wedge artifact is
-`assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore`.
+The current-head non-paper literal-wedge artifact is
+`assets/cpu_current_head_f36d28_20260730T070943/`. It ran from clean head
+`f36d28eea97` and current trace/core SHA-256 values `d0d65b48...` /
+`0ff1c992...`. Two qualifying host samples 66 seconds apart recorded
+`60 C` / load `0.58`, then `58 C` / load `0.39`, with no process above five
+percent instantaneous CPU on the reserved logical CPUs.
 It uses Native `FourPointPlanar`, `1 um` closure, exact-inertia wedges, float64
 x86-64 Linux, scale 35, 5,000 outer iterations, 30 fixed inner sweeps,
 relaxation 1.1, fresh gamma, and zero diagonal/matrix-free seed. One warmup and
@@ -205,14 +223,21 @@ maximum displacement from the constructed initial state is
 
 | Threads | Mean ms | Median ms | p95 ms | Max ms | Mean 60 Hz | Every-step 60 Hz | Validated speedup | Paper timing |
 | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| 1 | `6.122883` | `2.4966535` | `21.663237` | `287.473818` | Pass | Fail | `1.0x` | Null |
-| 4 | `4.269397` | `1.9047965` | `14.396602` | `180.504588` | Pass | Fail | `1.434133x` | Null |
+| 1 | `6.018877` | `2.4400735` | `21.370755` | `293.100193` | Pass | Fail | `1.0x` | Null |
+| 4 | `4.218560` | `1.875658` | `14.159278` | `174.640069` | Pass | Fail | `1.426761x` | Null |
 
 This validates mean-real-time throughput and multicore scaling for the named
 reconstructed workload only. The one-thread p95 and both maximum times prevent
 an every-step deadline claim; the four-thread p95 is below the 60 Hz budget.
 The scene is not the author 100-contact impact scene, and the precision,
 kernel, host, and timer are not paper-comparable.
+
+The summary and artifact-index SHA-256 values are
+`648ce0fbdaae704b28949c574bb7aba2e08b47564cd133b0ebda75c4e37df09c`
+and
+`302b49f5dd233f74726b10465270b523682aab6faea583bf51177d53cfee2417`.
+Every indexed artifact and all fail-closed summary invariants independently
+reverify. The earlier July 19 packet remains historical capture-time evidence.
 
 Schema v8 preserves the newline-terminated default 83-column header at
 SHA-256

@@ -534,7 +534,50 @@ v2_r3 invocation and whole-tree hashes are
 and `953d8efd4d43ee2a74cede6b5e3a0a766ecd1fd8914485b50b340f515b7ecb77`;
 diagnostic semantics are unchanged.
 
-## Locally Validated Non-Paper Literal-Wedge Evidence
+## 2026-07-30 Current-Head Non-Paper Scaling Evidence
+
+The fresh ignored schema-v8 bundle is
+`assets/cpu_current_head_f36d28_20260730T070943/`. It binds clean execution
+head `f36d28eea97`, trace binary SHA-256 `d0d65b48...`, and core DART SHA-256
+`0ff1c992...`. The preregistered host gate passed twice, 66 seconds apart:
+`60 C` / load `0.58`, then `58 C` / load `0.39`, with no process above five
+percent instantaneous CPU on logical CPUs 8, 10, 12, or 14.
+
+One warmup and three measured 600-step trajectories complete at each of one
+and four threads. Each lane contributes 1,800 measured steps, with identical
+workload fingerprint
+`9d8df2edba609314432ff17f63768fded23577703537040d75ce082ab4233a36`,
+96 contacts, 24 body pairs/manifolds, three colors, width eight, complete
+finite trajectories, valid standing outcomes, residual pass fraction `1.0`,
+and zero exact failures or boxed fallbacks.
+
+| Field | One thread | Four threads |
+| --- | ---: | ---: |
+| Mean step time | `6.018877 ms` | `4.218560 ms` |
+| Median step time | `2.4400735 ms` | `1.875658 ms` |
+| p95 step time | `21.370755 ms` | `14.159278 ms` |
+| Maximum step time | `293.100193 ms` | `174.640069 ms` |
+| Mean below 60 Hz budget | Yes | Yes |
+| Every step below 60 Hz budget | No | No |
+| Validated speedup | `1.0x` | `1.426761x` |
+
+The four-thread lane records exactly 1,800 persistent colored dispatches,
+four observed participants on CPUs 8/10/12/14, valid per-phase residency, and
+a valid matched scaling pair. This is a mean-throughput and explicitly
+non-paper colored-BGS result. It is not an every-step deadline guarantee,
+paper CPU comparison, paper multicore result, or parity claim. The paper
+target remains unevaluated because its reference timing and matching workload
+contract are unavailable.
+
+Independent artifact-index and summary-invariant verification passes. The
+summary, metadata, report, and artifact-index SHA-256 values are
+`648ce0fbdaae704b28949c574bb7aba2e08b47564cd133b0ebda75c4e37df09c`,
+`60284463eaa712dcedaf9c5c5678b8d172bae1e8b15fcc8b5ee163c83bf75733`,
+`fa95791a5d1ac5a0f54153b709eb3708f34cb11b5f493f9bf6a4f56bea65e519`,
+and
+`302b49f5dd233f74726b10465270b523682aab6faea583bf51177d53cfee2417`.
+
+## Historical Locally Validated Non-Paper Literal-Wedge Evidence
 
 The locally sealed schema-v8 bundle is
 `assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore`.
