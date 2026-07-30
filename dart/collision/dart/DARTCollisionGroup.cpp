@@ -32,18 +32,43 @@
 
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
+#include "dart/collision/dart/detail/DARTCollisionObjectEngineData.hpp"
+
+#include <algorithm>
 
 namespace dart {
 namespace collision {
+
+namespace {
+
+//==============================================================================
+std::size_t assignId(detail::DARTCollisionGroupEngineData& engineData)
+{
+  if (!engineData.freeIds.empty()) {
+    const std::size_t id = engineData.freeIds.back();
+    engineData.freeIds.pop_back();
+    return id;
+  }
+
+  return engineData.nextId++;
+}
+
+} // namespace
 
 //==============================================================================
 DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
-  // Do nothing
+  auto* detector = static_cast<DARTCollisionDetector*>(collisionDetector.get());
+  // Anchor the external broadphase state in the released detector pointer
+  // member. Old DART 6.20 headers inline this class's destructor, but they
+  // still destroy mCollisionDetector and therefore release this owner.
+  mCollisionDetector
+      = detector->attachCollisionGroupEngineData(this, collisionDetector);
 }
 
 //==============================================================================
@@ -55,17 +80,26 @@ void DARTCollisionGroup::initializeEngineData()
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
-      == mCollisionObjects.end()) {
-    mCollisionObjects.push_back(object);
-  }
+  auto& engineData = getEngineData();
+  if (engineData.objectToId.find(object) != engineData.objectToId.end())
+    return;
+
+  auto* nativeObject = static_cast<DARTCollisionObject*>(object);
+  nativeObject->updateEngineData();
+
+  const std::size_t id = assignId(engineData);
+  engineData.objectToId[object] = id;
+  engineData.idToObject[id] = nativeObject;
+  mCollisionObjects.push_back(object);
+  engineData.broadPhase.add(
+      id, detail::DARTCollisionObjectAccessor::getAabb(nativeObject));
 }
 
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
-  for (auto collObject : collObjects)
+  for (auto* collObject : collObjects)
     addCollisionObjectToEngine(collObject);
 }
 
@@ -73,31 +107,59 @@ void DARTCollisionGroup::addCollisionObjectsToEngine(
 void DARTCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
+  auto& engineData = getEngineData();
+  const auto search = engineData.objectToId.find(object);
+  if (search == engineData.objectToId.end())
+    return;
+
+  const std::size_t id = search->second;
+  engineData.broadPhase.remove(id);
+  engineData.objectToId.erase(search);
+  engineData.idToObject.erase(id);
+  engineData.freeIds.push_back(id);
   mCollisionObjects.erase(
-      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object));
+      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object),
+      mCollisionObjects.end());
 }
 
 //==============================================================================
 void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
+  auto& engineData = getEngineData();
+  engineData.broadPhase.clear();
   mCollisionObjects.clear();
+  engineData.idToObject.clear();
+  engineData.objectToId.clear();
+  engineData.freeIds.clear();
+  engineData.nextId = 0u;
 }
 
 //==============================================================================
 void DARTCollisionGroup::updateCollisionGroupEngineData()
 {
-  // Do nothing
+  auto& engineData = getEngineData();
+  // Iterate the id map directly instead of hashing every object through
+  // objectToId each step; broadphase update order cannot leak into results
+  // because pair queries are normalized and sorted before visitation.
+  for (const auto& entry : engineData.idToObject) {
+    engineData.broadPhase.update(
+        entry.first,
+        detail::DARTCollisionObjectAccessor::getAabb(entry.second));
+  }
 }
 
 //==============================================================================
 void DARTCollisionGroup::updateEngineDataForCollide()
 {
-  for (const auto& info : mObjectInfoList) {
-    auto* object = static_cast<DARTCollisionObject*>(info->mObject.get());
-    object->DARTCollisionObject::updateEngineData();
-  }
+  updateEngineData();
+}
 
-  updateCollisionGroupEngineData();
+//==============================================================================
+detail::DARTCollisionGroupEngineData& DARTCollisionGroup::getEngineData()
+{
+  auto* detector
+      = static_cast<DARTCollisionDetector*>(getCollisionDetector().get());
+  return detector->getCollisionGroupEngineData(this);
 }
 
 } // namespace collision

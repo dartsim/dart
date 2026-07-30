@@ -26,7 +26,7 @@ collision-fidelity work needed by the affected rows):
 pixi run build-py-dev && pixi install -e mujoco
 PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
   pixi run python scripts/mujoco_comparison/run_comparison.py \
-  --reps 5 --detector native --dart-sleep off \
+  --reps 5 --detector dart --dart-sleep off \
   --scene ARM-REACHER --scene ARM-PUSHER \
   --scene HUM-FALL --scene HUM-ACTIVE \
   --scene PILE-120 --scene PILE-900 --scene DYN-STIR-120 \
