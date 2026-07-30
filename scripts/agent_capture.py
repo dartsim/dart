@@ -25,7 +25,7 @@ from typing import Any
 
 from trajectory_record import _BUILTIN_SCENES, _load_factory
 
-SCHEMA_VERSION = "dart.agent_capture/v1"
+SCHEMA_VERSION = "dart.agent_capture/v2"
 
 
 def _import_dartpy() -> Any:
@@ -134,6 +134,47 @@ def _camera_json(camera: Any) -> dict[str, Any]:
         "distance": float(camera.distance),
         "target": [float(v) for v in np.asarray(camera.target).reshape(3)],
     }
+
+
+def _review_inspection_targets(
+    artifacts: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Select deterministic stills for native semantic image inspection."""
+    targets: list[dict[str, str]] = []
+    for artifact in artifacts:
+        kind = str(artifact["kind"])
+        path = str(artifact["path"])
+        if kind == "still":
+            targets.append(
+                {
+                    "path": path,
+                    "source_kind": kind,
+                    "phase": "static",
+                }
+            )
+            continue
+        if kind not in {"turntable", "motion"}:
+            continue
+        frame_count = max(0, int(artifact.get("frames", 0)))
+        if frame_count == 0:
+            continue
+        phases_by_index: dict[int, list[str]] = {}
+        for index, phase in (
+            (0, "start"),
+            (frame_count // 2, "middle"),
+            (frame_count - 1, "end"),
+        ):
+            phases_by_index.setdefault(index, []).append(phase)
+        prefix = "turn" if kind == "turntable" else "frame"
+        for index, phases in sorted(phases_by_index.items()):
+            targets.append(
+                {
+                    "path": (Path(path) / f"{prefix}{index:04d}.png").as_posix(),
+                    "source_kind": kind,
+                    "phase": "/".join(phases),
+                }
+            )
+    return targets
 
 
 def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
@@ -378,10 +419,17 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "text_oracle_required": True,
             "semantic_image_inspection_required": True,
             "machine_checks_are_not_semantic_review": True,
-            "inspect_artifacts": [
-                artifact["path"]
-                for artifact in artifacts
-                if artifact["kind"] == "still"
+            "inspect_artifacts": _review_inspection_targets(artifacts),
+            "temporal_sampling": (
+                "Inspect start/middle/end sequence frames; add intervening "
+                "frames or a grid when the claim depends on a transient event."
+            ),
+            "required_record_fields": [
+                "claim_and_expected_observation",
+                "text_oracle",
+                "visible_observation",
+                "reconciliation_and_verdict",
+                "not_proven_and_limitations",
             ],
             "recommended_detail": (
                 "original for fine contacts, labels, bounds, or frame axes"

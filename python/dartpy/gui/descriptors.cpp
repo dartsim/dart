@@ -229,6 +229,11 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw("pitch", &gui::OrbitCamera::pitch)
       .def_rw("distance", &gui::OrbitCamera::distance);
 
+  nb::class_<gui::BoundingSphere>(m, "BoundingSphere")
+      .def(nb::init<>())
+      .def_rw("center", &gui::BoundingSphere::center)
+      .def_rw("radius", &gui::BoundingSphere::radius);
+
   nb::class_<gui::OrbitCameraBasis>(m, "OrbitCameraBasis")
       .def(nb::init<>())
       .def_rw("eye", &gui::OrbitCameraBasis::eye)
@@ -576,6 +581,27 @@ void defGuiDescriptors(nb::module_& m)
   m.def(
       "make_orbit_camera_basis", &gui::makeOrbitCameraBasis, nb::arg("camera"));
   m.def("camera_eye", &gui::cameraEye, nb::arg("camera"));
+  m.def(
+      "scene_bounding_sphere",
+      &gui::sceneBoundingSphere,
+      nb::arg("descriptors"));
+  m.def(
+      "fit_orbit_camera",
+      &gui::fitOrbitCamera,
+      nb::arg("sphere"),
+      nb::arg("vertical_fov_degrees"),
+      nb::arg("azimuth_degrees"),
+      nb::arg("elevation_degrees"));
+  m.def(
+      "fit_orbit_camera_to_viewport",
+      &gui::fitOrbitCameraToViewport,
+      nb::arg("sphere"),
+      nb::arg("width"),
+      nb::arg("height"),
+      nb::arg("vertical_fov_degrees"),
+      nb::arg("azimuth_degrees"),
+      nb::arg("elevation_degrees"),
+      nb::arg("margin") = 1.0);
   m.def(
       "update_orbit_camera",
       &gui::updateOrbitCamera,

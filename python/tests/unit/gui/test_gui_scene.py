@@ -219,8 +219,11 @@ def test_bounds_fit_camera_skips_invisible_renderables():
     hidden.material.visible = False
 
     camera = _world_render_bridge._bounds_fit_camera([visible, hidden], (320, 240))
+    sphere = dart.gui.scene_bounding_sphere([visible, hidden])
 
     assert np.allclose(camera.target, [0.0, 0.0, 0.0])
+    assert np.allclose(sphere.center, [0.0, 0.0, 0.0])
+    assert sphere.radius == pytest.approx(np.sqrt(3.0) * 0.5)
 
 
 @requires_gui_bindings

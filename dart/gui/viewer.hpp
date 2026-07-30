@@ -221,8 +221,8 @@ struct PerspectiveProjection
 };
 
 /// A world-space bounding sphere over a set of renderables. Produced by
-/// `sceneBoundingSphere` and consumed by `fitOrbitCamera` to auto-frame a
-/// scene. Value type only so it can cross the public GUI boundary.
+/// `sceneBoundingSphere` and consumed by the `fitOrbitCamera` helpers to
+/// auto-frame a scene. Value type only so it can cross the public GUI boundary.
 struct BoundingSphere
 {
   Eigen::Vector3d center = Eigen::Vector3d::Zero();
@@ -396,16 +396,25 @@ sceneBoundingSphere(const std::vector<RenderableDescriptor>& descriptors);
 /// distance is `radius / sin(verticalFov / 2)`, so the sphere fits the vertical
 /// field of view.
 ///
-/// Convergence follow-up (WP-ASV.4 -> WP-ASV.5): this is the canonical bounds-
-/// fit helper. WP-ASV.5's Python `dart.gui.render(world, camera=None)` path
-/// (python/dartpy/_world_render_bridge.py) currently derives its framing camera
-/// in Python; it should later bind and call this helper instead of keeping a
-/// second copy of the formula.
 DART_GUI_API OrbitCamera fitOrbitCamera(
     const BoundingSphere& sphere,
     double verticalFovDegrees,
     double azimuthDegrees,
     double elevationDegrees);
+
+/// Builds an `OrbitCamera` that frames `sphere` inside a viewport. The limiting
+/// field of view is derived from `width`/`height`, so portrait captures do not
+/// crop a sphere that would fit the vertical field of view alone. `margin`
+/// scales the fitted distance and defaults to no extra padding. Invalid
+/// dimensions, field of view, and margin values receive finite safe defaults.
+DART_GUI_API OrbitCamera fitOrbitCameraToViewport(
+    const BoundingSphere& sphere,
+    int width,
+    int height,
+    double verticalFovDegrees,
+    double azimuthDegrees,
+    double elevationDegrees,
+    double margin = 1.0);
 
 } // namespace dart::gui
 

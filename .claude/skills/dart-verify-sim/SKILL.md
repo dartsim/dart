@@ -46,7 +46,9 @@ target-specific note without cloning the skill.
    decides correctness.
 2. Capture one assessed, claim-tied view first. Add only the debug layers needed
    for the claim; use paired plain/debug views when an overlay could obscure the
-   underlying scene.
+   underlying scene. For a turntable or motion sequence, inspect at least the
+   capture sidecar's start/middle/end frame targets; add intervening frames or a
+   grid when a transient event is part of the claim.
 3. Run `image-verdict` for artifact integrity, then open the selected local PNG
    with the active agent's native image viewer. Use original detail for small
    contacts, labels, bounds, or frame axes. Add a grid or another view only when
@@ -84,7 +86,9 @@ Visual (corroboration):
   issues (`cropped`/`too-far`/`too-close`/`occluded`/`ambiguous`);
   `dart.gui.select_viewpoints(...)` picks deterministic best views;
   `dart.gui.frame_body`/`frame_region` reframe onto a subject. Assess first;
-  fix flagged views before capturing evidence.
+  fix flagged views before capturing evidence. Descriptor bounds, transformed
+  corners, viewport FOV, and fit distance stay in the shared `dart::gui` core;
+  Python performs only focus resolution and capture/search orchestration.
 - viewer camera flags: `--view {three-quarter|front|side|top}`,
   `--camera-azimuth/-elevation/-distance/-target`, `--turntable N`, `--fit`
 - `pixi run py-demo-capture` — headless PNG/MP4 capture from Python
@@ -93,8 +97,9 @@ Visual (corroboration):
 - `pixi run image-compose` — side-by-side / blend / diff-heatmap composites
 - `pixi run evidence-select` — claim-driven artifact selection with recorded
   rationale; `pixi run evidence-publish` — PR "Visual verification" section
-  with GitHub-hosted media (manual placeholders by default; `gh-release`
-  upload only with `--yes` + maintainer approval)
+  with a required semantic verdict and claim boundary plus GitHub-hosted media
+  (manual placeholders by default; `gh-release` upload only with `--yes` +
+  maintainer approval)
 - `pixi run image-verdict` / `image-golden` / `image-sheet` — JSON verdict,
   golden diff, contact sheet (contrast is report-only; `--require-contrast` to
   gate); these are machine pixel checks, not semantic visual review

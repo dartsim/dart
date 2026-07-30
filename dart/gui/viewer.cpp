@@ -833,4 +833,32 @@ OrbitCamera fitOrbitCamera(
   return camera;
 }
 
+OrbitCamera fitOrbitCameraToViewport(
+    const BoundingSphere& sphere,
+    int width,
+    int height,
+    double verticalFovDegrees,
+    double azimuthDegrees,
+    double elevationDegrees,
+    double margin)
+{
+  const double safeVerticalFov = std::isfinite(verticalFovDegrees)
+                                         && verticalFovDegrees > 0.0
+                                         && verticalFovDegrees < 180.0
+                                     ? verticalFovDegrees
+                                     : ProjectionOptions{}.verticalFovDegrees;
+  const double verticalFovRadians = degreesToRadians(safeVerticalFov);
+  const double aspect
+      = static_cast<double>(std::max(1, width)) / std::max(1, height);
+  const double horizontalFovRadians
+      = 2.0 * std::atan(std::tan(0.5 * verticalFovRadians) * aspect);
+  const double limitingFovDegrees
+      = std::min(verticalFovRadians, horizontalFovRadians) * 180.0 / kPi;
+
+  OrbitCamera camera = fitOrbitCamera(
+      sphere, limitingFovDegrees, azimuthDegrees, elevationDegrees);
+  camera.distance *= std::isfinite(margin) && margin > 0.0 ? margin : 1.0;
+  return camera;
+}
+
 } // namespace dart::gui

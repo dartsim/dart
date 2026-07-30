@@ -146,3 +146,19 @@ def test_frame_region_respects_margin():
     near = dart.gui.frame_region((0.0, 0.0, 0.0), 1.0, margin=1.0)
     far = dart.gui.frame_region((0.0, 0.0, 0.0), 1.0, margin=2.0)
     assert far.distance == pytest.approx(2.0 * near.distance)
+
+
+def test_frame_region_uses_viewport_limiting_fov():
+    landscape = dart.gui.frame_region(
+        (1.0, 2.0, 3.0), 1.0, size=(640, 480), margin=1.0
+    )
+    portrait = dart.gui.frame_region(
+        (1.0, 2.0, 3.0), 1.0, size=(240, 480), margin=1.0
+    )
+    horizontal_fov = 2.0 * math.atan(math.tan(math.radians(45.0) * 0.5) * 0.5)
+    assert landscape.distance == pytest.approx(
+        1.0 / math.sin(math.radians(45.0) * 0.5)
+    )
+    assert portrait.distance == pytest.approx(1.0 / math.sin(horizontal_fov * 0.5))
+    assert portrait.distance > landscape.distance
+    assert list(portrait.target) == pytest.approx([1.0, 2.0, 3.0])

@@ -73,8 +73,11 @@ camera, size, focus=...)` returns a machine-readable `ViewReport`
   `dart.gui.select_viewpoints(...)` deterministically scores a candidate grid
   and returns the best azimuth-diverse cameras with recorded reasons;
   `dart.gui.frame_body` / `frame_region` reframe onto a named body or region.
-  Assess before rendering; when a report lists issues, reframe or reselect
-  instead of shipping the shot.
+  Bounds, transformed corners, limiting viewport FOV, and fit distance are
+  computed by the shared `dart::gui` core (`sceneBoundingSphere` and
+  `fitOrbitCameraToViewport`); Python resolves focus names and orchestrates the
+  candidate search. Assess before rendering; when a report lists issues,
+  reframe or reselect instead of shipping the shot.
 - **Debug layers offscreen** — `dart.gui.render(world, camera, size,
 debug=(...layers...))` draws world-derived overlay layers through the same
   unlit always-on-top path as the viewer: `grid`, `world_frame`,
@@ -95,7 +98,12 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   stills/turntables/motion sequences (optional MP4) from the built-in scene
   registry or a `module:callable` world factory, with explicit or
   auto-selected cameras, debug layers, and a sidecar JSON recording camera
-  parameters, layers, view reports, and the exact reproduction command.
+  parameters, layers, view reports, and the exact reproduction command. Its
+  review contract enumerates every selected still plus representative
+  start/middle/end frames for each turntable or motion sequence and names the
+  semantic-review record fields. Inspect more intervening frames or a grid
+  when the claim depends on a transient event; an initial still does not prove
+  temporal behavior.
 - **Composites** — `pixi run image-compose` builds labeled side-by-side
   (before/after, expected/actual, normal/debug), overlay blends, and
   amplified diff heatmaps with summary statistics.
@@ -108,7 +116,11 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   repro commands) with GitHub-hosted media: `manual` backend emits
   web-editor upload placeholders (the documented user-attachments flow);
   `gh-release` uploads release assets via `gh` but only with `--yes` and
-  maintainer approval. PR-only media never enters git history.
+  maintainer approval. PR-only media never enters git history. The published
+  section must also carry the actual text oracle, visible observation,
+  reconciliation/verdict, and a non-empty claim boundary describing what the
+  evidence does not prove; limitations are added when applicable. "What to
+  observe" is the expectation, not proof that an image was inspected.
 - **Image verdict / golden / contact sheet** — `pixi run image-verdict`
   emits a machine-readable JSON verdict (non-blank, report-only contrast,
   per-pixel diff with AA-ignore and a Blender-style two-number budget, optional

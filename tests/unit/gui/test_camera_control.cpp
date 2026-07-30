@@ -187,3 +187,27 @@ TEST(CameraControl, FitDistanceMatchesFovFormula)
       = sphere.radius / std::sin(0.5 * deg2rad(fovYDegrees));
   EXPECT_NEAR(camera.distance, expectedDistance, 1e-9);
 }
+
+TEST(CameraControl, ViewportFitUsesLimitingFovAndMargin)
+{
+  dart::gui::BoundingSphere sphere;
+  sphere.center = Eigen::Vector3d(1.0, 2.0, 3.0);
+  sphere.radius = 2.0;
+
+  const double fovYDegrees = 45.0;
+  const dart::gui::OrbitCamera landscape = dart::gui::fitOrbitCameraToViewport(
+      sphere, 640, 480, fovYDegrees, -45.0, 25.0);
+  const double verticalDistance
+      = sphere.radius / std::sin(0.5 * deg2rad(fovYDegrees));
+  EXPECT_NEAR(landscape.distance, verticalDistance, 1e-9);
+
+  const dart::gui::OrbitCamera portrait = dart::gui::fitOrbitCameraToViewport(
+      sphere, 240, 480, fovYDegrees, -45.0, 25.0, 1.5);
+  const double horizontalFovRadians
+      = 2.0 * std::atan(std::tan(0.5 * deg2rad(fovYDegrees)) * 0.5);
+  const double expectedPortraitDistance
+      = sphere.radius / std::sin(0.5 * horizontalFovRadians) * 1.5;
+  EXPECT_NEAR(portrait.distance, expectedPortraitDistance, 1e-9);
+  EXPECT_GT(portrait.distance, landscape.distance);
+  EXPECT_TRUE(portrait.target.isApprox(sphere.center));
+}

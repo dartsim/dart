@@ -383,8 +383,11 @@ compatibility remains on the active DART 6 LTS branch._
   branch-aware cross-tool verification, and a required text-first plus native
   semantic visual simulation-debugging lane. The visual workflow now makes
   image-capable agents inspect and reconcile captures instead of treating pixel
-  checks as scene understanding. Corrected the shared box-stack evidence fixture
-  so it starts with shallow contacts instead of deep interpenetration.
+  checks as scene understanding, keeps bounds and viewport-aware camera fitting
+  in the shared GUI core, points reviewers at representative temporal frames,
+  and gates evidence publication on a recorded text/image semantic verdict.
+  Corrected the shared box-stack evidence fixture so it starts with shallow
+  contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code
