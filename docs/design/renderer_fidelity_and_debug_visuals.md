@@ -40,17 +40,22 @@ Landed (build + headless render + unit/extraction tests + dartpy smoke verified)
 - **B3 — new debug primitives.** `drawJointAxes` (revolute double-line /
   prismatic arrow) and `drawLinearVelocities`/`drawAngularVelocities` arrows,
   with `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers. The helpers
-  operate on `dynamics::BodyNode` directly and are intended for `debugProvider`
-  callbacks; the legacy-world `extractDebugLines` overload that auto-walked
-  skeletons was retired with the legacy world, so world-derived overlays will
-  be re-wired when debug extraction lands for the promoted
-  `dart::simulation::World`.
+  operate on `dynamics::BodyNode` directly. The later agent-verification work
+  in #3371 added `extractDebugLines(simulation::World&)` and a core offscreen
+  `DebugScene` path, so body frames, centers of mass, inertia, collision
+  bounds, velocities, contacts, and labels can now be derived from the
+  promoted world without Python geometry. Solved contact-force arrows are
+  available on rigid solver paths with stable post-step contact keys; other
+  solver families deliberately retain point/normal-only contact overlays.
 - **B2 — built-in panel.** The built-in panel exposes only debug controls backed
   by the current overlay extraction path: grid/world-frame toggles, contact
   toggles, and a "Debug tuning" slider group for grid spacing, world-frame axis
-  length, and contact-force scale. Body/joint/velocity controls stay out of the
-  panel until world debug extraction is reintroduced for the promoted world (see
-  B3 note), while applications can draw those helpers through `debugProvider`.
+  length, and contact-force scale. World extraction and agent/offscreen layer
+  selection have landed, but body/joint/velocity controls remain absent from
+  the built-in interactive panel. Applications can draw those helpers through
+  `debugProvider`, and agent capture selects them through
+  `debug_scene_for_world`; richer host-panel exposure remains a separate UI
+  follow-up rather than a visual-verification dependency.
 
 Remaining (deliberately deferred — see rationale):
 

@@ -118,6 +118,47 @@ def test_initial_still_defers_unseeded_motion_trajectory() -> None:
     ) == ["labels"]
 
 
+def test_review_targets_include_representative_temporal_frames() -> None:
+    assert agent_capture._review_inspection_targets(
+        [
+            {"kind": "still", "path": "capture_main.png"},
+            {"kind": "turntable", "path": "capture_turntable", "frames": 4},
+            {"kind": "motion", "path": "capture_motion", "frames": 2},
+        ]
+    ) == [
+        {
+            "path": "capture_main.png",
+            "source_kind": "still",
+            "phase": "static",
+        },
+        {
+            "path": "capture_turntable/turn0000.png",
+            "source_kind": "turntable",
+            "phase": "start",
+        },
+        {
+            "path": "capture_turntable/turn0002.png",
+            "source_kind": "turntable",
+            "phase": "middle",
+        },
+        {
+            "path": "capture_turntable/turn0003.png",
+            "source_kind": "turntable",
+            "phase": "end",
+        },
+        {
+            "path": "capture_motion/frame0000.png",
+            "source_kind": "motion",
+            "phase": "start",
+        },
+        {
+            "path": "capture_motion/frame0001.png",
+            "source_kind": "motion",
+            "phase": "middle/end",
+        },
+    ]
+
+
 def _display_available() -> bool:
     try:
         import dartpy
@@ -193,7 +234,7 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
         steps=150,
     )
     sidecar = agent_capture.run_capture(args)
-    assert sidecar["schema_version"] == "dart.agent_capture/v1"
+    assert sidecar["schema_version"] == "dart.agent_capture/v2"
     assert sidecar["scene"] == "box_on_ground"
     stills = [a for a in sidecar["artifacts"] if a["kind"] == "still"]
     assert len(stills) == 1
@@ -201,6 +242,32 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
     assert (tmp_path / still["path"]).exists()
     assert still["view_report"]["schema_version"] == "dart.view_report/v1"
     assert "pixi run agent-capture" in sidecar["reproduce"]
+    assert sidecar["review_contract"] == {
+        "text_oracle_required": True,
+        "semantic_image_inspection_required": True,
+        "machine_checks_are_not_semantic_review": True,
+        "inspect_artifacts": [
+            {
+                "path": still["path"],
+                "source_kind": "still",
+                "phase": "static",
+            }
+        ],
+        "temporal_sampling": (
+            "Inspect start/middle/end sequence frames; add intervening "
+            "frames or a grid when the claim depends on a transient event."
+        ),
+        "required_record_fields": [
+            "claim_and_expected_observation",
+            "text_oracle",
+            "visible_observation",
+            "reconciliation_and_verdict",
+            "not_proven_and_limitations",
+        ],
+        "recommended_detail": (
+            "original for fine contacts, labels, bounds, or frame axes"
+        ),
+    }
     saved = json.loads((tmp_path / "smoke_capture.json").read_text("utf-8"))
     assert saved == sidecar
 

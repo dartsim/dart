@@ -656,6 +656,21 @@ double degreesToRadians(double degrees)
   return degrees * kPi / 180.0;
 }
 
+// Matches the public descriptor contract used by auto-framing: explicit local
+// bounds are authoritative, while descriptor-only geometry without a positive
+// size or radius cannot establish a scene extent.
+bool hasUsableLocalBounds(const GeometryDescriptor& geometry)
+{
+  if (geometry.hasLocalBounds) {
+    return geometry.localBoundsMin.allFinite()
+           && geometry.localBoundsMax.allFinite();
+  }
+  if (geometry.size.allFinite() && (geometry.size.array() > 0.0).any()) {
+    return true;
+  }
+  return std::isfinite(geometry.radius) && geometry.radius > 0.0;
+}
+
 // Conservative local half-extent for a descriptor's geometry, used to build a
 // per-descriptor axis-aligned bounding box before transforming it to world
 // space. Meshes/point clouds expose explicit local bounds; primitive shapes are
@@ -767,7 +782,8 @@ BoundingSphere sceneBoundingSphere(
   bool sawAny = false;
 
   for (const RenderableDescriptor& descriptor : descriptors) {
-    if (!descriptor.material.visible) {
+    if (!descriptor.material.visible
+        || !hasUsableLocalBounds(descriptor.geometry)) {
       continue;
     }
     const Eigen::Vector3d halfExtent = localHalfExtent(descriptor.geometry);
@@ -805,6 +821,7 @@ BoundingSphere sceneBoundingSphere(
   if (!(sphere.radius > 0.0) || !std::isfinite(sphere.radius)) {
     sphere.radius = 1.0;
   }
+  sphere.hasBounds = true;
   return sphere;
 }
 
@@ -830,6 +847,34 @@ OrbitCamera fitOrbitCamera(
           : ProjectionOptions{}.verticalFovDegrees);
   const double sinHalf = std::sin(0.5 * fovRadians);
   camera.distance = sinHalf > 1e-6 ? radius / sinHalf : radius;
+  return camera;
+}
+
+OrbitCamera fitOrbitCameraToViewport(
+    const BoundingSphere& sphere,
+    int width,
+    int height,
+    double verticalFovDegrees,
+    double azimuthDegrees,
+    double elevationDegrees,
+    double margin)
+{
+  const double safeVerticalFov = std::isfinite(verticalFovDegrees)
+                                         && verticalFovDegrees > 0.0
+                                         && verticalFovDegrees < 180.0
+                                     ? verticalFovDegrees
+                                     : ProjectionOptions{}.verticalFovDegrees;
+  const double verticalFovRadians = degreesToRadians(safeVerticalFov);
+  const double aspect
+      = static_cast<double>(std::max(1, width)) / std::max(1, height);
+  const double horizontalFovRadians
+      = 2.0 * std::atan(std::tan(0.5 * verticalFovRadians) * aspect);
+  const double limitingFovDegrees
+      = std::min(verticalFovRadians, horizontalFovRadians) * 180.0 / kPi;
+
+  OrbitCamera camera = fitOrbitCamera(
+      sphere, limitingFovDegrees, azimuthDegrees, elevationDegrees);
+  camera.distance *= std::isfinite(margin) && margin > 0.0 ? margin : 1.0;
   return camera;
 }
 

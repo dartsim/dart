@@ -254,86 +254,24 @@ def _populate_bridge_from_world(bridge: "WorldRenderBridge", world: Any) -> None
             )
 
 
-def _descriptor_bounds(descriptor: Any) -> tuple[np.ndarray, np.ndarray] | None:
-    geometry = getattr(descriptor, "geometry", None)
-    if geometry is None:
-        return None
-    try:
-        has_bounds = bool(getattr(geometry, "has_local_bounds", False))
-    except Exception:  # noqa: BLE001
-        has_bounds = False
-    if has_bounds:
-        local_min = np.asarray(geometry.local_bounds_min, dtype=float).reshape(3)
-        local_max = np.asarray(geometry.local_bounds_max, dtype=float).reshape(3)
-    else:
-        size = np.asarray(getattr(geometry, "size", np.zeros(3)), dtype=float).reshape(
-            -1
-        )
-        if size.size >= 3 and np.any(size[:3] > 0.0):
-            half = 0.5 * size[:3]
-            local_min = -half
-            local_max = half
-        else:
-            radius = float(getattr(geometry, "radius", 0.0) or 0.0)
-            if radius <= 0.0:
-                return None
-            local_min = np.full(3, -radius)
-            local_max = np.full(3, radius)
-
-    transform = _isometry_to_matrix(getattr(descriptor, "world_transform", np.eye(4)))
-    corners = np.array(
-        [
-            [x, y, z, 1.0]
-            for x in (local_min[0], local_max[0])
-            for y in (local_min[1], local_max[1])
-            for z in (local_min[2], local_max[2])
-        ],
-        dtype=float,
-    )
-    world = (transform @ corners.T).T[:, :3]
-    if not np.all(np.isfinite(world)):
-        return None
-    return world.min(axis=0), world.max(axis=0)
-
-
-def _descriptor_visible(descriptor: Any) -> bool:
-    material = getattr(descriptor, "material", None)
-    try:
-        return bool(getattr(material, "visible", True))
-    except Exception:  # noqa: BLE001
-        return True
-
-
 def _bounds_fit_camera(renderables: list[Any], size: tuple[int, int]) -> Any:
-    mins: list[np.ndarray] = []
-    maxs: list[np.ndarray] = []
-    for descriptor in renderables:
-        if not _descriptor_visible(descriptor):
-            continue
-        bounds = _descriptor_bounds(descriptor)
-        if bounds is None:
-            continue
-        mins.append(bounds[0])
-        maxs.append(bounds[1])
-    if not mins:
-        raise ValueError("dart.gui.render requires at least one bounded renderable")
-
-    scene_min = np.min(np.vstack(mins), axis=0)
-    scene_max = np.max(np.vstack(maxs), axis=0)
-    center = 0.5 * (scene_min + scene_max)
-    radius = 0.5 * float(np.linalg.norm(scene_max - scene_min))
-    radius = max(radius, 0.5)
-
     width, height = size
-    vertical_fov = math.radians(45.0)
-    aspect = max(float(width) / float(max(height, 1)), 1.0e-6)
-    horizontal_fov = 2.0 * math.atan(math.tan(vertical_fov * 0.5) * aspect)
-    distance = radius / math.sin(min(horizontal_fov, vertical_fov) * 0.5) * 1.1
-
-    camera = dart.gui.OrbitCamera()
-    camera.target = center
-    camera.distance = distance
-    return camera
+    sphere = dart.gui.scene_bounding_sphere(renderables)
+    if not bool(sphere.has_bounds):
+        raise ValueError("dart.gui.render requires at least one bounded renderable")
+    # Preserve the historical minimal-scene framing floor while keeping all
+    # bounds, transforms, viewport projection, and fit math in dart::gui.
+    sphere.radius = max(float(sphere.radius), 0.5)
+    default_camera = dart.gui.OrbitCamera()
+    return dart.gui.fit_orbit_camera_to_viewport(
+        sphere,
+        int(width),
+        int(height),
+        45.0,
+        math.degrees(float(default_camera.yaw)),
+        math.degrees(float(default_camera.pitch)),
+        1.1,
+    )
 
 
 def orbit_camera(

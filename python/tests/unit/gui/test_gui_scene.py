@@ -236,8 +236,25 @@ def test_bounds_fit_camera_skips_invisible_renderables():
     hidden.material.visible = False
 
     camera = _world_render_bridge._bounds_fit_camera([visible, hidden], (320, 240))
+    sphere = dart.gui.scene_bounding_sphere([visible, hidden])
 
     assert np.allclose(camera.target, [0.0, 0.0, 0.0])
+    assert np.allclose(sphere.center, [0.0, 0.0, 0.0])
+    assert sphere.radius == pytest.approx(np.sqrt(3.0) * 0.5)
+    assert sphere.has_bounds
+
+
+@requires_gui_bindings
+def test_bounds_fit_camera_rejects_scenes_without_usable_bounds():
+    from dartpy import _world_render_bridge
+
+    unbounded = dart.gui.RenderableDescriptor()
+    hidden = _renderable_from_shape(dart.BoxShape(np.ones(3)))
+    hidden.material.visible = False
+
+    for renderables in ([], [unbounded], [hidden]):
+        with pytest.raises(ValueError, match="at least one bounded renderable"):
+            _world_render_bridge._bounds_fit_camera(renderables, (320, 240))
 
 
 @requires_gui_bindings

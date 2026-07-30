@@ -93,11 +93,18 @@ Use the `dart-verify-sim` workflow and durable guide at
 `docs/onboarding/agent-sim-verification.md`. Establish correctness with metrics,
 scene/trajectory/contact comparison, or focused behavioral tests; then use
 view assessment, `agent-capture`, and only the engine debug layers needed by
-the claim. Record the runnable command, view report, expected observation,
-`image-verdict` or inspected artifact, limitations, and what the image does not
+the claim. An image-capable agent must then open the selected capture and
+perform semantic visual review; `image-verdict` is a pixel-integrity/reference
+gate, not evidence that the image was understood. Use original image detail
+when fine contacts, labels, bounds, or axes matter. Record the runnable command,
+view report, expected observation, text oracle, visible observation,
+text/image reconciliation, verdict, limitations, and what the image does not
 prove. A self-contained GUI or demos-app example remains the preferred durable
-user surface. If rendering is unavailable or genuinely irrelevant, record why
-and name replacement evidence.
+user surface. If rendering is unavailable, native image review is unavailable,
+or visual evidence is genuinely irrelevant, record why.
+
+Always name replacement evidence. Use `verification-bundle` when an
+image-capable reviewer is available.
 
 Linux CI runs an explicit settled-contact `agent-capture` under Xvfb with
 contacts, collision bounds, and labels, then requires `image-verdict` to accept

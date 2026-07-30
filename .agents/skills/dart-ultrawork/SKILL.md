@@ -61,12 +61,12 @@ issues/PRs/branches, commands, and first step when present.
 
 ## Workflow
 
-You are the orchestrator, supervisor, and steerer for the entire task: you
-decompose, delegate, review, and keep evidence honest. Workers implement.
-Follow the orchestrator/executor contract and packet sizing rules in
-`docs/ai/orchestration.md`. Use `dart-new-task` instead when the work is a
-bounded single-session task and the user did not ask for autonomous project
-handling.
+Own understanding, decomposition, sequencing, review, and honest evidence for
+the whole task. Follow the orchestrator/executor and packet-sizing contracts in
+`docs/ai/orchestration.md`. Delegate only when the user explicitly requested it
+and the current surface permits it; otherwise execute packets serially. Use
+`dart-new-task` for bounded single-session work unless the user asked for the
+autonomous project-home loop.
 
 1. **Session start and current reality** - Locate the project home. For
    DART autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
@@ -125,13 +125,12 @@ handling.
    deferred. Every delegated packet gets its own contract: GOAL (one
    sentence), DONE WHEN (verifiable), EVIDENCE (what to record), RISKS, and
    NEXT STEP.
-6. **Decompose and route to workers** - Cut work packets per
-   `docs/ai/orchestration.md`, then route by `docs/ai/README.md`. For Codex,
-   use `dart_scout` for read-only territory mapping, built-in workers or
-   `dart-execute-packet` for bounded implementation, `dart_reviewer` for
-   independent acceptance review, and `dart_release_auditor` for branch
-   adaptation. Without team tooling, execute packets sequentially. Use
-   parallel writers only when file ownership is explicit and disjoint.
+6. **Decompose and route** - Cut work packets per `docs/ai/orchestration.md`
+   and route by `docs/ai/README.md`. Execute serially by default. When the user
+   explicitly requested delegation, use `dart_scout` for read-only territory
+   mapping, bounded workers or `dart-execute-packet` for implementation,
+   `dart_reviewer` for acceptance review, and `dart_release_auditor` for branch
+   adaptation. Use parallel writers only with explicit disjoint ownership.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,
@@ -162,51 +161,25 @@ handling.
     and remove the folder in the completing PR. GitHub mutations (push, PR,
     comments, re-triggers) only with explicit maintainer/user approval.
 
-## Kickoff Prompt Template
+## Prompt Shape
 
-Canonical fresh-session prompt. `TASK`, context, and `Done when` are per-task;
-reuse the `Logistics` block verbatim.
+Use an outcome-first brief. Do not repeat this workflow's logistics or required
+reading in the task prompt; the capability loads them.
 
 ```text
 TASK: <one-sentence objective>
-
-<Per-task context: constraints, quality bar, must/never rules, and pointers
-to the docs, code, branches, or references that define the territory.>
 
 Done when:
 - <verifiable outcome: a file, test, gate, benchmark, or artifact>
 - <verifiable outcome>
 
-Logistics:
-- Run /dart-ultrawork with this task. You are the orchestrator,
-  supervisor, and steerer: decompose, delegate, review, and keep evidence
-  honest.
-- Interview first: ask the maintainer only the consequential decisions that
-  evidence cannot settle; resolve everything else yourself and record the
-  evidence.
-- Use docs/dev_tasks/<task>/ as the project home. Keep README.md,
-  RESUME.md, and any decisions.md / verification.md / progress-log.md
-  sidecars current enough for a zero-context session to resume.
-- Prioritize correctness over speed, but stop once acceptance criteria are
-  satisfied, verification is recorded, docs are current, and known gaps are
-  documented. Manage resources responsibly; avoid endless exploration and
-  low-value polishing.
-- Route well-defined implementation packets to bounded workers with GOAL /
-  DONE WHEN / EVIDENCE. Use team mode only when available and file ownership
-  can stay disjoint. Keep authoring and review separate; use the strongest
-  available reasoning for critical decisions, hard failures, and research
-  synthesis.
-- Set goal mode to Done-when; use Claude `/goal Run /dart-ultrawork with:
-  <real prompt>` or Codex `/goal $dart-ultrawork <real prompt>`. Treat Claude
-  goal text beginning `ulw:` or `ultrawok:` as shorthand for the same canonical
-  `/dart-ultrawork` workflow, not as separate capabilities.
-- Read docs/ai/principles.md, docs/ai/north-star.md,
-  docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
-- Review loop: use specialized reviewers when available, investigate findings,
-  and require two clean passes on the current state before done.
-- Verification first: task-specific gates and dart-verify-sim evidence when
-  applicable; pixi run lint before commits; GitHub mutations only with approval.
+Constraints/evidence:
+- <task-specific must/never rules and owner references>
+- <known risks, branch/PR facts, or required comparison>
 ```
+
+Put this brief after `/dart-ultrawork` or `$dart-ultrawork`. When goal mode is
+available, make the same `Done when` list the goal contract.
 
 ## Output
 

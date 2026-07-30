@@ -81,29 +81,6 @@ def _camera_params(camera: Any) -> dict[str, Any]:
     }
 
 
-def _descriptor_world_corners(descriptor: Any) -> np.ndarray | None:
-    geometry = getattr(descriptor, "geometry", None)
-    if geometry is None or not bool(getattr(geometry, "has_local_bounds", False)):
-        return None
-    from . import _world_render_bridge
-
-    bounds_min = np.asarray(geometry.local_bounds_min, dtype=float).reshape(3)
-    bounds_max = np.asarray(geometry.local_bounds_max, dtype=float).reshape(3)
-    transform = np.asarray(
-        _world_render_bridge._isometry_to_matrix(descriptor.world_transform),
-        dtype=float,
-    ).reshape(4, 4)
-    corners = np.array(
-        [
-            [x, y, z]
-            for x in (bounds_min[0], bounds_max[0])
-            for y in (bounds_min[1], bounds_max[1])
-            for z in (bounds_min[2], bounds_max[2])
-        ]
-    )
-    return corners @ transform[:3, :3].T + transform[:3, 3]
-
-
 def _descriptor_name(descriptor: Any) -> str:
     for attribute in ("body_name", "shape_frame_name", "shape_node_name"):
         name = str(getattr(descriptor, attribute, "") or "")
@@ -188,6 +165,27 @@ def assess_view(
     )
 
 
+def _fit_bounding_sphere(
+    sphere: Any,
+    *,
+    azimuth: float,
+    elevation: float,
+    size: tuple[int, int],
+    margin: float,
+    vertical_fov_degrees: float = 45.0,
+) -> Any:
+    width, height = int(size[0]), int(size[1])
+    return dart.gui.fit_orbit_camera_to_viewport(
+        sphere,
+        width,
+        height,
+        float(vertical_fov_degrees),
+        math.degrees(float(azimuth)),
+        math.degrees(float(elevation)),
+        float(margin),
+    )
+
+
 def frame_region(
     center: Sequence[float],
     radius: float,
@@ -199,17 +197,16 @@ def frame_region(
     vertical_fov_degrees: float = 45.0,
 ) -> Any:
     """Build a camera that frames a sphere around ``center`` with margin."""
-    width, height = int(size[0]), int(size[1])
-    radius = max(float(radius), 1e-6)
-    fov = math.radians(vertical_fov_degrees)
-    aspect = max(float(width) / float(max(height, 1)), 1e-6)
-    horizontal_fov = 2.0 * math.atan(math.tan(fov * 0.5) * aspect)
-    distance = radius / math.sin(min(fov, horizontal_fov) * 0.5) * float(margin)
-    return dart.gui.orbit_camera(
-        azimuth=float(azimuth),
-        elevation=float(elevation),
-        distance=distance,
-        target=np.asarray(center, dtype=float).reshape(3),
+    sphere = dart.gui.BoundingSphere()
+    sphere.center = np.asarray(center, dtype=float).reshape(3)
+    sphere.radius = max(float(radius), 1e-6)
+    return _fit_bounding_sphere(
+        sphere,
+        azimuth=azimuth,
+        elevation=elevation,
+        size=size,
+        margin=margin,
+        vertical_fov_degrees=vertical_fov_degrees,
     )
 
 
@@ -227,18 +224,15 @@ def frame_body(
 
     descriptors = _world_render_bridge._renderables_from_world(world)
     focus_descriptors, _ = _split_focus(descriptors, name)
-    corners_list = [
-        corners
-        for corners in (_descriptor_world_corners(d) for d in focus_descriptors)
-        if corners is not None
-    ]
-    if not corners_list:
+    sphere = dart.gui.scene_bounding_sphere(focus_descriptors)
+    if not bool(sphere.has_bounds):
         raise ValueError(f"focus {name!r} has no bounded renderables to frame")
-    corners = np.vstack(corners_list)
-    center = 0.5 * (corners.min(axis=0) + corners.max(axis=0))
-    radius = 0.5 * float(np.linalg.norm(corners.max(axis=0) - corners.min(axis=0)))
-    return frame_region(
-        center, radius, azimuth=azimuth, elevation=elevation, size=size, margin=margin
+    return _fit_bounding_sphere(
+        sphere,
+        azimuth=azimuth,
+        elevation=elevation,
+        size=size,
+        margin=margin,
     )
 
 
@@ -271,27 +265,20 @@ def select_viewpoints(
 
     descriptors = _world_render_bridge._renderables_from_world(world)
     focus_descriptors, _ = _split_focus(descriptors, focus)
-    corners_list = [
-        corners
-        for corners in (_descriptor_world_corners(d) for d in focus_descriptors)
-        if corners is not None
-    ]
-    if not corners_list:
+    sphere = dart.gui.scene_bounding_sphere(focus_descriptors)
+    if not bool(sphere.has_bounds):
         raise ValueError("select_viewpoints requires bounded focus renderables")
-    corners = np.vstack(corners_list)
-    center = 0.5 * (corners.min(axis=0) + corners.max(axis=0))
-    radius = 0.5 * float(np.linalg.norm(corners.max(axis=0) - corners.min(axis=0)))
 
     candidates: list[ViewpointChoice] = []
     for elevation in elevations:
         for azimuth in azimuths:
             for scale in distance_scales:
-                camera = frame_region(
-                    center,
-                    radius * float(scale),
+                camera = _fit_bounding_sphere(
+                    sphere,
                     azimuth=float(azimuth),
                     elevation=float(elevation),
                     size=size,
+                    margin=1.15 * float(scale),
                 )
                 report = assess_view(
                     world,

@@ -757,6 +757,25 @@ class OrbitCamera:
     @distance.setter
     def distance(self, arg: float, /) -> None: ...
 
+class BoundingSphere:
+    def __init__(self) -> None: ...
+    @property
+    def center(
+        self,
+    ) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]: ...
+    @center.setter
+    def center(
+        self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")], /
+    ) -> None: ...
+    @property
+    def radius(self) -> float: ...
+    @radius.setter
+    def radius(self, arg: float, /) -> None: ...
+    @property
+    def has_bounds(self) -> bool: ...
+    @has_bounds.setter
+    def has_bounds(self, arg: bool, /) -> None: ...
+
 class OrbitCameraBasis:
     def __init__(self) -> None: ...
     @property
@@ -1502,6 +1521,24 @@ def make_orbit_camera_basis(camera: OrbitCamera) -> OrbitCameraBasis: ...
 def camera_eye(
     camera: OrbitCamera,
 ) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]: ...
+def scene_bounding_sphere(
+    descriptors: Sequence[RenderableDescriptor],
+) -> BoundingSphere: ...
+def fit_orbit_camera(
+    sphere: BoundingSphere,
+    vertical_fov_degrees: float,
+    azimuth_degrees: float,
+    elevation_degrees: float,
+) -> OrbitCamera: ...
+def fit_orbit_camera_to_viewport(
+    sphere: BoundingSphere,
+    width: int,
+    height: int,
+    vertical_fov_degrees: float,
+    azimuth_degrees: float,
+    elevation_degrees: float,
+    margin: float = ...,
+) -> OrbitCamera: ...
 def update_orbit_camera(camera: OrbitCamera, update: OrbitCameraUpdate) -> None: ...
 def add_orbit_camera_scroll(
     controller: OrbitCameraController, scroll_delta: float
