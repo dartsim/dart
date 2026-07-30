@@ -33,6 +33,8 @@
 #ifndef DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
 #define DART_EXAMPLES_DEMOS_CONTACTVISUALIZER_HPP_
 
+#include "ContactArrowLayout.hpp"
+
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
@@ -93,6 +95,7 @@ private:
   dart::simulation::WorldPtr mWorld;
   bool mEnabled = true;
 
+  ContactArrowLayout mLayout;
   std::vector<dart::dynamics::SimpleFramePtr> mFrames;
   std::vector<std::shared_ptr<dart::dynamics::ArrowShape>> mArrows;
   std::size_t mLastVisualizedCount = 0;
