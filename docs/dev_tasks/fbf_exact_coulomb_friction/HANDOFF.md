@@ -23,27 +23,28 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Current pushed documentation head:
+Fixed evidence-execution head:
 
-  6be9d0f42de62c75a71bded1820311f2a8878e6a
+  f36d28eea97a60ee6bfcf92c1484b91aa370ea9a
 
 Matching pushed code/runtime checkpoint:
 
   91eea8541b8908f00a3d21717f0bb832320490ec
 
-The runtime checkpoint contains release-6.20 tip
+The fixed execution head is documentation-only and uses the runtime
+checkpoint below. That runtime checkpoint contains release-6.20 tip
 aaf1e5f64dd47f0350ea1b395bf257bb77b36829. Query the live branch and PR
 #3377 before acting. At the 2026-07-30 handoff the PR is open, draft, and
-mergeable, and every reported current-head check is green; only the
-intentionally skipped API-documentation deploy job is not a success. Keep it
-draft and do not trigger @codex review.
+mergeable. Immediately after f36d28eea97, AI infrastructure and both Read the
+Docs contexts passed, the other reported checks were running or queued, and
+none had failed. Keep it draft, requery mutable CI, and do not trigger @codex
+review.
 
-Commit 6be9d0f42de6 is the matching 2026-07-30 documentation-only checkpoint
-for AGENT_CONTINUATION.md, HANDOFF.md, README.md, RESUME.md, and
-docs/dev_tasks/.gitignore; it does not change the runtime hashes below.
-Preserve any later handoff edits. Before their next commit, wait for a safe
-host window, run pixi run lint and git diff --check, fetch the target, merge
-it if advanced, and then create and push the authorized checkpoint.
+Commit f36d28eea97 is the Figure 3 documentation seal and fixed execution head
+for the CPU packet; it does not change the runtime hashes below. Preserve the
+later CPU handoff edits. Before their next commit, wait for a safe host
+window, run pixi run lint and git diff --check, fetch the target, merge it if
+advanced, and then create and push the authorized checkpoint.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -126,6 +127,23 @@ on 2026-07-30, and every byte stream matched its recorded SHA-256. This proves
 attachment integrity only; it does not promote a partial or blocked coverage
 row.
 
+A fresh matched CPU packet ran from clean head f36d28eea97 and trace binary
+d0d65b48... under ignored
+assets/cpu_current_head_f36d28_20260730T070943/. Its qualifying host samples
+were 66 seconds apart: 60 C / load 0.58, then 58 C / load 0.39, with no
+process above five percent instantaneous CPU on logical CPUs 8, 10, 12, or
+14. One warmup plus three measured 600-step trajectories passed per lane.
+One thread averaged 6.018877 ms (p95 21.370755 ms); four threads averaged
+4.218560 ms (p95 14.159278 ms), for validated speedup 1.426761x. Both lanes
+have complete trajectories, valid standing outcomes, residual pass fraction
+1.0, and zero exact failures or boxed fallbacks. Mean throughput exceeds
+60 Hz, but neither lane satisfies the every-step deadline. This is explicitly
+non-paper colored-BGS scaling evidence; the paper timing target remains
+unevaluated. Independent artifact-index and summary-invariant checks pass.
+Summary and artifact-index SHA-256 values are
+648ce0fbdaae704b28949c574bb7aba2e08b47564cd133b0ebda75c4e37df09c and
+302b49f5dd233f74726b10465270b523682aab6faea583bf51177d53cfee2417.
+
 The compact tracked paper-coverage-contract.json replaces the deleted
 asset-coupled manifest. Run:
 
@@ -140,13 +158,10 @@ does not make the evidence complete.
 
 Remaining order:
 
-1. run the isolated matched one-/four-core packet only after two samples at
-   least 60 seconds apart show package temperature <= 60 C, one-minute
-   load <= 1.0, and no process above 5% CPU on logical CPUs 8, 10, 12, or 14;
-2. freshly capture and independently verify Figure 8;
-3. run the roughly five-hour paired ten-level exact/boxed capture from one
+1. freshly capture and independently verify Figure 8;
+2. run the roughly five-hour paired ten-level exact/boxed capture from one
    unchanged head; and
-4. upload changed review videos as GitHub user attachments, not repository
+3. upload changed review videos as GitHub user attachments, not repository
    files, then
    update PAPER_DEMO_VIDEO_MATRIX.md and the draft PR body.
 

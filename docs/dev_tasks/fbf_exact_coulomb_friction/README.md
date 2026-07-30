@@ -30,10 +30,11 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 
 ## 2026-07-30 Current-Head Checkpoint
 
-The live draft-PR head is documentation-only commit `6be9d0f42de`; the
-matching code/runtime evidence checkpoint is `91eea8541b8`, containing
-`release-6.20` target `aaf1e5f64dd`. The PR description shows the before/after
-API and makes the compatibility defaults explicit:
+The fixed evidence-execution head is documentation-only commit
+`f36d28eea97`; the matching code/runtime evidence checkpoint is
+`91eea8541b8`, containing `release-6.20` target `aaf1e5f64dd`. Query the live
+branch for later handoff-only commits. The PR description shows the
+before/after API and makes the compatibility defaults explicit:
 `World::create()` still uses `BoxedLcpConstraintSolver`; exact-Coulomb FBF is
 opt-in; boxed fallback is enabled inside the opt-in solver; and
 `DARTCollisionDetector` remains `Compact` unless a paper/demo scene explicitly
@@ -50,6 +51,15 @@ All 16 GitHub user-attachment streams were freshly re-downloaded and match
 their recorded hashes. Both solvers pass the bounded slice; no superiority,
 equivalence, renderer, timing, Figure 3, or paper-parity claim follows. See
 the top of [RESUME.md](RESUME.md) for hashes and the exact restart order.
+
+A fresh clean-head, cool/quiet one-/four-core packet passes complete
+trajectory, outcome, residual, affinity, and scaling gates. Mean step time is
+`6.018877 ms` on one thread and `4.218560 ms` on four threads, a validated
+`1.426761x` speedup. Both means exceed 60 Hz, but neither lane meets the
+every-step deadline. This is explicitly non-paper colored-BGS scaling
+evidence; the paper timing target remains unevaluated. The ignored summary
+SHA-256 is
+`648ce0fbdaae704b28949c574bb7aba2e08b47564cd133b0ebda75c4e37df09c`.
 
 ## 2026-07-29 Post-target Coverage Checkpoint
 

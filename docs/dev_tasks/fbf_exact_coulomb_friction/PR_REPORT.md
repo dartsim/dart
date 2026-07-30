@@ -1,5 +1,58 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
+## 2026-07-30 Current-Head Figure 3 And CPU Update
+
+This section supersedes every older current-head, Figure 3, CPU, branch, raw
+file, and CI statement below.
+
+- Fixed evidence-execution head `f36d28eea97` uses code/runtime checkpoint
+  `91eea8541b8`, which contains release target `aaf1e5f64dd`. Query the live
+  branch for later documentation-only handoff commits. PR #3377 is open,
+  draft, and mergeable. Immediately after `f36d28eea97`, AI infrastructure
+  and both Read the Docs contexts had passed, the other reported checks were
+  running or queued, and none had failed. Requery mutable CI; do not request
+  review yet.
+- Existing `World::create()` behavior remains the default:
+  `BoxedLcpConstraintSolver` with the normal FCL/primitive collision detector.
+  Exact-Coulomb FBF is opt-in by replacing the world constraint solver.
+  `fallbackToBoxedLcp` defaults on inside that opt-in solver, and
+  `DARTCollisionDetector` defaults to `Compact`; paper/demo scenes select
+  `FourPointPlanar` explicitly where required. The draft PR body contains
+  before/after API examples and a defaults table.
+- The current net PR has 162 changed paths and zero tracked dev-task
+  `assets/` or generated evidence/raw-output paths. The scalable
+  `docs/dev_tasks/.gitignore` `**/assets/` rule hides generated task evidence
+  by role without broad extension rules. Seven intentional `data/` paths
+  remain: two license/provenance documents and five small Figure 3/Figure 4
+  renderer inputs. Historical topic commits still contain 492 generated
+  evidence blobs, so final integration requires a true squash unless a
+  separate clean-history reconstruction is explicitly approved.
+- Fresh current-head Figure 3 exact, boxed, and paired checker media pass
+  capture-time and independent reuse-only verification. The three MP4 byte
+  streams reproduce slots 02/16 exactly, and manual inspection confirms
+  visible checker orientation change. The reuse summary SHA-256 is
+  `7b5c40beba769ec301d78ee5038c0d9118ffac75190429968f899d1f1a40005a`.
+  Both solvers pass the bounded slice; no superiority, equivalence,
+  renderer/golden, timing, Figure 3, or paper-parity claim follows.
+- A fresh matched CPU packet ran from clean head `f36d28eea97` under ignored
+  `assets/cpu_current_head_f36d28_20260730T070943/`. Two qualifying samples
+  66 seconds apart recorded `60 C` / load `0.58`, then `58 C` / load `0.39`,
+  with no process above five percent instantaneous CPU on CPUs 8/10/12/14.
+  One warmup plus three measured 600-step trajectories pass per lane. One
+  thread averages `6.018877 ms` (`p95 21.370755 ms`); four average
+  `4.218560 ms` (`p95 14.159278 ms`), for validated `1.426761x` speedup.
+  Both lanes have complete finite standing trajectories, residual pass
+  fraction `1.0`, and zero exact failures/fallbacks. Both means exceed 60 Hz,
+  but neither lane meets the every-step deadline. This is explicitly
+  non-paper colored-BGS scaling evidence; paper timing remains unevaluated.
+  Independent artifact-index and invariant checks pass. Summary and
+  artifact-index SHA-256 values are `648ce0fb...` and `302b49f5...`.
+- All 16 GitHub user-attachment URLs were freshly streamed and each matched
+  its recorded SHA-256. Figure 8 and the roughly five-hour paired ten-level
+  media still need fresh execution from the current runtime lineage. The
+  compact audit remains 29 rows = 24 partial + 5 blocked + 0 complete, so the
+  direct coverage answer remains **No** and the PR remains draft.
+
 ## 2026-07-29 Post-Merge Code And Runtime Update
 
 This section supersedes every older current-head, active-capture, Figure 3,

@@ -6,16 +6,17 @@ This section supersedes every older branch-head, API-default, Figure 3,
 performance-host, CI, and immediate-next-step statement below. The task is
 still active and incomplete.
 
-- Branch `research/fbf-friction-release620` and draft PR #3377 are pushed at
-  documentation-only head
-  `6be9d0f42de62c75a71bded1820311f2a8878e6a`. The code/runtime evidence
-  checkpoint remains
+- The fixed evidence-execution head on branch
+  `research/fbf-friction-release620` is documentation-only commit
+  `f36d28eea97a60ee6bfcf92c1484b91aa370ea9a`; query the live branch for a
+  later handoff-only commit. The code/runtime evidence checkpoint remains
   `91eea8541b8908f00a3d21717f0bb832320490ec`, which merges current
   `origin/release-6.20`
-  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. The 2026-07-30 live query
-  showed OPEN, draft, and mergeable, with every reported current-head check
-  green; the API-documentation deploy job was intentionally skipped. Keep it
-  draft and do not request review.
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. Immediately after
+  `f36d28eea97`, the live query showed OPEN, draft, and mergeable; AI
+  infrastructure and both Read the Docs contexts passed, the other reported
+  checks were running or queued, and none had failed. Keep it draft, requery
+  mutable CI, and do not request review.
 - The PR description now includes the public before/after API and defaults.
   Default `World::create()` behavior remains `BoxedLcpConstraintSolver` and
   the normal FCL/primitive detector. Callers opt into exact-Coulomb FBF by
@@ -56,26 +57,40 @@ still active and incomplete.
   GitHub on 2026-07-30 and each byte stream matched its recorded SHA-256.
   This is attachment-integrity evidence only; it does not promote any partial
   or blocked coverage row.
+- A fresh matched CPU packet ran from clean head `f36d28eea97` under ignored
+  `assets/cpu_current_head_f36d28_20260730T070943/`. Its qualifying samples
+  were 66 seconds apart: `60 C` / load `0.58`, then `58 C` / load `0.39`,
+  with CPUs 8, 10, 12, and 14 quiet. One warmup plus three measured 600-step
+  trajectories passed per lane. One thread averaged `6.018877 ms`
+  (`p95 21.370755 ms`); four averaged `4.218560 ms`
+  (`p95 14.159278 ms`), a validated `1.426761x` speedup. Both have complete
+  valid standing trajectories, residual pass fraction `1.0`, and zero exact
+  failures/fallbacks. Mean throughput exceeds 60 Hz; neither meets the
+  every-step deadline. This is non-paper colored-BGS scaling evidence, and
+  the paper timing target remains unevaluated. Independent artifact-index and
+  summary-invariant checks pass. Summary/artifact-index SHA-256 values are
+  `648ce0fbdaae704b28949c574bb7aba2e08b47564cd133b0ebda75c4e37df09c`
+  and
+  `302b49f5dd233f74726b10465270b523682aab6faea583bf51177d53cfee2417`.
 
-Resume only after a cool window: run the declared cool/quiet CPU packet, fresh
-Figure 8 blocker capture/finalize/seal/verify, and the paired ten-level capture
-from one unchanged head. Keep all videos outside Git and publish changed bytes
-only as GitHub user attachments. Before any commit, merge a newly advanced
-target, run mandatory `pixi run lint`, rerun proportionate tests, checkpoint,
-and push.
+Resume only after a safe host window: run the fresh Figure 8 blocker
+capture/finalize/seal/verify, then the paired ten-level capture from one
+unchanged head. Keep all videos outside Git and publish changed bytes only as
+GitHub user attachments. Before any commit, merge a newly advanced target, run
+mandatory `pixi run lint`, rerun proportionate tests, checkpoint, and push.
 
-For the CPU packet, require two host samples at least 60 seconds apart with
-package temperature at or below 60 C, one-minute load at or below 1.0, and no
-competing process above 5% CPU on logical CPUs 8, 10, 12, or 14. Later visual
-captures are not timing evidence, but still wait until the package is below
-its thermal alarm and unrelated build saturation has cleared.
+Do not replace or extend the CPU packet without the same gate: two host
+samples at least 60 seconds apart with package temperature at or below 60 C,
+one-minute load at or below 1.0, and no competing process above 5% CPU on
+logical CPUs 8, 10, 12, or 14. Later visual captures are not timing evidence,
+but still wait until the package is below its thermal alarm and unrelated
+build saturation has cleared.
 
-Commit `6be9d0f42de6` is the 2026-07-30 documentation-only checkpoint for
-`AGENT_CONTINUATION.md`, `HANDOFF.md`, `README.md`, this file, and
-`docs/dev_tasks/.gitignore`; it does not change the runtime hashes above.
-Preserve any later handoff edits. Before their next commit, wait for a safe
-host window, run `pixi run lint` and `git diff --check`, fetch the target,
-merge it if advanced, and then create and push the authorized checkpoint.
+Commit `f36d28eea97` is the Figure 3 documentation seal and fixed execution
+head for the CPU packet; it does not change the runtime hashes above. Preserve
+the later CPU handoff edits. Before their next commit, wait for a safe host
+window, run `pixi run lint` and `git diff --check`, fetch the target, merge it
+if advanced, and then create and push the authorized checkpoint.
 
 ## 2026-07-29 Post-target Coverage Checkpoint
 
