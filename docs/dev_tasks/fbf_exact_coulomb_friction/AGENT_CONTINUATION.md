@@ -35,7 +35,71 @@ does not reproduce the source
 trajectory equivalently, all scenes source-equivalently, the historical
 renderer, Apple hardware, or paper timer boundary.
 
-## 2026-07-29 Post-Merge Code And Runtime Checkpoint
+## 2026-07-29 Collision-Consolidation Merge Checkpoint
+
+This section is authoritative for current branch, detector, runtime-evidence,
+CI, and PR state. It supersedes every older runtime hash and media-currency
+claim in this file.
+
+- The active merge combines topic parent
+  `ca806fb72358c8e696787a3dead8d9dbc49333b2` with
+  `origin/release-6.20` target
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The target consolidates
+  DART-owned native collision into `DARTCollisionDetector` and removes the
+  public `NativeCollisionDetector` frontend. Query the merge commit, live
+  branch, and draft PR #3377 after publication rather than treating either
+  parent hash as current.
+- Exact-FBF contact-gap and `FourPointPlanar` policies now live on
+  `DARTCollisionDetector`. Their state remains behind its existing manager
+  sidecar, so the released public class layout does not grow. Exact-FBF
+  consumers use consolidated detector/object types. Stable evidence and CLI
+  value `"native"` names the DART-owned native policy contract; it is not a
+  detector factory key.
+- The consolidated detector defaults to `Compact`. Paper/demo worlds that
+  formerly selected the released DART collision frontend now explicitly
+  request `FourPointPlanar`, restoring the Painleve threshold, A-frame
+  precursor, and former DART-lane behavior without changing the global
+  default.
+- `UNIT_collision_dart_engine`, all 75 `test_ConstraintSolver` cases,
+  `test_ExactCoulombFbfConstraintSolver`,
+  `UNIT_math_ExactCoulombFbfSolver`, the default
+  `test_ExactCoulombFbfPaperFixtures` suite, and
+  `INTEGRATION_StepAllocation` pass. Nine affected Python files pass 695
+  tests, including the freshly rebuilt dartpy consolidated-detector binding
+  and GUI capture helpers. Mandatory `pixi run lint` and
+  `pixi run check-lint` pass. A 60-step exact backspin trace ends successfully
+  with zero fallbacks; a fresh ten-step off-screen author-backspin smoke
+  records nine exact solves, zero failures/fallbacks, and residual
+  `7.1534829981547423e-7`.
+- Three synthetic masonry-arch diagnostics capped at two contacts per pair no
+  longer converge with the consolidated box-box manifold. They remain
+  executable behind `DART_RUN_FBF_PAPER_STRESS_TESTS=1` and explicitly report
+  expected failure. The default full-manifold 25-stone gate passes. No
+  tolerance, convergence boundary, or scientific success criterion changed.
+- Every earlier performance packet and schema-v3 capture binds a
+  pre-`46719bf` collision runtime. The old `d9932f4c...` / `caf402af...`
+  hashes, Figure 3 byte-identity seal, Figure 8 blocker diagnostic, and
+  ten-level pair are not current-runtime evidence. The interrupted ten-level
+  run that crossed heads is non-evidence and must not be combined or resumed.
+- Once the ordinary merge checkpoint is pushed and stable, generate new
+  demo/core/runtime hashes, matched one-/four-core performance, checker-sphere
+  Figure 3, fresh Figure 8, and a fresh roughly five-hour paired ten-level
+  exact/boxed capture. Independently verify each root before updating claim
+  docs or GitHub user-attachment URLs.
+- The scalable repository policy remains the role-based
+  `docs/dev_tasks/.gitignore` `**/assets/` rule. Generated evidence stays
+  local; broad extension ignores remain prohibited. The generated optional
+  MuJoCo arch avoids 103 redundant adapted MJCF/OBJ files. Published topic
+  history still contains 492 historical evidence blobs totaling 96,573,227
+  bytes; a true squash excludes them from the target. No history rewrite or
+  force-push is authorized.
+- PR #3377 is open and draft. Keep it draft, do not trigger `@codex review`,
+  and classify only current-head CI after the merge checkpoint is pushed.
+
+The fail-closed manifest remains 29 rows: 24 partial, 5 blocked, 0 complete
+until a fresh validation run proves otherwise.
+
+## Archived 2026-07-29 Pre-Consolidation Code And Runtime Checkpoint
 
 - The immutable post-merge code/runtime checkpoint is
   `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df`. It contains current
@@ -117,7 +181,12 @@ renderer, Apple hardware, or paper timer boundary.
   The target merge/rebuild is complete. Rerun only after a declared
   cool/low-load gate.
 
-## Truth Ledger
+## Requirement Ledger With Historical Runtime Bindings
+
+Use the rows below for the requirement inventory and claim boundaries. Any
+branch head, binary hash, performance result, or media-currentness statement
+in the table is historical unless the authoritative checkpoint above
+explicitly revalidates it.
 
 | Claim | Current evidence | Verdict |
 | --- | --- | --- |
@@ -1677,7 +1746,7 @@ core math are verified, and neither failure is silent wrong physics):
   twice). Root cause is a **stale threshold, not a solver regression**: the
   `>100` bar dates to the original fixtures commit `49693e4883b` and was never
   reconciled when commit `369808583e8` "repaired the 26-card reconstruction" and
-  overhauled `NativeCollisionDetector.cpp` (731-line change) -- the same commit
+  overhauled `DARTCollisionDetector.cpp` (731-line change) -- the same commit
   that added the opt-in env gate. The repaired geometry's natural manifold is 98
   contacts (dense: ~3.8 contacts/card across 26 cards, near the 4-per-pair cap),
   which satisfies the assertion's stated intent ("the full natural manifold must
@@ -1788,7 +1857,7 @@ Build only after checking that no other agent owns the shared Ninja tree:
 cmake --build build/default/cpp/Release \
   --target fbf_paper_trace fbf_paper_arch_wedge_dynamics_probe \
   test_ExactCoulombFbfPaperFixtures test_ConstraintSolver \
-  test_NativeCollisionDetector \
+  test_DARTCollisionDetector \
   --parallel 4
 ```
 

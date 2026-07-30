@@ -1,8 +1,101 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-29 post-merge execution
-checkpoint in [RESUME.md](RESUME.md) and supersedes the archived 2026-07-22
+Use the first prompt below. It reflects the 2026-07-29 collision-consolidation
+merge checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
 prompt later in this file.
+
+```text
+Continue the active DART 6.20 exact-Coulomb FBF task in:
+
+  /home/js/dev/dartsim/dart/task_6
+
+Project home:
+
+  docs/dev_tasks/fbf_exact_coulomb_friction/
+
+The task is incomplete. The answer to whether all paper tests, benchmarks, GUI
+examples, physical outcomes, and performance results are covered remains
+"No." Read AGENTS.md and docs/ai/principles.md, then read the first sections
+of RESUME.md and AGENT_CONTINUATION.md. They supersede all older branch-head,
+runtime-hash, performance, capture, attachment, CI, and PR statements.
+
+Durable branch:
+
+  research/fbf-friction-release620
+
+The in-progress merge combines topic parent
+ca806fb72358c8e696787a3dead8d9dbc49333b2 with release-6.20 target
+46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5. Query the live branch and draft
+PR #3377 after the merge checkpoint is pushed; do not assume either hash is
+still current. Keep the PR draft and do not trigger @codex review.
+
+Target 46719bf consolidates DART-owned native collision into
+DARTCollisionDetector and removes the public NativeCollisionDetector
+frontend. The exact-FBF branch ports contact-gap and FourPointPlanar policies
+to DARTCollisionDetector without adding public class-layout state. Former DART
+paper/demo lanes explicitly select FourPointPlanar; the consolidated detector's
+global default remains Compact. The stable evidence/CLI string "native" is a
+schema label for DART-owned policy, not a collision-detector factory key.
+
+The focused merge gates pass:
+
+- UNIT_collision_dart_engine;
+- all 75 test_ConstraintSolver cases;
+- test_ExactCoulombFbfConstraintSolver;
+- UNIT_math_ExactCoulombFbfSolver;
+- the default test_ExactCoulombFbfPaperFixtures suite;
+- INTEGRATION_StepAllocation;
+- 695 affected Python tests, including the freshly rebuilt dartpy consolidated
+  detector binding and GUI capture helpers;
+- a 60-step exact backspin trace with zero fallbacks; and
+- a fresh ten-step off-screen author-backspin smoke with nine exact solves,
+  zero failures, zero fallbacks, and residual 7.1534829981547423e-7.
+
+Three synthetic reduced-contact masonry-arch diagnostics no longer converge
+with the consolidated box-box manifold. They remain explicit expected-failing
+opt-in diagnostics behind DART_RUN_FBF_PAPER_STRESS_TESTS=1. The default
+full-manifold 25-stone gate passes. No tolerance or scientific success
+criterion was loosened.
+
+Every pre-46719 performance packet and schema-v3 media capture binds an older
+collision runtime. Do not reuse d9932f4c... / caf402af... or call prior Figure
+3, Figure 8, or ten-level media current-runtime evidence. The interrupted
+cross-head ten-level exact/partial-boxed pair is non-evidence and must never be
+combined or resumed. After a stable pushed merge checkpoint:
+
+1. record fresh demo/core/runtime hashes and rerun the isolated matched
+   one-/four-core packet;
+2. freshly capture and independently verify Figure 3 with its checker sphere;
+3. freshly capture and independently verify Figure 8;
+4. run the roughly five-hour paired ten-level exact/boxed capture from one
+   unchanged head; and
+5. upload review videos as GitHub user attachments, not repository files, then
+   update PAPER_DEMO_VIDEO_MATRIX.md and the draft PR body.
+
+The scalable file policy is docs/dev_tasks/.gitignore's role-based
+**/assets/ rule. It ignores generated frames, clips, traces, raw tables, and
+logs for every dev task while preserving legitimate source/runtime assets.
+Do not add broad extension rules such as *.png, *.csv, or *.obj. The optional
+MuJoCo arch generates its 101 wedges and inline MJCF; the redundant adapted
+MJCF/OBJ files remain removed. Published topic history still contains 492
+historical evidence blobs totaling 96,573,227 bytes. A true squash merge
+excludes them from the target. Do not reconstruct or force-push the review
+branch without separate explicit approval.
+
+The mandatory pixi run lint and check-lint gates pass, as do the rebuilt dartpy
+collision test and post-lint focused C++ gates. Inspect the staged net diff for
+generated/raw files. Merge the latest target again if it advanced, then make
+and ordinarily push the authorized checkpoint. Query current-head CI afterward
+and fix only evidenced failures. Never add AI/tool attribution to commits or
+PRs.
+
+The fail-closed manifest was 29 rows: 24 partial, 5 blocked, 0 complete. Re-run
+it after the fresh runtime evidence. Preserve every proxy, continuation,
+frozen-prefix, exact/boxed-policy, and non-parity boundary. Do not retire this
+task folder until all remaining requirements are proven or explicitly blocked.
+```
+
+## Archived 2026-07-29 Pre-Consolidation Prompt
 
 ```text
 Continue the active DART 6.20 exact-Coulomb FBF task in:

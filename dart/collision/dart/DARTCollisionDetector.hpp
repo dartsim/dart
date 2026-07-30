@@ -34,20 +34,67 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
-
-#include <vector>
+#include <dart/collision/dart/Fwd.hpp>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class DARTCollisionGroup;
+
+namespace detail {
+struct DARTCollisionDetectorAccessor;
+struct DARTCollisionGroupEngineData;
+struct DARTCollisionObjectEngineData;
+} // namespace detail
 
 class DARTCollisionDetector : public CollisionDetector
 {
 public:
+  /// Solver-facing contact reduction policy for DART collision queries.
+  enum class ContactManifoldMode
+  {
+    /// Preserve the default compact manifold: at most three contacts per pair.
+    Compact,
+
+    /// Allow four-point box, plane-box, and planar convex-face manifolds.
+    FourPointPlanar
+  };
+
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
+
+  /// Set the solver-facing contact reduction policy.
+  ///
+  /// The default is ContactManifoldMode::Compact.
+  void setContactManifoldMode(ContactManifoldMode mode);
+
+  /// Get the solver-facing contact reduction policy.
+  [[nodiscard]] ContactManifoldMode getContactManifoldMode() const;
+
+  /// Set the speculative contact gap for a ShapeFrame.
+  ///
+  /// A rigid pair is eligible for a proximity contact when its signed surface
+  /// distance is less than the sum of the two ShapeFrame gaps. Gaps must be
+  /// finite, non-negative, and no greater than half the maximum representable
+  /// double so any pair sum remains finite. Setting a gap to zero removes the
+  /// override. The default is zero for every ShapeFrame, which preserves
+  /// ordinary DART collision behavior. When ConstraintSolver admits a rigid
+  /// negative-depth proximity contact, its velocity constraint permits the
+  /// current physical separation to close over one time step before generating
+  /// an impulse; the gap is not treated as penetration. Soft-body proximity
+  /// contacts remain excluded from constraint solving.
+  void setContactGap(const dynamics::ShapeFrame* shapeFrame, double contactGap);
+
+  /// Get the speculative contact gap for a ShapeFrame.
+  ///
+  /// Returns zero for a null or unconfigured ShapeFrame.
+  [[nodiscard]] double getContactGap(
+      const dynamics::ShapeFrame* shapeFrame) const;
+
+  /// Remove every speculative contact-gap override from this detector.
+  void clearContactGaps();
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
@@ -56,15 +103,14 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
-  /// Get collision detector type for this class
+  /// Get collision detector type for this class.
   static const std::string& getStaticType();
 
-  /// Sets the number of worker participants for parallel native collision
-  /// queries. A value of 0 maps to hardware concurrency.
+  /// Sets the number of worker participants for parallel collision queries.
+  /// A value of 0 maps to hardware concurrency.
   void setNumCollisionThreads(std::size_t numThreads);
 
-  /// Returns the number of worker participants for parallel native collision
-  /// queries.
+  /// Returns the number of worker participants for parallel collision queries.
   std::size_t getNumCollisionThreads() const;
 
   /// Enables contacts for primitive penetration through soft triangle
@@ -106,8 +152,20 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override;
+
+  [[nodiscard]] native::CachedContact* getCachedContact(
+      const DARTCollisionObject* object1,
+      const DARTCollisionObject* object2,
+      void* userData) const;
+
 protected:
-  /// Constructor
   DARTCollisionDetector();
 
   // Documentation inherited
@@ -117,8 +175,39 @@ protected:
   // Documentation inherited
   void refreshCollisionObject(CollisionObject* object) override;
 
+  // Documentation inherited
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
+
 private:
+  friend class DARTCollisionGroup;
+  friend class DARTCollisionObject;
+  friend struct detail::DARTCollisionDetectorAccessor;
+
   class DARTCollisionObjectManager;
+
+  CollisionDetectorPtr attachCollisionGroupEngineData(
+      const DARTCollisionGroup* group,
+      const CollisionDetectorPtr& collisionDetector);
+
+  void removeCollisionGroupEngineData(const DARTCollisionGroup* group);
+
+  detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
+      const DARTCollisionGroup* group);
+
+  dynamics::ConstShapePtr attachCollisionObjectEngineData(
+      const DARTCollisionObject* object, const dynamics::ConstShapePtr& shape);
+
+  void removeCollisionObjectEngineData(const DARTCollisionObject* object);
+
+  detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object);
+
+  const detail::DARTCollisionObjectEngineData& getCollisionObjectEngineData(
+      const DARTCollisionObject* object) const;
+
+  std::size_t getNumCollisionGroupEngineData() const;
+
+  std::size_t getNumCollisionObjectEngineData() const;
 
   static Registrar<DARTCollisionDetector> mRegistrar;
 };

@@ -33,12 +33,14 @@
 #ifndef DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORPAINLEVESPEC_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORPAINLEVESPEC_HPP_
 
+#include "FbfCollisionFrontendContract.hpp"
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
@@ -311,18 +313,18 @@ inline PhysicsContract inspectPhysicsContract(
   }
 
   const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           world->getConstraintSolver()->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
-        "author Painleve adapter requires Native collision");
-  contract.collisionDetector = detector->getType();
-  contract.contactManifold
-      = detector->getContactManifoldMode()
-                == dart::collision::NativeCollisionDetector::
-                    ContactManifoldMode::FourPointPlanar
-            ? "four_point_planar"
-            : "compact";
+        "author Painleve adapter requires DART-owned native collision");
+  contract.collisionDetector
+      = fbf_collision_frontend::kDartOwnedNativeContractLabel;
+  contract.contactManifold = detector->getContactManifoldMode()
+                                     == dart::collision::DARTCollisionDetector::
+                                         ContactManifoldMode::FourPointPlanar
+                                 ? "four_point_planar"
+                                 : "compact";
   const auto& collisionOption
       = world->getConstraintSolver()->getCollisionOption();
   contract.maxContacts = collisionOption.maxNumContacts;

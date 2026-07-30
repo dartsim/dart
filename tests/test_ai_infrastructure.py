@@ -914,6 +914,7 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         "      - name: Agent visual verification smoke\n"
         "if: matrix.build_type == 'Release'\n"
         "xvfb-run\n"
+        "bash -eu -o pipefail <<'VISUAL_SMOKE'\n"
         "pixi run agent-capture\n"
         "--scene box_on_ground --steps 250 --focus box --auto-views 1\n"
         "--layers contacts collision_bounds labels\n"
@@ -921,6 +922,15 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         "--out /tmp/dart-agent-visual-smoke --prefix smoke\n"
         "pixi run image-verdict\n"
         "/tmp/dart-agent-visual-smoke/smoke_auto0.png\n"
+        "pixi run agent-capture\n"
+        "--scene dart_shape_contacts --steps 500\n"
+        "--camera-azimuth 0.8 --camera-elevation 0.42\n"
+        "--camera-distance 4.5 --camera-target 0 0 0.2\n"
+        "--layers contacts collision_bounds labels\n"
+        "--width 640 --height 480\n"
+        "--out /tmp/dart-agent-visual-smoke --prefix dart\n"
+        "pixi run image-verdict\n"
+        "/tmp/dart-agent-visual-smoke/dart_main.png\n"
         "xvfb-run\n"
         "pixi run test-agent-debug-overlay\n"
     )
@@ -958,13 +968,20 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     (
         "Agent visual verification smoke",
         "xvfb-run",
+        "bash -eu -o pipefail <<'VISUAL_SMOKE'",
         "pixi run agent-capture",
         "--scene box_on_ground --steps 250 --focus box --auto-views 1",
+        "--scene dart_shape_contacts --steps 500",
+        "--camera-azimuth 0.8 --camera-elevation 0.42",
+        "--camera-distance 4.5 --camera-target 0 0 0.2",
         "--layers contacts collision_bounds labels",
         "--width 320 --height 240",
+        "--width 640 --height 480",
         "--out /tmp/dart-agent-visual-smoke --prefix smoke",
+        "--out /tmp/dart-agent-visual-smoke --prefix dart",
         "pixi run image-verdict",
         "/tmp/dart-agent-visual-smoke/smoke_auto0.png",
+        "/tmp/dart-agent-visual-smoke/dart_main.png",
         "pixi run test-agent-debug-overlay",
     ),
 )

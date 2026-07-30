@@ -337,7 +337,7 @@ TEST(FbfLiteralMasonryArchSpec, ExactWorldUsesLiteralConstruction)
   EXPECT_TRUE(contract.nativeCollision);
   EXPECT_EQ(
       contract.manifoldMode,
-      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
   EXPECT_TRUE(contract.splitImpulseEnabled);
   EXPECT_TRUE(contract.exactColoredBlockGaussSeidelEnabled);

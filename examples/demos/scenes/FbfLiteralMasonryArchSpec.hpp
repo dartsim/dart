@@ -40,7 +40,7 @@
 #include <dart/constraint/ContactConstraint.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
@@ -364,11 +364,11 @@ inline dart::dynamics::SkeletonPtr createStone(
 }
 
 //==============================================================================
-inline std::shared_ptr<dart::collision::NativeCollisionDetector>
+inline std::shared_ptr<dart::collision::DARTCollisionDetector>
 createCollisionDetector()
 {
-  auto detector = dart::collision::NativeCollisionDetector::create();
-  detector->setContactManifoldMode(dart::collision::NativeCollisionDetector::
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  detector->setContactManifoldMode(dart::collision::DARTCollisionDetector::
                                        ContactManifoldMode::FourPointPlanar);
   return detector;
 }
@@ -517,8 +517,8 @@ struct PhysicsContract
   std::size_t maxContacts = 0u;
   std::size_t maxContactsPerPair = 0u;
   bool nativeCollision = false;
-  dart::collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
-      = dart::collision::NativeCollisionDetector::ContactManifoldMode::Compact;
+  dart::collision::DARTCollisionDetector::ContactManifoldMode manifoldMode
+      = dart::collision::DARTCollisionDetector::ContactManifoldMode::Compact;
   bool splitImpulseEnabled = false;
   bool exactColoredBlockGaussSeidelEnabled = false;
   bool exactParticipantAffinityEnabled = false;
@@ -567,11 +567,11 @@ inline PhysicsContract inspectPhysicsContract(
   }
 
   const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           world->getConstraintSolver()->getCollisionDetector());
   if (!detector) {
     throw std::runtime_error(
-        "literal masonry arch requires Native collision detector");
+        "literal masonry arch requires DART-owned native collision detector");
   }
   contract.nativeCollision = true;
   contract.manifoldMode = detector->getContactManifoldMode();
@@ -769,9 +769,9 @@ inline void writeContractJsonPose(
 
 //==============================================================================
 inline const char* manifoldModeLabel(
-    dart::collision::NativeCollisionDetector::ContactManifoldMode mode)
+    dart::collision::DARTCollisionDetector::ContactManifoldMode mode)
 {
-  using Mode = dart::collision::NativeCollisionDetector::ContactManifoldMode;
+  using Mode = dart::collision::DARTCollisionDetector::ContactManifoldMode;
   switch (mode) {
     case Mode::Compact:
       return "compact";

@@ -38,7 +38,7 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
@@ -150,7 +150,7 @@ std::shared_ptr<dart::collision::CollisionDetector> makeDetector(
 {
   switch (backend) {
     case Backend::Native:
-      return dart::collision::NativeCollisionDetector::create();
+      return dart::collision::DARTCollisionDetector::create();
     case Backend::Fcl: {
       auto detector = dart::collision::FCLCollisionDetector::create();
       // ConvexMeshShape is represented by fcl::Convex. Request FCL's own

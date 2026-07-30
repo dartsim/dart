@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture balanced DART-vs-native soft-body benchmark pairs."""
+"""Capture balanced FCL-vs-DART soft-body benchmark pairs."""
 
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ if str(SCRIPT_DIR) not in sys.path:
 import compare_soft_body_performance as matrix
 
 SCHEMA_VERSION = "dart.soft_body_detector_pairs/v1"
-REFERENCE_DETECTOR = "dart"
-CANDIDATE_DETECTOR = "native"
+REFERENCE_DETECTOR = "fcl"
+CANDIDATE_DETECTOR = "dart"
 SCENE_TO_INDEX = {name: index for index, name in matrix.SCENES.items()}
 REQUIRED_SCENES = tuple(matrix.SCENES[index] for index in sorted(matrix.SCENES))
 REQUIRED_THREADS = (1, 16)
@@ -510,7 +510,7 @@ def evaluate_pairs(
         if not passed:
             if median_ratio is not None and median_ratio > 1.0 + tolerance:
                 row_failures.append(
-                    f"median native/dart ratio {median_ratio:.9f} exceeds "
+                    f"median dart/fcl ratio {median_ratio:.9f} exceeds "
                     f"{1.0 + tolerance:.9f}"
                 )
             failures.extend(
@@ -1130,6 +1130,7 @@ def evaluate_detector_equivalence_all_threads(
             tolerance=tolerance,
             output_dir=output_dir,
             thread_count=thread_count,
+            reference_detector=REFERENCE_DETECTOR,
         )
         by_thread[thread_count] = results
 
@@ -1221,7 +1222,7 @@ def write_markdown(
             "",
             "## Paired CPU verdict",
             "",
-            "| Scene | Threads | Pairs | First D/N | Median DART ms | Median native ms | Median native/dart | Delta | Wins N/D | Verdict |",
+            "| Scene | Threads | Pairs | First F/D | Median FCL ms | Median DART ms | Median DART/FCL | Delta | Wins D/F | Verdict |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
     )

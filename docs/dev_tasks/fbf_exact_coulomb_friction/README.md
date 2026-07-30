@@ -28,7 +28,47 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
-## 2026-07-29 Generated MuJoCo Arch And File-Surface Checkpoint
+## 2026-07-29 Collision-Consolidation Merge Checkpoint
+
+This section supersedes every older branch-head, runtime-hash, performance,
+media, CI, and PR statement below.
+
+- The active merge combines topic parent `ca806fb72358c8e696787a3dead8d9dbc49333b2`
+  with `origin/release-6.20` target
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. Target `46719bf` consolidates
+  DART-owned native collision into `DARTCollisionDetector` and removes the
+  public `NativeCollisionDetector` frontend.
+- Exact-FBF contact-gap and `FourPointPlanar` policies are ported to
+  `DARTCollisionDetector` behind its existing manager sidecar. Former DART
+  paper/demo lanes explicitly select `FourPointPlanar`; the global detector
+  default remains `Compact`.
+- Focused collision, constraint, exact-solver, paper-fixture, allocation, and
+  695 affected Python tests pass, including the freshly rebuilt dartpy
+  consolidated-detector binding and GUI capture helpers. Mandatory `lint` and
+  `check-lint` pass. Three synthetic reduced-contact arch diagnostics are
+  explicit opt-in expected failures under the consolidated manifold; the
+  default full-manifold 25-stone gate passes. No scientific tolerance was
+  loosened.
+- Every earlier performance packet and schema-v3 media capture binds a
+  pre-`46719bf` collision runtime. The old demo/core hashes and Figure 3,
+  Figure 8, and ten-level current-runtime seals are stale. The interrupted
+  cross-head ten-level pair is non-evidence.
+- After the merge checkpoint is pushed and stable, rerun the matched CPU
+  packet and fresh Figure 3, Figure 8, and paired ten-level capture/verification
+  workflows. Publish review videos through GitHub user attachments, never as
+  raw repository files.
+- PR #3377 remains open, incomplete, and draft. Keep it draft and do not
+  trigger `@codex review` until current-runtime evidence, CI, and the claim
+  ledger are ready.
+
+The role-based `docs/dev_tasks/.gitignore` `**/assets/` rule remains the
+scalable file policy. It excludes task-generated evidence without hiding
+legitimate source/runtime media by extension. Published topic history still
+contains 492 historical evidence blobs totaling 96,573,227 bytes; a true
+squash merge keeps them out of the target. Rewriting the review branch remains
+outside current authorization.
+
+## Archived 2026-07-29 Generated MuJoCo Arch And File-Surface Checkpoint
 
 The optional MuJoCo masonry baseline no longer vendors its adapted MJCF and 102
 OBJ files. The branch now reconstructs the 101 source wedges deterministically
@@ -85,7 +125,11 @@ the post-merge runtime without reuploading.
 Historical `67073`/`7ba6` roots retain their recorded claim boundaries but are
 not the current-runtime checkpoint.
 
-## Current Reality
+## Archived Pre-Consolidation Reality Ledger
+
+The table below preserves the requirement inventory and historical evidence
+boundaries. Its branch heads, runtime hashes, performance packets, and media
+currency are superseded by the collision-consolidation checkpoint above.
 
 | Area | Current truth | Verdict |
 | --- | --- | --- |

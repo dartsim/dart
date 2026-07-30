@@ -1,22 +1,21 @@
 # Scoping: Native collision detector port (DART 7 -> DART 6.20)
 
-> **Status: EXECUTION PLAN / CURRENT RESUME MAP** - DART 6.20 now has the
-> opt-in native collision detector, phase-2 adapter, phase-3 capability parity
-> pieces, native dashboard rows, and the first measured Phase 4 optimization
-> (#3364). FCL is still the release-branch default and still part of the core
-> dependency surface. This document is the go/no-go and sequencing artifact for
-> finishing Phase 4, deciding Phase 5 compatibility facades, performing the
-> Phase 6 default flip, and completing Phase 7 FCL decoupling.
+> **Status: EXECUTION PLAN / CURRENT RESUME MAP (2026-07-29)** - PR #3381
+> consolidates the DART-owned engine into `DARTCollisionDetector`; `"dart"` is
+> the sole canonical key and the unreleased interim `"native"` key is removed.
+> FCL remains the DART 6.20 default and a core dependency. This document keeps
+> the historical phase evidence, but any default flip or FCL decoupling is now
+> later-release work gated on the full acceptance envelope.
 
 ## Why (the real dependency win)
 
 DART 6.20 hard-requires **FCL** as the core collision dependency (default
 detector + linked into `dart` + in `DART_PKG_EXTERNAL_DEPS`), and ships Bullet/
-ODE as alternative backends. The only way to actually *remove* external collision
-dependencies (not just hide them) is to make a **native** detector the default
-and turn FCL/Bullet/ODE optional - exactly what DART 7 did (PLAN-035, PRs #2652
-/#2688/#2700). Goal for 6.20: native default that is **gz-compatible**, **feature-
-complete**, and **evidence-driven faster** than Bullet/ODE/FCL.
+ODE as alternative backends. Removing those dependencies eventually requires
+the consolidated `dart` detector to become the default, as DART 7 did
+(PLAN-035, PRs #2652/#2688/#2700). For 6.20, the authorized goal is
+consolidation only: remain **gz-compatible**, preserve FCL as the default, and
+prove that FCL/Bullet/ODE paths incur no runtime regression.
 
 ## Current evidence refresh (2026-07-09)
 
@@ -36,12 +35,13 @@ Refs checked:
   `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
   `fix/gz-physics-joint-detach-6.20`.
 
-Live conclusion:
+Historical conclusion at that refresh:
 
-- `release-6.20` now contains the phase-1 native math core, phase-2 DART 6
-  detector adapter, opt-in `"native"` factory key, phase-3 capability parity
+- `release-6.20` contained the phase-1 native math core, phase-2 DART 6
+  detector adapter, interim `"native"` factory key, phase-3 capability parity
   pieces, native dashboard rows, and #3364's solver-facing manifold
-  optimization.
+  optimization. PR #3381 supersedes that interim public naming with the sole
+  canonical `"dart"` key.
 - It still has no default flip: the default path still resolves through FCL,
   and FCL remains a core dependency until phases 6 and 7.
 - DART 7 source/reference PRs remain #2652 (native default), #2688 (coverage and

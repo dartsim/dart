@@ -33,6 +33,8 @@
 #ifndef DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORCARDHOUSESPEC_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORCARDHOUSESPEC_HPP_
 
+#include "FbfCollisionFrontendContract.hpp"
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
@@ -42,7 +44,7 @@
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
 #include <dart/collision/CollisionFilter.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
@@ -661,11 +663,11 @@ inline std::size_t configureDartContactGapValues(
 
   auto* solver = world->getConstraintSolver();
   auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           solver->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
-        "author card-house contact gaps require Native collision");
+        "author card-house contact gaps require DART-owned native collision");
 
   detector->clearContactGaps();
   solver->getCollisionOption().allowNegativePenetrationDepthContacts = enabled;
@@ -891,12 +893,12 @@ inline ConfigurationContract inspectConfigurationContract(
   if (solver == nullptr)
     throw std::runtime_error("author card-house contract requires exact FBF");
 
-  const auto detector = std::dynamic_pointer_cast<
-      const dart::collision::NativeCollisionDetector>(
-      solver->getCollisionDetector());
+  const auto detector
+      = std::dynamic_pointer_cast<const dart::collision::DARTCollisionDetector>(
+          solver->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
-        "author card-house contract requires Native collision");
+        "author card-house contract requires DART-owned native collision");
 
   const auto ground = world->getSkeleton("ground_plane");
   if (!ground || ground->getNumBodyNodes() != 1u)
@@ -925,13 +927,13 @@ inline ConfigurationContract inspectConfigurationContract(
   contract.gravity = world->getGravity();
   contract.simulationThreads = world->getNumSimulationThreads();
   contract.deactivationEnabled = world->getDeactivationOptions().mEnabled;
-  contract.collisionDetector = detector->getType();
-  contract.contactManifold
-      = detector->getContactManifoldMode()
-                == dart::collision::NativeCollisionDetector::
-                    ContactManifoldMode::FourPointPlanar
-            ? "four_point_planar"
-            : "compact";
+  contract.collisionDetector
+      = fbf_collision_frontend::kDartOwnedNativeContractLabel;
+  contract.contactManifold = detector->getContactManifoldMode()
+                                     == dart::collision::DARTCollisionDetector::
+                                         ContactManifoldMode::FourPointPlanar
+                                 ? "four_point_planar"
+                                 : "compact";
   const auto& collisionOption = solver->getCollisionOption();
   contract.maxContacts = collisionOption.maxNumContacts;
   contract.maxContactsPerPair = collisionOption.maxNumContactsPerPair;
@@ -1018,12 +1020,13 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
     throw std::runtime_error(
         "author card-house dynamics solver is unsupported");
 
-  const auto detector = std::dynamic_pointer_cast<
-      const dart::collision::NativeCollisionDetector>(
-      solver->getCollisionDetector());
+  const auto detector
+      = std::dynamic_pointer_cast<const dart::collision::DARTCollisionDetector>(
+          solver->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
-        "author card-house dynamics contract requires Native collision");
+        "author card-house dynamics contract requires DART-owned native "
+        "collision");
 
   const auto cardSpecs = makeCardSpecs(scenario.levelCount);
   const auto cubeSpecs = makeCubeSpecs(scenario.levelCount);
@@ -1189,13 +1192,13 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
   contract.gravity = world->getGravity();
   contract.simulationThreads = world->getNumSimulationThreads();
   contract.deactivationEnabled = world->getDeactivationOptions().mEnabled;
-  contract.collisionDetector = detector->getType();
-  contract.contactManifold
-      = detector->getContactManifoldMode()
-                == dart::collision::NativeCollisionDetector::
-                    ContactManifoldMode::FourPointPlanar
-            ? "four_point_planar"
-            : "compact";
+  contract.collisionDetector
+      = fbf_collision_frontend::kDartOwnedNativeContractLabel;
+  contract.contactManifold = detector->getContactManifoldMode()
+                                     == dart::collision::DARTCollisionDetector::
+                                         ContactManifoldMode::FourPointPlanar
+                                 ? "four_point_planar"
+                                 : "compact";
   const auto& collisionOption = solver->getCollisionOption();
   const auto bodyNodeFilter = std::dynamic_pointer_cast<
       const dart::collision::BodyNodeCollisionFilter>(

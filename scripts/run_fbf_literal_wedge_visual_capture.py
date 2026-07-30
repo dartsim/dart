@@ -64,8 +64,8 @@ SOURCE_FILES = (
     TRACE_SOURCE_RELATIVE,
     LITERAL_ARCH_SPEC_SOURCE_RELATIVE,
     "dart/math/detail/MasonryArchGeometry.hpp",
-    "dart/collision/native/NativeCollisionDetector.cpp",
-    "dart/collision/native/NativeCollisionDetector.hpp",
+    "dart/collision/dart/DARTCollisionDetector.cpp",
+    "dart/collision/dart/DARTCollisionDetector.hpp",
     "dart/constraint/ExactCoulombFbfConstraintSolver.cpp",
     "dart/constraint/ExactCoulombFbfConstraintSolver.hpp",
     "dart/constraint/detail/ExactCoulombContactRowOperator.hpp",
@@ -902,7 +902,7 @@ def validate_capture_source_contract() -> dict[str, Any]:
         ),
         "duplicate_exact_options": "ExactCoulombFbfConstraintSolverOptions options;",
         "duplicate_literal_wedge_generator": "generateMasonryArchStoneWedges(",
-        "duplicate_native_detector": "NativeCollisionDetector::create()",
+        "duplicate_native_detector": "DARTCollisionDetector::create()",
         "duplicate_ground_builder": "SkeletonPtr createGround(",
         "duplicate_stone_builder": "SkeletonPtr createStone(",
     }
@@ -1005,7 +1005,7 @@ def validate_capture_source_contract() -> dict[str, Any]:
             "if (index == 0u || index + 1u == kStoneCount) "
             "skeleton->setMobile(false);"
         ),
-        "native_frontend": "NativeCollisionDetector::create();",
+        "native_frontend": "DARTCollisionDetector::create();",
         "four_point_planar": "ContactManifoldMode::FourPointPlanar",
         "colored_bgs_enabled": (
             "installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);"
@@ -1063,7 +1063,7 @@ def validate_capture_source_contract() -> dict[str, Any]:
         "duplicate_exact_solver": (
             "std::make_unique<dart::constraint::" "ExactCoulombFbfConstraintSolver>"
         ),
-        "duplicate_native_detector": "NativeCollisionDetector::create()",
+        "duplicate_native_detector": "DARTCollisionDetector::create()",
     }
 
     consumer_missing = [

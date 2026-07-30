@@ -54,7 +54,6 @@
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
 
 #include <dart/math/detail/MasonryArchGeometry.hpp>
 
@@ -285,16 +284,16 @@ void configureWorldBase(const WorldPtr& world)
 //==============================================================================
 std::shared_ptr<dart::collision::CollisionDetector>
 createFbfPaperCollisionDetector(
-    dart::collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
-    = dart::collision::NativeCollisionDetector::ContactManifoldMode::Compact)
+    dart::collision::DARTCollisionDetector::ContactManifoldMode manifoldMode
+    = dart::collision::DARTCollisionDetector::ContactManifoldMode::
+        FourPointPlanar)
 {
   if (manifoldMode
-      == dart::collision::NativeCollisionDetector::ContactManifoldMode::
-          Compact) {
+      == dart::collision::DARTCollisionDetector::ContactManifoldMode::Compact) {
     return dart::collision::DARTCollisionDetector::create();
   }
 
-  auto detector = dart::collision::NativeCollisionDetector::create();
+  auto detector = dart::collision::DARTCollisionDetector::create();
   detector->setContactManifoldMode(manifoldMode);
   return detector;
 }
@@ -307,8 +306,8 @@ void configureSolver(
     std::size_t maxContactsPerPair,
     bool cardBudget = false,
     bool archBudget = false,
-    dart::collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
-    = dart::collision::NativeCollisionDetector::ContactManifoldMode::Compact)
+    dart::collision::DARTCollisionDetector::ContactManifoldMode manifoldMode
+    = dart::collision::DARTCollisionDetector::ContactManifoldMode::Compact)
 {
   if (mode == SolverMode::ExactFbf) {
     auto solver
@@ -333,14 +332,14 @@ void configureSolver(
 }
 
 //==============================================================================
-dart::collision::NativeCollisionDetector::ContactManifoldMode
+dart::collision::DARTCollisionDetector::ContactManifoldMode
 getConfiguredContactManifoldMode(const WorldPtr& world)
 {
   const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           world->getConstraintSolver()->getCollisionDetector());
   return detector != nullptr ? detector->getContactManifoldMode()
-                             : dart::collision::NativeCollisionDetector::
+                             : dart::collision::DARTCollisionDetector::
                                  ContactManifoldMode::Compact;
 }
 
@@ -474,7 +473,7 @@ WorldPtr createInclineWorld(SolverMode mode)
       4u,
       false,
       false,
-      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
 
   const double theta = std::atan(kInclineTan);
@@ -665,7 +664,7 @@ WorldPtr createTurntableWorld(
       4u,
       false,
       false,
-      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
 
   Eigen::Isometry3d turntable = Eigen::Isometry3d::Identity();
@@ -791,7 +790,7 @@ WorldPtr createAuthorTurntableWorld(
       4u,
       false,
       false,
-      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
   auto* exactSolver
       = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
@@ -923,7 +922,7 @@ void installAuthorCardHouseSolver(
       fbf_author_card_house::kDartMaxContactsPerPair,
       false,
       false,
-      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
           FourPointPlanar);
   auto* solver = world->getConstraintSolver();
   fbf_author_card_house::configureDartCollisionGeneration(
@@ -1094,7 +1093,7 @@ SkeletonPtr createAuthorPainleveBox(double friction)
 void configureAuthorPainleveSolver(const WorldPtr& world, SolverMode mode)
 {
   using namespace fbf_author_painleve;
-  const auto manifoldMode = dart::collision::NativeCollisionDetector::
+  const auto manifoldMode = dart::collision::DARTCollisionDetector::
       ContactManifoldMode::FourPointPlanar;
   if (mode == SolverMode::ExactFbf) {
     auto solver

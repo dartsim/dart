@@ -157,7 +157,7 @@ void printUsage(const char* prog)
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
          "(default 1.0).\n"
       << "  --collision-detector <name>  Initial collision backend "
-         "(e.g. fcl, dart, native, bullet, ode when available).\n"
+         "(e.g. fcl, dart, bullet, ode when available).\n"
       << "  --threads <n>   Initial simulation worker threads (0 selects "
          "hardware concurrency).\n"
       << "  -h, --help      Show this help.\n";

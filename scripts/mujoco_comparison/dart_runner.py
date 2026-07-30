@@ -26,7 +26,6 @@ _DETECTOR_CLASS_NAMES = {
     "fcl": "FCLCollisionDetector",
     "bullet": "BulletCollisionDetector",
     "ode": "OdeCollisionDetector",
-    "native": "NativeCollisionDetector",
 }
 
 
@@ -56,7 +55,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--detector",
-        choices=("default", "dart", "fcl", "bullet", "ode", "native"),
+        choices=("default", "dart", "fcl", "bullet", "ode"),
         default="default",
         help="Collision detector to install via "
         "world.getConstraintSolver().setCollisionDetector(); 'default' "
@@ -230,14 +229,6 @@ def _apply_detector(world, name: str) -> None:
     class_name = _DETECTOR_CLASS_NAMES[name]
     factory = getattr(dart.collision, class_name, None)
     if factory is None:
-        if name == "native":
-            raise SystemExit(
-                "dartpy.collision.NativeCollisionDetector is not bound yet. "
-                "This is tracked separately (bind NativeCollisionDetector in "
-                "dartpy) and must land before --detector native can be used "
-                "here; see docs/dev_tasks/dart6_dependency_minimization/ for "
-                "status."
-            )
         raise SystemExit(
             f"dartpy.collision.{class_name} is not available in this build "
             "(likely built without the corresponding optional backend)."

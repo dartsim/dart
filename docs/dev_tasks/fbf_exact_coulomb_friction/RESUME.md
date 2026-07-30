@@ -1,168 +1,113 @@
 # Resume: FBF exact Coulomb friction
 
-## 2026-07-29 Post-Merge Execution Checkpoint
+## 2026-07-29 Collision-Consolidation Merge Checkpoint
 
-This section supersedes every older branch-head, current-binary, active-capture,
-Figure 3, Figure 8, attachment, and CI statement below. The task remains active
-and incomplete. The mandatory status answer remains:
+This section supersedes every older branch-head, binary-hash, active-capture,
+Figure 3, Figure 8, ten-level, performance, CI, and PR statement below. The
+task remains active and incomplete. The mandatory status answer remains:
 
 ```text
 No, the DART reconstruction does not yet cover or match every paper test,
 benchmark, GUI example, physical outcome, or performance result.
 ```
 
-Current branch and evidence runtime:
+Current code state:
 
-- Branch `research/fbf-friction-release620` has immutable post-merge
-  code/runtime checkpoint
-  `6fb4d0dbd8cff445f5656e31bcdec7e9f09938df`. It contains current
-  `origin/release-6.20` checkpoint
-  `6c88ac1d774a702b494643fb598be6b8af9385e1` through that merge checkpoint.
-  Subsequent documentation and optional MuJoCo-baseline source/data-hygiene
-  commits do not change the DART demo or solver binary identity; query the live
-  branch/PR head instead of assuming `6fb4` is still HEAD.
-- Pushed head `33a7b2f32dc98bd6ba09d0da7a3dae5e4ea828a5` closes the
-  current-tree generated-baseline cleanup. PR #3377 remains open and draft.
-  Query the live head and checks rather than assuming that checkpoint is still
-  current. Relative to `release-6.20`, the tree has 161 changed files and seven
-  `data/` paths, down from 264 and 110.
-- The scalable role rule remains
-  `docs/dev_tasks/.gitignore` `**/assets/`; no broad extension ignore was
-  added. The current net tree has no tracked task assets or generated
-  video/CSV/JSON/log evidence, while legitimate runtime/source meshes remain
-  visible.
-- The optional MuJoCo arch now generates the pinned 101 weighted-catenary
-  wedges deterministically and emits inline MJCF. Before deletion, all 101
-  generated OBJ byte streams exactly matched the tracked files. MuJoCo 3.11.0
-  produced exactly equal mass, inertia, initial-state, mesh-vertex, and
-  mesh-face arrays for the file-backed and inline models; a five-step
-  trajectory and contact counts were bit-identical. The adapted XML, unused
-  plane OBJ, and 101 stone OBJs are removed, leaving only the license and
-  provenance/contract README under `data/mjcf/rigid_ipc_arch/`. The DART Figure
-  8 demo remains unchanged and continues to call
-  `generateMasonryArchStoneWedges`.
-- The rebuilt post-merge `dart-demos` SHA-256 is
-  `d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363`;
-  the exact build-tree `libdart.so.6.19.4` SHA-256 is
-  `caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5`.
-  The merge passed `pixi run lint`, all 166 C++ tests, the 34-scene FBF
-  documentation validator, `check-ai-commands`, and the AI infrastructure
-  doctor.
-- The captured-checkpoint `dart-demos` SHA-256 is
-  `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`;
-  the exact build-tree `libdart.so.6.19.4` SHA-256 is
-  `3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`.
-  Visual-evidence schema v3 binds the demo, 61 regular resolved libraries,
-  eight build-tree libraries, and the exact core DART library before and after
-  capture at `333a809f14a`. Those records and uploaded bytes are not
-  post-merge current-binary reuse evidence except where the identical Figure 3
-  byte streams were freshly resealed below.
+- Branch `research/fbf-friction-release620` incorporates topic parent
+  `ca806fb72358c8e696787a3dead8d9dbc49333b2` and current
+  `origin/release-6.20` target
+  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The target commit consolidates
+  DART-owned collision detection and retires the public
+  `NativeCollisionDetector` frontend. The merge commit containing this
+  section is the authoritative checkpoint; query the live branch and draft
+  PR #3377 rather than copying a hash from older sections.
+- Exact-FBF contact-gap and four-point-manifold policies now live on
+  `DARTCollisionDetector`, with state behind its existing manager sidecar so
+  the released public class layout remains unchanged. Exact-FBF consumers,
+  probes, and tests use the consolidated object/detector types. The stable
+  evidence/CLI label `"native"` remains a schema label for the DART-owned
+  native policy, not a detector factory key.
+- The consolidated detector defaults to its compact manifold. Paper/demo
+  lanes that previously selected the released DART frontend now explicitly
+  request `FourPointPlanar`; this restores the Painleve threshold and A-frame
+  precursor behavior without changing the global detector default.
+- Three synthetic masonry-arch diagnostics capped at two contacts per pair
+  no longer converge with the consolidated box-box manifold. They remain
+  executable behind `DART_RUN_FBF_PAPER_STRESS_TESTS=1` and are marked
+  expected-failing with their measured residual boundaries. The default
+  full-manifold 25-stone gate remains enabled and passes. No tolerance or
+  scientific success criterion was weakened.
 
-Post-merge Figure 3 evidence is under ignored
-`assets/pr_media_postmerge_a833/`; Figure 8 and ten-level captured-checkpoint
-evidence remains under ignored `assets/pr_media_current_head_333a/`:
+Verification completed for the merge:
 
-- Figure 3 backspin was freshly captured and independently verified against
-  post-merge demo/core SHA-256 values `d9932f4c...` / `caf402af...` and
-  runtime-closure digest `22c7f90e...`. Exact and boxed each complete 240/240
-  steps (241 states), expose 121 unique rendered frames, and pass the bounded
-  rolling/roll-off outcome gates.
-  The sphere uses the requested checker texture, and manual frame inspection
-  of steps 0/2/4 and the five-time panel confirms that its changing orientation
-  makes the backspin visibly unambiguous. The local manual-inspection record
-  SHA-256 is
-  `5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f`.
-  Exact, boxed, and synchronized-group clip SHA-256 values are
-  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`,
-  `dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`,
-  and
-  `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
-  These are byte-identical to the existing uploaded slots 02/16, so no
-  reupload is required to bind those bytes to the current runtime.
-  Both solvers pass; no superiority or paper-parity claim follows.
-- Figure 8 is sealed and independently verified as
-  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Strict exact
-  stops at `iteration_cap` after completed step 209; the finalizer freezes
-  only the last valid step-208 image. Boxed completes 1,600/1,600 but fails the
-  standing oracle and visibly collapses. The diagnostic clip/panel/metadata
-  SHA-256 values are
-  `5e83527d2ed13218fda295b1dc30143007e012b333d63e965a765790145bb1d7`,
-  `d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`,
-  and
-  `2293baf64a2922e758c02adba4ce44018bbda93553970eaa19c305003890ed4f`.
-  Manual inspection at 0.0, 0.9, 3.3, and 6.6 seconds is recorded by
-  `b30836f21d3028683ffbbe04c17200a61d8f967502597d9bdfa95f760f208543`.
-  This is a frozen-prefix blocker diagnostic, not a complete exact
-  trajectory, solver-superiority result, historical Figure 8 invocation, or
-  parity result.
-- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
-  same unchanged runtime. Exact records 7,702/7,702 exact solves, zero
-  failures/fallbacks, 2,427 plateau accepts, and 763 max-iteration accepts.
-  Exact/boxed/group clip SHA-256 values are
-  `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`,
-  `d8066f899834303f8cbced3cc75c7e9e89716bb0f31d67011a361e0e1f1db442`,
-  and
-  `438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d`.
-  Standalone verification, full decode, and manual panel/keyframe inspection
-  pass. Exact alone requests source continuation and no automated semantic
-  outcome exists, so this is policy-asymmetric presentation—not strict
-  success, solver-only evidence, superiority, or parity.
-- Strict zero-accepted-cap completion is an intentionally stronger research
-  gate than current-source execution: the retained four-level source control
-  has 945/2,400 `converged=false` substeps and the ten-level 120-substep source
-  prefix has 87 non-converged substeps; both source runners continue. Preserve
-  this distinction instead of presenting continuation as strict success.
+- CMake configuration and focused builds of `dart-demos`,
+  `fbf_paper_trace`, the exact solver tests, and collision tests pass.
+- `UNIT_collision_dart_engine`, full `test_ConstraintSolver`,
+  `test_ExactCoulombFbfConstraintSolver`,
+  `UNIT_math_ExactCoulombFbfSolver`,
+  `test_ExactCoulombFbfPaperFixtures`, and
+  `INTEGRATION_StepAllocation` pass.
+- Nine affected Python files pass: 695 tests total, including the freshly
+  rebuilt dartpy consolidated-detector binding, GUI capture helpers, visual
+  evidence, literal-wedge capture, card cross-step/manifold tools, author
+  incline, card-house finalization, and turntable finalization.
+- Mandatory `pixi run lint` and `pixi run check-lint` pass after the merge
+  resolution. The post-lint focused C++ gates and rebuilt dartpy collision
+  tests also pass.
+- A 60-step exact backspin trace ends in `success` with zero fallbacks. A
+  fresh ten-step off-screen author-backspin smoke has residual
+  `7.1534829981547423e-7`, nine exact solves, zero exact failures, and zero
+  boxed fallbacks.
 
-GitHub media state:
+Evidence boundary after the merge:
 
-- All 16 intended H.264/yuv420p clips are referenced from the draft PR through
-  `github.com/user-attachments/assets/...` URLs. Each was re-downloaded from
-  its PR-facing URL and matched its full recorded SHA-256. Slot 09 now uses the
-  fresh schema-v3 captured-runtime group (`438b02b2...`) at user attachment
-  `af9d80bf...`; the historical provisional bytes were replaced. The verified
-  URL/hash ledger is in
-  [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md).
-- Slots 02/16 additionally match the post-merge Figure 3 recapture byte for
-  byte. The rest of the ledger keeps its original captured-runtime labels.
+- Every earlier performance packet and schema-v3 capture binds an older
+  collision runtime. None is current-runtime evidence after target
+  `46719bfbd75`; do not reuse the old `d9932f4c...`/`caf402af...` hashes or
+  claim the prior Figure 3 byte-identity seal is current.
+- The interrupted ten-level run that crossed branch heads is non-evidence.
+  Its exact member and partial boxed member must not be combined or resumed.
+- Fresh performance, Figure 3, Figure 8, and paired ten-level evidence must be
+  generated only after the merge checkpoint is pushed and the runtime closure
+  is stable. Figure 8 and ten-level remain required long-running closeout
+  work; preserve all strict/continuation and frozen-prefix labels.
+- The 16 existing PR attachments remain audited bytes for their recorded
+  capture checkpoints. They do not become current-runtime evidence merely
+  because the PR branch advances.
 
-Current hosted CI is mutable. Checks for `6fb4d0dbd8c` were queued at the last
-query; query the live current head for a verdict. At the prior
-`333a809f14a` head, macOS
-`arm64-Debug` alone failed in the untouched randomized
-`JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion test. The base-branch job
-passed and a local 1,000-repeat focused run passed. Do not carry that
-classification forward or patch the exact-FBF branch without current-head
-evidence.
+Repository and PR hygiene:
 
-The first post-capture matched performance attempt is retained only at
-`/tmp/fbf-mark26-current-head-rerun`. It has the exact mark26 measured-work
-fingerprint and passes affinity, residency, solver, and physical-outcome gates,
-but ran under sustained GUI/editor load immediately after the five-hour visual
-capture with an 82 C package. Its 12.924/12.321 ms means and 1.0489x speedup
-are a host-contention diagnostic, not replacement evidence. The target
-merge/rebuild is complete; rerun only after a declared cool/low-load gate.
+- `docs/dev_tasks/.gitignore` applies the scalable role-based `**/assets/`
+  rule. Generated frames, clips, traces, logs, and evidence packets remain
+  local while legitimate source/runtime media elsewhere stays visible. Do
+  not add broad `*.png`, `*.csv`, `*.obj`, or similar ignores.
+- The current source tree tracks no task `assets/` output. The optional MuJoCo
+  arch generates its 101 wedges and inline MJCF; the 103 redundant adapted
+  MJCF/OBJ files remain removed. Published topic history still contains 492
+  historical evidence blobs totaling 96,573,227 bytes. A true squash merge
+  excludes them from the target; rewriting the review branch requires
+  separate explicit approval and `--force-with-lease`.
+- PR #3377 is open and draft. Keep it draft and do not trigger
+  `@codex review` until the current runtime evidence, CI, and claim ledger are
+  ready.
 
 Next:
 
-1. Preserve the closed generated-baseline checkpoint. Its build, focused
-   Python/MuJoCo, lint/check-lint, exact-equivalence, and diff/ignore gates
-   passed before commit `33a7b2f32dc` was pushed. Keep the role-based
-   `**/assets/` ignore; do not add broad extension ignores.
-2. Decide with the maintainer whether a true squash merge is sufficient for
-   the 492 historical evidence blobs or whether the published review branch
-   must be reconstructed. Any history replacement and
-   `--force-with-lease` push requires explicit approval.
-3. Preserve the post-merge Figure 3 root, the captured-checkpoint Figure 8 and
-   ten-level roots, and the passing 16-URL PR reference/download/hash audit.
-4. Run the isolated matched one-/four-core performance rerun only after the
-   declared cool/low-load gate, and synchronize only the narrow non-paper
-   throughput claims it proves.
-5. Decide whether completion requires post-merge reseals of the long Figure 8
-   and ten-level clips. Until those exist, label only slots 02/16 as
-   post-merge-current-runtime bytes; keep the remaining schema-v3 uploads bound
-   to their recorded capture checkpoints.
-6. Keep the PR draft until the historical-blob integration decision,
-   paper-parity, CI, performance, and review gates are honestly resolved.
+1. Push the ordinary merge checkpoint, then query current-head CI. Fix only
+   failures evidenced on that head.
+2. Record the new demo/core/runtime hashes and rerun the isolated one-/four-core
+   performance packet. Synchronize only the narrow non-paper throughput claim
+   it proves.
+3. Reseal Figure 3 with the checker sphere, then rerun and independently verify
+   Figure 8 from a fresh root.
+4. Run the paired ten-level exact/boxed capture from one stable head. Expect
+   roughly five hours; never combine output from different commits.
+5. Upload current-runtime review media through GitHub user attachments rather
+   than committing videos, update the URL/hash ledger and draft PR body, and
+   keep every proxy, continuation, frozen-prefix, and non-parity caption.
+6. Re-run the fail-closed 29-row manifest, full gates, CI, and review loop.
+   Do not retire this task folder until every remaining row is proven or
+   explicitly blocked.
 
 ## Archived 2026-07-27 Checkpoint
 
@@ -269,7 +214,7 @@ fallback — the documented card-house hardness, fails-closed correctly) and
 `CardHouseFourLevelFullManifoldSplitImpulseSettleProbe` (solver succeeds; only
 `maxContactsSeen 98 vs >100` fails). Root-caused: the `>100` bar is a stale
 threshold from `49693e4883b`, never reconciled when `369808583e8` repaired the
-26-card reconstruction + overhauled NativeCollisionDetector (98 is the healthy
+26-card reconstruction + overhauled DARTCollisionDetector (98 is the healthy
 repaired-geometry manifold). Not a solver-correctness defect. Both opt-in skip
 messages were relabeled this session to disclose the EXPECTED-FAILING status
 (no assertion/threshold changed; default battery still 43/3). The `>100`->98
@@ -2047,7 +1992,7 @@ Focused local tests after source stabilizes:
 cmake --build build/default/cpp/Release \
   --target fbf_paper_trace fbf_paper_arch_wedge_dynamics_probe \
   test_ExactCoulombFbfPaperFixtures test_ConstraintSolver \
-  test_NativeCollisionDetector \
+  test_DARTCollisionDetector \
   --parallel 4
 
 .pixi/envs/default/bin/python -m pytest -q \

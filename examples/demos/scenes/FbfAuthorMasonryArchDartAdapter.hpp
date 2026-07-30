@@ -41,7 +41,7 @@
 #include <dart/constraint/ContactConstraint.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
@@ -379,11 +379,11 @@ makeSourceContinuationCrossStepPolicyOptions()
 }
 
 //==============================================================================
-inline std::shared_ptr<dart::collision::NativeCollisionDetector>
+inline std::shared_ptr<dart::collision::DARTCollisionDetector>
 createCollisionDetector()
 {
-  auto detector = dart::collision::NativeCollisionDetector::create();
-  detector->setContactManifoldMode(dart::collision::NativeCollisionDetector::
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  detector->setContactManifoldMode(dart::collision::DARTCollisionDetector::
                                        ContactManifoldMode::FourPointPlanar);
   return detector;
 }
@@ -795,13 +795,13 @@ inline AdapterContract inspectAdapterContract(
   }
 
   const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           world->getConstraintSolver()->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
         "author masonry-arch adapter requires Native collision");
   contract.nativeFourPointPlanar = detector->getContactManifoldMode()
-                                   == dart::collision::NativeCollisionDetector::
+                                   == dart::collision::DARTCollisionDetector::
                                        ContactManifoldMode::FourPointPlanar;
   const auto& collisionOption
       = world->getConstraintSolver()->getCollisionOption();

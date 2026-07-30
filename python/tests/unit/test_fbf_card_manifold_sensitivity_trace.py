@@ -125,7 +125,7 @@ def test_requested_mode_is_installed_and_actual_native_mode_is_read_back():
     source = _source()
 
     detector_builder = re.search(
-        r"createFbfPaperNativeCollisionDetector\(Scenario scenario\)\s*\{" r"(.*?)\n\}",
+        r"createFbfPaperDARTCollisionDetector\(Scenario scenario\)\s*\{" r"(.*?)\n\}",
         source,
         re.DOTALL,
     )
@@ -136,7 +136,7 @@ def test_requested_mode_is_installed_and_actual_native_mode_is_read_back():
     assert "detector->setContactManifoldMode(mode);" in builder
 
     assert re.search(
-        r"dynamic_pointer_cast<\s*dart::collision::NativeCollisionDetector>"
+        r"dynamic_pointer_cast<\s*dart::collision::DARTCollisionDetector>"
         r".*?detector->getContactManifoldMode\(\)",
         source,
         re.DOTALL,

@@ -269,6 +269,33 @@ def test_builtin_scenes_construct_and_step():
         assert world.getNumSkeletons() >= 2, name
 
 
+def test_dart_box_on_ground_selects_dart_detector():
+    world = agent_capture._BUILTIN_SCENES["dart_box_on_ground"](
+        agent_capture._import_dartpy()
+    )
+    assert (
+        world.getConstraintSolver().getCollisionDetector().getType() == "dart"
+    )
+
+
+def test_dart_shape_contacts_exercises_supported_shape_adapters():
+    world = agent_capture._BUILTIN_SCENES["dart_shape_contacts"](
+        agent_capture._import_dartpy()
+    )
+    assert (
+        world.getConstraintSolver().getCollisionDetector().getType() == "dart"
+    )
+    assert [world.getSkeleton(index).getName() for index in range(4)] == [
+        "ground",
+        "ellipsoid",
+        "capsule",
+        "cone",
+    ]
+    for _ in range(500):
+        world.step()
+    assert world.getLastCollisionResult().getNumContacts() >= 3
+
+
 @requires_display
 def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
     (tmp_path / "claim_capture_scene.py").write_text(
@@ -295,12 +322,14 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path, monkeypatch):
             pytest.fail(str(error))
         raise
     assert sidecar["schema_version"] == "dart.agent_capture/v1"
+    assert sidecar["collision_detector"] == "fcl"
     stills = [a for a in sidecar["artifacts"] if a["kind"] == "still"]
     assert len(stills) == 1
     assert (tmp_path / stills[0]["path"]).exists()
     assert stills[0]["view_report"]["schema_version"] == "dart.view_report/v1"
     assert "pixi run agent-capture" in sidecar["reproduce"]
     assert "--factory claim_capture_scene:make_world" in sidecar["reproduce"]
+    assert sidecar["skipped_contacts"] == 0
     saved = json.loads((tmp_path / "smoke_capture.json").read_text("utf-8"))
     assert saved == sidecar
 
