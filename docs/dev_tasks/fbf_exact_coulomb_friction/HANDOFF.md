@@ -1,7 +1,7 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-29 collision-consolidation
-merge checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
+Use the first prompt below. It reflects the 2026-07-29 post-target compact
+coverage checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
 prompt later in this file.
 
 ```text
@@ -23,13 +23,21 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Local integration commit da135c99c30 merges topic parent
+Minimum integrated checkpoint:
+
+  3aee836ff62d80fcbbaacd39d54134c7af7d3061
+
+It contains release-6.20 tip
+2ffe228c14c67e120d2a946ce9d36e8a9658044f, including removal of the
+volumetric FEM subsystem. Query the live branch and PR #3377 for the later
+coverage checkpoint and hosted checks. Keep the PR draft and do not trigger
+@codex review.
+
+Earlier integration commit da135c99c30 merges topic parent
 ca806fb72358c8e696787a3dead8d9dbc49333b2 with collision-consolidation target
-46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5. The immediately following merge
-incorporates current release-6.20 tip
-ac7b9462612a9ef54eeb9d6841375c7789cf23d8. Query the live branch and draft
-PR #3377 after that checkpoint is pushed; do not assume any recorded hash is
-still current. Keep the PR draft and do not trigger @codex review.
+46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5. Later merge checkpoint 3aee836ff62
+incorporates release-6.20 tip 2ffe228c14c. Query the live branch and draft PR
+#3377; do not assume any recorded hash is still HEAD.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -39,7 +47,8 @@ paper/demo lanes explicitly select FourPointPlanar; the consolidated detector's
 global default remains Compact. The stable evidence/CLI string "native" is a
 schema label for DART-owned policy, not a collision-detector factory key.
 
-The focused merge gates pass:
+Before the later 2ffe228c target merge, the focused collision-consolidation
+gates passed:
 
 - UNIT_collision_dart_engine;
 - all 75 test_ConstraintSolver cases;
@@ -59,19 +68,42 @@ opt-in diagnostics behind DART_RUN_FBF_PAPER_STRESS_TESTS=1. The default
 full-manifold 25-stone gate passes. No tolerance or scientific success
 criterion was loosened.
 
-Every pre-46719 performance packet and schema-v3 media capture binds an older
-collision runtime. Do not reuse d9932f4c... / caf402af... or call prior Figure
-3, Figure 8, or ten-level media current-runtime evidence. The interrupted
-cross-head ten-level exact/partial-boxed pair is non-evidence and must never be
-combined or resumed. After a stable pushed merge checkpoint:
+Every pre-46719 performance packet, Figure 8 capture, and ten-level capture
+binds an older collision runtime. The interrupted cross-head ten-level
+exact/partial-boxed pair is non-evidence and must never be combined or resumed.
 
-1. record fresh demo/core/runtime hashes and rerun the isolated matched
-   one-/four-core packet;
-2. freshly capture and independently verify Figure 3 with its checker sphere;
+Figure 3 root assets/pr_media_current_head_3cfafc/ is valid capture-time
+evidence for checkpoint 3cfafc70ec1, not for the later target merge. Exact,
+boxed, and their synchronized checker group passed capture and independent
+verification; both lanes completed 240 steps and passed the bounded source
+outcome slice. The clip hashes are b2c268aa337f..., dc3228e2aa8c..., and
+e321c711eae7.... Manual inspection confirmed visible checker-orientation
+change. Rebuild and reseal it before a current-head claim. Even when current,
+it proves no superiority, equivalence, source-backend/full-trajectory,
+renderer/golden, timing, Figure 3, or paper parity.
+
+The compact tracked paper-coverage-contract.json replaces the deleted
+asset-coupled manifest. Run:
+
+  python scripts/run_fbf_visual_evidence.py audit-coverage
+
+The gate passes 29 canonical rows = 24 partial + 5 blocked + 0 complete, 18
+required runnable schedules, stable source-video mappings, and all 16
+registered GitHub user-attachment slots. The contract SHA-256 is
+4f078f04cde7d8c74a1c75eb43072b9e94d345b2003a7c9e79720501aa0b1a27.
+All 478 visual-evidence tests and lint/check-lint pass. This structural pass
+does not make the evidence complete.
+
+Remaining order:
+
+1. publish a stable checkpoint, rebuild, and freshly reseal Figure 3;
+2. run the isolated matched one-/four-core packet only after a declared cool,
+   low-load host gate;
 3. freshly capture and independently verify Figure 8;
 4. run the roughly five-hour paired ten-level exact/boxed capture from one
    unchanged head; and
-5. upload review videos as GitHub user attachments, not repository files, then
+5. upload changed review videos as GitHub user attachments, not repository
+   files, then
    update PAPER_DEMO_VIDEO_MATRIX.md and the draft PR body.
 
 The scalable file policy is docs/dev_tasks/.gitignore's role-based
@@ -91,10 +123,13 @@ and ordinarily push the authorized checkpoint. Query current-head CI afterward
 and fix only evidenced failures. Never add AI/tool attribution to commits or
 PRs.
 
-The fail-closed manifest was 29 rows: 24 partial, 5 blocked, 0 complete. Re-run
-it after the fresh runtime evidence. Preserve every proxy, continuation,
-frozen-prefix, exact/boxed-policy, and non-parity boundary. Do not retire this
-task folder until all remaining requirements are proven or explicitly blocked.
+Commit 259da0a4828 removed the tracked generated manifest, its 19,000-line
+asset-coupled validator, and its 200 KiB test when task assets became ignored.
+Do not restore them. The compact replacement makes the current 29-row count
+machine-verifiable without checking in generated evidence. Preserve every
+proxy, continuation, frozen-prefix, exact/boxed-policy, and non-parity
+boundary. Do not retire this task folder until all remaining requirements are
+proven or explicitly blocked.
 ```
 
 ## Archived 2026-07-29 Pre-Consolidation Prompt

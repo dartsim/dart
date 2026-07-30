@@ -23,6 +23,13 @@ byte-identical to the existing attachments; no reupload was needed. The other
 slots retain their recorded capture-time identities. Documentation-only
 descendants do not change the runtime identity.
 
+Later merge checkpoint `3aee836ff62` incorporates release target `2ffe228c14c`,
+which removes the volumetric FEM subsystem from core DART. Therefore every
+earlier runtime seal, including the `3cfafc70ec1` Figure 3 capture described
+below, is capture-time rather than current-head evidence until rebuilt and
+resealed. The registered attachment URLs and byte hashes remain valid; this
+statement deliberately does not promote them as current-runtime proof.
+
 | Slot | Intended caption key | Local SHA-256 | Registered user-attachment URL |
 | ---: | --- | --- | --- |
 | `01` | `fig01_02_incline_exact_vs_boxed` | `a750350c7f210953bf3292f79faef2bdacb160c9652676a9f98695165357f723` | <https://github.com/user-attachments/assets/715455d4-2174-4f32-be7b-f7087eabb380> |
@@ -44,13 +51,14 @@ descendants do not change the runtime identity.
 
 Captured-runtime notes:
 
-- Slots 02 and 16 are byte-identically reproduced by the post-merge schema-v3
-  `assets/pr_media_postmerge_a833/` Figure 3 capture. Exact and boxed both
-  finish 240 steps and pass the bounded outcome slice against demo/core/closure
-  hashes `d9932f4c...` / `caf402af...` / `22c7f90e...`. Manual inspection of
-  steps 0/2/4 and the temporal panel confirms that the checker-textured sphere
-  makes changing orientation and backspin visible; both lanes pass, so no
-  solver-superiority claim is valid.
+- Slots 02 and 16 were most recently byte-identically reproduced by the
+  schema-v3 `assets/pr_media_current_head_3cfafc/` Figure 3 capture. Exact and
+  boxed both finished 240 steps and passed the bounded outcome slice against
+  demo/core/closure hashes `9e4f6c37...` / `928edc607...` / `f510f9dc5...`.
+  Manual inspection of captured and decoded consecutive frames confirmed that
+  the checker-textured sphere makes changing orientation visible. The later
+  `2ffe228c` target merge makes this capture-time evidence pending a fresh
+  reseal; both lanes passed, so no solver-superiority claim is valid.
 - Slot 08 comes from the fresh schema-v3 Figure 8 seal. Exact stops after
   completed step 209 and is frozen only after its last valid step-208 frame;
   boxed finishes 1,600 steps, collapses, and fails the standing oracle. It is a
@@ -69,6 +77,14 @@ H.264/yuv420p MP4 files produced and decoded by
 `scripts/run_fbf_visual_evidence.py`, then attached through the pull-request
 editor. Record the resulting `github.com/user-attachments/...` URL here and in
 the PR description.
+
+The compact tracked `paper-coverage-contract.json` binds every canonical paper
+row to its status, blockers, demo schedules, and applicable attachment slots.
+Run `python scripts/run_fbf_visual_evidence.py audit-coverage`; the current
+structural gate passes 29 rows (`24 partial`, `5 blocked`, `0 complete`), 18
+required runnable schedules, and all 16 registered attachment slots. It
+contains no generated artifact inventory and a green result does not imply
+paper-evidence completion.
 
 Checkpoint `67073f4f575` adds generic no-render
 `dart-demos --scene-physics-contract <scene-id>` queries and fail-closed

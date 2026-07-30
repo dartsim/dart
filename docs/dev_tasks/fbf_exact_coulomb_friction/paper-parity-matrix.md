@@ -2,11 +2,24 @@
 
 This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
-active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
-complete across 29 requirements. The local visual inventory has six locally finalized
-bundles, and the visual workflow declares 33 runnable schedules, 30 of which
-encode MP4. The additional schedule is a DART-only numeric diagnostic rather
-than a paper/video row.
+active and incomplete. The compact tracked coverage contract currently audits
+as 24 partial, 5 blocked, and 0 complete across 29 canonical requirements. Run
+`python scripts/run_fbf_visual_evidence.py audit-coverage`; it also validates
+18 required runnable source-video schedules and all 16 registered PR
+attachment slots without tracking generated artifacts. A structural pass is
+not evidence completion. The broader visual workflow declares 33 runnable
+schedules, 30 of which encode MP4; the additional schedules include DART-only
+diagnostics rather than canonical paper/video rows.
+
+## 2026-07-29 Post-target Currency Boundary
+
+Merge checkpoint `3aee836ff62` incorporates release target `2ffe228c14c`.
+Because that target removes a core DART subsystem, all earlier runtime-bound
+media and CPU packets are capture-time evidence until rebuilt and resealed.
+The `3cfafc70ec1` Figure 3 exact/boxed checker capture remains a valid narrow
+capture-time result and its bytes match registered slots 02/16, but it is not
+current-head runtime evidence after this merge. Figure 8, ten-level, and the
+cool-host one-/four-core packet also require fresh one-head execution.
 
 ## 2026-07-29 Captured-Runtime Media Checkpoint
 
