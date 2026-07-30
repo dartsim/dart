@@ -909,8 +909,7 @@ def write_detector_winner_graph(
             units = min(bar_width, max(1, units))
             marker = "*" if detector == item["winner"] else " "
             parts.append(
-                f"{marker}{detector}:{'#' * units:<{bar_width}} "
-                f"{cpu_ms:.3f}ms"
+                f"{marker}{detector}:{'#' * units:<{bar_width}} " f"{cpu_ms:.3f}ms"
             )
 
         lines.append(
