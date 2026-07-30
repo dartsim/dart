@@ -70,6 +70,9 @@ struct VisualBody
 {
   dart::dynamics::fem::DeformableBodyPtr body;
   std::vector<dart::dynamics::SimpleFramePtr> nodeFrames;
+  /// Each node's starting height, so sag measures displacement rather than the
+  /// node's offset from the body origin.
+  std::vector<double> initialHeights;
   Eigen::Vector3d origin = Eigen::Vector3d::Zero();
   double maxSag = 0.0;
 };
@@ -113,6 +116,7 @@ VisualBody makeBody(
     frame->setTranslation(visual.body->getNodePosition(i));
     world->addSimpleFrame(frame);
     visual.nodeFrames.push_back(frame);
+    visual.initialHeights.push_back(visual.body->getNodePosition(i)[2]);
   }
 
   visual.body->attachTo(world);
@@ -126,8 +130,11 @@ void refresh(VisualBody& visual)
   for (std::size_t i = 0; i < visual.body->getNumNodes(); ++i) {
     const Eigen::Vector3d position = visual.body->getNodePosition(i);
     visual.nodeFrames[i]->setTranslation(position);
+    // Measure each node against where it started. The box is centered on its
+    // origin, so comparing against the origin would report half the box
+    // thickness as sag before anything had moved.
     if (!visual.body->isNodeFixed(i))
-      sag = std::max(sag, visual.origin[2] - position[2]);
+      sag = std::max(sag, visual.initialHeights[i] - position[2]);
   }
   visual.maxSag = sag;
 }
