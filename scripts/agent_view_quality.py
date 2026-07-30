@@ -601,9 +601,7 @@ def select_viewpoints(
     bounds = body_bounds(world)
     focus_bounds, _ = _split_focus(bounds, focus)
     if not focus_bounds:
-        raise ValueError(
-            "cannot select viewpoints: world has no bounded renderables"
-        )
+        raise ValueError("cannot select viewpoints: world has no bounded renderables")
     corners = np.vstack([b.corners for b in focus_bounds])
     center = 0.5 * (corners.min(axis=0) + corners.max(axis=0))
     radius = 0.5 * float(np.linalg.norm(corners.max(axis=0) - corners.min(axis=0)))

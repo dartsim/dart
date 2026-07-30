@@ -78,7 +78,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' \
+    black . --extend-exclude '/\\.[^/]+' \
     && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
@@ -138,7 +138,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' \
+    black . --check --extend-exclude '/\\.[^/]+' \
     && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
@@ -802,7 +802,7 @@ config = { cmd = """
 """, env = { DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' && isort . --skip-glob '.*'
+    black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
 lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
@@ -810,8 +810,10 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 lint = { depends-on = ["lint-spell", "lint-py"] }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
+""", depends-on = [
+  "config",
+] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
