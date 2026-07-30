@@ -993,6 +993,123 @@ def test_test_gate_contract_rejects_inactive_runtime_targets(
     )
 
 
+def test_test_gate_contract_rejects_quoted_pytest_target_spoof(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "python/tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_custom_target(\n    pytest",
+            'add_custom_target(\n    fake\n    "pytest COMMAND"',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "python/tests/CMakeLists.txt: missing `test-all` graph marker "
+        '`"${Python3_EXECUTABLE}" -m pytest`' in error
+        for error in errors
+    )
+
+
+def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "python/tests/CMakeLists.txt"
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            (
+                "    COMMAND\n"
+                '      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}"\n'
+                '      "${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v\n'
+            ),
+            (
+                "    COMMAND ${CMAKE_COMMAND} -E echo\n"
+                '      "COMMAND ${CMAKE_COMMAND} -E env '
+                "PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} "
+                '-m pytest ${dartpy_test_files} -v"\n'
+            ),
+            1,
+        ),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "python/tests/CMakeLists.txt: missing `test-all` graph marker "
+        '`"${Python3_EXECUTABLE}" -m pytest`' in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("relative", "needle", "occurrence", "expected_marker"),
+    (
+        (
+            "CMakeLists.txt",
+            "list(APPEND all_target_candidates tests_and_run pytest)",
+            1,
+            "list(APPEND all_target_candidates tests_and_run pytest)",
+        ),
+        (
+            "CMakeLists.txt",
+            "add_custom_target(ALL DEPENDS ${all_targets})",
+            1,
+            "add_custom_target(ALL DEPENDS ${all_targets})",
+        ),
+        (
+            "tests/CMakeLists.txt",
+            "add_custom_target(\n    tests_and_run",
+            1,
+            "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
+        ),
+        (
+            "tests/CMakeLists.txt",
+            "add_custom_target(\n    tests_and_run",
+            2,
+            "${CMAKE_CTEST_COMMAND} --output-on-failure",
+        ),
+        (
+            "python/tests/CMakeLists.txt",
+            "add_custom_target(\n    pytest",
+            1,
+            '"${Python3_EXECUTABLE}" -m pytest',
+        ),
+        (
+            "python/tests/CMakeLists.txt",
+            "add_custom_target(\n    pytest",
+            2,
+            "pytest",
+        ),
+    ),
+)
+def test_test_gate_contract_rejects_unreachable_runtime_graph(
+    tmp_path, relative, needle, occurrence, expected_marker
+):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / relative
+    text = cmake.read_text(encoding="utf-8")
+    offset = -1
+    for _ in range(occurrence):
+        offset = text.index(needle, offset + 1)
+    cmake.write_text(
+        text[:offset] + "return()\n  " + text[offset:],
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"{relative}: missing `test-all` graph marker `{expected_marker}`" in error
+        for error in errors
+    )
+
+
 def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "tests/CMakeLists.txt"

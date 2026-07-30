@@ -348,6 +348,7 @@ def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
     """Attach each executable CMake command to its enclosing control scopes."""
     records: list[tuple[str, str, tuple[str, ...]]] = []
     stack: list[tuple[str, str]] = []
+    terminated_contexts: list[tuple[str, ...]] = []
     openers = {"block", "foreach", "function", "if", "macro", "while"}
     closers = {f"end{name}" for name in openers}
     for name, arguments in cmake_commands(text):
@@ -364,8 +365,33 @@ def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
                 stack[-1] = (name, condition)
             continue
         context = tuple(f"{kind}:{value}" for kind, value in stack)
+        if any(
+            context[: len(terminated)] == terminated
+            for terminated in terminated_contexts
+        ):
+            continue
         records.append((name, arguments, context))
+        if name == "return":
+            terminated_contexts.append(context)
     return records
+
+
+def cmake_argument_tokens(arguments: str) -> list[str]:
+    """Split normalized CMake arguments without matching inside quoted values."""
+    try:
+        return shlex.split(arguments, posix=True)
+    except ValueError:
+        return []
+
+
+def contains_token_sequence(tokens: list[str], sequence: tuple[str, ...]) -> bool:
+    """Return whether one exact token sequence occurs in order."""
+    if not sequence or len(sequence) > len(tokens):
+        return False
+    return any(
+        tokens[offset : offset + len(sequence)] == list(sequence)
+        for offset in range(len(tokens) - len(sequence) + 1)
+    )
 
 
 def has_shell_control_syntax(command: str) -> bool:
@@ -1010,9 +1036,20 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "add_custom_target",
                 None,
                 (
-                    "pytest COMMAND",
-                    '"${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v',
-                    "DEPENDS dartpy",
+                    ("pytest",),
+                    (
+                        "COMMAND",
+                        "${CMAKE_COMMAND}",
+                        "-E",
+                        "env",
+                        "PYTHONPATH=${DART_PYTHONPATH}",
+                        "${Python3_EXECUTABLE}",
+                        "-m",
+                        "pytest",
+                        "${dartpy_test_files}",
+                        "-v",
+                    ),
+                    ("DEPENDS", "dartpy"),
                 ),
                 ("if:DARTPY_PYTEST_FOUND",),
                 '"${Python3_EXECUTABLE}" -m pytest',
@@ -1020,7 +1057,10 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             (
                 "add_custom_target",
                 None,
-                ("pytest COMMAND", "Warning: Failed to run pytest"),
+                (
+                    ("pytest", "COMMAND", "${CMAKE_COMMAND}", "-E", "echo"),
+                    ("Warning: Failed to run pytest because pytest is not found!",),
+                ),
                 ("else:DARTPY_PYTEST_FOUND",),
                 "pytest",
             ),
@@ -1037,7 +1077,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         for (
             name,
             exact_arguments,
-            argument_markers,
+            argument_token_sequences,
             expected_scope,
             marker,
         ) in requirements:
@@ -1047,7 +1087,19 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 and (
                     arguments == exact_arguments
                     if exact_arguments is not None
-                    else all(value in arguments for value in argument_markers)
+                    else (
+                        bool(argument_token_sequences)
+                        and cmake_argument_tokens(arguments)[
+                            : len(argument_token_sequences[0])
+                        ]
+                        == list(argument_token_sequences[0])
+                        and all(
+                            contains_token_sequence(
+                                cmake_argument_tokens(arguments), sequence
+                            )
+                            for sequence in argument_token_sequences[1:]
+                        )
+                    )
                 )
                 for record_name, arguments, context in records
             ):
