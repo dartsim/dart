@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -131,6 +132,13 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=SoftWormModelTest.*",),
         "environment": (),
     },
+}
+SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
+RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
+    "PASS_REGULAR_EXPRESSION",
+    "SKIP_REGULAR_EXPRESSION",
+    "SKIP_RETURN_CODE",
+    "WILL_FAIL",
 }
 EXPECTED_PYTEST_INI_OPTIONS = {
     "minversion": "6.0",
@@ -1026,25 +1034,26 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
         "tests/CMakeLists.txt": (
             (
                 "add_custom_target",
+                None,
                 (
-                    "tests_and_run COMMAND ${CMAKE_CTEST_COMMAND} "
-                    "--output-on-failure -C $<CONFIG> DEPENDS "
-                    "${integration_tests} ${regression_tests} ${unit_tests}"
+                    (
+                        "tests_and_run",
+                        "COMMAND",
+                        "${CMAKE_COMMAND}",
+                        "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}",
+                        "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
+                        "-P",
+                        "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake",
+                    ),
+                    (
+                        "DEPENDS",
+                        "${integration_tests}",
+                        "${regression_tests}",
+                        "${unit_tests}",
+                    ),
                 ),
                 (),
-                ("if:MSVC",),
-                "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
-            ),
-            (
-                "add_custom_target",
-                (
-                    "tests_and_run COMMAND ${CMAKE_CTEST_COMMAND} "
-                    "--output-on-failure DEPENDS ${integration_tests} "
-                    "${regression_tests} ${unit_tests}"
-                ),
-                (),
-                ("else:MSVC",),
-                "${CMAKE_CTEST_COMMAND} --output-on-failure",
+                "cmake/DARTRunCTest.cmake",
             ),
         ),
         "python/tests/CMakeLists.txt": (
@@ -1067,6 +1076,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "pytest",
                         "-c",
                         "${PROJECT_SOURCE_DIR}/pyproject.toml",
+                        "--noconftest",
                         "${dartpy_test_files}",
                         "-v",
                     ),
@@ -1115,6 +1125,78 @@ def cmake_graph_command_matches(
         contains_token_sequence(tokens, sequence)
         for sequence in argument_token_sequences[1:]
     )
+
+
+def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
+    """Require the broad CTest wrapper to clear every ambient GTEST_* variable."""
+    prefix = "cmake/DARTRunCTest.cmake"
+    path = root / prefix
+    try:
+        records = cmake_command_details(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect clean-environment runner: {error}")
+        return
+    token_records = [
+        (name, tuple(cmake_argument_tokens(arguments)), line)
+        for name, arguments, line in records
+    ]
+    required = (
+        (
+            "execute_process",
+            (
+                "COMMAND",
+                "${CMAKE_COMMAND}",
+                "-E",
+                "environment",
+                "OUTPUT_VARIABLE",
+                "_dart_test_environment",
+                "RESULT_VARIABLE",
+                "_dart_environment_result",
+            ),
+        ),
+        (
+            "string",
+            ("TOUPPER", "${_dart_name}", "_dart_name_upper"),
+        ),
+        (
+            "if",
+            ("_dart_name_upper", "MATCHES", "^GTEST_"),
+        ),
+        (
+            "list",
+            ("APPEND", "_dart_gtest_unsets", "--unset=${_dart_name}"),
+        ),
+        (
+            "execute_process",
+            (
+                "COMMAND",
+                "${CMAKE_COMMAND}",
+                "-E",
+                "env",
+                "${_dart_gtest_unsets}",
+                "${DART_CTEST_COMMAND}",
+                "${_dart_ctest_arguments}",
+                "COMMAND_ERROR_IS_FATAL",
+                "ANY",
+            ),
+        ),
+    )
+    for name, tokens in required:
+        if (
+            sum(
+                record_name == name and record_tokens == tokens
+                for record_name, record_tokens, _ in token_records
+            )
+            != 1
+        ):
+            errors.append(
+                f"{prefix}: missing exact clean-environment command "
+                f"`{name}({' '.join(tokens)})`"
+            )
+    if any(name == "return" for name, _, _ in token_records):
+        errors.append(f"{prefix}: `return()` may bypass CTest execution")
+    if sum(name == "execute_process" for name, _, _ in token_records) != 2:
+        errors.append(f"{prefix}: must contain exactly two `execute_process()` calls")
 
 
 def check_test_gate_contract(root: Path, errors: list[str]) -> None:
@@ -1292,6 +1374,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 cmake_graph_command_matches(record, requirement) for record in records
             ):
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
+    check_ctest_runner_contract(root, errors)
 
     dependencies = pixi.get("dependencies")
     if not isinstance(dependencies, dict) or "pytest" not in dependencies:
@@ -1460,7 +1543,8 @@ def discover_cmake_build_dir(root: Path) -> Path | None:
     environment = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     build_type = os.environ.get("BUILD_TYPE", "Release")
     base = root / "build" / environment / "cpp"
-    for candidate in (base / build_type, base):
+    candidates = (base,) if sys.platform == "win32" else (base / build_type,)
+    for candidate in candidates:
         cache = candidate / "CMakeCache.txt"
         if not cache.is_file():
             continue
@@ -1842,14 +1926,62 @@ def check_pytest_execution_options(root: Path, errors: list[str]) -> None:
         )
 
 
+def check_pytest_source_policies(root: Path, errors: list[str]) -> None:
+    """Reject test-module declarations that can load unvalidated local plugins."""
+    prefix = "CMake semantic test graph"
+    for path in sorted((root / "python" / "tests").rglob("*.py")):
+        if not path.is_file():
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (OSError, SyntaxError) as error:
+            errors.append(
+                f"{prefix}: unable to inspect pytest source `{path}`: {error}"
+            )
+            continue
+        declares_plugins = any(
+            (isinstance(node, ast.Name) and node.id == "pytest_plugins")
+            or (
+                isinstance(node, (ast.Import, ast.ImportFrom))
+                and any(
+                    alias.name == "pytest_plugins" or alias.asname == "pytest_plugins"
+                    for alias in node.names
+                )
+            )
+            for node in ast.walk(tree)
+        )
+        if declares_plugins:
+            errors.append(
+                f"{prefix}: pytest source `{path.relative_to(root)}` declares "
+                "`pytest_plugins`; local plugin loading is not allowed"
+            )
+
+
 def cmake_unquote_bracket(value: str) -> str:
     """Remove CMake bracket quoting from one generated argument."""
     match = re.fullmatch(r"\[(=*)\[(.*)\]\1\]", value, re.DOTALL)
     return match.group(2) if match is not None else value
 
 
+def generated_ctest_condition_matches(
+    arguments: str, configuration: str
+) -> bool | None:
+    """Evaluate the configuration predicates emitted by multi-config CMake."""
+    tokens = cmake_argument_tokens(arguments)
+    if len(tokens) != 3 or tokens[0] != "CTEST_CONFIGURATION_TYPE":
+        return None
+    if tokens[1] == "STREQUAL":
+        return configuration == tokens[2]
+    if tokens[1] != "MATCHES":
+        return None
+    try:
+        return re.search(tokens[2], configuration) is not None
+    except re.error:
+        return None
+
+
 def generated_ctest_registrations(
-    build_dir: Path, errors: list[str]
+    build_dir: Path, configuration: str, errors: list[str]
 ) -> dict[str, tuple[list[str], Path]]:
     """Read freshly configured CTest commands without requiring built artifacts."""
     prefix = "CMake semantic test graph"
@@ -1872,7 +2004,64 @@ def generated_ctest_registrations(
         except OSError as error:
             errors.append(f"{prefix}: unable to read `{path}`: {error}")
             continue
+        branches: list[dict[str, bool]] = []
         for command_name, arguments, _ in records:
+            if command_name == "if":
+                matched = generated_ctest_condition_matches(arguments, configuration)
+                if matched is None:
+                    errors.append(
+                        f"{prefix}: generated CTest file uses unsupported "
+                        f"condition `{arguments}`"
+                    )
+                    matched = False
+                parent_active = all(branch["active"] for branch in branches)
+                branches.append(
+                    {
+                        "active": parent_active and matched,
+                        "parent_active": parent_active,
+                        "taken": matched,
+                    }
+                )
+                continue
+            if command_name == "elseif":
+                if not branches:
+                    errors.append(
+                        f"{prefix}: generated CTest file has unmatched `elseif()`"
+                    )
+                    continue
+                matched = generated_ctest_condition_matches(arguments, configuration)
+                if matched is None:
+                    errors.append(
+                        f"{prefix}: generated CTest file uses unsupported "
+                        f"condition `{arguments}`"
+                    )
+                    matched = False
+                branch = branches[-1]
+                branch["active"] = (
+                    branch["parent_active"] and not branch["taken"] and matched
+                )
+                branch["taken"] = branch["taken"] or matched
+                continue
+            if command_name == "else":
+                if not branches:
+                    errors.append(
+                        f"{prefix}: generated CTest file has unmatched `else()`"
+                    )
+                    continue
+                branch = branches[-1]
+                branch["active"] = branch["parent_active"] and not branch["taken"]
+                branch["taken"] = True
+                continue
+            if command_name == "endif":
+                if not branches:
+                    errors.append(
+                        f"{prefix}: generated CTest file has unmatched `endif()`"
+                    )
+                else:
+                    branches.pop()
+                continue
+            if not all(branch["active"] for branch in branches):
+                continue
             tokens = [
                 cmake_unquote_bracket(token)
                 for token in cmake_argument_tokens(arguments)
@@ -1915,6 +2104,8 @@ def generated_ctest_registrations(
                 errors.append(f"{prefix}: generated CTest test `{name}` is duplicated")
                 continue
             registrations[name] = (command, path.parent)
+        if branches:
+            errors.append(f"{prefix}: generated CTest file has unterminated `if()`")
     if not registrations:
         errors.append(f"{prefix}: generated CTest files register no tests")
     return registrations
@@ -2006,7 +2197,7 @@ def check_cmake_ctest_inventory(
         errors.append(f"{prefix}: CTest inventory exposes no registered tests")
         return
 
-    generated = generated_ctest_registrations(build_dir, errors)
+    generated = generated_ctest_registrations(build_dir, configuration, errors)
     inventory_names = {
         test.get("name")
         for test in tests
@@ -2035,6 +2226,12 @@ def check_cmake_ctest_inventory(
             for value in ctest_property_values(test, "DISABLED")
         ):
             errors.append(f"{prefix}: CTest test `{name}` is disabled")
+        for property_name in sorted(RESULT_NEUTRALIZING_CTEST_PROPERTIES):
+            if ctest_property_values(test, property_name):
+                errors.append(
+                    f"{prefix}: CTest test `{name}` uses result-neutralizing "
+                    f"property `{property_name}`"
+                )
         generated_registration = generated.get(name)
         if generated_registration is None:
             continue
@@ -2071,7 +2268,9 @@ def check_cmake_ctest_inventory(
             if isinstance(item, str)
         ]
         selection_environment = tuple(
-            item for item in environment_values if item.startswith("GTEST_")
+            item
+            for item in environment_values
+            if item.partition("=")[0].upper().startswith("GTEST_")
         )
         expected_environment = tuple(selection_policy["environment"])
         if selection_environment != expected_environment:
@@ -2079,12 +2278,34 @@ def check_cmake_ctest_inventory(
                 f"{prefix}: CTest test `{name}` has unapproved GTest "
                 f"environment {list(selection_environment)}"
             )
-        fail_patterns = ctest_property_values(test, "FAIL_REGULAR_EXPRESSION")
-        if (expected_arguments or expected_environment) and not any(
-            isinstance(value, list) and "0 tests" in value for value in fail_patterns
-        ):
+        environment_modifications = [
+            item
+            for value in ctest_property_values(test, "ENVIRONMENT_MODIFICATION")
+            for item in (value if isinstance(value, list) else [value])
+            if isinstance(item, str)
+            and item.partition("=")[0].upper().startswith("GTEST_")
+        ]
+        if environment_modifications:
             errors.append(
-                f"{prefix}: selected CTest test `{name}` does not fail on zero tests"
+                f"{prefix}: CTest test `{name}` has unapproved GTest environment "
+                f"modifications {environment_modifications}"
+            )
+        fail_patterns = [
+            item
+            for value in ctest_property_values(test, "FAIL_REGULAR_EXPRESSION")
+            for item in (value if isinstance(value, list) else [value])
+            if isinstance(item, str)
+        ]
+        selected = bool(expected_arguments or expected_environment)
+        if selected and fail_patterns != [SAFE_ZERO_TEST_PATTERN]:
+            errors.append(
+                f"{prefix}: selected CTest test `{name}` does not fail on zero tests "
+                f"with exact pattern `{SAFE_ZERO_TEST_PATTERN}`"
+            )
+        elif not selected and fail_patterns:
+            errors.append(
+                f"{prefix}: CTest test `{name}` has unapproved failure patterns "
+                f"{fail_patterns}"
             )
         registered_tests[name] = generated_registration
         registered_commands.add(
@@ -2188,21 +2409,32 @@ def check_cmake_test_target_trace(
             "active Pixi environment"
         )
     elif tests_arguments is not None:
-        suffix = tests_arguments[4:]
-        valid_suffix = (bool(suffix) and suffix[0] == "DEPENDS") or (
-            len(suffix) >= 3 and suffix[:3] == ["-C", "$<CONFIG>", "DEPENDS"]
+        ctest_definition = (
+            tests_arguments[3].partition("=")[2] if len(tests_arguments) > 3 else ""
         )
+        configuration_definition = (
+            tests_arguments[4].partition("=")[2] if len(tests_arguments) > 4 else ""
+        )
+        suffix = tests_arguments[7:]
         if (
             tests_arguments[:2] != ["tests_and_run", "COMMAND"]
-            or len(tests_arguments) < 4
-            or tests_arguments[3] != "--output-on-failure"
+            or len(tests_arguments) < 8
+            or not executable_paths_match(tests_arguments[2], cmake_executable)
+            or not tests_arguments[3].startswith("-DDART_CTEST_COMMAND=")
+            or not executable_paths_match(ctest_definition, trusted_ctest)
+            or not tests_arguments[4].startswith("-DDART_CTEST_CONFIGURATION=")
+            or configuration_definition not in {"$<CONFIG>", "Release"}
+            or tests_arguments[5] != "-P"
+            or not cmake_paths_match(
+                tests_arguments[6], root / "cmake" / "DARTRunCTest.cmake"
+            )
             or tests_arguments.count("COMMAND") != 1
-            or not executable_paths_match(tests_arguments[2], trusted_ctest)
-            or not valid_suffix
+            or not suffix
+            or suffix[0] != "DEPENDS"
         ):
             errors.append(
                 f"{prefix}: expanded `tests_and_run` command does not invoke "
-                "the configured CTest executable"
+                "the validated clean-environment CTest runner"
             )
 
     pytest_arguments = target_arguments("pytest")
@@ -2237,7 +2469,7 @@ def check_cmake_test_target_trace(
                 )
                 and pytest_arguments[pytest_index + 2 : pytest_index + 4]
                 == ["-E", "env"]
-                and len(pytest_arguments) > pytest_index + 13
+                and len(pytest_arguments) > pytest_index + 14
             )
         if valid:
             environment_assignments = pytest_arguments[
@@ -2278,6 +2510,7 @@ def check_cmake_test_target_trace(
                     pytest_arguments[pytest_index + 12],
                     root / "pyproject.toml",
                 )
+                and pytest_arguments[pytest_index + 13] == "--noconftest"
             )
         if valid:
             try:
@@ -2294,7 +2527,7 @@ def check_cmake_test_target_trace(
                     == (root / "python" / "tests").resolve()
                 )
         if valid:
-            command_tail = pytest_arguments[pytest_index + 13 : working_index]
+            command_tail = pytest_arguments[pytest_index + 14 : working_index]
             valid = bool(command_tail) and command_tail[-1] == "-v"
         if valid:
             traced_sources = [
@@ -2313,6 +2546,7 @@ def check_cmake_test_target_trace(
             ) == set(expected_sources)
         if valid:
             check_pytest_execution_options(root, errors)
+            check_pytest_source_policies(root, errors)
             check_pytest_module_provenance(
                 sys.executable,
                 root / "python" / "tests",

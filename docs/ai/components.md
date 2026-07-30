@@ -17,8 +17,9 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
 - `scripts/check_ai_infrastructure.py`: doctor, drift, scenario, and effective
   CMake test-graph checker; the Pixi gate couples source contracts to a
   configured File API graph, expanded command trace, active generated CTest
-  graph, and pinned pre-import pytest provenance rather than trusting lexical
-  markers, stale build files, or imported module state.
+  configuration, clean ambient GTest execution, and pinned conftest-free pytest
+  provenance rather than trusting lexical markers, stale build files, result-
+  neutralizing properties, or imported module state.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
   surfaces, and DART 7 exclusions.

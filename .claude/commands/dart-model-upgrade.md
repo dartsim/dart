@@ -124,9 +124,10 @@ simulation state with text-first and OSG visual/debug evidence.
    investigation. Treat the configured CMake File API result, expanded
    target-command trace, and CTest inventory from `check-ai-infra` as the
    effective test-graph proof. Confirm inactive tests use explicit reached
-   predicates, CTest registrations execute rather than list, and pytest remains
-   pinned to the trusted root configuration and pre-import package provenance;
-   source-marker matches alone are insufficient.
+   predicates, the requested multi-config CTest branch executes without ambient
+   GTest selectors or result-neutralizing properties, and pytest remains pinned
+   to the trusted root configuration without conftest or explicit local plugin
+   loading; source-marker matches alone are insufficient.
    Audit-only uses `pixi run check-lint`; only apply mode runs auto-fixing
    `pixi run lint` before a commit. Complete the principle audit and two clean
    role-separated reviews. Label unavailable behavioral, cross-tool, hosted,

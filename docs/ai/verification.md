@@ -36,13 +36,15 @@ surface affects shared behavior.
   `check-ai-commands` proves generated parity and manifest ownership. The
   `check-ai-infra` completion gate includes those structural checks and
   validates the configured Release graph through the CMake File API, expanded
-  target trace, CTest inventory, and pytest provenance. It does not execute
-  CTest or pytest and does not replace `test-ai-infra`, `test-all`, hosted
-  platform CI, or claim-tied semantic image review. The direct structural
-  checker form is reserved for fast staged/setup internals and is not
-  sufficient completion evidence. The focused tests cover regressions; the
-  scenario command exercises release routing and unavailable-hook fallbacks
-  without network or model calls.
+  target trace, configuration-selected CTest inventory, sanitized GTest
+  contract, and conftest-free pytest provenance. It rejects result-neutralizing
+  CTest properties and explicit local pytest plugins. It does not execute CTest
+  or pytest and does not replace `test-ai-infra`, `test-all`, hosted platform
+  CI, or claim-tied semantic image review. The direct structural checker form
+  is reserved for fast staged/setup internals and is not sufficient completion
+  evidence. The focused tests cover regressions; the scenario command exercises
+  release routing and unavailable-hook fallbacks without network or model
+  calls.
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source

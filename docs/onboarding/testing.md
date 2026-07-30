@@ -24,16 +24,21 @@ unowned test sources, and admits inactive platform tests or the one compile-only
 C test only through exact branch-owned predicates and target contracts. It
 walks the active generated CTest subdirectory graph, maps registrations back to
 configured executables, rejects unapproved command filters or non-executing
-modes, and requires selected GTest registrations to fail when they match zero
-tests. The pytest target pins the root configuration, clears ambient/plugin
-overrides, and resolves the installed package without importing a local shadow.
-The probe also ties each broad target back to its validated source command and
-confirms Release commands use the active Pixi CTest and Python implementations.
-It catches early exits, inactive lexical decoys, variable poisoning, command
-shadowing, disabled or list-only CTest entries, collection-only or spoofed
-pytest substitutions, stale generated test directories, and decoy targets that
-a source-marker check alone cannot distinguish. Native hosted CI remains the
-platform-specific execution proof.
+modes, selects only the requested branch of multi-config registrations, rejects
+result-neutralizing test properties or GTest environment modifications, and
+requires selected registrations to use a digit-bounded zero-test failure guard.
+The `tests_and_run` target removes every ambient `GTEST_*` variable before
+invoking CTest, while branch-owned per-test selections remain explicit. The
+pytest target pins the root configuration, disables `conftest.py`, clears
+ambient/plugin overrides, rejects explicit local `pytest_plugins`, and resolves
+the installed package without importing a local shadow. The probe also ties
+each broad target back to its validated source command and confirms Release
+commands use the active Pixi CTest and Python implementations. It catches early
+exits, inactive lexical decoys, variable poisoning, command shadowing, disabled,
+list-only, skipped, or result-inverted CTest entries, collection-only or
+spoofed pytest substitutions, stale generated test directories, and decoy
+targets that a source-marker check alone cannot distinguish. Native hosted CI
+remains the platform-specific execution proof.
 
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in

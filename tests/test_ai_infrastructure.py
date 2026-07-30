@@ -689,6 +689,7 @@ def _copy_test_gate_contract(root: Path) -> None:
         "docs/onboarding/release-management.md",
         "tests/CMakeLists.txt",
         "python/tests/CMakeLists.txt",
+        "cmake/DARTRunCTest.cmake",
     ):
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -704,7 +705,9 @@ def _replace_required_pytest_command(cmake: Path, replacement: str) -> None:
         '"PYTHONPATH=${DART_PYTHONPATH}" "PYTEST_ADDOPTS="\n'
         '      "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" "PYTEST_PLUGINS="\n'
         '      "${Python3_EXECUTABLE}" -m pytest -c\n'
-        '      "${PROJECT_SOURCE_DIR}/pyproject.toml" ${dartpy_test_files} -v\n'
+        '      "${PROJECT_SOURCE_DIR}/pyproject.toml" --noconftest '
+        "${dartpy_test_files}\n"
+        "      -v\n"
     )
     text = cmake.read_text(encoding="utf-8")
     assert marker in text
@@ -1063,11 +1066,6 @@ def test_test_gate_contract_rejects_inactive_runtime_graph(tmp_path, replacement
     ("relative", "condition", "expected_marker"),
     (
         (
-            "tests/CMakeLists.txt",
-            "MSVC",
-            "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
-        ),
-        (
             "python/tests/CMakeLists.txt",
             "DARTPY_PYTEST_FOUND",
             '"${Python3_EXECUTABLE}" -m pytest',
@@ -1095,6 +1093,27 @@ def test_test_gate_contract_rejects_inactive_runtime_targets(
 
     assert any(
         f"{relative}: missing `test-all` graph marker `{expected_marker}`" in error
+        for error in errors
+    )
+
+
+def test_test_gate_contract_rejects_ctest_runner_drift(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "tests/CMakeLists.txt"
+    marker = "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
+    text = cmake.read_text(encoding="utf-8")
+    assert marker in text
+    cmake.write_text(
+        text.replace(marker, "${PROJECT_SOURCE_DIR}/cmake/Noop.cmake", 1),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "tests/CMakeLists.txt: missing `test-all` graph marker "
+        "`cmake/DARTRunCTest.cmake`" in error
         for error in errors
     )
 
@@ -1133,7 +1152,7 @@ def test_test_gate_contract_rejects_quoted_pytest_command_spoof(tmp_path):
             "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
             "${Python3_EXECUTABLE} -m pytest -c "
             "${PROJECT_SOURCE_DIR}/pyproject.toml "
-            '${dartpy_test_files} -v"\n'
+            '--noconftest ${dartpy_test_files} -v"\n'
         ),
     )
     errors = []
@@ -1158,7 +1177,7 @@ def test_test_gate_contract_rejects_bracket_pytest_command_spoof(tmp_path):
             "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTEST_PLUGINS= "
             "${Python3_EXECUTABLE} -m pytest -c "
             "${PROJECT_SOURCE_DIR}/pyproject.toml "
-            "${dartpy_test_files} -v]=]\n"
+            "--noconftest ${dartpy_test_files} -v]=]\n"
         ),
     )
     errors = []
@@ -1187,13 +1206,8 @@ def test_test_gate_contract_rejects_bracket_pytest_command_spoof(tmp_path):
         ),
         (
             "tests/CMakeLists.txt",
-            "add_custom_target(\n    tests_and_run",
+            "add_custom_target(\n  tests_and_run",
             1,
-        ),
-        (
-            "tests/CMakeLists.txt",
-            "add_custom_target(\n    tests_and_run",
-            2,
         ),
         (
             "python/tests/CMakeLists.txt",
@@ -1230,7 +1244,7 @@ def test_test_gate_contract_rejects_unreachable_runtime_graph(
     )
 
 
-def _configure_semantic_graph_fixture(root: Path) -> Path:
+def _configure_semantic_graph_fixture(root: Path, generator: str | None = None) -> Path:
     sources = {
         "CMakeLists.txt": """
 cmake_minimum_required(VERSION 3.22)
@@ -1259,19 +1273,15 @@ add_custom_target(ALL DEPENDS ${all_targets})
 add_subdirectory(integration)
 add_subdirectory(regression)
 add_subdirectory(unit)
-if(MSVC)
-  add_custom_target(
-    tests_and_run
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
-    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
-  )
-else()
-  add_custom_target(
-    tests_and_run
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
-  )
-endif()
+add_custom_target(
+  tests_and_run
+  COMMAND
+    ${CMAKE_COMMAND}
+    "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
+    "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
+    -P "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
+  DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
+)
 """.lstrip(),
         "tests/integration/CMakeLists.txt": """
 add_executable(INTEGRATION_semantic test_semantic.cpp)
@@ -1305,7 +1315,7 @@ if(DARTPY_PYTEST_FOUND)
       "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1"
       "PYTEST_PLUGINS="
       "${Python3_EXECUTABLE}" -m pytest -c
-      "${PROJECT_SOURCE_DIR}/pyproject.toml" ${dartpy_test_files} -v
+      "${PROJECT_SOURCE_DIR}/pyproject.toml" --noconftest ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${dartpy_test_files} ${dartpy_test_utils}
     DEPENDS dartpy
@@ -1320,6 +1330,9 @@ else()
 endif()
 """.lstrip(),
         "python/tests/test_semantic.py": "def test_semantic():\n    pass\n",
+        "cmake/DARTRunCTest.cmake": (ROOT / "cmake/DARTRunCTest.cmake").read_text(
+            encoding="utf-8"
+        ),
         "pyproject.toml": """
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -1342,15 +1355,18 @@ testpaths = ["tests"]
         path.write_text("int main(void) { return 0; }\n", encoding="utf-8")
 
     build = root / "build"
+    command = [
+        "cmake",
+        "-S",
+        str(root),
+        "-B",
+        str(build),
+        "-DCMAKE_BUILD_TYPE=Release",
+    ]
+    if generator is not None:
+        command[1:1] = ["-G", generator]
     result = subprocess.run(
-        [
-            "cmake",
-            "-S",
-            str(root),
-            "-B",
-            str(build),
-            "-DCMAKE_BUILD_TYPE=Release",
-        ],
+        command,
         capture_output=True,
         text=True,
     )
@@ -1360,6 +1376,15 @@ testpaths = ["tests"]
 
 def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
     build = _configure_semantic_graph_fixture(tmp_path)
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+def test_cmake_semantic_graph_probe_accepts_release_multi_config_graph(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path, "Ninja Multi-Config")
     errors = []
 
     infra.check_cmake_test_graph(tmp_path, build, errors)
@@ -1390,8 +1415,23 @@ def test_cmake_build_discovery_accepts_cmake_slash_spelling(tmp_path, monkeypatc
     )
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "default")
     monkeypatch.setenv("BUILD_TYPE", "Release")
+    monkeypatch.setattr(infra.sys, "platform", "linux")
 
     assert infra.discover_cmake_build_dir(tmp_path) == build
+
+
+def test_cmake_build_discovery_uses_windows_multi_config_owner(tmp_path, monkeypatch):
+    base = tmp_path / "build" / "default" / "cpp"
+    nested = base / "Release"
+    nested.mkdir(parents=True)
+    cache = f"CMAKE_HOME_DIRECTORY:INTERNAL={tmp_path.resolve()}\n"
+    (base / "CMakeCache.txt").write_text(cache, encoding="utf-8")
+    (nested / "CMakeCache.txt").write_text(cache, encoding="utf-8")
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "default")
+    monkeypatch.setenv("BUILD_TYPE", "Release")
+    monkeypatch.setattr(infra.sys, "platform", "win32")
+
+    assert infra.discover_cmake_build_dir(tmp_path) == base
 
 
 @pytest.mark.parametrize(
@@ -1578,6 +1618,59 @@ def test_cmake_semantic_graph_probe_rejects_unapproved_gtest_environment(
     )
 
 
+def test_cmake_semantic_graph_probe_rejects_gtest_environment_modification(
+    tmp_path,
+):
+    cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + "\nset_tests_properties(test_semantic_regression PROPERTIES "
+        'ENVIRONMENT_MODIFICATION "GTEST_FILTER=set:-*")\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "CTest test `test_semantic_regression` has unapproved GTest "
+        "environment modifications" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("property_name", "value"),
+    (
+        ("WILL_FAIL", "TRUE"),
+        ("PASS_REGULAR_EXPRESSION", '".*"'),
+        ("SKIP_REGULAR_EXPRESSION", '".*"'),
+        ("SKIP_RETURN_CODE", "1"),
+    ),
+)
+def test_cmake_semantic_graph_probe_rejects_result_neutralizing_properties(
+    tmp_path, property_name, value
+):
+    cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + "\nset_tests_properties(test_semantic_regression PROPERTIES "
+        f"{property_name} {value})\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        f"CTest test `test_semantic_regression` uses result-neutralizing "
+        f"property `{property_name}`" in error
+        for error in errors
+    )
+
+
 def test_cmake_semantic_graph_probe_requires_zero_test_guard_for_selection(
     tmp_path, monkeypatch
 ):
@@ -1606,6 +1699,200 @@ def test_cmake_semantic_graph_probe_requires_zero_test_guard_for_selection(
     assert any(
         "selected CTest test `test_semantic_regression` does not fail on zero "
         "tests" in error
+        for error in errors
+    )
+
+
+def test_cmake_semantic_graph_probe_rejects_ambiguous_zero_test_guard(
+    tmp_path, monkeypatch
+):
+    cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8").replace(
+            "add_test(NAME test_semantic_regression COMMAND "
+            "test_semantic_regression)\n",
+            "add_test(NAME test_semantic_regression COMMAND "
+            "test_semantic_regression --gtest_filter=Semantic.*)\n"
+            "set_tests_properties(test_semantic_regression PROPERTIES "
+            'FAIL_REGULAR_EXPRESSION "0 tests")\n',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(
+        infra.APPROVED_CTEST_SELECTIONS,
+        "test_semantic_regression",
+        {
+            "arguments": ("--gtest_filter=Semantic.*",),
+            "environment": (),
+        },
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "does not fail on zero tests with exact pattern" in error for error in errors
+    )
+
+
+def test_cmake_test_runner_clears_future_ambient_gtest_controls(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    source = tmp_path / "tests" / "regression" / "test_semantic.cpp"
+    source.write_text(
+        """
+#include <cstdlib>
+#include <fstream>
+
+int main()
+{
+  if (std::getenv("GTEST_FUTURE_SELECTOR") != nullptr)
+    return 0;
+  std::ofstream("semantic-body-ran") << "ran";
+  return 0;
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    environment = os.environ.copy()
+    environment["GTEST_FUTURE_SELECTOR"] = "skip-everything"
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(build),
+            "--target",
+            "tests_and_run",
+            "--config",
+            "Release",
+        ],
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (build / "tests" / "regression" / "semantic-body-ran").is_file()
+
+
+def test_cmake_zero_test_guard_does_not_match_ten_tests(tmp_path, monkeypatch):
+    cmake = tmp_path / "tests" / "regression" / "CMakeLists.txt"
+    build = _configure_semantic_graph_fixture(tmp_path)
+    cmake.write_text(
+        cmake.read_text(encoding="utf-8")
+        + "\nset_tests_properties(test_semantic_regression PROPERTIES "
+        'ENVIRONMENT "GTEST_FILTER=Semantic.*" '
+        f'FAIL_REGULAR_EXPRESSION "{infra.SAFE_ZERO_TEST_PATTERN}")\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "tests" / "regression" / "test_semantic.cpp").write_text(
+        """
+#include <iostream>
+
+int main()
+{
+  std::cout << "10 tests from 1 test suite ran." << std::endl;
+  return 0;
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(
+        infra.APPROVED_CTEST_SELECTIONS,
+        "test_semantic_regression",
+        {
+            "arguments": (),
+            "environment": ("GTEST_FILTER=Semantic.*",),
+        },
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    assert errors == []
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(build),
+            "--target",
+            "tests_and_run",
+            "--config",
+            "Release",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_cmake_pytest_target_ignores_repository_conftest(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    test_source = tmp_path / "python" / "tests" / "test_semantic.py"
+    test_source.write_text(
+        """
+from pathlib import Path
+
+
+def test_semantic():
+    Path(__file__).with_name("semantic-body-ran").write_text("ran")
+""".lstrip(),
+        encoding="utf-8",
+    )
+    (test_source.parent / "conftest.py").write_text(
+        """
+def pytest_collection_modifyitems(items):
+    items.clear()
+
+
+def pytest_sessionfinish(session):
+    session.exitstatus = 0
+""".lstrip(),
+        encoding="utf-8",
+    )
+    errors = []
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+    assert errors == []
+
+    result = subprocess.run(
+        [
+            "cmake",
+            "--build",
+            str(build),
+            "--target",
+            "pytest",
+            "--config",
+            "Release",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (test_source.parent / "semantic-body-ran").is_file()
+
+
+def test_cmake_semantic_graph_probe_rejects_explicit_local_pytest_plugin(
+    tmp_path,
+):
+    build = _configure_semantic_graph_fixture(tmp_path)
+    test_source = tmp_path / "python" / "tests" / "test_semantic.py"
+    test_source.write_text(
+        'pytest_plugins = ["evil"]\n\n\ndef test_semantic():\n    pass\n',
+        encoding="utf-8",
+    )
+    (test_source.parent / "evil.py").write_text(
+        "def pytest_collection_modifyitems(items):\n    items.clear()\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert any(
+        "declares `pytest_plugins`; local plugin loading is not allowed" in error
         for error in errors
     )
 
@@ -2137,8 +2424,8 @@ def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
     cmake = tmp_path / "tests/CMakeLists.txt"
     cmake.write_text(
         cmake.read_text(encoding="utf-8").replace(
-            "-C $<CONFIG>",
-            "-C ${CMAKE_BUILD_TYPE}",
+            "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
+            "-DDART_CTEST_CONFIGURATION=${CMAKE_BUILD_TYPE}",
             1,
         ),
         encoding="utf-8",
@@ -2149,7 +2436,7 @@ def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
 
     assert any(
         "tests/CMakeLists.txt: missing `test-all` graph marker "
-        "`${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>`" in error
+        "`cmake/DARTRunCTest.cmake`" in error
         for error in errors
     )
 
