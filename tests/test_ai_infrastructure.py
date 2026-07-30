@@ -600,6 +600,7 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "reasoning modes",
         "migrations",
         "compatibility reviews",
+        "visual simulation-debugging evaluations",
     ):
         assert trigger in meta["description"]
     for marker in (
@@ -622,6 +623,11 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "The workflow itself is an audit surface",
         "do not clone the workflow",
         "Remove superseded model-specific guidance",
+        "representative DART 3D physics investigation",
+        "text correctness oracle",
+        "Images are never the sole correctness oracle",
+        "`verification-bundle`",
+        "text/image disagreement",
     ):
         assert marker in text
 

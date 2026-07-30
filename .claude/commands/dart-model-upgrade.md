@@ -1,5 +1,5 @@
 ---
-description: audit and update DART AI infrastructure for model or coding-agent upgrades, including named models, reasoning modes, migrations, and compatibility reviews
+description: audit and update DART AI infrastructure for model or coding-agent upgrades, including named models, reasoning modes, migrations, compatibility reviews, and visual simulation-debugging evaluations
 argument-hint: "<target-model-or-tool-version> [audit-only|apply]"
 agent: build
 ---
@@ -16,6 +16,8 @@ better harness. Keep the reusable intake, comparison, verification, and
 closeout core model-agnostic. The workflow itself is an audit surface: improve
 it when a target exposes a reusable gap, and replace obsolete target-specific
 guidance instead of accumulating one branch or command per model family.
+Because DART is a 3D physics simulator, every target must also demonstrate how
+well it investigates simulation state with text-first and visual/debug evidence.
 
 ## Required Reading
 
@@ -29,6 +31,7 @@ guidance instead of accumulating one branch or command per model family.
 @docs/README.md
 @docs/information-architecture.md
 @docs/onboarding/ai-tools.md
+@docs/onboarding/agent-sim-verification.md
 @docs/dev_tasks/README.md
 
 ## Workflow
@@ -45,7 +48,8 @@ guidance instead of accumulating one branch or command per model family.
    installed tool versions, `pixi run ai-doctor --json`, current model/config
    references, prompt and instruction sizes, generated skill metadata size,
    custom-agent inheritance, hooks, scenarios, durable context and project-state
-   owners, and active plan/dev-task handoff surfaces.
+   owners, active plan/dev-task handoff surfaces, and the branch-local
+   `dart-verify-sim` route and rendering/image-evaluation availability.
 
    Record docs-policy freshness advisories and baseline read-only focused gates.
    If an `apply` task is multi-session, create or refresh
@@ -91,6 +95,23 @@ guidance instead of accumulating one branch or command per model family.
    comparison and say so; never promote structural checks into model-quality
    claims.
 
+   For every target, run a representative DART 3D physics investigation through
+   the branch's `dart-verify-sim` capability. Give the control and target the
+   same scene or behavior claim. Require a text correctness oracle such as step
+   metrics, scene/trajectory/contact comparison, profiling output, or a focused
+   behavioral test, then corroborate it with an assessed headless capture and
+   only the debug layers needed by the claim. Compare whether each model:
+   - asks for missing evidence instead of guessing;
+   - repairs or rejects cropped, occluded, or ambiguous views;
+   - selects claim-tied views and debug layers;
+   - reconciles text/image disagreement; and
+   - states what the image does not prove.
+
+   Images are never the sole correctness oracle. If rendering or image-capable
+   review is unavailable, exercise the text path and `verification-bundle`
+   where possible, record the exact limitation, and do not turn structural tool
+   availability into a model-quality claim.
+
 6. **Route model and reasoning by task shape.** For the GPT-5.6 family, use Sol
    for the hardest ambiguous work, Terra for everyday or read-heavy work, and
    Luna for clear repeatable work. Max gives one difficult task more reasoning
@@ -123,8 +144,10 @@ guidance instead of accumulating one branch or command per model family.
    configuration aliases, generated parity, instruction discovery, and
    approval boundaries when touched. Include a fresh-session case that must
    find current project state and the correct cross-session resume surface
-   without hidden chat history. In `audit-only`, assess existing coverage and
-   report missing cases without adding them.
+   without hidden chat history. Include visual-debug failure cases for an
+   unavailable renderer, a poor view, text/image disagreement, and a static
+   geometry defect that visual-only inspection must not pass. In `audit-only`,
+   assess existing coverage and report missing cases without adding them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, relevant
    docs/AI checks from `docs/ai/verification.md`, including
@@ -152,6 +175,8 @@ guidance instead of accumulating one branch or command per model family.
 - Preserve/update/remove/consolidate/add findings with evidence
 - Durable context, project-state, session-handoff, and freshness findings
 - Comparison matrix, limitations, prompt/config changes, and unchanged choices
+- 3D physics investigation and visual/debug evaluation results, artifacts,
+  failure-boundary outcomes, and unavailable-evidence limitations
 - Direct, indirect, incomplete, non-trigger, and edge-case results
 - Mode, mutations performed (none for `audit-only`), gates, principle audit, two
   review passes, and blockers

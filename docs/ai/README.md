@@ -96,6 +96,12 @@ comparison, verification, and closeout core is itself part of every audit. An
 replacing stale target-specific guidance instead of cloning a command or
 accumulating permanent per-model branches.
 
+Because DART is a 3D physics simulator, each model-upgrade audit also compares a
+representative physics investigation through `dart-verify-sim`. The control and
+target must use the same text correctness evidence, assessed view, and
+claim-specific visual/debug layers; unavailable rendering or image review is a
+recorded limitation, not permission to infer model quality.
+
 Do not use it for a missed already-documented rule
 (`dart-audit-agent-compliance`) or an ordinary AI-doc edit
 (`dart-docs-update`). An incomplete target starts with installed-version and
