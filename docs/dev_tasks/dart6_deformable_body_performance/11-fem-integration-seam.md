@@ -13,7 +13,7 @@ Purpose: answer the make-or-break question behind the branch-strategy decision �
 as ABI-safe additive API on `release-6.20`, with per-step internal-DOF
 integration, coupling to rigid/skeleton bodies, zero pure-rigid overhead, and
 preserved rigid determinism, without changing any existing public class layout
-or vtable?* Plan reference: `10-full-parity-execution-plan.md` §7, §11 step 2.
+or vtable?* Plan reference: `10-full-parity-execution-plan.md`, Part B (retired).
 
 ## Verdict
 

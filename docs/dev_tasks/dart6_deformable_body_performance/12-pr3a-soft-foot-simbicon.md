@@ -1,6 +1,6 @@
 # PR-3a — soft-foot SIMBICON locomotion (Jain/Liu "biped push recovery")
 
-Kickoff spec for the first Jain/Liu parity build (plan `10-...` §6/§11). Goal:
+Kickoff spec for the first Jain/Liu parity build (plan `10-full-parity-execution-plan.md`, Part A). Goal:
 reproduce the paper's soft-vs-rigid contact locomotion claim — *"soft contact
 withstands larger perturbations while maintaining more ground contact points"* —
 as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
