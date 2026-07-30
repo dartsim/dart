@@ -1,75 +1,55 @@
-# 101-stone masonry arch meshes and MuJoCo reference scene
+# Deterministic 101-stone MuJoCo comparison geometry
 
-The 101 stone meshes are source-bound to the public FBF reference repository,
+The optional MuJoCo comparison generates its 101 masonry stones in memory from
+the source parameters instead of checking 101 mechanical OBJ files and an
+expanded MJCF file into the repository. The implementation lives in
+`tests/benchmark/integration/fbf_paper_mujoco_baseline.py`; this directory keeps
+only the source license and this provenance record.
+
+The geometry is source-bound to the public FBF repository,
 <https://github.com/matthcsong/fbf-sca-2026>, commit
-`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, under
-`meshes/arch/num_stones=101/`. All 101 checked-in OBJ files are byte-identical
-to that pinned tree. The normalized `sha256sum stone-*.obj` ledger digest is
-`2841fe941dba046936e950f1875e01374259e2ddc28b5bcf40c465fd10f71993`.
-
-The FBF repository credits the geometry to the
-[Rigid-IPC dataset](https://github.com/ipc-sim/rigid-ipc). The original local
-extraction was independently pinned to Rigid-IPC commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, path
+`meshes/arch/num_stones=101/`. That repository credits the
+[Rigid-IPC dataset](https://github.com/ipc-sim/rigid-ipc). The independent
+upstream pin remains Rigid-IPC commit
 `23b6ba6fbf8434056444ae106356fd2209136988` ("Write GLTF in input orientation",
 2025-06-13). Rigid-IPC implements Ferguson et al., "Intersection-free Rigid
 Body Dynamics" (SIGGRAPH 2021). Its MIT license is retained in
-[`LICENSE.md`](LICENSE.md) (Copyright (c) 2021 Zachary Ferguson and the IPC
-Simulation organization).
+[`LICENSE.md`](LICENSE.md).
 
-Files here are a benchmark/example-only data asset for
-the FBF masonry-arch demo and
-`tests/benchmark/integration/fbf_paper_mujoco_baseline.py`. They are not read
-by any core DART library target and add no core dependency; see
-`docs/ai/principles.md` / `AGENTS.md` for the repository's compatibility-first
-policy on this kind of optional external-comparison asset.
+## Reproduction contract
 
-## Contents
+The dependency-free generator mirrors the weighted-catenary parameters and
+operations used by the source:
 
-- `arch-101-stones_mjc.xml`: adapted from
-  `comparisons/MuJoCo/friction/arch/arch-101-stones_mjc.xml` in the upstream
-  repository (a MuJoCo port Rigid-IPC ships itself, "reference only" per the
-  extraction manifest).
-- `plane.obj`: the flat ground-plane mesh (`meshes/plane.obj` upstream).
-- `arch/num_stones=101/stone-01.obj` .. `stone-101.obj`: the 101
-  source-bound voussoir meshes, 8 vertices / 12 triangles each.
+- `fc=60 cm`, `Qb=100 cm^2`, `Qt=49 cm^2`, and `L=30 cm`;
+- composite Simpson integration and equal-arc-length bisection;
+- constant per-stone square cross sections, source offsets, springer
+  flattening, and the `0.1 cm` height normalization;
+- source OBJ vertex order, twelve face triangles, and six-decimal coordinate
+  quantization; and
+- the source y/z-to-MuJoCo axis rotation, `0.01` cm-to-m scale, uniform `0.5`
+  friction, `0.005 s` timestep, and `9.8 m/s^2` gravity.
 
-## Adaptations from the upstream XML (attribute-only, no vertex data changed)
+The ordered 2,424-coordinate inventory is pinned by FNV-1a64
+`0x528596c9206aef89`, the same digest used by the DART Figure 8 construction
+test. Before removing the vendored files, an independent audit proved:
 
-1. `<mesh file="....stl">` -> `<mesh file="....obj">`. This tree does not
-   carry a `.stl` mesh export step; we ship the `.obj` meshes the upstream
-   repository also carries, and MuJoCo loads `.obj` natively.
-2. Every `<mesh>` element gained a `0.01` per-axis scale factor (combined
-   multiplicatively with the one pre-existing `plane_0` scale). The raw OBJ
-   vertex coordinates are unitless numbers on the order of the paper's
-   stated "cm" dimensions (roughly 0-65 for the 101-stone arch); taken
-   literally as meters the stones would be tens of meters tall. This is
-   exactly the cm -> m conversion recorded in
-   [`PROVENANCE.txt`](../../../docs/dev_tasks/fbf_exact_coulomb_friction/PROVENANCE.txt),
-   so the arch here is close to the
-   ~0.6 m-tall scale the source generator's own parameters describe
-   (`fc=60`, `Qb=100`, `Qt=49`, `L=30`, all in cm).
-3. An explicit `<option timestep="0.005" gravity="0 0 -9.8" cone="elliptic"/>`
-   was added. The upstream file has no `<option>` block and relies on
-   whatever harness loads it; `9.8` matches Rigid-IPC's own gravity
-   magnitude (source scene JSON uses `gravity: [0, -9.8, 0]`, Y-up).
+- all 101 generated OBJ byte streams exactly matched the pinned copies;
+- file-backed and generated MuJoCo models had identical dimensions, masses,
+  inertias, initial positions, mesh vertices, and mesh faces under MuJoCo
+  3.11.0; and
+- their first five simulation steps were bit-identical in `qpos` and `qvel`.
 
-Body/geom friction values (`0.5`, uniform), stone ordering, and the
-axis-remapping `quat` on every body (Rigid-IPC is Y-up; this rotates the
-scene into MuJoCo's Z-up convention, matching the upstream file) are
-unmodified.
+Unit tests keep the inventory digest, representative vertices, self-contained
+MJCF structure, and absence of file-backed mesh references fail-closed.
 
-## Known limitations
+## Scope and limitations
 
-- The XML is Rigid-IPC's MuJoCo port, not a MuJoCo scene authored by the FBF
-  paper. The OBJ geometry is byte-identical to the pinned public FBF source,
-  but the MuJoCo configuration and backend are not a byte-for-byte paper
-  reproduction.
-- Density is left at MuJoCo's per-mesh default (`1000 kg/m^3`), matching
-  Rigid-IPC's own unspecified-density default
-  (`src/io/read_rb_scene.cpp:68` upstream).
-- All 101 stones are dynamic; only the ground plane is fixed, matching the
-  source JSON (`is_dof_fixed` is only set on the ground body). This differs
-  from DART's current approximate-arch test scaffold, which additionally
-  pins the two endpoint stones as static; see
-  `docs/dev_tasks/fbf_exact_coulomb_friction/PR_REPORT.md` for the DART-side
-  arch fixture notes.
+This is a benchmark/example-only comparison path. No core DART target reads it
+and it adds no core dependency. The generated MJCF preserves Rigid-IPC's MuJoCo
+port semantics; it is not a MuJoCo scene authored by the FBF paper and does not
+establish historical paper parity. Density remains MuJoCo's per-mesh default
+(`1000 kg/m^3`), matching Rigid-IPC's unspecified-density default. All 101
+stones remain dynamic and only the ground is fixed, matching the source JSON
+but differing from DART's current Figure 8 adapter, which fixes both springers.

@@ -206,32 +206,35 @@ eaa5ffce2f2e2de7b6b493e1edfbca2caa09fb1931c943cc7477bd699303eaa7
 a31e3472c3ec4a914bcd1f2c62a32471993154eb00fdabcc230b33d08cbf9c18
   tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp
 
-6. Optional MuJoCo comparison asset
-------------------------------------
+6. Optional MuJoCo comparison geometry
+---------------------------------------
 
 Location: data/mjcf/rigid_ipc_arch/
 
-The directory contains Rigid-IPC's 101-stone MuJoCo comparison scene, OBJ
-meshes, plane, license, and a README describing every adaptation. It is a
-benchmark/example-only asset and is not a core DART dependency.
+The directory now retains only Rigid-IPC's MIT license and a provenance README.
+The optional benchmark generates its 101-stone MuJoCo comparison scene in
+memory from the compact source parameters in
+tests/benchmark/integration/fbf_paper_mujoco_baseline.py. It is a
+benchmark/example-only path and is not a core DART dependency.
 
 The now-public FBF source at pinned commit
 b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 also ships the 101 meshes under
-meshes/arch/num_stones=101/. A 2026-07-29 byte audit matched all 101 DART
-copies to that pinned tree. The normalized `sha256sum stone-*.obj` ledger
-digest is
-2841fe941dba046936e950f1875e01374259e2ddc28b5bcf40c465fd10f71993.
-This source-binds the OBJ geometry; it does not turn Rigid-IPC's MuJoCo XML
-or backend into an FBF-author or historical-paper configuration.
+meshes/arch/num_stones=101/. A 2026-07-29 pre-removal audit proved all 101
+generated OBJ streams byte-identical to the pinned copies. The ordered 2,424
+signed micro-unit coordinates have FNV-1a64 digest 0x528596c9206aef89, shared
+with the DART source-construction test. MuJoCo 3.11.0 compiled the file-backed
+and generated scenes to identical model dimensions, masses, inertias, qpos0,
+mesh vertices, and mesh faces, and their first five qpos/qvel steps were
+bit-identical.
 
-Representative snapshot SHA-256 values on 2026-07-12:
+The generated scene retains the credited XML's stone order, face winding,
+axis-remapping quaternion, dynamic-body policy, friction, density default,
+0.01 mesh scale, timestep, and gravity. This source-binds the generated
+geometry; it does not turn Rigid-IPC's MuJoCo configuration or backend into an
+FBF-author or historical-paper configuration. The retained license SHA-256 is:
 
 732b3d6dd045ddd22e18a6477108cbdf538add60945fbd39c33f41cbc8f84d2a
   data/mjcf/rigid_ipc_arch/LICENSE.md
-3e82689039b0a050f6e6d846828167e6b7441a88bde15c9799dfaca103728100
-  data/mjcf/rigid_ipc_arch/arch-101-stones_mjc.xml
-d77c9dd773a8ea02c1698c7ae6a9221b35cb13bc91673780c9273969e8b54278
-  data/mjcf/rigid_ipc_arch/plane.obj
 
 6a. Card-house reconstruction
 ------------------------------

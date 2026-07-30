@@ -10,11 +10,11 @@ Figure 8, upload, branch, and CI statement below.
   `release-6.20` checkpoint
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
   merge. Documentation-only descendants do not change the binary identity.
-  The pre-handoff pushed head audited here is
-  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
-  descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
-  files, 161,002 additions, and 439 deletions. Requery its mutable head, checks,
-  and review state.
+  The last pushed head before the generated optional-baseline change is
+  `3a185ee2743d5111461f5dd0465dba5535f9b74c`. PR #3377 is open and draft.
+  Relative to `release-6.20`, the generated-baseline tree has 161 changed files
+  and seven `data/` paths, down from 264 and 110. Requery its mutable head,
+  checks, and review state.
 - The merge resolution passed `pixi run lint`, all 166 C++ tests, all 34 FBF
   scene-documentation checks, `check-ai-commands`, and the AI infrastructure
   doctor. The rebuilt post-merge demo/core SHA-256 values are
@@ -24,16 +24,21 @@ Figure 8, upload, branch, and CI statement below.
   `docs/dev_tasks/.gitignore` policy ignores every task's role-based
   `**/assets/` subtree. The handoff audit found zero non-ignored untracked
   files, zero tracked ignored files, and zero tracked task-asset paths.
-- Raw-file cleanup is still required before review. Published topic history
-  contains 492 evidence blobs totaling 96,573,227 bytes. The current net diff
-  also includes a 105-file optional MuJoCo arch bundle, including 101 stone
-  OBJs. Contrary to earlier wording, the DART Figure 8 demo generates its
-  pinned geometry procedurally and does not load these files; only
-  `fbf_paper_mujoco_baseline.py` consumes the adapted XML and stone OBJs.
-  Replace that raw bundle with deterministic compact or temporary generation,
-  preserving exact geometry, provenance, licensing, optional MuJoCo behavior,
-  and clean-checkout reproducibility. Broad extension ignores remain wrong
-  because they would hide legitimate Figure 3 and turntable runtime assets.
+- Current-tree raw-file cleanup is complete. The optional MuJoCo baseline now
+  deterministically generates the pinned 101 weighted-catenary wedges and
+  inline MJCF. Before deletion, every generated OBJ byte stream matched its
+  tracked source exactly. MuJoCo 3.11.0 produced exactly equal compiled
+  mass/inertia/state/mesh arrays and a bit-identical five-step
+  trajectory/contact sequence for the old file-backed and new generated
+  models. The adapted XML, unused plane mesh, and 101 stone OBJs are removed;
+  only the license and provenance/contract README remain. The DART Figure 8
+  demo is unchanged and generates its geometry procedurally. No broad extension
+  ignore was added because Figure 3 and turntable have legitimate runtime
+  assets.
+- Published topic history separately contains 492 evidence blobs totaling
+  96,573,227 bytes. A true squash keeps them out of `release-6.20`; cleaning
+  the published review branch itself requires explicit approval for a
+  reconstruction and `--force-with-lease` update.
 - Visual-evidence schema v3 binds the captured-checkpoint demo
   (`3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`),
   61 regular runtime libraries, eight build-tree libraries, and the exact core

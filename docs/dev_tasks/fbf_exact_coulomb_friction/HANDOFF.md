@@ -30,34 +30,38 @@ Current durable branch:
 
 Documentation-only descendants do not change that runtime identity. Query the
 live branch/PR head rather than assuming the checkpoint is still HEAD.
-The pre-handoff pushed head audited here is
-dd70baec27b504def42e28d137f4abc08b5e9061; this handoff is a docs-only
-descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
-files, 161,002 additions, and 439 deletions. Query the resulting live head and
-hosted checks rather than assuming this checkpoint is still current.
+The last pushed head before the generated optional-baseline change is
+3a185ee2743d5111461f5dd0465dba5535f9b74c. PR #3377 is open and draft.
+Query the resulting live head and hosted checks rather than assuming this
+checkpoint is still current. Relative to release-6.20, the generated-baseline
+tree has 161 changed files and seven data/ paths, down from 264 and 110.
 It must remain draft. The current net tree tracks no generated task assets or
 raw capture output. docs/dev_tasks/.gitignore uses the scalable role-based
 **/assets/ rule. Do not add broad *.png, *.csv, *.obj, or similar ignores:
 runtime source assets would be hidden.
 
-Repository hygiene is the first next-session blocker. The published topic
-history still contains 492 task-evidence blobs totaling 96,573,227 bytes. A
-true squash merge keeps them out of release-6.20, but cleaning the review
-branch itself requires explicit approval for a reconstructed branch and
---force-with-lease update. The current net diff also has a removable raw-file
-surface: 105 files under data/mjcf/rigid_ipc_arch/, including 101 stone OBJs.
-A fresh consumer audit corrects the earlier handoff: dart-demos does not load
-those files; its Figure 8 adapter generates the pinned geometry through
-generateMasonryArchStoneWedges. Only the optional MuJoCo baseline script loads
-the adapted XML and stone OBJs. Replace that bundle with deterministic compact
-or temporary generation, preserving exact geometry, provenance, licensing,
-optional MuJoCo behavior, and clean-checkout reproducibility, then delete the
-redundant raw XML/OBJ files.
+The current-tree raw-file surface is closed. The optional MuJoCo baseline now
+deterministically generates all 101 weighted-catenary wedges and emits inline
+MJCF. Before deletion, each generated OBJ byte stream exactly matched its
+tracked source file. MuJoCo 3.11.0 produced exactly equal compiled model arrays
+and a bit-identical five-step trajectory/contact sequence from the old
+file-backed and new inline models. The adapted XML, unused plane mesh, and 101
+stone OBJs are removed; only LICENSE.md and the provenance/contract README
+remain under data/mjcf/rigid_ipc_arch/. dart-demos is unchanged and continues
+to generate its Figure 8 geometry through generateMasonryArchStoneWedges.
 
-The handoff audit found zero non-ignored untracked files, zero tracked ignored
-files, and zero tracked task-asset paths. It found 19,521 ignored local files
-under this task's assets/ tree; leave them local. No solver, renderer, capture,
-benchmark, asset-generation, CI-rerun, or history-rewrite process is active.
+The published topic history separately still contains 492 task-evidence blobs
+totaling 96,573,227 bytes. A true squash merge keeps them out of release-6.20,
+but cleaning the review branch itself requires explicit approval for a
+reconstructed branch and --force-with-lease update. Do not rewrite history
+without that approval.
+
+The prior handoff audit found zero non-ignored untracked files, zero tracked
+ignored files, and zero tracked task-asset paths. It found 19,521 ignored local
+files under this task's assets/ tree; leave them local. No solver, renderer,
+capture, benchmark, or history-rewrite process is active. The
+generated-baseline checkpoint still needs its full build/lint gate and
+commit/push before this prompt can be treated as a clean published checkpoint.
 
 Post-merge current runtime:
 
@@ -146,9 +150,10 @@ gate.
 
 Immediate order:
 
-1. Close the raw-file/file-count blocker: replace the optional MuJoCo
-   arch XML/OBJ bundle with deterministic generation and prove it before
-   removing the files. Do not broaden extension ignores.
+1. Finish the generated-baseline checkpoint gates: focused Python/MuJoCo tests,
+   pixi run build, pixi run lint, and diff/ignore audits. Merge a newer
+   release-6.20 only if one exists, then commit and push the cleanup. Do not
+   broaden extension ignores.
 2. Obtain a maintainer decision on squash-only integration versus an explicitly
    approved clean review-branch reconstruction for the historical evidence
    blobs.
@@ -232,14 +237,12 @@ without that approval, and do not use an ordinary merge commit for final
 integration.
 
 Live GitHub state at that archived stop checkpoint reported 264 net changed
-files, not the earlier 700+ local/raw-artifact view. A later consumer audit
-corrected the raw-file classification: 105 net files belong to the optional
-MuJoCo arch bundle, including 101 stone OBJs, while the DART Figure 8 demo
-generates its own pinned geometry and does not load those files. Do not add a
-broad *.obj ignore; Figure 3 and turntable have legitimate runtime meshes.
-Before review readiness, replace the optional raw bundle with deterministic
-compact or temporary generation while preserving exact geometry, provenance,
-licensing, optional MuJoCo behavior, and clean-checkout reproducibility.
+files, not the earlier 700+ local/raw-artifact view. The later
+generated-baseline checkpoint removed the optional adapted MJCF and 102 OBJ
+files after exact source-byte, compiled-model, and short-trajectory
+equivalence checks. Its net tree has 161 files and seven data/ paths. Do not
+add a broad *.obj ignore; Figure 3 and turntable still have legitimate runtime
+meshes.
 
 The role-based task ignore keeps generated evidence out of Git. Ignored
 `assets/pr_upload_3377/` contains 16 H.264/yuv420p MP4s and `SHA256SUMS`.
@@ -1774,14 +1777,13 @@ symlink for an explicit live-closure recheck.
 Immediate order:
 
 1. Inspect current diffs and active agents before taking file/build ownership.
-   First resolve the review-surface decision: verify the live PR file list,
-   preserve the scalable role-based task-assets ignore and CI guard, decide
-   whether the 492 historical task-evidence blobs require an explicitly
-   approved clean-history reconstruction, and replace the optional MuJoCo
-   baseline's 101 licensed masonry OBJ files with a proven deterministic
-   compact or temporary generation path. The DART demo does not consume those
-   files. Do not confuse ignored local outputs, historical blobs, optional
-   comparison assets, and legitimate runtime inputs elsewhere.
+   Verify the live PR file list, preserve the scalable role-based task-assets
+   ignore and CI guard, and decide whether the 492 historical task-evidence
+   blobs require an explicitly approved clean-history reconstruction. The
+   current-tree MuJoCo raw-file surface is already closed by deterministic
+   inline generation and exact equivalence checks. Do not confuse ignored local
+   outputs, historical blobs, optional comparison inputs, and legitimate
+   runtime assets elsewhere.
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
    numeric incline sweep, historical verified Painleve proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the

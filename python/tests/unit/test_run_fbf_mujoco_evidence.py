@@ -3,6 +3,7 @@ import math
 import pathlib
 import tempfile
 import types
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -70,6 +71,38 @@ def test_default_durations_separate_published_and_reconstructed_horizons():
         "unknown_or_unpublished"
     ]
     assert "simulation duration" in unknowns
+
+
+def test_generated_rigid_ipc_arch_geometry_matches_pinned_source_inventory():
+    stones = BASELINE.rigid_ipc_arch_source_vertices()
+    assert len(stones) == BASELINE.RIGID_IPC_ARCH_STONE_COUNT
+    assert all(len(stone) == 8 for stone in stones)
+    assert (
+        BASELINE.rigid_ipc_arch_source_inventory_hash()
+        == BASELINE.RIGID_IPC_ARCH_SOURCE_INVENTORY_FNV1A64
+        == 0x528596C9206AEF89
+    )
+    assert stones[0][0] == (-30.115009, 0.1, -5.0)
+    assert stones[50][0] == (-0.415074, 62.648966, -3.500692)
+    assert stones[50][-1] == (0.972056, 69.628159, 3.500692)
+    assert stones[-1][-1] == (40.354012, 0.1, 5.0)
+
+
+def test_generated_rigid_ipc_arch_xml_is_self_contained():
+    root = ET.fromstring(BASELINE.build_rigid_ipc_arch_xml())
+    meshes = root.findall("./asset/mesh")
+    stone_bodies = root.findall("./worldbody/body")[1:]
+    assert len(meshes) == BASELINE.RIGID_IPC_ARCH_STONE_COUNT
+    assert len(stone_bodies) == BASELINE.RIGID_IPC_ARCH_STONE_COUNT
+    assert all("file" not in mesh.attrib for mesh in meshes)
+    assert all(len(mesh.attrib["vertex"].split()) == 24 for mesh in meshes)
+    assert all(len(mesh.attrib["face"].split()) == 36 for mesh in meshes)
+    assert all(body.find("freejoint") is not None for body in stone_bodies)
+    assert root.find("./option").attrib == {
+        "timestep": "0.005",
+        "gravity": "0 0 -9.8",
+        "cone": "elliptic",
+    }
 
 
 def test_cpu_list_parser_accepts_ranges_and_rejects_ambiguous_input():

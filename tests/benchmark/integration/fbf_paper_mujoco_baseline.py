@@ -78,8 +78,8 @@ are written to stderr, so `... > trace.csv` captures only the data rows.
 """
 
 import argparse
+import functools
 import math
-import os
 import sys
 import time
 
@@ -142,9 +142,29 @@ SMALL_FIXTURE_SCENARIOS = [
 ARCH_SCENARIO = "masonry_arch_101_rigid_ipc"
 ALL_SCENARIOS = SMALL_FIXTURE_SCENARIOS + [ARCH_SCENARIO]
 
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-ARCH_XML_PATH = os.path.join(
-    REPO_ROOT, "data", "mjcf", "rigid_ipc_arch", "arch-101-stones_mjc.xml"
+RIGID_IPC_ARCH_STONE_COUNT = 101
+RIGID_IPC_ARCH_TIMESTEP = 0.005
+RIGID_IPC_ARCH_GRAVITY = -9.8
+RIGID_IPC_ARCH_FRICTION = 0.5
+RIGID_IPC_ARCH_MESH_SCALE = 0.01
+RIGID_IPC_ARCH_BODY_QUAT = "0 0 0.707107 0.707107"
+RIGID_IPC_ARCH_SOURCE_INVENTORY_FNV1A64 = 0x528596C9206AEF89
+
+# Source OBJ faces converted from one-based to zero-based indexing. The
+# winding is deliberately the source OBJ winding, before the DART y/z swap.
+RIGID_IPC_ARCH_FACES = (
+    (0, 2, 3),
+    (3, 1, 0),
+    (4, 5, 7),
+    (7, 6, 4),
+    (0, 1, 5),
+    (5, 4, 0),
+    (2, 6, 7),
+    (7, 3, 2),
+    (0, 4, 6),
+    (6, 2, 0),
+    (1, 3, 7),
+    (7, 5, 1),
 )
 
 
@@ -192,6 +212,319 @@ def y_axis_quat(phi):
     """MuJoCo (w, x, y, z) quaternion for a rotation of `phi` about the Y axis,
     formatted as a MuJoCo attribute string."""
     return f"{math.cos(phi / 2.0)} 0 {math.sin(phi / 2.0)} 0"
+
+
+# --------------------------------------------------------------------------
+# Deterministic Rigid-IPC masonry-arch geometry.
+#
+# This dependency-free port mirrors ipc-sim/rigid-ipc's weighted-catenary
+# generator and DART's independently pinned MasonryArchGeometry.hpp port. It
+# emits the original source OBJ coordinate convention (x, height, depth), in
+# centimeters and quantized to six decimals. Keeping the compact generator
+# here lets the optional MuJoCo comparison compile an in-memory MJCF model
+# without checking 101 generated OBJ files into the repository.
+# --------------------------------------------------------------------------
+
+
+def _rigid_ipc_arch_integrand(x, a, c, half_width):
+    cosh_term = math.cosh(c * x / half_width)
+    return math.sqrt(
+        1.0 + a * a * (cosh_term * cosh_term - 1.0) * c * c / (half_width * half_width)
+    )
+
+
+def _rigid_ipc_arch_simpson_integral(a, b, model_a, model_c, half_width, n=2000):
+    if n % 2 == 1:
+        n += 1
+    h = (b - a) / n
+    total = _rigid_ipc_arch_integrand(
+        a, model_a, model_c, half_width
+    ) + _rigid_ipc_arch_integrand(b, model_a, model_c, half_width)
+    for index in range(1, n):
+        x = a + index * h
+        total += _rigid_ipc_arch_integrand(x, model_a, model_c, half_width) * (
+            2.0 if index % 2 == 0 else 4.0
+        )
+    return total * h / 3.0
+
+
+def _rigid_ipc_arch_next_boundary(
+    x0,
+    target_segment_length,
+    hi,
+    model_a,
+    model_c,
+    half_width,
+    tolerance=1.0e-10,
+    max_iterations=200,
+):
+    def residual(x):
+        return (
+            _rigid_ipc_arch_simpson_integral(x0, x, model_a, model_c, half_width)
+            - target_segment_length
+        )
+
+    lo = x0
+    residual_lo = residual(lo)
+    for _ in range(max_iterations):
+        midpoint = 0.5 * (lo + hi)
+        residual_midpoint = residual(midpoint)
+        if abs(residual_midpoint) < tolerance:
+            return midpoint
+        if (residual_midpoint > 0.0) == (residual_lo > 0.0):
+            lo = midpoint
+            residual_lo = residual_midpoint
+        else:
+            hi = midpoint
+    return 0.5 * (lo + hi)
+
+
+def _normalize_2d(x, y):
+    norm = math.hypot(x, y)
+    return (x / norm, y / norm)
+
+
+def _add_2d(left, right):
+    return (left[0] + right[0], left[1] + right[1])
+
+
+def _round_half_away_from_zero(value):
+    if value >= 0.0:
+        return math.floor(value + 0.5)
+    return math.ceil(value - 0.5)
+
+
+def _quantize_source_obj_coordinate(value):
+    scale = 1.0e6
+    return _round_half_away_from_zero(value * scale) / scale
+
+
+@functools.lru_cache(maxsize=1)
+def rigid_ipc_arch_source_vertices():
+    """Return all 101 source-ordered stone vertices in raw centimeter units."""
+
+    crown_height = 60.0
+    base_area = 100.0
+    crown_area = 49.0
+    half_width = 30.0
+    model_a = crown_height / (base_area / crown_area - 1.0)
+    model_c = math.acosh(base_area / crown_area)
+
+    def height(x):
+        return -model_a * (math.cosh(model_c * x / half_width) - 1.0) + crown_height
+
+    def slope(x):
+        return -model_a * math.sinh(model_c * x / half_width) * model_c / half_width
+
+    arc_length = _rigid_ipc_arch_simpson_integral(
+        -half_width, half_width, model_a, model_c, half_width
+    )
+    target_segment_length = arc_length / RIGID_IPC_ARCH_STONE_COUNT
+    sqrt_base_area = math.sqrt(base_area)
+    sqrt_crown_area = math.sqrt(crown_area)
+
+    # Each entry is [inner0, outer0, inner1, outer1, width].
+    stones = []
+    x0 = -half_width
+    while x0 < half_width * 0.999:
+        x1 = _rigid_ipc_arch_next_boundary(
+            x0,
+            target_segment_length,
+            half_width * 1.0001,
+            model_a,
+            model_c,
+            half_width,
+        )
+        y0 = height(x0)
+        y1 = height(x1)
+        normal0 = _normalize_2d(-slope(x0), 1.0)
+        normal1 = _normalize_2d(-slope(x1), 1.0)
+
+        alpha0 = min(max(y0 / crown_height, 0.0), 1.0)
+        alpha1 = min(max(y1 / crown_height, 0.0), 1.0)
+        width0 = sqrt_base_area + alpha0 * (sqrt_crown_area - sqrt_base_area)
+        width1 = sqrt_base_area + alpha1 * (sqrt_crown_area - sqrt_base_area)
+        if x0 < 0.0:
+            width1 = width0
+        else:
+            width0 = width1
+
+        point0 = (x0, y0)
+        point1 = (x1, y1)
+        half_normal0 = (0.5 * width0 * normal0[0], 0.5 * width0 * normal0[1])
+        half_normal1 = (0.5 * width1 * normal1[0], 0.5 * width1 * normal1[1])
+        inner0 = (point0[0] - half_normal0[0], point0[1] - half_normal0[1])
+        outer0 = (point0[0] + half_normal0[0], point0[1] + half_normal0[1])
+        inner1 = (point1[0] - half_normal1[0], point1[1] - half_normal1[1])
+        outer1 = (point1[0] + half_normal1[0], point1[1] + half_normal1[1])
+
+        midpoint = RIGID_IPC_ARCH_STONE_COUNT // 2
+        centered_index = len(stones) - midpoint
+        source_offset = (
+            centered_index * 0.1,
+            midpoint * 0.1 - abs(centered_index * 0.1),
+        )
+        stones.append(
+            [
+                _add_2d(inner0, source_offset),
+                _add_2d(outer0, source_offset),
+                _add_2d(inner1, source_offset),
+                _add_2d(outer1, source_offset),
+                width0,
+            ]
+        )
+        x0 = x1
+
+    if len(stones) != RIGID_IPC_ARCH_STONE_COUNT:
+        raise RuntimeError(
+            "Rigid-IPC masonry-arch generator produced "
+            f"{len(stones)} stones, expected {RIGID_IPC_ARCH_STONE_COUNT}"
+        )
+
+    first = stones[0]
+    first_slope = (first[1][1] - first[3][1]) / (first[1][0] - first[3][0])
+    first_target_y = first[0][1]
+    first_target_x = (first_target_y - first[3][1]) / first_slope + first[3][0]
+    first[1] = (first_target_x, first_target_y)
+
+    last = stones[-1]
+    last_slope = (last[3][1] - last[1][1]) / (last[3][0] - last[1][0])
+    last_target_y = last[2][1]
+    last_target_x = (last_target_y - last[1][1]) / last_slope + last[1][0]
+    last[3] = (last_target_x, last_target_y)
+
+    min_height = min(
+        point[1]
+        for stone in stones
+        for point in (stone[0], stone[1], stone[2], stone[3])
+    )
+    height_shift = 0.1 - min_height
+    result = []
+    for inner0, outer0, inner1, outer1, width in stones:
+        inner0 = (inner0[0], inner0[1] + height_shift)
+        outer0 = (outer0[0], outer0[1] + height_shift)
+        inner1 = (inner1[0], inner1[1] + height_shift)
+        outer1 = (outer1[0], outer1[1] + height_shift)
+        half_depth = 0.5 * width
+        raw_vertices = (
+            (inner0[0], inner0[1], -half_depth),
+            (inner0[0], inner0[1], half_depth),
+            (inner1[0], inner1[1], -half_depth),
+            (inner1[0], inner1[1], half_depth),
+            (outer0[0], outer0[1], -half_depth),
+            (outer0[0], outer0[1], half_depth),
+            (outer1[0], outer1[1], -half_depth),
+            (outer1[0], outer1[1], half_depth),
+        )
+        result.append(
+            tuple(
+                tuple(_quantize_source_obj_coordinate(value) for value in vertex)
+                for vertex in raw_vertices
+            )
+        )
+    return tuple(result)
+
+
+def _append_signed_integer_to_fnv1a(hash_value, value):
+    fnv_prime = 1099511628211
+    mask = (1 << 64) - 1
+    bits = value & mask
+    for byte in range(8):
+        hash_value ^= (bits >> (8 * byte)) & 0xFF
+        hash_value = (hash_value * fnv_prime) & mask
+    return hash_value
+
+
+def rigid_ipc_arch_source_inventory_hash():
+    """Match the DART-side FNV digest after the source y/z axis swap."""
+
+    hash_value = 14695981039346656037
+    for stone in rigid_ipc_arch_source_vertices():
+        for source_x, source_height, source_depth in stone:
+            for value in (source_x, source_depth, source_height):
+                units = _round_half_away_from_zero(value * 1.0e6)
+                hash_value = _append_signed_integer_to_fnv1a(hash_value, units)
+    return hash_value
+
+
+@functools.lru_cache(maxsize=1)
+def build_rigid_ipc_arch_xml():
+    """Build the adapted 101-stone MuJoCo scene without file-backed meshes."""
+
+    inventory_hash = rigid_ipc_arch_source_inventory_hash()
+    if inventory_hash != RIGID_IPC_ARCH_SOURCE_INVENTORY_FNV1A64:
+        raise RuntimeError(
+            "generated Rigid-IPC masonry-arch geometry does not match the "
+            f"pinned source inventory: 0x{inventory_hash:016x}"
+        )
+
+    face_values = " ".join(
+        str(index) for face in RIGID_IPC_ARCH_FACES for index in face
+    )
+    mesh_lines = []
+    body_lines = []
+    for index, vertices in enumerate(rigid_ipc_arch_source_vertices(), start=1):
+        source_name = f"arch/num_stones=101/stone-{index:02d}"
+        vertex_values = " ".join(
+            f"{value:.6f}" for vertex in vertices for value in vertex
+        )
+        mesh_lines.append(
+            f'    <mesh name="{source_name}" '
+            f'scale="{RIGID_IPC_ARCH_MESH_SCALE:.8f} '
+            f"{RIGID_IPC_ARCH_MESH_SCALE:.8f} "
+            f'{RIGID_IPC_ARCH_MESH_SCALE:.8f}" '
+            f'vertex="{vertex_values}" face="{face_values}"/>'
+        )
+        body_lines.extend(
+            [
+                f'    <body name="rigid_ipc_arch_stone_{index:03d}" '
+                f'pos="0 0 0" quat="{RIGID_IPC_ARCH_BODY_QUAT}">',
+                f'      <geom mesh="{source_name}" type="mesh" '
+                f'friction="{RIGID_IPC_ARCH_FRICTION:.6f}"/>',
+                "      <freejoint/>",
+                "    </body>",
+            ]
+        )
+
+    lines = [
+        "<mujoco>",
+        f'  <option timestep="{RIGID_IPC_ARCH_TIMESTEP}" '
+        f'gravity="0 0 {RIGID_IPC_ARCH_GRAVITY}" cone="elliptic"/>',
+        "  <asset>",
+        *mesh_lines,
+        "  </asset>",
+        "  <worldbody>",
+        '    <body name="rigid_ipc_arch_plane" pos="0 0 0">',
+        f'      <geom type="plane" size="10 10 1" '
+        f'friction="{RIGID_IPC_ARCH_FRICTION:.6f}"/>',
+        "    </body>",
+        *body_lines,
+        "  </worldbody>",
+        "</mujoco>",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def build_rigid_ipc_arch_model(mujoco):
+    """Compile and structurally validate the generated MuJoCo arch model."""
+
+    model = mujoco.MjModel.from_xml_string(build_rigid_ipc_arch_xml())
+    dimensions = (
+        model.nbody,
+        model.ngeom,
+        model.nmesh,
+        model.njnt,
+        model.nq,
+        model.nv,
+    )
+    expected = (103, 102, 101, 101, 707, 606)
+    if dimensions != expected:
+        raise RuntimeError(
+            "generated Rigid-IPC masonry-arch model has unexpected dimensions: "
+            f"{dimensions}, expected {expected}"
+        )
+    return model
 
 
 # --------------------------------------------------------------------------
@@ -565,18 +898,9 @@ def run_small_fixture(mujoco, scenario, dt, duration, sample_stride):
 
 
 def run_rigid_ipc_arch(mujoco, duration, sample_stride):
-    if not os.path.isfile(ARCH_XML_PATH):
-        log(
-            "# masonry_arch_101_rigid_ipc: adapted Rigid-IPC MuJoCo asset not "
-            f"found at {ARCH_XML_PATH}; skipping (see "
-            "data/mjcf/rigid_ipc_arch/README.md for provenance/licensing; "
-            "this scenario is opt-in and benchmark/example-only)."
-        )
-        return
-
     import numpy as np
 
-    model = mujoco.MjModel.from_xml_path(ARCH_XML_PATH)
+    model = build_rigid_ipc_arch_model(mujoco)
     # MuJoCo silently resets mjData back toward its initial state whenever a
     # step produces a non-finite QACC ("auto-reset"). Left enabled, a genuine
     # collapse that goes numerically unstable would keep getting reset back

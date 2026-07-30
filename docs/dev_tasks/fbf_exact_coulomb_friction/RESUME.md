@@ -20,25 +20,27 @@ Current branch and evidence runtime:
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through that merge checkpoint.
   Documentation-only descendants do not change this runtime identity; query
   the live branch/PR head instead of assuming `6fb4` is still HEAD.
-- The pre-handoff pushed head audited here is
-  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
-  descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
-  files, 161,002 additions, and 439 deletions. Query the resulting live head and
-  checks rather than assuming this checkpoint is still current.
-- The current worktree has zero non-ignored untracked files, zero tracked files
-  matching ignore rules, and zero tracked task-asset paths. At the audit
-  snapshot, 19,521 local files below this task's `assets/` tree are correctly
-  ignored by the scalable `docs/dev_tasks/.gitignore` `**/assets/` role rule.
-  Do not replace it with broad extension ignores that would hide legitimate
-  runtime inputs.
-- Of the 110 net `data/` paths, 105 belong to
-  `data/mjcf/rigid_ipc_arch/`: 101 stone OBJs, one unused `plane.obj`, one
-  adapted XML, the provenance README, and the license. A fresh reference audit
-  corrects earlier wording: the DART Figure 8 demo does not load these meshes;
-  it generates its pinned geometry through
-  `generateMasonryArchStoneWedges`. Only the optional MuJoCo comparison in
-  `tests/benchmark/integration/fbf_paper_mujoco_baseline.py` loads the XML and
-  stone OBJs.
+- The last pushed head before the generated optional-baseline change is
+  `3a185ee2743d5111461f5dd0465dba5535f9b74c`. PR #3377 remains open and
+  draft. Query the resulting live head and checks rather than assuming that
+  checkpoint is still current. Relative to `release-6.20`, the generated
+  baseline tree has 161 changed files and seven `data/` paths, down from 264
+  and 110.
+- The scalable role rule remains
+  `docs/dev_tasks/.gitignore` `**/assets/`; no broad extension ignore was
+  added. The current net tree has no tracked task assets or generated
+  video/CSV/JSON/log evidence, while legitimate runtime/source meshes remain
+  visible.
+- The optional MuJoCo arch now generates the pinned 101 weighted-catenary
+  wedges deterministically and emits inline MJCF. Before deletion, all 101
+  generated OBJ byte streams exactly matched the tracked files. MuJoCo 3.11.0
+  produced exactly equal mass, inertia, initial-state, mesh-vertex, and
+  mesh-face arrays for the file-backed and inline models; a five-step
+  trajectory and contact counts were bit-identical. The adapted XML, unused
+  plane OBJ, and 101 stone OBJs are removed, leaving only the license and
+  provenance/contract README under `data/mjcf/rigid_ipc_arch/`. The DART Figure
+  8 demo remains unchanged and continues to call
+  `generateMasonryArchStoneWedges`.
 - The rebuilt post-merge `dart-demos` SHA-256 is
   `d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363`;
   the exact build-tree `libdart.so.6.19.4` SHA-256 is
@@ -142,12 +144,11 @@ merge/rebuild is complete; rerun only after a declared cool/low-load gate.
 
 Next:
 
-1. Close the repository-hygiene review blocker before more long captures or
-   benchmarks. Replace the optional MuJoCo arch XML/OBJ bundle with a
-   deterministic compact or temporary generation path, prove exact geometry
-   and optional-baseline behavior, preserve licensing/provenance, and then
-   remove the redundant raw files. Keep the role-based `**/assets/` ignore; do
-   not add broad extension ignores.
+1. Complete the generated-baseline checkpoint gates (`pixi run build`, focused
+   Python/MuJoCo tests, `pixi run lint`, diff/ignore audit), merge a newer
+   `release-6.20` only if one exists, and commit/push the current-tree raw-file
+   cleanup. Keep the role-based `**/assets/` ignore; do not add broad extension
+   ignores.
 2. Decide with the maintainer whether a true squash merge is sufficient for
    the 492 historical evidence blobs or whether the published review branch
    must be reconstructed. Any history replacement and
@@ -161,8 +162,8 @@ Next:
    and ten-level clips. Until those exist, label only slots 02/16 as
    post-merge-current-runtime bytes; keep the remaining schema-v3 uploads bound
    to their recorded capture checkpoints.
-6. Keep the PR draft until the file-surface, paper-parity, CI, and review gates
-   are honestly resolved.
+6. Keep the PR draft until the historical-blob integration decision,
+   paper-parity, CI, performance, and review gates are honestly resolved.
 
 ## Archived 2026-07-27 Checkpoint
 
@@ -308,7 +309,7 @@ ten-level recapture "active."
   non-failing (18 success, one skipped). Requery mutable PR/CI state; do not
   request review while it remains draft and incomplete.
 
-### Raw/generated-file cleanup is still a review-readiness blocker
+### Raw/generated-file cleanup outcome
 
 The current scalable policy is correct but does not rewrite history:
 `docs/dev_tasks/.gitignore` ignores the role-based `**/assets/` tree, and
@@ -317,7 +318,7 @@ negation rules. The current PR tree tracks no
 `docs/dev_tasks/**/assets/**` paths and its net diff contains no generated
 CSV, JSON, PNG, MP4, GIF, log, stderr/stdout, NPY, or NPZ artifacts.
 
-Two separate cleanup questions remain:
+The historical snapshot originally had two separate cleanup questions:
 
 1. Topic history still retains 492 topic-added task-evidence blobs totaling
    96,573,227 bytes. A true squash merge would keep those blobs out of
@@ -326,21 +327,19 @@ Two separate cleanup questions remain:
    the current net source/docs tree as a clean commit series from the latest
    `origin/release-6.20`, and update the existing PR branch with
    `--force-with-lease`. Do not rewrite or force-push without that approval.
-2. Of the 264 current net changed files, 110 are under `data/`; 105 belong to
-   the optional MuJoCo arch bundle, including 101 stone OBJs. A later reference
-   audit established that the installed DART Figure 8 demo generates its
-   geometry procedurally and does not load those files. Only
-   `fbf_paper_mujoco_baseline.py` consumes the adapted XML and stone OBJs.
-   Before review readiness, replace that raw bundle with a deterministic
-   compact or temporary generation path that preserves exact geometry,
-   provenance, licensing, optional MuJoCo behavior, and clean-checkout
-   reproducibility. A broad `*.obj` ignore remains wrong because it would hide
-   legitimate Figure 3 and turntable visual meshes.
+2. The former 105-file optional MuJoCo arch bundle is now reduced to its
+   license and provenance/contract README. The optional runner deterministically
+   generates the 101 wedges and inline MJCF; pre-removal source-byte,
+   compiled-model, and five-step trajectory equivalence checks passed. This
+   closes the current-tree raw-file surface without a broad `*.obj` ignore,
+   which would still be wrong because it would hide legitimate Figure 3 and
+   turntable visual meshes.
 
 The earlier 700+ raw/untracked-file views should not be treated as the current
-GitHub net diff; the live PR API currently reports 264. The remaining history
-and runtime-asset work above is nevertheless real and must be resolved or
-explicitly accepted before marking the PR ready for review.
+GitHub net diff. The generated-baseline tree has 161 changed files and seven
+`data/` paths. The historical 492-blob integration question remains real and
+must be resolved or explicitly accepted before marking the PR ready for
+review.
 
 When media work is authorized again, use a fresh output root rather than
 reusing the interrupted boxed directory:
