@@ -227,8 +227,8 @@ struct JointModel
   /// (per generalized coordinate).
   JointVector coulombFriction;
 
-  /// Maximum AVBD constraint force before the joint is marked broken. A value
-  /// of 0 disables automatic breakage.
+  /// Maximum physical AVBD row-load norm before the joint is marked broken. A
+  /// value of 0 disables automatic breakage.
   double breakForce = 0.0;
 
   JointLimits limits;

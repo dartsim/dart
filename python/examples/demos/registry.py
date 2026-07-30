@@ -48,6 +48,9 @@ from .scenes.avbd_demo3d_soft_body import SCENE as AVBD_DEMO3D_SOFT_BODY
 from .scenes.avbd_articulated_breakable_joint import (
     SCENE as AVBD_ARTICULATED_BREAKABLE_JOINT,
 )
+from .scenes.avbd_articulated_compliant_breakable_motor import (
+    SCENE as AVBD_ARTICULATED_COMPLIANT_BREAKABLE_MOTOR,
+)
 from .scenes.avbd_articulated_compliant_joints import (
     SCENE as AVBD_ARTICULATED_COMPLIANT_JOINTS,
 )
@@ -314,6 +317,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         AVBD_ARTICULATED_PRISMATIC_PAIR_MOTOR_BREAKABLE_JOINT,
         AVBD_ARTICULATED_PRISMATIC_MOTOR_BREAKABLE_JOINT,
         AVBD_ARTICULATED_WORLD_REVOLUTE_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_COMPLIANT_BREAKABLE_MOTOR,
         AVBD_ARTICULATED_COMPLIANT_JOINTS,
         AVBD_ARTICULATED_COMPLIANT_MOTORS,
         AVBD_ARTICULATED_HIGH_RATIO_CHAIN,

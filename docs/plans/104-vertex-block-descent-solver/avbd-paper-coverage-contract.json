@@ -119,9 +119,10 @@
             "tests/unit/simulation/deformable_vbd/test_vbd_finite_stiffness.cpp",
             "tests/unit/simulation/compute/test_variational_integration.cpp",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json",
-            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json"
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["CPU finite-stiffness spring/tetrahedral rows, passive world-link articulated fixed/spherical/revolute/prismatic rows, same-multibody passive spherical/revolute/prismatic rows, and bounded same-multibody finite revolute/prismatic motors exist, but fracture accounting, the full paper/source corpus, unified rows, and CUDA parity are incomplete."]
+          "blockers": ["CPU finite-stiffness spring/tetrahedral rows, passive world-link and same-multibody articulated masks, bounded same-multibody finite motors, and physical finite-plus-motor fracture accounting exist, but the full paper/source corpus, broad finite-row fracture coverage, unified rows, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.force_bounds",
@@ -202,9 +203,10 @@
             "tests/unit/simulation/world/test_vbd_world_solver.cpp",
             "tests/unit/simulation/compute/test_variational_integration.cpp",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json",
-            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json"
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["Hard point-joint bridges, passive finite world-link and same-multibody spherical/revolute/prismatic masked rows, and bounded same-multibody finite revolute/prismatic motors exist on CPU, but finite-row fracture accounting, the full joint corpus, unified paper scenes, and CUDA parity are incomplete."]
+          "blockers": ["Hard point-joint bridges, passive finite world-link and same-multibody masks, bounded same-multibody finite motors, and physical finite-plus-motor break/reset accounting exist on CPU, but the full joint corpus, unified paper scenes, broad fracture coverage, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.motors",
@@ -212,16 +214,20 @@
           "source_locator": "Paper/source-demo motor constraints",
           "evidence": [
             "docs/plans/104-vertex-block-descent-solver/avbd-rigid-revolute-motor-packet.json",
-            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json"
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["Narrow public motor rows exist, but source-wide CPU wins, CUDA parity, and paper-scene integration are incomplete."]
+          "blockers": ["Narrow public hard and finite motor rows plus physical break-load accounting exist, but source-wide CPU wins, CUDA parity, and paper-scene integration are incomplete."]
         },
         {
           "id": "avbd.method.fracture",
           "status": "partial",
           "source_locator": "Section 5.4 and Figure 13 breakable attachments",
-          "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json"],
-          "blockers": ["Narrow break/reset rows exist, but the paper wall, broad fracture lifecycle, solver identity, and CUDA parity are incomplete."]
+          "evidence": [
+            "docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
+          ],
+          "blockers": ["Hard and finite articulated break/reset rows now have narrow CPU and solver-identity evidence, but the paper wall, broad fracture lifecycle and row corpus, achieved-accuracy performance, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.unified_rigid_soft",

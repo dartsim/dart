@@ -198,7 +198,9 @@ compatibility remains on the active DART 6 LTS branch._
   joints now also apply masked finite-stiffness rows for world-link and
   same-multibody movable-link endpoints while preserving their free
   coordinates. Finite articulated revolute and prismatic velocity motors now
-  add bounded free-coordinate motor rows alongside those compliant masks.
+  add bounded free-coordinate motor rows alongside those compliant masks, and
+  finite plus motor row loads now share physical break-force accounting with
+  reset, re-arm, and binary persistence.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default

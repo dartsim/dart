@@ -1,0 +1,591 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdArticulatedCompliantBreakableMotorStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "invariants": {
+      "break_force": 1000000000000.0,
+      "breakable": true,
+      "endpoint_topology": "same-multibody movable-link pairs",
+      "family_instances": [
+        1,
+        4,
+        16
+      ],
+      "motor_types": [
+        "revolute",
+        "prismatic"
+      ],
+      "time_step": 0.005
+    },
+    "json_sha256": "e0ec14fa8309b537f3e29333d520b0768e7ceb14eb06ba12f0624fe1c5bf14ef",
+    "rows": [
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "breakable_motors": 2.0,
+        "cpu_time": 104680.47797001156,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1_mean",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 1.0,
+        "real_time": 104683.55271102692,
+        "repetitions": 5,
+        "revolute_motors": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "breakable_motors": 2.0,
+        "cpu_time": 103192.47866205306,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1_median",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 1.0,
+        "real_time": 103192.3010588689,
+        "repetitions": 5,
+        "revolute_motors": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "breakable_motors": 0.0,
+        "cpu_time": 3967.754250407611,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1_stddev",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 0.0,
+        "real_time": 3973.4648026748278,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "breakable_motors": 0.0,
+        "cpu_time": 0.03790347854109223,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1_cv",
+        "per_family_instance_index": 0,
+        "prismatic_motors": 0.0,
+        "real_time": 0.0379569158647429,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/1",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "breakable_motors": 8.0,
+        "cpu_time": 585850.9421875004,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4_mean",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 4.0,
+        "real_time": 585880.695234664,
+        "repetitions": 5,
+        "revolute_motors": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "breakable_motors": 8.0,
+        "cpu_time": 585012.8593750002,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4_median",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 4.0,
+        "real_time": 585012.8436577506,
+        "repetitions": 5,
+        "revolute_motors": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "breakable_motors": 0.0,
+        "cpu_time": 3602.87932594175,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4_stddev",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 0.0,
+        "real_time": 3573.74469830174,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "breakable_motors": 0.0,
+        "cpu_time": 0.006149822534191053,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4_cv",
+        "per_family_instance_index": 1,
+        "prismatic_motors": 0.0,
+        "real_time": 0.006099782306140572,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/4",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "breakable_motors": 32.0,
+        "cpu_time": 6649086.720000001,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16_mean",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 16.0,
+        "real_time": 6650178.079726175,
+        "repetitions": 5,
+        "revolute_motors": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "breakable_motors": 32.0,
+        "cpu_time": 6633084.8,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16_median",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 16.0,
+        "real_time": 6633091.499679722,
+        "repetitions": 5,
+        "revolute_motors": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "breakable_motors": 0.0,
+        "cpu_time": 65218.89335385543,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16_stddev",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 0.0,
+        "real_time": 65473.14611885314,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "breakable_motors": 0.0,
+        "cpu_time": 0.00980869946509818,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16_cv",
+        "per_family_instance_index": 2,
+        "prismatic_motors": 0.0,
+        "real_time": 0.009845322235573732,
+        "repetitions": 5,
+        "revolute_motors": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantBreakableMotorStep/16",
+        "run_type": "aggregate",
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ],
+    "scale_data": [
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantBreakableMotorStep/1",
+        "breakable_motors": 2,
+        "cpu_time_per_motor_ns": 51596.23933102653,
+        "cpu_time_per_step_ns": 103192.47866205306,
+        "family_instances": 1,
+        "real_time_per_step_ns": 103192.3010588689,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantBreakableMotorStep/4",
+        "breakable_motors": 8,
+        "cpu_time_per_motor_ns": 73126.60742187503,
+        "cpu_time_per_step_ns": 585012.8593750002,
+        "family_instances": 4,
+        "real_time_per_step_ns": 585012.8436577506,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantBreakableMotorStep/16",
+        "breakable_motors": 32,
+        "cpu_time_per_motor_ns": 207283.9,
+        "cpu_time_per_step_ns": 6633084.8,
+        "family_instances": 16,
+        "real_time_per_step_ns": 6633091.499679722,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "claim_boundary": "This closes the narrow CPU articulated finite-row load-accounting gap. It does not reproduce the paper wall, close the broad fracture corpus, unify rigid and soft rows, provide CUDA parity, or establish a paper/reference performance win.",
+  "correctness": {
+    "allocation_tests": [
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotGrowWorldBaseAllocator",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotAllocateGlobalHeap",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotMallocOnHeap"
+    ],
+    "cpp_lifecycle_test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows",
+    "cpp_load_test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotorBreakLoads",
+    "cpp_serialization_test": "VariationalIntegration.AvbdCompliantPublicArticulatedFiniteBreakageSurvivesSaveLoadAndReset",
+    "exact_parent_mutation": {
+      "command": "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotorBreakLoads:VariationalIntegration.AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows'",
+      "exit_code": 1,
+      "failed_assertions": [
+        {
+          "actual": false,
+          "case": "finite_only",
+          "expected": true,
+          "threshold": 0.8
+        },
+        {
+          "actual": false,
+          "case": "motor_dt_0.005",
+          "expected": true,
+          "threshold": 1.8
+        },
+        {
+          "actual": false,
+          "case": "motor_dt_0.01",
+          "expected": true,
+          "threshold": 1.8
+        },
+        {
+          "actual": false,
+          "case": "combined_load",
+          "expected": true,
+          "threshold": 2.1
+        },
+        {
+          "actual": false,
+          "case": "reset_lifecycle",
+          "expected": true,
+          "threshold": 2.1
+        }
+      ],
+      "file": "avbd-articulated-compliant-fracture-exact-parent.json",
+      "interpretation": "The exact parent neither fractures from finite accepted row forces nor associates bounded finite-motor projection load with the public joint, so finite-only, motor-only at both timesteps, combined-load, and reset/re-arm lifecycle assertions all fail.",
+      "mutation": "Build production at the exact parent commit with only the candidate finite-load and fracture-lifecycle tests applied.",
+      "observed_result": "fail",
+      "parent_commit": "9ebd9b895b17e982bd1ed9287287d589b029409f",
+      "sha256": "b6984f1d10a652469e09488f7032692e078d338791e124e2bd55a74504b3b517",
+      "tests": [
+        "VariationalIntegration.AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotorBreakLoads",
+        "VariationalIntegration.AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows"
+      ]
+    },
+    "python_scene_test": "test_avbd_articulated_compliant_breakable_motor_demo_rearms_finite_rows"
+  },
+  "load_contract": {
+    "finite_rows": "accepted stiffness times accepted residual",
+    "fracture_action": "mark the source joint broken and clear its finite row lambda/stiffness state before later-step extraction skips it",
+    "hard_and_motor_projection_rows": "position-level projection lambda divided by time_step squared",
+    "joint_aggregation": "L2 norm across finite and projection rows",
+    "public_threshold_units": "force or torque"
+  },
+  "packet": "avbd_articulated_compliant_fracture",
+  "performance_claim_boundary": "Candidate-only finite breakable-mechanism cost and scaling. The exact parent did not account for these finite or bounded-motor loads, so this packet makes no before/after speedup claim.",
+  "reproduction": {
+    "benchmark_command": "taskset -c 18 build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter='BM_AvbdArticulatedCompliantBreakableMotorStep/(1|4|16)$' --benchmark_min_time=0.05s --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe PYTHONPATH=build/default/cpp/Release-docking/python:python BUILD_TYPE=Release-docking python scripts/capture_py_demo.py --scene avbd_articulated_compliant_breakable_motor --frames 150 --width 960 --height 540 --show-ui --view three-quarter --camera-distance 5 --camera-target 0,0,1 --output-dir <capture-dir>",
+    "image_verdict_command": "pixi run image-verdict -- <capture-dir>/avbd_articulated_compliant_breakable_motor.png --out <capture-dir>/image_verdict.json --meta scene=avbd_articulated_compliant_breakable_motor --meta view=three-quarter"
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "contact-free py-demo, focused World tests, and articulated finite-load benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd"
+  },
+  "scene": "avbd_articulated_compliant_breakable_motor",
+  "schema_version": 2,
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.method.joints_and_attachments",
+      "avbd.method.finite_stiffness_ramping",
+      "avbd.method.motors",
+      "avbd.method.fracture"
+    ],
+    "scope": "physical break-force accounting across finite masked rows and bounded motor projection rows for same-multibody articulated point joints on CPU"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 149,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "4f053c497293c3c4a5bd57f4e7cb10c145f7e815fef7eb6912748f3c72175975"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000149.png",
+        "sha256": "8723d275bef35376bda361e7722fed1ef14c0a4ad1975dfea86051b82d331bc9"
+      }
+    },
+    "image_verdict": {
+      "checks": {
+        "contrast": {
+          "bright_pixels": 1051,
+          "dark_pixels": 98371,
+          "mid_pixels": 28782,
+          "p05": 23.936,
+          "p95": 157.761,
+          "pass": true,
+          "reasons": [],
+          "region": {
+            "x0": 384,
+            "x1": 931,
+            "y0": 243,
+            "y1": 486
+          },
+          "sample_count": 132921,
+          "spread": 133.825,
+          "thresholds": {
+            "bright_luminance_gt": 190.0,
+            "dark_luminance_lt": 55.0,
+            "mid_luminance_max": 170.0,
+            "mid_luminance_min": 70.0,
+            "min_bright_pixels": 664,
+            "min_dark_pixels": 664,
+            "min_mid_pixels": 332,
+            "min_spread": 90.0
+          }
+        },
+        "non_blank": {
+          "nonzero_pixels": 518400,
+          "pass": true,
+          "reasons": [],
+          "total_pixels": 518400,
+          "unique_colors_seen": 2
+        }
+      },
+      "file": "image_verdict.json",
+      "machine_scope": "pixel-integrity",
+      "metadata": {
+        "scene": "avbd_articulated_compliant_breakable_motor",
+        "view": "three-quarter"
+      },
+      "pass": true,
+      "sha256": "cdf3404cdd0311d0dc0124ed560984c883aa0f68e0a03c57e49bb7f9744aa0cc"
+    },
+    "manifest_sha256": "e829939530d29b24b660dd855fa31210dfd07a56ff305c9bd845a4727eb76e98",
+    "scene": "avbd_articulated_compliant_breakable_motor",
+    "scene_metrics": {
+      "event_count": 150,
+      "latest_frame": 150,
+      "latest_metrics": {
+        "angular_stiffness": 100.0,
+        "axis_travel": 0.3512673896350404,
+        "break_force": 9.0,
+        "broken": 1.0,
+        "constraint": "finite_and_motor_physical_load_fracture_lifecycle",
+        "executor": "World.step default",
+        "history": {
+          "cycles": 0.0,
+          "max_transverse_residual": 0.1821538634946589,
+          "samples": 151.0,
+          "saw_broken": 1.0,
+          "saw_intact": 1.0,
+          "transitions": 3.0
+        },
+        "joint_name": "avbd_articulated_compliant_breakable_slider",
+        "linear_stiffness": 100.0,
+        "max_effort": 6.0,
+        "phase": "weak re-arm: break",
+        "prestrain": 0.08,
+        "row": "avbd_articulated_compliant_breakable_motor",
+        "solver": "avbd_variational_articulated",
+        "start_stiffness": 100.0,
+        "status": "broken",
+        "strong_break_force": 100.0,
+        "time_step_ms": 5.0,
+        "transverse_residual": 0.10368056156434158,
+        "weak_break_force": 9.0,
+        "world_time": 0.7500000000000006
+      },
+      "metric_key_counts": {
+        "angular_stiffness": 150,
+        "axis_travel": 150,
+        "break_force": 150,
+        "broken": 150,
+        "constraint": 150,
+        "executor": 150,
+        "history": 150,
+        "joint_name": 150,
+        "linear_stiffness": 150,
+        "max_effort": 150,
+        "phase": 150,
+        "prestrain": 150,
+        "row": 150,
+        "solver": 150,
+        "start_stiffness": 150,
+        "status": 150,
+        "strong_break_force": 150,
+        "time_step_ms": 150,
+        "transverse_residual": 150,
+        "weak_break_force": 150,
+        "world_time": 150
+      },
+      "numeric_ranges": {
+        "angular_stiffness": {
+          "max": 100.0,
+          "min": 100.0
+        },
+        "axis_travel": {
+          "max": 0.3512673896350404,
+          "min": 8.804580602117529e-05
+        },
+        "break_force": {
+          "max": 100.0,
+          "min": 9.0
+        },
+        "broken": {
+          "max": 1.0,
+          "min": 0.0
+        },
+        "linear_stiffness": {
+          "max": 100.0,
+          "min": 100.0
+        },
+        "max_effort": {
+          "max": 6.0,
+          "min": 6.0
+        },
+        "prestrain": {
+          "max": 0.08,
+          "min": 0.08
+        },
+        "start_stiffness": {
+          "max": 100.0,
+          "min": 100.0
+        },
+        "strong_break_force": {
+          "max": 100.0,
+          "min": 100.0
+        },
+        "time_step_ms": {
+          "max": 5.0,
+          "min": 5.0
+        },
+        "transverse_residual": {
+          "max": 0.1821538634946589,
+          "min": 0.018957483996866337
+        },
+        "weak_break_force": {
+          "max": 9.0,
+          "min": 9.0
+        },
+        "world_time": {
+          "max": 0.7500000000000006,
+          "min": 0.005
+        }
+      }
+    },
+    "scene_metrics_events": {
+      "file": "scene_metrics.jsonl",
+      "sha256": "d931df25287fb49874890d94ea516d649756fbe3dcb015bf32cb75380c081738"
+    },
+    "screenshot": {
+      "file": "avbd_articulated_compliant_breakable_motor.png",
+      "height": 540,
+      "sha256": "8723d275bef35376bda361e7722fed1ef14c0a4ad1975dfea86051b82d331bc9",
+      "width": 960
+    },
+    "semantic_review": {
+      "file": "visual_review.json",
+      "inspected_frames": [
+        {
+          "file": "png_frames/frame_000001.png",
+          "role": "start",
+          "sha256": "4f053c497293c3c4a5bd57f4e7cb10c145f7e815fef7eb6912748f3c72175975"
+        },
+        {
+          "file": "png_frames/frame_000075.png",
+          "role": "middle",
+          "sha256": "79ecb97e2ea7fbf48871f4add852a60acc7410cc5131799ac086745596f34edd"
+        },
+        {
+          "file": "png_frames/frame_000149.png",
+          "role": "end",
+          "sha256": "8723d275bef35376bda361e7722fed1ef14c0a4ad1975dfea86051b82d331bc9"
+        }
+      ],
+      "limitations": "The images corroborate phase identity, break/reset/re-arm state, visible release, and scene stability. They do not quantify individual finite-row or motor-row physical loads, establish their L2 aggregation, or prove timestep-unit conversion; the focused C++ load and lifecycle oracles decide those claims.",
+      "observations": "The docked panel and mechanism remain legible in all three frames. The start frame reports the weak threshold and broken state. The midpoint reports the 100 N strong-reset threshold and intact state while the blue and gold movable links remain aligned with the rail. The end reports weak re-arm and broken state; the links have visibly separated transverse to the rail and the connector is red. No contacts are present, so the observed lifecycle belongs to the articulated finite-row and bounded-motor path.",
+      "reviewer_capability": "native image input at original detail",
+      "sha256": "2e31961b14c975eb93d061e55bb7d07c0d85bb861451d2f7f21a73385c4b324d",
+      "verdict": "pass"
+    },
+    "show_ui": true,
+    "ui_ready": {
+      "dropped_warmup_frames": 1,
+      "required": true
+    }
+  }
+}

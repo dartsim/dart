@@ -25,22 +25,25 @@ This folder is the temporary working surface; the durable owner is the plan.
   the fail-closed contract is committed locally at `710cbfc1152`, and nothing
   has been pushed. The Section 3.5 packet is committed locally at
   `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
-  finite-row packet at `761263bbd41`; the articulated finite-motor packet is
-  the current local unpushed closeout.
-- **Current packet:** passive public spherical, revolute, and prismatic point
-  joints now support same-multibody movable-link endpoints in their masked
-  finite-stiffness rows. Finite public revolute/prismatic `Velocity` joints
-  additionally project one bounded motor-only row on the free coordinate while
-  their constrained coordinates remain compliant.
+  finite-row packet at `761263bbd41`; the articulated finite-motor packet at
+  `9ebd9b895b1`; the articulated finite-fracture packet is the current local
+  unpushed closeout.
+- **Current packet:** same-multibody finite-stiffness articulated point joints
+  now account for accepted finite-row force and bounded motor projection load
+  in public force/torque units. All rows owned by a joint contribute to one L2
+  threshold; fracture clears finite row state, later steps skip the broken
+  joint, reset re-engages it, and weak re-arm can break it again.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
-- **Latest verified local packet:** focused passive/motor behavior, warmed
-  allocation, Python scene, exact-parent mutation, docked assessed visual, and
-  candidate-only scale evidence advance
-  `avbd.method.joints_and_attachments` and
-  `avbd.method.finite_stiffness_ramping` without completing either row.
-  Finite-row fracture accounting, unified rows, CUDA, and source-matched
+- **Latest verified local packet:** focused finite-only, motor-only
+  two-timestep, combined-load, break/reset/re-arm, and save/load behavior;
+  warmed allocation; Python scene; exact-parent mutation; docked assessed
+  visual; and candidate-only scale evidence advance
+  `avbd.method.joints_and_attachments`,
+  `avbd.method.finite_stiffness_ramping`, `avbd.method.motors`, and
+  `avbd.method.fracture` without completing any row. The paper wall, broad
+  joint/fracture corpus, unified rows, CUDA, and source-matched
   achieved-accuracy performance remain open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
@@ -51,21 +54,22 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the focused passive and bounded-motor C++ oracles,
-  all three articulated finite-row post-bake allocation policies, six
-  packet-writer tests, and the focused Python command/reversal oracle pass.
-  The motor oracle fails both driven coordinates on exact parent
-  `761263bbd41`, proving mutation sensitivity. The assessed 119-frame
-  docking-build capture and pinned 2/8/32-motor candidate-only benchmark are
-  recorded in the packet. The Release build, complete variational binary
-  (183/183), aggregate C++ unit tier (168/168), full Python tier (1651 passed,
-  20 skipped), PLAN-104 parity contract (176 rows), AVBD packets (54), and
-  PLAN-122 allocation matrix (18 rows, 14 closed) pass. The simulation label
-  passes 77/79 active entries; only the split global-heap and raw-malloc
-  binaries fail on the same four unrelated signatures previously reproduced
-  on exact parent (320/80 global bytes and 320/1376 raw bytes), while all three
-  new finite articulated gates pass inside those splits. Two monolithic
-  entries remain intentionally disabled.
+- **Current local gates:** the focused finite-only, bounded-motor,
+  combined-load, break/reset/re-arm, and save/load C++ oracles; all 55 AVBD
+  breakage tests; all three articulated finite-row post-bake allocation
+  policies; six packet-writer tests; and the focused Python lifecycle oracle
+  pass. The two mutation-sensitive C++ tests fail in five required cases on
+  exact parent `9ebd9b895b1`. The assessed 149-frame docking-build capture and
+  pinned 2/8/32-motor candidate-only benchmark are recorded in the packet.
+  The Release build, complete variational binary (186/186), aggregate C++ unit
+  tier (168/168), full Python tier (1658 passed, 20 skipped), PLAN-104 parity
+  contract (176 rows), AVBD packets (55), and PLAN-122 allocation matrix
+  (18 rows, 14 closed) pass. The simulation label passes 77/79 active entries;
+  only the split global-heap and raw-malloc binaries fail on the same four
+  unrelated signatures previously reproduced on exact parent (320/80 global
+  bytes and 320/1376 raw bytes), while all three new finite articulated gates
+  pass inside those splits. Two monolithic entries remain intentionally
+  disabled.
 
 ## Goal
 
@@ -96,10 +100,10 @@ numbers.
 
 ## Immediate Next Steps
 
-Continue PLAN-104's articulated multibody AVBD extraction with finite-row load
-accounting and fracture lifecycle after this packet. Keep every dependent
-figure/demo/performance row partial until source-matched CPU and CUDA evidence
-closes it.
+Continue PLAN-104 with the paper wall/broader fracture and joint corpus,
+unified rigid/soft rows, or another highest-priority missing paper mechanism.
+Keep every dependent figure/demo/performance row partial until source-matched
+CPU and CUDA evidence closes it.
 
 Two smaller deferred maintenance items remain valid but do not outrank the
 missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
@@ -235,6 +239,34 @@ Both linked canonical method rows remain partial.
 The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json).
 The linked method rows remain partial.
+
+## Verified Local Packet: Articulated Finite Load And Fracture
+
+- **Value:** give finite articulated rows the same physical break-force
+  contract as hard and bounded motor rows, so public thresholds are stable
+  across timesteps and one joint fractures from its complete row load.
+- **Scope:** evaluate accepted finite load as stiffness times residual, convert
+  position-projection lambda to force/torque with `1 / dt^2`, aggregate all
+  finite and motor rows by L2 norm, clear finite row state on fracture, and
+  preserve broken/reset policy through simulation-mode save/load.
+- **Correctness evidence:** finite-only, motor-only at 5 ms and 10 ms, and
+  combined-load threshold oracles; break/skip/reset/re-arm and binary
+  round-trip lifecycle coverage; all existing AVBD breakage regressions; and
+  all three warmed finite articulated allocation policies.
+- **Mutation evidence:** both load/lifecycle tests fail in the five required
+  cases on exact parent `9ebd9b895b1` and pass on the candidate.
+- **Runtime evidence:** the
+  `avbd_articulated_compliant_breakable_motor` text oracle and assessed docked
+  capture show weak break, strong reset/intact, and weak re-arm/break phases.
+- **Performance boundary:** the pinned candidate-only benchmark records 103.2
+  us for 2 breakable motors, 585.0 us for 8, and 6.633 ms for 32. The parent
+  omitted this load accounting, so the packet makes no speedup claim.
+- **Non-goals:** the paper wall, broad fracture/joint corpus, unified
+  rigid/soft rows, CUDA, and source/paper achieved-accuracy performance.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
+All linked canonical method rows remain partial.
 
 ## History
 

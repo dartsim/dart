@@ -3973,6 +3973,246 @@ TEST(
   EXPECT_LT(weakSlider.maxAngularResidual, 1e-6);
 }
 
+// PLAN-104 AVBD articulated finite-stiffness bridge: break-force accounting
+// must use physical row loads, then combine the compliant constrained rows and
+// the bounded free-coordinate motor row belonging to one public joint. The
+// deliberately massive endpoints keep the imposed 0.1 m transverse residual
+// effectively fixed: k=10 N/m contributes 1 N while the saturated prismatic
+// motor contributes 2 N, so neither crosses 2.1 N alone but their L2 norm does.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotorBreakLoads)
+{
+  const auto breaks =
+      [](bool finiteLoad, bool motorLoad, double breakForce, double timeStep) {
+        sx::World world;
+        world.setGravity(Eigen::Vector3d::Zero());
+        world.setMultibodyOptions(
+            {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+        world.setTimeStep(timeStep);
+
+        FloatingLinkPair pair = addFloatingLinkPair(world);
+        constexpr double kMass = 1.0e12;
+        pair.parent.setMass(kMass);
+        pair.parent.setInertia(kMass * Eigen::Matrix3d::Identity());
+        pair.child.setMass(kMass);
+        pair.child.setInertia(kMass * Eigen::Matrix3d::Identity());
+
+        sx::Joint joint = world.addJoint(
+            pair.parent,
+            pair.child,
+            makeJointSpec(
+                "finite_break_load",
+                sx::JointType::Prismatic,
+                Eigen::Vector3d::UnitX()));
+        joint.setConstraintProjectionPolicy(
+            makeConstraintProjectionPolicy(10.0, 10.0, 10.0));
+        if (motorLoad) {
+          joint.setActuatorType(sx::ActuatorType::Velocity);
+          joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 1.0));
+          joint.setEffortLimits(
+              Eigen::VectorXd::Constant(1, -2.0),
+              Eigen::VectorXd::Constant(1, 2.0));
+        }
+        joint.setBreakForce(breakForce);
+
+        world.enterSimulationMode();
+        auto& registry = dart::simulation::detail::registryOf(world);
+        const entt::entity jointEntity
+            = sx::detail::toRegistryEntity(joint.getEntity());
+        auto& config
+            = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+        if (finiteLoad) {
+          config.localAnchorB += 0.1 * Eigen::Vector3d::UnitY();
+        }
+
+        world.step();
+        return joint.isBroken();
+      };
+
+  EXPECT_TRUE(breaks(
+      /*finiteLoad=*/true,
+      /*motorLoad=*/false,
+      /*breakForce=*/0.8,
+      /*timeStep=*/0.005));
+  EXPECT_FALSE(breaks(
+      /*finiteLoad=*/true,
+      /*motorLoad=*/false,
+      /*breakForce=*/1.2,
+      /*timeStep=*/0.005));
+
+  // The motor projection bound is effort * dt^2. Break-force accounting must
+  // divide the projected load by dt^2 so the public threshold stays in force
+  // units and produces the same verdict at different timesteps.
+  EXPECT_TRUE(breaks(
+      /*finiteLoad=*/false,
+      /*motorLoad=*/true,
+      /*breakForce=*/1.8,
+      /*timeStep=*/0.005));
+  EXPECT_TRUE(breaks(
+      /*finiteLoad=*/false,
+      /*motorLoad=*/true,
+      /*breakForce=*/1.8,
+      /*timeStep=*/0.01));
+  EXPECT_FALSE(breaks(
+      /*finiteLoad=*/false,
+      /*motorLoad=*/true,
+      /*breakForce=*/2.2,
+      /*timeStep=*/0.005));
+
+  EXPECT_TRUE(breaks(
+      /*finiteLoad=*/true,
+      /*motorLoad=*/true,
+      /*breakForce=*/2.1,
+      /*timeStep=*/0.005));
+}
+
+// PLAN-104 AVBD articulated finite-stiffness bridge: a finite joint that
+// fractures from its combined compliant/motor load must remain skipped until
+// the public reset, re-engage under a high threshold, and fracture again when
+// re-armed with the original weak threshold.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+  world.setTimeStep(0.005);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  constexpr double kMass = 1.0e12;
+  pair.parent.setMass(kMass);
+  pair.parent.setInertia(kMass * Eigen::Matrix3d::Identity());
+  pair.child.setMass(kMass);
+  pair.child.setInertia(kMass * Eigen::Matrix3d::Identity());
+
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec(
+          "finite_break_reset",
+          sx::JointType::Prismatic,
+          Eigen::Vector3d::UnitX()));
+  joint.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(10.0, 10.0, 10.0));
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 1.0));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -2.0), Eigen::VectorXd::Constant(1, 2.0));
+  joint.setBreakForce(2.1);
+
+  world.enterSimulationMode();
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorB += 0.1 * Eigen::Vector3d::UnitY();
+
+  world.step();
+  ASSERT_TRUE(joint.isBroken());
+
+  world.step();
+  EXPECT_TRUE(joint.isBroken());
+
+  joint.setBreakForce(100.0);
+  joint.resetBreakage();
+  world.step();
+  EXPECT_FALSE(joint.isBroken());
+
+  joint.setBreakForce(2.1);
+  world.step();
+  EXPECT_TRUE(joint.isBroken());
+}
+
+// PLAN-104 AVBD articulated finite-stiffness bridge: finite projection policy,
+// private row geometry, and broken-state bookkeeping must survive a
+// simulation-mode binary round trip. The restored joint stays broken until the
+// public reset, then its finite rows re-engage and can fracture a second time.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedFiniteBreakageSurvivesSaveLoadAndReset)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+  world.setTimeStep(0.005);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  constexpr double kMass = 1.0e12;
+  pair.parent.setMass(kMass);
+  pair.parent.setInertia(kMass * Eigen::Matrix3d::Identity());
+  pair.child.setMass(kMass);
+  pair.child.setInertia(kMass * Eigen::Matrix3d::Identity());
+
+  sx::Joint joint = world.addJoint(
+      pair.parent,
+      pair.child,
+      makeJointSpec(
+          "serialized_finite_break",
+          sx::JointType::Prismatic,
+          Eigen::Vector3d::UnitX()));
+  joint.setConstraintProjectionPolicy(
+      makeConstraintProjectionPolicy(10.0, 10.0, 10.0));
+  joint.setBreakForce(0.8);
+
+  world.enterSimulationMode();
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& config
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorB += 0.1 * Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d savedLocalAnchorB = config.localAnchorB;
+
+  world.step();
+  ASSERT_TRUE(joint.isBroken());
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  restored.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+
+  auto restoredJoint = restored.getJoint("serialized_finite_break");
+  ASSERT_TRUE(restoredJoint.has_value());
+  ASSERT_TRUE(restoredJoint->isBroken());
+  EXPECT_EQ(restoredJoint->getType(), sx::JointType::Prismatic);
+  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 0.8);
+  const sx::JointConstraintProjectionPolicy restoredPolicy
+      = restoredJoint->getConstraintProjectionPolicy();
+  EXPECT_DOUBLE_EQ(restoredPolicy.startStiffness, 10.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.linearStiffness, 10.0);
+  EXPECT_DOUBLE_EQ(restoredPolicy.angularStiffness, 10.0);
+
+  auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
+  const entt::entity restoredJointEntity
+      = sx::detail::toRegistryEntity(restoredJoint->getEntity());
+  ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
+      restoredJointEntity));
+  const auto& restoredConfig
+      = restoredRegistry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+          restoredJointEntity);
+  EXPECT_LT((restoredConfig.localAnchorB - savedLocalAnchorB).norm(), 1e-12);
+
+  restored.step();
+  EXPECT_TRUE(restoredJoint->isBroken());
+
+  restoredJoint->setBreakForce(100.0);
+  restoredJoint->resetBreakage();
+  restored.step();
+  EXPECT_FALSE(restoredJoint->isBroken());
+
+  restoredJoint->setBreakForce(0.8);
+  restored.step();
+  EXPECT_TRUE(restoredJoint->isBroken());
+}
+
 // PLAN-104 AVBD articulated bridge: simulation-entry current-pose extraction
 // now covers non-topology private point-joint entities whose endpoint is a
 // multibody link. The generated hard fixed config captures the link's design
@@ -8891,7 +9131,10 @@ TEST(
   joint.setEffortLimits(
       Eigen::VectorXd::Constant(1, -850.0),
       Eigen::VectorXd::Constant(1, 950.0));
-  joint.setBreakForce(13.0);
+  // This test exercises persistence rather than fracture, so retain a finite
+  // non-default threshold that stays above every commanded physical row load.
+  constexpr double breakForce = 1.0e6;
+  joint.setBreakForce(breakForce);
 
   std::stringstream data;
   world.saveBinary(data);
@@ -8922,7 +9165,7 @@ TEST(
   ASSERT_EQ(restoredJoint->getEffortUpperLimits().size(), 1);
   EXPECT_DOUBLE_EQ(restoredJoint->getEffortLowerLimits()[0], -850.0);
   EXPECT_DOUBLE_EQ(restoredJoint->getEffortUpperLimits()[0], 950.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 13.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), breakForce);
   EXPECT_FALSE(restoredJoint->isBroken());
 
   auto& registry = dart::simulation::detail::registryOf(restored);
@@ -8965,6 +9208,7 @@ TEST(
   EXPECT_LT(maxAnchorResidual, 1e-6);
   EXPECT_LT(maxHingeAxisTilt, 1e-6);
   EXPECT_LT((rotation - expectedRotation).norm(), 1e-6);
+  EXPECT_FALSE(restoredJoint->isBroken());
 }
 
 // PLAN-104 AVBD articulated bridge: world-anchored revolute facades expose the

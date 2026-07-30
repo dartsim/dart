@@ -363,8 +363,9 @@ public:
   /// Set the point-joint break-force threshold.
   ///
   /// A finite non-negative value is required. The default value, 0, disables
-  /// automatic breakage. When projected point-joint rows accumulate a
-  /// constraint load at or above this threshold, the joint is marked broken and
+  /// automatic breakage. The threshold is the L2 norm of the joint's physical
+  /// row forces/torques, including finite-stiffness and bounded motor rows.
+  /// When that load reaches the threshold, the joint is marked broken and
   /// excluded from later point-joint extraction until resetBreakage().
   void setBreakForce(double breakForce);
 

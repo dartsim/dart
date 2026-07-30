@@ -2765,7 +2765,7 @@ std::unique_ptr<sx::World> makeArticulatedCompliantJointWorld(
 }
 
 std::unique_ptr<sx::World> makeArticulatedCompliantMotorWorld(
-    std::size_t familyCount)
+    std::size_t familyCount, bool breakable = false)
 {
   constexpr double kStartStiffness = 20.0;
   constexpr double kLinearStiffness = 2000.0;
@@ -2841,6 +2841,9 @@ std::unique_ptr<sx::World> makeArticulatedCompliantMotorWorld(
       policy.linearStiffness = kLinearStiffness;
       policy.angularStiffness = kAngularStiffness;
       joint.setConstraintProjectionPolicy(policy);
+      if (breakable) {
+        joint.setBreakForce(1.0e12);
+      }
       joints.push_back(joint);
     }
   }
@@ -4007,6 +4010,29 @@ static void BM_AvbdArticulatedCompliantMotorStep(benchmark::State& state)
   state.counters["compliant_motors"] = static_cast<double>(2u * familyCount);
 }
 BENCHMARK(BM_AvbdArticulatedCompliantMotorStep)->Arg(1)->Arg(4)->Arg(16);
+
+//==============================================================================
+static void BM_AvbdArticulatedCompliantBreakableMotorStep(
+    benchmark::State& state)
+{
+  const auto familyCount = static_cast<std::size_t>(state.range(0));
+  auto world
+      = makeArticulatedCompliantMotorWorld(familyCount, /*breakable=*/true);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["family_instances"] = static_cast<double>(familyCount);
+  state.counters["revolute_motors"] = static_cast<double>(familyCount);
+  state.counters["prismatic_motors"] = static_cast<double>(familyCount);
+  state.counters["breakable_motors"] = static_cast<double>(2u * familyCount);
+}
+BENCHMARK(BM_AvbdArticulatedCompliantBreakableMotorStep)
+    ->Arg(1)
+    ->Arg(4)
+    ->Arg(16);
 
 //==============================================================================
 static void BM_AvbdArticulatedHighRatioChainStep(benchmark::State& state)

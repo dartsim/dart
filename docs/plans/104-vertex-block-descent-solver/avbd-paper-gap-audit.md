@@ -466,6 +466,14 @@ reset for all three spherical paths.
 now validates the five public fixed/spherical breakable point-joint benchmark
 rows over 1, 8, and 32 joints. Broad fracture-constraint, breakable-wall, GPU
 parity, and paper-number gates remain open.
+[`avbd-articulated-compliant-fracture-packet.json`](avbd-articulated-compliant-fracture-packet.json)
+adds the first finite articulated fracture contract: accepted finite-row forces
+and bounded motor projection loads are converted to physical units, aggregated
+per public joint, and drive break/reset/re-arm plus save/load behavior. Its
+exact-parent mutation, allocation gates, docked lifecycle capture, and
+candidate-only 2/8/32-motor benchmark close the prior load-accounting gap
+without claiming the paper wall, broad fracture corpus, CUDA parity, or a
+paper/reference performance win.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,
@@ -581,8 +589,9 @@ open.
    joints, motor torque rows, attachment rows, maximum-force fracture, and
    breakage persistence. CPU hard point-joint bridges and passive finite
    world-link/same-multibody fixed/spherical/revolute/prismatic masked rows plus
-   bounded same-multibody finite revolute/prismatic motors are partial; broad
-   finite-row fracture accounting/corpus coverage and CUDA remain open.
+   bounded same-multibody finite revolute/prismatic motors now include narrow
+   physical finite-plus-motor load accounting and break/reset persistence;
+   broad fracture-corpus coverage and CUDA remain open.
 7. **A6 - unified rigid/soft coupling:** Couple rigid rows and deformable VBD
    rows in one AVBD solve so soft cloth/elastic bodies interact with articulated
    rigid chains and stacks.
@@ -641,8 +650,14 @@ next three gaps from that packet. The adjacent
 now records mutation-sensitive same-multibody passive S/R/P coverage, bounded
 finite revolute/prismatic motor rows, all three warmed allocation policies,
 an assessed docked capture, and candidate-only 2/8/32-motor scale data. The
-first two gaps are closed on CPU; finite-row break-force accounting remains
-missing. Non-topology
+first two gaps are closed on CPU.
+[`avbd-articulated-compliant-fracture-packet.json`](avbd-articulated-compliant-fracture-packet.json)
+closes the third narrowly with physical accepted finite-row and bounded-motor
+load aggregation, timestep-unit invariance, break/reset/re-arm and save/load
+oracles, exact-parent mutation evidence, allocation gates, an assessed docked
+capture, and candidate-only scale data. The paper wall, broad joint/fracture
+corpus, unified rows, CUDA, and comparable paper/reference performance remain
+open. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
 poses, and public same-multibody/world-link articulated
@@ -739,8 +754,9 @@ coverage, but DART still lacks broader persistent motor lifecycle coverage
 beyond the one-DOF, direct/private movable-pair lifecycle, and generated
 current-pose plus public/private movable-pair tiny-limit and save/load/reset
 checks,
-broad fracture lifecycle coverage beyond the now-covered 2D Fracture and 3D
-Breakable source-demo fixed-joint break/reset rows, and broader
+broad fracture lifecycle coverage beyond the now-covered finite articulated
+load/reset contract and 2D Fracture/3D Breakable source-demo fixed-joint
+break/reset rows, and broader
 public articulated World facade coverage beyond those
 linear-only spherical/link-link/world-link entrypoints and fixed/spherical
 save/load rebuilding.
@@ -772,8 +788,9 @@ renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes. The next articulated mechanism
-slice should close finite-row load accounting and fracture lifecycle before
-treating the A5 joint-family surface as broad.
+slice should broaden the now-covered finite-row load/fracture lifecycle into
+the paper wall and remaining joint/attachment corpus before treating the A5
+joint-family surface as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

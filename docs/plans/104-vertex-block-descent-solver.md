@@ -893,9 +893,14 @@ angular row families: spherical rotation, revolute hinge rotation, and
 prismatic axis translation remain free. The same masked finite rows now also
 support same-multibody movable-link endpoint pairs. Finite public revolute and
 prismatic `Velocity` joints additionally project a bounded motor-only row on
-their free coordinate while their constrained coordinates remain compliant;
-the motor-only row intentionally carries no break-force source because finite
-row load accounting is not yet complete. The focused
+their free coordinate while their constrained coordinates remain compliant.
+Accepted finite-row forces and position-level hard/motor projection loads now
+share one physical-unit break-force contract: projection loads are divided by
+`dt^2`, every active row is aggregated into the owning public joint's L2 load,
+and fracture clears finite lambda/stiffness state before later-step extraction
+skips the broken joint. Focused load, timestep-invariance, combined-load,
+break/reset/re-arm, and simulation-mode save/load regressions cover that
+lifecycle. The focused
 `avbd_articulated_compliant_joints` py-demo, allocation gates, exact-parent
 mutation oracle, and candidate-only 3/12/48-joint benchmark are recorded in
 [`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json).
@@ -903,7 +908,13 @@ The `avbd_articulated_compliant_motors` py-demo, allocation gates,
 exact-parent mutation oracle, docked assessed capture, and candidate-only
 2/8/32-motor benchmark are recorded in
 [`avbd-articulated-compliant-motors-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json).
-Finite-row fracture accounting, CUDA, and unified soft/rigid rows remain open.
+The `avbd_articulated_compliant_breakable_motor` py-demo, exact-parent
+load/lifecycle mutation, serialization and allocation gates, assessed
+break/reset/re-arm capture, and candidate-only 2/8/32-motor benchmark are
+recorded in
+[`avbd-articulated-compliant-fracture-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
+The paper wall, broad fracture corpus, CUDA, and unified soft/rigid rows remain
+open.
 Free-rigid AVBD point-joint rows now also support finite linear and angular
 material stiffness through the public point-joint facade and dartpy properties;
 those rows use raw finite residuals and ramp row stiffness up to the configured
@@ -1152,12 +1163,12 @@ remaining gaps, in order:
    movable link-pair, tiny-limit, restored tiny-limit save/load, one-DOF
    break/reset, spherical reset, and movable-pair plus direct world-link
    save/load/reset checks remains open.
-   Extend finite extraction to same-multibody endpoint pairs, couple bounded
-   free-axis velocity motors with finite masked rows, and add finite-row
-   break-force accounting. Then broaden fracture
-   lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
-   the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
-   Breakable source-demo fixed-joint break/reset rows, and public articulated
+   Same-multibody finite endpoint pairs, bounded free-axis velocity motors, and
+   physical finite-plus-motor break-force accounting are now covered narrowly.
+   Broaden fracture lifecycle/corpus coverage beyond that articulated contract,
+   the narrow hard point-joint threshold, the private fixed-row/world-fixed
+   reset, and the 2D Fracture/3D Breakable source-demo fixed-joint rows; also
+   broaden public articulated
    World facade coverage
    beyond the new same-multibody link-link, world-link, explicit-anchor, and
    spherical linear-only point-joint entrypoints plus same-multibody link-link
@@ -1313,6 +1324,26 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-07-30, the articulated finite-fracture packet closed the narrow CPU
+load-accounting gap left by the finite-motor slice. Accepted finite-row forces
+use the same stiffness/residual values as the variational solve, while hard and
+bounded-motor position-projection loads are converted to public force/torque
+units by dividing by `dt^2`; all rows owned by one joint contribute to one L2
+break load. Focused C++ oracles cover finite-only, motor-only at two timesteps,
+combined finite-plus-motor thresholds, skip/reset/re-arm, and simulation-mode
+save/load. Both mutation-sensitive tests fail in five required cases on exact
+parent `9ebd9b895b1`; all 55 AVBD breakage tests and all three warmed
+finite-row allocation policies pass on the candidate. The
+`avbd_articulated_compliant_breakable_motor` text oracle and assessed
+149-frame docking capture show weak break, strong reset/intact, and weak
+re-arm/break phases. A pinned candidate-only benchmark records median CPU time
+of 103.2 us for 2 breakable motors, 585.0 us for 8, and 6.633 ms for 32; no
+parent speedup is claimed because the parent omitted the new load accounting.
+[`avbd-articulated-compliant-fracture-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json)
+keeps the four linked method rows partial: the paper wall, broad fracture and
+joint corpus, unified rigid/soft rows, CUDA, and source/paper achieved-accuracy
+performance remain open.
 
 On 2026-07-30, the articulated finite-motor packet closed two adjacent CPU
 extraction gaps: passive finite spherical/revolute/prismatic masks now support

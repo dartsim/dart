@@ -935,6 +935,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "avbd_articulated_prismatic_pair_motor_breakable_joint",
             "avbd_articulated_prismatic_motor_breakable_joint",
             "avbd_articulated_world_revolute_motor_breakable_joint",
+            "avbd_articulated_compliant_breakable_motor",
             "avbd_articulated_compliant_joints",
             "avbd_articulated_compliant_motors",
             "avbd_articulated_high_ratio_chain",
@@ -11987,6 +11988,69 @@ def test_avbd_articulated_compliant_motors_demo_drives_free_coordinates() -> Non
         np.all(np.isfinite(np.asarray(link.transform, dtype=float)))
         for link in links.values()
     )
+
+
+def test_avbd_articulated_compliant_breakable_motor_demo_rearms_finite_rows() -> None:
+    import numpy as np
+
+    sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")
+
+    from examples.demos.scenes.avbd_articulated_compliant_breakable_motor import (
+        build,
+    )
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    joint = setup.info["joint"]
+    metrics = setup.info["metrics"]
+
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
+    assert joint.type == sx.JointType.PRISMATIC
+    assert joint.actuator_type == sx.ActuatorType.VELOCITY
+    assert joint.constraint_projection_policy.start_stiffness == pytest.approx(
+        setup.info["start_stiffness"]
+    )
+    assert joint.constraint_projection_policy.linear_stiffness == pytest.approx(
+        setup.info["linear_stiffness"]
+    )
+    assert joint.constraint_projection_policy.angular_stiffness == pytest.approx(
+        setup.info["angular_stiffness"]
+    )
+    assert joint.effort_lower_limits[0] == pytest.approx(-setup.info["max_effort"])
+    assert joint.effort_upper_limits[0] == pytest.approx(setup.info["max_effort"])
+
+    setup.info["replay_state"]["enabled"] = False
+    assert not joint.is_broken
+    assert setup.pre_step is not None
+    setup.pre_step()
+    setup.world.step()
+    assert joint.is_broken
+    weak_metrics = metrics()
+    assert np.isfinite(float(weak_metrics["transverse_residual"]))
+    assert float(weak_metrics["transverse_residual"]) > 0.05
+
+    setup.info["reset_strong_joint"]()
+    assert not joint.is_broken
+    for _ in range(8):
+        setup.pre_step()
+        setup.world.step()
+        assert not joint.is_broken
+
+    setup.info["rearm_weak_joint"]()
+    assert not joint.is_broken
+    setup.pre_step()
+    setup.world.step()
+    assert joint.is_broken
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["constraint"] == (
+        "finite_and_motor_physical_load_fracture_lifecycle"
+    )
+    assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
+    assert capture_metrics["history"]["saw_intact"] == pytest.approx(1.0)
 
 
 def test_avbd_articulated_high_ratio_chain_demo_swings_and_resets() -> None:

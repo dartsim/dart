@@ -9,30 +9,31 @@ this file is only the current session pointer. See
 ## Last Session Summary
 
 The exact 176-row VBD/AVBD paper-parity contract remains fail-closed, with no
-complete rows. The latest local packet extends the CPU articulated variational
-bridge from passive finite world-link rows to same-multibody movable-link
-spherical/revolute/prismatic pairs and bounded finite revolute/prismatic
-`Velocity` motors. Their masked constrained coordinates use persistent
-per-axis AVBD stiffness state while the free coordinate uses a motor-only
-projection row with the existing hard-motor target/Jacobian/effort bounds.
+complete rows. The latest local packet closes the narrow CPU break-load gap for
+same-multibody finite articulated point joints. Accepted finite-row forces and
+bounded motor projection loads now share public force/torque units, aggregate
+into one per-joint L2 threshold, clear finite row state on fracture, skip while
+broken, and re-engage after reset.
 
 The durable packet is
-[`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json).
-It records passive and motor same-multibody C++ oracles, all three warmed
-allocation policies, a Python command/reversal oracle, assessed docked
-start/middle/end visual evidence, candidate-only 2/8/32-motor scale data, and
-an exact-parent mutation run. The motor behavior test fails both driven
-coordinates on exact parent `761263bbd41` and passes on the candidate. The
-linked method rows remain partial.
+[`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
+It records finite-only, motor-only at two timesteps, combined-load,
+break/reset/re-arm, and save/load C++ oracles; all three warmed allocation
+policies; a Python lifecycle oracle; assessed docked start/middle/end visual
+evidence; candidate-only 2/8/32-motor scale data; and an exact-parent mutation
+run. Both load/lifecycle tests fail in five required cases on exact parent
+`9ebd9b895b1` and pass on the candidate. The linked method rows remain partial.
 
-The Release build, complete variational binary (183/183), aggregate C++ unit
-tier (168/168), full Python tier (1651 passed, 20 skipped), six packet-writer
-tests, PLAN-104 parity contract (176 rows), all 54 AVBD packets, and PLAN-122
-allocation matrix (18 rows, 14 closed) pass. The simulation label passes 77/79
-active entries: its split global-heap and raw-malloc binaries reproduce the
-same four unrelated 320/80-byte and 320/1376-byte signatures recorded on the
-exact parent, while every new finite articulated allocation gate passes. Two
-monolithic entries remain intentionally disabled.
+The focused load/lifecycle/serialization C++ oracles, all existing AVBD
+breakage tests, all three warmed allocation policies, the Python scene oracle,
+six packet-writer tests, assessed 149-frame docking capture, and pinned
+candidate-only benchmark pass. The Release build, complete variational binary
+(186/186), aggregate C++ unit tier (168/168), full Python tier (1658 passed,
+20 skipped), PLAN-104 parity contract (176 rows), AVBD packets (55), and
+PLAN-122 allocation matrix (18 rows, 14 closed) also pass. The simulation label
+passes 77/79 active entries; only the split global-heap and raw-malloc binaries
+retain the four unrelated exact-parent-reproduced allocation signatures, while
+all three new finite articulated gates pass inside those splits.
 
 ## Current Branch
 
@@ -40,15 +41,16 @@ monolithic entries remain intentionally disabled.
 `origin/main` at `83110ef54ab`. The fail-closed contract is committed locally
 at `710cbfc1152`, the Section 3.5 packet at `a78f688a178`, and the Section 4
 packet at `0b0154573b8`; the articulated finite-row packet is committed at
-`761263bbd41`, and the articulated finite-motor packet is the current
-uncommitted closeout. The branch has not been pushed.
+`761263bbd41`, and the articulated finite-motor packet at `9ebd9b895b1`; the
+articulated finite-fracture packet follows as the current local unpushed
+closeout. The branch has not been pushed.
 
 ## Immediate Next Step
 
-After aggregate gates and the local closeout commit, continue articulated
-extraction with finite-row load accounting and fracture lifecycle. Preserve
-the packet boundary: the current CPU finite rows do not close unified rows,
-CUDA, the source/paper corpus, or achieved-accuracy performance.
+Broaden the paper wall/fracture and joint corpus, unified rigid/soft rows, or
+another highest-priority missing paper mechanism. Preserve the packet
+boundary: this narrow CPU load contract does not close those rows, CUDA, the
+source/paper corpus, or achieved-accuracy performance.
 
 ## Context That Would Be Lost
 
@@ -58,10 +60,11 @@ CUDA, the source/paper corpus, or achieved-accuracy performance.
 - The articulated finite-motor benchmark is candidate-only. Exact parent skips
   the new rows, so a timing ratio would compare different work and is not a
   speedup claim.
-- Finite public one-DOF `Velocity` rows now use a separate bounded motor-only
-  row beside their compliant masks. Do not attach break-force source state to
-  that row until finite compliant and motor loads have a complete accounting
-  contract; doing so now would be partial and misleading.
+- Finite public one-DOF `Velocity` rows use a bounded motor-only projection row
+  beside their compliant masks. Its `dt^2` position-level load must remain
+  associated with the owning compliant constraint and converted to physical
+  units before comparison; do not regress to an isolated motor threshold or
+  compare raw projection lambda to public break force.
 - The pinned 2D source applies Section 3.5 generically and the 3D joint source
   applies it to nonlinear point rows, but the pinned 3D Spring source omits the
   geometric term. DART follows the paper for distance springs; do not call that
