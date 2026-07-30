@@ -6866,6 +6866,51 @@ void configureLongVariationalArticulatedPointJointScene(
       parent, makeJointSpec("tip_world_anchor", sx::JointType::Fixed));
 }
 
+void configureFiniteVariationalArticulatedPointJointScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setMultibodyOptions({sx::MultibodyIntegrationFamily::Variational});
+  world.setGravity(Eigen::Vector3d(1.0, -2.0, 3.0));
+  world.setTimeStep(1.0e-3);
+
+  struct JointCase
+  {
+    std::string_view name;
+    sx::JointType type;
+    Eigen::Vector3d axis;
+  };
+  const std::array<JointCase, 3> cases{{
+      {"socket", sx::JointType::Spherical, Eigen::Vector3d::UnitZ()},
+      {"hinge", sx::JointType::Revolute, Eigen::Vector3d::UnitY()},
+      {"slider", sx::JointType::Prismatic, Eigen::Vector3d::UnitX()},
+  }};
+
+  for (const JointCase& jointCase : cases) {
+    auto robot
+        = world.addMultibody(std::string(jointCase.name) + "_finite_robot");
+    auto base = robot.addLink("base");
+    sx::JointSpec floatingSpec;
+    floatingSpec.name = std::string(jointCase.name) + "_floating";
+    floatingSpec.type = sx::JointType::Floating;
+    auto body = robot.addLink("body", base, floatingSpec);
+    body.setMass(1.0);
+    body.setInertia(Eigen::Vector3d(0.1, 0.2, 0.3).asDiagonal());
+    body.getParentJoint().setVelocity(Eigen::VectorXd::Constant(6, 0.1));
+
+    auto joint = world.addJoint(
+        body,
+        makeJointSpec(
+            std::string(jointCase.name) + "_finite_joint",
+            jointCase.type,
+            jointCase.axis));
+    joint.setActuatorType(sx::ActuatorType::Passive);
+    joint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(10.0, 200.0, 400.0));
+  }
+}
+
 void configureCompliantVariationalContactSliderScene(
     dart::simulation::World& world)
 {
@@ -7452,6 +7497,15 @@ TEST(World, VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator)
   EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
   EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
   EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
+TEST(
+    World,
+    BakedVariationalCompliantArticulatedPointJointRowsDoNotGrowWorldBaseAllocator)
+{
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "multibody variational compliant articulated point-joint rows",
+      configureFiniteVariationalArticulatedPointJointScene);
 }
 
 TEST(World, VariationalLoopClosureRegistryStorageRebuildsAfterClear)
@@ -10373,6 +10427,26 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
               entity, cfg);
         }
       });
+}
+
+TEST(
+    World,
+    BakedVariationalCompliantArticulatedPointJointRowsDoNotAllocateGlobalHeap)
+{
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational compliant articulated point-joint rows",
+      configureFiniteVariationalArticulatedPointJointScene);
+}
+
+TEST(World, BakedVariationalCompliantArticulatedPointJointRowsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "multibody variational compliant articulated point-joint rows",
+      configureFiniteVariationalArticulatedPointJointScene);
+#endif
 }
 
 TEST(World, BakedVariationalMultibodyStepsDoNotMallocOnHeap)

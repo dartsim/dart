@@ -30,6 +30,7 @@
 
 #include <Eigen/Cholesky>
 #include <Eigen/Geometry>
+#include <Eigen/LU>
 #include <Eigen/QR>
 #include <entt/entt.hpp>
 
@@ -607,7 +608,17 @@ void invertJointMatrixInto(
     return;
   }
 
-  inverse = matrix.inverse();
+  DART_SIMULATION_THROW_T_IF(
+      matrix.rows() != matrix.cols() || matrix.rows() > 6,
+      InvalidOperationException,
+      "Variational articulated solve expects a square joint block with at "
+      "most six rows");
+  Matrix6 padded = Matrix6::Identity();
+  padded.topLeftCorner(matrix.rows(), matrix.cols()) = matrix;
+  const Eigen::PartialPivLU<Matrix6> decomposition{padded};
+  const Matrix6 paddedInverse = decomposition.solve(Matrix6::Identity());
+  inverse.resize(matrix.rows(), matrix.cols());
+  inverse = paddedInverse.topLeftCorner(matrix.rows(), matrix.cols());
 }
 
 void subtractProjectedInertiaInto(
@@ -627,8 +638,22 @@ void subtractProjectedInertiaInto(
     return;
   }
 
-  inertia.noalias()
-      -= forceProjector * inverseJointMatrix * motionProjector.transpose();
+  const Eigen::Index dof = forceProjector.cols();
+  DART_SIMULATION_THROW_T_IF(
+      dof > 6 || motionProjector.cols() != dof
+          || inverseJointMatrix.rows() != dof
+          || inverseJointMatrix.cols() != dof,
+      InvalidOperationException,
+      "Variational articulated solve received inconsistent projected joint "
+      "blocks");
+  Matrix6 paddedForce = Matrix6::Zero();
+  Matrix6 paddedInverse = Matrix6::Zero();
+  Matrix6 paddedMotion = Matrix6::Zero();
+  paddedForce.leftCols(dof) = forceProjector;
+  paddedInverse.topLeftCorner(dof, dof) = inverseJointMatrix;
+  paddedMotion.leftCols(dof) = motionProjector;
+  const Matrix6 projected = paddedForce * paddedInverse;
+  inertia.noalias() -= projected * paddedMotion.transpose();
 }
 
 void addProjectedForceInto(
@@ -1022,14 +1047,23 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const bool hard = isHardAvbdRigidWorldPointJointConfig(config);
     const std::optional<double> compliantStiffness
         = avbdRigidWorldCompliantPointJointStiffness(config);
+    const bool usesFiniteOneDofVelocityMotor
+        = !hard
+          && (jointModel.type == comps::JointType::Revolute
+              || jointModel.type == comps::JointType::Prismatic)
+          && jointActuation.actuatorType == comps::ActuatorType::Velocity;
     if (!config.enabled || jointState.broken
         || !dvbd::isAvbdRigidWorldPointJointType(jointModel.type)
         || isTopologyMultibodyJoint(registry, jointEntity, jointModel)) {
       continue;
     }
+    // A finite masked constraint and its free-axis velocity motor need
+    // separate compliant and bounded projection rows. Until that combined
+    // contract is implemented, keep the pre-existing fail-closed behavior
+    // instead of silently dropping the configured motor.
     if (!hard
         && (compliantScratch == nullptr || !compliantStiffness.has_value()
-            || jointModel.type != comps::JointType::Fixed)) {
+            || usesFiniteOneDofVelocityMotor)) {
       continue;
     }
     if (!dvbd::detail::hasValidActiveAvbdRigidJointAxes(
@@ -1815,8 +1849,8 @@ void computeResidualInto(
         residual[seg]
             = link.subspace.col(0).dot(force) - timeStep * appliedForce[seg];
       } else {
-        residual.segment(seg, n) = link.subspace.transpose() * force
-                                   - timeStep * appliedForce.segment(seg, n);
+        residual.segment(seg, n).noalias() = link.subspace.transpose() * force;
+        residual.segment(seg, n) -= timeStep * appliedForce.segment(seg, n);
       }
     }
   }
@@ -3805,7 +3839,20 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       auto normalRhs = anderson.normalRhs.head(m);
       normalRhs.noalias() = stepMatrix.transpose() * step;
       auto gamma = anderson.gamma.head(m);
-      gamma = regularized.ldlt().solve(normalRhs);
+      constexpr Eigen::Index kStackAndersonDepth = 5;
+      if (m <= kStackAndersonDepth) {
+        using AndersonMatrix
+            = Eigen::Matrix<double, kStackAndersonDepth, kStackAndersonDepth>;
+        using AndersonVector = Eigen::Matrix<double, kStackAndersonDepth, 1>;
+        AndersonMatrix padded = AndersonMatrix::Identity();
+        padded.topLeftCorner(m, m) = regularized;
+        AndersonVector paddedRhs = AndersonVector::Zero();
+        paddedRhs.head(m) = normalRhs;
+        const AndersonVector paddedGamma = padded.ldlt().solve(paddedRhs);
+        gamma = paddedGamma.head(m);
+      } else {
+        gamma = regularized.ldlt().solve(normalRhs);
+      }
       if (gamma.allFinite()) {
         anderson.andersonIncrement = step;
         anderson.andersonIncrement.noalias() += mixMatrix * gamma;
@@ -4488,6 +4535,8 @@ void reserveMultibodyVariationalRegistryStorage(
         compliantScratch->clear();
       }
     }
+    const bool hasCompliantLoopForce
+        = compliantScratch != nullptr && !compliantScratch->constraints.empty();
     const Eigen::Index loopProjectionRows = constraintRowCount(
         variationalLoopConstraintSpan(scratch.constraints));
     scratch.constraints.clear();
@@ -4505,6 +4554,9 @@ void reserveMultibodyVariationalRegistryStorage(
       reserveConstraintProjectionScratch(
           tree, projectionRows, scratch.projection);
       reserveVariationalAndersonScratch(tree, 5, scratch.anderson);
+      if (hasCompliantLoopForce) {
+        reserveContactEvaluationScratch(tree, scratch.contactEvaluation);
+      }
     }
 
     auto* contactConfig = registry.try_get<comps::VariationalContact>(entity);

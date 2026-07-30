@@ -935,6 +935,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "avbd_articulated_prismatic_pair_motor_breakable_joint",
             "avbd_articulated_prismatic_motor_breakable_joint",
             "avbd_articulated_world_revolute_motor_breakable_joint",
+            "avbd_articulated_compliant_joints",
             "avbd_articulated_high_ratio_chain",
             "avbd_rigid_breakable_joint",
             "avbd_rigid_spherical_breakable_joint",
@@ -11849,6 +11850,70 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
     assert joint.is_broken
     assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
         -target_speed
+    )
+
+
+def test_avbd_articulated_compliant_joints_demo_preserves_free_coordinates() -> None:
+    import numpy as np
+
+    sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")
+
+    from examples.demos.scenes.avbd_articulated_compliant_joints import build
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    bodies = setup.info["bodies"]
+    joints = setup.info["joints"]
+    metrics = setup.info["metrics"]
+
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
+    assert set(joints) == {"spherical", "revolute", "prismatic"}
+    assert joints["spherical"].type == sx.JointType.SPHERICAL
+    assert joints["revolute"].type == sx.JointType.REVOLUTE
+    assert joints["prismatic"].type == sx.JointType.PRISMATIC
+    assert all(joint.actuator_type == sx.ActuatorType.PASSIVE for joint in joints.values())
+    assert all(
+        joint.constraint_projection_policy.start_stiffness
+        == pytest.approx(setup.info["start_stiffness"])
+        for joint in joints.values()
+    )
+    assert all(
+        joint.constraint_projection_policy.linear_stiffness
+        == pytest.approx(setup.info["linear_stiffness"])
+        for joint in joints.values()
+    )
+    assert all(
+        joint.constraint_projection_policy.angular_stiffness
+        == pytest.approx(setup.info["angular_stiffness"])
+        for joint in joints.values()
+    )
+
+    setup.info["replay_state"]["enabled"] = False
+    for _ in range(100):
+        assert setup.pre_step is not None
+        setup.pre_step()
+        setup.world.step()
+
+    values = metrics()
+    assert all(np.isfinite(value) for value in values.values())
+    assert values["socket_anchor_error"] < 0.08
+    assert values["socket_free_rotation"] > 0.15
+    assert values["hinge_anchor_error"] < 0.06
+    assert values["hinge_axis_tilt"] < 0.04
+    assert values["hinge_free_rotation"] > 0.12
+    assert values["slider_axis_travel"] > 0.15
+    assert values["slider_transverse_error"] < 0.06
+    assert values["slider_rotation_error"] < 0.05
+
+    setup.info["reset_joints"]()
+    reset_values = metrics()
+    assert all(abs(value) < 1.0e-12 for value in reset_values.values())
+    assert all(
+        np.all(np.isfinite(np.asarray(body.transform, dtype=float)))
+        for body in bodies.values()
     )
 
 

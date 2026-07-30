@@ -590,6 +590,69 @@ TEST(VariationalIntegration, ArticulatedInverseMassMatchesDenseSolve)
   }
 }
 
+// The allocation-free fixed-size joint-block solve must preserve the dense
+// inverse-mass result for the largest public joint block (Floating, six DOFs)
+// and a multi-DOF manifold child (Spherical, three DOFs).
+TEST(VariationalIntegration, ArticulatedInverseMassMultiDofMatchesDenseSolve)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  auto robot = world.addMultibody("multi_dof");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec floatingSpec;
+  floatingSpec.name = "floating";
+  floatingSpec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, floatingSpec);
+  body.setMass(2.3);
+  body.setInertia(Eigen::Vector3d(0.17, 0.23, 0.31).asDiagonal());
+
+  sx::JointSpec sphericalSpec;
+  sphericalSpec.name = "spherical";
+  sphericalSpec.type = sx::JointType::Spherical;
+  sphericalSpec.transformFromParent.translation()
+      = Eigen::Vector3d(0.4, -0.2, 0.3);
+  auto child = robot.addLink("child", body, sphericalSpec);
+  child.setMass(1.7);
+  child.setInertia(Eigen::Vector3d(0.11, 0.19, 0.29).asDiagonal());
+
+  world.enterSimulationMode();
+  body.getParentJoint().setPosition(
+      (Eigen::VectorXd(6) << 0.2, -0.3, 0.4, 0.1, -0.2, 0.3).finished());
+  child.getParentJoint().setPosition(
+      (Eigen::VectorXd(3) << 0.3, -0.4, 0.2).finished());
+  world.updateKinematics();
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const auto& structure = structureOf(world);
+  const Eigen::MatrixXd massMatrix
+      = sxc::computeMultibodyDynamicsTerms(
+            registry, structure, world.getGravity())
+            .massMatrix;
+  ASSERT_EQ(massMatrix.rows(), 9);
+  const Eigen::LDLT<Eigen::MatrixXd> dense(massMatrix);
+
+  std::vector<Eigen::VectorXd> rhs;
+  rhs.reserve(10);
+  for (Eigen::Index i = 0; i < 9; ++i) {
+    Eigen::VectorXd basis = Eigen::VectorXd::Zero(9);
+    basis[i] = 1.0;
+    rhs.push_back(std::move(basis));
+  }
+  rhs.push_back(
+      (Eigen::VectorXd(9) << 0.7, -1.3, 0.9, 0.2, -0.6, 1.1, -0.4, 0.8, -0.5)
+          .finished());
+
+  for (const auto& b : rhs) {
+    const Eigen::VectorXd abi
+        = sxc::computeMultibodyInverseMassProduct(registry, structure, b);
+    const Eigen::VectorXd denseSolve = dense.solve(b);
+    EXPECT_TRUE(abi.isApprox(denseSolve, 1e-9))
+        << "b=" << b.transpose() << " abi=" << abi.transpose()
+        << " dense=" << denseSolve.transpose();
+  }
+}
+
 // The variational integrator is deterministic: two identical rollouts through
 // the public World::step() path produce bit-identical final state.
 TEST(VariationalIntegration, DeterministicAcrossRuns)
@@ -2767,6 +2830,163 @@ TEST(
       /*driveAngular=*/true);
   EXPECT_GT(softAngular.maxYaw, 1e-3);
   EXPECT_LT(stiffAngular.maxYaw, 0.7 * softAngular.maxYaw);
+}
+
+// PLAN-104 AVBD articulated finite-stiffness bridge: passive public spherical,
+// revolute, and prismatic point joints must feed their masked finite rows into
+// the variational solve. Each joint resists only its constrained row family and
+// leaves the paper-defined free coordinate responsive.
+TEST(
+    VariationalIntegration,
+    AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion)
+{
+  struct Motion
+  {
+    double maxTranslation = 0.0;
+    double maxAxisTranslation = 0.0;
+    double maxOrthogonalTranslation = 0.0;
+    double maxRotation = 0.0;
+    double maxAxisTilt = 0.0;
+    double maxAxisRotation = 0.0;
+  };
+
+  const auto rollout = [](sx::JointType type,
+                          const Eigen::Vector3d& axis,
+                          const Eigen::Vector3d& force,
+                          const Eigen::Vector3d& torque,
+                          bool compliant) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+    world.setTimeStep(0.002);
+
+    auto robot = world.addMultibody("masked_compliant_joint");
+    auto base = robot.addLink("base");
+    sx::JointSpec floatingSpec;
+    floatingSpec.name = "floating";
+    floatingSpec.type = sx::JointType::Floating;
+    auto body = robot.addLink("body", base, floatingSpec);
+    body.setMass(2.0);
+    body.setInertia(Eigen::Vector3d(0.2, 0.25, 0.3).asDiagonal());
+
+    if (compliant) {
+      sx::Joint joint
+          = world.addJoint(body, makeJointSpec("finite_joint", type, axis));
+      joint.setActuatorType(sx::ActuatorType::Passive);
+      joint.setConstraintProjectionPolicy(
+          makeConstraintProjectionPolicy(1000.0, 1000.0, 1000.0));
+    }
+
+    world.enterSimulationMode();
+
+    Motion result;
+    for (int k = 0; k < 100; ++k) {
+      body.applyForce(force);
+      if (torque.squaredNorm() > 0.0) {
+        const Eigen::Vector3d torqueDirection = torque.normalized();
+        const Eigen::Vector3d reference
+            = std::abs(torqueDirection.dot(Eigen::Vector3d::UnitX())) < 0.9
+                  ? Eigen::Vector3d::UnitX()
+                  : Eigen::Vector3d::UnitY();
+        const Eigen::Vector3d lever
+            = 0.25 * torqueDirection.cross(reference).normalized();
+        const Eigen::Vector3d coupleForce
+            = torque.cross(lever) / (2.0 * lever.squaredNorm());
+        const Eigen::Vector3d center = body.getWorldTransform().translation();
+        body.applyForce(
+            coupleForce,
+            center + lever,
+            /*forceInWorldFrame=*/true,
+            /*pointInWorldFrame=*/true);
+        body.applyForce(
+            -coupleForce,
+            center - lever,
+            /*forceInWorldFrame=*/true,
+            /*pointInWorldFrame=*/true);
+      }
+      world.step();
+
+      const Eigen::Isometry3d transform = body.getWorldTransform();
+      const Eigen::Vector3d translation = transform.translation();
+      const double axisTranslation = translation.dot(axis);
+      result.maxTranslation
+          = std::max(result.maxTranslation, translation.norm());
+      result.maxAxisTranslation
+          = std::max(result.maxAxisTranslation, std::abs(axisTranslation));
+      result.maxOrthogonalTranslation = std::max(
+          result.maxOrthogonalTranslation,
+          (translation - axisTranslation * axis).norm());
+      result.maxRotation = std::max(
+          result.maxRotation, Eigen::AngleAxisd(transform.linear()).angle());
+      result.maxAxisTilt = std::max(
+          result.maxAxisTilt, (transform.linear() * axis - axis).norm());
+      result.maxAxisRotation = std::max(
+          result.maxAxisRotation,
+          std::abs(signedRotationAroundAxis(transform.linear(), axis)));
+    }
+    return result;
+  };
+
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+  const Motion freeSocket = rollout(
+      sx::JointType::Spherical,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantSocket = rollout(
+      sx::JointType::Spherical,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeSocket.maxTranslation, 5e-2);
+  ASSERT_GT(freeSocket.maxAxisRotation, 2e-2);
+  EXPECT_LT(compliantSocket.maxTranslation, 0.5 * freeSocket.maxTranslation);
+  EXPECT_GT(compliantSocket.maxAxisRotation, 0.5 * freeSocket.maxAxisRotation);
+
+  const Motion freeHinge = rollout(
+      sx::JointType::Revolute,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      0.8 * Eigen::Vector3d::UnitX() + 0.6 * Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantHinge = rollout(
+      sx::JointType::Revolute,
+      zAxis,
+      10.0 * Eigen::Vector3d::UnitX(),
+      0.8 * Eigen::Vector3d::UnitX() + 0.6 * Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeHinge.maxTranslation, 5e-2);
+  ASSERT_GT(freeHinge.maxAxisTilt, 2e-2);
+  ASSERT_GT(freeHinge.maxAxisRotation, 1e-2);
+  EXPECT_LT(compliantHinge.maxTranslation, 0.5 * freeHinge.maxTranslation);
+  EXPECT_LT(compliantHinge.maxAxisTilt, 0.5 * freeHinge.maxAxisTilt);
+  EXPECT_GT(compliantHinge.maxAxisRotation, 0.5 * freeHinge.maxAxisRotation);
+
+  const Eigen::Vector3d xAxis = Eigen::Vector3d::UnitX();
+  const Motion freeSlider = rollout(
+      sx::JointType::Prismatic,
+      xAxis,
+      10.0 * Eigen::Vector3d::UnitX() + 10.0 * Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/false);
+  const Motion compliantSlider = rollout(
+      sx::JointType::Prismatic,
+      xAxis,
+      10.0 * Eigen::Vector3d::UnitX() + 10.0 * Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      /*compliant=*/true);
+  ASSERT_GT(freeSlider.maxAxisTranslation, 5e-2);
+  ASSERT_GT(freeSlider.maxOrthogonalTranslation, 5e-2);
+  ASSERT_GT(freeSlider.maxRotation, 2e-2);
+  EXPECT_GT(
+      compliantSlider.maxAxisTranslation, 0.5 * freeSlider.maxAxisTranslation);
+  EXPECT_LT(
+      compliantSlider.maxOrthogonalTranslation,
+      0.5 * freeSlider.maxOrthogonalTranslation);
+  EXPECT_LT(compliantSlider.maxRotation, 0.5 * freeSlider.maxRotation);
 }
 
 // Topology joints are the multibody tree itself, not external AVBD point-joint

@@ -194,7 +194,9 @@ compatibility remains on the active DART 6 LTS branch._
   remains intentionally Taylor-linearized. Large promoted AVBD CPU row
   inventories now perform the Section 4 post-primal dual/stiffness update over
   deterministic, allocation-stable worker ranges while preserving exact serial
-  row state.
+  row state. Passive articulated spherical, revolute, and prismatic point
+  joints now also apply masked finite-stiffness rows while preserving their
+  free coordinates.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default

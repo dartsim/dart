@@ -115,8 +115,12 @@
           "id": "avbd.method.finite_stiffness_ramping",
           "status": "partial",
           "source_locator": "Section 3.1, stiffness growth and finite-stiffness saturation",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_finite_stiffness.cpp"],
-          "blockers": ["Narrow spring/tetrahedral rows exist, but all paper constraints, source scenes, and CUDA parity are incomplete."]
+          "evidence": [
+            "tests/unit/simulation/deformable_vbd/test_vbd_finite_stiffness.cpp",
+            "tests/unit/simulation/compute/test_variational_integration.cpp",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json"
+          ],
+          "blockers": ["CPU finite-stiffness spring/tetrahedral rows and passive world-link articulated fixed/spherical/revolute/prismatic rows exist, but finite one-DOF motor coupling, same-multibody finite pairs, fracture accounting, the full paper/source corpus, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.force_bounds",
@@ -193,8 +197,12 @@
           "id": "avbd.method.joints_and_attachments",
           "status": "partial",
           "source_locator": "Sections 1 and 5, ball-socket, attachment, and limited-DOF hard constraints",
-          "evidence": ["tests/unit/simulation/world/test_vbd_world_solver.cpp"],
-          "blockers": ["Narrow point-joint and articulated bridges exist, but the full joint corpus and unified paper scenes are incomplete."]
+          "evidence": [
+            "tests/unit/simulation/world/test_vbd_world_solver.cpp",
+            "tests/unit/simulation/compute/test_variational_integration.cpp",
+            "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json"
+          ],
+          "blockers": ["Hard point-joint bridges and passive finite world-link spherical/revolute/prismatic masked rows exist on CPU, but finite motor coupling, same-multibody finite pairs, the full joint corpus, unified paper scenes, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.motors",

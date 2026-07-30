@@ -52,6 +52,7 @@
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -2687,6 +2688,82 @@ std::unique_ptr<sx::World> makeArticulatedSphericalPairBreakableJointWorld(
   return world;
 }
 
+std::unique_ptr<sx::World> makeArticulatedCompliantJointWorld(
+    std::size_t familyCount)
+{
+  constexpr double kStartStiffness = 10.0;
+  constexpr double kLinearStiffness = 1000.0;
+  constexpr double kAngularStiffness = 1000.0;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.timeStep = 0.002;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::MultibodyOptions multibodyOptions;
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
+  world->setMultibodyOptions(multibodyOptions);
+
+  auto robot = world->addMultibody("articulated_compliant_joint_robot");
+  auto base = robot.addLink("articulated_compliant_joint_base");
+
+  std::vector<sx::Link> links;
+  std::vector<sx::Joint> joints;
+  links.reserve(3u * familyCount);
+  joints.reserve(3u * familyCount);
+  const std::array jointTypes{
+      sx::JointType::Spherical,
+      sx::JointType::Revolute,
+      sx::JointType::Prismatic};
+  for (std::size_t family = 0; family < jointTypes.size(); ++family) {
+    for (std::size_t i = 0; i < familyCount; ++i) {
+      const std::size_t flatIndex = family * familyCount + i;
+      const Eigen::Vector3d anchor(
+          0.35 * static_cast<double>(i + 1),
+          0.2 * static_cast<double>(family),
+          0.04 * static_cast<double>(i % 2));
+
+      sx::JointSpec floatingSpec;
+      floatingSpec.name
+          = "articulated_compliant_float_" + std::to_string(flatIndex);
+      floatingSpec.type = sx::JointType::Floating;
+      auto link = robot.addLink(
+          "articulated_compliant_link_" + std::to_string(flatIndex),
+          base,
+          floatingSpec);
+      link.setMass(1.0 + 0.1 * static_cast<double>(i % 3));
+      link.setInertia(Eigen::Vector3d(0.15, 0.2, 0.25).asDiagonal());
+      Eigen::VectorXd pose = Eigen::VectorXd::Zero(6);
+      pose.head<3>() = anchor;
+      link.getParentJoint().setPosition(pose);
+      link.getParentJoint().setVelocity(
+          (Eigen::VectorXd(6) << 0.35, -0.25, 0.2, 0.4, -0.3, 0.5).finished());
+
+      sx::Joint joint = addPointJoint(
+          *world,
+          "articulated_compliant_joint_" + std::to_string(flatIndex),
+          link,
+          jointTypes[family],
+          family == 2u ? Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitZ(),
+          anchor,
+          Eigen::Vector3d::Zero());
+      auto policy = joint.getConstraintProjectionPolicy();
+      policy.startStiffness = kStartStiffness;
+      policy.linearStiffness = kLinearStiffness;
+      policy.angularStiffness = kAngularStiffness;
+      joint.setConstraintProjectionPolicy(policy);
+
+      links.push_back(link);
+      joints.push_back(joint);
+    }
+  }
+
+  benchmark::DoNotOptimize(links.data());
+  benchmark::DoNotOptimize(joints.data());
+  return world;
+}
+
 constexpr std::size_t kArticulatedHighRatioChainLinks = 5;
 constexpr double kArticulatedHighRatioLinkLength = 0.45;
 constexpr double kArticulatedHighRatioLightMass = 1.0;
@@ -3807,6 +3884,25 @@ BENCHMARK(BM_AvbdArticulatedSphericalPairBreakableJointStep)
     ->Arg(1)
     ->Arg(8)
     ->Arg(32);
+
+//==============================================================================
+static void BM_AvbdArticulatedCompliantJointStep(benchmark::State& state)
+{
+  const auto familyCount = static_cast<std::size_t>(state.range(0));
+  auto world = makeArticulatedCompliantJointWorld(familyCount);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["family_instances"] = static_cast<double>(familyCount);
+  state.counters["spherical_joints"] = static_cast<double>(familyCount);
+  state.counters["revolute_joints"] = static_cast<double>(familyCount);
+  state.counters["prismatic_joints"] = static_cast<double>(familyCount);
+  state.counters["compliant_joints"] = static_cast<double>(3u * familyCount);
+}
+BENCHMARK(BM_AvbdArticulatedCompliantJointStep)->Arg(1)->Arg(4)->Arg(16);
 
 //==============================================================================
 static void BM_AvbdArticulatedHighRatioChainStep(benchmark::State& state)

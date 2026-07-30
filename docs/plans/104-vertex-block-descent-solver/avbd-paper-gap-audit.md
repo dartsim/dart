@@ -579,7 +579,10 @@ open.
    rescaling/approximate Hessian options.
 6. **A5 - joints, motors, and fracture:** Implement ball/revolute/limited DOF
    joints, motor torque rows, attachment rows, maximum-force fracture, and
-   breakage persistence.
+   breakage persistence. CPU hard point-joint bridges and passive finite
+   world-link fixed/spherical/revolute/prismatic masked rows are partial;
+   finite motor coupling, same-multibody finite pairs, broad fracture
+   accounting/corpus coverage, and CUDA remain open.
 7. **A6 - unified rigid/soft coupling:** Couple rigid rows and deformable VBD
    rows in one AVBD solve so soft cloth/elastic bodies interact with articulated
    rigid chains and stacks.
@@ -623,7 +626,17 @@ bridge into the variational projection path, including narrow hard
 bounded revolute/prismatic velocity-motor rows with revolute/prismatic
 command-update coverage, private fixed-row reset, revolute/prismatic
 break/reset re-engagement, and persistent
-stiffness-ramped compliant fixed rows. Non-topology
+stiffness-ramped compliant fixed rows. Passive public world-link spherical,
+revolute, and prismatic rows now also apply their finite linear/angular masks
+through that persistent ramp state while preserving spherical rotation,
+revolute hinge rotation, and prismatic axis translation. The focused behavior
+oracle fails on exact parent and passes on the candidate, the three post-bake
+allocation policies pass, and
+[`avbd-articulated-compliant-joints-packet.json`](avbd-articulated-compliant-joints-packet.json)
+records solver identity, assessed capture, and candidate-only 3/12/48-joint
+scale data without a speedup claim. Finite one-DOF velocity-motor coupling,
+same-multibody finite pairs, and finite-row break-force accounting remain
+missing. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
 poses, and public same-multibody/world-link articulated
@@ -752,7 +765,9 @@ records validated benchmark JSON plus finite replay plot data, and
 renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
-cloth-plus-articulated-rigid coupling scenes.
+cloth-plus-articulated-rigid coupling scenes. The next articulated mechanism
+slice should close finite one-DOF motor coupling or same-multibody finite pairs
+before treating the A5 joint-family surface as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

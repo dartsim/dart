@@ -887,6 +887,15 @@ Finite-stiffness private AVBD fixed
 point-joint configs on articulated endpoints now also contribute compliant
 variational forces through persistent per-axis finite-stiffness row state that
 warm-starts and ramps toward the configured cap across steps.
+Passive public world-link spherical, revolute, and prismatic point joints now
+use that same persistent finite-stiffness state for their masked linear and
+angular row families: spherical rotation, revolute hinge rotation, and
+prismatic axis translation remain free. The focused
+`avbd_articulated_compliant_joints` py-demo, allocation gates, exact-parent
+mutation oracle, and candidate-only 3/12/48-joint benchmark are recorded in
+[`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json).
+Finite one-DOF velocity-motor coupling, same-multibody finite pairs,
+finite-row fracture accounting, CUDA, and unified soft/rigid rows remain open.
 Free-rigid AVBD point-joint rows now also support finite linear and angular
 material stiffness through the public point-joint facade and dartpy properties;
 those rows use raw finite residuals and ramp row stiffness up to the configured
@@ -1008,10 +1017,15 @@ remaining gaps, in order:
    tiny positive effort-limit coverage including non-cardinal
    child-/parent-endpoint axis bases, private fixed-row reset, and
    revolute/prismatic break/reset re-engagement for world-link polarity.
-   Finite-stiffness
-   private AVBD fixed point-joint
-   configs now also contribute compliant variational forces through persistent
-   stiffness-ramped rows, and non-topology multibody-link
+   Finite-stiffness private AVBD fixed point-joint configs and passive public
+   world-link spherical/revolute/prismatic masked rows now contribute compliant
+   variational forces through persistent stiffness-ramped state while keeping
+   their paper-defined free coordinates active. The focused behavior oracle
+   fails on exact parent, all three warmed allocation policies pass, and
+   `avbd_articulated_compliant_joints` plus
+   [`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json)
+   record visual and candidate-only 3/12/48-joint scale evidence without a
+   speedup claim. Non-topology multibody-link
    fixed/revolute/prismatic point-joint entities can now generate hard private
    configs from the simulation-entry current pose. Public same-multibody and
    world-link articulated facades now cover fixed, spherical linear-only
@@ -1130,7 +1144,9 @@ remaining gaps, in order:
    movable link-pair, tiny-limit, restored tiny-limit save/load, one-DOF
    break/reset, spherical reset, and movable-pair plus direct world-link
    save/load/reset checks remains open.
-   Extend that bridge to those row families, then broaden fracture
+   Extend finite extraction to same-multibody endpoint pairs, couple bounded
+   free-axis velocity motors with finite masked rows, and add finite-row
+   break-force accounting. Then broaden fracture
    lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
    the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
    Breakable source-demo fixed-joint break/reset rows, and public articulated
@@ -1289,6 +1305,24 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-07-30, the articulated finite-row packet extended the CPU variational
+bridge from finite fixed rows to passive public world-link spherical,
+revolute, and prismatic point joints. Their masked constrained coordinates use
+persistent per-axis stiffness ramp state while spherical rotation, revolute
+hinge rotation, and prismatic axis translation remain free. The public
+behavior oracle fails on exact parent `0b0154573b8` and passes on the candidate;
+a fixed-size 6x6 articulated inverse-mass solve matches the dense nine-DOF
+oracle, and warmed world-base, global-`new`, and raw-malloc gates all pass. The
+`avbd_articulated_compliant_joints` py-demo has a text-first free-coordinate
+oracle and assessed 120-frame software capture. A pinned candidate-only
+benchmark records median CPU time of 71.7 us for 3 joints, 333.5 us for 12,
+and 2.404 ms for 48; the parent skipped these rows, so no speedup is claimed.
+[`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json)
+keeps `avbd.method.joints_and_attachments` and
+`avbd.method.finite_stiffness_ramping` partial: finite one-DOF motor coupling,
+same-multibody finite pairs, fracture accounting, unified soft/rigid rows,
+CUDA, and source/paper achieved-accuracy performance remain open.
 
 On 2026-07-30, the bounded AVBD Section 4 packet added a deterministic
 post-primal CPU dual/stiffness pass for the currently promoted deformable and

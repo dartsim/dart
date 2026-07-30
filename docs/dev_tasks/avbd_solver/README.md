@@ -24,18 +24,22 @@ This folder is the temporary working surface; the durable owner is the plan.
   `feature/vbd-avbd-paper-parity-contract`, based on `main` at `83110ef54ab`;
   the fail-closed contract is committed locally at `710cbfc1152`, and nothing
   has been pushed. The Section 3.5 packet is committed locally at
-  `a78f688a178`; the Section 4 packet is the current local unpushed closeout.
-- **Current packet:** verified Section 4 parallel dual/stiffness update over
-  the already-promoted deformable and private free-rigid CPU row inventories.
+  `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
+  finite-row packet is the current local unpushed closeout.
+- **Current packet:** passive public world-link spherical, revolute, and
+  prismatic point joints now feed their masked finite-stiffness rows into the
+  CPU variational articulated bridge while preserving their free coordinates.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
-- **Latest verified local packet:**
-  `avbd.method.parallel_dual_stiffness_pass` advanced from missing to partial.
-  The serial primal order is unchanged; inventories above the measured
-  8,192-row gate use deterministic, allocation-stable persistent-worker
-  ranges. The row is not complete; articulated/unified inventories, CUDA, and
-  source-matched achieved-accuracy performance remain open.
+- **Latest verified local packet:** focused behavior, dense inverse-mass,
+  warmed allocation, Python scene, exact-parent mutation, assessed visual, and
+  candidate-only scale evidence advance
+  `avbd.method.joints_and_attachments` and
+  `avbd.method.finite_stiffness_ramping` without completing either row. Finite
+  one-DOF motor coupling, same-multibody finite pairs, fracture accounting,
+  unified rows, CUDA, and source-matched achieved-accuracy performance remain
+  open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -45,16 +49,20 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** 228/228 focused compute/contact/deformable/rigid
-  tests and the three new production-World activation/allocation tests pass.
-  The complete World binary is 431/435; all four failures reproduce with the
-  same allocation counts and bytes on exact parent `a78f688a178`, so they are
-  recorded as pre-existing rather than attributed to this packet. The full
-  simulation label is 77/79 active CTest entries with only the two split
-  allocation entries failing on those same four assertions; its other two
-  listed entries are intentionally disabled. The aggregate C++ unit tier is
-  168/168. Release/profile build, lint, PLAN-104 parity, AVBD-packet, and
-  PLAN-122 allocation-matrix checks pass.
+- **Current local gates:** the complete variational-integration binary passes
+  181/181 active tests; the three new articulated finite-row post-bake
+  allocation policies, five packet-writer tests, and focused Python scene
+  behavior oracle pass. The identical behavior test fails five constrained-row
+  assertions on exact parent `0b0154573b8`, proving mutation sensitivity. The
+  assessed 120-frame software capture and pinned 3/12/48-joint candidate-only
+  benchmark are recorded in the packet. The Release build, aggregate C++ unit
+  tier (168/168), full Python tier (1644 passed, 20 skipped), PLAN-104 parity,
+  AVBD-packet, and PLAN-122 allocation-matrix gates pass. The simulation label
+  passes 77/79 active entries; only the split global-heap and raw-malloc
+  binaries fail on the same four unrelated allocation signatures previously
+  reproduced on exact parent `a78f688a178` (320/80 global bytes and 320/1376
+  raw bytes), while all three new articulated finite-row gates pass inside
+  those splits. Two monolithic entries remain intentionally disabled.
 
 ## Goal
 
@@ -85,9 +93,10 @@ numbers.
 
 ## Immediate Next Steps
 
-Advance PLAN-104's articulated multibody AVBD extraction gap after the verified
-Section 4 closeout. Keep every dependent figure/demo/performance row partial
-until source-matched CPU and CUDA evidence closes it.
+Continue PLAN-104's articulated multibody AVBD extraction with finite
+same-multibody endpoint pairs or finite one-DOF motor coupling after this
+packet. Keep every dependent figure/demo/performance row partial until
+source-matched CPU and CUDA evidence closes it.
 
 Two smaller deferred maintenance items remain valid but do not outrank the
 missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
@@ -169,6 +178,32 @@ benchmark keeps 8,192 rows inline and records current 2-/4-worker speedups of
 paper/reference-performance claims. No new render is required for this
 scheduling-only packet because bitwise serial/parallel row and production
 World state equivalence is the stronger behavior oracle.
+
+## Verified Local Packet: Articulated Finite Masked Rows
+
+- **Value:** make public passive finite-stiffness spherical, revolute, and
+  prismatic world-link point joints affect the variational articulated solve
+  instead of being silently skipped.
+- **Scope:** reuse persistent per-axis AVBD ramp state for masked linear and
+  angular rows on CPU; preserve spherical rotation, revolute hinge rotation,
+  and prismatic axis translation as free coordinates.
+- **Non-goals:** finite one-DOF velocity-motor coupling, same-multibody finite
+  endpoint pairs, finite-row fracture accounting, unified soft/rigid rows,
+  CUDA, and a paper/reference speedup claim.
+- **Correctness evidence:** the public S/R/P behavior oracle passes on the
+  candidate and fails five constrained-coordinate assertions on exact parent
+  `0b0154573b8`; the allocation-free fixed-size 6x6 articulated inverse-mass
+  path matches a dense nine-DOF solve.
+- **Runtime evidence:** warmed world-base, global-`new`, and raw-malloc gates
+  pass; the Python text oracle and assessed start/middle/end render show the
+  constrained bodies remain aligned while their free coordinates move.
+- **Performance boundary:** the pinned candidate-only benchmark records 71.7
+  us for 3 joints, 333.5 us for 12, and 2.404 ms for 48. The parent skipped
+  these rows, so the packet makes no before/after speedup claim.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json).
+Both linked canonical method rows remain partial.
 
 ## History
 
