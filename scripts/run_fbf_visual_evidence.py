@@ -2722,9 +2722,7 @@ def _demo_runtime_closure(demo: Path) -> dict[str, Any]:
         reported_name: str
         candidate_text: str
         if "=>" in line:
-            reported_name, remainder = (
-                part.strip() for part in line.split("=>", 1)
-            )
+            reported_name, remainder = (part.strip() for part in line.split("=>", 1))
             candidate_text = remainder.split(maxsplit=1)[0]
         else:
             candidate_text = line.split(maxsplit=1)[0]

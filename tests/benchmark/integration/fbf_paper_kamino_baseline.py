@@ -75,7 +75,11 @@ def main():
         import newton
         from newton.solvers import SolverKamino  # noqa: F401 - probe import
     except Exception as error:  # noqa: BLE001 - availability probe
-        emit("kamino_probe", "kamino", f"skipped: newton/SolverKamino not importable ({error})")
+        emit(
+            "kamino_probe",
+            "kamino",
+            f"skipped: newton/SolverKamino not importable ({error})",
+        )
         return 0
 
     try:
