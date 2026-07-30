@@ -23,23 +23,27 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Minimum pushed code/runtime checkpoint:
+Current pushed documentation head:
+
+  6be9d0f42de62c75a71bded1820311f2a8878e6a
+
+Matching pushed code/runtime checkpoint:
 
   91eea8541b8908f00a3d21717f0bb832320490ec
 
-It contains release-6.20 tip
+The runtime checkpoint contains release-6.20 tip
 aaf1e5f64dd47f0350ea1b395bf257bb77b36829. Query the live branch and PR
-#3377 before acting. At handoff the PR is open, draft, mergeable, and its
-current-head checks are queued. Keep it draft and do not trigger @codex
-review.
+#3377 before acting. At the 2026-07-30 handoff the PR is open, draft, and
+mergeable, and every reported current-head check is green; only the
+intentionally skipped API-documentation deploy job is not a success. Keep it
+draft and do not trigger @codex review.
 
-The matching 2026-07-30 updates in AGENT_CONTINUATION.md, HANDOFF.md,
-README.md, RESUME.md, and docs/dev_tasks/.gitignore form a documentation-only
-follow-up and do not change the runtime hashes below. If those five files
-remain modified, preserve them. After cooldown, inspect them, run pixi run
-lint and git diff --check, then create and push the authorized documentation
-checkpoint before CPU-heavy evidence work. If the worktree is clean, query
-the live branch for that later documentation-only commit.
+Commit 6be9d0f42de6 is the matching 2026-07-30 documentation-only checkpoint
+for AGENT_CONTINUATION.md, HANDOFF.md, README.md, RESUME.md, and
+docs/dev_tasks/.gitignore; it does not change the runtime hashes below.
+Preserve any later handoff edits. Before their next commit, wait for a safe
+host window, run pixi run lint and git diff --check, fetch the target, merge
+it if advanced, and then create and push the authorized checkpoint.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -104,14 +108,23 @@ inspection confirms crisp checker facets and visible orientation changes.
 The capture summary hash is 88b9a50830d3..., and the manual record hash is
 9807fac4d9a3....
 
-The separate reuse-only verify run was interrupted during PNG validation when
-the shared host reached 100 C. It is non-evidence. Do not call the current-head
-Figure 3 bundle independently verified or fully resealed until verify
-completes in a cool window. The capture-time runner itself passed frame,
-full-decode, runtime-closure, and outcome validation. Both solvers pass, so
-there is no superiority, equivalence, source-backend/full-trajectory,
-renderer/golden, signed-rate-from-video, timing, Figure 3, or paper-parity
-claim.
+Earlier reuse-only verify runs were interrupted during PNG validation when the
+shared host reached 100 C and are non-evidence. The later thermally throttled
+reuse-only verifier completed and independently passed exact, boxed, and the
+paired group, including full MP4 decode, frame/metadata checks, runtime
+closure, and outcome validation. It reused the captured bytes rather than
+rerunning the simulation. The ignored
+assets/pr_media_current_head_cfd865/fig03_verify_summary.json SHA-256 is
+7b5c40beba769ec301d78ee5038c0d9118ffac75190429968f899d1f1a40005a.
+Exact recorded 205 attempts, 205 solves, zero exact failures, zero boxed
+fallbacks, and a worst residual below 1e-6. Both solvers pass, so there is no
+superiority, equivalence, source-backend/full-trajectory, renderer/golden,
+signed-rate-from-video, timing, Figure 3, or paper-parity claim.
+
+All 16 recorded GitHub user-attachment URLs were freshly streamed from GitHub
+on 2026-07-30, and every byte stream matched its recorded SHA-256. This proves
+attachment integrity only; it does not promote a partial or blocked coverage
+row.
 
 The compact tracked paper-coverage-contract.json replaces the deleted
 asset-coupled manifest. Run:
@@ -127,14 +140,13 @@ does not make the evidence complete.
 
 Remaining order:
 
-1. after a cool window, complete Figure 3 reuse-only verification;
-2. run the isolated matched one-/four-core packet only after two samples at
+1. run the isolated matched one-/four-core packet only after two samples at
    least 60 seconds apart show package temperature <= 60 C, one-minute
    load <= 1.0, and no process above 5% CPU on logical CPUs 8, 10, 12, or 14;
-3. freshly capture and independently verify Figure 8;
-4. run the roughly five-hour paired ten-level exact/boxed capture from one
+2. freshly capture and independently verify Figure 8;
+3. run the roughly five-hour paired ten-level exact/boxed capture from one
    unchanged head; and
-5. upload changed review videos as GitHub user attachments, not repository
+4. upload changed review videos as GitHub user attachments, not repository
    files, then
    update PAPER_DEMO_VIDEO_MATRIX.md and the draft PR body.
 

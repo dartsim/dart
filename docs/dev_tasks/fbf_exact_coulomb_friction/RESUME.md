@@ -7,11 +7,15 @@ performance-host, CI, and immediate-next-step statement below. The task is
 still active and incomplete.
 
 - Branch `research/fbf-friction-release620` and draft PR #3377 are pushed at
-  `91eea8541b8908f00a3d21717f0bb832320490ec`, merging current
+  documentation-only head
+  `6be9d0f42de62c75a71bded1820311f2a8878e6a`. The code/runtime evidence
+  checkpoint remains
+  `91eea8541b8908f00a3d21717f0bb832320490ec`, which merges current
   `origin/release-6.20`
-  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. The last live PR query showed
-  OPEN, draft, mergeable, with the new head's checks queued. Keep it draft and
-  do not request review.
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. The 2026-07-30 live query
+  showed OPEN, draft, and mergeable, with every reported current-head check
+  green; the API-documentation deploy job was intentionally skipped. Keep it
+  draft and do not request review.
 - The PR description now includes the public before/after API and defaults.
   Default `World::create()` behavior remains `BoxedLcpConstraintSolver` and
   the normal FCL/primitive detector. Callers opt into exact-Coulomb FBF by
@@ -31,39 +35,47 @@ still active and incomplete.
   `b2c268aa...`, `dc3228e2...`, and `e321c711...`, byte-identical to the
   existing PR attachment streams. Manual inspection confirms the checker
   texture is legible and visibly rotates.
-- The reuse-only `verify` command was interrupted when the shared package
-  reached 100 C. Treat that attempt as non-evidence and do not call this
-  current-head bundle independently verified or fully resealed yet. Both
-  solvers pass the bounded slice, so no superiority, equivalence, backend,
-  full-trajectory, renderer/golden, timing, Figure 3, or paper-parity claim
-  follows.
+- Earlier reuse-only `verify` attempts were interrupted when the shared
+  package reached 100 C and remain non-evidence. The later thermally throttled
+  reuse-only verifier completed and independently passed exact, boxed, and
+  the paired group, including full MP4 decode, frame/metadata checks, runtime
+  closure, and outcome validation. It reused the captured bytes rather than
+  rerunning the simulation. Its ignored
+  `assets/pr_media_current_head_cfd865/fig03_verify_summary.json` SHA-256 is
+  `7b5c40beba769ec301d78ee5038c0d9118ffac75190429968f899d1f1a40005a`.
+  Exact recorded 205 attempts, 205 solves, zero exact failures, zero boxed
+  fallbacks, and a worst residual below `1e-6`. Both solvers pass the bounded
+  slice, so no superiority, equivalence, backend, full-trajectory,
+  renderer/golden, timing, Figure 3, or paper-parity claim follows.
 - The current net PR tree has no task-generated `assets/` or raw evidence
   outputs. Generated task data remains covered by the scalable role-based
   `docs/dev_tasks/.gitignore` `**/assets/` rule. Historical topic commits still
   contain 492 old evidence blobs, so a true squash is required to avoid
   importing that history. No history rewrite or force-push is authorized.
+- All 16 recorded GitHub user-attachment URLs were freshly streamed from
+  GitHub on 2026-07-30 and each byte stream matched its recorded SHA-256.
+  This is attachment-integrity evidence only; it does not promote any partial
+  or blocked coverage row.
 
-Resume only after a cool window: rerun Figure 3 `verify`; then run the declared
-cool/quiet CPU packet, fresh Figure 8 blocker capture/finalize/seal/verify, and
-the paired ten-level capture from one unchanged head. Keep all videos outside
-Git and publish changed bytes only as GitHub user attachments. Before any
-commit, merge a newly advanced target, run mandatory `pixi run lint`, rerun
-proportionate tests, checkpoint, and push.
+Resume only after a cool window: run the declared cool/quiet CPU packet, fresh
+Figure 8 blocker capture/finalize/seal/verify, and the paired ten-level capture
+from one unchanged head. Keep all videos outside Git and publish changed bytes
+only as GitHub user attachments. Before any commit, merge a newly advanced
+target, run mandatory `pixi run lint`, rerun proportionate tests, checkpoint,
+and push.
 
 For the CPU packet, require two host samples at least 60 seconds apart with
 package temperature at or below 60 C, one-minute load at or below 1.0, and no
-competing process above 5% CPU on logical CPUs 8, 10, 12, or 14. Figure 3
-verification and later visual captures are not timing evidence, but still wait
-until the package is below its thermal alarm and unrelated build saturation
-has cleared.
+competing process above 5% CPU on logical CPUs 8, 10, 12, or 14. Later visual
+captures are not timing evidence, but still wait until the package is below
+its thermal alarm and unrelated build saturation has cleared.
 
-The 2026-07-30 updates in `AGENT_CONTINUATION.md`, `HANDOFF.md`, `README.md`,
-this file, and `docs/dev_tasks/.gitignore` form a documentation-only
-checkpoint and do not change the runtime hashes above. If those five files
-remain modified, preserve them; after cooldown, review them, run
-`pixi run lint` and `git diff --check`, then create and push the authorized
-documentation checkpoint before CPU-heavy evidence work. If the worktree is
-clean, query the live branch for that later documentation-only commit.
+Commit `6be9d0f42de6` is the 2026-07-30 documentation-only checkpoint for
+`AGENT_CONTINUATION.md`, `HANDOFF.md`, `README.md`, this file, and
+`docs/dev_tasks/.gitignore`; it does not change the runtime hashes above.
+Preserve any later handoff edits. Before their next commit, wait for a safe
+host window, run `pixi run lint` and `git diff --check`, fetch the target,
+merge it if advanced, and then create and push the authorized checkpoint.
 
 ## 2026-07-29 Post-target Coverage Checkpoint
 
