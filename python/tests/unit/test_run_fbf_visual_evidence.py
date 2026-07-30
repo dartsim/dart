@@ -199,7 +199,7 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
         "completed_steps": schedule.total_steps,
         "width": schedule.width,
         "height": schedule.height,
-        "collision_detector": schedule.collision_detector,
+        "collision_detector": module._expected_runtime_collision_detector(schedule),
         "event_order": "captures_before_actions_at_each_completed_step",
         "steps": step_records,
         "shots": shots,
@@ -601,7 +601,7 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
         "completed_steps": step,
         "width": schedule.width,
         "height": schedule.height,
-        "collision_detector": schedule.collision_detector,
+        "collision_detector": module._expected_runtime_collision_detector(schedule),
         "event_order": "captures_before_actions_at_each_completed_step",
         "steps": steps,
         "shots": shots,
@@ -714,7 +714,7 @@ def _write_failed_source_continuation_sidecar(
         "completed_steps": step,
         "width": schedule.width,
         "height": schedule.height,
-        "collision_detector": schedule.collision_detector,
+        "collision_detector": module._expected_runtime_collision_detector(schedule),
         "event_order": "captures_before_actions_at_each_completed_step",
         "steps": steps,
         "shots": shots,
@@ -4272,6 +4272,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
     assert legacy_command[legacy_command.index("--collision-detector") + 1] == "dart"
     assert legacy_plan["collision_detector"] == "dart"
     assert legacy_plan["collision_detector_override"] is True
+    assert legacy_plan["runtime_collision_detector"] == "dart"
 
     for member in native_members:
         schedule = module.SCHEDULES[member]
@@ -4284,6 +4285,7 @@ def test_capture_schedules_select_the_required_collision_frontend():
         assert "--collision-detector" not in command
         assert plan["collision_detector"] == "native"
         assert plan["collision_detector_override"] is False
+        assert plan["runtime_collision_detector"] == "dart"
 
 
 def test_literal_arch_contract_binds_exact_and_boxed_physics(tmp_path, monkeypatch):
@@ -8567,6 +8569,7 @@ def test_existing_verification_accepts_legacy_exact_artifact_without_flag(
         ("schedule", "panel_labels", ["invented"]),
         ("schedule", "collision_detector", "native"),
         ("schedule", "collision_detector_override", False),
+        ("schedule", "runtime_collision_detector", "bullet"),
         ("schedule", "actual_simulator_required", False),
         ("schedule", "generated_imagery_allowed", True),
         ("schedule", "paper_comparable", True),
@@ -9099,7 +9102,9 @@ def test_capture_schedule_rejects_invalid_explicit_time_step(time_step_seconds):
 def test_sidecar_validation_uses_scheduled_collision_frontend(tmp_path):
     module = _load_module()
     schedule = module.dataclasses.replace(
-        _test_schedule(module), collision_detector="native"
+        _test_schedule(module),
+        collision_detector="native",
+        collision_detector_override=False,
     )
     output_dir = tmp_path / schedule.id
     _write_frames(module, schedule, output_dir)
@@ -9107,14 +9112,30 @@ def test_sidecar_validation_uses_scheduled_collision_frontend(tmp_path):
 
     report = module.validate_sidecar(schedule, output_dir)
     assert report["pass"] is True
+    assert module._expected_runtime_collision_detector(schedule) == "dart"
+    assert (
+        module.schedule_plan(schedule, Path("dart-demos"), tmp_path)[
+            "runtime_collision_detector"
+        ]
+        == "dart"
+    )
 
     sidecar_path = output_dir / "timeline.json"
     sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
-    sidecar["collision_detector"] = "dart"
+    sidecar["collision_detector"] = "native"
     sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
 
     with pytest.raises(ValueError, match="collision detector differs"):
         module.validate_sidecar(schedule, output_dir)
+
+
+def test_explicit_collision_frontend_keeps_runtime_identity():
+    module = _load_module()
+    schedule = _test_schedule(module)
+
+    assert schedule.collision_detector == "dart"
+    assert schedule.collision_detector_override is True
+    assert module._expected_runtime_collision_detector(schedule) == "dart"
 
 
 def test_exact_sidecar_allows_unavailable_pre_solve_step_zero(tmp_path):

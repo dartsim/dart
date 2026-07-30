@@ -2856,6 +2856,20 @@ def _panel_frame_path(output_dir: Path, step: int) -> Path:
     return output_dir / "panel_frames" / f"step_{step:06d}.png"
 
 
+def _expected_runtime_collision_detector(schedule: CaptureSchedule) -> str:
+    """Return the detector identity reported by the active demo frontend."""
+
+    # Source schedules retain "native" as the stable evidence-policy label.
+    # Without an explicit frontend override, the consolidated public DART-owned
+    # detector factory reports its actual runtime identity as "dart".
+    if (
+        not schedule.collision_detector_override
+        and schedule.collision_detector == "native"
+    ):
+        return "dart"
+    return schedule.collision_detector
+
+
 def build_demo_command(
     schedule: CaptureSchedule, demo: Path, output_dir: Path
 ) -> list[str]:
@@ -3047,6 +3061,7 @@ def schedule_plan(
         "expected_solver": _expected_solver(schedule),
         "collision_detector": schedule.collision_detector,
         "collision_detector_override": schedule.collision_detector_override,
+        "runtime_collision_detector": _expected_runtime_collision_detector(schedule),
         "configuration": schedule.configuration_dict(),
         "total_steps": schedule.total_steps,
         "time_step_seconds": schedule.time_step_seconds,
@@ -3144,6 +3159,7 @@ def _validate_capture_claim_boundary(
         "pre_run_actions": list(schedule.pre_run_actions),
         "collision_detector": schedule.collision_detector,
         "collision_detector_override": schedule.collision_detector_override,
+        "runtime_collision_detector": _expected_runtime_collision_detector(schedule),
         "actual_simulator_required": True,
         "generated_imagery_allowed": False,
         "paper_comparable": False,
@@ -8195,7 +8211,7 @@ def _validate_failed_exact_fbf_sidecar(
         schedule.height,
     ):
         raise ValueError(f"{sidecar_path}: capture dimensions do not match")
-    if data.get("collision_detector") != schedule.collision_detector:
+    if data.get("collision_detector") != _expected_runtime_collision_detector(schedule):
         raise ValueError(
             f"{sidecar_path}: collision detector differs from the schedule"
         )
@@ -8537,7 +8553,7 @@ def _validate_failed_source_continuation_sidecar(
         schedule.height,
     ):
         raise ValueError(f"{sidecar_path}: capture dimensions do not match")
-    if data.get("collision_detector") != schedule.collision_detector:
+    if data.get("collision_detector") != _expected_runtime_collision_detector(schedule):
         raise ValueError(
             f"{sidecar_path}: collision detector differs from the schedule"
         )
@@ -8795,7 +8811,7 @@ def validate_sidecar(
         schedule.height,
     ):
         raise ValueError(f"{sidecar_path}: capture dimensions do not match")
-    if data.get("collision_detector") != schedule.collision_detector:
+    if data.get("collision_detector") != _expected_runtime_collision_detector(schedule):
         raise ValueError(
             f"{sidecar_path}: collision detector differs from the schedule"
         )
