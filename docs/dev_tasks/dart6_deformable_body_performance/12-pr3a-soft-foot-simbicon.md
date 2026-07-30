@@ -67,6 +67,11 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 - **Push recovery: soft withstands ≥ rigid** — `maxRecoverablePush(Soft) >=
   maxRecoverablePush(Rigid)` (paper: soft withstands larger perturbations), or a
   push magnitude that fells rigid but not soft.
+- **Equal mass**: the rigid and soft bipeds weigh the same. A `<soft_shape>`'s
+  `<total_mass>` is added on top of its link mass, so the soft feet's link mass
+  and inertia are scaled down to compensate; otherwise the soft biped is a
+  kilogram heavier and the contact and push gates measure ground load rather
+  than deformability.
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required

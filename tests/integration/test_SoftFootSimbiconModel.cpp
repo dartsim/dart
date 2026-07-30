@@ -66,6 +66,23 @@ namespace sfs = dart_demos::soft_foot_simbicon_model;
 
 namespace {
 
+/// Total mass of `skeleton`, counting soft point masses.
+///
+/// `BodyNode::getMass()` is not virtual and `Skeleton::getMass()` accumulates
+/// through it, so neither sees the point masses a SoftBodyNode carries; only
+/// `SoftBodyNode::getMass()` adds them.
+double totalMassIncludingPointMasses(
+    const dart::dynamics::SkeletonPtr& skeleton)
+{
+  double total = 0.0;
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    auto* soft = dynamic_cast<dart::dynamics::SoftBodyNode*>(body);
+    total += soft ? soft->getMass() : body->getMass();
+  }
+  return total;
+}
+
 /// Whether `body` reads as colliding the way BodyContactCondition reads it: for
 /// a SoftBodyNode the flag lives on the point masses, not on the body.
 bool readsAsColliding(dart::dynamics::BodyNode* body)
@@ -267,6 +284,37 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
                    .cwiseAbs()
                    .maxCoeff()
             << "\n";
+}
+
+//==============================================================================
+// Gate 1c: the two bipeds weigh the same. A soft foot's point masses are added
+// on top of its link mass, so leaving the link at the rigid mass would make the
+// soft biped a kilogram heavier -- and extra ground load raises contact counts
+// and changes push recovery by itself, which would make gates 2 and 3 unable to
+// attribute anything to deformability.
+TEST(SoftFootSimbiconModelTest, RigidAndSoftBipedsWeighTheSame)
+{
+  sfs::Model rigid = sfs::createModel(sfs::Feet::Rigid);
+  sfs::Model soft = sfs::createModel(sfs::Feet::Soft);
+
+  const double rigidMass = totalMassIncludingPointMasses(rigid.atlas);
+  const double softMass = totalMassIncludingPointMasses(soft.atlas);
+  EXPECT_NEAR(softMass, rigidMass, 1e-9)
+      << "the soft biped does not weigh what the rigid one does, so the "
+         "contact and push gates cannot isolate deformability";
+
+  // Per foot as well, not just in total.
+  for (const auto& pair :
+       {std::make_pair(rigid.leftFoot, soft.leftFoot),
+        std::make_pair(rigid.rightFoot, soft.rightFoot)}) {
+    auto* softFoot = dynamic_cast<dart::dynamics::SoftBodyNode*>(pair.second);
+    ASSERT_NE(softFoot, nullptr) << "soft model's foot is not a SoftBodyNode";
+    EXPECT_NEAR(softFoot->getMass(), pair.first->getMass(), 1e-9)
+        << "soft foot total mass differs from the rigid foot it replaces";
+  }
+
+  std::cout << "soft_foot_simbicon mass  rigid=" << rigidMass
+            << " kg  soft=" << softMass << " kg\n";
 }
 
 //==============================================================================
