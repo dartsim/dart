@@ -85,6 +85,7 @@
     consolidated-DART detector smoke uses a semantically inspected orthogonal
     view that keeps its shape labels, contact markers, and collision bounds
     readable.
+    ([#3410](https://github.com/dartsim/dart/pull/3410))
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
