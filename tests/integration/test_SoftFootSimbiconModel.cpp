@@ -39,8 +39,11 @@
 //  2. Soft feet maintain at least as many ground contact points as rigid feet
 //     over a settled window (the paper's headline: "maintaining more ground
 //     contact points") -- here a large, robust margin.
-//  3. Soft feet withstand at least as large a recoverable pelvis push as rigid
-//     feet (the paper's "withstands larger perturbations").
+//  3. Recoverable pelvis push is measured for both foot types. The paper's
+//     "withstands larger perturbations" does NOT reproduce here -- soft
+//     recovers 4000 N against rigid's 8000 N -- so this gate publishes the
+//     numbers rather than asserting the comparison. See the gate for the
+//     stiffness sweep that locates the cause.
 //
 // A fourth gate covers the scene's Reset action, which has to restore the soft
 // feet's independent point-mass state and the gait phase, not just the
