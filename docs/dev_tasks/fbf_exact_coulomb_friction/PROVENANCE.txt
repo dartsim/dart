@@ -15,8 +15,11 @@ d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363 and
 its exact build-tree libdart.so.6.19.4 SHA-256 is
 caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5.
 The merge resolution passed lint, all 166 C++ tests, the 34-scene FBF
-documentation validator, and AI-workflow consistency checks. No schema-v3
-visual reseal has been captured against this post-merge binary.
+documentation validator, and AI-workflow consistency checks. A schema-v3
+Figure 3 exact/boxed/group reseal has been captured against this post-merge
+binary under assets/pr_media_postmerge_a833/. Its runtime-closure digest is
+22c7f90e766b14c0993aaa929f9e9b92fcb05278d1e1071486a74ade677317d3,
+and the closure remained unchanged during capture.
 Documentation-only descendants do not change this runtime identity; query Git
 for the live branch head.
 
@@ -32,9 +35,18 @@ Slot 09 is the fresh schema-v3 captured-runtime ten-level group
 (SHA-256 438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d);
 both members and the group pass standalone verification and full decode, and
 the PR-facing download matches byte-for-byte. Generated media remains ignored
-local evidence and is not tracked by Git. These records were captured at
-333a809f14a2e8b5f9837c74dcef13c77ca8fd76 and are not current-head binary
-reuse evidence after the 6fb4 merge.
+local evidence and is not tracked by Git. Figure 8 and ten-level records were
+captured at 333a809f14a2e8b5f9837c74dcef13c77ca8fd76 and are not current-head
+binary reuse evidence after the 6fb4 merge. Figure 3 exact/boxed/group MP4
+SHA-256 values
+b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30,
+dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f,
+and e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b
+were reproduced byte-identically against the post-merge runtime. The
+run-summary, verification, and manual-inspection SHA-256 values are
+22f7abb67a1d04b065a1a3402966024f7d3ebf5d4446061fe524f147eece0532,
+09fbfb51ae8425d2de6f6e0d4a73bfedfeb4196a9255947a77648f5d25cc086e,
+and 5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f.
 
 1. Paper and project page
 -------------------------

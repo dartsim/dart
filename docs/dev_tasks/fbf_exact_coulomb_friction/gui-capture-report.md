@@ -8,15 +8,19 @@ below. Schema-v3 evidence under ignored
 `3d685d2c...`, core DART SHA-256 `3b66436b...`, 61 regular libraries, and
 eight build-tree libraries before and after capture at `333a809f14a`.
 Post-merge code/runtime checkpoint `6fb4d0dbd8c` rebuilds to demo/core SHA-256 values
-`d9932f4c...` / `caf402af...`; no full visual reseal has run against that
-binary. Documentation-only descendants do not change this identity. The
-uploaded bytes remain audited captured-checkpoint artifacts, not post-merge
-current-binary reuse evidence.
+`d9932f4c...` / `caf402af...`. Documentation-only descendants do not change
+this identity. Figure 3 was freshly recaptured and independently verified
+against that post-merge runtime under ignored
+`assets/pr_media_postmerge_a833/`; its exact/boxed/group bytes are identical
+to slots 02/16. Figure 8, ten-level, and the remaining uploaded clips retain
+their recorded captured-checkpoint identities.
 
-- Fresh Figure 3 exact and boxed members complete 240/240 and independently
-  verify. Their checker-textured sphere makes changing orientation and
-  backspin visible. Exact/group hashes are `b2c268aa...` / `e321c711...`;
-  both outcomes pass, so this supplies no superiority claim.
+- Fresh post-merge Figure 3 exact and boxed members complete 240/240 and
+  independently verify against demo/core/closure hashes `d9932f4c...` /
+  `caf402af...` / `22c7f90e...`. Their checker-textured sphere makes changing
+  orientation and backspin visible in steps 0/2/4 and the temporal panel.
+  Exact/boxed/group hashes are `b2c268aa...` / `dc3228e2...` /
+  `e321c711...`; both outcomes pass, so this supplies no superiority claim.
 - Fresh Figure 8 boxed capture, failed-exact-prefix finalization, manual seal,
   and standalone verification pass with `upload_ready=true`. Exact stops after
   completed step 209 and freezes only after step 208; boxed finishes 1,600 but
@@ -358,12 +362,15 @@ count, full 11 s semantic edit, paper timing, and real-time parity.
 ### Source-Pinned Author Figure 3 Backspin Capture
 
 The preferred Figure 3 visual evidence is the ignored
-`assets/pr_media_author_backspin_v2/` capture for
+`assets/pr_media_postmerge_a833/` capture for
 `fbf_author_backspin_current_source` / `backspin_author_current_source`.
 Capture and independent reuse verification pass for two members and one group,
-with summary SHA-256 values
-`f0780db1a420f799f6850395711342fda5406e1f760218334488fa119e21468f` and
-`390ec386f51cd6a8081b5494e05039efd96beda4571782f9c9cb8670b5005171`.
+with run-summary / verification SHA-256 values
+`22f7abb67a1d04b065a1a3402966024f7d3ebf5d4446061fe524f147eece0532`
+and
+`09fbfb51ae8425d2de6f6e0d4a73bfedfeb4196a9255947a77648f5d25cc086e`.
+It binds post-merge demo/core/runtime-closure SHA-256 values
+`d9932f4c...` / `caf402af...` / `22c7f90e...` unchanged during capture.
 Exact and boxed both complete 240 steps / 241 state samples and pass the narrow
 rolling, contiguous-support, left-edge roll-off, planar-motion, airborne
 terminal, and source-terminal-tolerance gates. Exact records 205/205 solves,
@@ -375,7 +382,9 @@ The 121-frame exact member is the preferred browser upload at SHA-256
 the 121-frame labeled exact/boxed group is supplemental at SHA-256
 `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
 Manual inspection confirms visible ivory/charcoal facet-orientation changes in
-consecutive frames and across the temporal panel. The checker mesh is
+steps 0/2/4 and across the temporal panel. Its local record SHA-256 is
+`5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f`.
+The checker mesh is
 visual-only and hash-bound before/after capture. At 30 fps the initial
 `-200 rad/s` aliases, so signed direction/rate remains trace-backed. Both
 solvers pass; the capture proves no solver equivalence/superiority, source
