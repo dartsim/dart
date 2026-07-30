@@ -28,6 +28,27 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-30 Current-Head Checkpoint
+
+The current code/runtime evidence checkpoint is `91eea8541b8`, containing
+`release-6.20` target `aaf1e5f64dd`; a later documentation-only commit may be
+the live draft-PR head. The PR description now shows the before/after API and
+makes the compatibility defaults explicit:
+`World::create()` still uses `BoxedLcpConstraintSolver`; exact-Coulomb FBF is
+opt-in; boxed fallback is enabled inside the opt-in solver; and
+`DARTCollisionDetector` remains `Compact` unless a paper/demo scene explicitly
+requests `FourPointPlanar`.
+
+A fresh current-head Figure 3 capture passes capture-time validation for exact,
+boxed, and their labeled checker-texture comparison. Its three MP4s are
+byte-identical to the existing attachment streams, and manual inspection
+confirms visible checker orientation changes. A separate reuse-only verifier
+was stopped at the shared host's 100 C thermal limit, so the bundle is not yet
+an independently verified current-head seal. Both solvers pass the bounded
+slice; no superiority, equivalence, renderer, timing, Figure 3, or paper-parity
+claim follows. See the top of [RESUME.md](RESUME.md) for hashes and the exact
+restart order.
+
 ## 2026-07-29 Post-target Coverage Checkpoint
 
 Merge checkpoint `3aee836ff62d80fcbbaacd39d54134c7af7d3061` includes current
