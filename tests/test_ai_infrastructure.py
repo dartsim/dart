@@ -730,6 +730,7 @@ def _copy_test_gate_contract(root: Path) -> None:
         "docs/onboarding/testing.md",
         "docs/onboarding/release-management.md",
         "tests/CMakeLists.txt",
+        "python/CMakeLists.txt",
         "python/tests/CMakeLists.txt",
         "cmake/DARTRunCTest.cmake",
     ):
@@ -1422,6 +1423,33 @@ def test_test_gate_contract_rejects_unreachable_runtime_graph(
     )
 
 
+@pytest.mark.parametrize(
+    ("value", "separator", "expected"),
+    (
+        (
+            "$<TARGET_FILE_DIR:dartpy>:/tmp/build/python",
+            ":",
+            ["$<TARGET_FILE_DIR:dartpy>", "/tmp/build/python"],
+        ),
+        (
+            "$<TARGET_FILE_DIR:dartpy>;C:/build/python",
+            ";",
+            ["$<TARGET_FILE_DIR:dartpy>", "C:/build/python"],
+        ),
+        (
+            "$<IF:$<BOOL:1>,/tmp/a,/tmp/b>:/tmp/build/python",
+            ":",
+            ["$<IF:$<BOOL:1>,/tmp/a,/tmp/b>", "/tmp/build/python"],
+        ),
+        ("$<TARGET_FILE_DIR:dartpy", ":", []),
+    ),
+)
+def test_split_cmake_path_list_preserves_generator_expressions(
+    value, separator, expected
+):
+    assert infra.split_cmake_path_list(value, separator) == expected
+
+
 def _configure_semantic_graph_fixture(root: Path, generator: str | None = None) -> Path:
     sources = {
         "CMakeLists.txt": """
@@ -1432,8 +1460,15 @@ enable_testing()
 set(BUILD_TESTING ON CACHE BOOL "")
 set(DART_BUILD_DARTPY ON CACHE BOOL "")
 set(DART_USE_SYSTEM_PYBIND11 ON CACHE BOOL "")
-set(DART_PYTHONPATH "${CMAKE_BINARY_DIR}/python/dartpy")
-add_custom_target(dartpy)
+add_library(dartpy MODULE python/dartpy.c)
+if(WIN32)
+  set(
+    DART_PYTHONPATH
+    "$<TARGET_FILE_DIR:dartpy>\\;${CMAKE_BINARY_DIR}/python"
+  )
+else()
+  set(DART_PYTHONPATH "$<TARGET_FILE_DIR:dartpy>:${CMAKE_BINARY_DIR}/python")
+endif()
 add_subdirectory(tests)
 add_subdirectory(python/tests)
 set(all_target_candidates dartpy)
@@ -1476,6 +1511,7 @@ add_executable(UNIT_semantic test_semantic.cpp)
 add_test(NAME UNIT_semantic COMMAND UNIT_semantic)
 set(unit_tests UNIT_semantic PARENT_SCOPE)
 """.lstrip(),
+        "python/dartpy.c": "int dartpy_semantic_fixture(void) { return 0; }\n",
         "python/tests/CMakeLists.txt": """
 set(DARTPY_PYTEST_FOUND TRUE)
 set(dartpy_test_files test_semantic.py)
@@ -2695,6 +2731,10 @@ def test_cmake_semantic_graph_probe_rejects_pytest_fallback(tmp_path):
             "add_subdirectory(python/tests)",
             'set(DART_PYTHONPATH "${CMAKE_BINARY_DIR}/unrelated")\n',
         ),
+        (
+            "add_subdirectory(python/tests)",
+            'set(DART_PYTHONPATH "$<TARGET_FILE_DIR:dartpy>")\n',
+        ),
     ),
 )
 def test_cmake_semantic_graph_probe_rejects_effective_bypasses(
@@ -2750,6 +2790,69 @@ def test_test_gate_contract_requires_multiconfig_ctest_selection(tmp_path):
     assert any(
         "tests/CMakeLists.txt: missing `test-all` graph marker "
         "`cmake/DARTRunCTest.cmake`" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (
+            'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")',
+            'set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy")',
+            "`DART_DARTPY_BUILD_DIR` must derive from `$<TARGET_FILE_DIR:dartpy>`",
+        ),
+        (
+            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}\\\\;'
+            '${DART_PYTHON_BUILD_DIR}")',
+            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")',
+            "`DART_PYTHONPATH` must combine the target output directory and "
+            "Python build root under `if(WIN32)`",
+        ),
+        (
+            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}:'
+            '${DART_PYTHON_BUILD_DIR}")',
+            'set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}")',
+            "`DART_PYTHONPATH` must combine the target output directory and "
+            "Python build root under the non-Windows branch",
+        ),
+    ),
+)
+def test_test_gate_contract_requires_config_aware_dartpy_path(
+    tmp_path, old, new, expected
+):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "python/CMakeLists.txt"
+    text = cmake.read_text(encoding="utf-8")
+    assert old in text
+    cmake.write_text(text.replace(old, new, 1), encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(expected in error for error in errors)
+
+
+def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "python/CMakeLists.txt"
+    text = cmake.read_text(encoding="utf-8")
+    old = (
+        "add_subdirectory(dartpy)\n"
+        'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")'
+    )
+    new = (
+        'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")\n'
+        "add_subdirectory(dartpy)"
+    )
+    assert old in text
+    cmake.write_text(text.replace(old, new, 1), encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        "define `dartpy`, derive its configuration-aware output path" in error
         for error in errors
     )
 

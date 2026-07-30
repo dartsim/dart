@@ -1296,6 +1296,80 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
         )
 
 
+def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
+    """Keep pytest imports tied to the active dartpy target configuration."""
+    relative = "python/CMakeLists.txt"
+    path = root / relative
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        errors.append(f"{relative}: unable to read dartpy runtime path: {error}")
+        return
+
+    records = cmake_scoped_commands(text)
+    requirements = (
+        (
+            ("add_subdirectory", "dartpy", ()),
+            "dartpy_target",
+            "`add_subdirectory(dartpy)` must define the binding target",
+        ),
+        (
+            (
+                "set",
+                'DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>"',
+                (),
+            ),
+            "dartpy_output",
+            "`DART_DARTPY_BUILD_DIR` must derive from `$<TARGET_FILE_DIR:dartpy>`",
+        ),
+        (
+            (
+                "set",
+                "DART_PYTHONPATH "
+                '"${DART_DARTPY_BUILD_DIR}\\\\;${DART_PYTHON_BUILD_DIR}"',
+                ("if:WIN32",),
+            ),
+            "windows_path",
+            "`DART_PYTHONPATH` must combine the target output directory and "
+            "Python build root under `if(WIN32)`",
+        ),
+        (
+            (
+                "set",
+                "DART_PYTHONPATH "
+                '"${DART_DARTPY_BUILD_DIR}:${DART_PYTHON_BUILD_DIR}"',
+                ("else:WIN32",),
+            ),
+            "posix_path",
+            "`DART_PYTHONPATH` must combine the target output directory and "
+            "Python build root under the non-Windows branch",
+        ),
+        (
+            ("add_subdirectory", "tests", ()),
+            "pytest_target",
+            "`add_subdirectory(tests)` must define the dartpy test target",
+        ),
+    )
+    positions: dict[str, int] = {}
+    for required, key, message in requirements:
+        try:
+            positions[key] = records.index(required)
+        except ValueError:
+            errors.append(f"{relative}: {message}")
+
+    if len(positions) != len(requirements):
+        return
+    path_positions = (positions["windows_path"], positions["posix_path"])
+    if not (
+        positions["dartpy_target"] < positions["dartpy_output"] < min(path_positions)
+        and max(path_positions) < positions["pytest_target"]
+    ):
+        errors.append(
+            f"{relative}: define `dartpy`, derive its configuration-aware "
+            "output path, compose both platform paths, and then define tests"
+        )
+
+
 def check_test_gate_contract(root: Path, errors: list[str]) -> None:
     """Keep the Release ALL graph and focused test gates unambiguous."""
     try:
@@ -1559,6 +1633,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             ):
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
     check_ctest_runner_contract(root, errors)
+    check_dartpy_runtime_path_contract(root, errors)
 
     dependencies = pixi.get("dependencies")
     if not isinstance(dependencies, dict) or "pytest" not in dependencies:
@@ -1581,6 +1656,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "`scripts/run_pytest.py`",
             "does not run lint",
             "CMake's File API",
+            "$<TARGET_FILE_DIR:dartpy>",
         ),
         "docs/onboarding/release-management.md": (
             "`pixi run test-all` for the complete default CMake graph",
@@ -1955,6 +2031,33 @@ def normalized_absolute_path(path: str, base: Path) -> str:
     if not candidate.is_absolute():
         candidate = base / candidate
     return os.path.normcase(str(candidate.resolve()))
+
+
+def split_cmake_path_list(value: str, separator: str) -> list[str]:
+    """Split a path list without treating generator-expression colons as separators."""
+    entries: list[str] = []
+    entry: list[str] = []
+    depth = 0
+    offset = 0
+    while offset < len(value):
+        if value.startswith("$<", offset):
+            depth += 1
+            entry.extend(("$", "<"))
+            offset += 2
+            continue
+        character = value[offset]
+        if character == ">" and depth:
+            depth -= 1
+        if character == separator and depth == 0:
+            entries.append("".join(entry))
+            entry = []
+        else:
+            entry.append(character)
+        offset += 1
+    if depth:
+        return []
+    entries.append("".join(entry))
+    return entries
 
 
 def check_pytest_module_provenance(
@@ -2764,6 +2867,7 @@ def check_cmake_ctest_inventory(
 def check_cmake_test_target_trace(
     root: Path,
     build_dir: Path,
+    dartpy_output_dir: str,
     cache: dict[str, str],
     records: list[dict[str, Any]],
     origins: dict[str, tuple[str, int]],
@@ -2880,25 +2984,28 @@ def check_cmake_test_target_trace(
             )
         if valid:
             pythonpath_value = pytest_arguments[pytest_index + 5]
-            pythonpath_entries = pythonpath_value.split(os.pathsep)
+            pythonpath_entries = split_cmake_path_list(pythonpath_value, os.pathsep)
+            resolved_pythonpath_entries = [
+                (dartpy_output_dir if entry == "$<TARGET_FILE_DIR:dartpy>" else entry)
+                for entry in pythonpath_entries
+            ]
             normalized_pythonpath = {
                 normalized_absolute_path(entry, root / "python" / "tests")
-                for entry in pythonpath_entries
+                for entry in resolved_pythonpath_entries
                 if entry
             }
             allowed_pythonpath = {
-                normalized_absolute_path(str(build_dir / "python" / "dartpy"), root),
+                normalized_absolute_path(dartpy_output_dir, build_dir),
                 normalized_absolute_path(str(build_dir / "python"), root),
             }
-            required_pythonpath = normalized_absolute_path(
-                str(build_dir / "python" / "dartpy"), root
-            )
             valid = (
-                all(pythonpath_entries)
+                bool(pythonpath_entries)
+                and all(pythonpath_entries)
+                and pythonpath_entries[0] == "$<TARGET_FILE_DIR:dartpy>"
                 and len(pythonpath_entries) == len(normalized_pythonpath)
-                and required_pythonpath in normalized_pythonpath
-                and normalized_pythonpath <= allowed_pythonpath
+                and normalized_pythonpath == allowed_pythonpath
             )
+            pythonpath_value = os.pathsep.join(resolved_pythonpath_entries)
         if valid:
             try:
                 working_index = pytest_arguments.index("WORKING_DIRECTORY")
@@ -3113,7 +3220,7 @@ def check_cmake_test_graph(
             id_to_name[target_id] = name
 
     required_entries: dict[str, dict[str, Any]] = {}
-    for name in ("ALL", "tests_and_run", "pytest"):
+    for name in ("ALL", "dartpy", "tests_and_run", "pytest"):
         entries = named_targets.get(name, [])
         if len(entries) != 1:
             errors.append(
@@ -3122,7 +3229,7 @@ def check_cmake_test_graph(
             )
             continue
         required_entries[name] = entries[0]
-    if len(required_entries) != 3:
+    if len(required_entries) != 4:
         return
 
     target_data: dict[str, dict[str, Any]] = {}
@@ -3140,8 +3247,24 @@ def check_cmake_test_graph(
             errors.append(f"{prefix}: target `{name}` object is invalid")
             continue
         target_data[name] = data
-    if len(target_data) != 3:
+    if len(target_data) != 4:
         return
+
+    dartpy_artifacts = target_data["dartpy"].get("artifacts", [])
+    if not isinstance(dartpy_artifacts, list):
+        dartpy_artifacts = []
+    dartpy_output_dirs = {
+        str(Path(normalized_absolute_path(artifact["path"], build_dir)).parent)
+        for artifact in dartpy_artifacts
+        if isinstance(artifact, dict) and isinstance(artifact.get("path"), str)
+    }
+    if len(dartpy_output_dirs) != 1:
+        errors.append(
+            f"{prefix}: configured `dartpy` target must expose one artifact "
+            "directory"
+        )
+        return
+    dartpy_output_dir = next(iter(dartpy_output_dirs))
 
     def dependency_names(name: str) -> set[str]:
         dependencies = target_data[name].get("dependencies", [])
@@ -3423,6 +3546,7 @@ def check_cmake_test_graph(
         check_cmake_test_target_trace(
             root,
             build_dir,
+            dartpy_output_dir,
             cache,
             trace_records,
             configured_origins,

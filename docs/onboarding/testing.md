@@ -34,18 +34,20 @@ per-test selections remain explicit. Repository pytest gates use
 `scripts/run_pytest.py`; it removes every ambient `PYTEST_*` control, disables
 external plugin autoload, runs under Python isolation before adding only the
 task-owned import path, pins the root configuration, disables `conftest.py`,
-and fails if no test body executes. The checker rejects explicit local
+and fails if no test body executes. CMake derives the dartpy import location
+from `$<TARGET_FILE_DIR:dartpy>`, so Visual Studio, Xcode, and future
+multi-config generators use the selected configuration's extension module
+instead of a guessed build directory. The checker rejects explicit local
 `pytest_plugins` and resolves the installed package without importing a local
-shadow. Its semantic probes execute controlled passing and failing
-CTest/pytest cases, so source markers alone cannot claim that sanitization,
-test-body execution, or failure propagation works. The configured-graph probe
-also ties each broad target back to its validated source command and confirms
-Release commands use the active Pixi CTest and Python implementations. It
-catches early exits, inactive lexical decoys, variable poisoning, command
-shadowing, disabled, list-only, skipped, or result-inverted CTest entries,
-collection-only or spoofed pytest substitutions, stale generated test
-directories, and decoy targets. Native hosted CI remains the platform-specific
-execution proof.
+shadow. Its semantic probes execute controlled passing and failing CTest/pytest
+cases, so source markers alone cannot claim that sanitization, test-body
+execution, or failure propagation works. The configured-graph probe also ties
+each broad target back to its validated source command and confirms Release
+commands use the active Pixi CTest and Python implementations. It catches early
+exits, inactive lexical decoys, variable poisoning, command shadowing,
+disabled, list-only, skipped, or result-inverted CTest entries, collection-only
+or spoofed pytest substitutions, stale generated test directories, and decoy
+targets. Native hosted CI remains the platform-specific execution proof.
 
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in
