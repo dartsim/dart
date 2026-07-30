@@ -94,6 +94,40 @@ set_tests_properties(
 )
 dart_format_add(${soft_demo_model_test_sources})
 
+# The soft-foot locomotion model drives the Atlas soft-feet SDF with the
+# existing SIMBICON controller, so it needs the URDF and SDF loaders. Those
+# components are optional, so the gate only exists when both are built.
+if(TARGET dart-utils AND TARGET dart-utils-urdf)
+  set(
+    soft_foot_simbicon_test_sources
+    test_SoftFootSimbiconModel.cpp
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.cpp"
+    # The controller sources are GUI-free and are reused as-is.
+    # AtlasSimbiconScene.cpp is deliberately excluded: it is the only file in
+    # that directory that pulls in OSG and ImGui.
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/Controller.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/State.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/StateMachine.cpp"
+    "${PROJECT_SOURCE_DIR}/examples/demos/scenes/atlas_simbicon/TerminalCondition.cpp"
+  )
+  target_sources(
+    test_ConstraintSolver
+    PRIVATE ${soft_foot_simbicon_test_sources}
+  )
+  target_link_libraries(test_ConstraintSolver dart-utils dart-utils-urdf)
+  add_test(
+    NAME test_SoftFootSimbiconModel
+    COMMAND
+      $<TARGET_FILE:test_ConstraintSolver>
+      --gtest_filter=SoftFootSimbiconModelTest.*
+  )
+  set_tests_properties(
+    test_SoftFootSimbiconModel
+    PROPERTIES FAIL_REGULAR_EXPRESSION "0 tests"
+  )
+  dart_format_add(${soft_foot_simbicon_test_sources})
+endif()
+
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)

@@ -152,7 +152,13 @@ function(dart_demos_collect_scene_srcs out_var)
     "scenes/atlas_simbicon/*.cpp"
     "scenes/atlas_simbicon/*.hpp"
   )
+  file(
+    GLOB _soft_foot_simbicon_srcs
+    "scenes/soft_foot_simbicon/*.cpp"
+    "scenes/soft_foot_simbicon/*.hpp"
+  )
   list(APPEND _srcs ${_atlas_simbicon_srcs})
+  list(APPEND _srcs ${_soft_foot_simbicon_srcs})
   if(DART_DEMOS_HAVE_TINY_DNN)
     file(
       GLOB _human_joint_limits_srcs
