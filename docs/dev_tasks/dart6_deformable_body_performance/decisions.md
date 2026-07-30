@@ -17,6 +17,38 @@ reversible.
 - GitHub mutations (push, PR creation, review threads) require explicit
   maintainer approval.
 
+## 2026-07-29 maintainer decision: Kim/Pollard leaves DART 6
+
+- Decision: **Remove the volumetric FEM subsystem (`dart/dynamics/fem/`) from
+  DART 6 and retarget the Kim/Pollard lane to DART 7**, keeping DART 6's
+  deformable work on the Jain/Liu model that `SoftBodyNode` already implements.
+- Reasoning: the two papers cannot share one discretization. Jain/Liu is surface
+  point masses attached to articulated rigid bodies, which *is* `SoftBodyNode`
+  and which #3382 improved. Kim/Pollard is a reduced *volumetric* FEM over
+  tetrahedra with an embedded surface; expressing it required a second,
+  parallel deformable architecture living beside `SoftBodyNode`. Carrying two
+  deformable subsystems on a compatibility release branch is the wrong shape,
+  and it is why the ABI posture for the FEM work stayed awkward (internal-only
+  staging, uninstalled headers, a Doxygen exclusion).
+- Consequence: DART 6.20 keeps one deformable model. The removed work is
+  preserved in branch and pull-request history rather than deleted outright:
+  the foundation in `wp-db-fem-foundation` and the elastic element forces in
+  `wp-db-fem-elastic` / #3404, which is closed rather than merged.
+- Open question, explicitly not settled here: whether a reduced FEM in the
+  Kim/Pollard style is still the right target for DART 7 at all, given newer
+  solvers such as AVBD. Decide that on DART 7's own terms before porting
+  anything; the 2011 method is not automatically the best choice fifteen years
+  later.
+- Retained knowledge: `11-fem-integration-seam.md` keeps the DART 6 findings
+  that outlive the FEM code, in particular that `World::step()` returns early
+  without calling `ConstraintSolver::solve()` once automatic deactivation puts
+  the rigid scene to rest, and that external forces applied mid-solve are
+  cleared before the next step. Both constrain any future per-step extension of
+  DART 6, deformable or otherwise.
+- Revisit trigger: a maintainer decides DART 6 should carry volumetric
+  deformables after all, which would also mean revisiting the release branch's
+  compatibility contract.
+
 ## 2026-07-23 maintainer directive: full two-paper parity, deferrals retracted
 
 - Decision: The maintainer **retracted the 2026-07-11 approved-deferral list**

@@ -1,4 +1,12 @@
-# M2.0 — ABI-safe FEM integration seam (de-risking findings)
+# DART 6 per-step extension seam — findings
+
+> **Retained after the 2026-07-29 scope change.** The volumetric FEM subsystem
+> this investigation was written for has been removed from DART 6 and retargeted
+> to DART 7 (`decisions.md`). The findings below are kept because they are facts
+> about **DART 6 itself**, not about FEM: they constrain any future attempt to
+> hang per-step work off the constraint solver, and the deactivation early-out
+> in particular is a trap worth knowing about.
+
 
 Purpose: answer the make-or-break question behind the branch-strategy decision —
 *can a volumetric-FEM deformable subsystem be integrated into DART 6's step loop

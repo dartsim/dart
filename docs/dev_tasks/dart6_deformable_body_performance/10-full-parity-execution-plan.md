@@ -1,5 +1,14 @@
 # DART 6 full two-paper deformable parity — execution plan (PROPOSAL)
 
+> **Scope change, 2026-07-29.** The Kim/Pollard lane has been removed from
+> DART 6 and retargeted to DART 7; see the decision record in `decisions.md`.
+> The two papers need different discretizations, and DART 6 should carry one
+> deformable model rather than two parallel subsystems. Everything below that
+> concerns the volumetric FEM backend (PR-2, M2.x) is therefore **not** DART 6
+> work, and whether a reduced FEM is even the right DART 7 target is open given
+> newer solvers such as AVBD. The Jain/Liu lane (PR-3) remains DART 6 work and
+> is unaffected.
+
 Status: **accepted 2026-07-23**; first build step = **M2.0 FEM integration-seam
 prototype** (§11 step 2). Requested by the 2026-07-23 directive: full replication
 of both reference papers' demos/examples (correctness AND performance, no
