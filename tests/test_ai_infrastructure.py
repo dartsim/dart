@@ -917,7 +917,19 @@ def test_test_gate_contract_rejects_commented_runtime_graph(tmp_path):
     (
         'message("list(APPEND all_target_candidates tests_and_run pytest)")',
         (
+            "message(\n"
+            "  list(APPEND all_target_candidates tests_and_run pytest)\n"
+            ")"
+        ),
+        (
             "if(FALSE)\n"
+            "  list(APPEND all_target_candidates tests_and_run pytest)\n"
+            "endif()"
+        ),
+        (
+            "if(\n"
+            "  FALSE\n"
+            ")\n"
             "  list(APPEND all_target_candidates tests_and_run pytest)\n"
             "endif()"
         ),
@@ -937,6 +949,46 @@ def test_test_gate_contract_rejects_inactive_runtime_graph(tmp_path, replacement
 
     assert any(
         f"CMakeLists.txt: missing `test-all` graph marker `{marker}`" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("relative", "condition", "expected_marker"),
+    (
+        (
+            "tests/CMakeLists.txt",
+            "MSVC",
+            "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
+        ),
+        (
+            "python/tests/CMakeLists.txt",
+            "DARTPY_PYTEST_FOUND",
+            '"${Python3_EXECUTABLE}" -m pytest',
+        ),
+    ),
+)
+def test_test_gate_contract_rejects_inactive_runtime_targets(
+    tmp_path, relative, condition, expected_marker
+):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / relative
+    text = cmake.read_text(encoding="utf-8")
+    condition_offset = text.index(f"if({condition})")
+    text = text[:condition_offset] + text[condition_offset:].replace(
+        f"if({condition})",
+        f"if({condition})\n  if(FALSE)",
+        1,
+    )
+    else_offset = text.index("else()", condition_offset)
+    text = text[:else_offset] + "  endif()\n" + text[else_offset:]
+    cmake.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_test_gate_contract(tmp_path, errors)
+
+    assert any(
+        f"{relative}: missing `test-all` graph marker `{expected_marker}`" in error
         for error in errors
     )
 

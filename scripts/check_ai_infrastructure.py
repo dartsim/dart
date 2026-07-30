@@ -256,44 +256,116 @@ def cmake_cache_definition_values(command: str) -> dict[str, list[str]]:
     return definitions
 
 
-def cmake_code_without_comments(text: str) -> str:
-    """Remove CMake bracket and line comments before contract matching."""
-    text = re.sub(r"#\[(=*)\[.*?\]\1\]", "", text, flags=re.DOTALL)
-    return "\n".join(line.split("#", maxsplit=1)[0] for line in text.splitlines())
+def cmake_commands(text: str) -> list[tuple[str, str]]:
+    """Parse CMake command names and normalized arguments."""
+
+    def bracket_end(offset: int) -> int | None:
+        match = re.match(r"\[(=*)\[", text[offset:])
+        if match is None:
+            return None
+        delimiter = "]" + match.group(1) + "]"
+        end = text.find(delimiter, offset + match.end())
+        return len(text) if end < 0 else end + len(delimiter)
+
+    def skip_comment(offset: int) -> int:
+        bracket = bracket_end(offset + 1) if offset + 1 < len(text) else None
+        if bracket is not None:
+            return bracket
+        newline = text.find("\n", offset + 1)
+        return len(text) if newline < 0 else newline + 1
+
+    commands: list[tuple[str, str]] = []
+    identifier = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+    offset = 0
+    while offset < len(text):
+        if text[offset] == "#":
+            offset = skip_comment(offset)
+            continue
+        match = identifier.match(text, offset)
+        if match is None:
+            offset += 1
+            continue
+        name = match.group(0).lower()
+        cursor = match.end()
+        while cursor < len(text):
+            if text[cursor].isspace():
+                cursor += 1
+                continue
+            if text[cursor] == "#":
+                cursor = skip_comment(cursor)
+                continue
+            break
+        if cursor >= len(text) or text[cursor] != "(":
+            offset = match.end()
+            continue
+
+        depth = 1
+        cursor += 1
+        arguments: list[str] = []
+        while cursor < len(text) and depth:
+            character = text[cursor]
+            if character == "#":
+                cursor = skip_comment(cursor)
+                arguments.append(" ")
+                continue
+            if character == '"':
+                start = cursor
+                cursor += 1
+                while cursor < len(text):
+                    if text[cursor] == "\\" and cursor + 1 < len(text):
+                        cursor += 2
+                        continue
+                    cursor += 1
+                    if text[cursor - 1] == '"':
+                        break
+                arguments.append(text[start:cursor])
+                continue
+            bracket = bracket_end(cursor) if character == "[" else None
+            if bracket is not None:
+                arguments.append(text[cursor:bracket])
+                cursor = bracket
+                continue
+            if character == "(":
+                depth += 1
+                arguments.append(character)
+                cursor += 1
+                continue
+            if character == ")":
+                depth -= 1
+                if depth:
+                    arguments.append(character)
+                cursor += 1
+                continue
+            arguments.append(character)
+            cursor += 1
+        normalized = " ".join("".join(arguments).split())
+        commands.append((name, normalized))
+        offset = cursor
+    return commands
 
 
-def cmake_line_scopes(text: str) -> dict[str, list[tuple[str, ...]]]:
-    """Map single-line CMake commands to their enclosing control scopes."""
-    scopes: dict[str, list[tuple[str, ...]]] = {}
+def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
+    """Attach each executable CMake command to its enclosing control scopes."""
+    records: list[tuple[str, str, tuple[str, ...]]] = []
     stack: list[tuple[str, str]] = []
-    opener = re.compile(
-        r"^(if|function|macro|foreach|while)\s*\((.*)\)\s*$",
-        flags=re.IGNORECASE,
-    )
-    closer = re.compile(
-        r"^end(if|function|macro|foreach|while)\s*\(.*\)\s*$",
-        flags=re.IGNORECASE,
-    )
-    branch = re.compile(r"^(else|elseif)\s*\((.*)\)\s*$", flags=re.IGNORECASE)
-    for raw_line in cmake_code_without_comments(text).splitlines():
-        line = raw_line.strip()
-        if not line:
+    openers = {"block", "foreach", "function", "if", "macro", "while"}
+    closers = {f"end{name}" for name in openers}
+    for name, arguments in cmake_commands(text):
+        if name in openers:
+            stack.append((name, arguments))
             continue
-        if match := opener.fullmatch(line):
-            stack.append((match.group(1).lower(), match.group(2).strip()))
-            continue
-        if closer.fullmatch(line):
+        if name in closers:
             if stack:
                 stack.pop()
             continue
-        if match := branch.fullmatch(line):
-            if stack and stack[-1][0] == "if":
+        if name in {"else", "elseif"}:
+            if stack and stack[-1][0] in {"if", "else", "elseif"}:
                 condition = stack[-1][1]
-                stack[-1] = (match.group(1).lower(), condition)
+                stack[-1] = (name, condition)
             continue
         context = tuple(f"{kind}:{value}" for kind, value in stack)
-        scopes.setdefault(line, []).append(context)
-    return scopes
+        records.append((name, arguments, context))
+    return records
 
 
 def has_shell_control_syntax(command: str) -> bool:
@@ -892,33 +964,93 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 f"`{variable}={expected_value}` exactly once"
             )
 
-    graph_markers = {
-        "CMakeLists.txt": ("add_custom_target(ALL DEPENDS ${all_targets})",),
+    graph_scope_requirements = {
+        "CMakeLists.txt": (
+            (
+                "add_custom_target",
+                "ALL DEPENDS ${all_targets}",
+                (),
+                (),
+                "add_custom_target(ALL DEPENDS ${all_targets})",
+            ),
+            (
+                "list",
+                "APPEND all_target_candidates tests_and_run pytest",
+                (),
+                ("if:BUILD_TESTING",),
+                "list(APPEND all_target_candidates tests_and_run pytest)",
+            ),
+        ),
         "tests/CMakeLists.txt": (
-            "tests_and_run",
-            "${CMAKE_CTEST_COMMAND} --output-on-failure",
-            "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
+            (
+                "add_custom_target",
+                (
+                    "tests_and_run COMMAND ${CMAKE_CTEST_COMMAND} "
+                    "--output-on-failure -C $<CONFIG> DEPENDS "
+                    "${integration_tests} ${regression_tests} ${unit_tests}"
+                ),
+                (),
+                ("if:MSVC",),
+                "${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>",
+            ),
+            (
+                "add_custom_target",
+                (
+                    "tests_and_run COMMAND ${CMAKE_CTEST_COMMAND} "
+                    "--output-on-failure DEPENDS ${integration_tests} "
+                    "${regression_tests} ${unit_tests}"
+                ),
+                (),
+                ("else:MSVC",),
+                "${CMAKE_CTEST_COMMAND} --output-on-failure",
+            ),
         ),
         "python/tests/CMakeLists.txt": (
-            "pytest",
-            '"${Python3_EXECUTABLE}" -m pytest',
+            (
+                "add_custom_target",
+                None,
+                (
+                    "pytest COMMAND",
+                    '"${Python3_EXECUTABLE}" -m pytest ${dartpy_test_files} -v',
+                    "DEPENDS dartpy",
+                ),
+                ("if:DARTPY_PYTEST_FOUND",),
+                '"${Python3_EXECUTABLE}" -m pytest',
+            ),
+            (
+                "add_custom_target",
+                None,
+                ("pytest COMMAND", "Warning: Failed to run pytest"),
+                ("else:DARTPY_PYTEST_FOUND",),
+                "pytest",
+            ),
         ),
     }
-    for relative, markers in graph_markers.items():
+    for relative, requirements in graph_scope_requirements.items():
         path = root / relative
         try:
             text = path.read_text(encoding="utf-8")
         except OSError as error:
             errors.append(f"{relative}: unable to read test graph: {error}")
             continue
-        code = cmake_code_without_comments(text)
-        for marker in markers:
-            if marker not in code:
-                errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
-        if relative == "CMakeLists.txt":
-            marker = "list(APPEND all_target_candidates tests_and_run pytest)"
-            expected_scope = ("if:BUILD_TESTING",)
-            if expected_scope not in cmake_line_scopes(text).get(marker, []):
+        records = cmake_scoped_commands(text)
+        for (
+            name,
+            exact_arguments,
+            argument_markers,
+            expected_scope,
+            marker,
+        ) in requirements:
+            if not any(
+                record_name == name
+                and context == expected_scope
+                and (
+                    arguments == exact_arguments
+                    if exact_arguments is not None
+                    else all(value in arguments for value in argument_markers)
+                )
+                for record_name, arguments, context in records
+            ):
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
 
     dependencies = pixi.get("dependencies")
