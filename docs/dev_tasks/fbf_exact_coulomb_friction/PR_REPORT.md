@@ -10,8 +10,11 @@ Figure 8, upload, branch, and CI statement below.
   `release-6.20` checkpoint
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
   merge. Documentation-only descendants do not change the binary identity.
-  PR #3377 is open and draft; it had 264 net changed files at the last live
-  query. Requery its mutable head, checks, and review state.
+  The pre-handoff pushed head audited here is
+  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
+  descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
+  files, 161,002 additions, and 439 deletions. Requery its mutable head, checks,
+  and review state.
 - The merge resolution passed `pixi run lint`, all 166 C++ tests, all 34 FBF
   scene-documentation checks, `check-ai-commands`, and the AI infrastructure
   doctor. The rebuilt post-merge demo/core SHA-256 values are
@@ -19,9 +22,18 @@ Figure 8, upload, branch, and CI statement below.
 - The PR tree tracks no generated task assets, raw capture output, CSV, JSON,
   PNG, MP4, logs, stdout/stderr, NPY, or NPZ evidence. The scalable
   `docs/dev_tasks/.gitignore` policy ignores every task's role-based
-  `**/assets/` subtree. The 101 source-pinned Figure 8 masonry OBJ files are
-  required runtime inputs, not generated data; broad extension ignores would
-  incorrectly hide them and the Figure 3 checker/runtime meshes.
+  `**/assets/` subtree. The handoff audit found zero non-ignored untracked
+  files, zero tracked ignored files, and zero tracked task-asset paths.
+- Raw-file cleanup is still required before review. Published topic history
+  contains 492 evidence blobs totaling 96,573,227 bytes. The current net diff
+  also includes a 105-file optional MuJoCo arch bundle, including 101 stone
+  OBJs. Contrary to earlier wording, the DART Figure 8 demo generates its
+  pinned geometry procedurally and does not load these files; only
+  `fbf_paper_mujoco_baseline.py` consumes the adapted XML and stone OBJs.
+  Replace that raw bundle with deterministic compact or temporary generation,
+  preserving exact geometry, provenance, licensing, optional MuJoCo behavior,
+  and clean-checkout reproducibility. Broad extension ignores remain wrong
+  because they would hide legitimate Figure 3 and turntable runtime assets.
 - Visual-evidence schema v3 binds the captured-checkpoint demo
   (`3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`),
   61 regular runtime libraries, eight build-tree libraries, and the exact core

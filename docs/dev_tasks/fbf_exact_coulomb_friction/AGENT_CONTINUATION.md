@@ -42,9 +42,11 @@ renderer, Apple hardware, or paper timer boundary.
   `origin/release-6.20` target
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through the `6fb4d0dbd8c`
   merge checkpoint. Documentation-only descendants do not change the binary
-  identity below. PR #3377 is open, draft, and had 264 net changed files at
-  the last live query. Requery its mutable head and checks before reporting
-  them.
+  identity below. The pre-handoff pushed head audited here is
+  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
+  descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
+  files, 161,002 additions, and 439 deletions. Requery mutable head/check state
+  before reporting it.
 - The merge resolution passed `pixi run lint`, the full 166/166 C++ suite,
   all 34 FBF scene-documentation checks, `check-ai-commands`, and the AI
   infrastructure doctor. The rebuilt post-merge `dart-demos` SHA-256 is
@@ -52,9 +54,20 @@ renderer, Apple hardware, or paper timer boundary.
   the exact build-tree `libdart.so.6.19.4` SHA-256 is
   `caf402af4e5cb9a927b2b89c6ad4fe13813f314ff5c77958045534de6bfc7ad5`.
 - The PR tree has zero tracked generated task assets or raw capture output.
-  `docs/dev_tasks/.gitignore` uses the scalable role rule `**/assets/`. The 101
-  source-pinned masonry OBJ files are required demo runtime inputs, not
-  generated data; do not hide them with a global extension rule.
+  `docs/dev_tasks/.gitignore` uses the scalable role rule `**/assets/`. The
+  handoff audit also found zero non-ignored untracked files and zero tracked
+  ignored files; 19,521 files below this task's local `assets/` tree are
+  correctly ignored.
+- The user's 700+ raw-file concern remains a review-readiness blocker. Topic
+  history contains 492 task-evidence blobs totaling 96,573,227 bytes. The
+  current net diff also vendors a 105-file optional MuJoCo arch bundle,
+  including 101 stone OBJs. A fresh reference audit corrects earlier wording:
+  DART's Figure 8 demo procedurally calls `generateMasonryArchStoneWedges` and
+  does not load those files; only `fbf_paper_mujoco_baseline.py` consumes the
+  adapted XML and stone OBJs. Replace that bundle with deterministic compact or
+  temporary generation before review, preserving geometry, provenance,
+  licensing, optional MuJoCo behavior, and clean-checkout reproducibility. Do
+  not use a broad extension ignore.
 - The captured-checkpoint evidence runtime hashes are
   `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`
   for `dart-demos` and
@@ -107,7 +120,7 @@ renderer, Apple hardware, or paper timer boundary.
 | --- | --- | --- |
 | Public author reference | The MIT-licensed repository is available at pinned commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` with the solver, six runnable examples, current configurations, pinned dependencies, and optional MuJoCo/Kamino runners | Available and source-auditable; porting and matched runs are now internal work |
 | PR #3374 | Merged at `fa17fad` | Required visual infrastructure is available on the release branch |
-| PR #3377 | Open and draft at the last live query. Post-merge code/runtime checkpoint `6fb4d0dbd8c` contains current target `6c88ac1d774`; later documentation-only descendants do not change its binary identity. The inspected net diff has 264 files, zero tracked task-asset paths, and zero generated video/CSV/JSON/log paths. Requery mutable head/check state before reporting it | WIP, not completion evidence. Slots 02/16 are now byte-identically resealed against the post-merge demo/core/runtime closure; Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a` |
+| PR #3377 | Open and draft; `dd70baec27b` is the audited pre-handoff pushed head, and this handoff is its docs-only descendant. Post-merge code/runtime checkpoint `6fb4d0dbd8c` contains current target `6c88ac1d774`; documentation-only descendants do not change its binary identity. The inspected net diff has 264 files, zero tracked task-asset paths, and zero generated video/CSV/JSON/log paths. Published history still has 492 evidence blobs, and the optional MuJoCo arch comparison still vendors a 105-file bundle that the DART demo does not consume. Requery mutable head/check state before reporting it | WIP, not completion evidence or review-ready. Raw-file/history cleanup remains open. Slots 02/16 are byte-identically resealed against the post-merge demo/core/runtime closure; Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a` |
 | Exact algebra | Row signs validated; row-operator versus impulse-test `W` relative error `1.33e-16`; spectral-nullspace regressions pass | Tested formulation is internally consistent |
 | Literal 25-stone exact dynamics | Schema-v8 mark26 has eight complete 600-step processes: one warmup plus three measured runs at each of one and four threads | Full local exact trajectory is proven for the reconstructed non-paper scene |
 | Exact solve contract | 1,800 measured steps per thread count; maximum residual `9.999807145410957e-7`; zero exact failures, caps, or fallbacks | Pass |

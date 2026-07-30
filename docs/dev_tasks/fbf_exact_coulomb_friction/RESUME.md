@@ -20,14 +20,25 @@ Current branch and evidence runtime:
   `6c88ac1d774a702b494643fb598be6b8af9385e1` through that merge checkpoint.
   Documentation-only descendants do not change this runtime identity; query
   the live branch/PR head instead of assuming `6fb4` is still HEAD.
-- PR #3377 is open and draft with 264 net changed files. The current net tree
-  tracks no generated task assets or raw capture output. The scalable
-  `docs/dev_tasks/.gitignore` role rule ignores every task's `assets/` subtree;
-  do not replace it with broad extension ignores that would hide legitimate
+- The pre-handoff pushed head audited here is
+  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
+  descendant. PR #3377 is open and draft. Its audited net diff has 264 changed
+  files, 161,002 additions, and 439 deletions. Query the resulting live head and
+  checks rather than assuming this checkpoint is still current.
+- The current worktree has zero non-ignored untracked files, zero tracked files
+  matching ignore rules, and zero tracked task-asset paths. At the audit
+  snapshot, 19,521 local files below this task's `assets/` tree are correctly
+  ignored by the scalable `docs/dev_tasks/.gitignore` `**/assets/` role rule.
+  Do not replace it with broad extension ignores that would hide legitimate
   runtime inputs.
-- Of the 110 net `data/` paths, 101 small OBJ files are the source-pinned
-  masonry stones required by the installed Figure 8 demo. They total roughly
-  404 KiB and are source/runtime inputs, not generated evidence.
+- Of the 110 net `data/` paths, 105 belong to
+  `data/mjcf/rigid_ipc_arch/`: 101 stone OBJs, one unused `plane.obj`, one
+  adapted XML, the provenance README, and the license. A fresh reference audit
+  corrects earlier wording: the DART Figure 8 demo does not load these meshes;
+  it generates its pinned geometry through
+  `generateMasonryArchStoneWedges`. Only the optional MuJoCo comparison in
+  `tests/benchmark/integration/fbf_paper_mujoco_baseline.py` loads the XML and
+  stone OBJs.
 - The rebuilt post-merge `dart-demos` SHA-256 is
   `d9932f4c4e878bfd33a730815bb33ffc706af4980f17a25aeed213744d54a363`;
   the exact build-tree `libdart.so.6.19.4` SHA-256 is
@@ -131,16 +142,27 @@ merge/rebuild is complete; rerun only after a declared cool/low-load gate.
 
 Next:
 
-1. Preserve the post-merge Figure 3 root, the captured-checkpoint Figure 8 and
+1. Close the repository-hygiene review blocker before more long captures or
+   benchmarks. Replace the optional MuJoCo arch XML/OBJ bundle with a
+   deterministic compact or temporary generation path, prove exact geometry
+   and optional-baseline behavior, preserve licensing/provenance, and then
+   remove the redundant raw files. Keep the role-based `**/assets/` ignore; do
+   not add broad extension ignores.
+2. Decide with the maintainer whether a true squash merge is sufficient for
+   the 492 historical evidence blobs or whether the published review branch
+   must be reconstructed. Any history replacement and
+   `--force-with-lease` push requires explicit approval.
+3. Preserve the post-merge Figure 3 root, the captured-checkpoint Figure 8 and
    ten-level roots, and the passing 16-URL PR reference/download/hash audit.
-2. Run the isolated matched one-/four-core performance rerun and synchronize
-   only the narrow non-paper throughput claims it proves.
-3. Decide whether completion requires post-merge reseals of the long Figure 8
+4. Run the isolated matched one-/four-core performance rerun only after the
+   declared cool/low-load gate, and synchronize only the narrow non-paper
+   throughput claims it proves.
+5. Decide whether completion requires post-merge reseals of the long Figure 8
    and ten-level clips. Until those exist, label only slots 02/16 as
    post-merge-current-runtime bytes; keep the remaining schema-v3 uploads bound
    to their recorded capture checkpoints.
-4. Keep the PR draft until the remaining paper-parity, CI, and review gates are
-   honestly resolved.
+6. Keep the PR draft until the file-surface, paper-parity, CI, and review gates
+   are honestly resolved.
 
 ## Archived 2026-07-27 Checkpoint
 
@@ -173,9 +195,10 @@ below.
   checkpoint is `7ba6d8232c8`; subsequent handoff-only documentation
   checkpoints do not change the bound demo evidence. The inspected net diff
   had 264 files and no tracked `docs/dev_tasks/**/assets/**` or generated
-  video/CSV/JSON/log paths. The 104 `.obj` files are runtime inputs, primarily
-  the 101 source-pinned masonry meshes. Requery the mutable head and hosted
-  checks before reporting a final status.
+  video/CSV/JSON/log paths. A later consumer audit established that 101 of the
+  104 `.obj` files are consumed only by the optional MuJoCo comparison; the
+  DART Figure 8 demo generates its pinned geometry procedurally. Requery the
+  mutable head and hosted checks before reporting a final status.
 - The merge changed the `dart-demos` SHA-256 from the capture-time
   `69879e77...` to
   `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`.
@@ -303,14 +326,16 @@ Two separate cleanup questions remain:
    the current net source/docs tree as a clean commit series from the latest
    `origin/release-6.20`, and update the existing PR branch with
    `--force-with-lease`. Do not rewrite or force-push without that approval.
-2. Of the 264 current net changed files, 110 are under `data/`; 101 are the
-   source-pinned masonry-arch stone OBJ inputs needed by the Figure 8 demo.
-   These are runtime/source inputs, not generated evidence, so a broad
-   `*.obj` ignore would break the north star and also hide the Figure 3 and
-   turntable visual meshes. Before review readiness, either justify the
-   licensed 101-file source asset set explicitly or replace it with a
-   deterministic compact/generation path that preserves provenance, licensing,
-   installed/demo behavior, and clean-checkout reproducibility.
+2. Of the 264 current net changed files, 110 are under `data/`; 105 belong to
+   the optional MuJoCo arch bundle, including 101 stone OBJs. A later reference
+   audit established that the installed DART Figure 8 demo generates its
+   geometry procedurally and does not load those files. Only
+   `fbf_paper_mujoco_baseline.py` consumes the adapted XML and stone OBJs.
+   Before review readiness, replace that raw bundle with a deterministic
+   compact or temporary generation path that preserves exact geometry,
+   provenance, licensing, optional MuJoCo behavior, and clean-checkout
+   reproducibility. A broad `*.obj` ignore remains wrong because it would hide
+   legitimate Figure 3 and turntable visual meshes.
 
 The earlier 700+ raw/untracked-file views should not be treated as the current
 GitHub net diff; the live PR API currently reports 264. The remaining history

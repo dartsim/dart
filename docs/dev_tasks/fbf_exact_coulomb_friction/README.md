@@ -28,6 +28,41 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-29 Handoff-Only Stop Checkpoint
+
+The user stopped implementation work so a fresh Codex or Claude session can
+resume without hidden chat context. No solver, renderer, capture, benchmark,
+asset-generation, CI-rerun, or history-rewrite lane is active.
+
+- The pre-handoff pushed head audited here is
+  `dd70baec27b504def42e28d137f4abc08b5e9061`; this handoff is a docs-only
+  descendant. PR #3377 is open and draft. Its audited net diff reports 264
+  changed files, 161,002 additions, and 439 deletions. Query the resulting live
+  head and checks rather than assuming this checkpoint is still current.
+- The worktree is clean: zero non-ignored untracked files, zero tracked files
+  that now match ignore rules, and zero tracked task-asset paths. At the audit
+  snapshot, 19,521 local files below this task's `assets/` tree are correctly
+  ignored by the scalable `docs/dev_tasks/.gitignore` `**/assets/` rule.
+- The user's 700+ raw-file concern remains a review-readiness blocker even
+  though the live GitHub net diff is now 264 files. Published topic history
+  still contains 492 topic-added evidence blobs totaling 96,573,227 bytes; a
+  true squash merge keeps them out of `release-6.20`, while cleaning the
+  published review branch itself requires explicit approval for a
+  `--force-with-lease` history replacement.
+- A fresh consumer audit corrects earlier wording about the masonry assets.
+  `dart-demos` does not load the 101 stone OBJ files; its Figure 8 adapter
+  generates the pinned geometry through `generateMasonryArchStoneWedges`.
+  The tracked XML and stone OBJs are consumed only by the optional MuJoCo
+  comparison in `tests/benchmark/integration/fbf_paper_mujoco_baseline.py`.
+  The 105-file `data/mjcf/rigid_ipc_arch/` bundle therefore remains a
+  file-surface cleanup target, not an installed-demo requirement.
+- The next session should first replace that optional baseline bundle with a
+  deterministic compact or temporary generation path, preserving exact
+  geometry, provenance, licensing, MuJoCo behavior, and clean-checkout
+  reproducibility, then remove the redundant raw XML/OBJ files. Do not solve
+  this with broad `*.obj`, `*.csv`, `*.png`, or similar ignores: those rules
+  would hide legitimate source/runtime inputs elsewhere.
+
 The immutable post-merge code/runtime checkpoint is `6fb4d0dbd8c`; it contains
 current target `6c88ac1d774` through that merge checkpoint. Documentation-only
 descendants do not change its rebuilt `dart-demos` and exact build-tree
@@ -55,7 +90,7 @@ not the current-runtime checkpoint.
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 is open and draft. Code/runtime checkpoint `6fb4d0dbd8c` contains current target `6c88ac1d774`; later documentation-only descendants do not change its binary identity. The inspected net diff has 264 files, no tracked task assets, and no generated video/CSV/JSON/log paths. Mutable head/check/review state must be verified live | #3377 is work in progress, not completion evidence. Figure 3 slots 02/16 are now byte-identically resealed against the post-merge demo/core/runtime closure. Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a`, not the post-merge binary |
+| PR integration | PR #3374 is historically merged at `fa17fad`. PR #3377 is open and draft; `dd70baec27b` is the audited pre-handoff pushed head, and this handoff is its docs-only descendant. Code/runtime checkpoint `6fb4d0dbd8c` contains current target `6c88ac1d774`; documentation-only descendants do not change its binary identity. The inspected net diff has 264 files, no tracked task assets, and no generated video/CSV/JSON/log paths. Published topic history still contains 492 evidence blobs, and the optional MuJoCo arch baseline still vendors a 105-file source bundle; both are explicit review-readiness cleanup items. Mutable head/check/review state must be verified live | #3377 is work in progress, not completion evidence. Figure 3 slots 02/16 are now byte-identically resealed against the post-merge demo/core/runtime closure. Figure 8 and ten-level schema-v3 media still bind captured checkpoint `333a809f14a`, not the post-merge binary |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
