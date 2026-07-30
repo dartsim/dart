@@ -1,5 +1,122 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-29 Current-Head Execution Checkpoint
+
+This section supersedes every older branch-head, current-binary, active-capture,
+Figure 3, Figure 8, attachment, and CI statement below. The task remains active
+and incomplete. The mandatory status answer remains:
+
+```text
+No, the DART reconstruction does not yet cover or match every paper test,
+benchmark, GUI example, physical outcome, or performance result.
+```
+
+Current branch and evidence runtime:
+
+- Branch `research/fbf-friction-release620` is clean at pushed checkpoint
+  `333a809f14a2e8b5f9837c74dcef13c77ca8fd76`. It contains
+  `origin/release-6.20` checkpoint `d65e88ebda4` through merge `d209da2cbf1`.
+  After the visual seal, the target advanced to `6c88ac1d774` through PR #3382.
+  Merge that target before the next push; the rebuilt runtime will have a new
+  identity, so do not call the `333a` evidence post-merge-binary evidence.
+- PR #3377 is open and draft with 264 net changed files. The current net tree
+  tracks no generated task assets or raw capture output. The scalable
+  `docs/dev_tasks/.gitignore` role rule ignores every task's `assets/` subtree;
+  do not replace it with broad extension ignores that would hide legitimate
+  runtime inputs.
+- Of the 110 net `data/` paths, 101 small OBJ files are the source-pinned
+  masonry stones required by the installed Figure 8 demo. They total roughly
+  404 KiB and are source/runtime inputs, not generated evidence.
+- The current `dart-demos` SHA-256 is
+  `3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`;
+  the exact build-tree `libdart.so.6.19.4` SHA-256 is
+  `3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`.
+  Visual-evidence schema v3 binds the demo, 61 regular resolved libraries,
+  eight build-tree libraries, and the exact core DART library before and after
+  capture.
+
+Fresh current-runtime visual evidence is under the ignored
+`assets/pr_media_current_head_333a/` root:
+
+- Figure 3 backspin exact and boxed each complete 240/240 steps and pass
+  independent verification and the bounded rolling/roll-off outcome gates.
+  The sphere uses the requested checker texture, and manual frame inspection
+  confirms that its changing orientation makes the backspin visibly
+  unambiguous. Exact and synchronized-group clip SHA-256 values are
+  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`
+  and
+  `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+  Both solvers pass; no superiority or paper-parity claim follows.
+- Figure 8 is sealed and independently verified as
+  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Strict exact
+  stops at `iteration_cap` after completed step 209; the finalizer freezes
+  only the last valid step-208 image. Boxed completes 1,600/1,600 but fails the
+  standing oracle and visibly collapses. The diagnostic clip/panel/metadata
+  SHA-256 values are
+  `5e83527d2ed13218fda295b1dc30143007e012b333d63e965a765790145bb1d7`,
+  `d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`,
+  and
+  `2293baf64a2922e758c02adba4ce44018bbda93553970eaa19c305003890ed4f`.
+  Manual inspection at 0.0, 0.9, 3.3, and 6.6 seconds is recorded by
+  `b30836f21d3028683ffbbe04c17200a61d8f967502597d9bdfa95f760f208543`.
+  This is a frozen-prefix blocker diagnostic, not a complete exact
+  trajectory, solver-superiority result, historical Figure 8 invocation, or
+  parity result.
+- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
+  same unchanged runtime. Exact records 7,702/7,702 exact solves, zero
+  failures/fallbacks, 2,427 plateau accepts, and 763 max-iteration accepts.
+  Exact/boxed/group clip SHA-256 values are
+  `19637c4255c890f1f32383e7e7e680169688e5d8b071168bc6b4ffdebf33061d`,
+  `d8066f899834303f8cbced3cc75c7e9e89716bb0f31d67011a361e0e1f1db442`,
+  and
+  `438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d`.
+  Standalone verification, full decode, and manual panel/keyframe inspection
+  pass. Exact alone requests source continuation and no automated semantic
+  outcome exists, so this is policy-asymmetric presentation—not strict
+  success, solver-only evidence, superiority, or parity.
+- Strict zero-accepted-cap completion is an intentionally stronger research
+  gate than current-source execution: the retained four-level source control
+  has 945/2,400 `converged=false` substeps and the ten-level 120-substep source
+  prefix has 87 non-converged substeps; both source runners continue. Preserve
+  this distinction instead of presenting continuation as strict success.
+
+GitHub media state:
+
+- All 16 intended H.264/yuv420p clips are referenced from the draft PR through
+  `github.com/user-attachments/assets/...` URLs. Each was re-downloaded from
+  its PR-facing URL and matched its full recorded SHA-256. Slot 09 now uses the
+  fresh schema-v3 current-runtime group (`438b02b2...`) at user attachment
+  `af9d80bf...`; the historical provisional bytes were replaced. The verified
+  URL/hash ledger is in
+  [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md).
+
+Current hosted CI is mutable. At the inspected `333a809f14a` head, most
+reported jobs pass or remain in progress. macOS `arm64-Debug` alone failed in
+the untouched randomized `JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion
+test. The base-branch job passed and a local 1,000-repeat focused run passed;
+treat this as an unrelated likely random/singularity flake unless it reproduces
+on the next content checkpoint. Do not patch the exact-FBF branch for it
+without contrary evidence.
+
+The first post-capture matched performance attempt is retained only at
+`/tmp/fbf-mark26-current-head-rerun`. It has the exact mark26 measured-work
+fingerprint and passes affinity, residency, solver, and physical-outcome gates,
+but ran under sustained GUI/editor load immediately after the five-hour visual
+capture with an 82 C package. Its 12.924/12.321 ms means and 1.0489x speedup
+are a host-contention diagnostic, not replacement evidence. Rerun once after
+the target merge/rebuild and a declared cool/low-load gate.
+
+Next:
+
+1. Preserve the complete schema-v3 Figure 3, Figure 8, and ten-level roots and
+   the passing 16-URL PR reference/download/hash audit.
+2. Run the isolated matched one-/four-core performance rerun and synchronize
+   only the narrow non-paper throughput claims it proves.
+3. Merge fetched `origin/release-6.20` at `6c88ac1d774` before the next
+   checkpoint push, run the required lint/build/focused gates, and keep the PR
+   draft until the remaining paper-parity and review gates are honestly
+   resolved.
+
 ## Current Checkpoint
 
 This task is active and incomplete as of 2026-07-27. Start with
@@ -1801,7 +1918,12 @@ the identity contract, so the current default live run correctly reports five
 path mismatches. Archive mode remains clean; recreate the historical symlink
 only for an explicit live-closure recheck.
 
-## Immediate Work Order
+## Archived Immediate Work Order
+
+Do not execute the historical instructions in this section. The
+2026-07-29 execution checkpoint and its `Next` list above supersede them; the
+fresh ten-level recapture, verification, upload, and PR-facing hash audit are
+complete.
 
 1. Reinspect current diffs and active agents before taking file or shared-build
    ownership.

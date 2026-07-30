@@ -2,6 +2,33 @@
 
 ## Current Status
 
+The 2026-07-29 current-runtime checkpoint supersedes older upload/current-head
+statements below. Schema-v3 evidence under ignored
+`assets/pr_media_current_head_333a/` binds `dart-demos` SHA-256
+`3d685d2c...`, core DART SHA-256 `3b66436b...`, 61 regular libraries, and
+eight build-tree libraries before and after capture.
+
+- Fresh Figure 3 exact and boxed members complete 240/240 and independently
+  verify. Their checker-textured sphere makes changing orientation and
+  backspin visible. Exact/group hashes are `b2c268aa...` / `e321c711...`;
+  both outcomes pass, so this supplies no superiority claim.
+- Fresh Figure 8 boxed capture, failed-exact-prefix finalization, manual seal,
+  and standalone verification pass with `upload_ready=true`. Exact stops after
+  completed step 209 and freezes only after step 208; boxed finishes 1,600 but
+  collapses. Clip/panel hashes are `5e83527d...` / `d6782a65...`. This is
+  blocker media, not a complete exact trajectory or paper/superiority result.
+- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
+  unchanged runtime. Standalone verification, full decode, and manual
+  panel/keyframe inspection pass. Exact/boxed/group hashes are `19637c42...`,
+  `d8066f89...`, and `438b02b2...`. Exact alone requests continuation and no
+  automated semantic outcome exists, so the group is policy-asymmetric
+  presentation rather than solver-only, superiority, or parity evidence.
+- All 16 user attachments are referenced from the draft PR and were
+  re-downloaded from their PR-facing URLs; all match their full recorded
+  SHA-256 values. Slot 09 is now the fresh schema-v3 current-runtime group at
+  user attachment `af9d80bf...`; the historical provisional bytes were
+  replaced.
+
 Visual evidence is partial. The small-scene capture system now produces
 auditable, solver-gated media, and a complete post-review small matrix exists.
 The source-selected strict card, reconstructed card, 101-stone arch, and
@@ -38,15 +65,17 @@ Historical c95 temporal panels confirm visible checker/coral-tile rotation in
 the reconstructed Figure 3 lane and the Painleve `mu=.55` divergence. The
 source-pinned author capture supersedes that Figure 3 media. Byte-identical c95-bound clip hashes
 preserve the prior timeline/clip-audited turntable classifications. The bundle is
-ignored local state, not repository media; PR user-attachment URLs are still
-pending browser-composer upload.
+ignored local state, not repository media. The selected clips now have
+PR-referenced, re-download/hash-verified user attachments recorded in
+`PAPER_DEMO_VIDEO_MATRIX.md`.
 
 The consolidated browser-upload manifest in
 `PAPER_DEMO_VIDEO_MATRIX.md` selects nine minimum source-row clips and seven
 supplemental direct comparisons. An independent handoff audit rechecked all 16
 paths and hashes, probed H.264/yuv420p at 30 fps, and completed an
-`ffmpeg -xerror` decode for every file. This closes local upload-readiness only;
-no GitHub user-attachment URL or additional physics/parity claim follows.
+`ffmpeg -xerror` decode for every file. All 16 attachments are now
+PR-referenced and re-download/hash verified, including fresh schema-v3 slot 09.
+This does not add any physics/parity claim.
 
 ## Evidence Predicates
 
@@ -217,7 +246,7 @@ caps, zero exact failures, and zero boxed-LCP fallbacks. This establishes
 | Combined incline | Locally finalized 21-indexed/23-physical current-source bundle; five selected local stills, a 61-frame decoded schedule, and 240/240 exact attempts/solves with zero caps/failures/fallbacks | Reconstructed `mu=.4` slide and `mu=.5` stick-threshold separation visible | Partial: independent traces corroborate the threshold, but capture contacts 8 differ from aggregate trace contacts 6; strict `paper_cpu` `mu=.5` still fails at residual `1.439e-6`, and external/paper/golden/timing/real-time proof is missing |
 | Backspin | Source-pinned author exact/boxed 240-step capture with 121-frame member/group MP4s, complete 241-state traces, sealed numeric source oracle, explicit material/process policy, and checker OBJ/MTL/PPM hash binding | Manual inspection confirms the ivory/charcoal facets visibly change orientation; trace validation owns signed `wy`, rolling, left-edge roll-off, and terminal-source tolerances | Partial: both solvers pass, so there is no superiority claim. The visual cadence aliases initial spin; source backend/full-trajectory, solver equivalence, renderer/video/golden, timing/real-time, Figure 3, and paper parity remain false |
 | Turntable 2x2 | Finalized 58-indexed/60-physical author-pinned bundle with four outcome stills; all four 360-step current visual cells are solver-valid | Segmented disc/coral wedge are legible; three cells eject and `mu=.5, omega=2` remains on support through 6 s | Partial: finite-horizon result only; no zero-slip/co-rotation, full-state, approved-golden, paper-timing, real-time, or paper-parity claim, and the separate strict lane fails the retained cell at step 40 |
-| Source-pinned Painleve exact/boxed pair | Finalized ignored bundle passes capture summary and independent verify with four 121-sample members, four 61-frame H.264/yuv420p groups, strict exact audit, full decode, and manual panel/keyframe audit | At `mu=.5` both lanes finish upright near rest; at `mu=.55` exact finishes tumbled near rest while boxed finishes upright near rest | Current-DART-adapter divergence only; no source-backend/trajectory equivalence, paper Figure 5 parity, timing comparability, or solver-superiority claim; GitHub URLs pending |
+| Source-pinned Painleve exact/boxed pair | Finalized ignored bundle passes capture summary and independent verify with four 121-sample members, four 61-frame H.264/yuv420p groups, strict exact audit, full decode, and manual panel/keyframe audit | At `mu=.5` both lanes finish upright near rest; at `mu=.55` exact finishes tumbled near rest while boxed finishes upright near rest | Current-DART-adapter divergence only; no source-backend/trajectory equivalence, paper Figure 5 parity, timing comparability, or solver-superiority claim. Slots 04/05 are PR-referenced and re-download/hash verified |
 | Historical Painleve proxy pair | Historical post-review group media valid; both proxies solver-valid | `mu=0.5` upright and `mu=0.55` tumble visible | Superseded for local use by the locally finalized proxy bundle below; it remains separate historical diagnostic evidence and does not replace the source-pinned adapter result |
 | 10-level construction | Static frame only | Construction layout visible | No dynamic or solver-outcome claim |
 | Author five-level construction | Finalized 12-indexed/14-physical current-source bundle; step-zero capture and bound manual inspection | Public-author default five-level, 40-card configuration and four suspended cubes visible | Construction only: zero simulation substeps; no release, standing, trajectory, solver, dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
@@ -249,8 +278,8 @@ The exact-vs-boxed upload candidates are
 `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209`)
 and `groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` (SHA-256
 `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f`).
-Their GitHub URLs remain pending manual browser-composer upload; the media is
-not checked into Git.
+Their slots 04/05 user attachments are PR-referenced and re-download/hash
+verified in the video matrix. The media is not checked into Git.
 
 The locally finalized current-source incline bundle is
 `assets/paper_evidence/fig01_02_incline_current_v1/`.
@@ -506,7 +535,8 @@ This is not strict success, a solver-only A/B, superiority, an automated
 semantic or physical outcome, historical Tables 6-7 or source trajectory/
 backend/timing evidence, paper-video parity, or paper parity. The v1/v2
 captures are superseded framing probes and excluded. The v3 media remains
-ignored, with its browser-upload URL pending.
+ignored. Its byte-identical slot 15 attachment is PR-referenced and
+re-download/hash verified.
 
 The separately named `fbf_author_card_house_4_impact_current_source` scene and
 `card_house_author_4_impact_current_source` schedule pin author commit
@@ -665,14 +695,18 @@ Capture and independent reuse verification pass. Manual inspection finds an
 intact arch through step 400, loss of the crown-standing configuration by step
 800, and visible collapse by steps 1,200 and 1,600.
 
-The 1320x506 diagnostic hstack freezes exact at its last rendered step-208
-frame while boxed continues; its 201-frame full decode has SHA-256
-`d6f5f658e4fb027edb23e0911acd34b74dfd749daace41b5d9c9204af3163b94`.
-The compact bundle-summary SHA-256 is
-`1c19c6c3c36171a5e85f330b2863b429956652fb894aae0aa0b82d68291e3481`.
+The fresh current-runtime 1320x506 diagnostic hstack freezes exact at its last
+rendered step-208 frame while boxed continues; its 201-frame full decode has
+SHA-256
+`5e83527d2ed13218fda295b1dc30143007e012b333d63e965a765790145bb1d7`.
+The panel and metadata SHA-256 values are
+`d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`
+and
+`2293baf64a2922e758c02adba4ce44018bbda93553970eaa19c305003890ed4f`.
 This is valid blocker presentation, not a complete exact/boxed comparison,
 standing result, historical source/Kamino golden, source/golden match, paper
-parity, or solver-superiority evidence. GitHub URLs remain pending. Independent
+parity, or solver-superiority evidence. Slot 08 is PR-referenced and
+re-download/hash verified. Independent
 full current-source FBF and Kamino controls also fail the local standing
 criterion; Kamino completes all 400 frames with finite arrays but saves no
 convergence/contact history, full poses, rotations, cube trajectory, or media.

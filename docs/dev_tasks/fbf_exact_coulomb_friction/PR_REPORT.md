@@ -1,5 +1,82 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
+## 2026-07-29 Current-Head Update
+
+This section supersedes every older current-head, active-capture, Figure 3,
+Figure 8, upload, branch, and CI statement below.
+
+- Pushed head `333a809f14a2e8b5f9837c74dcef13c77ca8fd76` contains
+  `release-6.20` checkpoint `d65e88ebda4` through merge `d209da2cbf1`.
+  After the visual seal, the target advanced to `6c88ac1d774` through PR #3382;
+  it must be merged before the next push and will create a new binary identity.
+  PR #3377 is open and draft with 264 net changed files.
+- The PR tree tracks no generated task assets, raw capture output, CSV, JSON,
+  PNG, MP4, logs, stdout/stderr, NPY, or NPZ evidence. The scalable
+  `docs/dev_tasks/.gitignore` policy ignores every task's role-based
+  `**/assets/` subtree. The 101 source-pinned Figure 8 masonry OBJ files are
+  required runtime inputs, not generated data; broad extension ignores would
+  incorrectly hide them and the Figure 3 checker/runtime meshes.
+- Visual-evidence schema v3 binds the current demo
+  (`3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750`),
+  61 regular runtime libraries, eight build-tree libraries, and the exact core
+  DART library
+  (`3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`)
+  before and after capture.
+- Fresh current-runtime Figure 3 exact and boxed captures complete 240/240,
+  pass independent verification and the bounded outcome slice, and use the
+  requested checker-textured sphere so orientation and backspin are visibly
+  apparent. Exact/group MP4 SHA-256 values are `b2c268aa...` and
+  `e321c711...`. Both solvers pass; no superiority or paper-parity result is
+  claimed.
+- Fresh current-runtime Figure 8 is sealed and independently verified as
+  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Exact fails
+  closed at `iteration_cap` after completed step 209 and freezes only its last
+  valid step-208 image; boxed completes 1,600/1,600 but collapses and fails the
+  standing oracle. Clip/panel/metadata SHA-256 values are `5e83527d...`,
+  `d6782a65...`, and `2293baf6...`. This is a frozen-prefix blocker
+  diagnostic, not a complete exact trajectory, historical Figure 8 invocation,
+  solver-superiority result, or paper-parity result.
+- Fresh ten-level exact and boxed members each complete 3,200/3,200 from the
+  same unchanged runtime. Exact records 7,702/7,702 solves, zero
+  failures/fallbacks, 2,427 plateau accepts, and 763 max-iteration accepts.
+  Exact/boxed/group clip SHA-256 values are `19637c42...`, `d8066f89...`, and
+  `438b02b2...`. Standalone verification, full decode, and manual
+  panel/keyframe inspection pass. Exact alone requests source continuation and
+  no automated semantic outcome exists, so this is a policy-asymmetric
+  presentation—never strict success, a solver-only A/B, superiority, or
+  parity.
+- The strict zero-accepted-cap gate is stronger than the public author runner:
+  the retained four-level source control has 945/2,400 `converged=false`
+  substeps and the ten-level 120-substep prefix has 87 non-converged substeps;
+  both source runs continue. DART's separately named continuation lanes expose
+  the analogous policy with typed telemetry and never relabel it strict
+  success.
+- All 16 intended H.264/yuv420p clips are referenced from the draft PR through
+  GitHub user-attachment URLs. Each was re-downloaded from its PR-facing URL
+  and matched its full recorded SHA-256. Slot 09 now uses the fresh schema-v3
+  current-runtime group (`438b02b2...`) at user attachment `af9d80bf...`; the
+  historical provisional bytes were replaced.
+  [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns the verified
+  URL/hash ledger.
+- At the inspected current head, most hosted jobs passed or remained active.
+  macOS `arm64-Debug` alone failed in the untouched randomized
+  `JOINTS.CONVENIENCE_FUNCTIONS` transform-conversion test. The base branch
+  passed and the focused test passed 1,000 local repeats, so this is currently
+  classified as an unrelated likely random/singularity flake pending the next
+  content-triggered run.
+- The first post-capture matched performance attempt preserves the exact
+  mark26 measured-work fingerprint and passes affinity, residency, solver, and
+  outcome gates, but it ran under sustained GUI/editor load immediately after
+  the five-hour capture with an 82 C package. Its 12.924/12.321 ms means and
+  1.0489x speedup are a host-contention diagnostic, not replacement evidence.
+  Rerun after target merge/rebuild and a declared cool/low-load gate.
+
+The direct coverage answer remains **No**: the branch does not reproduce every
+paper test, benchmark, GUI example, physical outcome, or performance result.
+Historical renderer/golden recovery, strict card-house and arch convergence,
+matched paper timing, and apples-to-apples source/backend claims remain open or
+blocked. Keep PR #3377 draft.
+
 This is the PR-facing status report for the DART 6.20 exact-Coulomb FBF work.
 It states what the current branch demonstrates and, just as importantly, what
 it does not demonstrate. The five minimum Figures 1-5 source-row uploads now
@@ -13,8 +90,9 @@ pass the current demo, broad-source, and exact live/sidecar contract gates;
 [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md) owns their full paths
 and hashes. Figure 6 and Figure 7 staging slots 06/07 now contain those
 current-head groups, the five-level group is byte-identical to slot 15, and the
-updated 16-entry staging checksum manifest verifies. The ten-level current-head
-recapture is active but not finally verified. Checkpoint
+    updated 16-entry staging checksum manifest verifies. The ten-level current-head
+    recapture and standalone verification now pass for both members and the
+    synchronized group. Checkpoint
 `8ad9961e56c` adds the standalone fail-closed Figure 8 failed-prefix finalizer,
 but no current-head Figure 8 bundle has completed finalize/seal/verify.
 Manual panels show more retained exact structure in Figure 6 and five-level
@@ -488,7 +566,8 @@ boxed-upright. The c95 turntable group hashes are byte-identical to previously
 audited clips/timelines, which retain the narrow source-order
 ejected/ejected/retained/ejected and proxy classifications. These are narrow current-DART observations, not paper
 parity or general solver-superiority evidence. No MP4 is tracked; browser-only
-PR upload and resulting user-attachment URLs remain pending.
+PR media stays outside Git. Its selected proxy slots 10-13 are PR-referenced
+and re-download/hash verified.
 
 The consolidated browser handoff in `PAPER_DEMO_VIDEO_MATRIX.md` selects 16
 recommended clips: nine minimum one-per-source-row uploads and seven
@@ -498,7 +577,9 @@ path and SHA-256, H.264/yuv420p at 30 fps, and a complete
 author group remains exact-only; Figures 6/7/Tables 6-7 remain continuation
 evidence; Figure 8 remains a frozen-prefix diagnostic; and the Figure 4 proxy
 pairs are reconstructed. The Tables 6-7 pair includes a continuation-policy
-difference and is presentation-only.
+difference and is presentation-only. All 16 slots are PR-referenced and
+re-download/hash verified; slot 09 remains explicitly provisional pending the
+active fresh ten-level pair.
 
 The source audit pins the combined 82 s video, teaser, and paper and validates
 all nine contiguous source segments. The SHA-256 values are:
@@ -624,8 +705,8 @@ superiority remain false. The two exact-vs-boxed candidates are
 `77d3286dde96785a6c36cd901e92f183409098ba2bd8dbb426489f537fe71209`)
 and `groups/painleve_author_mu055__exact_vs_boxed/clip.mp4` (SHA-256
 `2c71e565559dea513870b56bba3c709cf015707b171cfdb45b5cf64fde31f70f`).
-Their GitHub attachment URLs remain pending manual browser-composer upload;
-the media stays outside Git.
+Their slots 04/05 are PR-referenced and re-download/hash verified; the media
+stays outside Git.
 
 The historical Painleve proxy subset has since been independently recaptured
 and locally finalized at
@@ -645,8 +726,8 @@ golden/diff, paper timing, or real-time evidence.
 
 ### Source-Pinned Author Figure 3 Backspin
 
-The preferred PR media is now the ignored
-`assets/pr_media_current_head_67073/` v2 capture of
+The preferred PR media is now the ignored fresh current-runtime
+`assets/pr_media_current_head_333a/` schema-v3 capture of
 `fbf_author_backspin_current_source` under schedule
 `backspin_author_current_source`, not the reconstructed c95 bundle below. It
 binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, the sealed
@@ -654,12 +735,13 @@ source-reference manifest SHA-256
 `7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`,
 the DART implementation, exact options, explicit ground/sphere primary and
 secondary friction plus restitution, process state, and the checker OBJ/MTL/PPM
-before and after capture. The source's configured terminal flag is true for all
-240 steps, but 183 projected natural residuals exceed `1e-6`; this is not
-strict natural-residual convergence. Capture and independent reuse verification
-pass for two members and one group; their summary SHA-256 values are
-`e2709dcc8aedb7c8deb52d4fd9e5ccf881cf64b92490b85d6760bffb1ae929c7` and
-`f82e74fb762906a525ee442f878c489aa833820fa910e3c137f54341b94242fc`.
+before and after capture. Schema v3 additionally binds demo SHA-256
+`3d685d2c...`, exact core DART SHA-256 `3b66436b...`, 61 regular runtime
+libraries, and eight build-tree libraries before and after capture. The
+source's configured terminal flag is true for all 240 steps, but 183 projected
+natural residuals exceed `1e-6`; this is not strict natural-residual
+convergence. Capture and independent reuse verification pass for both members
+and their group.
 
 Exact and boxed each complete 240 steps / 241 states and pass prompt contact,
 contiguous support through step 206, a five-sample rolling tail, zero measured
@@ -680,7 +762,8 @@ The imagery does not prove signed direction/rate because 30 fps aliases the
 initial `-200 rad/s`; the trace owns signed `wy`. Both solvers pass, so no
 solver equivalence/superiority, source backend/full-trajectory or video
 equivalence, timing/real-time evidence, historical Figure 3 invocation, or
-paper parity follows. Browser upload and GitHub attachment URLs remain pending.
+paper parity follows. Slots 02/16 are PR-referenced and re-download/hash
+verified.
 
 ### Historical Reconstructed Figure 3 Backspin
 
@@ -1584,10 +1667,10 @@ and `63c47426019a218942afe3edae31cdf5dbbbd8d8926732ea59120e23bb6cf1a4`.
 It saves no convergence/contact history, full poses, rotations, cube
 trajectory, or media.
 
-GitHub attachment URLs remain pending. This is a current-DART scientific
-negative, not a complete exact/boxed comparison, source trajectory/outcome
-equivalence, Fig. 8/video.08 parity, historical source/Kamino golden, timing,
-performance, or superiority evidence.
+Slot 08 is PR-referenced and re-download/hash verified. This is a current-DART
+scientific negative, not a complete exact/boxed comparison, source
+trajectory/outcome equivalence, Fig. 8/video.08 parity, historical
+source/Kamino golden, timing, performance, or superiority evidence.
 
 The separately frozen 101-stone literal protocol is
 `LITERAL_ARCH_101_V1.md`; its current provenance-bound bundle is
@@ -1844,18 +1927,17 @@ cross-platform CI.
   upload it only through the PR editor and record the URL. Keep those lanes
   distinct from the reconstructed
   manifold-v2 lane, whose two trajectories remain non-strict.
-- Preserve the independently reverified full exact and boxed ten-level members,
-  their summaries, and the same-binary presentation-only labeled pair. Keep the
-  superseded interrupted step-112 attempt and partial frames classified as
-  non-evidence. Upload only the labeled pair through the PR
-  browser composer and record its URL. Keep predictive checkpoint
-  `3647959a188` distinct from previous checkpoint `ffe23d347b0`, and keep
-  continuation evidence distinct from strict convergence. Preserve the
-  completed ten-level colored and global-scope bounded rejects; do not rerun or
-  extend either without a new source-backed preregistered mismatch, promote
-  colored ordering to the default, or ship the detached global patch, and do
-  not loosen tolerance, iteration caps, fallback, fail-fast, or accepted-cap
-  policy.
+- Preserve the fresh schema-v3 exact and boxed ten-level members, their
+  standalone verification summaries, and the current-runtime
+  presentation-only labeled pair. Slot 09 is uploaded, PR-referenced, and
+  re-download/hash verified. Keep superseded partial attempts classified as
+  non-evidence, keep predictive checkpoint `3647959a188` distinct from
+  previous checkpoint `ffe23d347b0`, and keep continuation evidence distinct
+  from strict convergence. Preserve the completed ten-level colored and
+  global-scope bounded rejects; do not rerun or extend either without a new
+  source-backed preregistered mismatch, promote colored ordering to the
+  default, ship the detached global patch, or loosen tolerance, iteration
+  caps, fallback, fail-fast, or accepted-cap policy.
 - Preserve the independently verified historical five-level source-default v3
   members and the policy-asymmetric labeled pair as supplemental non-paper
   diagnostics.

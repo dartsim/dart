@@ -4,7 +4,22 @@ FBF exact-Coulomb paper-parity provenance
 Original paper/media snapshot date: 2026-07-12
 Public-source availability addendum: 2026-07-18
 Current-source incline sweep addendum: 2026-07-19
+Current-runtime closure and PR-media addendum: 2026-07-29
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
+
+The 2026-07-29 visual checkpoint binds dart-demos SHA-256
+3d685d2c94a4aa0d45cc140b8163ae762d23617703c5265ae80ce3db5efa3750,
+exact build-tree libdart.so.6.19.4 SHA-256
+3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926,
+61 regular runtime libraries, and eight build-tree libraries before and after
+capture. Fresh Figure 3 and Figure 8 schema-v3 bundles pass their narrow
+capture/reuse/manual gates. All 16 intended PR user attachments are referenced
+and were re-downloaded byte-for-byte against their recorded SHA-256 values.
+Slot 09 is the fresh schema-v3 current-runtime ten-level group
+(SHA-256 438b02b29710c35e6eca2a9854f848f489466b3ad63f9ef4101c84ed788cf59d);
+both members and the group pass standalone verification and full decode, and
+the PR-facing download matches byte-for-byte. Generated media remains ignored
+local evidence and is not tracked by Git.
 
 1. Paper and project page
 -------------------------
@@ -172,6 +187,15 @@ Location: data/mjcf/rigid_ipc_arch/
 The directory contains Rigid-IPC's 101-stone MuJoCo comparison scene, OBJ
 meshes, plane, license, and a README describing every adaptation. It is a
 benchmark/example-only asset and is not a core DART dependency.
+
+The now-public FBF source at pinned commit
+b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 also ships the 101 meshes under
+meshes/arch/num_stones=101/. A 2026-07-29 byte audit matched all 101 DART
+copies to that pinned tree. The normalized `sha256sum stone-*.obj` ledger
+digest is
+2841fe941dba046936e950f1875e01374259e2ddc28b5bcf40c465fd10f71993.
+This source-binds the OBJ geometry; it does not turn Rigid-IPC's MuJoCo XML
+or backend into an FBF-author or historical-paper configuration.
 
 Representative snapshot SHA-256 values on 2026-07-12:
 
