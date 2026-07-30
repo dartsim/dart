@@ -8,11 +8,12 @@ bundles, and the visual workflow declares 33 runnable schedules, 30 of which
 encode MP4. The additional schedule is a DART-only numeric diagnostic rather
 than a paper/video row.
 
-## 2026-07-29 Current-Runtime Media Checkpoint
+## 2026-07-29 Captured-Runtime Media Checkpoint
 
 Fresh schema-v3 Figure 3 and Figure 8 evidence under ignored
-`assets/pr_media_current_head_333a/` binds the current demo, exact core DART,
-and resolved runtime-library closure before and after capture. Figure 3 exact
+`assets/pr_media_current_head_333a/` binds the captured demo, exact core DART,
+and resolved runtime-library closure before and after capture at
+`333a809f14a`. Figure 3 exact
 and boxed finish 240/240, independently verify, and use a checker-textured
 sphere whose changing orientation makes the backspin visible; both bounded
 outcomes pass. Figure 8 exact stops after completed step 209 and freezes only
@@ -26,10 +27,18 @@ panel/keyframe inspection pass. Exact alone requests source continuation and
 no automated semantic outcome exists, so this remains a policy-asymmetric
 presentation rather than strict, solver-only, superiority, or parity evidence.
 All 16 intended GitHub user attachments are referenced from the draft PR and
-re-download/hash verified. Slot 09 is the fresh schema-v3 current-runtime group
+re-download/hash verified. Slot 09 is the fresh schema-v3 captured-runtime group
 with SHA-256 `438b02b2...`; the historical provisional bytes were replaced.
 None of these media updates changes the manifest counts or promotes any paper
 row to complete.
+
+Post-merge code/runtime checkpoint `6fb4d0dbd8c` includes release target
+`6c88ac1d774` and rebuilds to demo/core SHA-256 values `d9932f4c...` /
+`caf402af...`. Documentation-only descendants do not change this identity. The
+merge passes lint, all 166 C++ tests, the 34-scene FBF documentation validator,
+and AI-workflow checks. No full visual reseal has run against that binary, so
+the 16 uploaded clips remain audited captured-checkpoint artifacts rather than
+post-merge current-binary reuse evidence.
 
 ## Source And Comparability Boundary
 
@@ -285,7 +294,7 @@ colored-inner-BGS contract validated above.
 | ID | Paper fixture/result | Current evidence | Current status and missing proof |
 | --- | --- | --- | --- |
 | Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | New source-bound seven-cell DART demo/schedule over `mu=.3,.4,.45,.5,.55,.6,.8`, independently verified exact/boxed paired media, the older two-cell visual/trace bundle, and numeric author FBF/MuJoCo/Kamino runs | Partial: both DART lanes classify `.3/.4/.45` slide and `.5/.55/.6/.8` stick and match the retained source-FBF terminal projection within `.01 m/.01 m/s`. The source oracle is non-strict at 839/840 configured flags (`mu=.55`, step 1 at 200/200); source trajectory/backend/full-state, historical invocation/golden/video, paper contact/history/timing/real-time, superiority, and paper parity remain missing |
-| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Fresh current-runtime schema-v3 source-pinned exact/boxed 240-step traces, preregistered rolling/roll-off/source-terminal slice, independently sealed public-source numeric reference, checker-textured exact/group MP4s, and manual checker-rotation inspection | Partial: both DART solvers pass the bounded terminal/outcome slice and trace signed `wy`; the checker makes changing orientation and spin visible, although 30 fps aliases the initial angular rate. Slots 02/16 are PR-referenced and re-download/hash verified. Source backend/full-trajectory, solver equivalence/superiority, renderer/video/golden, historical invocation, timing/real-time, Figure 3, and paper parity remain unproven |
+| Fig. 3 | Backspin sphere reverses toward analytical terminal state | Fresh captured-runtime schema-v3 source-pinned exact/boxed 240-step traces, preregistered rolling/roll-off/source-terminal slice, independently sealed public-source numeric reference, checker-textured exact/group MP4s, and manual checker-rotation inspection | Partial: both DART solvers pass the bounded terminal/outcome slice and trace signed `wy`; the checker makes changing orientation and spin visible, although 30 fps aliases the initial angular rate. Slots 02/16 are PR-referenced and re-download/hash verified. The media is captured at `333a`, not current `6fb4`. Source backend/full-trajectory, solver equivalence/superiority, renderer/video/golden, historical invocation, timing/real-time, Figure 3, and paper parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Locally finalized author-pinned 58-indexed/60-physical four-cell bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | The source-pinned `fig05_painleve_author_current_v1` exact/boxed DART bundle passes capture summary and independent verify with four complete traces, four 61-frame decoded member/group results, strict exact audit, classified outcomes, and manual inspection; the older DART-only proxy remains historical diagnostic evidence | Partial: under the pinned current DART adapter, exact and boxed diverge at `mu=.55`. Slots 04/05 are PR-referenced and re-download/hash verified. Source-backend equivalence, trajectory equivalence, paper Figure 5 parity, timing comparability, and solver superiority remain false |
 | Fig. 6 | 26-card house settles, then receives four projectiles | Strict source-selected adapter plus a separate telemetry-rich source-continuation exact/boxed capture, six bounded c95 colored/global-scope/source-gap/cadence/terminal-estimate/source-seed-values diagnostics, the distinct five-level construction bundle, reconstructed prior-source strict step-89 negative, and manifold sensitivity v2 | Blocked for strict/parity completion: strict exact fails closed at step 35 on the retained 56-contact group. Colored ordering and global scope are bounded rejects. A source-sized-gap candidate fails the 36-step gate at step 31, while c95 cadence-5, same-binary `last_norm10`, and same-binary source-seed-values candidates still fail at step 35; each has explicit claim limits and leaves the scene unchanged. The continuation pair completes 2,400/2,400 through release; exact records 3,351/3,351 solves, 0 failures/fallbacks, 113 plateau and 633 max-iteration accepts, 0 shrink caps, and worst residual `0.917120`. Manual inspection finds both standing through release and more endpoint structure in exact, but this is qualitative continuation evidence, not strict convergence, quantitative outcome/trajectory/golden/backend/timing parity, superiority, or paper parity |
@@ -294,7 +303,7 @@ colored-inner-BGS contract validated above.
 | Fig. 8 | 101-stone arch remains balanced | Source-pinned current-DART 101-mesh adapter and boxed-collapse media, independent full current-source FBF/Kamino numeric negatives, plus the older oriented-box bounded attempt and provenance-bound literal v7 failed-step-1 run | Partial blocker evidence; parity blocked: source-pinned exact stops after step 209 on an iteration cap (`208` contacts, residual `1.2582804496e-6`), and boxed completes 1,600 steps but fails the standing oracle and collapses. Current-source FBF and Kamino also fail the local standing criterion. The diagnostic hstack freezes exact at step 208. No lane supplies standing, the historical invocation/backend, full-pose source trajectory, golden media, timing, or paper-parity proof |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
 | Fig. 10 | Gamma sweeps with physical-outcome interpretation | Sweep/trace infrastructure | Partial: the pinned recovery policy is inspectable, but DART equivalence and paper-profile contact-rich outcomes are not established |
-| GPU table | Card/arch outcomes and timing | Construction adapter, reconstructed Kamino runner, strict ten-level negative, and continuation-policy presentation | Non-comparable: strict ten-level DART fails after completed step 31. Historical continuation members complete; a fresh current-runtime exact member completes while boxed is active. These are CPU/DART policy-asymmetric diagnostics, not matched GPU outcome or timing evidence |
+| GPU table | Card/arch outcomes and timing | Construction adapter, reconstructed Kamino runner, strict ten-level negative, and continuation-policy presentation | Non-comparable: strict ten-level DART fails after completed step 31. Historical continuation members complete; captured-checkpoint exact and boxed members complete. These are CPU/DART policy-asymmetric diagnostics, not matched GPU outcome or timing evidence |
 
 The ignored Figure 5 bundle is
 `docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_author_current_v1/`.
