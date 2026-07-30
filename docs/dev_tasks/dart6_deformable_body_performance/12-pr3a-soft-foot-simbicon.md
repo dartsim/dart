@@ -31,9 +31,11 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
    `applyPush(Model&, Vector3d, int steps)`; `step(Model&)` (push countdown +
    `controller->update()` + `world->step()`); metrics `pelvisHeightY`,
    `isUpright` (pelvis Y above fall threshold), `footContactCount` (contacts on
-   l_foot/r_foot), `isFinite`, `checksum`; helper `maxRecoverablePush(Feet)`
-   (sweep push magnitudes, return largest from which the biped stays upright N
-   steps).
+   l_foot/r_foot), `isFinite`, `stateVector` (full skeleton + point-mass
+   state, for exact determinism comparison), `resetModel` (skeleton config,
+   soft point masses, gait phase, pending push); helper
+   `maxRecoverablePush(Feet)` (sweep push magnitudes, return largest from which
+   the biped stays upright N steps).
 2. `examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconScene.cpp` →
    `makeSoftFootSimbiconScene()`; register in `examples/demos/Registry.cpp`
    (Soft Bodies group) + declare in `examples/demos/scenes/Scenes.hpp`. Feet-type
@@ -55,7 +57,9 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 ## Acceptance gates (paper row)
 
 - Soft-foot biped stands finite + upright for ≥ N steps (no fall) under the
-  controller — deterministic (two runs equal checksum).
+  controller — deterministic (two runs produce an exactly equal `stateVector`).
+- Reset restores the full starting state, including the soft feet's independent
+  point-mass deformation and momentum and the gait phase.
 - **Push recovery: soft withstands ≥ rigid** — `maxRecoverablePush(Soft) >=
   maxRecoverablePush(Rigid)` (paper: soft withstands larger perturbations), or a
   push magnitude that fells rigid but not soft.

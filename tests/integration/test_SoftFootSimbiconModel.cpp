@@ -41,6 +41,10 @@
 //     contact points") -- here a large, robust margin.
 //  3. Soft feet withstand at least as large a recoverable pelvis push as rigid
 //     feet (the paper's "withstands larger perturbations").
+//
+// A fourth gate covers the scene's Reset action, which has to restore the soft
+// feet's independent point-mass state and the gait phase, not just the
+// skeleton's generalized coordinates.
 
 #include "examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
 
@@ -66,7 +70,7 @@ struct StandOutcome
   std::size_t failedStep = 0;
   double minUprightGap = 1e9;
   double finalPelvisY = 0.0;
-  double checksum = 0.0;
+  Eigen::VectorXd state;
   std::size_t contactSum = 0;
   std::size_t contactMin = 1000000;
   std::size_t contactSamples = 0;
@@ -98,7 +102,7 @@ StandOutcome runStand(sfs::Feet feet, std::size_t steps)
     }
   }
   out.finalPelvisY = sfs::pelvisHeightY(model);
-  out.checksum = sfs::checksum(model);
+  out.state = sfs::stateVector(model);
   return out;
 }
 
@@ -124,16 +128,57 @@ TEST(SoftFootSimbiconModelTest, SoftFootBipedStandsAndIsDeterministic)
 
   const StandOutcome second = runStand(sfs::Feet::Soft, kStandSteps);
   ASSERT_TRUE(second.finiteThroughout);
-  ASSERT_EQ(second.checksum, first.checksum)
-      << "soft biped run was not deterministic";
+
+  // Exact comparison of the whole state -- skeleton positions and velocities
+  // plus every soft point mass's positions and velocities. Reducing this to a
+  // scalar would let two genuinely different states compare equal.
+  ASSERT_EQ(second.state.size(), first.state.size());
+  ASSERT_TRUE((second.state.array() == first.state.array()).all())
+      << "soft biped run was not deterministic; largest component difference "
+      << (second.state - first.state).cwiseAbs().maxCoeff();
   ASSERT_EQ(second.finalPelvisY, first.finalPelvisY);
 
   std::cout << std::setprecision(6)
             << "soft_foot_simbicon steps=" << kStandSteps
             << " min_upright_gap=" << first.minUprightGap
             << " final_pelvisY=" << first.finalPelvisY
-            << " checksum=" << std::setprecision(17) << first.checksum
+            << " state_components=" << first.state.size()
             << " deterministic=true\n";
+}
+
+//==============================================================================
+// Gate 1b: Reset restores the complete state, not just the skeleton's
+// generalized coordinates. The soft feet carry deformation and momentum in
+// independent point masses, so a reset that skipped them would resume from a
+// nominal pose with squashed, still-moving feet.
+TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
+{
+  sfs::Model fresh = sfs::createModel(sfs::Feet::Soft);
+  const Eigen::VectorXd startState = sfs::stateVector(fresh);
+
+  sfs::Model model = sfs::createModel(sfs::Feet::Soft);
+  sfs::applyPush(model, Eigen::Vector3d(0.0, 0.0, 400.0), 100);
+  for (int s = 0; s < 400; ++s)
+    sfs::step(model);
+
+  // The run has to have actually disturbed the feet, or the reset below would
+  // be trivially satisfied.
+  const Eigen::VectorXd disturbed = sfs::stateVector(model);
+  ASSERT_EQ(disturbed.size(), startState.size());
+  ASSERT_GT((disturbed - startState).cwiseAbs().maxCoeff(), 1e-6);
+
+  sfs::resetModel(model);
+
+  const Eigen::VectorXd resetState = sfs::stateVector(model);
+  EXPECT_LT((resetState - startState).cwiseAbs().maxCoeff(), 1e-12)
+      << "reset did not restore the starting state";
+  EXPECT_EQ(model.forceDuration, 0);
+  EXPECT_EQ(model.externalForce, Eigen::Vector3d::Zero());
+
+  std::cout << "soft_foot_simbicon reset  disturbed_by="
+            << (disturbed - startState).cwiseAbs().maxCoeff()
+            << "  residual_after_reset="
+            << (resetState - startState).cwiseAbs().maxCoeff() << "\n";
 }
 
 //==============================================================================
@@ -151,8 +196,9 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
   // measuring a fall rather than the contact spreading the paper describes.
   ASSERT_TRUE(rigid.uprightThroughout) << "rigid biped fell; contact totals "
                                           "would not be comparable";
-  ASSERT_TRUE(soft.uprightThroughout) << "soft biped fell; contact totals would "
-                                         "not be comparable";
+  ASSERT_TRUE(soft.uprightThroughout)
+      << "soft biped fell; contact totals would "
+         "not be comparable";
 
   const double rigidAvg = contactAvg(rigid);
   const double softAvg = contactAvg(soft);

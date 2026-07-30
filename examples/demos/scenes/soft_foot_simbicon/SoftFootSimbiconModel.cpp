@@ -31,6 +31,7 @@
 #include "SoftFootSimbiconModel.hpp"
 
 #include "../atlas_simbicon/Controller.hpp"
+#include "../atlas_simbicon/StateMachine.hpp"
 
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
@@ -242,24 +243,60 @@ bool isFinite(const Model& model)
 }
 
 //==============================================================================
-double checksum(const Model& model)
+Eigen::VectorXd stateVector(const Model& model)
 {
-  long double checksum = 0.0;
-  std::size_t component = 1;
-  const auto positions = model.atlas->getPositions();
-  for (Eigen::Index i = 0; i < positions.size(); ++i)
-    checksum += static_cast<long double>(component++) * positions[i];
+  const Eigen::VectorXd positions = model.atlas->getPositions();
+  const Eigen::VectorXd velocities = model.atlas->getVelocities();
 
+  std::size_t numPoints = 0;
+  for (std::size_t i = 0; i < model.atlas->getNumSoftBodyNodes(); ++i)
+    numPoints += model.atlas->getSoftBodyNode(i)->getNumPointMasses();
+
+  Eigen::VectorXd state(positions.size() + velocities.size() + 6 * numPoints);
+  state << positions, velocities;
+
+  Eigen::Index offset = positions.size() + velocities.size();
   for (std::size_t i = 0; i < model.atlas->getNumSoftBodyNodes(); ++i) {
     const auto* softBody = model.atlas->getSoftBodyNode(i);
     for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j) {
-      const Eigen::Vector3d& position
-          = softBody->getPointMass(j)->getWorldPosition();
-      for (int axis = 0; axis < 3; ++axis)
-        checksum += static_cast<long double>(component++) * position[axis];
+      const auto* point = softBody->getPointMass(j);
+      state.segment<3>(offset) = point->getPositions();
+      state.segment<3>(offset + 3) = point->getVelocities();
+      offset += 6;
     }
   }
-  return static_cast<double>(checksum);
+  return state;
+}
+
+//==============================================================================
+void resetModel(Model& model)
+{
+  model.controller->resetRobot();
+
+  // resetRobot() restores the skeleton's generalized coordinates only. The
+  // soft feet hold their deformation and momentum in independent point-mass
+  // state, so without this the biped would resume from a nominal pose with
+  // squashed, still-moving feet.
+  for (std::size_t i = 0; i < model.atlas->getNumSoftBodyNodes(); ++i) {
+    auto* softBody = model.atlas->getSoftBodyNode(i);
+    for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j) {
+      auto* point = softBody->getPointMass(j);
+      point->resetPositions();
+      point->resetVelocities();
+      point->resetAccelerations();
+      point->resetForces();
+    }
+  }
+
+  // Restart the gait from its initial state. State 0 is the initial state of
+  // every machine Controller builds, and begin() rewinds the phase clock that
+  // the states' terminal conditions are timed against.
+  auto* stateMachine = model.controller->getCurrentState();
+  stateMachine->transiteTo(std::size_t(0), model.world->getTime());
+  stateMachine->begin(model.world->getTime());
+
+  model.externalForce.setZero();
+  model.forceDuration = 0;
 }
 
 //==============================================================================

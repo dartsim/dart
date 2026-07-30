@@ -149,13 +149,10 @@ DemoScene makeSoftFootSimbiconScene()
     setup.keyActions.push_back(KeyAction{'f', "Push right (-Z)", [push] {
                                            push(0.0, -1.0);
                                          }});
-    setup.keyActions.push_back(
-        KeyAction{'r', "Reset biped", [state] {
-                    state->model.controller->resetRobot();
-                    state->model.externalForce.setZero();
-                    state->model.forceDuration = 0;
-                    state->finite = true;
-                  }});
+    setup.keyActions.push_back(KeyAction{'r', "Reset biped", [state] {
+                                           sfs::resetModel(state->model);
+                                           state->finite = true;
+                                         }});
     setup.keyActions.push_back(
         KeyAction{'t', "Toggle feet (applies on Reset)", [feetSelection] {
                     *feetSelection = (*feetSelection == sfs::Feet::Soft)
@@ -197,9 +194,9 @@ DemoScene makeSoftFootSimbiconScene()
           "a/s push the pelvis forward/back, d/f push left/right (%.0f N for "
           "%d "
           "steps). 't' toggles rigid/soft feet (takes effect on Reset). 'r' "
-          "resets the biped. Soft feet spread more contact points and "
-          "withstand "
-          "larger pushes than rigid feet (Jain/Liu 2011).",
+          "resets the biped. Compare the two: soft feet spread more contact "
+          "points, and recover from a push at least as large as the rigid "
+          "feet do (Jain/Liu 2011).",
           sfs::kDefaultPushMagnitude,
           sfs::kPushSteps);
     };

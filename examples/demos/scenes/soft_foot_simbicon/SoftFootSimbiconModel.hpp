@@ -117,8 +117,17 @@ std::size_t footContactCount(const Model& model);
 /// Whether all skeleton and soft-point state remains finite.
 bool isFinite(const Model& model);
 
-/// Deterministic weighted checksum of skeleton and soft-point state.
-double checksum(const Model& model);
+/// The model's full simulation state, laid out as skeleton positions, skeleton
+/// velocities, then each soft point mass's positions and velocities.
+///
+/// Returned as a vector rather than reduced to a scalar so a determinism check
+/// can compare states exactly: any summary that folds the components together
+/// admits collisions between genuinely different states.
+Eigen::VectorXd stateVector(const Model& model);
+
+/// Resets the biped to its starting state: skeleton configuration, soft-foot
+/// point-mass state, gait phase, and any pending push.
+void resetModel(Model& model);
 
 /// Largest pelvis push magnitude (N) from which the biped recovers upright,
 /// found by sweeping magnitudes in a fixed lateral direction and returning the
