@@ -825,13 +825,19 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "pixi.toml: every `config` command used by `test-all` must only "
             "configure CMake"
         )
-    if config_commands and any(
-        "-DBUILD_TESTING=ON" not in shell_tokens(command) for command in config_commands
-    ):
-        errors.append(
-            "pixi.toml: every `config` command used by `test-all` must pin "
-            "`BUILD_TESTING=ON`"
-        )
+    required_runtime_config_flags = (
+        "-DBUILD_TESTING=ON",
+        "-DDART_BUILD_DARTPY=ON",
+        "-DDART_USE_SYSTEM_PYBIND11=ON",
+    )
+    for flag in required_runtime_config_flags:
+        if config_commands and any(
+            flag not in shell_tokens(command) for command in config_commands
+        ):
+            errors.append(
+                "pixi.toml: every `config` command used by `test-all` must pin "
+                f"`{flag.removeprefix('-D')}`"
+            )
 
     graph_markers = {
         "CMakeLists.txt": (

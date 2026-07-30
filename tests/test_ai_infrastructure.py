@@ -815,12 +815,20 @@ def test_test_gate_contract_rejects_runtime_config_path(tmp_path, old, new, expe
     assert any(expected in error for error in errors)
 
 
-def test_test_gate_contract_requires_build_testing_on(tmp_path):
+@pytest.mark.parametrize(
+    "flag",
+    (
+        "-DBUILD_TESTING=ON",
+        "-DDART_BUILD_DARTPY=ON",
+        "-DDART_USE_SYSTEM_PYBIND11=ON",
+    ),
+)
+def test_test_gate_contract_requires_runtime_config_flags(tmp_path, flag):
     _copy_test_gate_contract(tmp_path)
     pixi = tmp_path / "pixi.toml"
     pixi.write_text(
         pixi.read_text(encoding="utf-8").replace(
-            "        -DBUILD_TESTING=ON \\\n",
+            f"        {flag} \\\n",
             "",
             1,
         ),
@@ -830,7 +838,7 @@ def test_test_gate_contract_requires_build_testing_on(tmp_path):
 
     infra.check_test_gate_contract(tmp_path, errors)
 
-    assert any("must pin `BUILD_TESTING=ON`" in error for error in errors)
+    assert any(f"must pin `{flag.removeprefix('-D')}`" in error for error in errors)
 
 
 def test_test_gate_contract_requires_runtime_graph(tmp_path):
