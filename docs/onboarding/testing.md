@@ -15,6 +15,20 @@ depends on `tests_and_run` and `pytest`, so this aggregate also runs CTest and
 the Python binding tests. It does not run lint; run `pixi run lint` separately.
 Use `test` or `test-py` for focused reruns and clearer failure attribution.
 
+`pixi run check-ai-infra` also reconfigures the current platform, queries
+CMake's File API, inspects the expanded configure trace, and inventories CTest
+registrations without executing tests. It requires the effective `ALL` target
+to depend directly on `tests_and_run` and `pytest`, requires those targets to
+cover every configured C++ and Python test, rejects omitted test directories or
+unowned test sources, ties each target back to its validated source command,
+and confirms the Release target commands resolve to the active Pixi CTest,
+Python, and installed pytest implementations. This semantic probe catches
+early exits, variable poisoning, command shadowing, disabled CTest entries,
+collection-only or locally shadowed pytest substitutions, and decoy targets
+that a source-marker check alone cannot distinguish. Static adversarial tests
+cover the alternate MSVC and pytest source branches; native hosted CI remains
+the platform-specific execution proof.
+
 For model, simulation, collision/contact, or OSG claims, also use
 `dart-verify-sim` with the text-first and claim-tied visual/debug path in
 [`docs/ai/verification.md`](../ai/verification.md).

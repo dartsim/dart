@@ -125,10 +125,13 @@ simulation state with text-first and OSG visual/debug evidence.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, the relevant
    docs/AI gates in `docs/ai/verification.md`, and the representative OSG
-   investigation. Audit-only uses `pixi run check-lint`; only apply mode runs
-   auto-fixing `pixi run lint` before a commit. Complete the principle audit
-   and two clean role-separated reviews. Label unavailable behavioral,
-   cross-tool, hosted, or downstream evidence.
+   investigation. Treat the configured CMake File API result, expanded
+   target-command trace, and CTest inventory from `check-ai-infra` as the
+   effective test-graph proof; source-marker matches alone are insufficient.
+   Audit-only uses `pixi run check-lint`; only apply mode runs auto-fixing
+   `pixi run lint` before a commit. Complete the principle audit and two clean
+   role-separated reviews. Label unavailable behavioral, cross-tool, hosted,
+   or downstream evidence.
 10. **Close out for DART 6.** Make the changelog decision in apply mode,
     promote durable guidance, and remove completing temporary task state.
     Compare any related DART 7 PR or commit against the current release base

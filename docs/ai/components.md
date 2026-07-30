@@ -14,7 +14,10 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
   `scripts/pretool_guard_bridge.py`: native-Windows forwarding into the shared
   Git Bash guard.
 - `scripts/sync_ai_commands.py`: sync and validation tool.
-- `scripts/check_ai_infrastructure.py`: doctor, drift, and scenario checker.
+- `scripts/check_ai_infrastructure.py`: doctor, drift, scenario, and effective
+  CMake test-graph checker; the Pixi gate couples source contracts to a
+  configured File API graph, expanded command trace, and CTest inventory rather
+  than trusting lexical markers alone.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
   surfaces, and DART 7 exclusions.

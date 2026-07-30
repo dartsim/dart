@@ -256,8 +256,8 @@ def cmake_cache_definition_values(command: str) -> dict[str, list[str]]:
     return definitions
 
 
-def cmake_commands(text: str) -> list[tuple[str, str]]:
-    """Parse CMake command names and normalized arguments."""
+def cmake_command_details(text: str) -> list[tuple[str, str, int]]:
+    """Parse CMake command names, normalized arguments, and source lines."""
 
     def bracket_end(offset: int) -> int | None:
         match = re.match(r"\[(=*)\[", text[offset:])
@@ -274,7 +274,7 @@ def cmake_commands(text: str) -> list[tuple[str, str]]:
         newline = text.find("\n", offset + 1)
         return len(text) if newline < 0 else newline + 1
 
-    commands: list[tuple[str, str]] = []
+    commands: list[tuple[str, str, int]] = []
     identifier = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
     offset = 0
     while offset < len(text):
@@ -339,18 +339,26 @@ def cmake_commands(text: str) -> list[tuple[str, str]]:
             arguments.append(character)
             cursor += 1
         normalized = " ".join("".join(arguments).split())
-        commands.append((name, normalized))
+        line = text.count("\n", 0, match.start()) + 1
+        commands.append((name, normalized, line))
         offset = cursor
     return commands
 
 
-def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
-    """Attach each CMake command to its enclosing lexical control scopes."""
-    records: list[tuple[str, str, tuple[str, ...]]] = []
+def cmake_commands(text: str) -> list[tuple[str, str]]:
+    """Parse CMake command names and normalized arguments."""
+    return [(name, arguments) for name, arguments, _ in cmake_command_details(text)]
+
+
+def cmake_scoped_command_details(
+    text: str,
+) -> list[tuple[str, str, tuple[str, ...], int]]:
+    """Attach each CMake command and line to its lexical control scopes."""
+    records: list[tuple[str, str, tuple[str, ...], int]] = []
     stack: list[tuple[str, str]] = []
     openers = {"block", "foreach", "function", "if", "macro", "while"}
     closers = {f"end{name}" for name in openers}
-    for name, arguments in cmake_commands(text):
+    for name, arguments, line in cmake_command_details(text):
         if name in openers:
             stack.append((name, arguments))
             continue
@@ -364,8 +372,16 @@ def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
                 stack[-1] = (name, condition)
             continue
         context = tuple(f"{kind}:{value}" for kind, value in stack)
-        records.append((name, arguments, context))
+        records.append((name, arguments, context, line))
     return records
+
+
+def cmake_scoped_commands(text: str) -> list[tuple[str, str, tuple[str, ...]]]:
+    """Attach each CMake command to its enclosing lexical control scopes."""
+    return [
+        (name, arguments, context)
+        for name, arguments, context, _ in cmake_scoped_command_details(text)
+    ]
 
 
 def cmake_argument_tokens(arguments: str) -> list[str]:
@@ -910,118 +926,9 @@ def check_pixi_references(root: Path, errors: list[str]) -> None:
                 )
 
 
-def check_test_gate_contract(root: Path, errors: list[str]) -> None:
-    """Keep the Release ALL graph and focused test gates unambiguous."""
-    try:
-        pixi = read_toml(root / "pixi.toml")
-    except (OSError, tomllib.TOMLDecodeError) as error:
-        errors.append(f"pixi.toml: invalid TOML: {error}")
-        return
-
-    task_markers = {
-        "test": "ctest",
-        "test-py": "pytest",
-        "test-all": "--target ALL",
-    }
-    for task, marker in task_markers.items():
-        commands = collect_task_commands(pixi, task)
-        if not commands:
-            errors.append(f"pixi.toml: missing required test task `{task}`")
-        elif any(marker not in command for command in commands):
-            errors.append(
-                f"pixi.toml: `{task}` task must retain command marker `{marker}`"
-            )
-
-    test_all_definitions = collect_task_definitions(pixi, "test-all")
-    test_all_commands = collect_task_commands(pixi, "test-all")
-    if test_all_definitions and len(test_all_commands) != len(test_all_definitions):
-        errors.append("pixi.toml: every `test-all` variant must define one command")
-    if (
-        test_all_commands
-        and all("--target ALL" in command for command in test_all_commands)
-        and any(not is_single_cmake_all_build(command) for command in test_all_commands)
-    ):
-        errors.append(
-            "pixi.toml: every `test-all` command must be one CMake build with "
-            "the single target `--target ALL`"
-        )
-    if any(
-        forbidden in command.lower()
-        for command in test_all_commands
-        for forbidden in ("ctest", "pytest")
-    ):
-        errors.append(
-            "pixi.toml: `test-all` runtime coverage must remain owned by "
-            "the CMake `ALL` graph, not appended to the Pixi command"
-        )
-    for definition in test_all_definitions:
-        environment = definition.get("env")
-        if environment != {"BUILD_TYPE": "Release"}:
-            errors.append(
-                "pixi.toml: every `test-all` variant must set only "
-                '`BUILD_TYPE = "Release"`'
-            )
-            break
-    for definition in test_all_definitions:
-        dependencies = definition.get("depends-on", [])
-        if isinstance(dependencies, str):
-            dependencies = [dependencies]
-        if dependencies != ["config"]:
-            errors.append(
-                "pixi.toml: every `test-all` variant must depend only on "
-                "the build configuration task `config`"
-            )
-            break
-
-    config_definitions = collect_task_definitions(pixi, "config")
-    if not config_definitions:
-        errors.append("pixi.toml: missing required build task `config`")
-    for definition in config_definitions:
-        dependencies = definition.get("depends-on", [])
-        if isinstance(dependencies, str):
-            dependencies = [dependencies]
-        if dependencies:
-            errors.append(
-                "pixi.toml: `config` must not depend on other tasks because "
-                "`test-all` requires a direct configuration prerequisite"
-            )
-            break
-        environment = definition.get("env")
-        if environment not in (
-            {"DART_VERBOSE": "OFF"},
-            {"DART_VERBOSE": "OFF", "BUILD_TYPE": "Release"},
-        ):
-            errors.append(
-                "pixi.toml: every `config` variant must use the exact "
-                "branch-owned environment"
-            )
-            break
-    config_commands = collect_task_commands(pixi, "config")
-    if config_definitions and len(config_commands) != len(config_definitions):
-        errors.append("pixi.toml: every `config` variant must define one command")
-    elif config_commands and any(
-        not is_configuration_only_command(command) for command in config_commands
-    ):
-        errors.append(
-            "pixi.toml: every `config` command used by `test-all` must only "
-            "configure CMake"
-        )
-    required_runtime_config_values = (
-        ("BUILD_TESTING", "ON"),
-        ("DART_BUILD_DARTPY", "ON"),
-        ("DART_USE_SYSTEM_PYBIND11", "ON"),
-    )
-    for variable, expected_value in required_runtime_config_values:
-        if config_commands and any(
-            cmake_cache_definition_values(command).get(variable) != [expected_value]
-            for command in config_commands
-        ):
-            errors.append(
-                "pixi.toml: every `config` command used by `test-all` must pin "
-                f"`{variable}={expected_value}` exactly once"
-            )
-
-    graph_scope_requirements = {
+def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
+    """Return the source contracts that own the broad CMake runtime graph."""
+    return {
         "CMakeLists.txt": (
             (
                 "add_custom_target",
@@ -1097,6 +1004,181 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             ),
         ),
     }
+
+
+def cmake_graph_command_matches(
+    record: tuple[str, str, tuple[str, ...]],
+    requirement: tuple[Any, ...],
+) -> bool:
+    """Return whether one parsed command satisfies a graph source contract."""
+    record_name, arguments, context = record
+    (
+        name,
+        exact_arguments,
+        argument_token_sequences,
+        expected_scope,
+        _,
+    ) = requirement
+    if record_name != name or context != expected_scope:
+        return False
+    if exact_arguments is not None:
+        return arguments == exact_arguments
+    if not argument_token_sequences:
+        return False
+    tokens = cmake_argument_tokens(arguments)
+    return tokens[: len(argument_token_sequences[0])] == list(
+        argument_token_sequences[0]
+    ) and all(
+        contains_token_sequence(tokens, sequence)
+        for sequence in argument_token_sequences[1:]
+    )
+
+
+def check_test_gate_contract(root: Path, errors: list[str]) -> None:
+    """Keep the Release ALL graph and focused test gates unambiguous."""
+    try:
+        pixi = read_toml(root / "pixi.toml")
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        errors.append(f"pixi.toml: invalid TOML: {error}")
+        return
+
+    task_markers = {
+        "test": "ctest",
+        "test-py": "pytest",
+        "test-all": "--target ALL",
+    }
+    for task, marker in task_markers.items():
+        commands = collect_task_commands(pixi, task)
+        if not commands:
+            errors.append(f"pixi.toml: missing required test task `{task}`")
+        elif any(marker not in command for command in commands):
+            errors.append(
+                f"pixi.toml: `{task}` task must retain command marker `{marker}`"
+            )
+
+    test_all_definitions = collect_task_definitions(pixi, "test-all")
+    test_all_commands = collect_task_commands(pixi, "test-all")
+    if test_all_definitions and len(test_all_commands) != len(test_all_definitions):
+        errors.append("pixi.toml: every `test-all` variant must define one command")
+    if (
+        test_all_commands
+        and all("--target ALL" in command for command in test_all_commands)
+        and any(not is_single_cmake_all_build(command) for command in test_all_commands)
+    ):
+        errors.append(
+            "pixi.toml: every `test-all` command must be one CMake build with "
+            "the single target `--target ALL`"
+        )
+    if any(
+        forbidden in command.lower()
+        for command in test_all_commands
+        for forbidden in ("ctest", "pytest")
+    ):
+        errors.append(
+            "pixi.toml: `test-all` runtime coverage must remain owned by "
+            "the CMake `ALL` graph, not appended to the Pixi command"
+        )
+    for definition in test_all_definitions:
+        environment = definition.get("env")
+        if environment != {"BUILD_TYPE": "Release"}:
+            errors.append(
+                "pixi.toml: every `test-all` variant must set only "
+                '`BUILD_TYPE = "Release"`'
+            )
+            break
+    for definition in test_all_definitions:
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies != ["config"]:
+            errors.append(
+                "pixi.toml: every `test-all` variant must depend only on "
+                "the build configuration task `config`"
+            )
+            break
+
+    ai_check_definitions = collect_task_definitions(pixi, "check-ai-infra")
+    if not ai_check_definitions:
+        errors.append("pixi.toml: missing required AI infrastructure check task")
+    for definition in ai_check_definitions:
+        command = definition.get("cmd")
+        try:
+            tokens = shlex.split(command) if isinstance(command, str) else []
+        except ValueError:
+            tokens = []
+        if tokens != [
+            "python",
+            "scripts/check_ai_infrastructure.py",
+            "--check",
+            "--semantic-cmake",
+        ]:
+            errors.append(
+                "pixi.toml: `check-ai-infra` must run the semantic CMake "
+                "infrastructure check exactly"
+            )
+            break
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies != ["config"]:
+            errors.append("pixi.toml: `check-ai-infra` must depend only on `config`")
+            break
+        if definition.get("env") != {"BUILD_TYPE": "Release"}:
+            errors.append(
+                "pixi.toml: `check-ai-infra` must select only the Release "
+                "configuration"
+            )
+            break
+
+    config_definitions = collect_task_definitions(pixi, "config")
+    if not config_definitions:
+        errors.append("pixi.toml: missing required build task `config`")
+    for definition in config_definitions:
+        dependencies = definition.get("depends-on", [])
+        if isinstance(dependencies, str):
+            dependencies = [dependencies]
+        if dependencies:
+            errors.append(
+                "pixi.toml: `config` must not depend on other tasks because "
+                "`test-all` requires a direct configuration prerequisite"
+            )
+            break
+        environment = definition.get("env")
+        if environment not in (
+            {"DART_VERBOSE": "OFF"},
+            {"DART_VERBOSE": "OFF", "BUILD_TYPE": "Release"},
+        ):
+            errors.append(
+                "pixi.toml: every `config` variant must use the exact "
+                "branch-owned environment"
+            )
+            break
+    config_commands = collect_task_commands(pixi, "config")
+    if config_definitions and len(config_commands) != len(config_definitions):
+        errors.append("pixi.toml: every `config` variant must define one command")
+    elif config_commands and any(
+        not is_configuration_only_command(command) for command in config_commands
+    ):
+        errors.append(
+            "pixi.toml: every `config` command used by `test-all` must only "
+            "configure CMake"
+        )
+    required_runtime_config_values = (
+        ("BUILD_TESTING", "ON"),
+        ("DART_BUILD_DARTPY", "ON"),
+        ("DART_USE_SYSTEM_PYBIND11", "ON"),
+    )
+    for variable, expected_value in required_runtime_config_values:
+        if config_commands and any(
+            cmake_cache_definition_values(command).get(variable) != [expected_value]
+            for command in config_commands
+        ):
+            errors.append(
+                "pixi.toml: every `config` command used by `test-all` must pin "
+                f"`{variable}={expected_value}` exactly once"
+            )
+
+    graph_scope_requirements = test_graph_scope_requirements()
     for relative, requirements in graph_scope_requirements.items():
         path = root / relative
         try:
@@ -1116,27 +1198,15 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             expected_scope,
             marker,
         ) in requirements:
+            requirement = (
+                name,
+                exact_arguments,
+                argument_token_sequences,
+                expected_scope,
+                marker,
+            )
             if not any(
-                record_name == name
-                and context == expected_scope
-                and (
-                    arguments == exact_arguments
-                    if exact_arguments is not None
-                    else (
-                        bool(argument_token_sequences)
-                        and cmake_argument_tokens(arguments)[
-                            : len(argument_token_sequences[0])
-                        ]
-                        == list(argument_token_sequences[0])
-                        and all(
-                            contains_token_sequence(
-                                cmake_argument_tokens(arguments), sequence
-                            )
-                            for sequence in argument_token_sequences[1:]
-                        )
-                    )
-                )
-                for record_name, arguments, context in records
+                cmake_graph_command_matches(record, requirement) for record in records
             ):
                 errors.append(f"{relative}: missing `test-all` graph marker `{marker}`")
 
@@ -1159,6 +1229,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
             "`pixi run test-all` builds the",
             "`tests_and_run` and `pytest`",
             "does not run lint",
+            "CMake's File API",
         ),
         "docs/onboarding/release-management.md": (
             "`pixi run test-all` for the complete default CMake graph",
@@ -1259,6 +1330,976 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                     f"{path.relative_to(root)}:{line_number}: `test-all` must "
                     "not be described as providing lint coverage"
                 )
+
+
+def cmake_paths_match(first: str | Path, second: str | Path) -> bool:
+    """Compare CMake paths across slash and Windows case conventions."""
+
+    def normalize(path: str | Path) -> str:
+        value = str(path).replace("\\", "/").rstrip("/")
+        return value.casefold() if re.match(r"^[A-Za-z]:/", value) else value
+
+    return normalize(first) == normalize(second)
+
+
+def discover_cmake_build_dir(root: Path) -> Path | None:
+    """Find the Pixi default environment's configured CMake tree."""
+    environment = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    build_type = os.environ.get("BUILD_TYPE", "Release")
+    base = root / "build" / environment / "cpp"
+    for candidate in (base / build_type, base):
+        cache = candidate / "CMakeCache.txt"
+        if not cache.is_file():
+            continue
+        try:
+            values = cmake_cache_values(cache)
+        except OSError:
+            continue
+        home = values.get("CMAKE_HOME_DIRECTORY")
+        if isinstance(home, str) and cmake_paths_match(home, root.resolve()):
+            return candidate
+    return None
+
+
+def cmake_cache_values(path: Path) -> dict[str, str]:
+    """Read scalar values from one CMake cache."""
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line or line.startswith(("//", "#")) or "=" not in line:
+            continue
+        key_with_type, value = line.split("=", maxsplit=1)
+        key = key_with_type.split(":", maxsplit=1)[0]
+        values[key] = value
+    return values
+
+
+def cmake_target_backtrace(
+    target: dict[str, Any],
+) -> tuple[str, str, int] | None:
+    """Return the command, source path, and line that created a target."""
+    graph = target.get("backtraceGraph")
+    node_index = target.get("backtrace")
+    if not isinstance(graph, dict) or type(node_index) is not int:
+        return None
+    nodes = graph.get("nodes")
+    commands = graph.get("commands")
+    files = graph.get("files")
+    if (
+        not isinstance(nodes, list)
+        or not isinstance(commands, list)
+        or not isinstance(files, list)
+        or not 0 <= node_index < len(nodes)
+    ):
+        return None
+    node = nodes[node_index]
+    if not isinstance(node, dict):
+        return None
+    command_index = node.get("command")
+    file_index = node.get("file")
+    line = node.get("line")
+    if (
+        type(command_index) is not int
+        or type(file_index) is not int
+        or type(line) is not int
+        or not 0 <= command_index < len(commands)
+        or not 0 <= file_index < len(files)
+        or not isinstance(commands[command_index], str)
+        or not isinstance(files[file_index], str)
+    ):
+        return None
+    return commands[command_index], files[file_index], line
+
+
+def cmake_trace_records(output: str) -> list[dict[str, Any]]:
+    """Return JSON-v1 CMake trace records from mixed configure output."""
+    records: list[dict[str, Any]] = []
+    for line in output.splitlines():
+        if not line.startswith("{"):
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and isinstance(record.get("cmd"), str):
+            records.append(record)
+    return records
+
+
+def executable_paths_match(actual: str, expected: str) -> bool:
+    """Compare configured executable paths across platform spelling variants."""
+    return os.path.normcase(str(Path(actual).resolve())) == os.path.normcase(
+        str(Path(expected).resolve())
+    )
+
+
+def normalized_absolute_path(path: str, base: Path) -> str:
+    """Return one comparable absolute path for generated inventory records."""
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = base / candidate
+    return os.path.normcase(str(candidate.resolve()))
+
+
+def check_pytest_module_provenance(
+    python_executable: str,
+    working_directory: Path,
+    pythonpath: str,
+    errors: list[str],
+) -> None:
+    """Require target-context pytest imports to resolve inside the Pixi prefix."""
+    prefix = "CMake semantic test graph"
+    environment = {**os.environ, "PYTHONPATH": pythonpath}
+    try:
+        result = subprocess.run(
+            [
+                python_executable,
+                "-c",
+                (
+                    "from pathlib import Path; import pytest; "
+                    "print(Path(pytest.__file__).resolve())"
+                ),
+            ],
+            cwd=working_directory,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        errors.append(f"{prefix}: pytest provenance probe failed: {error}")
+        return
+    if result.returncode != 0:
+        output = (result.stdout + result.stderr).strip().splitlines()
+        detail = output[-1] if output else f"exit {result.returncode}"
+        errors.append(f"{prefix}: pytest provenance probe failed: {detail}")
+        return
+    output = [line for line in result.stdout.splitlines() if line.strip()]
+    if len(output) != 1:
+        errors.append(f"{prefix}: pytest provenance probe returned invalid output")
+        return
+    module_path = Path(output[0]).resolve()
+    try:
+        module_path.relative_to(Path(sys.prefix).resolve())
+    except ValueError:
+        errors.append(
+            f"{prefix}: pytest resolves outside the active Pixi environment "
+            f"at `{module_path}`"
+        )
+
+
+def check_pytest_execution_options(root: Path, errors: list[str]) -> None:
+    """Reject repository or ambient pytest options that suppress execution."""
+    prefix = "CMake semantic test graph"
+    options: list[str] = []
+    config = root / "pyproject.toml"
+    if config.is_file():
+        try:
+            data = read_toml(config)
+        except (OSError, tomllib.TOMLDecodeError) as error:
+            errors.append(f"{prefix}: invalid pytest configuration: {error}")
+            return
+        tool = data.get("tool")
+        pytest = tool.get("pytest") if isinstance(tool, dict) else None
+        ini = pytest.get("ini_options") if isinstance(pytest, dict) else None
+        addopts = ini.get("addopts", []) if isinstance(ini, dict) else []
+        if isinstance(addopts, str):
+            try:
+                options.extend(shlex.split(addopts))
+            except ValueError as error:
+                errors.append(f"{prefix}: invalid pytest addopts: {error}")
+                return
+        elif isinstance(addopts, list) and all(
+            isinstance(option, str) for option in addopts
+        ):
+            options.extend(addopts)
+        else:
+            errors.append(f"{prefix}: pytest addopts must be strings")
+            return
+    ambient = os.environ.get("PYTEST_ADDOPTS")
+    if ambient:
+        try:
+            options.extend(shlex.split(ambient))
+        except ValueError as error:
+            errors.append(f"{prefix}: invalid ambient PYTEST_ADDOPTS: {error}")
+            return
+    forbidden = {
+        "--co",
+        "--collect-only",
+        "--fixtures",
+        "--fixtures-per-test",
+        "--help",
+        "--markers",
+        "--setup-only",
+        "--setup-plan",
+        "--version",
+        "-h",
+        "-V",
+    }
+    suppressed = sorted(forbidden.intersection(options))
+    if suppressed:
+        errors.append(
+            f"{prefix}: pytest execution is suppressed by options {suppressed}"
+        )
+
+
+def check_cmake_ctest_inventory(
+    build_dir: Path,
+    configuration: str,
+    ctest_executable: str,
+    test_targets: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> None:
+    """Require every configured C++ test target to be registered with CTest."""
+    prefix = "CMake semantic test graph"
+    try:
+        result = subprocess.run(
+            [
+                ctest_executable,
+                "--test-dir",
+                str(build_dir / "tests"),
+                "--show-only=json-v1",
+                "-C",
+                configuration,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        errors.append(f"{prefix}: CTest inventory probe failed: {error}")
+        return
+    if result.returncode != 0:
+        output = (result.stdout + result.stderr).strip().splitlines()
+        detail = output[-1] if output else f"exit {result.returncode}"
+        errors.append(f"{prefix}: CTest inventory probe failed: {detail}")
+        return
+    try:
+        inventory = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        errors.append(f"{prefix}: CTest inventory is invalid JSON: {error}")
+        return
+    tests = inventory.get("tests") if isinstance(inventory, dict) else None
+    if not isinstance(tests, list) or not tests:
+        errors.append(f"{prefix}: CTest inventory exposes no registered tests")
+        return
+
+    registered_commands: set[str] = set()
+    registered_tests: dict[str, list[str] | None] = {}
+    for test in tests:
+        if not isinstance(test, dict):
+            errors.append(f"{prefix}: CTest inventory contains an invalid test")
+            continue
+        name = test.get("name")
+        command = test.get("command")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{prefix}: CTest inventory contains an unnamed test")
+            continue
+        if name in registered_tests:
+            errors.append(f"{prefix}: CTest test name `{name}` is duplicated")
+            continue
+        properties = test.get("properties", [])
+        if isinstance(properties, list) and any(
+            isinstance(prop, dict)
+            and prop.get("name") == "DISABLED"
+            and prop.get("value") in (True, 1, "1", "ON", "TRUE")
+            for prop in properties
+        ):
+            errors.append(f"{prefix}: CTest test `{name}` is disabled")
+        if command is None:
+            # CTest omits the command for an unbuilt target but still reports
+            # its name and add_test() backtrace.
+            registered_tests[name] = None
+            continue
+        if (
+            not isinstance(command, list)
+            or not command
+            or not isinstance(command[0], str)
+        ):
+            errors.append(f"{prefix}: CTest test `{name}` has an invalid command")
+            continue
+        command_path = normalized_absolute_path(command[0], build_dir)
+        registered_tests[name] = command
+        registered_commands.add(command_path)
+
+    target_artifacts: dict[str, set[str]] = {}
+    for name, target in test_targets.items():
+        artifacts = target.get("artifacts")
+        if not isinstance(artifacts, list):
+            artifacts = []
+        paths = {
+            normalized_absolute_path(artifact["path"], build_dir)
+            for artifact in artifacts
+            if isinstance(artifact, dict) and isinstance(artifact.get("path"), str)
+        }
+        if not paths:
+            errors.append(f"{prefix}: C++ test target `{name}` has no artifact")
+            continue
+        target_artifacts[name] = paths
+
+    unregistered = []
+    for name, artifacts in target_artifacts.items():
+        named_command = registered_tests.get(name, "")
+        named_registration = name in registered_tests and (
+            named_command is None
+            or (
+                len(named_command) == 1
+                and normalized_absolute_path(named_command[0], build_dir) in artifacts
+            )
+        )
+        command_registration = not artifacts.isdisjoint(registered_commands)
+        if not named_registration and not command_registration:
+            unregistered.append(name)
+    unregistered.sort()
+    if unregistered:
+        errors.append(
+            f"{prefix}: {len(unregistered)} configured C++ test targets are not "
+            f"registered with CTest, including {unregistered[:5]}"
+        )
+    configured_artifacts = {
+        artifact for artifacts in target_artifacts.values() for artifact in artifacts
+    }
+    unmapped_commands = registered_commands - configured_artifacts
+    if unmapped_commands:
+        errors.append(
+            f"{prefix}: {len(unmapped_commands)} CTest commands do not map to "
+            "configured C++ test targets"
+        )
+
+
+def check_cmake_test_target_trace(
+    root: Path,
+    build_dir: Path,
+    cache: dict[str, str],
+    records: list[dict[str, Any]],
+    origins: dict[str, tuple[str, int]],
+    cmake_executable: str,
+    errors: list[str],
+) -> None:
+    """Validate expanded commands for the configured CTest and pytest targets."""
+    prefix = "CMake semantic test graph"
+
+    def target_arguments(name: str) -> list[str] | None:
+        relative, line = origins[name]
+        expected_file = (root / relative).resolve()
+        matches = []
+        for record in records:
+            arguments = record.get("args")
+            source = record.get("file")
+            if (
+                record.get("cmd") != "add_custom_target"
+                or not isinstance(arguments, list)
+                or not arguments
+                or arguments[0] != name
+                or not all(isinstance(argument, str) for argument in arguments)
+                or not isinstance(source, str)
+                or Path(source).resolve() != expected_file
+                or record.get("line") != line
+            ):
+                continue
+            matches.append(arguments)
+        if len(matches) != 1:
+            errors.append(
+                f"{prefix}: expected one expanded `{name}` target command at "
+                f"`{relative}:{line}`, found {len(matches)}"
+            )
+            return None
+        return matches[0]
+
+    tests_arguments = target_arguments("tests_and_run")
+    ctest_executable = cache.get("CMAKE_CTEST_COMMAND")
+    trusted_ctest = shutil.which("ctest")
+    if not isinstance(ctest_executable, str):
+        errors.append(f"{prefix}: configured CTest executable is unavailable")
+    elif trusted_ctest is None:
+        errors.append(f"{prefix}: trusted CTest executable is unavailable")
+    elif not executable_paths_match(ctest_executable, trusted_ctest):
+        errors.append(
+            f"{prefix}: configured CTest executable does not match the "
+            "active Pixi environment"
+        )
+    elif tests_arguments is not None:
+        suffix = tests_arguments[4:]
+        valid_suffix = (bool(suffix) and suffix[0] == "DEPENDS") or (
+            len(suffix) >= 3 and suffix[:3] == ["-C", "$<CONFIG>", "DEPENDS"]
+        )
+        if (
+            tests_arguments[:2] != ["tests_and_run", "COMMAND"]
+            or len(tests_arguments) < 4
+            or tests_arguments[3] != "--output-on-failure"
+            or tests_arguments.count("COMMAND") != 1
+            or not executable_paths_match(tests_arguments[2], trusted_ctest)
+            or not valid_suffix
+        ):
+            errors.append(
+                f"{prefix}: expanded `tests_and_run` command does not invoke "
+                "the configured CTest executable"
+            )
+
+    pytest_arguments = target_arguments("pytest")
+    python_executable = cache.get("_Python3_EXECUTABLE") or cache.get(
+        "Python3_EXECUTABLE"
+    )
+    if not isinstance(python_executable, str):
+        errors.append(f"{prefix}: configured Python executable is unavailable")
+    elif not executable_paths_match(python_executable, sys.executable):
+        errors.append(
+            f"{prefix}: configured Python executable does not match the "
+            "active Pixi environment"
+        )
+    elif pytest_arguments is not None:
+        command_indexes = [
+            index
+            for index, argument in enumerate(pytest_arguments)
+            if argument == "COMMAND"
+        ]
+        valid = len(command_indexes) == 2
+        if valid:
+            echo_index, pytest_index = command_indexes
+            valid = (
+                len(pytest_arguments) > echo_index + 3
+                and executable_paths_match(
+                    pytest_arguments[echo_index + 1], cmake_executable
+                )
+                and pytest_arguments[echo_index + 2 : echo_index + 4] == ["-E", "echo"]
+                and len(pytest_arguments) > pytest_index + 3
+                and executable_paths_match(
+                    pytest_arguments[pytest_index + 1], cmake_executable
+                )
+                and pytest_arguments[pytest_index + 2 : pytest_index + 4]
+                == ["-E", "env"]
+                and len(pytest_arguments) > pytest_index + 8
+            )
+        if valid:
+            pythonpath = pytest_arguments[pytest_index + 4]
+            traced_python = pytest_arguments[pytest_index + 5]
+            pythonpath_value = pythonpath.partition("=")[2]
+            pythonpath_entries = pythonpath_value.split(os.pathsep)
+            normalized_pythonpath = {
+                normalized_absolute_path(entry, root / "python" / "tests")
+                for entry in pythonpath_entries
+                if entry
+            }
+            allowed_pythonpath = {
+                normalized_absolute_path(str(build_dir / "python" / "dartpy"), root),
+                normalized_absolute_path(str(build_dir / "python"), root),
+            }
+            required_pythonpath = normalized_absolute_path(
+                str(build_dir / "python" / "dartpy"), root
+            )
+            valid = (
+                pythonpath.startswith("PYTHONPATH=")
+                and all(pythonpath_entries)
+                and len(pythonpath_entries) == len(normalized_pythonpath)
+                and required_pythonpath in normalized_pythonpath
+                and normalized_pythonpath <= allowed_pythonpath
+                and executable_paths_match(traced_python, sys.executable)
+                and pytest_arguments[pytest_index + 6 : pytest_index + 8]
+                == ["-m", "pytest"]
+            )
+        if valid:
+            try:
+                working_index = pytest_arguments.index("WORKING_DIRECTORY")
+                sources_index = pytest_arguments.index("SOURCES")
+                depends_index = pytest_arguments.index("DEPENDS")
+            except ValueError:
+                valid = False
+            else:
+                valid = (
+                    pytest_index < working_index < sources_index < depends_index
+                    and len(pytest_arguments) > working_index + 1
+                    and Path(pytest_arguments[working_index + 1]).resolve()
+                    == (root / "python" / "tests").resolve()
+                )
+        if valid:
+            command_tail = pytest_arguments[pytest_index + 8 : working_index]
+            valid = bool(command_tail) and command_tail[-1] == "-v"
+        if valid:
+            traced_sources = [
+                normalized_absolute_path(source, root / "python" / "tests")
+                for argument in command_tail[:-1]
+                for source in argument.split(";")
+                if source
+            ]
+            expected_sources = [
+                normalized_absolute_path(str(path), root)
+                for path in sorted((root / "python" / "tests").rglob("test_*.py"))
+                if path.is_file()
+            ]
+            valid = len(traced_sources) == len(expected_sources) and set(
+                traced_sources
+            ) == set(expected_sources)
+        if valid:
+            check_pytest_execution_options(root, errors)
+            check_pytest_module_provenance(
+                sys.executable,
+                root / "python" / "tests",
+                pythonpath_value,
+                errors,
+            )
+        if not valid:
+            errors.append(
+                f"{prefix}: expanded `pytest` command does not invoke the "
+                "configured Python interpreter over the configured test sources"
+            )
+
+
+def check_cmake_test_graph(
+    root: Path,
+    build_dir: Path,
+    errors: list[str],
+) -> None:
+    """Validate the configured test graph through CMake's File API."""
+    prefix = "CMake semantic test graph"
+    root = root.resolve()
+    build_dir = build_dir.resolve()
+    build_root = (root / "build").resolve()
+    try:
+        build_dir.relative_to(build_root)
+    except ValueError:
+        errors.append(f"{prefix}: build directory must be inside `{build_root}`")
+        return
+
+    cache_path = build_dir / "CMakeCache.txt"
+    if not cache_path.is_file():
+        errors.append(f"{prefix}: missing configured cache `{cache_path}`")
+        return
+
+    reply = build_dir / ".cmake" / "api" / "v1" / "reply"
+    try:
+        previous_indexes = {}
+        for path in reply.glob("index-*.json"):
+            stat = path.stat()
+            previous_indexes[path.name] = (stat.st_mtime_ns, stat.st_size)
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect prior File API replies: {error}")
+        return
+
+    query = build_dir / ".cmake" / "api" / "v1" / "query" / "codemodel-v2"
+    try:
+        query.parent.mkdir(parents=True, exist_ok=True)
+        query.write_text("", encoding="utf-8")
+    except OSError as error:
+        errors.append(f"{prefix}: unable to create File API query: {error}")
+        return
+
+    executable = shutil.which("cmake")
+    if executable is None:
+        errors.append(f"{prefix}: `cmake` is unavailable")
+        return
+    traced_sources = (
+        root / "tests" / "CMakeLists.txt",
+        root / "python" / "tests" / "CMakeLists.txt",
+    )
+    trace_arguments = [
+        "--trace-expand",
+        "--trace-format=json-v1",
+        *(f"--trace-source={source}" for source in traced_sources),
+    ]
+    try:
+        result = subprocess.run(
+            [
+                executable,
+                "-S",
+                str(root),
+                "-B",
+                str(build_dir),
+                *trace_arguments,
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        errors.append(f"{prefix}: configure probe failed: {error}")
+        return
+    if result.returncode != 0:
+        output = (result.stdout + result.stderr).strip().splitlines()
+        detail = output[-1] if output else f"exit {result.returncode}"
+        errors.append(f"{prefix}: configure probe failed: {detail}")
+        return
+
+    try:
+        cache = cmake_cache_values(cache_path)
+    except OSError as error:
+        errors.append(f"{prefix}: unable to read `{cache_path}`: {error}")
+        return
+    for variable in (
+        "BUILD_TESTING",
+        "DART_BUILD_DARTPY",
+        "DART_USE_SYSTEM_PYBIND11",
+    ):
+        if cache.get(variable) != "ON":
+            errors.append(f"{prefix}: configured `{variable}` must be `ON`")
+    cache_home = cache.get("CMAKE_HOME_DIRECTORY")
+    if not isinstance(cache_home, str) or not cmake_paths_match(cache_home, root):
+        errors.append(f"{prefix}: configured cache belongs to another source tree")
+    desired = "Release"
+    configuration_types = cache.get("CMAKE_CONFIGURATION_TYPES")
+    if isinstance(configuration_types, str) and configuration_types:
+        if desired not in configuration_types.split(";"):
+            errors.append(f"{prefix}: multi-config cache does not provide `{desired}`")
+    elif cache.get("CMAKE_BUILD_TYPE") != desired:
+        errors.append(
+            f"{prefix}: single-config cache must use `CMAKE_BUILD_TYPE={desired}`"
+        )
+
+    try:
+        fresh_indexes = []
+        for path in reply.glob("index-*.json"):
+            stat = path.stat()
+            current = (stat.st_mtime_ns, stat.st_size)
+            if previous_indexes.get(path.name) != current:
+                fresh_indexes.append((stat.st_mtime_ns, path.name, path))
+    except OSError as error:
+        errors.append(f"{prefix}: unable to inspect File API replies: {error}")
+        return
+    if not fresh_indexes:
+        errors.append(f"{prefix}: CMake File API did not emit a fresh index")
+        return
+    fresh_indexes.sort()
+    index_path = fresh_indexes[-1][2]
+    try:
+        index = read_json(index_path)
+        codemodel_reply = index["reply"]["codemodel-v2"]
+        codemodel = read_json(reply / codemodel_reply["jsonFile"])
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        errors.append(f"{prefix}: invalid CMake File API reply: {error}")
+        return
+
+    paths = codemodel.get("paths")
+    source_path = paths.get("source") if isinstance(paths, dict) else None
+    if not isinstance(source_path, str) or not cmake_paths_match(source_path, root):
+        errors.append(f"{prefix}: File API reply belongs to another source tree")
+        return
+    configurations = codemodel.get("configurations")
+    if not isinstance(configurations, list) or not configurations:
+        errors.append(f"{prefix}: File API reply has no configurations")
+        return
+    configuration = next(
+        (
+            item
+            for item in configurations
+            if isinstance(item, dict) and item.get("name") == desired
+        ),
+        configurations[0] if len(configurations) == 1 else None,
+    )
+    if not isinstance(configuration, dict):
+        errors.append(f"{prefix}: File API has no `{desired}` configuration")
+        return
+
+    targets = configuration.get("targets")
+    directories = configuration.get("directories")
+    if not isinstance(targets, list) or not isinstance(directories, list):
+        errors.append(f"{prefix}: File API codemodel is incomplete")
+        return
+    named_targets: dict[str, list[dict[str, Any]]] = {}
+    id_to_name: dict[str, str] = {}
+    for entry in targets:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        target_id = entry.get("id")
+        if isinstance(name, str):
+            named_targets.setdefault(name, []).append(entry)
+        if isinstance(name, str) and isinstance(target_id, str):
+            id_to_name[target_id] = name
+
+    required_entries: dict[str, dict[str, Any]] = {}
+    for name in ("ALL", "tests_and_run", "pytest"):
+        entries = named_targets.get(name, [])
+        if len(entries) != 1:
+            errors.append(
+                f"{prefix}: expected exactly one configured `{name}` target, "
+                f"found {len(entries)}"
+            )
+            continue
+        required_entries[name] = entries[0]
+    if len(required_entries) != 3:
+        return
+
+    target_data: dict[str, dict[str, Any]] = {}
+    for name, entry in required_entries.items():
+        json_file = entry.get("jsonFile")
+        if not isinstance(json_file, str):
+            errors.append(f"{prefix}: target `{name}` has no File API object")
+            continue
+        try:
+            data = read_json(reply / json_file)
+        except (OSError, json.JSONDecodeError) as error:
+            errors.append(f"{prefix}: unable to read target `{name}`: {error}")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{prefix}: target `{name}` object is invalid")
+            continue
+        target_data[name] = data
+    if len(target_data) != 3:
+        return
+
+    def dependency_names(name: str) -> set[str]:
+        dependencies = target_data[name].get("dependencies", [])
+        if not isinstance(dependencies, list):
+            return set()
+        names: set[str] = set()
+        for dependency in dependencies:
+            if not isinstance(dependency, dict):
+                continue
+            target_id = dependency.get("id")
+            if not isinstance(target_id, str):
+                continue
+            names.add(id_to_name.get(target_id, target_id.split("::@", 1)[0]))
+        return names
+
+    all_dependencies = dependency_names("ALL")
+    missing_all = {"tests_and_run", "pytest"} - all_dependencies
+    if missing_all:
+        errors.append(
+            f"{prefix}: `ALL` is missing direct dependencies " f"{sorted(missing_all)}"
+        )
+    if "dartpy" not in dependency_names("pytest"):
+        errors.append(f"{prefix}: `pytest` does not depend on `dartpy`")
+
+    test_directories = ("tests/integration", "tests/regression", "tests/unit")
+
+    def repository_directory(source: str) -> str | None:
+        candidate = Path(source)
+        if candidate.is_absolute():
+            try:
+                candidate = candidate.resolve().relative_to(root)
+            except ValueError:
+                return None
+        return candidate.as_posix().rstrip("/")
+
+    configured_directories = {
+        relative
+        for directory in directories
+        if isinstance(directory, dict)
+        and isinstance(directory.get("source"), str)
+        and (relative := repository_directory(directory["source"])) is not None
+    }
+    expected_directories = {
+        path.parent.relative_to(root).as_posix()
+        for directory in test_directories
+        for path in (root / directory).rglob("CMakeLists.txt")
+    }
+    missing_directories = expected_directories - configured_directories
+    if missing_directories:
+        errors.append(
+            f"{prefix}: configured test graph omits {len(missing_directories)} "
+            f"CMake directories, including {sorted(missing_directories)[:5]}"
+        )
+
+    test_target_names: set[str] = set()
+    test_target_data: dict[str, dict[str, Any]] = {}
+    configured_test_sources: set[str] = set()
+    executable_test_sources: set[str] = set()
+    for entry in targets:
+        if not isinstance(entry, dict):
+            continue
+        directory_index = entry.get("directoryIndex")
+        name = entry.get("name")
+        if (
+            type(directory_index) is not int
+            or not 0 <= directory_index < len(directories)
+            or not isinstance(name, str)
+        ):
+            continue
+        directory = directories[directory_index]
+        source = directory.get("source") if isinstance(directory, dict) else None
+        relative_source = (
+            repository_directory(source) if isinstance(source, str) else None
+        )
+        if isinstance(relative_source, str) and any(
+            relative_source == directory or relative_source.startswith(f"{directory}/")
+            for directory in test_directories
+        ):
+            json_file = entry.get("jsonFile")
+            if not isinstance(json_file, str):
+                errors.append(
+                    f"{prefix}: C++ test candidate `{name}` has no File API object"
+                )
+                continue
+            try:
+                candidate = read_json(reply / json_file)
+            except (OSError, json.JSONDecodeError) as error:
+                errors.append(
+                    f"{prefix}: unable to inspect C++ test candidate "
+                    f"`{name}`: {error}"
+                )
+                continue
+            if not isinstance(candidate, dict):
+                continue
+            candidate_sources: set[str] = set()
+            for candidate_source in candidate.get("sources", []):
+                path = (
+                    candidate_source.get("path")
+                    if isinstance(candidate_source, dict)
+                    else None
+                )
+                if not isinstance(path, str):
+                    continue
+                relative = repository_directory(path)
+                if relative is not None:
+                    configured_test_sources.add(relative)
+                    candidate_sources.add(relative)
+            if candidate.get("type") == "EXECUTABLE":
+                test_target_names.add(name)
+                test_target_data[name] = candidate
+                executable_test_sources.update(candidate_sources)
+    if not test_target_names:
+        errors.append(f"{prefix}: File API exposes no C++ test targets")
+    else:
+        missing_tests = test_target_names - dependency_names("tests_and_run")
+        if missing_tests:
+            sample = sorted(missing_tests)[:5]
+            errors.append(
+                f"{prefix}: `tests_and_run` omits {len(missing_tests)} configured "
+                f"C++ test targets, including {sample}"
+            )
+
+    source_extensions = {".c", ".cc", ".cpp", ".cxx"}
+    expected_test_sources = {
+        path.relative_to(root).as_posix(): path
+        for directory in test_directories
+        for path in (root / directory).rglob("test_*")
+        if path.is_file() and path.suffix.lower() in source_extensions
+    }
+    ownership_commands = {
+        "add_executable",
+        "add_library",
+        "dart_add_test",
+        "dart_build_tests",
+        "target_sources",
+    }
+    unowned_sources = []
+    library_only_sources = []
+    for relative, path in expected_test_sources.items():
+        if relative in executable_test_sources:
+            continue
+        if relative in configured_test_sources:
+            # This C translation unit is an intentional compile/link ABI check.
+            if relative == "tests/unit/math/test_LegacyConvexHullC.c":
+                continue
+            library_only_sources.append(relative)
+            continue
+        owner = path.parent / "CMakeLists.txt"
+        try:
+            owner_commands = cmake_commands(owner.read_text(encoding="utf-8"))
+        except OSError:
+            owner_commands = []
+        if any(
+            name in ownership_commands
+            and (path.name in arguments or path.stem in arguments)
+            for name, arguments in owner_commands
+        ):
+            continue
+        unowned_sources.append(relative)
+    if library_only_sources:
+        errors.append(
+            f"{prefix}: {len(library_only_sources)} C++ runtime test sources "
+            f"belong only to non-executable targets, including "
+            f"{library_only_sources[:5]}"
+        )
+    if unowned_sources:
+        errors.append(
+            f"{prefix}: {len(unowned_sources)} C++ test sources are neither "
+            f"configured nor conditionally owned, including {unowned_sources[:5]}"
+        )
+
+    ctest_executable = shutil.which("ctest")
+    if ctest_executable is None:
+        errors.append(f"{prefix}: trusted CTest executable is unavailable")
+    elif test_target_data:
+        check_cmake_ctest_inventory(
+            build_dir,
+            desired,
+            ctest_executable,
+            test_target_data,
+            errors,
+        )
+
+    expected_python_sources = {
+        path.relative_to(root).as_posix()
+        for path in (root / "python" / "tests").rglob("test_*.py")
+        if path.is_file()
+    }
+    actual_python_sources = {
+        source["path"]
+        for source in target_data["pytest"].get("sources", [])
+        if isinstance(source, dict) and isinstance(source.get("path"), str)
+    }
+    missing_python_sources = expected_python_sources - actual_python_sources
+    if missing_python_sources:
+        errors.append(
+            f"{prefix}: `pytest` omits {len(missing_python_sources)} Python "
+            f"test sources, including {sorted(missing_python_sources)[:5]}"
+        )
+
+    requirements = test_graph_scope_requirements()
+    target_requirements = {
+        "ALL": ("CMakeLists.txt", (requirements["CMakeLists.txt"][0],)),
+        "tests_and_run": (
+            "tests/CMakeLists.txt",
+            requirements["tests/CMakeLists.txt"],
+        ),
+        "pytest": (
+            "python/tests/CMakeLists.txt",
+            (requirements["python/tests/CMakeLists.txt"][0],),
+        ),
+    }
+    configured_origins: dict[str, tuple[str, int]] = {}
+    for name, (relative, allowed_requirements) in target_requirements.items():
+        data = target_data[name]
+        if data.get("type") != "UTILITY":
+            errors.append(f"{prefix}: `{name}` is not a CMake utility target")
+            continue
+        backtrace = cmake_target_backtrace(data)
+        if backtrace is None:
+            errors.append(f"{prefix}: `{name}` has no creation backtrace")
+            continue
+        command, source, line = backtrace
+        if command != "add_custom_target" or Path(source).as_posix() != relative:
+            errors.append(
+                f"{prefix}: `{name}` was created by `{command}` at "
+                f"`{source}:{line}`, not its owning graph command"
+            )
+            continue
+        try:
+            records = cmake_scoped_command_details(
+                (root / relative).read_text(encoding="utf-8")
+            )
+        except OSError as error:
+            errors.append(f"{prefix}: unable to inspect `{relative}`: {error}")
+            continue
+        record = next(
+            (
+                (record_name, arguments, context)
+                for record_name, arguments, context, record_line in records
+                if record_line == line
+            ),
+            None,
+        )
+        if record is None or not any(
+            cmake_graph_command_matches(record, requirement)
+            for requirement in allowed_requirements
+        ):
+            errors.append(
+                f"{prefix}: configured `{name}` does not originate from its "
+                f"validated source contract at `{relative}:{line}`"
+            )
+            continue
+        configured_origins[name] = (relative, line)
+
+    if {"tests_and_run", "pytest"} <= configured_origins.keys():
+        check_cmake_test_target_trace(
+            root,
+            build_dir,
+            cache,
+            cmake_trace_records(result.stderr),
+            configured_origins,
+            executable,
+            errors,
+        )
 
 
 def check_path_references(root: Path, errors: list[str]) -> None:
@@ -1945,6 +2986,8 @@ def exercise_scenarios(
                 "pybind11",
                 "`dart::utils`",
                 "OSG",
+                "configured CMake File API result",
+                "source-marker matches",
             ):
                 if marker not in workflow_text:
                     local_errors.append(
@@ -2576,12 +3619,24 @@ def main() -> int:
     parser.add_argument(
         "--json", action="store_true", help="emit machine-readable doctor JSON"
     )
+    parser.add_argument(
+        "--semantic-cmake",
+        action="store_true",
+        help="reconfigure and validate the effective CMake test graph",
+    )
+    parser.add_argument(
+        "--cmake-build-dir",
+        type=Path,
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument("--repo-root", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     root = (args.repo_root or Path(__file__).resolve().parents[1]).resolve()
 
     if args.json and not args.doctor:
         parser.error("--json requires --doctor")
+    if args.semantic_cmake and (args.doctor or args.scenarios):
+        parser.error("--semantic-cmake is only valid with --check")
 
     if args.doctor:
         data = doctor_report(root)
@@ -2594,6 +3649,14 @@ def main() -> int:
         errors = exercise_scenarios(root)
     else:
         errors = run_checks(root)
+        if args.semantic_cmake:
+            build_dir = args.cmake_build_dir or discover_cmake_build_dir(root)
+            if build_dir is None:
+                errors.append(
+                    "CMake semantic test graph: no configured Pixi build tree found"
+                )
+            else:
+                check_cmake_test_graph(root, build_dir, errors)
 
     if errors:
         for error in errors:
