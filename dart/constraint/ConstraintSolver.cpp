@@ -37,9 +37,8 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -101,16 +100,15 @@ static bool isConfiguredNativeProximityContact(
     return false;
   }
 
-  const auto* object1 = dynamic_cast<const collision::NativeCollisionObject*>(
+  const auto* object1 = dynamic_cast<const collision::DARTCollisionObject*>(
       contact.collisionObject1);
-  const auto* object2 = dynamic_cast<const collision::NativeCollisionObject*>(
+  const auto* object2 = dynamic_cast<const collision::DARTCollisionObject*>(
       contact.collisionObject2);
   if (!object1 || !object2)
     return false;
 
-  const auto* detector
-      = dynamic_cast<const collision::NativeCollisionDetector*>(
-          object1->getCollisionDetector());
+  const auto* detector = dynamic_cast<const collision::DARTCollisionDetector*>(
+      object1->getCollisionDetector());
   if (!detector || object2->getCollisionDetector() != detector)
     return false;
 

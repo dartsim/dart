@@ -1,12 +1,26 @@
 # HANDOFF — DART 6.20 dependency minimization (native collision port)
 
-> Session handoff, refreshed 2026-07-09. Read [README.md](README.md) (overall SSOT),
+> Session handoff, refreshed 2026-07-29. Read [README.md](README.md) (overall SSOT),
 > then [03-native-collision-port-scoping.md](03-native-collision-port-scoping.md)
 > (plan of record for the remaining work), then
 > [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md) (phase-2 execution
 > plan), then [RESUME.md](RESUME.md) (exact next step). This file is the
 > transfer note: what is merged, what is open, exactly where to resume, and the
 > operational gotchas learned this session.
+>
+> **Current reality (2026-07-29):** this file predates the detector
+> consolidation. The phase-4/phase-5 framing below is historical: the native
+> engine has since been merged INTO the dart detector on
+> `feature/dart-detector-consolidation` (**PR #3381**). The current priority is
+> publishing and validating the latest 2026-07-29 review fix; no exact-head
+> green or review-clean claim exists until that cycle completes. See RESUME.md and
+> `~/dart-bench-artifacts/HANDOFF-2026-07-12-consolidation.md`.
+>
+> **Update 2026-07-23:** the phase-6 default flip described above has
+> been **reverted** per maintainer direction. PR #3381 now ships the
+> detector consolidation only; the built-in default remains **`fcl`**,
+> and the flip is deferred to a later PR. See RESUME.md "Update
+> 2026-07-23" for details.
 
 ## 1. The mission in one paragraph
 
@@ -16,8 +30,8 @@ port**: port DART 7's `dart/collision/native/` engine to DART 6.20 as C++17
 (no EnTT, no new dependency), make it the default detector, and thereby make
 **FCL/Bullet/ODE optional** — the final win (phase 7) is dropping FCL from the
 core `dart` target and `DART_PKG_EXTERNAL_DEPS`. This is an **XL, multi-PR,
-multi-week** initiative on a compatibility support branch; **FCL stays the
-default detector until the phase-6 flip**, and every phase is gz-gated.
+multi-week** initiative on a compatibility support branch. DART 6.20 ships
+consolidation only: **FCL remains its default**, and every phase is gz-gated.
 
 ## 2. Phase status (plan of record: `03`, phases 0–7)
 
@@ -29,7 +43,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ✅ complete (#3360) |
 | 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | 🔄 **active** — #3364 and AABB-tree broadphase #3368 merged (bit-identical guards, S3 −65%); remaining: S3 narrowphase delta and small-scene overhead; S6 resolved by documented acceptance re-scope (see RESUME) |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | 🔄 **active** — decision doc drafted with maintainer direction; ODE facade-vs-coordinated-gz change remains to ratify |
-| 6 | Default flip in both `ConstraintSolver` ctors (point of no return) | ⬜ not started |
+| 6 | Default flip in both `ConstraintSolver` ctors (point of no return) | ⏸ deferred beyond 6.20 |
 | 7 | FCL decoupling from core (the dependency win) + retire this task folder | ⬜ not started |
 
 ## 3. What merged this session (native-collision-port lane)
@@ -158,6 +172,52 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
+- **PR #3381 detector consolidation** — current priority. Remove the unreleased
+  `"native"` selector, preserve the released `DARTCollide` header/symbols via
+  thin wrappers, address all current-head Codex findings, prove FCL remains
+  the default, run the no-cache C++/Python/gz and installed-prefix gates, then
+  retrigger review on the pushed exact head. The PR does not authorize a
+  default flip or dependency removal. CI publishes an explicit
+  `DARTCollisionDetector` capture of ellipsoid/capsule/cone contacts. Soft-body
+  deformation/contact parity and raycast hit/sort/filter behavior stay
+  text-first because pixels do not prove those numerical contracts.
+  The 2026-07-29 local review-fix candidate is green on 155/155 C++ tests,
+  223/223 dartpy tests, `check-lint`, the complete AI aggregate (357 focused
+  tests plus seven scenarios), and the pinned Gazebo aggregate (199
+  gz-physics tests + four performance/symbol checks + one gz-sim integration
+  test). Mixed-header ABI canaries preserve the pre-consolidation 6.20
+  detector/group/object sizes (`32/376/320`) through 20 guarded lifecycle
+  runs, and the released 6.19.4 detector header passes 20 runs. Two alternating
+  five-repetition incumbent-backend A/Bs show no regression: ODE base/head
+  medians `868/867-868 ms`, FCL `257/255-256 ms`, Bullet `267/266 ms`, with
+  identical contact counts. Local visual smoke and all four rendered-overlay
+  regressions pass. This evidence predates publication; exact-head hosted CI,
+  artifact inspection, and fresh Codex review are still mandatory. The review
+  of pushed head `fd96521bb14` then found that new out-of-line group/object
+  destructors cannot clean sidecars for binaries built with the old inline
+  destructors. The correction ties sidecar ownership to the existing
+  detector/cached-shape shared-pointer members, restores defaulted inline
+  destructors, and adds a direct lifetime regression. It was published as
+  `af2ac200e26`; the review thread is resolved. Its `32/376/320` mixed-header
+  canaries pass 20/20 and the private test accessor is absent from the install.
+  Fresh Codex review `4814689190` of `af2ac200e26` found a separate race in the
+  four one-time shape-warning sets. The implementation-only correction
+  synchronizes every warning category behind one registry mutex without
+  locking supported-shape paths and adds an eight-thread regression covering
+  all categories. The full 43-test engine target passes in Release and
+  assertions-enabled builds. It was published as `2f2d45d99da`, and its thread
+  is resolved. Fresh Codex review `4814842827` of that head found the
+  single-thread two-group path missing the parallel path's AABB rejection. The
+  current candidate rejects disjoint pairs before filters and narrowphase in
+  both paths, matching the released ordering; its regression proves eight
+  isolated cross-group overlaps visit eight candidates rather than all 64
+  Cartesian pairs. The focused detector target passes in Release and
+  assertions-enabled builds. Fresh no-cache gates pass all 155 C++ tests, all
+  223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
+  gz-physics performance/symbol checks, and the gz-sim entity-system
+  integration test. This latest correction remains candidate evidence until
+  publication; exact-head hosted CI, artifact inspection, and fresh Codex
+  review remain mandatory.
 - **Phase 4 native performance** — #3362 and #3364 are merged. Next session
   should either close out Phase 4 with fresh evidence or produce one cohesive
   measured follow-up PR before Phase 5.
@@ -170,14 +230,14 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 6. Load-bearing invariants (do not violate)
 
-- **FCL stays the default** until phase 6. Never touch `WorldConfig`,
+- **FCL stays the default throughout DART 6.20.** Never touch `WorldConfig`,
   `ConstraintSolver`'s two FCL-hardcoded ctors, `World::toCollisionDetectorKey`,
-  or add a `CollisionDetectorType::Native` enum. Selection is the **factory
-  pointer** only: `CollisionDetector::getFactory()->create("native")` (there is
-  **no** `World::setCollisionDetector(const char*)` overload).
-- **No EnTT, no new dependency, C++17 only.** `rg entt dart/collision/native`
-  stays empty. Only C++20 feature in the ported tree is `std::span` → the
-  `detail/Span.hpp` shim.
+  or add a `CollisionDetectorType::Native` enum. Explicit consolidated-engine
+  selection uses the canonical `"dart"` factory key only; `"native"` is not an
+  alias. There is no `World::setCollisionDetector(const char*)` overload.
+- **No EnTT, no new dependency, C++17 only.** The internal namespace may remain
+  `dart::collision::native`, but its sources live under `dart/collision/dart/`.
+  The C++17 `detail/Span.hpp` shim replaces `std::span`.
 - **gz gate every PR** (`pixi run -e gazebo test-gz`); on engine-only slices it
   is a non-regression guard (trivially green), substantive from P3b onward.
 - **`NarrowPhase.{hpp,cpp}` is a bespoke reduced dispatcher** (`07` §2.1): it is
@@ -189,10 +249,10 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   parity coverage, and mechanical native-file cleanup in one PR when the local
   validation envelope remains clear; split only when review risk or ownership
   boundaries require it.
-- **No header-compatibility shims as a default strategy.** Prefer clean,
-  long-term interfaces. Preserve backward compatibility where gz-physics/gz-sim
-  actually depend on it, and prove that compatibility through the gz gate and
-  source-level subclassing/build checks.
+- **Prefer clean, long-term interfaces.** Do not retain unreleased aliases.
+  Preserve shipped DART 6 source/link surfaces, such as `DARTCollide`, with
+  thin adapters when necessary, and prove downstream compatibility through
+  installed-prefix builds plus the gz gate.
 - **Lazy geometry refresh** (P3b `NativeCollisionObject::updateEngineData`) must
   key on **shape identity + null**, not version alone (a fresh shape starts at
   version 1 → a version-only guard misses a swap). See `07` §1.4.

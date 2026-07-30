@@ -36,9 +36,9 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/PersistentManifoldCache.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/PersistentManifoldCache.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -85,6 +85,27 @@
 using namespace dart;
 
 namespace {
+
+DART_SUPPRESS_DEPRECATED_BEGIN
+class ConstructorProbeConstraintSolver final
+  : public constraint::ConstraintSolver
+{
+public:
+  ConstructorProbeConstraintSolver() = default;
+
+  explicit ConstructorProbeConstraintSolver(double timeStep)
+    : ConstraintSolver(timeStep)
+  {
+    // Do nothing
+  }
+
+private:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    // Do nothing
+  }
+};
+DART_SUPPRESS_DEPRECATED_END
 
 class FakeConstraint final : public constraint::ConstraintBase
 {
@@ -281,14 +302,13 @@ public:
   using ContactConstraint::getInformation;
 };
 
-class ExposedNativeCollisionObject final
-  : public collision::NativeCollisionObject
+class ExposedDARTCollisionObject final : public collision::DARTCollisionObject
 {
 public:
-  ExposedNativeCollisionObject(
+  ExposedDARTCollisionObject(
       collision::CollisionDetector* detector,
       const dynamics::ShapeFrame* shapeFrame)
-    : NativeCollisionObject(detector, shapeFrame)
+    : DARTCollisionObject(detector, shapeFrame)
   {
   }
 };
@@ -407,16 +427,16 @@ protected:
   void refreshCollisionObject(collision::CollisionObject*) override {}
 };
 
-class NegativeDepthNativeCollisionDetector final
-  : public collision::NativeCollisionDetector
+class NegativeDepthDARTCollisionDetector final
+  : public collision::DARTCollisionDetector
 {
 public:
-  using NativeCollisionDetector::collide;
+  using DARTCollisionDetector::collide;
 
-  static std::shared_ptr<NegativeDepthNativeCollisionDetector> create()
+  static std::shared_ptr<NegativeDepthDARTCollisionDetector> create()
   {
-    return std::shared_ptr<NegativeDepthNativeCollisionDetector>(
-        new NegativeDepthNativeCollisionDetector());
+    return std::shared_ptr<NegativeDepthDARTCollisionDetector>(
+        new NegativeDepthDARTCollisionDetector());
   }
 
   bool collide(
@@ -424,8 +444,7 @@ public:
       const collision::CollisionOption& option,
       collision::CollisionResult* result) override
   {
-    const bool collided
-        = NativeCollisionDetector::collide(group, option, result);
+    const bool collided = DARTCollisionDetector::collide(group, option, result);
     if (result != nullptr) {
       for (std::size_t i = 0u; i < result->getNumContacts(); ++i) {
         auto& contact = result->getContact(i);
@@ -436,7 +455,7 @@ public:
   }
 
 private:
-  NegativeDepthNativeCollisionDetector() = default;
+  NegativeDepthDARTCollisionDetector() = default;
 };
 
 class ExposedThreadedConstraintSolver final
@@ -834,6 +853,32 @@ std::shared_ptr<World> createWorld()
 }
 
 //==============================================================================
+TEST(ConstraintSolver, ConstructorsInstallFCLCollisionDetector)
+{
+  const ConstructorProbeConstraintSolver defaultSolver;
+  EXPECT_DOUBLE_EQ(0.001, defaultSolver.getTimeStep());
+  const auto defaultDetector
+      = std::dynamic_pointer_cast<const collision::FCLCollisionDetector>(
+          defaultSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, defaultDetector);
+  EXPECT_EQ(
+      collision::FCLCollisionDetector::PRIMITIVE,
+      defaultDetector->getPrimitiveShapeType());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const ConstructorProbeConstraintSolver explicitSolver(0.002);
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_DOUBLE_EQ(0.002, explicitSolver.getTimeStep());
+  const auto explicitDetector
+      = std::dynamic_pointer_cast<const collision::FCLCollisionDetector>(
+          explicitSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, explicitDetector);
+  EXPECT_EQ(
+      collision::FCLCollisionDetector::PRIMITIVE,
+      explicitDetector->getPrimitiveShapeType());
+}
+
+//==============================================================================
 std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
 {
   auto world = createWorld();
@@ -918,9 +963,12 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
 }
 
 //==============================================================================
+// The default compact DART manifold yields about three contacts per adjacent
+// box pair, so 44 boxes keep this fixture above the 128-contact parallel-row
+// activation threshold.
 std::shared_ptr<World> createExactCoulombParallelContactStackWorld(
     std::size_t solverThreads,
-    std::size_t numBoxes = 40u,
+    std::size_t numBoxes = 44u,
     bool assembleDenseContactRowSnapshot = false,
     bool useContactRowDelassusOperator = true)
 {
@@ -1014,7 +1062,9 @@ void expectManySingleFreeBodyContactWorldsMatch(
       = expectedWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& actualContacts
       = actualWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes * 3u);
+  // The explicitly selected dart detector emits one centroid contact per flat
+  // box-vs-plane pair, not a per-corner manifold.
+  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes);
   EXPECT_EQ(expectedContacts.getNumContacts(), actualContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < numBoxes; ++i) {
@@ -1520,9 +1570,9 @@ TEST(
 {
   auto smallWorld = createExactCoulombParallelContactStackWorld(4u, 20u);
   auto denseWorld
-      = createExactCoulombParallelContactStackWorld(4u, 40u, true, true);
+      = createExactCoulombParallelContactStackWorld(4u, 44u, true, true);
   auto impulseWorld
-      = createExactCoulombParallelContactStackWorld(4u, 40u, false, false);
+      = createExactCoulombParallelContactStackWorld(4u, 44u, false, false);
 
   smallWorld->step();
   denseWorld->step();
@@ -2001,7 +2051,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -2048,7 +2098,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -2461,7 +2511,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverSeedsCachedImpulseResidual)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -2512,7 +2562,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverFallsBackWhenNotConverged)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -2562,7 +2612,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverRejectsMixedFreeJointActuators)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -2801,7 +2851,7 @@ TEST(
       = configuredGround->getBodyNode(0)->getShapeNode(0);
   auto* configuredBoxShape = configuredBox->getBodyNode(0)->getShapeNode(0);
 
-  auto configuredDetector = collision::NativeCollisionDetector::create();
+  auto configuredDetector = collision::DARTCollisionDetector::create();
   configuredDetector->setContactGap(configuredGroundShape, 0.1);
   configuredDetector->setContactGap(configuredBoxShape, 0.005);
 
@@ -2941,7 +2991,7 @@ TEST(
       Eigen::Vector3d::Ones(),
       Eigen::Vector3d(0.0, 0.0, 0.49),
       true);
-  auto unconfiguredDetector = NegativeDepthNativeCollisionDetector::create();
+  auto unconfiguredDetector = NegativeDepthDARTCollisionDetector::create();
 
   ExposedBoxedLcpConstraintSolver unconfiguredSolver;
   unconfiguredSolver.setCollisionDetector(unconfiguredDetector);
@@ -2976,7 +3026,7 @@ TEST(ConstraintSolver, NativeContactGapRejectsSoftProximityContacts)
   softJoint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
 
   auto* groundShape = ground->getBodyNode(0)->getShapeNode(0);
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   detector->setContactGap(groundShape, 0.1);
   detector->setContactGap(softShape, 0.005);
 
@@ -3056,7 +3106,7 @@ TEST(ConstraintSolver, ContactConstraintCachesSolvedImpulse)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -3147,7 +3197,7 @@ TEST(ConstraintSolver, ContactConstraintClearsFrictionForChangedFrictionBasis)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -3214,7 +3264,7 @@ TEST(ConstraintSolver, ContactConstraintDoesNotSeedFrictionInPositionPhase)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -3337,9 +3387,9 @@ TEST(ConstraintSolver, ContactConstraintIgnoresForeignNativeUserData)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
-  ExposedNativeCollisionObject fixedObject(detector.get(), fixedShapeNode);
-  ExposedNativeCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
+  auto detector = collision::DARTCollisionDetector::create();
+  ExposedDARTCollisionObject fixedObject(detector.get(), fixedShapeNode);
+  ExposedDARTCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
 
   struct ForeignPayload
   {
@@ -4831,7 +4881,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverOptInKeepsContactWorldFinite)
   common::profile::resetProfile();
 
   const auto& contacts = world->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(contacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(contacts.getNumContacts(), kNumBoxes);
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
     const auto skeleton = world->getSkeleton("box_" + std::to_string(i));

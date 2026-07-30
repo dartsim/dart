@@ -204,17 +204,34 @@ def test_selection_relaxes_diversity_without_array_equality():
     assert len(avq.select_viewpoints(world, (320, 240), focus="marker", count=9)) == 9
 
 
-def test_raycast_detector_falls_back_to_native():
-    class Native:
+def test_raycast_detector_prefers_bullet():
+    class Bullet:
+        pass
+
+    class DartDetector:
         pass
 
     class Collision:
-        NativeCollisionDetector = Native
+        BulletCollisionDetector = Bullet
+        DARTCollisionDetector = DartDetector
 
     class Dart:
         collision = Collision()
 
-    assert isinstance(avq._raycast_detector(Dart()), Native)
+    assert isinstance(avq._raycast_detector(Dart()), Bullet)
+
+
+def test_raycast_detector_falls_back_to_dart():
+    class DartDetector:
+        pass
+
+    class Collision:
+        DARTCollisionDetector = DartDetector
+
+    class Dart:
+        collision = Collision()
+
+    assert isinstance(avq._raycast_detector(Dart()), DartDetector)
 
 
 def test_report_json_schema():

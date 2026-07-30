@@ -33,11 +33,13 @@
 #ifndef DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORTURNTABLESPEC_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_FBFAUTHORTURNTABLESPEC_HPP_
 
+#include "FbfCollisionFrontendContract.hpp"
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
@@ -253,11 +255,11 @@ inline PhysicsContract inspectPhysicsContract(
     throw std::runtime_error("author turntable contract requires exact FBF");
 
   const auto detector
-      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
           solver->getCollisionDetector());
   if (!detector)
     throw std::runtime_error(
-        "author turntable contract requires Native collision");
+        "author turntable contract requires DART-owned native collision");
 
   const auto support = world->getSkeleton("turntable");
   const auto rider = world->getSkeleton("turntable_rider");
@@ -299,13 +301,13 @@ inline PhysicsContract inspectPhysicsContract(
   contract.gravity = world->getGravity();
   contract.simulationThreads = world->getNumSimulationThreads();
   contract.deactivationEnabled = world->getDeactivationOptions().mEnabled;
-  contract.collisionDetector = detector->getType();
-  contract.contactManifold
-      = detector->getContactManifoldMode()
-                == dart::collision::NativeCollisionDetector::
-                    ContactManifoldMode::FourPointPlanar
-            ? "four_point_planar"
-            : "compact";
+  contract.collisionDetector
+      = fbf_collision_frontend::kDartOwnedNativeContractLabel;
+  contract.contactManifold = detector->getContactManifoldMode()
+                                     == dart::collision::DARTCollisionDetector::
+                                         ContactManifoldMode::FourPointPlanar
+                                 ? "four_point_planar"
+                                 : "compact";
   const auto& collisionOption = solver->getCollisionOption();
   contract.maxContacts = collisionOption.maxNumContacts;
   contract.maxContactsPerPair = collisionOption.maxNumContactsPerPair;

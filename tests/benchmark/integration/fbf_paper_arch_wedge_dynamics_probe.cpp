@@ -59,7 +59,7 @@
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
@@ -559,8 +559,8 @@ std::shared_ptr<dart::collision::CollisionDetector> makeDetector(
     Backend backend)
 {
   if (backend == Backend::Native) {
-    auto detector = dart::collision::NativeCollisionDetector::create();
-    detector->setContactManifoldMode(dart::collision::NativeCollisionDetector::
+    auto detector = dart::collision::DARTCollisionDetector::create();
+    detector->setContactManifoldMode(dart::collision::DARTCollisionDetector::
                                          ContactManifoldMode::FourPointPlanar);
     return detector;
   }

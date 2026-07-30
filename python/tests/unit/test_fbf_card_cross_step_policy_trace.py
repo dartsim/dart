@@ -232,7 +232,7 @@ def test_policy_is_installed_then_classified_from_solver_readbacks():
     installer = _function_body(
         source,
         r"void installCrossStepPolicy\(.*?\)",
-        r"std::shared_ptr<dart::collision::NativeCollisionDetector>",
+        r"std::shared_ptr<dart::collision::DARTCollisionDetector>",
     )
     assert "solver.setExactCoulombCrossStepPolicyOptions({});" in installer
     assert "solver.setExactCoulombOptions(options);" in installer

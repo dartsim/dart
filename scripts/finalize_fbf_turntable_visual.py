@@ -61,16 +61,12 @@ EXACT_FBF_SOURCE = ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.cpp"
 EXACT_FBF_HEADER = ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 DART_COLLISION_SOURCE = ROOT / "dart/collision/dart/DARTCollisionDetector.cpp"
 DART_COLLISION_HEADER = ROOT / "dart/collision/dart/DARTCollisionDetector.hpp"
-NATIVE_COLLISION_SOURCE = ROOT / "dart/collision/native/NativeCollisionDetector.cpp"
-NATIVE_COLLISION_HEADER = ROOT / "dart/collision/native/NativeCollisionDetector.hpp"
-NATIVE_CYLINDER_SOURCE = (
-    ROOT / "dart/collision/native/narrow_phase/CylinderCollision.cpp"
-)
-NATIVE_CYLINDER_HEADER = (
-    ROOT / "dart/collision/native/narrow_phase/CylinderCollision.hpp"
-)
-NATIVE_NARROW_PHASE_SOURCE = ROOT / "dart/collision/native/narrow_phase/NarrowPhase.cpp"
-NATIVE_NARROW_PHASE_HEADER = ROOT / "dart/collision/native/narrow_phase/NarrowPhase.hpp"
+NATIVE_COLLISION_SOURCE = ROOT / "dart/collision/dart/DARTCollisionDetector.cpp"
+NATIVE_COLLISION_HEADER = ROOT / "dart/collision/dart/DARTCollisionDetector.hpp"
+NATIVE_CYLINDER_SOURCE = ROOT / "dart/collision/dart/narrow_phase/CylinderCollision.cpp"
+NATIVE_CYLINDER_HEADER = ROOT / "dart/collision/dart/narrow_phase/CylinderCollision.hpp"
+NATIVE_NARROW_PHASE_SOURCE = ROOT / "dart/collision/dart/narrow_phase/NarrowPhase.cpp"
+NATIVE_NARROW_PHASE_HEADER = ROOT / "dart/collision/dart/narrow_phase/NarrowPhase.hpp"
 DEMO_SOURCE = ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
 AUTHOR_TURNTABLE_SPEC_SOURCE = ROOT / "examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
 DEMO_CMAKE_SOURCE = ROOT / "examples/demos/CMakeLists.txt"

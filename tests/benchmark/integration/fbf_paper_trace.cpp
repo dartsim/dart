@@ -86,7 +86,7 @@
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
@@ -604,9 +604,9 @@ const char* crossStepPolicySelectorName(CrossStepPolicySelector selector)
 }
 
 const char* nativeContactManifoldModeName(
-    dart::collision::NativeCollisionDetector::ContactManifoldMode mode)
+    dart::collision::DARTCollisionDetector::ContactManifoldMode mode)
 {
-  using Mode = dart::collision::NativeCollisionDetector::ContactManifoldMode;
+  using Mode = dart::collision::DARTCollisionDetector::ContactManifoldMode;
   switch (mode) {
     case Mode::Compact:
       return "compact";
@@ -1473,11 +1473,11 @@ void installCrossStepPolicy(
       authorPolicyInspiredCrossStepOptions());
 }
 
-std::shared_ptr<dart::collision::NativeCollisionDetector>
-createFbfPaperNativeCollisionDetector(Scenario scenario)
+std::shared_ptr<dart::collision::DARTCollisionDetector>
+createFbfPaperDARTCollisionDetector(Scenario scenario)
 {
-  using Mode = dart::collision::NativeCollisionDetector::ContactManifoldMode;
-  auto detector = dart::collision::NativeCollisionDetector::create();
+  using Mode = dart::collision::DARTCollisionDetector::ContactManifoldMode;
+  auto detector = dart::collision::DARTCollisionDetector::create();
   const bool useFourPointPlanar
       = scenario == Scenario::InclineStick || scenario == Scenario::InclineSlide
         || isTurntableScenario(scenario) || isLiteralWedgeScenario(scenario);
@@ -1491,6 +1491,16 @@ createFbfPaperNativeCollisionDetector(Scenario scenario)
     mode = Mode::FourPointPlanar;
   }
   detector->setContactManifoldMode(mode);
+  return detector;
+}
+
+std::shared_ptr<dart::collision::DARTCollisionDetector>
+createDartCollisionFrontendDetector()
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  detector->setContactManifoldMode(
+      dart::collision::DARTCollisionDetector::ContactManifoldMode::
+          FourPointPlanar);
   return detector;
 }
 
@@ -1520,10 +1530,9 @@ void configureWorldSolver(
             makeFbfOptions(initialStepSize, scenario, traceScope, contract));
     if (collisionFrontend == CollisionFrontend::Native) {
       solver->setCollisionDetector(
-          createFbfPaperNativeCollisionDetector(scenario));
+          createFbfPaperDARTCollisionDetector(scenario));
     } else {
-      solver->setCollisionDetector(
-          dart::collision::DARTCollisionDetector::create());
+      solver->setCollisionDetector(createDartCollisionFrontendDetector());
     }
     solver->setNumSimulationThreads(simulationThreads);
     world->setConstraintSolver(std::move(solver));
@@ -1563,10 +1572,9 @@ void configureWorldSolver(
     auto* solver = world->getConstraintSolver();
     if (collisionFrontend == CollisionFrontend::Native) {
       solver->setCollisionDetector(
-          createFbfPaperNativeCollisionDetector(scenario));
+          createFbfPaperDARTCollisionDetector(scenario));
     } else {
-      solver->setCollisionDetector(
-          dart::collision::DARTCollisionDetector::create());
+      solver->setCollisionDetector(createDartCollisionFrontendDetector());
     }
     solver->setNumSimulationThreads(simulationThreads);
     // Keep the boxed baseline comparable: the long-run full scenarios use the
@@ -3643,7 +3651,7 @@ void printPerformanceRow(
   }
   if (nativeManifoldSensitivityEnabled()) {
     const auto detector
-        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+        = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
             world->getConstraintSolver()->getCollisionDetector());
     const char* actualMode = detector == nullptr
                                  ? "unavailable"
@@ -3673,7 +3681,7 @@ void printPerformanceRow(
   }
   if (crossStepPolicyEvidenceEnabled()) {
     const auto detector
-        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+        = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
             world->getConstraintSolver()->getCollisionDetector());
     const char* actualMode = detector == nullptr
                                  ? "unavailable"
@@ -4337,9 +4345,9 @@ int main(int argc, char** argv)
       contract,
       collisionFrontend);
   if (nativeManifoldSensitivityEnabled()) {
-    using Mode = dart::collision::NativeCollisionDetector::ContactManifoldMode;
+    using Mode = dart::collision::DARTCollisionDetector::ContactManifoldMode;
     const auto detector
-        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+        = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
             world->getConstraintSolver()->getCollisionDetector());
     const Mode expectedMode
         = gNativeManifoldSensitivitySelector
@@ -4396,13 +4404,13 @@ int main(int argc, char** argv)
   if (crossStepPolicyEvidenceEnabled()) {
     installCrossStepPolicy(*exactSolver);
     const auto detector
-        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+        = std::dynamic_pointer_cast<dart::collision::DARTCollisionDetector>(
             world->getConstraintSolver()->getCollisionDetector());
     const auto& collisionOption
         = world->getConstraintSolver()->getCollisionOption();
     if (detector == nullptr
         || detector->getContactManifoldMode()
-               != dart::collision::NativeCollisionDetector::
+               != dart::collision::DARTCollisionDetector::
                    ContactManifoldMode::Compact
         || collisionOption.maxNumContacts != kCardHouseReducedMaxContacts
         || collisionOption.maxNumContactsPerPair
