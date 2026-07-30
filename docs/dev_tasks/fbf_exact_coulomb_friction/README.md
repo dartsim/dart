@@ -33,11 +33,13 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 This section supersedes every older branch-head, runtime-hash, performance,
 media, CI, and PR statement below.
 
-- The active merge combines topic parent `ca806fb72358c8e696787a3dead8d9dbc49333b2`
-  with `origin/release-6.20` target
-  `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. Target `46719bf` consolidates
-  DART-owned native collision into `DARTCollisionDetector` and removes the
-  public `NativeCollisionDetector` frontend.
+- Local integration commit `da135c99c30` merges topic parent
+  `ca806fb72358c8e696787a3dead8d9dbc49333b2` with collision-consolidation
+  target `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`. The immediately following
+  merge incorporates current `origin/release-6.20` tip
+  `ac7b9462612a9ef54eeb9d6841375c7789cf23d8`. Consolidation commit `46719bf`
+  folds DART-owned native collision into `DARTCollisionDetector` and removes
+  the public `NativeCollisionDetector` frontend.
 - Exact-FBF contact-gap and `FourPointPlanar` policies are ported to
   `DARTCollisionDetector` behind its existing manager sidecar. Former DART
   paper/demo lanes explicitly select `FourPointPlanar`; the global detector
