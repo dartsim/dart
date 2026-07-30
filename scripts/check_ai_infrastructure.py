@@ -2046,6 +2046,16 @@ def split_cmake_path_list(value: str, separator: str) -> list[str]:
             offset += 2
             continue
         character = value[offset]
+        if (
+            character == "\\"
+            and depth == 0
+            and offset + 1 < len(value)
+            and value[offset + 1] == separator
+        ):
+            entries.append("".join(entry))
+            entry = []
+            offset += 2
+            continue
         if character == ">" and depth:
             depth -= 1
         if character == separator and depth == 0:
@@ -2984,7 +2994,8 @@ def check_cmake_test_target_trace(
             )
         if valid:
             pythonpath_value = pytest_arguments[pytest_index + 5]
-            pythonpath_entries = split_cmake_path_list(pythonpath_value, os.pathsep)
+            path_separator = ";" if r"\;" in pythonpath_value else os.pathsep
+            pythonpath_entries = split_cmake_path_list(pythonpath_value, path_separator)
             resolved_pythonpath_entries = [
                 (dartpy_output_dir if entry == "$<TARGET_FILE_DIR:dartpy>" else entry)
                 for entry in pythonpath_entries

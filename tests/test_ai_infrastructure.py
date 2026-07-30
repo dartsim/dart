@@ -1437,6 +1437,11 @@ def test_test_gate_contract_rejects_unreachable_runtime_graph(
             ["$<TARGET_FILE_DIR:dartpy>", "C:/build/python"],
         ),
         (
+            r"$<TARGET_FILE_DIR:dartpy>\;C:/build/python",
+            ";",
+            ["$<TARGET_FILE_DIR:dartpy>", "C:/build/python"],
+        ),
+        (
             "$<IF:$<BOOL:1>,/tmp/a,/tmp/b>:/tmp/build/python",
             ":",
             ["$<IF:$<BOOL:1>,/tmp/a,/tmp/b>", "/tmp/build/python"],
@@ -1450,7 +1455,11 @@ def test_split_cmake_path_list_preserves_generator_expressions(
     assert infra.split_cmake_path_list(value, separator) == expected
 
 
-def _configure_semantic_graph_fixture(root: Path, generator: str | None = None) -> Path:
+def _configure_semantic_graph_fixture(
+    root: Path,
+    generator: str | None = None,
+    force_windows: bool = False,
+) -> Path:
     sources = {
         "CMakeLists.txt": """
 cmake_minimum_required(VERSION 3.22)
@@ -1580,6 +1589,8 @@ testpaths = ["tests"]
     ]
     if generator is not None:
         command[1:1] = ["-G", generator]
+    if force_windows:
+        command.append("-DWIN32=TRUE")
     result = subprocess.run(
         command,
         capture_output=True,
@@ -1600,6 +1611,15 @@ def test_cmake_semantic_graph_probe_accepts_effective_runtime_graph(tmp_path):
 
 def test_cmake_semantic_graph_probe_accepts_release_multi_config_graph(tmp_path):
     build = _configure_semantic_graph_fixture(tmp_path, "Ninja Multi-Config")
+    errors = []
+
+    infra.check_cmake_test_graph(tmp_path, build, errors)
+
+    assert errors == []
+
+
+def test_cmake_semantic_graph_probe_accepts_escaped_windows_path(tmp_path):
+    build = _configure_semantic_graph_fixture(tmp_path, force_windows=True)
     errors = []
 
     infra.check_cmake_test_graph(tmp_path, build, errors)
