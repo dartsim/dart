@@ -288,12 +288,13 @@ void resetModel(Model& model)
     }
   }
 
-  // Restart the gait from its initial state. State 0 is the initial state of
-  // every machine Controller builds, and begin() rewinds the phase clock that
-  // the states' terminal conditions are timed against.
+  // Restart the gait from the state the machine was configured to start in --
+  // which is not mStates[0] for the walking machines, they start mid-cycle --
+  // and rewind the phase clock the terminal conditions are timed against.
   auto* stateMachine = model.controller->getCurrentState();
-  stateMachine->transiteTo(std::size_t(0), model.world->getTime());
-  stateMachine->begin(model.world->getTime());
+  const double now = model.world->getTime();
+  stateMachine->transiteTo(stateMachine->getInitialState(), now);
+  stateMachine->begin(now);
 
   model.externalForce.setZero();
   model.forceDuration = 0;

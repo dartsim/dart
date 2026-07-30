@@ -46,6 +46,9 @@
 // feet's independent point-mass state and the gait phase, not just the
 // skeleton's generalized coordinates.
 
+#include "examples/demos/scenes/atlas_simbicon/Controller.hpp"
+#include "examples/demos/scenes/atlas_simbicon/State.hpp"
+#include "examples/demos/scenes/atlas_simbicon/StateMachine.hpp"
 #include "examples/demos/scenes/soft_foot_simbicon/SoftFootSimbiconModel.hpp"
 
 #include <gtest/gtest.h>
@@ -53,12 +56,20 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 #include <cstddef>
 
 namespace sfs = dart_demos::soft_foot_simbicon_model;
 
 namespace {
+
+/// Name of the gait state the controller is currently in. stateVector() covers
+/// the physical state only, so the gait phase has to be checked separately.
+std::string gaitStateName(const sfs::Model& model)
+{
+  return model.controller->getCurrentState()->getCurrentState()->getName();
+}
 
 constexpr std::size_t kStandSteps = 1000;
 constexpr std::size_t kContactWindowStart = 500;
@@ -155,29 +166,39 @@ TEST(SoftFootSimbiconModelTest, ResetRestoresTheFullStartingState)
 {
   sfs::Model fresh = sfs::createModel(sfs::Feet::Soft);
   const Eigen::VectorXd startState = sfs::stateVector(fresh);
+  const std::string startGait = gaitStateName(fresh);
 
   sfs::Model model = sfs::createModel(sfs::Feet::Soft);
   sfs::applyPush(model, Eigen::Vector3d(0.0, 0.0, 400.0), 100);
   for (int s = 0; s < 400; ++s)
     sfs::step(model);
 
-  // The run has to have actually disturbed the feet, or the reset below would
-  // be trivially satisfied.
+  // The run has to have actually disturbed both the physical state and the
+  // gait phase, or the reset below would be trivially satisfied.
   const Eigen::VectorXd disturbed = sfs::stateVector(model);
+  const std::string disturbedGait = gaitStateName(model);
   ASSERT_EQ(disturbed.size(), startState.size());
   ASSERT_GT((disturbed - startState).cwiseAbs().maxCoeff(), 1e-6);
+  ASSERT_NE(disturbedGait, startGait)
+      << "the run never left the initial gait state, so this gate would not "
+         "detect a reset that skips the gait phase";
 
   sfs::resetModel(model);
 
   const Eigen::VectorXd resetState = sfs::stateVector(model);
   EXPECT_LT((resetState - startState).cwiseAbs().maxCoeff(), 1e-12)
       << "reset did not restore the starting state";
+  // The walking machines start at state 1, not state 0, so resetting to
+  // "the first state" would land in the wrong half of the gait cycle.
+  EXPECT_EQ(gaitStateName(model), startGait)
+      << "reset did not restore the initial gait state";
   EXPECT_EQ(model.forceDuration, 0);
   EXPECT_EQ(model.externalForce, Eigen::Vector3d::Zero());
 
   std::cout << "soft_foot_simbicon reset  disturbed_by="
-            << (disturbed - startState).cwiseAbs().maxCoeff()
-            << "  residual_after_reset="
+            << (disturbed - startState).cwiseAbs().maxCoeff() << " gait "
+            << startGait << "->" << disturbedGait << "->"
+            << gaitStateName(model) << "  residual_after_reset="
             << (resetState - startState).cwiseAbs().maxCoeff() << "\n";
 }
 
