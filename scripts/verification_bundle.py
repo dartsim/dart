@@ -70,20 +70,20 @@ def _prompt(question: str, artifacts: list[dict[str, Any]]) -> str:
             "Review checklist:",
             "",
             "1. Read scene JSON/text for units, gravity, bodies, joints, shapes, "
-            "poses, limits, and missing collision geometry.",
+            + "poses, limits, and missing collision geometry.",
             "2. Read metrics and trajectories for energy, momentum, contacts, "
-            "penetration, determinism, and first divergence.",
+            + "penetration, determinism, and first divergence.",
             "3. State the visible observation expected if the claim is true, "
-            "then actually open each selected image. Use original/full detail "
-            "when contacts, labels, bounds, or axes are small.",
+            + "then actually open each selected image. Use original/full detail "
+            + "when contacts, labels, bounds, or axes are small.",
             "4. Describe only visible facts tied to the question. Treat a poor "
-            "or ambiguous view as a reason to reframe, not as negative physics "
-            "evidence.",
+            + "or ambiguous view as a reason to reframe, not as negative physics "
+            + "evidence.",
             "5. Reconcile visual observations with the text oracle. Any "
-            "unexplained disagreement is fail/uncertain, never an averaged pass.",
+            + "unexplained disagreement is fail/uncertain, never an averaged pass.",
             "6. Report under: Text oracle; Visible observation; Reconciliation; "
-            "Verdict (pass/fail/uncertain); Not proven and limitations. Cite the "
-            "artifact and field supporting each claim.",
+            + "Verdict (pass/fail/uncertain); Not proven and limitations. Cite the "
+            + "artifact and field supporting each claim.",
             "",
         ]
     )
