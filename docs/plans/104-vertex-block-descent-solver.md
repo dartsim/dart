@@ -47,6 +47,11 @@
   [`104-vertex-block-descent-solver/avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
   owns the row-by-row source-demo, paper-scene, website/video, and benchmark
   packet tracking needed before any parity claim.
+- VBD/AVBD paper-parity contract:
+  [`104-vertex-block-descent-solver/paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md)
+  owns the fail-closed completion rule and links the machine-checked 88-row VBD
+  and 88-row AVBD source inventories. Validate them with
+  `pixi run check-plan104-paper-parity`.
 
 ## Current Implementation Evidence
 
@@ -1278,6 +1283,18 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-07-30, the official VBD and AVBD papers, project pages, repositories,
+and paper videos were normalized into the fail-closed
+[`paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md)
+and two machine-readable coverage contracts. The gate inventories 88 VBD and
+88 AVBD requirements and deliberately records zero complete rows: existing
+implementation and packet evidence is partial until source-matched solver
+identity, quantitative outcome, CPU/CUDA, visual, comparable-performance, and
+current-build predicates all close. `pixi run check-plan104-paper-parity`
+rejects source-pin drift, row deletion/reordering, invalid evidence paths,
+media-timecode drift, incomplete predicates/backends, and premature aggregate
+completion.
 
 The DART-owned VBD CPU+CUDA solver landed on `main` (#2781):
 per-vertex block kernels, graph coloring, the colored Gauss-Seidel

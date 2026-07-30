@@ -229,16 +229,21 @@ its own line so status updates remain git-history friendly.
   [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
   toward AVBD hard constraints, bounded contact/friction, finite-stiffness
   ramping, rigid/articulated blocks, all paper/demo scenes, and CPU/GPU benchmark
-  parity, or implement the next missing row from
-  [`104-vertex-block-descent-solver/avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md).
+  parity. Select the next missing mechanism or reproduction from the
+  machine-checked 176-row
+  [`104-vertex-block-descent-solver/paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md);
+  the older
+  [`104-vertex-block-descent-solver/avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
+  remains a narrow artifact inventory rather than the global completion gate.
   Remaining VBD closeout (self-contact tangential friction, OGC audit, benchmark
   JSON, paper tetrahedral reproduction, Phase 8b SoA + Gaia-CPU, Phase 9 same-GPU
   Table 1) stays tracked in the owner plan. History: see the progress log in
   [`104-vertex-block-descent-solver.md`](104-vertex-block-descent-solver.md).
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
-  backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
-  guarantees, coloring conflict-freedom, and convergence parity with the
+  backend-neutral, proves per-vertex force/Hessian correctness, an explicit
+  reference-aligned Hessian stabilization policy, coloring conflict-freedom,
+  and convergence parity with the
   existing solver and the reference implementations, adds FEM/acceleration/
   contact/friction with focused tests, records CPU and GPU benchmark/profiling
   JSON that beats the reference and/or paper numbers before any parity claim,

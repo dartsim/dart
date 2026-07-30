@@ -10,13 +10,24 @@ This folder is the temporary working surface; the durable owner is the plan.
   [`../../plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](../../plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md).
 - Corpus matrix:
   [`../../plans/104-vertex-block-descent-solver/avbd-demo-corpus.md`](../../plans/104-vertex-block-descent-solver/avbd-demo-corpus.md).
+- Fail-closed VBD/AVBD parity contract:
+  [`../../plans/104-vertex-block-descent-solver/paper-parity-matrix.md`](../../plans/104-vertex-block-descent-solver/paper-parity-matrix.md),
+  backed by the machine-checked VBD and AVBD JSON inventories in the same
+  directory.
 
 ## Current Status
 
 - **Active, incomplete paper implementation.** No parity is claimed. The
   headline gates remain **open**: a source-demo/paper CPU win, GPU parity, and a
   same-hardware paper-number match.
-- **Branch state:** no active local AVBD branch; continue from current `main`.
+- **Branch state:** active local branch
+  `feature/vbd-avbd-paper-parity-contract`, based on `main` at `83110ef54ab`;
+  it has not been pushed.
+- **Current packet:** establish the exact official
+  paper/repository/video/project-page source inventory and fail-closed
+  validation gate. The contracts contain 88 VBD and 88 AVBD requirements; all
+  176 remain incomplete until their recorded correctness, solver-identity,
+  CPU/CUDA, visual, and comparable-performance predicates pass.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -61,18 +72,18 @@ numbers.
 
 ## Immediate Next Steps
 
-Pick the next bounded, mutation-verified slice from PLAN-104's
-`AVBD Current Next Gaps` and the corpus matrix; keep claims narrow (no CPU-win,
-GPU, broad fracture-corpus, or same-hardware paper-number claim unless the
-tracked artifacts prove it). Two small deferred items are also ready:
+Finish and review the parity-contract packet, then select the highest-leverage
+missing method row rather than adding another narrow demo packet. The first
+candidate is `avbd.method.quasi_newton_hessian`, because the paper describes
+its diagonal geometric-stiffness approximation as part of the core AVBD local
+block update and DART currently has no end-to-end implementation. Keep every
+dependent figure/demo/performance row partial until source-matched CPU and CUDA
+evidence closes it.
 
-1. **Hoist `makeCollisionPairKey`** into a shared `detail` header. It is
-   currently duplicated verbatim in `dart/simulation/compute/rigid_body_contact_stage.cpp`
-   and `dart/simulation/world.cpp`, so the contact-stage ignored-pair audit and
-   `World::setCollisionPairIgnored` can drift out of sync.
-2. **Upgrade the Spring / Spring Ratio packets** from legacy `schema_version` 1
-   (`LEGACY_IDENTITY_EXEMPT`) to version 2 with a `resolved_solver_identity` so
-   the packet-identity check covers them.
+Two smaller deferred maintenance items remain valid but do not outrank the
+missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
+shared `detail` header, and upgrade the Spring / Spring Ratio packets from
+legacy schema version 1 to version 2 with a `resolved_solver_identity`.
 
 ## History
 

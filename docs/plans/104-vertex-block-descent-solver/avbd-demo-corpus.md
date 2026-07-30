@@ -1,12 +1,16 @@
 # AVBD Demo And Benchmark Corpus Matrix
 
-This matrix is the durable owner for PLAN-104 AVBD scene and benchmark parity.
+This matrix is the detailed inventory of PLAN-104's narrow AVBD scene and
+benchmark surfaces. The authoritative cross-family completion rule and
+canonical row inventory are
+[`paper-parity-matrix.md`](paper-parity-matrix.md) and
+[`avbd-paper-coverage-contract.json`](avbd-paper-coverage-contract.json).
 The active implementation tracker remains
 [`../../dev_tasks/avbd_solver/`](../../dev_tasks/avbd_solver/), and the method
 scope remains
 [`avbd-paper-gap-audit.md`](avbd-paper-gap-audit.md). This file records the
-required source-demo, paper, website/video, and performance artifacts so the
-dev task can eventually be retired without losing the remaining corpus.
+existing source-demo, paper, website/video, and performance artifacts without
+promoting narrow packet status into a paper-parity claim.
 
 ## Evidence Contract
 
@@ -29,8 +33,10 @@ Status values:
   next without first creating another internal row family.
 - `Blocked by foundation`: required row families, coupling, GPU path, or
   candidate generation are still missing.
-- `Complete`: all evidence in the contract above exists and is linked from this
-  matrix.
+- `Complete`: the narrow DART surface or legacy packet met this matrix's local
+  evidence contract. It does **not** mean the corresponding canonical parity
+  row is complete; only the machine-checked coverage contract can make that
+  claim.
 
 ## Solver-Identity Relabel (PLAN-091 WP-091.1)
 
@@ -48,7 +54,8 @@ Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows while
 their ordinary contacts ran sequential impulse; and incidental link-link
 contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging Rope; 3D
 Rope and Heavy Rope) also ran sequential impulse. A `Complete` status below
-covers the row's evidence contract, not an AVBD-contact-solver claim. This
+covers only this matrix's historical local artifact contract, not an
+AVBD-contact-solver or paper-parity claim. This
 relabel changes no committed packet bytes and neither closes nor reopens any
 PLAN-104 completion gate; new AVBD evidence packets must machine-record
 `resolved_solver_identity` at AVBD packet schema version 2, enforced by

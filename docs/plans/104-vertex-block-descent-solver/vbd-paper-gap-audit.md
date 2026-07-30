@@ -1,26 +1,34 @@
 # VBD Paper / Reference Gap Audit
 
 This audit grounds PLAN-104 against the Vertex Block Descent paper and its
-reference implementations. It records what the method requires, what the DART
-DART 7 simulation world already provides, and what each phase must add. It is a
+reference implementations. It records what the method requires, what DART 7's
+simulation world already provides, and what each phase must add. It is a
 planning artifact; it does not itself claim implemented behavior.
+
+The authoritative, machine-checked parity inventory is
+[`vbd-paper-coverage-contract.json`](vbd-paper-coverage-contract.json), and its
+fail-closed completion semantics are defined by
+[`paper-parity-matrix.md`](paper-parity-matrix.md). This prose audit explains
+the method and gaps but cannot promote a contract row.
 
 ## Sources
 
-- Chen, A. H., Liu, T., Yang, Y., Kim, T., et al. "Vertex Block Descent."
+- Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
   _ACM Transactions on Graphics (SIGGRAPH 2024)_.
   Paper PDF: <https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf>
-  Project page: <https://ankachan.github.io/Projects/VertexBlockDescent/index.html>
+  Project page: <https://graphics.cs.utah.edu/research/projects/vbd/>
   Talk: <https://www.youtube.com/watch?v=2HCgKfKy3W8>
 - Reference implementations:
-  - `Gaia`: <https://github.com/AnkaChan/Gaia> (full research framework)
-  - `TinyVBD`: <https://github.com/AnkaChan/TinyVBD> (minimal reference)
+  - `Gaia`: <https://github.com/AnkaChan/Gaia> at
+    `c229692045465a76233f9fba9197fb22bbfb3694` (full research framework)
+  - `TinyVBD`: <https://github.com/AnkaChan/TinyVBD> at
+    `dcd011a5d945172e247ecced90a6c2c4b4313520` (minimal reference)
 
 The formulas and numbers below were verified against the arXiv full text
-(arXiv:2403.06321), the project page, and the `Gaia`/`TinyVBD` reference source.
-Code references are to those repositories' `main` branch. This is the durable
-method audit for PLAN-104; implementation status and remaining work are
-summarized in the parent plan and dashboard.
+(arXiv:2403.06321), the project page, and the pinned `Gaia`/`TinyVBD` reference
+source revisions above. This is the durable method audit for PLAN-104;
+implementation status and remaining work are summarized in the parent plan and
+dashboard.
 
 ## Verified Reference Details (load-bearing)
 
@@ -96,10 +104,11 @@ x_i <- x_i + H_i^{-1} f_i
 
 where `N(i)` is the set of elements (springs / tets / contacts) incident to
 vertex `i`. `H_i` is a single symmetric 3x3 matrix, so each block solve is a
-fixed-size SPD solve — no global sparse system. Robustness comes from keeping
-`H_i` SPD: the inertia term `(m_i/h^2) I_3` is always SPD, and each element block
-is PSD-projected (e.g. clamping indefinite geometric-stiffness terms) so the sum
-is SPD.
+fixed-size local solve — no global sparse system. In the reference default,
+element blocks are **not** PSD-projected. Robustness relies on the SPD inertia
+term and the stabilized local 3x3 solve described above; any DART projection or
+regularization is an explicitly tested descent-path choice rather than an
+unqualified paper-default claim.
 
 ### Parallelization by graph coloring
 
@@ -112,13 +121,16 @@ per timestep.
 
 ### Acceleration and initialization
 
-VBD reaches good accuracy in few iterations via (a) an **adaptive initial
-guess** that blends the inertial prediction with the previous step's
-acceleration, and (b) an optional **Chebyshev semi-iterative acceleration** of
-the block-descent sweeps. The exact blend rule and Chebyshev parameters are to
-be transcribed from the paper during Phase 5.
+VBD reaches good accuracy in few iterations via (a) the **adaptive initial
+guess** recorded in `Verified Reference Details` and (b) the optional
+**Chebyshev semi-iterative acceleration** recorded there. Those equations are
+transcribed and focused tests exist; the paper figures and full CPU/CUDA
+trajectory closure remain open in the coverage contract.
 
 ## Initial Component-by-Component Gap
+
+The table below is the historical pre-#2781 implementation baseline. Use the
+coverage contract, not this table, for current status.
 
 | VBD component                                             | DART 7 simulation world today                                                                                            | Phase that closes the gap         |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
@@ -126,7 +138,7 @@ be transcribed from the paper during Phase 5.
 | Inertial target `y` with gravity/damping/external accel   | Present: `world_step_stage.cpp` inertial-target setup (`dampingScale`, `gravityStep`, `externalAccelerations`)           | Phase 1/3 reuse                   |
 | Per-vertex force `f_i` (inertia + spring)                 | Partial: global gradient assembled, not per-vertex blocks                                                                | Phase 1                           |
 | Per-vertex SPD Hessian `H_i` (inertia + spring)           | Missing: no per-vertex Hessian assembly                                                                                  | Phase 1                           |
-| PD projection of element Hessian blocks                   | Missing                                                                                                                  | Phase 1 (spring), Phase 4 (FEM)   |
+| Stabilized local Hessian solve without default projection | Present in narrow kernels; reference-equivalent failure policy and full-scene evidence remain open                       | Coverage-contract method rows     |
 | 3x3 block Newton step                                     | Missing                                                                                                                  | Phase 1                           |
 | Vertex graph coloring                                     | Missing                                                                                                                  | Phase 2                           |
 | Block-descent sweep driver                                | Missing (current solver is global gradient descent)                                                                      | Phase 3                           |
@@ -146,11 +158,12 @@ be transcribed from the paper during Phase 5.
   `evaluateDeformableObjective`). Per-vertex Hessian block
   `H_aa = k[ n n^T + (1 - L/l)(I - n n^T) ]`, transverse factor clamped to
   `>= 0` for the SPD local Hessian.
-- **Stable Neo-Hookean** (Phase 4): the Smith et al. 2018 energy density used by
-  the reference, with Lame parameters derived from
-  `DeformableMaterial.youngsModulus` / `poissonRatio`, plus the per-tet,
-  per-vertex force and PD-projected Hessian block. Exact constants transcribed
-  during Phase 4.
+- **Stable Neo-Hookean** (Phase 4): the reference energy is
+  `Psi = (mu/2)(||F||_F^2 - 3) + (lambda/2)(det(F) - a)^2` with
+  `a = 1 + mu/lambda`, multiplied by rest volume. DART derives the Lamé
+  parameters from `DeformableMaterial.youngsModulus` / `poissonRatio`; any
+  stabilized Hessian treatment must stay explicitly distinguished from the
+  reference's default no-projection path.
 
 ## Reference Performance Targets ("beat the reference / paper")
 

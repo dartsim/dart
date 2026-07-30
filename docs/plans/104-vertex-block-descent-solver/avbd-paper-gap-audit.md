@@ -5,6 +5,12 @@ public 2D/3D reference demo repositories. It records the full implementation
 target for DART's AVBD work. It is a planning artifact; it does not itself
 claim implemented behavior.
 
+The authoritative, machine-checked parity inventory is
+[`avbd-paper-coverage-contract.json`](avbd-paper-coverage-contract.json), and
+its fail-closed completion semantics are defined by
+[`paper-parity-matrix.md`](paper-parity-matrix.md). This prose audit explains
+the method and gaps but cannot promote a contract row.
+
 ## Sources
 
 - Chris Giles, Elie Diaz, and Cem Yuksel. "Augmented Vertex Block Descent."
