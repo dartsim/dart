@@ -13,12 +13,15 @@ from its PR-facing URL and matched its full local SHA-256. Slot 09 now uses the
 fresh schema-v3 captured-runtime ten-level group; the historical provisional
 bytes were replaced.
 
-The upload ledger is byte-valid but not a post-merge binary seal. The clips
-were captured no later than checkpoint `333a809f14a`, whose demo/core hashes
-are `3d685d2c...` / `3b66436b...`. Post-merge code/runtime checkpoint
-`6fb4d0dbd8c` rebuilds to `d9932f4c...` / `caf402af...`; no full visual
-reseal has run against that binary. Documentation-only descendants do not
-change that identity.
+The upload ledger is byte-valid but is not wholly a post-merge binary seal.
+Most clips were captured no later than checkpoint `333a809f14a`, whose
+demo/core hashes are `3d685d2c...` / `3b66436b...`. Post-merge code/runtime
+checkpoint `6fb4d0dbd8c` rebuilds to `d9932f4c...` / `caf402af...`.
+Slots 02/16 were freshly recaptured under ignored
+`assets/pr_media_postmerge_a833/` against that post-merge runtime and are
+byte-identical to the existing attachments; no reupload was needed. The other
+slots retain their recorded capture-time identities. Documentation-only
+descendants do not change the runtime identity.
 
 | Slot | Intended caption key | Local SHA-256 | Registered user-attachment URL |
 | ---: | --- | --- | --- |
@@ -41,11 +44,13 @@ change that identity.
 
 Captured-runtime notes:
 
-- Slots 02 and 16 come from the fresh schema-v3
-  `assets/pr_media_current_head_333a/` Figure 3 capture. Exact and boxed both
-  finish 240 steps and pass the bounded outcome slice. The checker-textured
-  sphere makes changing orientation and backspin visible; both lanes pass, so
-  no solver-superiority claim is valid.
+- Slots 02 and 16 are byte-identically reproduced by the post-merge schema-v3
+  `assets/pr_media_postmerge_a833/` Figure 3 capture. Exact and boxed both
+  finish 240 steps and pass the bounded outcome slice against demo/core/closure
+  hashes `d9932f4c...` / `caf402af...` / `22c7f90e...`. Manual inspection of
+  steps 0/2/4 and the temporal panel confirms that the checker-textured sphere
+  makes changing orientation and backspin visible; both lanes pass, so no
+  solver-superiority claim is valid.
 - Slot 08 comes from the fresh schema-v3 Figure 8 seal. Exact stops after
   completed step 209 and is frozen only after its last valid step-208 frame;
   boxed finishes 1,600 steps, collapses, and fails the standing oracle. It is a

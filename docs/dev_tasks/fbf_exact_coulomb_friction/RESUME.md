@@ -42,19 +42,30 @@ Current branch and evidence runtime:
   Visual-evidence schema v3 binds the demo, 61 regular resolved libraries,
   eight build-tree libraries, and the exact core DART library before and after
   capture at `333a809f14a`. Those records and uploaded bytes are not
-  post-merge current-binary reuse evidence.
+  post-merge current-binary reuse evidence except where the identical Figure 3
+  byte streams were freshly resealed below.
 
-Fresh captured-checkpoint visual evidence is under the ignored
-`assets/pr_media_current_head_333a/` root:
+Post-merge Figure 3 evidence is under ignored
+`assets/pr_media_postmerge_a833/`; Figure 8 and ten-level captured-checkpoint
+evidence remains under ignored `assets/pr_media_current_head_333a/`:
 
-- Figure 3 backspin exact and boxed each complete 240/240 steps and pass
-  independent verification and the bounded rolling/roll-off outcome gates.
+- Figure 3 backspin was freshly captured and independently verified against
+  post-merge demo/core SHA-256 values `d9932f4c...` / `caf402af...` and
+  runtime-closure digest `22c7f90e...`. Exact and boxed each complete 240/240
+  steps (241 states), expose 121 unique rendered frames, and pass the bounded
+  rolling/roll-off outcome gates.
   The sphere uses the requested checker texture, and manual frame inspection
-  confirms that its changing orientation makes the backspin visibly
-  unambiguous. Exact and synchronized-group clip SHA-256 values are
-  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`
+  of steps 0/2/4 and the five-time panel confirms that its changing orientation
+  makes the backspin visibly unambiguous. The local manual-inspection record
+  SHA-256 is
+  `5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f`.
+  Exact, boxed, and synchronized-group clip SHA-256 values are
+  `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`,
+  `dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`,
   and
   `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+  These are byte-identical to the existing uploaded slots 02/16, so no
+  reupload is required to bind those bytes to the current runtime.
   Both solvers pass; no superiority or paper-parity claim follows.
 - Figure 8 is sealed and independently verified as
   `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Strict exact
@@ -98,6 +109,8 @@ GitHub media state:
   `af9d80bf...`; the historical provisional bytes were replaced. The verified
   URL/hash ledger is in
   [PAPER_DEMO_VIDEO_MATRIX.md](PAPER_DEMO_VIDEO_MATRIX.md).
+- Slots 02/16 additionally match the post-merge Figure 3 recapture byte for
+  byte. The rest of the ledger keeps its original captured-runtime labels.
 
 Current hosted CI is mutable. Checks for `6fb4d0dbd8c` were queued at the last
 query; query the live current head for a verdict. At the prior
@@ -118,13 +131,14 @@ merge/rebuild is complete; rerun only after a declared cool/low-load gate.
 
 Next:
 
-1. Preserve the complete schema-v3 Figure 3, Figure 8, and ten-level roots and
-   the passing 16-URL PR reference/download/hash audit.
+1. Preserve the post-merge Figure 3 root, the captured-checkpoint Figure 8 and
+   ten-level roots, and the passing 16-URL PR reference/download/hash audit.
 2. Run the isolated matched one-/four-core performance rerun and synchronize
    only the narrow non-paper throughput claims it proves.
-3. Decide whether completion requires a full post-merge visual reseal. Until
-   one exists, keep every schema-v3 upload labeled as captured at `333a`, not
-   as current-head binary evidence.
+3. Decide whether completion requires post-merge reseals of the long Figure 8
+   and ten-level clips. Until those exist, label only slots 02/16 as
+   post-merge-current-runtime bytes; keep the remaining schema-v3 uploads bound
+   to their recorded capture checkpoints.
 4. Keep the PR draft until the remaining paper-parity, CI, and review gates are
    honestly resolved.
 

@@ -28,13 +28,17 @@ Figure 8, upload, branch, and CI statement below.
   DART library
   (`3b66436b08641cffc7f18f01cb7671e2c8a099e7eb92972f932e525eb15ec926`)
   before and after capture. These records were captured at `333a809f14a`;
-  they remain audited uploaded bytes but are not post-merge current-binary
-  reuse evidence.
-- Fresh captured-checkpoint Figure 3 exact and boxed captures complete 240/240,
-  pass independent verification and the bounded outcome slice, and use the
-  requested checker-textured sphere so orientation and backspin are visibly
-  apparent. Exact/group MP4 SHA-256 values are `b2c268aa...` and
-  `e321c711...`. Both solvers pass; no superiority or paper-parity result is
+  Figure 8 and ten-level remain audited captured-checkpoint bytes rather than
+  post-merge current-binary evidence.
+- Fresh post-merge Figure 3 exact and boxed captures under ignored
+  `assets/pr_media_postmerge_a833/` complete 240/240, pass independent
+  verification and the bounded outcome slice, and bind demo/core/runtime
+  closure SHA-256 values `d9932f4c...` / `caf402af...` / `22c7f90e...`
+  unchanged during capture. Manual inspection of steps 0/2/4 and the five-time
+  panel confirms the requested checker-textured sphere makes orientation and
+  backspin visibly apparent. Exact/boxed/group MP4 SHA-256 values are
+  `b2c268aa...`, `dc3228e2...`, and `e321c711...`, byte-identical to existing
+  slots 02/16. Both solvers pass; no superiority or paper-parity result is
   claimed.
 - Fresh captured-checkpoint Figure 8 is sealed and independently verified as
   `valid_current_dart_blocker_diagnostic`, `upload_ready=true`. Exact fails
@@ -743,8 +747,8 @@ golden/diff, paper timing, or real-time evidence.
 
 ### Source-Pinned Author Figure 3 Backspin
 
-The preferred PR media is now the ignored fresh current-runtime
-`assets/pr_media_current_head_333a/` schema-v3 capture of
+The preferred PR media is now freshly resealed under ignored
+`assets/pr_media_postmerge_a833/` as a schema-v3 capture of
 `fbf_author_backspin_current_source` under schedule
 `backspin_author_current_source`, not the reconstructed c95 bundle below. It
 binds author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, the sealed
@@ -752,9 +756,10 @@ source-reference manifest SHA-256
 `7d4248f6431a902571b569b3477e61b4fa8ad0897f6c957e10a223cf32eb0b98`,
 the DART implementation, exact options, explicit ground/sphere primary and
 secondary friction plus restitution, process state, and the checker OBJ/MTL/PPM
-before and after capture. Schema v3 additionally binds demo SHA-256
-`3d685d2c...`, exact core DART SHA-256 `3b66436b...`, 61 regular runtime
-libraries, and eight build-tree libraries before and after capture. The
+before and after capture. Schema v3 additionally binds post-merge demo SHA-256
+`d9932f4c...`, exact core DART SHA-256 `caf402af...`, 61 regular runtime
+libraries, eight build-tree libraries, and runtime-closure digest
+`22c7f90e...` before and after capture. The
 source's configured terminal flag is true for all 240 steps, but 183 projected
 natural residuals exceed `1e-6`; this is not strict natural-residual
 convergence. Capture and independent reuse verification pass for both members
@@ -770,11 +775,18 @@ accepted caps, failures, or fallbacks, and worst residual
 `-11.4821219179/-46.2486366906/0.0800372547/-1.3731065400`.
 
 Manual inspection confirms visible checker-facet orientation changes in
-consecutive frames and the temporal panel. The exact 121-frame H.264/yuv420p
+steps 0/2/4 and the temporal panel; the local inspection record SHA-256 is
+`5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f`.
+The exact 121-frame H.264/yuv420p
 clip is the preferred upload at SHA-256
 `b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30`;
 the labeled exact/boxed group is supplemental at SHA-256
 `e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b`.
+The boxed member is
+`dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f`.
+All three MP4 streams are byte-identical to the prior captured-checkpoint
+outputs, so the existing slots 02/16 now also carry post-merge runtime identity
+without reuploading.
 The imagery does not prove signed direction/rate because 30 fps aliases the
 initial `-200 rad/s`; the trace owns signed `wy`. Both solvers pass, so no
 solver equivalence/superiority, source backend/full-trajectory or video

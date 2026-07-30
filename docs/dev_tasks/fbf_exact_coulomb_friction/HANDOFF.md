@@ -48,7 +48,8 @@ Post-merge current runtime:
 
 The merge resolution passed pixi run lint, all 166 C++ tests, the 34-scene FBF
 documentation validator, check-ai-commands, and the AI infrastructure doctor.
-No full visual reseal has run against this new binary.
+A short post-merge Figure 3 reseal has run against this binary; Figure 8 and
+the ten-level clips have not been recaptured against it.
 
 Captured 333a evidence runtime:
 
@@ -61,17 +62,25 @@ Captured 333a evidence runtime:
 Visual evidence schema v3 binds the demo, 61 regular libraries, eight
 build-tree libraries, and the exact core DART library before and after capture.
 These records and all uploaded bytes remain valid for captured checkpoint
-333a809f14a, but they are not post-merge current-binary reuse evidence. No
-visual capture is currently active.
+333a809f14a. Figure 8 and ten-level remain captured-checkpoint-only evidence.
+The byte-identical Figure 3 streams were freshly resealed against the post-merge
+runtime below. No visual capture is currently active.
 
-Fresh captured-checkpoint evidence is under ignored
-assets/pr_media_current_head_333a/:
+Post-merge Figure 3 evidence is under ignored
+assets/pr_media_postmerge_a833/. Figure 8 and ten-level captured-checkpoint
+evidence remains under ignored assets/pr_media_current_head_333a/:
 
-- Figure 3 exact and boxed complete 240/240 and pass independent verification
-  and the bounded outcome slice. The sphere has the requested checker texture;
-  manual inspection confirms visibly changing orientation. Exact/group clip
-  SHA-256 values are b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30
+- Figure 3 exact and boxed complete 240/240 and pass fresh capture, independent
+  verification, and the bounded outcome slice against demo/core SHA-256 values
+  d9932f4c... / caf402af... and runtime-closure digest 22c7f90e....
+  The sphere has the requested checker texture; manual inspection of steps
+  0/2/4 and the five-time panel confirms visibly changing orientation.
+  Exact/boxed/group clip SHA-256 values are
+  b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30,
+  dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f,
   and e321c711eae7daf8e2a289df71f4d08c0d813d6c84e204c0930594d4a561e15b.
+  They are byte-identical to the existing slot 02/16 uploads. The local
+  manual-inspection record SHA-256 is 5b72b3e4738b8ef5374229b3b868431d831b6044f49148a8eb7a4e117fb8768f.
   Both lanes pass; no superiority or paper-parity claim follows.
 - Figure 8 is sealed, independently verified, and upload_ready=true as a
   valid_current_dart_blocker_diagnostic. Exact stops at iteration_cap after
@@ -96,7 +105,8 @@ All 16 GitHub user attachments are referenced from the draft PR and were
 re-downloaded from their PR-facing URLs; all match their full recorded SHA-256
 values. Slot 09 is now the fresh schema-v3 captured-runtime group
 (`438b02b2...`) at user attachment `af9d80bf...`; the historical provisional
-bytes were replaced.
+bytes were replaced. Slots 02/16 additionally match the post-merge Figure 3
+recapture byte for byte.
 PAPER_DEMO_VIDEO_MATRIX.md owns the verified URL/hash ledger.
 
 At the prior 333a head, macOS arm64-Debug alone failed an untouched randomized
@@ -115,13 +125,14 @@ gate.
 
 Immediate order:
 
-1. Preserve the sealed schema-v3 Figure 3, Figure 8, and ten-level evidence
-   roots and the passing 16-URL PR reference/download/hash audit.
+1. Preserve the post-merge Figure 3 root, the captured-checkpoint Figure 8 and
+   ten-level roots, and the passing 16-URL PR reference/download/hash audit.
 2. Run the isolated matched one-/four-core performance rerun and synchronize
    only the narrow non-paper throughput claims it actually proves.
-3. Decide whether completion requires a full post-merge visual reseal. Until
-   one exists, label all uploaded schema-v3 media as captured at 333a, never as
-   current-head binary evidence.
+3. Decide whether completion requires post-merge reseals of Figure 8 and the
+   ten-level clips. Until those exist, label only slots 02/16 as
+   post-merge-current-runtime bytes and keep the other schema-v3 uploads bound
+   to their recorded capture checkpoints.
 4. Keep all exact/boxed policy asymmetry and Figure 8 frozen-prefix claim
    boundaries explicit. Continue the full 29-row parity, performance, CI, and
    review closeout; do not retire the task folder early.
