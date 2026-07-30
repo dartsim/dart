@@ -181,9 +181,7 @@ def _make_dart_shape_contacts(dart: Any) -> Any:
     )
     for name, shape, position, color in shape_specs:
         world.addSkeleton(
-            _shape_skeleton(
-                dart, name, shape, position, static=False, color=color
-            )
+            _shape_skeleton(dart, name, shape, position, static=False, color=color)
         )
     return world
 
@@ -583,9 +581,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 if tracker is not None:
                     tracker.sample()
             last_collision_result = (
-                world.getLastCollisionResult()
-                if "contacts" in args.layers
-                else None
+                world.getLastCollisionResult() if "contacts" in args.layers else None
             )
             contacts = (
                 list(last_collision_result.getContacts())
