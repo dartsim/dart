@@ -39,7 +39,9 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
+#include <string>
 
 #include <cmath>
 
@@ -104,23 +106,51 @@ bool accumulateBodyExtent(
 std::size_t ContactArrowLayout::sceneFingerprint(
     const dart::simulation::World& world)
 {
+  // Everything the references are derived from goes in, not just topology.
+  // Counts alone miss two things the demos actually do: `sleeping` launches and
+  // reparks a preallocated projectile pool by toggling setCollidable() without
+  // adding or removing anything, and `rigid_shapes` can delete a shape and
+  // spawn a differently-sized replacement with identical counts between two
+  // updates. Names and shape extents distinguish both.
+  const auto mix = [](std::size_t seed, std::size_t value) {
+    return seed * 131 + value;
+  };
+  const auto mixDouble = [&mix](std::size_t seed, double value) {
+    // Quantized so ordinary motion, which does not change the derived scale,
+    // does not churn the fingerprint.
+    return mix(
+        seed,
+        static_cast<std::size_t>(
+            static_cast<long long>(std::round(value * 1000.0))));
+  };
+
   std::size_t fingerprint = world.getNumSkeletons();
   for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
     const auto& skeleton = world.getSkeleton(i);
     if (!skeleton)
       continue;
-    fingerprint = fingerprint * 131 + skeleton->getNumBodyNodes();
-    fingerprint = fingerprint * 131 + skeleton->getNumDofs();
+    fingerprint
+        = mix(fingerprint, std::hash<std::string>{}(skeleton->getName()));
+    fingerprint = mix(fingerprint, skeleton->getNumBodyNodes());
+    fingerprint = mix(fingerprint, skeleton->getNumDofs());
 
-    // Collidability is part of the fingerprint because it is part of the
-    // scale. The `sleeping` scene launches and reparks a preallocated
-    // projectile pool by toggling setCollidable() and moving the bodies,
-    // without adding or removing anything, so counts alone would never see a
-    // heavy projectile enter or leave play.
     for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
       const auto* body = skeleton->getBodyNode(j);
-      if (body && body->isCollidable())
-        fingerprint = fingerprint * 131 + j + 1;
+      if (!body || !body->isCollidable())
+        continue;
+      fingerprint = mix(fingerprint, j + 1);
+      body->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+          [&](const dart::dynamics::ShapeNode* shapeNode) {
+            const auto& shape = shapeNode->getShape();
+            if (!shape)
+              return;
+            const Eigen::Vector3d extents
+                = shape->getBoundingBox().computeFullExtents();
+            if (!extents.allFinite())
+              return;
+            for (int axis = 0; axis < 3; ++axis)
+              fingerprint = mixDouble(fingerprint, extents[axis]);
+          });
     }
   }
   return fingerprint;

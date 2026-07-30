@@ -96,6 +96,7 @@ private:
   bool mEnabled = true;
 
   ContactArrowLayout mLayout;
+  double mShaftRadius = 0.0;
   std::vector<dart::dynamics::SimpleFramePtr> mFrames;
   std::vector<std::shared_ptr<dart::dynamics::ArrowShape>> mArrows;
   std::size_t mLastVisualizedCount = 0;

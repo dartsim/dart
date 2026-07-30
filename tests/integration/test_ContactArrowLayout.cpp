@@ -615,3 +615,46 @@ TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
             << " N  zero_gravity_ref=" << zeroGravityReference
             << " N  restored_floor=" << layout.getReferenceForce() << " N\n";
 }
+
+//==============================================================================
+// `rigid_shapes` lets a user delete a shape and spawn a differently-sized
+// replacement. If both happen before the next update, every count is identical,
+// so a fingerprint built from topology alone would never re-derive the scale.
+TEST(ContactArrowLayoutTest, RefreshesWhenASkeletonIsReplacedBySameTopology)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.3, box);
+
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+  const double smallLength = layout.getReferenceLength();
+
+  // Same one body, same six degrees of freedom, ten times the size.
+  world->removeSkeleton(box);
+  auto replacement = dart::dynamics::Skeleton::create("box");
+  auto* body
+      = replacement->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(3.0)));
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(10.0);
+  body->setInertia(inertia);
+  world->addSkeleton(replacement);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2u);
+  ASSERT_EQ(replacement->getNumBodyNodes(), box->getNumBodyNodes());
+  ASSERT_EQ(replacement->getNumDofs(), box->getNumDofs());
+
+  pump(layout, world);
+  EXPECT_GT(layout.getReferenceLength(), 2.0 * smallLength)
+      << "a same-topology replacement of a different size did not reach the "
+         "arrow scale";
+
+  std::cout << "contact_arrow_replacement  before=" << smallLength
+            << " m  after=" << layout.getReferenceLength() << " m\n";
+}
