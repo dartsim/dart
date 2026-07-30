@@ -16,7 +16,8 @@ For cross-bucket placement decisions, use
 | File | Purpose |
 | --- | --- |
 | [`dart6_ai_infra.md`](dart6_ai_infra.md) | Release-branch AI documentation, model-evolution, and visual-evidence decisions within DART 6 compatibility constraints. |
-| [`dart6_deformable_body.md`](dart6_deformable_body.md) | DART 6.20 deformable-body compatibility, paper-scope, performance-evidence, and native-collision decisions. |
+| [`dart6_collision_backends.md`](dart6_collision_backends.md) | Current DART 6.20 collision-backend architecture, compatibility boundary, downstream gz obligations, and later backend lifecycle. |
+| [`dart6_deformable_body.md`](dart6_deformable_body.md) | DART 6.20 deformable-body compatibility, paper scope, performance evidence, and collision-backend decisions. |
 
 ## Placement Rules
 

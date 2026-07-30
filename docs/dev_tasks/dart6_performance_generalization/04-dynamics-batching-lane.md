@@ -94,14 +94,14 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
   solver/profiler/Dantzig scratch reuse, and the allocation-counting
   `INTEGRATION_StepAllocation` harness covering `operator new`, raw
   malloc-family calls where available, and DART `MemoryAllocator` traffic.
-  Its PR evidence reported strict native DART same-shape gates with zero
+  Its PR evidence reported strict DART-owned same-shape gates with zero
   `operator new`, zero raw malloc-family, and zero World base-allocator growth
   after explicit preparation or the implicit first step; Bullet/ODE gates are
   scoped to the World base allocator because backend-internal allocations are
   outside DART ownership. Merged #3307 (`b6e6a0d8778`) extended the allocation
   discipline to soft/deformable paths and carried the required #3307-style
   performance report: strict zero-regression checker PASS on
-  `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, native
+  `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, `dart`
   DART winning every checksum-equivalent soft-scene/thread row against FCL, and
   strict soft allocation gates reporting zero `operator new`, zero raw
   `malloc`, and zero counted allocator growth where available. Local

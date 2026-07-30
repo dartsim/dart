@@ -6,29 +6,16 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
 
-### PLAN-620: Dependency Minimization And Native Collision
-
-- Owner doc: [dependency minimization](../dev_tasks/dart6_dependency_minimization/README.md)
-- Status: Planning / maintainer decision
-- Horizon: Later release
-- Dimension: Compatibility, dependency footprint, and downstream support.
-- Next step: Ratify the Phase 5 ODE-facade versus coordinated gz-physics choice
-  and the target later-release sequence. The DART 6.20 consolidation is merged;
-  do not continue the port or implement the default flip on `release-6.20`.
-- Gate: `pixi run lint`; default configure/build; component/package smoke for
-  touched dependencies; `pixi run -e gazebo test-gz` when collision,
-  constraint, package, or default-solver behavior can affect gz-physics.
-
 ### PLAN-621: Active Contact Performance Generalization
 
 - Owner doc: [performance generalization](../dev_tasks/dart6_performance_generalization/README.md)
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: #3353 (WP-PG.15/D7) and #3361 (WP-PG.14/D3) are merged. Refresh
-  the WS-G cross-engine and native-collision evidence on the current
-  `release-6.20` base, then select the next measured gap without retiring the
-  task while #3056 remains open.
+- Next step: Re-baseline the WS-G cross-engine matrix and `dart` detector
+  rows on the current merged base, then use that evidence to select one
+  consolidated implementation gap or the closeout route. Keep the task active
+  while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`
@@ -51,17 +38,31 @@ Priority order is document order. Active implementation handoff remains in
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: #3382 merged as `6c88ac1d774`, and #3407 merged as
-  `2ffe228c14c`, removing the volumetric FEM subsystem from DART 6. Continue the
-  Jain/Liu lane with PR-3a soft-foot SIMBICON, which reuses the existing
-  `atlas_simbicon` controller and soft-feet Atlas asset
-  (`12-pr3a-soft-foot-simbicon.md`). **Do not restart M2.x on
-  `release-6.20`.** Still open: the competitive-envelope definition, the
-  four-link flexible-foot comparison, WP-DB.07 scaling, WP-DB.08
-  native-owned/default coverage, a valid `bm-soft-body-paired` artifact or an
+- Next step: continue the Jain/Liu lane on DART 6 with PR-3a soft-foot
+  SIMBICON, which reuses the existing
+  `atlas_simbicon` controller and the soft-feet Atlas asset
+  (`12-pr3a-soft-foot-simbicon.md`). **Do not restart the volumetric FEM
+  subsystem on `release-6.20`.** Still open: the competitive-envelope
+  definition, the four-link flexible-foot comparison, WP-DB.07 scaling,
+  WP-DB.08 DART-owned/pre-default coverage, a valid `bm-soft-body-paired`
+  artifact or an
   approved disposition, and the separate `main` PR for the zero-DoF soft
   point-mass assertion. New GUI examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
   multi-thread determinism/scaling evidence; allocation gates and Gazebo
   coverage before any collision, constraint, or backend-default change.
+
+### PLAN-620: Dependency Minimization And Collision Backends
+
+- Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)
+- Status: Parked
+- Horizon: Parked
+- Dimension: Compatibility, dependency footprint, and downstream support.
+- Next step: Wait for an explicitly authorized future release line and
+  milestone before proposing the default flip. DART 6.20 stops with
+  `DARTCollisionDetector` selected by `"dart"` while FCL remains the default
+  and a core dependency.
+- Gate: `pixi run lint`; default configure/build; component/package smoke for
+  touched dependencies; `pixi run -e gazebo test-gz` when collision,
+  constraint, package, or default-solver behavior can affect gz-physics.

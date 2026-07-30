@@ -1,102 +1,58 @@
-# Handoff - DART 6 deformable body performance
+# Handoff - DART 6 deformable body feature and performance
 
-Updated: 2026-07-29
+Updated: 2026-07-30
 
-This is the historical takeover summary for PR #3382 stabilization. #3382
-merged into `release-6.20` as `6c88ac1d774`; do not resume the checkout or
-takeover order below. `RESUME.md` owns the current post-merge order, and
-`06-pr-evidence.md` owns detailed historical evidence.
+## Status
 
-## Packet contract
+The representative DART 6 deformable-body performance and soft-contact slice
+is merged:
 
-**Goal:** publish and stabilize the current representative deformable-body
-release slice with review findings fixed, exact-head gates honest, demos
-integrated into `dart-demos`, and DART 6 compatibility preserved.
+- #3382 merged as `6c88ac1d774a702b494643fb598be6b8af9385e1`;
+- #3381 established the single built-in `dart` collision detector;
+- #3407 removed the out-of-scope volumetric-FEM subsystem from DART 6.
 
-**Done for this PR-maintenance packet when:** the local base merge, Windows test
-calibration, and detector ABI repair are published, the resulting exact head
-has clean automated review and required CI, and remaining PLAN-622 work stays
-explicit.
+PLAN-622 remains active for the Jain/Liu point-mass surface model. Do not
+resume any branch used by the merged work.
 
-Landing #3382 does not complete the broader deformable-body objective.
+## Durable owners
 
-## Historical checkout
+- Architecture and compatibility:
+  `docs/design/dart6_deformable_body.md`
+- Paper targets:
+  `docs/background/deformable_body_paper_targets.md`
+- Current priority and gates:
+  `docs/plans/dashboard.md`
+- Active packet:
+  `docs/dev_tasks/dart6_deformable_body_performance/12-pr3a-soft-foot-simbicon.md`
+- Accepted merged-slice verification:
+  `docs/dev_tasks/dart6_deformable_body_performance/verification.md`
 
-```text
-worktree  /home/js/dev/dartsim/dart/task_2
-branch    wp-db-native-soft-fallback
-published 05d9de6e3fb
-base      75306efe770
-merge     834a2548fd9
-calibrate 50a254e7e56
-ABI fix   9a6796596bc
-PR        https://github.com/dartsim/dart/pull/3382
-```
+## Exact next action
 
-`wp-db-soft-skel-allocation-gates` is fully incorporated. Do not resume it.
+Implement PR-3a soft-foot SIMBICON from a fresh non-tracking topic branch
+based on the explicitly authorized release tip. Reuse the existing
+`atlas_simbicon` controller and soft-feet Atlas asset. Keep the scene in
+`dart-demos`; do not add a standalone GUI executable.
 
-## Historical evidence
+## Open acceptance work
 
-Published head `05d9de6e3fb` includes the base merge, Windows calibration, and
-task-evidence refresh. Its exact-head API docs, Windows Release, gz-physics,
-AVX, and both Read the Docs checks had passed at the last refresh; additional
-hosted matrix jobs were running or queued with no CI failure reported.
-The fresh Codex review found one top-level P1 ABI issue, now addressed locally.
-There is no inline thread to resolve and no reply should be posted to the bot.
+- Define and approve the competitive implementation envelope.
+- Complete the four-link flexible rigid-foot versus deformable-foot
+  comparison.
+- Resolve WP-DB.07 multicore scaling with representative evidence or an
+  explicit negative disposition.
+- Complete the `dart` detector coverage, allocation, determinism, and
+  same-host performance gates required before any default proposal.
+- Produce a complete `bm-soft-body-paired` artifact or record an approved
+  disposition.
+- Land the zero-DoF soft point-mass assertion fix separately on `main`.
 
-The earlier `b172b2ee1db` Codecov baseline passed: patch `94.34783%` with 143
-uncovered changed lines; project `75.17%` versus `73.90%` (reported `+1.26`
-percentage points).
+## Guardrails
 
-At `b172b2ee1db`, Windows Release was the only failure. It completed 150/151
-tests and failed only
-`SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth` in the
-legacy-FCL `default adaptive` lane: `0.12115883267368355` m maximum per-step CoP
-motion exceeded the former `0.11` m bound.
-
-The local candidate merges `origin/release-6.20@75306efe770` through
-`834a2548fd9`; the merge applied cleanly. Test-only commit `50a254e7e56` sets
-the legacy-FCL cap to `0.13` m, just above one `0.125` m surface-mesh interval.
-The native cap remains `0.02` m and all force, support, spike, finite-state, and
-per-step guards remain. Local evidence is 20/20 focused repeats, 25/25
-`test_SoftDynamics`, 292/292 no-cache Release build steps, 154/154 full C++
-tests, and two clean independent reviews. Downstream verification passed
-gz-physics 199/199 tests plus 4/4 performance checks and the selected gz-sim
-headless integration smoke 1/1. The test calibration changes no runtime
-behavior, API, ABI, or default simulation behavior. Hosted exact-head Windows
-remains required after the next push.
-
-Commit `9a6796596bc` restores the released `DARTCollisionDetector` object layout
-by moving its thread-pool/count state behind the existing base-class
-collision-object-manager pointer. It also moves the soft-contact flag into that
-same owned manager, keeps pool lifetime stable across concurrent resize, and
-adds compile-time size/alignment guards. Post-fix evidence is a no-cache focused
-build; 22/22 detector, 52/52 collision, and 4/4 derived-detector tests; a 20/20
-exact-v6.19.4-header ABI canary with legacy/current size 32 bytes; lint; diff
-check; and two clean independent reviews.
-
-The flagship `adaptive_soft_contact` and `soft_worm` examples are integrated as
-`dart-demos` scenes under `examples/demos`; their standalone executables were
-removed and GUI-free model tests preserve the numerical contracts. New GUI
-examples should continue to be integrated into `dart-demos`.
-
-## Remaining blockers beyond the local fix
-
-- No paired benchmark artifact has `COMPLETE.json`; all preflight-only attempts
-  are non-evidence.
-- Competitive-envelope and flexible-foot decisions remain open.
-- WP-DB.07 multicore scaling and WP-DB.08 native-owned/default coverage remain
-  follow-ups.
-- The release zero-DoF point-mass assertion fix still needs a separate `main`
-  PR.
-- PLAN-622 and this task remain active after #3382 stabilization.
-
-## Historical takeover order
-
-1. Re-fetch the base; merge again only if it advanced.
-2. Push the additive commits, update the PR body, and request one fresh
-   top-level `@codex review`.
-3. Monitor exact-head CI through terminal state, using the new Windows job as
-   the calibration proof.
-4. Do not merge or close, force-push, change base, request human review, or
-   delete branches without new explicit approval.
+- Preserve C++17, pybind11, installed DART 6 APIs, ABI-sensitive layouts,
+  default simulation behavior, and Gazebo/gz-physics compatibility.
+- Keep adaptive contact activation and soft face-interior coverage opt-in
+  unless a separately approved packet changes their defaults.
+- Do not restart the volumetric-FEM subsystem on `release-6.20`.
+- Do not propose making `dart` the default collision detector from this task
+  without satisfying the durable pre-default contract.

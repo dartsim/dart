@@ -12,7 +12,7 @@ ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-f
 ```
 
 Result: `test_SoftDynamics` passed locally after the final-state comparison
-gate was added. A follow-up native-detector slice extended the same finite-state
+gate was added. A follow-up DART-detector slice extended the same finite-state
 gate to run under both the default collision detector and
 `CollisionDetectorType::Dart`; the focused CTest repeat passed locally in
 0.11 seconds.
@@ -20,7 +20,7 @@ gate to run under both the default collision detector and
 ## Coverage
 
 `tests/integration/test_SoftDynamics.cpp` now loads and steps these SKEL soft
-scenes with the default detector and the native DART detector. Each detector
+scenes with the default detector and the built-in `dart` detector. Each detector
 configuration runs both `World::setNumSimulationThreads(1)` and
 `World::setNumSimulationThreads(4)`:
 
@@ -52,7 +52,7 @@ relative tolerance of `1e-12`. The compared state includes skeleton positions
 and velocities plus each point mass's local position, local velocity, and world
 position. This turns the threaded-world coverage into a deterministic
 final-state regression check instead of only proving that both runs stayed
-finite, and it now proves the representative finite-state gate for the native
+finite, and it now proves the representative finite-state gate for the `dart`
 soft collision backend.
 
 ## Fixture cleanup
@@ -74,8 +74,8 @@ The final #3382 test surface extends the original finite-state/thread gate with:
   never-lost-support minimum, and bounds isolated spikes explicitly;
 - `SoftDynamicsTest.softContactForcesAreRobustToLcpInitialPoint`, the available
   DART 6 reset/rebuild proxy because there is no public LCP initial-guess hook;
-- deterministic 2000-step headless checksum rows at 1 and 16 threads, recorded
-  in `06-pr-evidence.md`;
+- deterministic 2000-step headless checksum rows at 1 and 16 threads, accepted
+  with merged PR #3382 and summarized in `verification.md`;
 - the WP-DB.04 matrix/vector and retained-point-acceleration independence gates
   in `07-equation-correctness.md`.
 
