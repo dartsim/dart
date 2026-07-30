@@ -149,16 +149,22 @@ DemoScene makeSoftFootSimbiconScene()
     setup.keyActions.push_back(KeyAction{'f', "Push right (-Z)", [push] {
                                            push(0.0, -1.0);
                                          }});
-    setup.keyActions.push_back(KeyAction{'r', "Reset biped", [state] {
-                                           sfs::resetModel(state->model);
-                                           state->finite = true;
-                                         }});
+    // Two different resets exist here and they are not interchangeable. This
+    // one restarts the biped inside the running world, which cannot swap the
+    // foot geometry because that means loading a different SDF. The host's
+    // Reset/Rebuild buttons re-run this factory and build a new World, which
+    // is what actually applies a pending feet selection. The labels say so.
     setup.keyActions.push_back(
-        KeyAction{'t', "Toggle feet (applies on Reset)", [feetSelection] {
-                    *feetSelection = (*feetSelection == sfs::Feet::Soft)
-                                         ? sfs::Feet::Rigid
-                                         : sfs::Feet::Soft;
+        KeyAction{'r', "Restart biped (keeps current feet)", [state] {
+                    sfs::resetModel(state->model);
+                    state->finite = true;
                   }});
+    setup.keyActions.push_back(KeyAction{
+        't', "Toggle feet (applies on host Reset/Rebuild)", [feetSelection] {
+          *feetSelection = (*feetSelection == sfs::Feet::Soft)
+                               ? sfs::Feet::Rigid
+                               : sfs::Feet::Soft;
+        }});
 
     setup.renderPanel = [state, feetSelection] {
       const auto& model = state->model;
@@ -166,7 +172,7 @@ DemoScene makeSoftFootSimbiconScene()
       if (*feetSelection != model.feet) {
         ImGui::TextColored(
             ImVec4(1.0f, 0.80f, 0.25f, 1.0f),
-            "Pending: %s -- press Reset/Rebuild to apply",
+            "Pending: %s -- press the host's Reset or Rebuild to apply",
             feetLabel(*feetSelection));
       }
 
@@ -192,11 +198,11 @@ DemoScene makeSoftFootSimbiconScene()
       ImGui::Separator();
       ImGui::TextWrapped(
           "a/s push the pelvis forward/back, d/f push left/right (%.0f N for "
-          "%d "
-          "steps). 't' toggles rigid/soft feet (takes effect on Reset). 'r' "
-          "resets the biped. Compare the two: soft feet spread more contact "
-          "points, and recover from a push at least as large as the rigid "
-          "feet do (Jain/Liu 2011).",
+          "%d steps). 'r' restarts the biped in place, keeping the current "
+          "feet. 't' selects the other foot geometry, which needs a new world "
+          "and so takes effect on the host's Reset or Rebuild. Compare the "
+          "two: soft feet spread more contact points, and recover from a push "
+          "at least as large as the rigid feet do (Jain/Liu 2011).",
           sfs::kDefaultPushMagnitude,
           sfs::kPushSteps);
     };
