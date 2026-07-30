@@ -724,7 +724,8 @@ TEST(DARTCollisionDetector, ParallelQueriesSerializeCollisionFilterCallbacks)
 }
 
 //==============================================================================
-TEST(DARTCollisionDetector, ParallelTwoGroupFiltersMatchSerialCartesianCoverage)
+TEST(
+    DARTCollisionDetector, ParallelTwoGroupFiltersMatchSerialBroadPhaseCoverage)
 {
   constexpr std::size_t kGroupSize = 8u;
   auto detector = collision::DARTCollisionDetector::create();
@@ -738,7 +739,7 @@ TEST(DARTCollisionDetector, ParallelTwoGroupFiltersMatchSerialCartesianCoverage)
     frame1->setShape(std::make_shared<dynamics::SphereShape>(0.25));
     frame2->setShape(std::make_shared<dynamics::SphereShape>(0.25));
     frame1->setTranslation(Eigen::Vector3d(2.0 * i, 0.0, 0.0));
-    frame2->setTranslation(Eigen::Vector3d(2.0 * i, 10.0, 0.0));
+    frame2->setTranslation(Eigen::Vector3d(2.0 * i, 0.0, 0.0));
     group1->addShapeFrame(frame1.get());
     group2->addShapeFrame(frame2.get());
     frames.push_back(frame1);
@@ -749,17 +750,18 @@ TEST(DARTCollisionDetector, ParallelTwoGroupFiltersMatchSerialCartesianCoverage)
   collision::CollisionOption serialOption(true, 10u, serialFilter);
   detector->setNumCollisionThreads(1u);
   collision::CollisionResult serialResult;
-  EXPECT_FALSE(group1->collide(group2.get(), serialOption, &serialResult));
+  EXPECT_TRUE(group1->collide(group2.get(), serialOption, &serialResult));
+  EXPECT_EQ(serialResult.getNumContacts(), kGroupSize);
 
   auto parallelFilter = std::make_shared<ThreadRecordingCollisionFilter>();
   collision::CollisionOption parallelOption(true, 10u, parallelFilter);
   detector->setNumCollisionThreads(4u);
   collision::CollisionResult parallelResult;
-  EXPECT_FALSE(group1->collide(group2.get(), parallelOption, &parallelResult));
+  EXPECT_TRUE(group1->collide(group2.get(), parallelOption, &parallelResult));
+  EXPECT_EQ(parallelResult.getNumContacts(), kGroupSize);
 
-  constexpr std::size_t kExpectedChecks = kGroupSize * kGroupSize;
-  EXPECT_EQ(serialFilter->getNumChecks(), kExpectedChecks);
-  EXPECT_EQ(parallelFilter->getNumChecks(), kExpectedChecks);
+  EXPECT_EQ(serialFilter->getNumChecks(), kGroupSize);
+  EXPECT_EQ(parallelFilter->getNumChecks(), kGroupSize);
   EXPECT_EQ(parallelFilter->getNumThreads(), 1u);
 }
 

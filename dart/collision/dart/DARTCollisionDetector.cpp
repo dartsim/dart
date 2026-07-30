@@ -1044,6 +1044,14 @@ bool processNativePair(
 }
 
 //==============================================================================
+bool objectAabbsOverlap(
+    const DARTCollisionObject* object1, const DARTCollisionObject* object2)
+{
+  return detail::DARTCollisionObjectAccessor::getAabb(object1).overlaps(
+      detail::DARTCollisionObjectAccessor::getAabb(object2));
+}
+
+//==============================================================================
 bool processNativePairsInParallel(
     const std::vector<ParallelObjectPair>& pairs,
     const CollisionOption& option,
@@ -1710,17 +1718,14 @@ bool DARTCollisionDetector::collide(
       for (auto* object2 : nativeGroup2->mCollisionObjects) {
         auto* dartObject1 = static_cast<DARTCollisionObject*>(object1);
         auto* dartObject2 = static_cast<DARTCollisionObject*>(object2);
+        if (!objectAabbsOverlap(dartObject1, dartObject2))
+          continue;
+
         bool eligibilityChecked = false;
         if (option.collisionFilter) {
           if (shouldSkipPair(dartObject1, dartObject2, option))
             continue;
           eligibilityChecked = true;
-        }
-
-        if (!detail::DARTCollisionObjectAccessor::getAabb(dartObject1)
-                 .overlaps(detail::DARTCollisionObjectAccessor::getAabb(
-                     dartObject2))) {
-          continue;
         }
 
         objectPairs.emplace_back(dartObject1, dartObject2, eligibilityChecked);
@@ -1763,9 +1768,14 @@ bool DARTCollisionDetector::collide(
 
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
+      auto* dartObject1 = static_cast<DARTCollisionObject*>(object1);
+      auto* dartObject2 = static_cast<DARTCollisionObject*>(object2);
+      if (!objectAabbsOverlap(dartObject1, dartObject2))
+        continue;
+
       if (processNativePair(
-              static_cast<DARTCollisionObject*>(object1),
-              static_cast<DARTCollisionObject*>(object2),
+              dartObject1,
+              dartObject2,
               option,
               enableSoftFaceInteriorContacts,
               result,

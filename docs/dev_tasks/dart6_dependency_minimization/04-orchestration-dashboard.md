@@ -145,12 +145,16 @@
   exact-head P2 about old inline destructors was fixed at `af2ac200e26` with a
   released-layout lifetime owner, a direct regression, and refreshed
   `32/376/320` canaries. Fresh review `4814689190` of that head found a separate
-  race in the four one-time shape-warning sets. The current implementation-only
-  candidate uses one mutex-protected registry and adds an eight-thread
-  all-category regression. Its 43/43 Release and assertions-enabled engine
-  tests, fresh no-cache 155-test C++, 223-test dartpy, and `199 + 4 + 1`
-  Gazebo gates pass; publication, hosted artifact inspection, and another
-  fresh current-head review are still pending.
+  race in the four one-time shape-warning sets; that correction was published
+  at `2f2d45d99da` with an eight-thread all-category regression. Fresh review
+  `4814842827` then found that single-thread two-group queries missed the
+  parallel path's AABB rejection. The current candidate restores rejection
+  before filters and narrowphase in both paths and verifies eight isolated
+  cross-group overlaps visit eight candidates rather than all 64 Cartesian
+  pairs. Its focused Release and assertions-enabled detector targets, fresh
+  no-cache 155-test C++, 223-test dartpy, and `199 + 4 + 1` Gazebo gates pass;
+  publication, hosted artifact inspection, and another fresh current-head
+  review are still pending.
   **Merge is the maintainer's**.
 - **Phase 4** — #3362, #3364, and #3368 are merged; the remaining measured
   gaps were superseded by the consolidation and the documented S6 acceptance

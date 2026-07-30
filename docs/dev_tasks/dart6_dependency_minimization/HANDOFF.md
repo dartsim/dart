@@ -201,10 +201,17 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   `af2ac200e26`; the review thread is resolved. Its `32/376/320` mixed-header
   canaries pass 20/20 and the private test accessor is absent from the install.
   Fresh Codex review `4814689190` of `af2ac200e26` found a separate race in the
-  four one-time shape-warning sets. The current implementation-only candidate
+  four one-time shape-warning sets. The implementation-only correction
   synchronizes every warning category behind one registry mutex without
   locking supported-shape paths and adds an eight-thread regression covering
   all categories. The full 43-test engine target passes in Release and
+  assertions-enabled builds. It was published as `2f2d45d99da`, and its thread
+  is resolved. Fresh Codex review `4814842827` of that head found the
+  single-thread two-group path missing the parallel path's AABB rejection. The
+  current candidate rejects disjoint pairs before filters and narrowphase in
+  both paths, matching the released ordering; its regression proves eight
+  isolated cross-group overlaps visit eight candidates rather than all 64
+  Cartesian pairs. The focused detector target passes in Release and
   assertions-enabled builds. Fresh no-cache gates pass all 155 C++ tests, all
   223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
   gz-physics performance/symbol checks, and the gz-sim entity-system

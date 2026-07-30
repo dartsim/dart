@@ -76,16 +76,26 @@ a downstream-style object subclass, and a shape swap. It was published as
 
 Fresh Codex review `4814689190` of that exact head then found one further P2:
 the four function-local one-time shape-warning sets could race when independent
-worlds converted unsupported or malformed shapes concurrently. The current
-candidate routes all four warning categories through one mutex-protected
+worlds converted unsupported or malformed shapes concurrently. The correction
+routes all four warning categories through one mutex-protected
 registry while leaving supported-shape paths lock-free, and adds an eight-thread
 regression that repeatedly exercises every warning category. The complete
 43-test consolidated-engine target passes in Release and assertions-enabled
-builds. Fresh no-cache gates also pass all 155 C++ tests, all 223 dartpy tests,
-lint/check-lint, all 199 gz-physics tests, all four gz-physics
-performance/symbol checks, and the gz-sim entity-system integration test. This
-implementation-only correction changes no header or ABI surface. It remains
-candidate evidence until publication; exact-head hosted CI, artifact
+builds. It was published as `2f2d45d99da`, and its review thread was resolved.
+
+Fresh Codex review `4814842827` of that exact head found another P2: the
+single-thread two-group Cartesian walk sent disjoint pairs to narrowphase
+without the AABB rejection already present in the parallel branch. The current
+candidate rejects disjoint pairs before collision filters and narrowphase in
+both paths, matching the released detector's broadphase ordering. Its
+regression constructs eight isolated cross-group overlaps and verifies that
+serial and parallel queries both visit exactly eight candidates rather than all
+64 Cartesian pairs. The focused detector target passes in Release and
+assertions-enabled builds. Fresh no-cache gates also pass all 155 C++ tests,
+all 223 dartpy tests, lint/check-lint, all 199 gz-physics tests, all four
+gz-physics performance/symbol checks, and the gz-sim entity-system integration
+test. This implementation-only correction changes no header or ABI surface. It
+remains candidate evidence until publication; exact-head hosted CI, artifact
 inspection, and fresh Codex review remain mandatory.
 
 **Phase 0 is captured and recaptured on the current base.** The baseline packet lives in
