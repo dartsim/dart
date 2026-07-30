@@ -968,7 +968,8 @@ def acquire_benchmark_lock(root: Path, revision_sha: str):
     if not common_dir.is_absolute():
         common_dir = (root / common_dir).resolve()
     lock_path = common_dir / "dart-soft-body-benchmark.lock"
-    stream = lock_path.open("a+b")
+    lock_path.touch(exist_ok=True)
+    stream = lock_path.open("r+b")
     try:
         _acquire_file_lock(stream)
     except BlockingIOError:

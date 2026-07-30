@@ -85,8 +85,10 @@ def test_benchmark_lock_records_owner_and_releases_on_close(tmp_path, monkeypatc
         lambda _root, *_args: str(common_dir),
     )
     revision = "a" * 40
+    lock_path = common_dir / "dart-soft-body-benchmark.lock"
+    lock_path.write_text("stale metadata that must be replaced\n", encoding="utf-8")
 
-    stream, lock_path = runner.acquire_benchmark_lock(tmp_path, revision)
+    stream, acquired_path = runner.acquire_benchmark_lock(tmp_path, revision)
     try:
         stream.seek(0)
         owner = json.loads(stream.read().decode())
@@ -99,8 +101,13 @@ def test_benchmark_lock_records_owner_and_releases_on_close(tmp_path, monkeypatc
         stream.close()
 
     replacement, replacement_path = runner.acquire_benchmark_lock(tmp_path, revision)
-    replacement.close()
-    assert replacement_path == lock_path
+    try:
+        replacement.seek(0)
+        replacement_owner = json.loads(replacement.read().decode())
+        assert replacement_owner["revision"] == revision
+    finally:
+        replacement.close()
+    assert acquired_path == replacement_path == lock_path
 
 
 def _write_run(
