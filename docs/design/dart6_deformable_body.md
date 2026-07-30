@@ -121,20 +121,35 @@ assumed speedup.
 
 ## Paper-scope decisions
 
-The DART 6 point-mass surface model is close to the Jain/Liu contact model but
-is not the reduced volumetric FEM model used by Kim and Pollard. The approved
-release-slice deferrals are:
+DART 6 carries **one** deformable model: the point-mass surface flesh of
+`SoftBodyNode`, which is close to the Jain/Liu contact model. This section is the
+durable owner of that scope; it supersedes the 2026-07-11 deferral list that
+previously appeared here.
 
-- Kim/Pollard paper-scale volumetric-FEM characters: Fatman, starfish
-  (including obstacle escape), fish, and worm;
-- Jain/Liu SIMBICON/controller rows: biped push recovery, noisy floor, and
-  biped walking; and
-- Jain/Liu hand scenes: finger flick, arm fold, and pinch grasp.
+**Kim/Pollard is out of scope for DART 6 (decided 2026-07-29).** Their reduced
+volumetric FEM over tetrahedra with an embedded surface cannot be expressed in
+the point-mass model, so supporting it required a second, parallel deformable
+architecture beside `SoftBodyNode`. A compatibility release branch should not
+carry two deformable architectures, and the subsystem that briefly existed here
+needed uninstalled headers, absence from the generated aggregate, and a Doxygen
+exclusion purely to avoid freezing an unfinished API into 6.20 — symptoms of
+being in the wrong place. The lane is retargeted to DART 7, where the first
+question is whether a reduced FEM in this style is still the right target at all
+given newer solvers such as AVBD. The implementation is preserved in the
+`wp-db-fem-foundation` and `wp-db-fem-elastic` branches and in #3404. Do not
+restart it on `release-6.20`.
 
-The `soft_worm` and `adaptive_soft_contact` `dart-demos` scenes are
-representative reduced evidence. They do not establish full paper-scale parity.
-The Jain/Liu four-link flexible-rigid-foot versus deformable-foot comparison is
-not in the approved deferral list and remains an explicit roadmap decision.
+**The Jain/Liu deferrals were retracted (2026-07-23).** The SIMBICON/controller
+rows (biped push recovery, noisy floor, biped walking) and the hand scenes
+(finger flick, arm fold, pinch grasp) are no longer approved deferrals; they are
+active DART 6 work, as is the four-link flexible-rigid-foot versus deformable-foot
+comparison. They build controllers, models, and scenes on the shipped
+`SoftBodyNode` and adaptive activation rather than adding new dynamics, so they
+fit the compatibility contract.
+
+The `soft_worm` and `adaptive_soft_contact` `dart-demos` scenes remain
+representative reduced evidence and do not by themselves establish paper-scale
+parity.
 
 ## Related owners
 
