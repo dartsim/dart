@@ -111,6 +111,17 @@ std::size_t ContactArrowLayout::sceneFingerprint(
       continue;
     fingerprint = fingerprint * 131 + skeleton->getNumBodyNodes();
     fingerprint = fingerprint * 131 + skeleton->getNumDofs();
+
+    // Collidability is part of the fingerprint because it is part of the
+    // scale. The `sleeping` scene launches and reparks a preallocated
+    // projectile pool by toggling setCollidable() and moving the bodies,
+    // without adding or removing anything, so counts alone would never see a
+    // heavy projectile enter or leave play.
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      const auto* body = skeleton->getBodyNode(j);
+      if (body && body->isCollidable())
+        fingerprint = fingerprint * 131 + j + 1;
+    }
   }
   return fingerprint;
 }
@@ -196,10 +207,19 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   // an interactive debugging tool) would poison both the peak below and the
   // arrow mesh vertices, so those contacts are rejected up front. Note that
   // `mag < kNegligibleForce` is false for NaN, hence the allFinite() first.
+  //
+  // The magnitude is checked rather than the components, because a force whose
+  // components are each finite can still overflow to infinity under norm() --
+  // and an infinite reference would normalize that same contact as inf/inf,
+  // putting a NaN in the arrow head and pinning the reference at infinity for
+  // every later step.
   double peakForce = 0.0;
   for (std::size_t i = 0; i < count; ++i) {
-    if (contacts[i].point.allFinite() && contacts[i].force.allFinite())
-      peakForce = std::max(peakForce, contacts[i].force.norm());
+    if (!contacts[i].point.allFinite() || !contacts[i].force.allFinite())
+      continue;
+    const double magnitude = contacts[i].force.norm();
+    if (std::isfinite(magnitude))
+      peakForce = std::max(peakForce, magnitude);
   }
 
   // Track the peak instantly and release it slowly. Rising at once keeps the
@@ -223,7 +243,7 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
       continue;
 
     const double magnitude = force.norm();
-    if (magnitude < kNegligibleForce)
+    if (!std::isfinite(magnitude) || magnitude < kNegligibleForce)
       continue;
 
     const double normalized = std::clamp(magnitude / mReferenceForce, 0.0, 1.0);

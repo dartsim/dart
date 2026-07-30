@@ -469,3 +469,94 @@ TEST(ContactArrowLayoutTest, RefreshesWhenTheSceneGainsBodies)
             << " m  tracked_force_kept=" << layout.getReferenceForce()
             << " N\n";
 }
+
+//==============================================================================
+// The `sleeping` scene launches and reparks a preallocated projectile pool by
+// toggling collidability, without adding or removing any skeleton, body or
+// degree of freedom. A fingerprint built from counts alone would never notice.
+TEST(ContactArrowLayoutTest, RefreshesWhenCollidabilityChanges)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.3, box);
+
+  auto projectile = dart::dynamics::Skeleton::create("projectile");
+  auto* projectileBody
+      = projectile->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  projectileBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.4)));
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(20.0);
+  projectileBody->setInertia(inertia);
+  projectileBody->setCollidable(false);
+
+  Eigen::Vector6d parked = Eigen::Vector6d::Zero();
+  parked.tail<3>() = Eigen::Vector3d(60.0, 60.0, 10.0);
+  projectile->getJoint(0)->setPositions(parked);
+  world->addSkeleton(projectile);
+
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+  const double parkedLength = layout.getReferenceLength();
+
+  // Launch it: same counts, different collidability and position.
+  Eigen::Vector6d launched = Eigen::Vector6d::Zero();
+  launched.tail<3>() = Eigen::Vector3d(1.5, 1.0, 0.0);
+  projectile->getJoint(0)->setPositions(launched);
+  projectileBody->setCollidable(true);
+
+  layout.refreshForWorld(*world);
+  const double activeLength = layout.getReferenceLength();
+  EXPECT_GT(activeLength, parkedLength)
+      << "an active projectile never reached the arrow scale";
+
+  // Repark it and the scale comes back.
+  projectile->getJoint(0)->setPositions(parked);
+  projectileBody->setCollidable(false);
+  layout.refreshForWorld(*world);
+  EXPECT_DOUBLE_EQ(layout.getReferenceLength(), parkedLength)
+      << "reparking the projectile left the arrow scale stretched";
+
+  std::cout << "contact_arrow_collidability  parked=" << parkedLength
+            << " m  launched=" << activeLength
+            << " m  reparked=" << layout.getReferenceLength() << " m\n";
+}
+
+//==============================================================================
+// A force whose components are each finite can still overflow to infinity under
+// norm(). An infinite reference would normalize that contact as inf/inf, put a
+// NaN in the arrow head, and stay infinite for every later step.
+TEST(ContactArrowLayoutTest, RejectsForcesThatOverflowUnderNorm)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.5, box);
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  const double huge = 1e200; // finite, but 3 * huge^2 overflows
+  const std::vector<dart::collision::Contact> contacts = {
+      makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(huge)),
+      makeContact(Eigen::Vector3d::UnitX(), Eigen::Vector3d(0.0, 40.0, 0.0)),
+  };
+  ASSERT_TRUE(Eigen::Vector3d::Constant(huge).allFinite())
+      << "this contact no longer exercises the overflow path";
+  ASSERT_FALSE(std::isfinite(Eigen::Vector3d::Constant(huge).norm()))
+      << "this contact no longer overflows under norm()";
+
+  const auto& arrows = layout.update(contacts, kMaxArrows, kTimeStep);
+  ASSERT_EQ(arrows.size(), 1u) << "the overflowing contact should be dropped";
+  EXPECT_TRUE(arrows[0].head.allFinite());
+  EXPECT_TRUE(std::isfinite(layout.getReferenceForce()));
+
+  // And the reference must not have been poisoned for later steps.
+  const std::vector<dart::collision::Contact> normal
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 40.0, 0.0))};
+  const auto& later = layout.update(normal, kMaxArrows, kTimeStep);
+  ASSERT_EQ(later.size(), 1u);
+  EXPECT_TRUE(later[0].head.allFinite());
+  EXPECT_NEAR(later[0].normalizedMagnitude, 1.0, 1e-12);
+}
