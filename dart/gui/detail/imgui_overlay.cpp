@@ -32,9 +32,7 @@
 
 #include "imgui_overlay.hpp"
 
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
-  #include "imgui_draw_data.hpp"
-#endif
+#include "imgui_draw_data.hpp"
 #include "imgui_material.hpp"
 
 #include <dart/gui/application.hpp>
@@ -43,9 +41,7 @@
 #include <backend/PixelBufferDescriptor.h>
 #include <filament/Camera.h>
 #include <filament/Engine.h>
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
-  #include <filament/Fence.h>
-#endif
+#include <filament/Fence.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
 #include <filament/MaterialInstance.h>
@@ -60,9 +56,7 @@
 #include <imgui_internal.h>
 #include <utils/EntityManager.h>
 
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
-  #include <algorithm>
-#endif
+#include <algorithm>
 #include <filesystem>
 #include <vector>
 
@@ -193,14 +187,11 @@ void updateFontTexture(::filament::Engine& engine, ImGuiOverlay& overlay)
       ::filament::TextureSampler::MagFilter::LINEAR);
   overlay.materialInstance->setParameter(
       "fontTexture", overlay.fontTexture, sampler);
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
   for (auto* materialInstance : overlay.mesh.clipMaterialInstances) {
     materialInstance->setParameter("fontTexture", overlay.fontTexture, sampler);
   }
-#endif
 }
 
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
 void removeOverlayRenderable(
     ::filament::Engine& engine, const OverlayMesh& mesh)
 {
@@ -211,14 +202,11 @@ void removeOverlayRenderable(
     }
   }
 }
-#endif
 
 void destroyOverlayMesh(
     ::filament::Engine& engine, ::filament::Scene* scene, OverlayMesh& mesh)
 {
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
   removeOverlayRenderable(engine, mesh);
-#endif
   if (mesh.entity) {
     if (scene != nullptr) {
       scene->remove(mesh.entity);
@@ -235,17 +223,12 @@ void destroyOverlayMesh(
     engine.destroy(mesh.indexBuffer);
     mesh.indexBuffer = nullptr;
   }
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
   for (auto* materialInstance : mesh.clipMaterialInstances) {
     engine.destroy(materialInstance);
   }
   mesh.clipMaterialInstances.clear();
   mesh.vertexCapacity = 0;
   mesh.indexCapacity = 0;
-#else
-  mesh.vertexCount = 0;
-  mesh.indexCount = 0;
-#endif
 }
 
 } // namespace
@@ -490,9 +473,7 @@ ImGuiOverlay createConfiguredImGuiOverlay(
     ::filament::Engine& engine, float uiScale)
 {
   ImGui::CreateContext();
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
   configureImGuiOverlayRenderer(ImGui::GetIO());
-#endif
 #ifdef IMGUI_HAS_DOCK
   ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
@@ -545,7 +526,6 @@ void updateImGuiOverlay(
       10.0);
   overlay.camera->lookAt({0.0, 0.0, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0, 0.0});
 
-#if defined(DART_GUI_IMGUI_LARGE_DRAW_DATA)
   if (drawData == nullptr || drawData->TotalVtxCount <= 0
       || drawData->TotalIdxCount <= 0) {
     removeOverlayRenderable(engine, overlay.mesh);
@@ -680,101 +660,6 @@ void updateImGuiOverlay(
                 std::min<std::size_t>(commandIndex, 0x7FFFu)));
   }
   builder.build(engine, overlay.mesh.entity);
-#else
-  if (drawData == nullptr || drawData->TotalVtxCount <= 0
-      || drawData->TotalIdxCount <= 0) {
-    destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
-    return;
-  }
-
-  const ImVec2 displayPos = drawData->DisplayPos;
-  std::vector<ImGuiVertex> vertices;
-  std::vector<std::uint32_t> indices;
-  vertices.reserve(static_cast<std::size_t>(drawData->TotalVtxCount));
-  indices.reserve(static_cast<std::size_t>(drawData->TotalIdxCount));
-
-  for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
-    const ImDrawList* commandList = drawData->CmdLists[listIndex];
-    const std::uint32_t vertexBase
-        = static_cast<std::uint32_t>(vertices.size());
-
-    for (const ImDrawVert& vertex : commandList->VtxBuffer) {
-      vertices.push_back(
-          ImGuiVertex{
-              {vertex.pos.x - displayPos.x, vertex.pos.y - displayPos.y, 0.0f},
-              {vertex.uv.x, 1.0f - vertex.uv.y},
-              vertex.col});
-    }
-
-    for (const ImDrawIdx index : commandList->IdxBuffer) {
-      indices.push_back(vertexBase + static_cast<std::uint32_t>(index));
-    }
-  }
-
-  const std::size_t vertexCount = vertices.size();
-  const std::size_t indexCount = indices.size();
-  if (!overlay.mesh.entity || overlay.mesh.vertexCount != vertexCount
-      || overlay.mesh.indexCount != indexCount) {
-    destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
-
-    overlay.mesh.vertexBuffer
-        = ::filament::VertexBuffer::Builder()
-              .vertexCount(vertexCount)
-              .bufferCount(1)
-              .attribute(
-                  ::filament::VertexAttribute::POSITION,
-                  0,
-                  ::filament::VertexBuffer::AttributeType::FLOAT3,
-                  offsetof(ImGuiVertex, position),
-                  sizeof(ImGuiVertex))
-              .attribute(
-                  ::filament::VertexAttribute::UV0,
-                  0,
-                  ::filament::VertexBuffer::AttributeType::FLOAT2,
-                  offsetof(ImGuiVertex, uv),
-                  sizeof(ImGuiVertex))
-              .attribute(
-                  ::filament::VertexAttribute::COLOR,
-                  0,
-                  ::filament::VertexBuffer::AttributeType::UBYTE4,
-                  offsetof(ImGuiVertex, color),
-                  sizeof(ImGuiVertex))
-              .normalized(::filament::VertexAttribute::COLOR)
-              .build(engine);
-
-    overlay.mesh.indexBuffer
-        = ::filament::IndexBuffer::Builder()
-              .indexCount(indexCount)
-              .bufferType(::filament::IndexBuffer::IndexType::UINT)
-              .build(engine);
-
-    overlay.mesh.entity = utils::EntityManager::get().create();
-    ::filament::RenderableManager::Builder(1)
-        .boundingBox(
-            {{0.0f, 0.0f, -1.0f},
-             {static_cast<float>(width), static_cast<float>(height), 1.0f}})
-        .material(0, overlay.materialInstance)
-        .geometry(
-            0,
-            ::filament::RenderableManager::PrimitiveType::TRIANGLES,
-            overlay.mesh.vertexBuffer,
-            overlay.mesh.indexBuffer,
-            0,
-            indexCount)
-        .culling(false)
-        .castShadows(false)
-        .receiveShadows(false)
-        .build(engine, overlay.mesh.entity);
-    overlay.scene->addEntity(overlay.mesh.entity);
-    overlay.mesh.vertexCount = vertexCount;
-    overlay.mesh.indexCount = indexCount;
-  }
-
-  overlay.mesh.vertexBuffer->setBufferAt(
-      engine, 0, makeBufferDescriptor(std::move(vertices)));
-  overlay.mesh.indexBuffer->setBuffer(
-      engine, makeBufferDescriptor(std::move(indices)));
-#endif
 }
 
 void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay)

@@ -285,8 +285,11 @@ tooltips; the private ImGui implementation owns responsive sizing, drawing, and
 hover hit testing. A block grid does not by itself establish byte size, address
 order, or physical adjacency.
 
-The diagnostics-enabled Filament ImGui adapter must preserve each `ImDrawCmd`
-vertex offset, index range, clip rectangle, and blend order. Advertise
+The Filament ImGui adapter must preserve each `ImDrawCmd`
+vertex offset, index range, clip rectangle, and blend order. This is
+unconditional: a 16-bit `ImDrawIdx` draw list wraps past 65,535 vertices and a
+dropped clip rectangle leaks scrolled-off geometry in any dense panel, not only
+in diagnostics builds. Advertise
 `ImGuiBackendFlags_RendererHasVtxOffset`, flatten 16-bit draw-list indices into
 the adapter's 32-bit index buffer, and emit a scissored Filament primitive per
 visible command. Keep vertex and index buffers grow-only across frames; fence
