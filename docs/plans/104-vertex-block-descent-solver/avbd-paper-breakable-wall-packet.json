@@ -10,18 +10,18 @@
       "mhz_per_cpu": 5300,
       "num_cpus": 32
     },
-    "json_sha256": "12d758d44ff8e79812b23f27fd98b227e9814d9b0da7ba5dc3339b5cc527230d",
+    "json_sha256": "d5aa41fe4ae4c2bbcfe23b12c87b031d4ec839123e5e104cbdfd3401a52ccbb9",
     "rows": [
       {
         "aggregate_name": "mean",
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 7910242.160000001,
+        "cpu_time": 7434849.3500000015,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 7910501.326696249,
+        "real_time": 7436581.405102817,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -43,11 +43,11 @@
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 7739033.116666669,
+        "cpu_time": 7467247.275000003,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 7739176.074877227,
+        "real_time": 7467605.933440305,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -67,9 +67,9 @@
       {
         "aggregate_name": "stddev",
         "aggregate_unit": "time",
-        "cpu_time": 577236.8155847522,
+        "cpu_time": 352941.77407079434,
         "iterations": 5,
-        "real_time": 577272.751319648,
+        "real_time": 353435.6344223652,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -78,9 +78,9 @@
       {
         "aggregate_name": "cv",
         "aggregate_unit": "percentage",
-        "cpu_time": 0.07297334315549603,
+        "cpu_time": 0.047471274461101796,
         "iterations": 5,
-        "real_time": 0.07297549516507583,
+        "real_time": 0.04752662751460576,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -89,15 +89,15 @@
     ],
     "scene_spec_fingerprint": "2a746821cc10faee",
     "stability": {
-      "cpu_time_cv_fraction": 0.07297334315549603,
-      "real_time_cv_fraction": 0.07297549516507583,
+      "cpu_time_cv_fraction": 0.047471274461101796,
+      "real_time_cv_fraction": 0.04752662751460576,
       "repetitions": 5
     },
     "timing": {
-      "mean_cpu_time_per_step_ns": 7910242.160000001,
-      "mean_real_time_per_step_ns": 7910501.326696249,
-      "median_cpu_time_per_step_ns": 7739033.116666669,
-      "median_real_time_per_step_ns": 7739176.074877227
+      "mean_cpu_time_per_step_ns": 7434849.3500000015,
+      "mean_real_time_per_step_ns": 7436581.405102817,
+      "median_cpu_time_per_step_ns": 7467247.275000003,
+      "median_real_time_per_step_ns": 7467605.933440305
     }
   },
   "claim_boundary": "This packet covers the AVBD row of the publication-shaped Figure 13 breakable-wall outcome on the public CPU solver family. It does not claim exact source-scene replay, reproduce the Sequential Impulse, XPBD, and VBD comparison rows, or establish public CUDA AVBD parity.",
@@ -195,7 +195,7 @@
   "schema_version": 3,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "0140f32ad7f646daa25294149019a8725aecd79b65144e74807dead374b4c1e3",
+    "digest": "ab55ac1c20fdcd75e0d29bced2f62b37fb8b9f56ae68dffb64ec70ac3eff38ab",
     "files": [
       {
         "path": "dart/gui/view_quality.cpp",
@@ -207,27 +207,27 @@
       },
       {
         "path": "dart/simulation/world.cpp",
-        "sha256": "59a99eb21aee1784822b3b6dae6b5589ae7183370d24f705e25484c77f1c7147"
+        "sha256": "df7b4d1dfb4140190a43e65f0dc6d46e8121b489bda796f65afb77dac190bf50"
       },
       {
         "path": "dart/simulation/world.hpp",
-        "sha256": "5f3c436978f16b7dc6c8b3a52e89a3fe48c5a582be92f43993115ccc61fd8892"
+        "sha256": "a95470a832553e59a19b8a25f38e524e1f449d17a65d31c3185969d2275323da"
       },
       {
         "path": "dart/simulation/world_options.hpp",
-        "sha256": "cc7b41f9e5a92246030b61cac336ea3bcdc43b9aba63e85826637af82f368e60"
+        "sha256": "6306b5aa84cc523d8edde96385cbba5a6b461e26f4eb8fdba9e659d704756b88"
       },
       {
         "path": "dart/simulation/compute/rigid_body_contact_stage.cpp",
-        "sha256": "a2c65b3ab955e697dfba7d051f0510c0913316bd2931370fe8e62b034b2b6177"
+        "sha256": "125a7d11510749db22d28d3b9dfe08888aeb31b8711238e4ff81c90dca5559ff"
       },
       {
         "path": "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
-        "sha256": "10c567c477222bd424d5c14ead3bc95d71dbcf539550f1276d822f5b62615e75"
+        "sha256": "36b8f2ba77e45f0ad54d6ca0baf9ddf929264f5697b70040c3165f427d029a79"
       },
       {
         "path": "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
-        "sha256": "ff12a847e74af8bec0c06136b90dce10d8d1d388d1683209bc0dc0c32f4fa8de"
+        "sha256": "1184d6f71fd9705bd03760cefdf6e471f3c0ff0d73c4886f7014ff8812ae0ced"
       },
       {
         "path": "python/dartpy/_view_quality.py",
@@ -235,15 +235,19 @@
       },
       {
         "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
-        "sha256": "3af171d6ec13e397e797a2c6182956b03ea872d2194d92f0c5b52ff7a1438fac"
+        "sha256": "bb418854c79e6a2f5ca3d01059c9ce94ae0f135b9acecb46e2a46d34bfd5ebac"
       },
       {
         "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
-        "sha256": "8846b0782f3f624babccba7be746f1689071f271cc1412880e7ed9623de2d723"
+        "sha256": "24e5a9658898806ab9cfa0d765076884630c8cb100a52cf168d53e91a4ade01f"
+      },
+      {
+        "path": "scripts/avbd_packet_schema.py",
+        "sha256": "f3bb031ca321abea4a49d8fc1392f33dfffca482c6797618f94f680f3543c04b"
       },
       {
         "path": "scripts/write_avbd_paper_breakable_wall_packet.py",
-        "sha256": "c467d3ab290e6083a32dabdbff52c6cc7871b3a9ab643645f325f3a5819281b0"
+        "sha256": "4d2b0938a2bc98f7ac2740bb20ee5b02721039d0c388997e4e090ff2dc50220e"
       }
     ]
   },

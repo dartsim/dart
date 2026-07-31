@@ -978,9 +978,10 @@ constructor keywords rather than a bound `sx.WorldOptions` object. If Python
 later gains `sx.WorldOptions`, it should preserve the same field names and
 validation behavior as those constructor keywords.
 
-For supported free-rigid AVBD contact and pair constraints, callers select
-`sx.RigidBodySolver.AVBD` and a positive
-`sx.RigidConstraintOptions(iterations=...)` budget. That family owns its
+For supported free-rigid contact and pair constraints, callers select either
+the fixed-penalty `sx.RigidBodySolver.VBD` family or the augmented-Lagrangian
+`sx.RigidBodySolver.AVBD` family and provide a positive
+`sx.RigidConstraintOptions(iterations=...)` budget. Each family owns its
 contact formulation and rejects an incompatible
 `sx.ContactSolverMethod.BOXED_LCP` selection instead of falling back.
 The budget applies only while the split rigid constraint stage is active.

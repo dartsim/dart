@@ -482,8 +482,18 @@ outside and total wall fractions, finite state, and the exact public solver iden
 frame-60/frame-120 renders passed machine pixel-integrity and native semantic
 review against the pinned paper page. The five-repeat Release benchmark is
 absolute DART CPU timing only. Exact scene constants were not published, and
-the Sequential Impulse, XPBD, and VBD rows, source-matched video edit, CUDA
-path, broad fracture corpus, and comparable performance remain open.
+the source-matched video edit, CUDA path, broad fracture corpus, and comparable
+performance remain open.
+[`avbd-paper-vbd-comparison-packet.json`](avbd-paper-vbd-comparison-packet.json)
+adds a matched public fixed-penalty VBD row over that exact reconstructed scene
+fingerprint. Its independent frame-14 bend and frame-120 retention oracles,
+assessed renders, solver identity, allocation gates, and same-host
+five-repetition benchmark are bound to the current AVBD packet and pinned
+paper/video sources. The timing ratio is descriptive cost only because the
+methods intentionally produce different outcomes and no achieved-accuracy
+reference denominator exists. Sequential Impulse, XPBD, exact unpublished
+constants, a source-matched four-method edit, CUDA, and achieved-accuracy
+reference performance remain open.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,
@@ -669,9 +679,13 @@ capture, and candidate-only scale data. The adjacent
 [`avbd-paper-breakable-wall-packet.json`](avbd-paper-breakable-wall-packet.json)
 now covers the publication-shaped AVBD Figure 13 outcome with a deterministic
 fracture/localization oracle, assessed impact/outcome frames, allocation
-gates, and absolute CPU timing. Exact unpublished source constants, the
-four-method comparison, broad joint/fracture corpus, unified rows, CUDA, and
-comparable paper/reference performance remain open. Non-topology
+gates, and absolute CPU timing. The linked
+[`avbd-paper-vbd-comparison-packet.json`](avbd-paper-vbd-comparison-packet.json)
+adds the matched fixed-penalty VBD bend-without-fracture row on the same scene
+fingerprint, with independent numeric and assessed visual evidence. Exact
+unpublished source constants, Sequential Impulse and XPBD rows, a source edit,
+broad joint/fracture corpus, unified rows, CUDA, and comparable paper/reference
+performance remain open. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
 poses, and public same-multibody/world-link articulated
@@ -802,9 +816,10 @@ renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes. The next fracture slice should
-extend the publication-shaped AVBD wall into the source-matched four-method
-comparison, CUDA, and the remaining joint/attachment corpus before treating
-the A5 joint-family surface as broad.
+extend the matched publication-shaped AVBD/VBD wall into honest Sequential
+Impulse and XPBD rows, a source-matched four-method edit, CUDA, and the
+remaining joint/attachment corpus before treating the A5 joint-family surface
+as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

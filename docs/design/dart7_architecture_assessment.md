@@ -83,11 +83,13 @@ The domain selectors now share a typed-enum idiom on the facade: the
 `RigidBodySolver` enum (runtime-mutable, alters the schedule), the
 `ContactSolverMethod` enum (construction-only, a branch inside one stage), and
 the `MultibodyOptions.integrationFamily` enum (`MultibodyIntegrationFamily`,
-resolved once at finalize). `RigidBodySolver::Avbd` now publicly selects the
-supported free-rigid AVBD contact and pair-constraint schedule, while the
-private `RigidAvbdContactConfig` remains only as a compatibility opt-in under a
-non-AVBD public family. The resolved-configuration report distinguishes those
-selection sources, and unsupported public AVBD envelopes fail closed. Other
+resolved once at finalize). `RigidBodySolver::Vbd` and
+`RigidBodySolver::Avbd` now publicly select the supported free-rigid
+fixed-penalty VBD and augmented-Lagrangian AVBD contact and pair-constraint
+schedules. The private `RigidAvbdContactConfig` remains only as a compatibility
+AVBD opt-in under a non-VBD/non-AVBD public family. The
+resolved-configuration report distinguishes those selection sources, and
+unsupported public VBD/AVBD envelopes fail closed. Other
 scene-content routing remains unresolved: VBD can still fall back per body to
 projected Newton on unsupported features, and mixed scenes reroute contact
 solves across structurally different assemblies.
@@ -163,10 +165,14 @@ record solver identity, and flagship AVBD contact-scene packets recorded
 "DART beats reference" rows on scenes that actually ran the
 sequential-impulse contact path. Those rows are now relabeled, the shared
 packet contract records both resolved solver and rigid-contact selection
-source, and the first public-AVBD Figure 13 packet uses that contract. The
-broader substrate gap remains: legacy packets cannot be generalized beyond
-their recorded identities, and there is still no shared cross-family
-accuracy/performance harness.
+source, and the public-AVBD Figure 13 packet uses that contract. One matched
+public fixed-penalty VBD/AVBD Figure 13 comparison now shares a single scene
+builder and fingerprint across its demos and benchmark, binds independent
+outcome oracles and assessed renders, and keeps its same-host timing ratio
+descriptive. The broader substrate gap remains: this is one scenario-specific
+writer rather than a generic harness, legacy packets cannot be generalized
+beyond their recorded identities, and there is still no shared cross-family
+accuracy/performance substrate.
 
 ### F5 — Facade erosion at the edges
 

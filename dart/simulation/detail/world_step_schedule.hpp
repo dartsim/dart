@@ -45,6 +45,7 @@ enum class BuiltInRigidBodySolverFamily
 {
   SequentialImpulse,
   Avbd,
+  Vbd,
   Ipc,
 };
 
@@ -150,6 +151,7 @@ struct BuiltInWorldStepSchedule
     BuiltInRigidBodySolverFamily family) noexcept
 {
   return family == BuiltInRigidBodySolverFamily::SequentialImpulse
+         || family == BuiltInRigidBodySolverFamily::Vbd
          || family == BuiltInRigidBodySolverFamily::Avbd;
 }
 

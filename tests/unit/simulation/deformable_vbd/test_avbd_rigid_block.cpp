@@ -5574,6 +5574,75 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureMarksJointBroken)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedPenaltyFractureUsesFinitePenaltyForce)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  linkOptions.orientation = rotationZ(0.6);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);
+  registry.emplace<sx::comps::JointState>(jointEntity);
+  registry.emplace<sx::comps::JointActuation>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+
+  std::vector<vbd::AvbdRigidWorldPointJointInput> joints(1);
+  joints[0].joint = jointEntity;
+  joints[0].bodyA = sx::detail::toRegistryEntity(base.getEntity());
+  joints[0].bodyB = sx::detail::toRegistryEntity(link.getEntity());
+  joints[0].anchorA = Vec3::Zero();
+  joints[0].anchorB = Vec3::UnitX();
+  joints[0].targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  joints[0].startStiffness = 100.0;
+  joints[0].linearMaterialStiffness = 100.0;
+  joints[0].angularMaterialStiffness = 100.0;
+  joints[0].maxStiffness = 1000.0;
+  joints[0].fractureThreshold = 1e-12;
+
+  vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.descent.iterations = 1;
+  stepOptions.solve.descent.regularization = 1e-12;
+  stepOptions.solve.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          registry,
+          std::span<const sx::Contact>(),
+          joints,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          /*timeStep=*/1.0,
+          stepOptions);
+
+  EXPECT_EQ(result.solve.fracturedJoints, 1u);
+  ASSERT_EQ(result.solve.fracturedJointIndices.size(), 1u);
+  EXPECT_EQ(result.solve.fracturedJointIndices[0], 0u);
+  EXPECT_EQ(result.fracturedJoints, 1u);
+  EXPECT_TRUE(registry.get<sx::comps::JointState>(jointEntity).broken);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(jointLinearInventory.empty());
+  EXPECT_TRUE(jointAngularInventory.empty());
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldPointJointFractureUsesSolveScratchAllocator)
 {
   sx::World world;
@@ -6534,6 +6603,389 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
         = foundPositiveNormalDual || record.state.lambda > 0.0;
   }
   EXPECT_TRUE(foundPositiveNormalDual);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedNormalState)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  vbd::AvbdRigidWorldContactOptions contactOptions;
+  contactOptions.startStiffness = 200.0;
+  contactOptions.maxStiffness = 1000.0;
+  const auto buildSnapshot = [&]() {
+    return vbd::buildAvbdRigidWorldContactSnapshot(
+        dart::simulation::detail::registryOf(world),
+        world.collide(),
+        contactOptions);
+  };
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  vbd::AvbdScalarRowInventory motorInventory;
+  vbd::AvbdScalarRowInventory distanceSpringInventory;
+  vbd::AvbdRigidWorldContactSolveScratch solveScratch;
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 4;
+  solveOptions.descent.convergenceDisplacement = 1e-12;
+
+  auto augmentedSnapshot = buildSnapshot();
+  ASSERT_FALSE(augmentedSnapshot.contacts.empty());
+  const auto augmentedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      augmentedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_EQ(augmentedResult.normalRows, augmentedSnapshot.contacts.size());
+  ASSERT_FALSE(normalInventory.empty());
+  EXPECT_TRUE(
+      std::ranges::any_of(
+          normalInventory.records(),
+          [](const vbd::AvbdScalarRowRecord& record) {
+            return record.state.lambda > 0.0;
+          }));
+
+  solveOptions.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  auto fixedSnapshot = buildSnapshot();
+  const auto fixedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      fixedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_EQ(fixedResult.normalRows, fixedSnapshot.contacts.size());
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  ASSERT_EQ(solveScratch.normalRows.size(), fixedResult.normalRows);
+  for (const auto& row : solveScratch.normalRows) {
+    EXPECT_DOUBLE_EQ(row.row.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(row.row.state.lambda, 0.0);
+  }
+
+  auto repeatedFixedSnapshot = buildSnapshot();
+  const auto repeatedFixedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      repeatedFixedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_EQ(
+      repeatedFixedResult.normalRows, repeatedFixedSnapshot.contacts.size());
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  ASSERT_EQ(solveScratch.normalRows.size(), repeatedFixedResult.normalRows);
+  for (const auto& row : solveScratch.normalRows) {
+    EXPECT_DOUBLE_EQ(row.row.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(row.row.state.lambda, 0.0);
+  }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedFrictionState)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Vec3(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox(Vec3(2.0, 2.0, 0.25)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.mass = 1.0;
+  sphereOptions.position = Vec3(0.0, 0.0, 0.4);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  vbd::AvbdRigidWorldContactOptions contactOptions;
+  contactOptions.startStiffness = 200.0;
+  contactOptions.maxStiffness = 1000.0;
+  const auto buildSlidingSnapshot = [&]() {
+    auto snapshot = vbd::buildAvbdRigidWorldContactSnapshot(
+        dart::simulation::detail::registryOf(world),
+        world.collide(),
+        contactOptions);
+    const std::size_t sphereIndex = findEntityIndex(
+        snapshot.entities,
+        dart::simulation::detail::toRegistryEntity(sphere.getEntity()));
+    snapshot.inertialTargets[sphereIndex].position.x() += 0.1;
+    for (auto& contact : snapshot.contacts) {
+      contact.frictionCoefficient = 1.0;
+    }
+    return snapshot;
+  };
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 4;
+  solveOptions.descent.convergenceDisplacement = 0.0;
+  solveOptions.friction.beta = 500.0;
+  solveOptions.friction.maxStiffness = 1000.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  vbd::AvbdScalarRowInventory motorInventory;
+  vbd::AvbdScalarRowInventory distanceSpringInventory;
+  vbd::AvbdRigidWorldContactSolveScratch solveScratch;
+  auto augmentedSnapshot = buildSlidingSnapshot();
+  const auto augmentedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      augmentedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_GT(augmentedResult.frictionRows, 0u);
+  ASSERT_FALSE(frictionInventory.empty());
+  for (std::size_t i = 0; i < frictionInventory.size(); ++i) {
+    frictionInventory[i].state.lambda = i % 2u == 0u ? 3.0 : -4.0;
+    frictionInventory[i].state.stiffness = 900.0;
+  }
+
+  solveOptions.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  auto switchedSnapshot = buildSlidingSnapshot();
+  const auto switchedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      switchedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_GT(switchedResult.frictionRows, 0u);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  ASSERT_EQ(2u * solveScratch.frictionRows.size(), switchedResult.frictionRows);
+  for (const auto& rowPair : solveScratch.frictionRows) {
+    EXPECT_DOUBLE_EQ(rowPair.first.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(rowPair.first.state.lambda, 0.0);
+    EXPECT_DOUBLE_EQ(rowPair.second.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(rowPair.second.state.lambda, 0.0);
+  }
+
+  auto repeatedSnapshot = buildSlidingSnapshot();
+  const auto repeatedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      repeatedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      solveScratch,
+      solveOptions);
+  ASSERT_EQ(repeatedResult.frictionRows, switchedResult.frictionRows);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  ASSERT_EQ(2u * solveScratch.frictionRows.size(), repeatedResult.frictionRows);
+  for (const auto& rowPair : solveScratch.frictionRows) {
+    EXPECT_DOUBLE_EQ(rowPair.first.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(rowPair.first.state.lambda, 0.0);
+    EXPECT_DOUBLE_EQ(rowPair.second.state.stiffness, 200.0);
+    EXPECT_DOUBLE_EQ(rowPair.second.state.lambda, 0.0);
+  }
+
+  vbd::AvbdScalarRowInventory coldNormalInventory;
+  vbd::AvbdScalarRowInventory coldFrictionInventory;
+  vbd::AvbdScalarRowInventory coldJointLinearInventory;
+  vbd::AvbdScalarRowInventory coldJointAngularInventory;
+  vbd::AvbdScalarRowInventory coldMotorInventory;
+  vbd::AvbdScalarRowInventory coldDistanceSpringInventory;
+  vbd::AvbdRigidWorldContactSolveScratch coldSolveScratch;
+  auto coldSnapshot = buildSlidingSnapshot();
+  const auto coldResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      coldSnapshot,
+      coldNormalInventory,
+      coldFrictionInventory,
+      coldJointLinearInventory,
+      coldJointAngularInventory,
+      coldMotorInventory,
+      coldDistanceSpringInventory,
+      /*timeStep=*/1.0,
+      coldSolveScratch,
+      solveOptions);
+  ASSERT_EQ(coldResult.frictionRows, switchedResult.frictionRows);
+  ASSERT_EQ(coldSnapshot.states.size(), switchedSnapshot.states.size());
+  for (std::size_t i = 0; i < coldSnapshot.states.size(); ++i) {
+    EXPECT_NEAR(
+        (coldSnapshot.states[i].position - switchedSnapshot.states[i].position)
+            .norm(),
+        0.0,
+        1e-12);
+    EXPECT_NEAR(
+        (coldSnapshot.states[i].orientation.coeffs()
+         - switchedSnapshot.states[i].orientation.coeffs())
+            .norm(),
+        0.0,
+        1e-12);
+  }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldVbdToAvbdFiniteRowsMatchFreshAvbd)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& jointModel = registry.emplace<sx::comps::JointModel>(jointEntity);
+  jointModel.type = sx::comps::JointType::Fixed;
+
+  vbd::AvbdRigidWorldPointJointInput joint;
+  joint.joint = jointEntity;
+  joint.bodyA = sx::detail::toRegistryEntity(base.getEntity());
+  joint.bodyB = sx::detail::toRegistryEntity(link.getEntity());
+  joint.anchorA = Vec3::Zero();
+  joint.anchorB = Vec3::UnitX();
+  joint.linearAxisMask = 1u;
+  joint.angularAxisMask = 0u;
+  joint.startStiffness = 4.0;
+  joint.linearMaterialStiffness = 20.0;
+  joint.maxStiffness = 100.0;
+
+  const auto buildSnapshot = [&]() {
+    vbd::AvbdRigidWorldContactSnapshot snapshot
+        = vbd::buildAvbdRigidWorldContactSnapshot(
+            registry, std::span<const sx::Contact>());
+    EXPECT_EQ(
+        vbd::appendAvbdRigidWorldPointJoints(
+            registry,
+            std::span<const vbd::AvbdRigidWorldPointJointInput>{&joint, 1u},
+            snapshot),
+        1u);
+    vbd::predictAvbdRigidWorldContactInertialTargets(
+        registry, snapshot, /*timeStep=*/1.0);
+    return snapshot;
+  };
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+
+  vbd::AvbdRigidWorldContactSolveOptions vbdOptions;
+  vbdOptions.descent.iterations = 1;
+  vbdOptions.descent.regularization = 1e-12;
+  vbdOptions.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  auto vbdSnapshot = buildSnapshot();
+  const auto vbdResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      vbdSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      /*timeStep=*/1.0,
+      vbdOptions);
+  ASSERT_EQ(vbdResult.jointLinearRows, 1u);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(jointLinearInventory.empty());
+  EXPECT_TRUE(jointAngularInventory.empty());
+
+  vbd::AvbdRigidWorldContactSolveOptions avbdOptions;
+  avbdOptions.descent.iterations = 1;
+  avbdOptions.descent.regularization = 1e-12;
+  avbdOptions.row.beta = 0.0;
+  auto switchedSnapshot = buildSnapshot();
+  const auto switchedResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      switchedSnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      /*timeStep=*/1.0,
+      avbdOptions);
+  ASSERT_EQ(switchedResult.jointLinearRows, 1u);
+  ASSERT_EQ(jointLinearInventory.size(), 1u);
+  EXPECT_DOUBLE_EQ(jointLinearInventory[0].state.stiffness, 4.0);
+
+  vbd::AvbdScalarRowInventory coldNormalInventory;
+  vbd::AvbdScalarRowInventory coldFrictionInventory;
+  vbd::AvbdScalarRowInventory coldJointLinearInventory;
+  vbd::AvbdScalarRowInventory coldJointAngularInventory;
+  auto coldSnapshot = buildSnapshot();
+  const auto coldResult = vbd::solveAvbdRigidWorldContactSnapshot(
+      coldSnapshot,
+      coldNormalInventory,
+      coldFrictionInventory,
+      coldJointLinearInventory,
+      coldJointAngularInventory,
+      /*timeStep=*/1.0,
+      avbdOptions);
+  ASSERT_EQ(coldResult.jointLinearRows, switchedResult.jointLinearRows);
+  ASSERT_EQ(coldJointLinearInventory.size(), jointLinearInventory.size());
+  EXPECT_DOUBLE_EQ(coldJointLinearInventory[0].state.stiffness, 4.0);
+  EXPECT_DOUBLE_EQ(
+      jointLinearInventory[0].state.stiffness,
+      coldJointLinearInventory[0].state.stiffness);
+  ASSERT_EQ(coldSnapshot.states.size(), switchedSnapshot.states.size());
+  for (std::size_t i = 0; i < coldSnapshot.states.size(); ++i) {
+    EXPECT_NEAR(
+        (coldSnapshot.states[i].position - switchedSnapshot.states[i].position)
+            .norm(),
+        0.0,
+        1e-12);
+    EXPECT_NEAR(
+        (coldSnapshot.states[i].orientation.coeffs()
+         - switchedSnapshot.states[i].orientation.coeffs())
+            .norm(),
+        0.0,
+        1e-12);
+  }
 }
 
 //==============================================================================

@@ -1,0 +1,977 @@
+{
+  "benchmark": {
+    "comparison": {
+      "basis": "same executable, host, reconstructed scene fingerprint, trajectory length, time step, and 20-sweep budget",
+      "vbd_to_avbd_median_cpu_cost_ratio": 1.234459059747689
+    },
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "host_name": "mark26",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "json_sha256": "d5aa41fe4ae4c2bbcfe23b12c87b031d4ec839123e5e104cbdfd3401a52ccbb9",
+    "methods": {
+      "avbd": {
+        "benchmark": "BM_AvbdPaperBreakableWallStep",
+        "rows": [
+          {
+            "aggregate_name": "mean",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 7434849.3500000015,
+            "family_index": 0,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_mean",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 1.0,
+            "real_time": 7436581.405102817,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 712271905.0,
+            "scene_spec_fingerprint_lo": 3423664878.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "median",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 7467247.275000003,
+            "family_index": 0,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_median",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 1.0,
+            "real_time": 7467605.933440305,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 712271905.0,
+            "scene_spec_fingerprint_lo": 3423664878.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "stddev",
+            "aggregate_unit": "time",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 352941.77407079434,
+            "family_index": 0,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_stddev",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 0.0,
+            "real_time": 353435.6344223652,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_avbd": 0.0,
+            "resolved_rigid_pair_constraint_avbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 8.94427190999916,
+            "scene_spec_fingerprint_lo": 50.59644256269407,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          },
+          {
+            "aggregate_name": "cv",
+            "aggregate_unit": "percentage",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 0.047471274461101796,
+            "family_index": 0,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_cv",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 0.0,
+            "real_time": 0.04752662751460576,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_avbd": 0.0,
+            "resolved_rigid_pair_constraint_avbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 1.2557384121446091e-08,
+            "scene_spec_fingerprint_lo": 1.4778444843658577e-08,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          }
+        ],
+        "stability": {
+          "cpu_time_cv_fraction": 0.047471274461101796,
+          "real_time_cv_fraction": 0.04752662751460576,
+          "repetitions": 5
+        },
+        "timing": {
+          "mean_cpu_time_per_step_ns": 7434849.3500000015,
+          "mean_real_time_per_step_ns": 7436581.405102817,
+          "median_cpu_time_per_step_ns": 7467247.275000003,
+          "median_real_time_per_step_ns": 7467605.933440305
+        }
+      },
+      "vbd": {
+        "benchmark": "BM_VbdPaperBreakableWallStep",
+        "rows": [
+          {
+            "aggregate_name": "mean",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 9283993.19666667,
+            "family_index": 1,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_mean",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 1.0,
+            "real_time": 9285653.501719933,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_vbd": 1.0,
+            "resolved_rigid_pair_constraint_vbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 712271905.0,
+            "scene_spec_fingerprint_lo": 3423664878.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "median",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 9218011.049999997,
+            "family_index": 1,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_median",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 1.0,
+            "real_time": 9218644.316812666,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_vbd": 1.0,
+            "resolved_rigid_pair_constraint_vbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 712271905.0,
+            "scene_spec_fingerprint_lo": 3423664878.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "stddev",
+            "aggregate_unit": "time",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 315697.4492439518,
+            "family_index": 1,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_stddev",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 0.0,
+            "real_time": 316183.0099676496,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_vbd": 0.0,
+            "resolved_rigid_pair_constraint_vbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 8.94427190999916,
+            "scene_spec_fingerprint_lo": 50.59644256269407,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          },
+          {
+            "aggregate_name": "cv",
+            "aggregate_unit": "percentage",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 0.0340044895075214,
+            "family_index": 1,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_cv",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 0.0,
+            "real_time": 0.03405070089133572,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_vbd": 0.0,
+            "resolved_rigid_pair_constraint_vbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 1.2557384121446091e-08,
+            "scene_spec_fingerprint_lo": 1.4778444843658577e-08,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          }
+        ],
+        "stability": {
+          "cpu_time_cv_fraction": 0.0340044895075214,
+          "real_time_cv_fraction": 0.03405070089133572,
+          "repetitions": 5
+        },
+        "timing": {
+          "mean_cpu_time_per_step_ns": 9283993.19666667,
+          "mean_real_time_per_step_ns": 9285653.501719933,
+          "median_cpu_time_per_step_ns": 9218011.049999997,
+          "median_real_time_per_step_ns": 9218644.316812666
+        }
+      }
+    },
+    "scene_spec_fingerprint": "2a746821cc10faee"
+  },
+  "claim_boundary": "This packet covers the matched fixed-penalty VBD row and its same-host CPU comparison with the linked public AVBD Figure 13 packet. It does not reproduce the Sequential Impulse or XPBD rows, claim exact unpublished source constants, establish CUDA parity, or compare against a published/source timing.",
+  "correctness": {
+    "allocation_scene": "configurePublicRigidVbdContactAndBreakableJointRowsScene",
+    "allocation_tests": [
+      "World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths",
+      "World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap",
+      "World.BakedAvbdVbdRowsDoNotMallocOnHeap"
+    ],
+    "determinism_test": "test_vbd_paper_breakable_wall_checkpoints_are_deterministic",
+    "outcome_test": "test_vbd_paper_breakable_wall_matches_figure13_contract",
+    "public_configuration": {
+      "rigid_body_solver": "VBD",
+      "rigid_constraint_options": {
+        "iterations": 20
+      },
+      "scene_spec_fingerprint": "2a746821cc10faee",
+      "time_step": 0.016666666666666666
+    }
+  },
+  "linked_avbd_evidence": {
+    "file": "avbd-paper-breakable-wall-packet.json",
+    "resolved_solver_identity": {
+      "avbd_rigid_contact_config_emplaced": false,
+      "recorded_from": "engine World.resolved_configuration in both captures plus benchmark runtime resolved-configuration counters",
+      "rigid_contact_selection": "world_solver_family",
+      "rigid_contact_solver": "avbd",
+      "rigid_point_joint_solver": "avbd"
+    },
+    "scene_spec_fingerprint": "2a746821cc10faee",
+    "sha256": "ffb8c76fa9708ce7e6660d18087cfe6602acfd960b6a88898f1a88e0a099d0c0",
+    "visual_evidence": {
+      "impact_screenshot": {
+        "file": "avbd_paper_breakable_wall_impact.png",
+        "sha256": "a3ab663cdbbd030bccddbee838e134fa3326fdec459f3a8b734fa0da044f63a3"
+      },
+      "outcome_screenshot": {
+        "file": "avbd_paper_breakable_wall_outcome.png",
+        "sha256": "6587784a2ea32578d46b155e4aa3b51579c5be3ec2936e168f0b43367eb94a34"
+      },
+      "semantic_review": {
+        "file": "visual_review.json",
+        "sha256": "07060971349b4d1af35fdedfb3bfae880597f5b53b4aefe3c301f59f7b4c10fe",
+        "verdict": "pass"
+      }
+    }
+  },
+  "packet": "avbd_paper_vbd_comparison",
+  "paper_reference": {
+    "figure": {
+      "file": "paper-10.png",
+      "height": 1760,
+      "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b",
+      "width": 1360
+    },
+    "locator": "Section 5.4 and Figure 13, PDF page 10",
+    "paper_pdf": {
+      "file": "avbd.pdf",
+      "sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6"
+    }
+  },
+  "performance_claim_boundary": "The ratio is a descriptive same-host cost comparison for two public DART families running an identical reconstructed scene and iteration budget. It is not a paper/reference speedup claim.",
+  "publication_observation": "The Figure 13 VBD row bends under the three impacts but does not break.",
+  "reconstruction": {
+    "matched_with_avbd": {
+      "break_force": 8500.0,
+      "breakable_joints": 712,
+      "bricks": 252,
+      "impacting_balls": 3,
+      "scene_spec_fingerprint": "2a746821cc10faee"
+    },
+    "published": {
+      "constraint_iterations_or_substeps": 20,
+      "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+      "time_step": 0.016666666666666666
+    },
+    "unpublished": "wall dimensions, body materials, ball properties and launch conditions, break threshold, and exact source scene"
+  },
+  "reproduction": {
+    "benchmark_command": "pixi run bm -- bm_avbd_rigid_fixed_joint -- --benchmark_filter='^BM_(Avbd|Vbd)PaperBreakableWallStep/iterations:120$' --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_commands": [
+      "pixi run py-demo-capture -- --scene vbd_paper_breakable_wall --frames 14 --width 1280 --height 720 --view front --camera-distance 11 --camera-target 0,0,1.4 --capture-label bend --output-dir <bend-capture-dir>",
+      "pixi run py-demo-capture -- --scene vbd_paper_breakable_wall --frames 120 --width 1280 --height 720 --view front --camera-distance 11 --camera-target 0,0,1.4 --capture-label retention --output-dir <retention-capture-dir>"
+    ]
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "engine World.resolved_configuration in both VBD captures plus benchmark runtime resolved-configuration counters",
+    "rigid_contact_selection": "world_solver_family",
+    "rigid_contact_solver": "vbd",
+    "rigid_point_joint_solver": "vbd"
+  },
+  "scene": "vbd_paper_breakable_wall",
+  "schema_version": 3,
+  "source_provenance": {
+    "algorithm": "sha256-length-prefixed-path-and-content-v1",
+    "digest": "5dfbf32dbc165a1e83dd3e23e1a6d1aa95ffbf9749fbac3a49d7a305253d49b0",
+    "files": [
+      {
+        "path": "dart/simulation/world.cpp",
+        "sha256": "df7b4d1dfb4140190a43e65f0dc6d46e8121b489bda796f65afb77dac190bf50"
+      },
+      {
+        "path": "dart/simulation/world.hpp",
+        "sha256": "a95470a832553e59a19b8a25f38e524e1f449d17a65d31c3185969d2275323da"
+      },
+      {
+        "path": "dart/simulation/world_options.hpp",
+        "sha256": "6306b5aa84cc523d8edde96385cbba5a6b461e26f4eb8fdba9e659d704756b88"
+      },
+      {
+        "path": "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "sha256": "125a7d11510749db22d28d3b9dfe08888aeb31b8711238e4ff81c90dca5559ff"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+        "sha256": "36b8f2ba77e45f0ad54d6ca0baf9ddf929264f5697b70040c3165f427d029a79"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+        "sha256": "1184d6f71fd9705bd03760cefdf6e471f3c0ff0d73c4886f7014ff8812ae0ced"
+      },
+      {
+        "path": "dart/simulation/detail/world_step_schedule.hpp",
+        "sha256": "715a42595c19e8dba821d865cb477086f55600d54cf870902be73e253f1d1bec"
+      },
+      {
+        "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "sha256": "bb418854c79e6a2f5ca3d01059c9ce94ae0f135b9acecb46e2a46d34bfd5ebac"
+      },
+      {
+        "path": "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
+        "sha256": "9ec3f058fb63cc896b1c27e141c3dee34d3890c5c03f57ce72a5cb16a692bce4"
+      },
+      {
+        "path": "python/tests/integration/test_demos_cycle.py",
+        "sha256": "f792e19e4d3da4497122b0f55d7baca7c24f7f8e58fd4e5d266d7290c5f8e447"
+      },
+      {
+        "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "sha256": "24e5a9658898806ab9cfa0d765076884630c8cb100a52cf168d53e91a4ade01f"
+      },
+      {
+        "path": "tests/unit/simulation/world/test_world.cpp",
+        "sha256": "d4dde65145b8d3628489e597dd1b813b1a69b6ab1a60a666187fbe3dae7cb460"
+      },
+      {
+        "path": "scripts/avbd_packet_schema.py",
+        "sha256": "f3bb031ca321abea4a49d8fc1392f33dfffca482c6797618f94f680f3543c04b"
+      },
+      {
+        "path": "scripts/write_avbd_paper_vbd_comparison_packet.py",
+        "sha256": "7924bbd7e1f61b4e8812678c7566a8bcf04d0cb3d4c8f827d7b8dc96f26a0513"
+      }
+    ]
+  },
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.paper.fig.13"
+    ],
+    "covered_slice": "matched CPU VBD bend/no-break row with numeric, allocation, performance, and assessed visual evidence"
+  },
+  "visual_evidence": {
+    "bend": {
+      "camera": {
+        "distance": 11.0,
+        "target": [
+          0.0,
+          0.0,
+          1.4
+        ],
+        "view": "front"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 14,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 1259,
+            "dark_pixels": 57821,
+            "mid_pixels": 151043,
+            "p05": 35.09,
+            "p95": 147.723,
+            "pass": true,
+            "reasons": [],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 112.633,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "14",
+          "scene": "vbd_paper_breakable_wall",
+          "view": "front"
+        },
+        "pass": true,
+        "sha256": "035aff2135867535ca55ff658fc6d9b56701edb3e497c29f209ee6282bebda70"
+      },
+      "label": "bend",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "afce8eb0b0e2b4a9b12327184473888b8dc97a5e899463effdd6af249db6f10c"
+      },
+      "scene_metrics": {
+        "event_count": 14,
+        "frame": 14,
+        "outcome": {
+          "ball_positions": [
+            [
+              -3.095194390778397,
+              -0.31337254836840883,
+              1.3152668021613967
+            ],
+            [
+              -0.00018660146588299803,
+              -0.2732814645230808,
+              1.4713295069252923
+            ],
+            [
+              3.095554987013543,
+              -0.2789269932584263,
+              2.0800199857034722
+            ]
+          ],
+          "ball_velocities": [
+            [
+              0.19974399132345333,
+              -2.8630967401358034,
+              -0.5913280598170401
+            ],
+            [
+              -0.008003948397866957,
+              -1.5926396369675018,
+              -1.9674643237228473
+            ],
+            [
+              -0.17792006977352948,
+              -1.598896714370408,
+              -1.849455289044748
+            ]
+          ],
+          "bent_brick_count": 131,
+          "broken_joints": 0,
+          "checkpoint": "bend",
+          "contact_count": 26,
+          "evaluated": true,
+          "frame": 14,
+          "impact_band_displaced_counts": [
+            0,
+            0,
+            0
+          ],
+          "last_step_iterations": 20,
+          "max_brick_displacement": 0.22874158419119156,
+          "maximum_wall_normal_displacement": 0.2287292903493461,
+          "outside_brick_count": 181,
+          "outside_retained_fraction": 1.0,
+          "rms_wall_normal_displacement": 0.12227322736028712,
+          "status": "pass",
+          "threshold_checks": {
+            "bend_is_spatially_resolved": true,
+            "finite_state": true,
+            "no_fracture": true,
+            "topology_retained": true,
+            "wall_bend_is_distributed": true,
+            "wall_bends": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 1.0,
+          "unbroken_joints": 712,
+          "world_time": 0.2333333333333333
+        },
+        "outcome_oracle": {
+          "bent_brick_displacement_threshold": 0.1,
+          "evaluation_frame": 14,
+          "maximum_broken_joints": 0,
+          "minimum_bent_bricks": 100,
+          "minimum_maximum_wall_normal_displacement": 0.2,
+          "minimum_rms_wall_normal_displacement": 0.1,
+          "minimum_total_retained_fraction": 0.99,
+          "minimum_unbroken_joints": 712,
+          "retention_evaluation_frame": 120
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 8500.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "VBD",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_vbd",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "2a746821cc10faee",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.5707963267948966,
+            "distance": 11.0,
+            "elevation": 0.0,
+            "target": [
+              0.0,
+              0.0,
+              1.4
+            ]
+          },
+          "focus": [
+            "vbd_paper_wall_brick_00_00_visual",
+            "vbd_paper_wall_brick_00_20_visual",
+            "vbd_paper_wall_brick_11_00_visual",
+            "vbd_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.0,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.3333333333333333,
+            "subject_fraction": 0.29777577849388215
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.606450387098188,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 14,
+        "file": "scene_metrics.jsonl",
+        "sha256": "bde75666cd05199605562416a7fd994dacbf8a78d152e6b7c6736b57937cd4f8"
+      },
+      "screenshot": {
+        "file": "vbd_paper_breakable_wall_bend.png",
+        "sha256": "aae6cec800f888dff30f09c6c9209e7a7030ebc6505d646e68f44c2466cfdd24"
+      }
+    },
+    "retention": {
+      "camera": {
+        "distance": 11.0,
+        "target": [
+          0.0,
+          0.0,
+          1.4
+        ],
+        "view": "front"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 120,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 1086,
+            "dark_pixels": 61703,
+            "mid_pixels": 146859,
+            "p05": 34.878,
+            "p95": 147.723,
+            "pass": false,
+            "reasons": [
+              "bright pixels 1086 < 1180"
+            ],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 112.845,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "120",
+          "scene": "vbd_paper_breakable_wall",
+          "view": "front"
+        },
+        "pass": true,
+        "sha256": "6fab3e582e99401f21a67d468a61aaf8c0307f6677f366f7b90be8804359ea55"
+      },
+      "label": "retention",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "840d694d7fe98e236e01bd3a6c8eaa407e8d17b3c8426f5348fc2bdf512acbc4"
+      },
+      "scene_metrics": {
+        "event_count": 120,
+        "frame": 120,
+        "outcome": {
+          "ball_positions": [
+            [
+              -2.650841152312106,
+              -10.500981184136311,
+              -0.3106405050823772
+            ],
+            [
+              -0.020969640339728923,
+              -11.800473594287705,
+              -0.8858731141943095
+            ],
+            [
+              2.6902750342446717,
+              -10.912281727032484,
+              -0.6842234485751176
+            ]
+          ],
+          "ball_velocities": [
+            [
+              0.27289846885341973,
+              -6.292490243031423,
+              -3.797196084793277
+            ],
+            [
+              -0.013530988922874528,
+              -7.289482888726795,
+              -5.0532410859474455
+            ],
+            [
+              -0.25247807940752764,
+              -6.8264214493861175,
+              -4.676213287271364
+            ]
+          ],
+          "bent_brick_count": 0,
+          "broken_joints": 0,
+          "checkpoint": "retention",
+          "contact_count": 0,
+          "evaluated": true,
+          "frame": 120,
+          "impact_band_displaced_counts": [
+            0,
+            0,
+            0
+          ],
+          "last_step_iterations": 20,
+          "max_brick_displacement": 0.001208511643710914,
+          "maximum_wall_normal_displacement": 0.0008573600302032246,
+          "outside_brick_count": 181,
+          "outside_retained_fraction": 1.0,
+          "rms_wall_normal_displacement": 0.0004662711877188896,
+          "status": "pass",
+          "threshold_checks": {
+            "finite_state": true,
+            "no_fracture": true,
+            "topology_retained": true,
+            "wall_retained": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 1.0,
+          "unbroken_joints": 712,
+          "world_time": 1.9999999999999978
+        },
+        "outcome_oracle": {
+          "bent_brick_displacement_threshold": 0.1,
+          "evaluation_frame": 14,
+          "maximum_broken_joints": 0,
+          "minimum_bent_bricks": 100,
+          "minimum_maximum_wall_normal_displacement": 0.2,
+          "minimum_rms_wall_normal_displacement": 0.1,
+          "minimum_total_retained_fraction": 0.99,
+          "minimum_unbroken_joints": 712,
+          "retention_evaluation_frame": 120
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 8500.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "VBD",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_vbd",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "2a746821cc10faee",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.5707963267948966,
+            "distance": 11.0,
+            "elevation": 0.0,
+            "target": [
+              0.0,
+              0.0,
+              1.4
+            ]
+          },
+          "focus": [
+            "vbd_paper_wall_brick_00_00_visual",
+            "vbd_paper_wall_brick_00_20_visual",
+            "vbd_paper_wall_brick_11_00_visual",
+            "vbd_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.0,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.30303030303030304,
+            "subject_fraction": 0.29831663683376924
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.633905645800401,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 120,
+        "file": "scene_metrics.jsonl",
+        "sha256": "229207ff8e2c10f80b6d020bfa078f03b086cd17a5f9353b7ca2f5da247cb55d"
+      },
+      "screenshot": {
+        "file": "vbd_paper_breakable_wall_retention.png",
+        "sha256": "162d40cce657b9f474aff35d8533852be24185592c90eb518fdaee024a2f5ec7"
+      }
+    },
+    "semantic_review": {
+      "claim_and_expected_observation": "For the matched Figure 13 VBD row, the wall should remain one connected structure while distributing the three impacts as a broad transient bend; at the later retention checkpoint it should still have no detached bricks or fracture holes.",
+      "file": "vbd-paper-breakable-wall-visual-review-fixed.json",
+      "inspected_images": [
+        {
+          "file": "vbd_paper_breakable_wall_bend.png",
+          "role": "bend_frame_14",
+          "sha256": "aae6cec800f888dff30f09c6c9209e7a7030ebc6505d646e68f44c2466cfdd24"
+        },
+        {
+          "file": "vbd_paper_breakable_wall_retention.png",
+          "role": "retention_frame_120",
+          "sha256": "162d40cce657b9f474aff35d8533852be24185592c90eb518fdaee024a2f5ec7"
+        },
+        {
+          "file": "paper-10.png",
+          "role": "paper_figure_13_reference",
+          "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b"
+        }
+      ],
+      "not_proven_and_limitations": "The fixed front projection does not itself measure wall-normal depth, so the numeric displacement oracle supplies that quantitative check. These images do not prove exact unpublished source constants, the Sequential Impulse or XPBD comparison rows, CUDA parity, source-scene replay, or a published/reference timing match.",
+      "reconciliation_and_verdict": "PASS: both engine ViewReports pass, both pixel-integrity verdicts pass, frame 14 records a distributed 0.2287 m maximum and 0.1223 m RMS wall-normal bend across 131 bricks with 0 of 712 joints broken, and the image shows the connected courses displaced around all three balls. At frame 120 the image shows the wall intact with no holes or debris, agreeing with 712 retained joints and 100% retained bricks. Together those observations agree with Figure 13(c) and its bends-but-does-not-break text oracle.",
+      "reviewer_capability": "native image input inspected at original 1280x720 and 1360x1760 detail",
+      "sha256": "4844a9e6345073f5666af845e2a9cfe4e0dfc8f0b697903319f7fa5a29b6e475",
+      "text_oracle": "AVBD paper Figure 13 and its surrounding text state that VBD entirely prevents fracture but bends the wall, smoothly distributing constraint error.",
+      "verdict": "pass",
+      "visible_observation": "At frame 14 the three balls are aligned with three visibly displaced wall bands, yet every course remains continuous and no brick is detached. By frame 120 the balls have left the view and the same wall is standing as one complete structure without fracture holes, rubble, or a collapsed section."
+    }
+  }
+}

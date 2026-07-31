@@ -204,6 +204,83 @@ def test_public_avbd_family_requires_explicit_selection_source():
         )
 
 
+def test_public_vbd_family_records_matching_world_owned_rows():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family="vbd",
+        rigid_point_joint_solver="vbd",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="World resolved-configuration report",
+        rigid_contact_selection="world_solver_family",
+    )
+    assert identity["rigid_contact_solver"] == "vbd"
+    assert identity["rigid_point_joint_solver"] == "vbd"
+
+
+def test_public_world_family_rejects_contradictory_point_joint_family():
+    packet = {
+        "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": False,
+            "recorded_from": "contradictory test identity",
+            "rigid_contact_selection": "world_solver_family",
+            "rigid_contact_solver": "vbd",
+            "rigid_point_joint_solver": "avbd",
+        },
+    }
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any(
+        "rigid_point_joint_solver to be 'none' or match" in error for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("selection", "contact_solver", "emplaced"),
+    [
+        ("body_opt_in", "avbd", True),
+        ("contact_solver_method", "sequential_impulse", False),
+    ],
+)
+def test_vbd_point_rows_require_public_vbd_world_family(
+    selection,
+    contact_solver,
+    emplaced,
+):
+    packet = {
+        "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": emplaced,
+            "recorded_from": "impossible VBD point-row identity",
+            "rigid_contact_selection": selection,
+            "rigid_contact_solver": contact_solver,
+            "rigid_point_joint_solver": "vbd",
+        },
+    }
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any("rigid_point_joint_solver 'vbd' requires" in error for error in errors)
+
+
+def test_schema_v2_cannot_claim_vbd_without_selection_source_contract():
+    packet = {
+        "schema_version": 2,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": False,
+            "recorded_from": "pre-selection-source schema",
+            "rigid_contact_solver": "vbd",
+            "rigid_point_joint_solver": "vbd",
+        },
+    }
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any(
+        "VBD solver identities require schema_version 3" in error for error in errors
+    )
+
+
 def test_unrecognized_report_family_raises():
     with pytest.raises(ValueError):
         schema.resolved_rigid_contact_solver_from_report("magic-solver")

@@ -380,8 +380,9 @@ public:
   /// Create a finite-stiffness radial spring between two free rigid bodies.
   ///
   /// The spring connects each body's origin by default. The overload with
-  /// anchors accepts body-local anchor points. This experimental AVBD path is
-  /// design-mode only and is projected by the rigid-body contact stage.
+  /// anchors accepts body-local anchor points. This experimental VBD/AVBD
+  /// block-descent path is design-mode only and is projected by the rigid-body
+  /// contact stage.
   void addRigidBodyDistanceSpring(
       std::string_view name,
       const RigidBody& parent,
@@ -457,11 +458,13 @@ public:
 
   /// Select the solver family used by the default rigid-body step pipeline.
   ///
-  /// The default remains SequentialImpulse. Avbd is an explicit opt-in for
-  /// free rigid-body contact and public rigid-body pair constraints. Ipc is
+  /// The default remains SequentialImpulse. Vbd and Avbd are explicit opt-ins
+  /// for free rigid-body contact and public rigid-body pair constraints. Vbd
+  /// holds conservative rows at fixed finite penalty stiffness; Avbd adds the
+  /// augmented-Lagrangian dual and progressive stiffness update. Ipc is
   /// experimental and currently handles free mesh-like rigid bodies through
-  /// the internal rigid IPC stage. Unsupported family/domain combinations
-  /// throw rather than falling through to another solver.
+  /// the internal rigid IPC stage. Unsupported family/domain combinations throw
+  /// rather than falling through to another solver.
   void setRigidBodySolver(RigidBodySolver solver);
 
   /// Get the solver family used by the default rigid-body step pipeline.
@@ -469,10 +472,10 @@ public:
 
   /// Set domain-scoped tuning for the built-in rigid constraint stage.
   ///
-  /// The iteration budget controls sequential-impulse contact sweeps and AVBD
-  /// rigid contact, joint, motor, and spring sweeps. The IPC family and mixed
-  /// semi-implicit multibody worlds bypass this stage and accept only the
-  /// default options. Otherwise safe to change in simulation mode; the next
+  /// The iteration budget controls sequential-impulse contact sweeps and
+  /// VBD/AVBD rigid contact, joint, motor, and spring sweeps. The IPC family
+  /// and mixed semi-implicit multibody worlds bypass this stage and accept only
+  /// the default options. Otherwise safe to change in simulation mode; the next
   /// step uses the new options.
   void setRigidConstraintOptions(const RigidConstraintOptions& options);
 
@@ -496,10 +499,10 @@ public:
   /// `SequentialImpulse`) and independent of the differentiable flag. Under
   /// the `RigidBodySolver::SequentialImpulse` family, `BoxedLcp` opts the
   /// rigid-body contact stage into the boxed-LCP normal solve. The
-  /// `RigidBodySolver::Avbd` family owns its contact formulation and rejects
-  /// `BoxedLcp`. Safe to change at any time: when the World is already in
-  /// simulation mode, the step pipeline cache is rebuilt for the new contact
-  /// method.
+  /// `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd` families own their
+  /// contact formulations and reject `BoxedLcp`. Safe to change at any time:
+  /// when the World is already in simulation mode, the step pipeline cache is
+  /// rebuilt for the new contact method.
   /// @throws InvalidArgumentException if `method` is not a valid
   ///         `ContactSolverMethod` enumerator.
   void setContactSolverMethod(ContactSolverMethod method);

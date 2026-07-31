@@ -928,11 +928,14 @@ family" matrix row. Selection is a typed enum mapped to an internal
 representation on construction or set, so the per-step path carries no
 configuration cost when a non-default family is not in use.
 
-`RigidBodySolver::Avbd` is the explicit experimental public family for
-supported free-rigid contact and pair constraints. It owns its contact
-formulation, uses the positive `RigidConstraintOptions::iterations` budget,
-and rejects an incompatible boxed-LCP contact-method selection instead of
-silently substituting another family.
+`RigidBodySolver::Vbd` and `RigidBodySolver::Avbd` are the explicit
+experimental public families for supported free-rigid contact and pair
+constraints. VBD uses fixed finite-penalty rows without dual accumulation or
+progressive stiffness; AVBD uses augmented-Lagrangian dual/stiffness state.
+Each owns its contact formulation, uses the positive
+`RigidConstraintOptions::iterations` budget, and rejects an incompatible
+boxed-LCP contact-method selection instead of silently substituting another
+family.
 That budget applies only while the split rigid constraint stage is active.
 IPC and mixed semi-implicit multibody worlds bypass it, accept only the default
 options, and report the budget as not applicable.

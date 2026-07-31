@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/collision_geometry.hpp>
 #include <dart/simulation/comps/contact_material.hpp>
 #include <dart/simulation/comps/dynamics.hpp>
@@ -300,6 +301,12 @@ inline void clearAvbdRigidWorldContactSnapshot(
 
 struct AvbdRigidWorldContactSolveOptions
 {
+  enum class Formulation
+  {
+    AugmentedLagrangian,
+    FixedPenalty,
+  };
+
   // Constraint-family parameters stay independent of whether contact rows are
   // present. Contact stages may opt into the contact-family override below
   // without retuning disconnected joint, motor, or spring rows.
@@ -311,6 +318,7 @@ struct AvbdRigidWorldContactSolveOptions
   AvbdRigidPointAttachmentOptions contactRow;
   AvbdRigidPointPairFrictionOptions friction;
   AvbdRigidBlockDescentOptions descent;
+  Formulation formulation = Formulation::AugmentedLagrangian;
 };
 
 struct AvbdRigidWorldContactSolveResult
@@ -2287,7 +2295,51 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     return result;
   }
 
+  const bool fixedPenalty
+      = options.formulation
+        == AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  if (fixedPenalty) {
+    // VBD has no persistent dual or progressive stiffness state. Reset every
+    // row inventory before descriptor synchronization so runtime family
+    // changes cannot leak AVBD state into the fixed-penalty solve.
+    normalInventory.clear();
+    frictionInventory.clear();
+    jointLinearInventory.clear();
+    jointAngularInventory.clear();
+    motorInventory.clear();
+    distanceSpringInventory.clear();
+  }
+
   scratch.clear();
+  const auto applyFixedPenaltyRows = [&](auto& rows,
+                                         AvbdScalarRowInventory& inventory,
+                                         std::size_t inventoryOffset = 0u) {
+    if (!fixedPenalty) {
+      return;
+    }
+    for (std::size_t i = 0; i < rows.size(); ++i) {
+      DART_SIMULATION_THROW_T_IF(
+          inventoryOffset + i >= inventory.size(),
+          InvalidOperationException,
+          "VBD fixed-penalty row inventory drifted from assembled rows");
+      const AvbdScalarRowDescriptor& descriptor
+          = inventory[inventoryOffset + i].descriptor;
+      const double requestedStiffness
+          = std::isfinite(descriptor.materialStiffness)
+                ? descriptor.materialStiffness
+                : descriptor.startStiffness;
+      const double fixedStiffness
+          = std::min(requestedStiffness, descriptor.maxStiffness);
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(fixedStiffness) || fixedStiffness < 0.0,
+          InvalidOperationException,
+          "VBD requires every active penalty row to resolve a finite, "
+          "non-negative stiffness");
+      rows[i].row.state
+          = AvbdScalarRowState{.stiffness = fixedStiffness, .lambda = 0.0};
+      rows[i].row.materialStiffness = fixedStiffness;
+    }
+  };
   const AvbdRowWarmStartOptions& contactWarmStart
       = options.hasContactFamilyOverride ? options.contactWarmStart
                                          : options.warmStart;
@@ -2310,6 +2362,35 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       row.solveOptionsOverride = options.contactRow;
     }
   }
+  applyFixedPenaltyRows(normalRows, normalInventory);
+  if (fixedPenalty) {
+    for (std::size_t i = 0; i < frictionRows.size(); ++i) {
+      const std::size_t first = 2u * i;
+      const std::size_t second = first + 1u;
+      DART_SIMULATION_THROW_T_IF(
+          second >= frictionInventory.size(),
+          InvalidOperationException,
+          "VBD fixed-penalty friction inventory drifted from assembled rows");
+      const auto applyFrictionRow
+          = [&](AvbdRigidPointPairRow& row,
+                const AvbdScalarRowDescriptor& descriptor) {
+              const double fixedStiffness = std::min(
+                  descriptor.startStiffness, descriptor.maxStiffness);
+              DART_SIMULATION_THROW_T_IF(
+                  !std::isfinite(fixedStiffness) || fixedStiffness < 0.0,
+                  InvalidOperationException,
+                  "VBD requires every active friction penalty row to resolve a "
+                  "finite, non-negative stiffness");
+              row.state = AvbdScalarRowState{
+                  .stiffness = fixedStiffness, .lambda = 0.0};
+              row.materialStiffness = fixedStiffness;
+            };
+      applyFrictionRow(
+          frictionRows[i].first, frictionInventory[first].descriptor);
+      applyFrictionRow(
+          frictionRows[i].second, frictionInventory[second].descriptor);
+    }
+  }
   result.normalRows = normalRows.size();
   result.frictionRows = 2u * frictionRows.size();
 
@@ -2327,6 +2408,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       scratch.jointLinearRowsScratch,
       scratch.jointAngularRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(jointLinearRows, jointLinearInventory);
+  applyFixedPenaltyRows(jointAngularRows, jointAngularInventory);
   result.jointLinearRows = jointLinearRows.size();
   result.jointAngularRows = jointAngularRows.size();
 
@@ -2345,6 +2428,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       timeStep,
       scratch.motorRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(linearMotorRows, motorInventory);
+  applyFixedPenaltyRows(motorRows, motorInventory, linearMotorRows.size());
   result.motorRows = linearMotorRows.size() + motorRows.size();
 
   auto& distanceSpringRows = scratch.distanceSpringRows;
@@ -2355,6 +2440,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       distanceSpringRows,
       scratch.distanceSpringRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(distanceSpringRows, distanceSpringInventory);
   result.distanceSpringRows = distanceSpringRows.size();
 
   const std::size_t normalRowCount = normalRows.size();
@@ -2430,6 +2516,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     inertialTargets = std::span<const AvbdRigidBodyState>{
         fallbackInertialTargets.data(), fallbackInertialTargets.size()};
   }
+  AvbdRigidPointPairFrictionOptions frictionOptions = options.friction;
+  frictionOptions.fixedPenalty = fixedPenalty;
   result.stats = blockDescentRigidBodiesAvbdRows(
       std::span<AvbdRigidBodyState>{
           snapshot.states.data(), snapshot.states.size()},
@@ -2446,7 +2534,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       frictionRows,
       options.descent,
       options.row,
-      options.friction,
+      frictionOptions,
       &scratch.rowIndexScratch,
       distanceSpringRows,
       options.distanceSpring,
@@ -2509,22 +2597,45 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
         = avbdRigidWorldActiveJointAxisCount(joint.linearAxisMask);
     const std::size_t angularRowsForJoint
         = avbdRigidWorldActiveJointAxisCount(joint.angularAxisMask);
-    double lambdaSquared = 0.0;
+    double forceSquared = 0.0;
     for (std::size_t i = 0;
          i < linearRows && linearCursor + i < jointLinearRowCount;
          ++i) {
-      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
-          (*solvePointPairRows)[jointLinearOffset + linearCursor + i]
-              .row.state.lambda);
+      const AvbdRigidBodyPointPairRow& indexedRow
+          = (*solvePointPairRows)[jointLinearOffset + linearCursor + i];
+      const AvbdRigidPointPairRow& row = indexedRow.row;
+      const double force = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
+                               ? avbdRigidScalarRowForce(
+                                     row.state,
+                                     avbdRigidPointPairConstraintValue(
+                                         snapshot.states[indexedRow.bodyA],
+                                         snapshot.states[indexedRow.bodyB],
+                                         row),
+                                     row.bounds,
+                                     row.materialStiffness)
+                               : row.state.lambda;
+      forceSquared += avbdRigidWorldJointRowLambdaSquared(force);
     }
     for (std::size_t i = 0;
          i < angularRowsForJoint && angularCursor + i < jointAngularRowCount;
          ++i) {
-      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
-          (*solveAngularRows)[angularCursor + i].row.state.lambda);
+      const AvbdRigidBodyAngularPairRow& indexedRow
+          = (*solveAngularRows)[angularCursor + i];
+      const AvbdRigidAngularPairRow& row = indexedRow.row;
+      const double force = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
+                               ? avbdRigidScalarRowForce(
+                                     row.state,
+                                     avbdRigidAngularPairConstraintValue(
+                                         snapshot.states[indexedRow.bodyA],
+                                         snapshot.states[indexedRow.bodyB],
+                                         row),
+                                     row.bounds,
+                                     row.materialStiffness)
+                               : row.state.lambda;
+      forceSquared += avbdRigidWorldJointRowLambdaSquared(force);
     }
     if (joint.fractureThreshold > 0.0 && std::isfinite(joint.fractureThreshold)
-        && std::sqrt(lambdaSquared) >= joint.fractureThreshold) {
+        && std::sqrt(forceSquared) >= joint.fractureThreshold) {
       result.fracturedJointIndices.push_back(jointIndex);
     }
 
@@ -2532,6 +2643,18 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     angularCursor += angularRowsForJoint;
   }
   result.fracturedJoints = result.fracturedJointIndices.size();
+
+  if (fixedPenalty) {
+    // Fixed-penalty VBD owns no cross-step row state. Leaving the material
+    // stiffness written above in these shared inventories would let a later
+    // AVBD solve warm-start from VBD state after a runtime family switch.
+    normalInventory.clear();
+    frictionInventory.clear();
+    jointLinearInventory.clear();
+    jointAngularInventory.clear();
+    motorInventory.clear();
+    distanceSpringInventory.clear();
+  }
 
   return result;
 }

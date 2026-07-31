@@ -189,6 +189,7 @@ def _scene_spec_fingerprint(
 
 def _serialize_and_validate_resolved_configuration(
     world: sx.World,
+    solver_key: str,
 ) -> list[dict[str, str]]:
     notes = [
         {
@@ -200,9 +201,9 @@ def _serialize_and_validate_resolved_configuration(
         for note in world.resolved_configuration.notes
     ]
     expected = {
-        "rigid-body": ("avbd", "avbd"),
-        "rigid-contact": ("avbd", "avbd"),
-        "rigid-pair-constraint": ("avbd", "avbd"),
+        "rigid-body": (solver_key, solver_key),
+        "rigid-contact": (solver_key, solver_key),
+        "rigid-pair-constraint": (solver_key, solver_key),
         "rigid-constraint-iterations": (
             str(_RIGID_CONSTRAINT_ITERATIONS),
             str(_RIGID_CONSTRAINT_ITERATIONS),
@@ -218,7 +219,8 @@ def _serialize_and_validate_resolved_configuration(
         ]
         if len(matching) != 1:
             raise RuntimeError(
-                "AVBD breakable-wall resolved configuration drifted: "
+                f"{solver_key.upper()} breakable-wall resolved configuration "
+                "drifted: "
                 f"expected one {domain} {requested}->{resolved} note, "
                 f"got {matching!r}"
             )
@@ -304,11 +306,16 @@ def compute_outcome_metrics(
     joints: Sequence[sx.Joint],
     balls: Sequence[sx.RigidBody],
     initial_brick_positions: np.ndarray,
+    solver_family: str = "avbd",
+    outcome_oracle: dict[str, Any] = OUTCOME_ORACLE,
 ) -> dict[str, Any]:
     """Evaluate the fail-closed Figure 13 outcome oracle at the current state."""
     brick_positions = _positions(bricks)
     ball_positions = _positions(balls)
     displacements = np.linalg.norm(brick_positions - initial_brick_positions, axis=1)
+    wall_normal_displacements = np.abs(
+        brick_positions[:, 1] - initial_brick_positions[:, 1]
+    )
     initial_xz = initial_brick_positions[:, (0, 2)]
 
     impact_band_displaced_counts = []
@@ -339,6 +346,9 @@ def compute_outcome_metrics(
     broken_joints = sum(1 for joint in joints if joint.is_broken)
     unbroken_joints = len(joints) - broken_joints
     frame = int(round(float(world.time) / _TIME_STEP))
+    bent_brick_displacement_threshold = float(
+        outcome_oracle.get("bent_brick_displacement_threshold", 0.05)
+    )
     finite_state = bool(
         np.all(np.isfinite(brick_positions))
         and np.all(np.isfinite(ball_positions))
@@ -356,42 +366,101 @@ def compute_outcome_metrics(
             for body in (*bricks, *balls)
         )
     )
-    threshold_checks = {
-        "finite_state": finite_state,
-        "damage_in_three_impact_bands": all(
-            count
-            >= OUTCOME_ORACLE["minimum_displaced_bricks_per_impact_band"]
-            for count in impact_band_displaced_counts
-        ),
-        "outside_wall_retained": (
-            outside_retained_fraction
-            >= OUTCOME_ORACLE["minimum_outside_retained_fraction"]
-        ),
-        "total_wall_retained": (
-            total_retained_fraction
-            >= OUTCOME_ORACLE["minimum_total_retained_fraction"]
-        ),
-        "fracture_activated": (
-            broken_joints >= OUTCOME_ORACLE["minimum_broken_joints"]
-        ),
-        "fracture_localized": (
-            broken_joints <= OUTCOME_ORACLE["maximum_broken_joints"]
-            and unbroken_joints >= OUTCOME_ORACLE["minimum_unbroken_joints"]
-        ),
-    }
-    evaluated = frame >= _OUTCOME_FRAME
+    evaluation_frame = int(outcome_oracle["evaluation_frame"])
+    checkpoint = "outcome"
+    if solver_family == "avbd":
+        threshold_checks = {
+            "finite_state": finite_state,
+            "damage_in_three_impact_bands": all(
+                count
+                >= outcome_oracle["minimum_displaced_bricks_per_impact_band"]
+                for count in impact_band_displaced_counts
+            ),
+            "outside_wall_retained": (
+                outside_retained_fraction
+                >= outcome_oracle["minimum_outside_retained_fraction"]
+            ),
+            "total_wall_retained": (
+                total_retained_fraction
+                >= outcome_oracle["minimum_total_retained_fraction"]
+            ),
+            "fracture_activated": (
+                broken_joints >= outcome_oracle["minimum_broken_joints"]
+            ),
+            "fracture_localized": (
+                broken_joints <= outcome_oracle["maximum_broken_joints"]
+                and unbroken_joints >= outcome_oracle["minimum_unbroken_joints"]
+            ),
+        }
+        evaluated = frame >= evaluation_frame
+    elif solver_family == "vbd":
+        retention_frame = int(outcome_oracle["retention_evaluation_frame"])
+        if frame >= retention_frame:
+            checkpoint = "retention"
+            threshold_checks = {
+                "finite_state": finite_state,
+                "no_fracture": (
+                    broken_joints <= outcome_oracle["maximum_broken_joints"]
+                ),
+                "topology_retained": (
+                    unbroken_joints >= outcome_oracle["minimum_unbroken_joints"]
+                ),
+                "wall_retained": (
+                    total_retained_fraction
+                    >= outcome_oracle["minimum_total_retained_fraction"]
+                ),
+            }
+            evaluated = True
+        else:
+            checkpoint = "bend"
+            threshold_checks = {
+                "finite_state": finite_state,
+                "no_fracture": (
+                    broken_joints <= outcome_oracle["maximum_broken_joints"]
+                ),
+                "topology_retained": (
+                    unbroken_joints >= outcome_oracle["minimum_unbroken_joints"]
+                ),
+                "wall_bends": (
+                    float(np.max(wall_normal_displacements))
+                    >= outcome_oracle[
+                        "minimum_maximum_wall_normal_displacement"
+                    ]
+                ),
+                "wall_bend_is_distributed": (
+                    float(np.sqrt(np.mean(np.square(wall_normal_displacements))))
+                    >= outcome_oracle["minimum_rms_wall_normal_displacement"]
+                ),
+                "bend_is_spatially_resolved": (
+                    int(
+                        np.count_nonzero(
+                            wall_normal_displacements
+                            >= outcome_oracle[
+                                "bent_brick_displacement_threshold"
+                            ]
+                        )
+                    )
+                    >= outcome_oracle["minimum_bent_bricks"]
+                ),
+            }
+            evaluated = frame == evaluation_frame
+    else:
+        raise ValueError(f"unsupported breakable-wall solver family: {solver_family}")
     thresholds_pass = evaluated and all(threshold_checks.values())
     step_metrics = world.compute_step_metrics()
     return {
         "frame": frame,
         "world_time": float(world.time),
         "evaluated": evaluated,
+        "checkpoint": checkpoint,
         "status": (
             "pass"
             if thresholds_pass
             else "fail"
             if evaluated
             else "pre-evaluation"
+            if frame < evaluation_frame
+            else "between-checkpoints"
         ),
         "thresholds_pass": thresholds_pass,
         "threshold_checks": threshold_checks,
@@ -402,6 +471,18 @@ def compute_outcome_metrics(
         "broken_joints": broken_joints,
         "unbroken_joints": unbroken_joints,
         "max_brick_displacement": float(np.max(displacements)),
+        "maximum_wall_normal_displacement": float(
+            np.max(wall_normal_displacements)
+        ),
+        "rms_wall_normal_displacement": float(
+            np.sqrt(np.mean(np.square(wall_normal_displacements)))
+        ),
+        "bent_brick_count": int(
+            np.count_nonzero(
+                wall_normal_displacements
+                >= bent_brick_displacement_threshold
+            )
+        ),
         "ball_positions": ball_positions.tolist(),
         "ball_velocities": [
             np.asarray(ball.linear_velocity, dtype=float).reshape(3).tolist()
@@ -412,11 +493,21 @@ def compute_outcome_metrics(
     }
 
 
-def build() -> SceneSetup:
+def build_solver_variant(
+    *,
+    rigid_body_solver: sx.RigidBodySolver,
+    solver_key: str,
+    solver_display: str,
+    paper_reference: dict[str, Any],
+    outcome_oracle: dict[str, Any],
+) -> SceneSetup:
+    """Build one matched Figure 13 solver row from the shared reconstruction."""
+    scene_id = f"{solver_key}_paper_breakable_wall"
+    object_prefix = f"{solver_key}_paper"
     world = sx.World(
         time_step=_TIME_STEP,
         gravity=(0.0, 0.0, _GRAVITY),
-        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_body_solver=rigid_body_solver,
         rigid_constraint_options=sx.RigidConstraintOptions(
             iterations=_RIGID_CONSTRAINT_ITERATIONS
         ),
@@ -424,7 +515,7 @@ def build() -> SceneSetup:
 
     ground = _add_box(
         world,
-        "avbd_paper_breakable_wall_ground",
+        f"{object_prefix}_breakable_wall_ground",
         size=_GROUND_SIZE,
         position=np.array([0.0, 0.0, -0.5 * float(_GROUND_SIZE[2])]),
         mass=None,
@@ -439,7 +530,7 @@ def build() -> SceneSetup:
         for column in range(_WALL_COLUMNS):
             brick = _add_box(
                 world,
-                f"avbd_paper_wall_brick_{row:02d}_{column:02d}",
+                f"{object_prefix}_wall_brick_{row:02d}_{column:02d}",
                 size=_BRICK_SIZE,
                 position=_brick_position(row, column),
                 mass=brick_mass,
@@ -456,7 +547,7 @@ def build() -> SceneSetup:
             joints.append(
                 _add_breakable_fixed_joint(
                     world,
-                    f"avbd_paper_wall_horizontal_{row:02d}_{column:02d}",
+                    f"{object_prefix}_wall_horizontal_{row:02d}_{column:02d}",
                     left,
                     right,
                 )
@@ -480,7 +571,7 @@ def build() -> SceneSetup:
                     joints.append(
                         _add_breakable_fixed_joint(
                             world,
-                            "avbd_paper_wall_vertical_"
+                            f"{object_prefix}_wall_vertical_"
                             f"{row - 1:02d}_{lower_column:02d}_"
                             f"{row:02d}_{upper_column:02d}",
                             lower_brick,
@@ -499,7 +590,7 @@ def build() -> SceneSetup:
         joints.append(
             _add_breakable_fixed_joint(
                 world,
-                f"avbd_paper_wall_base_{column:02d}",
+                f"{object_prefix}_wall_base_{column:02d}",
                 ground,
                 brick,
             )
@@ -512,7 +603,7 @@ def build() -> SceneSetup:
     )
     for index, (target_x, target_z) in enumerate(_IMPACT_TARGETS_XZ):
         ball = world.add_rigid_body(
-            f"avbd_paper_wall_ball_{index}",
+            f"{object_prefix}_wall_ball_{index}",
             position=(target_x, _BALL_START_Y, target_z),
             linear_velocity=(0.0, _BALL_LAUNCH_SPEED, 0.0),
         )
@@ -532,7 +623,9 @@ def build() -> SceneSetup:
 
     initial_brick_positions = _positions(bricks)
     world.enter_simulation_mode()
-    resolved_configuration = _serialize_and_validate_resolved_configuration(world)
+    resolved_configuration = _serialize_and_validate_resolved_configuration(
+        world, solver_key
+    )
     scene_spec_fingerprint = _scene_spec_fingerprint(topology_records)
     view_assessment_available = _view_assessment_available()
     capture_camera = (
@@ -555,12 +648,12 @@ def build() -> SceneSetup:
         )
     )
 
-    bridge = WorldRenderBridge(world, name="avbd_paper_breakable_wall_render")
+    bridge = WorldRenderBridge(world, name=f"{scene_id}_render")
     bridge.add_rigid_body_visual(
         ground,
         dart.BoxShape(_GROUND_SIZE),
         (0.40, 0.42, 0.45),
-        name="avbd_paper_breakable_wall_ground_visual",
+        name=f"{object_prefix}_breakable_wall_ground_visual",
     )
     brick_colors = (
         (0.72, 0.25, 0.13),
@@ -603,6 +696,8 @@ def build() -> SceneSetup:
             joints=joints,
             balls=balls,
             initial_brick_positions=initial_brick_positions,
+            solver_family=solver_key,
+            outcome_oracle=outcome_oracle,
         )
 
     def record_metrics() -> dict[str, Any]:
@@ -626,9 +721,19 @@ def build() -> SceneSetup:
             if note["domain"] == "rigid-body"
         )
         view_report = None
+        assessed_frames = {
+            60,
+            int(outcome_oracle["evaluation_frame"]),
+            int(
+                outcome_oracle.get(
+                    "retention_evaluation_frame",
+                    outcome_oracle["evaluation_frame"],
+                )
+            ),
+        }
         if (
             view_assessment_available
-            and metrics["frame"] in (60, _OUTCOME_FRAME)
+            and metrics["frame"] in assessed_frames
         ):
             # capture_metrics() is also a public text-oracle callback, so it
             # can be invoked after direct World.step(n=...) calls that bypass
@@ -643,15 +748,16 @@ def build() -> SceneSetup:
             )
             if not assessed_view.acceptable:
                 raise RuntimeError(
-                    "AVBD breakable-wall capture view failed assessment: "
+                    f"{solver_display} breakable-wall capture view failed "
+                    "assessment: "
                     f"{assessed_view.issues!r}"
                 )
             view_report = assessed_view.to_json()
         return {
-            "row": "avbd_paper_breakable_wall",
+            "row": scene_id,
             "solver": f"public_{resolved_rigid_body}",
             "executor": "World.step default",
-            "paper_locator": PAPER_REFERENCE["source_locator"],
+            "paper_locator": paper_reference["source_locator"],
             "time_step_ms": 1000.0 * _TIME_STEP,
             "rigid_constraint_options": {
                 "iterations": int(rigid_constraint_options.iterations)
@@ -667,7 +773,7 @@ def build() -> SceneSetup:
             "ball_count": len(balls),
             "breakable_joints": len(joints),
             "break_force": _BREAK_FORCE,
-            "outcome_oracle": dict(OUTCOME_ORACLE),
+            "outcome_oracle": dict(outcome_oracle),
             "outcome": metrics,
         }
 
@@ -688,7 +794,7 @@ def build() -> SceneSetup:
             str(value) for value in metrics["impact_band_displaced_counts"]
         )
         builder.text("paper: Giles et al. 2025, Figure 13")
-        builder.text("solver: public rigid AVBD")
+        builder.text(f"solver: public rigid {solver_display}")
         builder.text(f"iterations: {_RIGID_CONSTRAINT_ITERATIONS}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"bricks / breakable joints: {len(bricks)} / {len(joints)}")
@@ -717,7 +823,7 @@ def build() -> SceneSetup:
         world=bridge.render_world,
         pre_step=pre_step,
         force_drag=bridge.force_drag,
-        panels=[ScenePanel("AVBD Paper Breakable Wall", build_panel)],
+        panels=[ScenePanel(f"{solver_display} Paper Breakable Wall", build_panel)],
         info={
             "sx_world": world,
             "ground": ground,
@@ -725,8 +831,8 @@ def build() -> SceneSetup:
             "balls": tuple(balls),
             "joints": tuple(joints),
             "initial_brick_positions": initial_brick_positions.copy(),
-            "paper_reference": PAPER_REFERENCE,
-            "outcome_oracle": OUTCOME_ORACLE,
+            "paper_reference": paper_reference,
+            "outcome_oracle": outcome_oracle,
             "resolved_configuration": tuple(resolved_configuration),
             "scene_spec_fingerprint": scene_spec_fingerprint,
             "outcome_metrics": sample_metrics,
@@ -734,6 +840,16 @@ def build() -> SceneSetup:
             "replay_live_step_is_stateless": True,
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
+    )
+
+
+def build() -> SceneSetup:
+    return build_solver_variant(
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        solver_key="avbd",
+        solver_display="AVBD",
+        paper_reference=PAPER_REFERENCE,
+        outcome_oracle=OUTCOME_ORACLE,
     )
 
 

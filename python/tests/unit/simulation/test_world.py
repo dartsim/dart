@@ -8520,6 +8520,37 @@ def test_simulation_public_avbd_contact_family():
         avbd_only.add_multibody("unsupported")
 
 
+def test_simulation_public_vbd_contact_family():
+    sx = _simulation()
+
+    world = sx.World(
+        time_step=0.05,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.VBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.25))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.25)))
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.4))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert world.rigid_body_solver == sx.RigidBodySolver.VBD
+    assert len(world.collide()) == 1
+    world.step()
+
+    assert world.compute_step_metrics().last_step_iterations == 20
+    assert sphere.linear_velocity.tolist()[2] > 0.0
+    assert sphere.translation.tolist()[2] > 0.4
+
+    with pytest.raises(Exception, match="cannot be combined"):
+        world.contact_solver_method = sx.ContactSolverMethod.BOXED_LCP
+
+    vbd_only = sx.World(rigid_body_solver=sx.RigidBodySolver.VBD)
+    with pytest.raises(Exception, match="Multibody"):
+        vbd_only.add_multibody("unsupported")
+
+
 def test_simulation_body_rests_on_static_ground():
     sx = _simulation()
 

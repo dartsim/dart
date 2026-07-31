@@ -350,13 +350,15 @@ classification is unchanged. New packets must machine-record both
 `resolved_solver_identity` and `rigid_contact_selection` at AVBD packet schema
 version 3, enforced by `pixi run check-avbd-packets`.
 
-Public C++ and dartpy callers can now select
-`RigidBodySolver::Avbd` / `RigidBodySolver.AVBD` and set a positive
-`RigidConstraintOptions::iterations` /
+Public C++ and dartpy callers can now select the fixed-penalty
+`RigidBodySolver::Vbd` / `RigidBodySolver.VBD` family or the
+augmented-Lagrangian `RigidBodySolver::Avbd` / `RigidBodySolver.AVBD` family and
+set a positive `RigidConstraintOptions::iterations` /
 `RigidConstraintOptions(iterations=...)` budget. The default remains
-sequential impulse, the choice survives binary save/load and replay, the
-resolved-configuration report names `avbd`, and unsupported combinations fail
-before stepping instead of falling through to another contact family.
+sequential impulse, each choice survives binary save/load and replay, the
+resolved-configuration report names the selected family, and unsupported
+combinations fail before stepping instead of falling through to another
+contact family.
 The publication-shaped `avbd_paper_breakable_wall` scene exercises that public
 path at the paper's 1/60 s step and 20-iteration budget with 252 staggered
 bricks, 712 breakable attachments, and three impacts. Its deterministic
@@ -366,12 +368,24 @@ the impact bands, and 82.54% total retention. The frame-60 capture remains an
 explicit pre-evaluation state: one band has three displaced bricks and no
 final three-band threshold claim is made there. Both engine ViewReports pass,
 the runtime scene and benchmark share fingerprint `2a746821cc10faee`, and the
-five-repeat Release benchmark records 7.739 ms median CPU time per step.
+current five-repeat Release benchmark records 7.467 ms median CPU time per
+step.
 Those assessed captures and the absolute CPU benchmark are sealed in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
+The matched `vbd_paper_breakable_wall` row reuses that exact scene fingerprint
+and projection budget with fixed finite-penalty rows, no dual accumulation or
+progressive stiffness. Its frame-14 oracle records 0 broken and 712 retained
+attachments, 0.229 m peak and 0.122 m RMS brick displacement, and 131 bricks
+beyond 0.1 m; its frame-120 oracle retains the full connected wall. Both
+assessed VBD renders pass. The same five-repeat benchmark records 9.218 ms
+median CPU time, or 1.234 times the AVBD median cost on this host; that ratio is
+descriptive only because the methods produce different physical outcomes and
+there is no achieved-accuracy reference denominator. The cross-linked evidence
+is sealed in
+[`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
 Figure 13 and the matching video row stay partial because the exact source
-constants are unpublished and the Sequential Impulse, XPBD, and VBD comparison
-rows, CUDA row, and matched performance evidence are still missing.
+constants are unpublished and the Sequential Impulse, XPBD, source-edit, CUDA,
+and achieved-accuracy reference-performance evidence is still missing.
 The `avbd_empty_baseline` py-demo and `BM_AvbdEmptyWorldStep` row now provide a
 first runnable baseline for the 2D/3D source-demo empty rows, with source
 revision/default metadata and a `sceneEmpty` zero-count reference invariant.
@@ -1031,10 +1045,13 @@ internal/explicit-opt-in decision, not a leaked solver registry.
 The free-rigid fixed-joint/contact, free-rigid/articulated one-DOF motor,
 breakable fixed point-joint, prismatic/revolute/spherical facade,
 articulated breakable-joint, high-ratio articulated-chain, and public AVBD
-Figure 13 slices are user-visible but intentionally bounded. The wall is the
-first publication-shaped paper outcome row, not an exact source replay or a
-four-method/CUDA closure; the source-demo corpus packets still carry their
-historical solver identities. The Section 4 post-primal
+Figure 13 slices are user-visible but intentionally bounded. The wall now has
+matched public fixed-penalty VBD and public AVBD rows on one reconstructed
+scene fingerprint, with distinct quantitative and assessed visual outcomes.
+It is not an exact source replay or a four-method/CUDA closure; Sequential
+Impulse, XPBD, the source edit, and achieved-accuracy reference performance
+remain open, and the source-demo corpus packets still carry their historical
+solver identities. The Section 4 post-primal
 dual/stiffness update is now a verified CPU partial over the promoted
 deformable and private free-rigid inventories; it remains open for
 articulated/unified rows, CUDA, and source-matched achieved-accuracy
@@ -1344,6 +1361,25 @@ AVBD parity additionally requires:
 
 Relocated from the dashboard on 2026-07-03; newest first.
 
+On 2026-07-30, the rigid-body solver selector gained a distinct public
+fixed-penalty VBD family in C++ and dartpy. It reuses the DART-owned 6-DOF
+block-descent contact and pair-row infrastructure while disabling AVBD dual
+accumulation and progressive stiffness, preserves selection through binary
+save/load and resolved configuration, rejects boxed-LCP and multibody
+envelopes, and has schedule, serialization, Python, fixed-penalty state,
+fracture-load, and all three first-post-bake allocation-policy regressions. The
+matched `vbd_paper_breakable_wall` scene shares the AVBD wall's exact
+`2a746821cc10faee` fingerprint, 1/60 s step, and 20-sweep budget. Its frame-14
+bend and frame-120 retained-wall oracles pass with 0 broken and 712 unbroken
+attachments, as do both assessed renders. The five-repeat same-host benchmark
+records 9.218 ms VBD versus 7.467 ms AVBD median CPU time, a descriptive
+1.234 cost ratio with no speedup or achieved-accuracy equivalence claim.
+[`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json)
+binds those rows to the current AVBD packet and pinned source hashes. Figure 13
+and video row 12 remain partial because Sequential Impulse, XPBD, exact
+unpublished constants, a source edit, CUDA, and achieved-accuracy reference
+performance remain open.
+
 On 2026-07-30, the public rigid-body solver selector gained an AVBD family and
 a serialized/replay-safe rigid-constraint options value object. The default remains
 sequential impulse; public AVBD owns supported rigid contact plus point-joint
@@ -1359,7 +1395,7 @@ impact/outcome renders and five-repeat Release benchmark are sealed in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 The packet makes no reference speedup claim and keeps Figure 13 plus video row
 12 partial because exact source constants, the other three method rows, CUDA,
-and comparable performance remain open.
+and comparable performance were open at that slice.
 
 On 2026-07-30, the articulated finite-fracture packet closed the narrow CPU
 load-accounting gap left by the finite-motor slice. Accepted finite-row forces

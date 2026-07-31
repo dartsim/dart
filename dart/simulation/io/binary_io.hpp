@@ -138,7 +138,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   29: World stores the rigid contact-stage iteration budget after
 //      differentiable physical-parameter registrations, and the rigid-body
 //      solver enum gains the AVBD value.
-constexpr std::uint32_t kBinaryFormatVersion = 29;
+//   30: The rigid-body solver enum gains the fixed-penalty VBD value.
+constexpr std::uint32_t kBinaryFormatVersion = 30;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

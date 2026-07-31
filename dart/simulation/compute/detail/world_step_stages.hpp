@@ -384,8 +384,9 @@ public:
 /// mass) act as immovable.
 ///
 /// The selected `WorldOptions::rigidBodySolver` family owns the top-level
-/// contact formulation. `RigidBodySolver::Avbd` routes every supported active
-/// free-rigid contact through AVBD. Under the default
+/// contact formulation. `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd`
+/// route every supported active free-rigid contact through fixed-penalty VBD
+/// and augmented VBD, respectively. Under the default
 /// `RigidBodySolver::SequentialImpulse` family, two contact-policy paths are
 /// available via `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +

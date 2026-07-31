@@ -165,6 +165,8 @@ class RigidBodySolver(enum.Enum):
 
     AVBD = 2
 
+    VBD = 3
+
 class ContactSolverMethod(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 

@@ -26,29 +26,32 @@ This folder is the temporary working surface; the durable owner is the plan.
   has been pushed. The Section 3.5 packet is committed locally at
   `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
   finite-row packet at `761263bbd41`; the articulated finite-motor packet at
-  `9ebd9b895b1`; and the articulated finite-fracture packet at `131981788fa`.
-  The public AVBD/Figure 13 slice is the current local unpushed closeout.
-- **Current packet:** C++ and dartpy callers can explicitly select the public
-  AVBD rigid-body family and its positive contact/joint projection budget.
-  Selection survives binary save/load and replay, reports `avbd`, and rejects
-  unsupported combinations instead of silently falling back. Mixed
-  semi-implicit multibody worlds use the unified constraint stage, so they
-  accept only the default rigid constraint options and report the split-stage
-  budget as not applicable. The new publication-shaped Figure 13 wall uses
-  252 staggered bricks, 712 breakable attachments, three impacts, a
-  deterministic localization/retention oracle, assessed impact/outcome
-  captures, allocation gates, and an absolute CPU benchmark.
+  `9ebd9b895b1`; the articulated finite-fracture packet at `131981788fa`; and
+  the public AVBD/Figure 13 slice at `646b447d6cc`. The matched public
+  fixed-penalty VBD/Figure 13 comparison is the current local closeout.
+- **Current packet:** C++ and dartpy callers can explicitly select public VBD
+  and AVBD rigid-body families with one positive contact/joint projection
+  budget. VBD uses fixed finite-penalty rows without dual accumulation or
+  progressive stiffness; AVBD retains augmented-Lagrangian dual/stiffness
+  state. Both selections survive binary save/load and replay, report their
+  resolved identities, and reject boxed-LCP or multibody envelopes instead of
+  silently falling back. The matched publication-shaped Figure 13 demos share
+  252 staggered bricks, 712 attachments, three impacts, 1/60 s, 20 sweeps, and
+  fingerprint `2a746821cc10faee`, but carry distinct paper-shaped outcome
+  oracles.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
 - **Latest verified local packet:**
-  [`../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json)
-  binds the public solver identity, exact paper/page hashes, frame-60 and
-  frame-120 scene metrics, camera and image-verdict hashes, native semantic
-  review, first-post-bake allocation tests, and five-repeat Release timing.
-  Figure 13 and video row 12 remain partial: exact source constants, the
-  Sequential Impulse, XPBD, and VBD comparison rows, CUDA, and comparable
-  performance are open.
+  [`../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json)
+  binds the current AVBD packet to the matched fixed-penalty VBD frame-14 bend
+  and frame-120 retention oracles, exact paper hashes, assessed VBD
+  captures, allocation gates, and five-repeat same-host timing. The benchmark
+  records 9.218 ms VBD versus 7.467 ms AVBD median CPU time, a descriptive
+  1.234 cost ratio with no speedup or achieved-accuracy equivalence claim.
+  Figure 13 and video row 12 remain partial: exact source constants,
+  Sequential Impulse, XPBD, a source edit, CUDA, and achieved-accuracy
+  reference performance are open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -58,33 +61,20 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** public solver/schedule/serialization/Python tests,
-  both Figure 13 scene oracles, all three public-AVBD post-bake allocation
-  policies, all 16 fail-closed packet-writer tests, the full 273-test migrated
-  packet/schema set, all 56 working-tree AVBD packet schemas, three exact
-  deterministic outcome runs, both assessed captures, and the five-repeat
-  benchmark pass. The final broad local gates pass: default `pixi run build`,
-  all 168 unit targets, all 445 `test_world` cases, all 15 resolved-
-  configuration cases, all 20 contact-parity cases, and 1,677 Python tests
-  with 20 expected skips. `pixi run -e cuda test-all` passes all seven phases,
-  including the GUI-disabled Python catalog, documentation, all eight CUDA
-  runtime tests, and CUDA benchmark smoke. The first CUDA run exposed and the
-  candidate now covers a headless `OrbitCamera` assumption in the Figure 13
-  scene. The boxed-LCP fallback allocation regression found by the full World
-  gate is also fixed: the runtime applies the allocation-free contact path and
-  copies its existing force vector instead of allocating a differentiable
-  snapshot. The final dual review found one additional fail-closed contract
-  gap:
-  non-default rigid iteration options were reported as applied in mixed
-  semi-implicit multibody worlds even though the unified stage ignored them.
-  Construction, runtime mutation, method-family transitions, load, and step
-  entry now reject that combination; the resolved report marks the default
-  budget not applicable. Both post-fix review lanes approve the result. The
-  exact post-fix reruns pass the uncached default build, 1,677 Python tests
-  with 20 expected skips, and all seven CUDA `test-all` phases; the eight CUDA
-  runtime tests include the 208.75-second Jacobi batch case. Packet provenance
-  was regenerated after formatting with zero source-hash mismatches, and the
-  PLAN-122 allocation matrix passes with 18 rows, 14 closed.
+- **Current local gates:** the VBD fixed-penalty row/state, public
+  solver/schedule/serialization/resolved-configuration/Python, matched demo,
+  and all three post-bake allocation-policy tests pass. Both assessed VBD
+  captures and the five-repeat comparison benchmark pass. After the final
+  packet-provenance repair, 188 focused Python/world/writer/schema tests, three
+  selected VBD Figure 13 demo cases, all 57 working-tree AVBD packet schemas,
+  and both 88-row PLAN-104 contracts pass. Fresh uncached default `test-all`
+  passes all six phases, including 79 enabled simulation tests and
+  documentation. Fresh uncached CUDA `test-all` passes all seven phases,
+  including all eight CUDA runtime tests and benchmark smoke; the long Jacobi
+  batch case took 206.81 seconds. This CUDA environment gate does not close
+  the still-missing VBD/AVBD GPU solver-parity rows. Independent final
+  code/correctness and architecture/docs/claims review lanes both approve the
+  post-fix tree.
 
 ## Goal
 
@@ -307,15 +297,46 @@ All linked canonical method rows remain partial.
   pass engine ViewReports, pixel integrity, and image-capable semantic review
   against the pinned paper page. The scene and benchmark share fingerprint
   `2a746821cc10faee`.
-- **Performance boundary:** five Release repetitions record 7.739 ms median
+- **Performance boundary:** the current five-repeat Release benchmark records
+  7.467 ms median
   CPU time per step. This is absolute DART timing only; the paper and source
   publish no directly comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the Sequential
-  Impulse, XPBD, and VBD comparison rows, source-matched video edit, broad
-  fracture corpus, unified rows, and CUDA.
+  Impulse and XPBD comparison rows, source-matched video edit, broad fracture
+  corpus, unified rows, and CUDA. The matched VBD row is tracked separately
+  below.
 
 The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
+Figure 13 and official-video row 12 remain partial.
+
+## Verified Local Packet: Matched Public VBD / AVBD Figure 13 Rows
+
+- **Value:** expose an honest public fixed-penalty VBD family over the same
+  DART-owned rigid 6-DOF block infrastructure, then compare it with public AVBD
+  using one exact reconstructed scene rather than relabeling sequential
+  impulse.
+- **Public contract:** `RigidBodySolver::Vbd` /
+  `sx.RigidBodySolver.VBD`, the same positive rigid-constraint iteration
+  policy, binary/replay persistence, resolved-family reporting, and
+  fail-closed boxed-LCP and multibody rejection. VBD uses finite penalty
+  stiffness, zero dual state, and no progressive stiffness update.
+- **Matched outcome evidence:** both demos and benchmark share fingerprint
+  `2a746821cc10faee`, 252 bricks, 712 attachments, three balls, 1/60 s, and 20
+  sweeps. VBD records no fracture, 0.229 m peak and 0.122 m RMS brick
+  displacement with 131 bricks beyond 0.1 m at frame 14, then 100% retained
+  attachments at frame 120. Both current-build VBD captures pass their engine
+  ViewReports, pixel-integrity checks, and paper-grounded semantic review.
+- **Performance boundary:** five Release repetitions record 9.218 ms VBD
+  versus 7.467 ms AVBD median CPU time. The 1.234 VBD/AVBD median cost ratio is
+  descriptive only: the outcomes intentionally differ, and no source
+  achieved-accuracy or same-hardware denominator exists.
+- **Remaining boundary:** exact unpublished constants, honest Sequential
+  Impulse and XPBD rows, a source-matched four-method edit, CUDA, broad
+  fracture/unified rows, and reference-performance parity remain open.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
 Figure 13 and official-video row 12 remain partial.
 
 ## History

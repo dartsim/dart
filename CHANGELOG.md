@@ -202,14 +202,15 @@ compatibility remains on the active DART 6 LTS branch._
   finite plus motor row loads now share physical break-force accounting with
   reset, re-arm, and binary persistence.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
-- Added an explicit experimental AVBD rigid-body family to the DART 7
-  `World` C++ and dartpy facades, including typed rigid-constraint options,
-  binary/replay persistence, fail-closed configuration, and a
-  publication-shaped breakable-wall demo with quantitative, allocation,
-  performance, and assessed visual evidence. Claim-tied view assessment now
-  scopes ambiguity to an explicitly named subject while still treating other
-  renderables as possible occluders, so dense debris scenes cannot reject a
-  clear subject view because of an unrelated overlapping pair.
+- Added explicit experimental fixed-penalty VBD and augmented-Lagrangian AVBD
+  rigid-body families to the DART 7 `World` C++ and dartpy facades, including
+  typed rigid-constraint options, binary/replay persistence, fail-closed
+  configuration, and matched publication-shaped breakable-wall demos with
+  quantitative, allocation, performance, and assessed visual evidence.
+  Claim-tied view assessment now scopes ambiguity to an explicitly named
+  subject while still treating other renderables as possible occluders, so
+  dense debris scenes cannot reject a clear subject view because of an
+  unrelated overlapping pair.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default

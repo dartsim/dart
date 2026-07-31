@@ -1099,6 +1099,28 @@ TEST(Serialization, PreservesPublicAvbdSolverFamily)
       sx::ContactSolverMethod::SequentialImpulse);
 }
 
+TEST(Serialization, PreservesPublicVbdSolverFamily)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Vbd);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 20u);
+  EXPECT_EQ(
+      world2.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+}
+
 TEST(Serialization, RejectsMissingRigidConstraintIterationBudget)
 {
   namespace sx = dart::simulation;
@@ -1131,6 +1153,29 @@ TEST(Serialization, RejectsAvbdSolverInPreAvbdFormat)
       serialized.size(), 2u * sizeof(std::uint32_t) + sizeof(std::size_t));
   serialized.resize(serialized.size() - sizeof(std::size_t));
   constexpr std::uint32_t legacyVersion = 28u;
+  std::memcpy(
+      serialized.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  std::stringstream downgraded(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(downgraded), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsVbdSolverInPreVbdFormat)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(serialized.size(), 2u * sizeof(std::uint32_t));
+  constexpr std::uint32_t legacyVersion = 29u;
   std::memcpy(
       serialized.data() + sizeof(std::uint32_t),
       &legacyVersion,

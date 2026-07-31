@@ -73,6 +73,10 @@ def test_humanize_new_solver_surfaces():
         == "AVBD empty baseline step"
     )
     assert (
+        module.humanize_name("BM_VbdPaperBreakableWallStep")
+        == "VBD paper breakable-wall step"
+    )
+    assert (
         module.humanize_name("BM_AvbdRigidFixedJointStep/8")
         == "AVBD fixed-joint step · 8 links"
     )
@@ -301,6 +305,9 @@ def test_family_grouping():
     assert module.family_of("BM_VbdWorldStepDefault/8") == module.FAMILY_VBD
     assert module.family_of("BM_DeformableFemBarStep/2") == module.FAMILY_FEM
     assert module.family_of("BM_AvbdEmptyWorldStep") == module.FAMILY_AVBD
+    assert (
+        module.family_of("BM_VbdPaperBreakableWallStep") == module.FAMILY_RIGID
+    )
     assert (
         module.family_of("BM_AvbdPaperScaleHighRatioChainIterationSweep/100")
         == module.FAMILY_AVBD

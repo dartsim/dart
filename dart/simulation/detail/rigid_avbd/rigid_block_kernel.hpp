@@ -328,6 +328,7 @@ struct AvbdRigidPointPairFrictionOptions
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   double staticFrictionTolerance = 1e-12;
+  bool fixedPenalty = false;
 };
 
 struct AvbdRigidPointPairDistanceSpringOptions
@@ -1769,7 +1770,7 @@ inline double avbdRigidScalarRowForce(
     double materialStiffness)
 {
   if (avbdRigidRowUsesFiniteMaterial(materialStiffness)) {
-    return state.stiffness * constraintValue;
+    return clampAvbdRowForce(state.stiffness * constraintValue, bounds);
   }
 
   return computeAvbdHardConstraintForce(state, constraintValue, bounds);
@@ -2095,6 +2096,14 @@ inline void updateAvbdRigidPointPairFrictionTangentPair(
     const AvbdRigidBodyState& stateB,
     const AvbdRigidPointPairFrictionOptions& options)
 {
+  if (options.fixedPenalty) {
+    // Fixed-penalty VBD recomputes k*C from the current configuration on the
+    // next block sweep. It has no friction dual and no stiffness evolution.
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    return;
+  }
+
   bool clamped = false;
   const Eigen::Vector3d firstWorldPointA
       = avbdRigidBodyWorldPoint(stateA, first.localPointA);

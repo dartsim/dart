@@ -183,6 +183,48 @@ TEST(ResolvedConfiguration, RecordsPublicAvbdFamilyAsRequested)
   EXPECT_EQ(iterations->resolved, "20");
 }
 
+TEST(ResolvedConfiguration, RecordsPublicVbdFamilyAsRequested)
+{
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world(options);
+  auto parent = world.addRigidBody("parent");
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("child", childOptions);
+  world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  world.enterSimulationMode();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_FALSE(config.hasSubstitution());
+
+  const auto* rigid = findNote(config, "rigid-body");
+  ASSERT_NE(rigid, nullptr);
+  EXPECT_EQ(rigid->requested, "vbd");
+  EXPECT_EQ(rigid->resolved, "vbd");
+
+  const auto* contact = findNote(config, "rigid-contact");
+  ASSERT_NE(contact, nullptr);
+  EXPECT_EQ(contact->requested, "vbd");
+  EXPECT_EQ(contact->resolved, "vbd");
+  EXPECT_EQ(contact->reason, "as requested");
+
+  const auto* pairConstraint = findNote(config, "rigid-pair-constraint");
+  ASSERT_NE(pairConstraint, nullptr);
+  EXPECT_EQ(pairConstraint->requested, "vbd");
+  EXPECT_EQ(pairConstraint->resolved, "vbd");
+  EXPECT_EQ(pairConstraint->reason, "as requested");
+
+  const auto* iterations = findNote(config, "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->requested, "20");
+  EXPECT_EQ(iterations->resolved, "20");
+}
+
 namespace {
 
 // Emplace the internal AVBD rigid-contact opt-in on a body. The opt-in is not

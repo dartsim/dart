@@ -1543,11 +1543,18 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
   switch (solver) {
     case RigidBodySolver::SequentialImpulse:
     case RigidBodySolver::Avbd:
+    case RigidBodySolver::Vbd:
     case RigidBodySolver::Ipc:
       return true;
   }
 
   return false;
+}
+
+//==============================================================================
+bool isRigidBlockDescentSolver(RigidBodySolver solver)
+{
+  return solver == RigidBodySolver::Vbd || solver == RigidBodySolver::Avbd;
 }
 
 //==============================================================================
@@ -1567,11 +1574,11 @@ void validateRigidSolverContactMethodCompatibility(
     RigidBodySolver solver, ContactSolverMethod contactMethod)
 {
   DART_SIMULATION_THROW_T_IF(
-      solver == RigidBodySolver::Avbd
+      isRigidBlockDescentSolver(solver)
           && contactMethod != ContactSolverMethod::SequentialImpulse,
       InvalidArgumentException,
-      "The AVBD rigid-body solver owns rigid contact resolution and cannot be "
-      "combined with a non-default contact solver method");
+      "The VBD and AVBD rigid-body solvers own rigid contact resolution and "
+      "cannot be combined with a non-default contact solver method");
 }
 
 //==============================================================================
@@ -1657,6 +1664,8 @@ std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
       return 0u;
     case RigidBodySolver::Avbd:
       return 2u;
+    case RigidBodySolver::Vbd:
+      return 3u;
     case RigidBodySolver::Ipc:
       return 1u;
   }
@@ -1676,6 +1685,8 @@ RigidBodySolver decodeRigidBodySolver(std::uint8_t value)
       return RigidBodySolver::Ipc;
     case 2u:
       return RigidBodySolver::Avbd;
+    case 3u:
+      return RigidBodySolver::Vbd;
   }
 
   DART_SIMULATION_THROW_T(
@@ -1830,6 +1841,8 @@ detail::BuiltInRigidBodySolverFamily toBuiltInRigidBodySolverFamily(
       return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
     case RigidBodySolver::Avbd:
       return detail::BuiltInRigidBodySolverFamily::Avbd;
+    case RigidBodySolver::Vbd:
+      return detail::BuiltInRigidBodySolverFamily::Vbd;
     case RigidBodySolver::Ipc:
       return detail::BuiltInRigidBodySolverFamily::Ipc;
   }
@@ -2173,10 +2186,11 @@ void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
   DART_SIMULATION_THROW_T_IF(
-      solver == RigidBodySolver::Avbd && hasMultibodyStructures(world),
+      isRigidBlockDescentSolver(solver) && hasMultibodyStructures(world),
       InvalidOperationException,
-      "The AVBD rigid-body solver currently supports free rigid-body worlds "
-      "only; multibody structures require a different rigid-body solver");
+      "The VBD and AVBD rigid-body solvers currently support free rigid-body "
+      "worlds only; multibody structures require a different rigid-body "
+      "solver");
 
   if (!hasRigidBodyAvbdPairConstraints(world)) {
     return;
@@ -2204,9 +2218,8 @@ void validateRigidBodyJointPipelineSupport(
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body AVBD pair constraints are not supported in worlds with "
-      "multibody "
-      "structures");
+      "Rigid-body VBD and AVBD pair constraints are not supported in worlds "
+      "with multibody structures");
 }
 
 //==============================================================================
@@ -4225,6 +4238,9 @@ void World::recordResolvedConfiguration()
     case RigidBodySolver::Avbd:
       rigidSolver = "avbd";
       break;
+    case RigidBodySolver::Vbd:
+      rigidSolver = "vbd";
+      break;
     case RigidBodySolver::Ipc:
       rigidSolver = "ipc";
       break;
@@ -4242,13 +4258,13 @@ void World::recordResolvedConfiguration()
       break;
   }
   // The compatibility-only internal AVBD rigid-contact opt-in is emplaced per
-  // body. When it is present under a non-AVBD public family, the resolved
+  // body. When it is present under a non-VBD/AVBD public family, the resolved
   // contact path differs from the requested `ContactSolverMethod`: configured
   // contacts run AVBD only when every active contact has an enabled config on
   // at least one endpoint (PLAN-091 WP-091.1). Record that substitution only
   // when the baked collision topology guarantees this all-or-nothing stage
-  // gate. The public AVBD family itself resolves AVBD as requested and does not
-  // use this substitution path.
+  // gate. The public VBD and AVBD families resolve their owned formulations as
+  // requested and do not use this substitution path.
   const detail::WorldRegistry& registry = m_storage->registry;
   const auto* avbdStorage = registry.storage<comps::RigidAvbdContactConfig>();
   const bool hasAvbdContactConfigs
@@ -4276,7 +4292,10 @@ void World::recordResolvedConfiguration()
   const bool avbdContactOptInCoversEveryPotentialPair
       = collisionEntityCount >= 2u
         && collisionEntitiesWithoutEnabledAvbdConfig <= 1u;
-  if (m_rigidBodySolver == RigidBodySolver::Avbd) {
+  if (m_rigidBodySolver == RigidBodySolver::Vbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact", "vbd", "vbd", "as requested"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Avbd) {
     m_resolvedConfiguration.notes.push_back(
         {"rigid-contact", "avbd", "avbd", "as requested"});
   } else if (
@@ -4309,6 +4328,9 @@ void World::recordResolvedConfiguration()
          "inactive",
          "inactive",
          "no rigid pair constraints configured"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Vbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint", "vbd", "vbd", "as requested"});
   } else if (m_rigidBodySolver == RigidBodySolver::Avbd) {
     m_resolvedConfiguration.notes.push_back(
         {"rigid-pair-constraint", "avbd", "avbd", "as requested"});
@@ -4546,14 +4568,15 @@ Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
   DART_SIMULATION_THROW_T_IF(
-      m_rigidBodySolver == RigidBodySolver::Avbd,
+      isRigidBlockDescentSolver(m_rigidBodySolver),
       InvalidOperationException,
-      "Multibody structures are not supported by the AVBD rigid-body solver");
+      "Multibody structures are not supported by the VBD or AVBD rigid-body "
+      "solver");
   DART_SIMULATION_THROW_T_IF(
       hasRigidBodyAvbdPairConstraints(*this),
       InvalidOperationException,
       "Multibody structures are not supported in worlds with rigid-body "
-      "AVBD pair constraints");
+      "VBD or AVBD pair constraints");
 
   std::string candidateName;
   if (name.empty()) {
@@ -8529,6 +8552,11 @@ void World::loadBinary(std::istream& input)
           InvalidArgumentException,
           "Serialized World AVBD rigid-body solver requires binary format "
           "version 29 or newer");
+      DART_SIMULATION_THROW_T_IF(
+          formatVersion < 30 && rigidBodySolver == 3u,
+          InvalidArgumentException,
+          "Serialized World VBD rigid-body solver requires binary format "
+          "version 30 or newer");
       m_rigidBodySolver = decodeRigidBodySolver(rigidBodySolver);
       m_contactSolverMethod = decodeContactSolverMethod(contactSolverMethod);
       m_contactGradientMode = decodeContactGradientMode(contactGradientMode);

@@ -779,6 +779,10 @@ Related public resources:
   ratios, quasi-Newton Hessian approximation, alpha-regularized error
   correction, warm-started dual/stiffness state, rigid-body 6-DOF blocks,
   articulated joints, fracture limits, and unified soft/rigid interactions.
+  DART now has one publication-shaped Figure 13 reconstruction with matched
+  public fixed-penalty VBD and public AVBD CPU rows, independent numeric and
+  assessed visual outcomes, and descriptive same-host timing; it is not an
+  exact source replay or an achieved-accuracy performance comparison.
   Full completion requires CPU and GPU implementations, all paper/site/video
   experiments and demos integrated into DART tests/benchmarks/`py-demos`, and
   benchmark packets proving DART beats the reference demo repositories and the

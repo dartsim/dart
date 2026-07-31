@@ -138,12 +138,14 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
 //==============================================================================
 dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
     std::size_t iterations,
+    dvbd::AvbdRigidWorldContactSolveOptions::Formulation formulation,
     const comps::RigidAvbdContactConfig* contactConfig = nullptr,
     double contactMaxStiffness = std::numeric_limits<double>::infinity())
 {
   dvbd::AvbdRigidWorldContactSolveOptions options;
   options.descent.iterations = iterations;
   options.descent.regularization = 1e-12;
+  options.formulation = formulation;
 
   if (contactConfig != nullptr) {
     options.hasContactFamilyOverride = true;
@@ -632,8 +634,9 @@ void RigidBodyContactStage::prepare(World& world)
   constraints.clear();
 
   const auto& registry = dart::simulation::detail::registryOf(world);
-  const bool useAvbdFamily
-      = world.getRigidBodySolver() == RigidBodySolver::Avbd;
+  const RigidBodySolver rigidBodySolver = world.getRigidBodySolver();
+  const bool useOwnedBlockFamily = rigidBodySolver == RigidBodySolver::Vbd
+                                   || rigidBodySolver == RigidBodySolver::Avbd;
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(world);
   std::size_t contactCapacity = 0u;
   if (!skipContactQuery) {
@@ -685,7 +688,8 @@ void RigidBodyContactStage::prepare(World& world)
       = distanceSpringStorage != nullptr ? distanceSpringStorage->size() : 0u;
   const std::size_t avbdContactCapacity
       = contactCapacity != 0u
-                && (useAvbdFamily || mayHaveRigidAvbdContactConfigs(registry))
+                && (useOwnedBlockFamily
+                    || mayHaveRigidAvbdContactConfigs(registry))
             ? contactCapacity
             : 0u;
   if (avbdContactCapacity == 0u && jointCapacity == 0u
@@ -719,10 +723,18 @@ void RigidBodyContactStage::prepare(World& world)
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
+  const bool useVbdFamily = world.getRigidBodySolver() == RigidBodySolver::Vbd;
   const bool useAvbdFamily
       = world.getRigidBodySolver() == RigidBodySolver::Avbd;
+  const bool useOwnedBlockFamily = useVbdFamily || useAvbdFamily;
+  const auto formulation
+      = useVbdFamily
+            ? dvbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty
+            : dvbd::AvbdRigidWorldContactSolveOptions::Formulation::
+                  AugmentedLagrangian;
+  const std::string_view solverFamilyName = useVbdFamily ? "VBD" : "AVBD";
 
-  const auto projectAvbdRigidPointJoints = [&]() {
+  const auto projectRigidBlockPointJoints = [&]() {
     const bool hasPointJointConfigs
         = dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
     const bool hasDistanceSpringConfigs
@@ -778,7 +790,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         registry, scratch.snapshot, timeStep);
 
     const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
-        = rigidAvbdWorldSolveOptions(m_iterations);
+        = rigidAvbdWorldSolveOptions(m_iterations, formulation);
     const dvbd::AvbdRigidWorldContactSolveResult solveResult
         = dvbd::solveAvbdRigidWorldContactSnapshot(
             scratch.snapshot,
@@ -808,7 +820,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   };
 
   if (shouldSkipRigidBodyContactQuery(world)) {
-    if (projectAvbdRigidPointJoints()) {
+    if (projectRigidBlockPointJoints()) {
       return;
     }
 
@@ -819,7 +831,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   }
 
   const bool mayUseAvbdContactDetails
-      = useAvbdFamily || mayHaveRigidAvbdContactConfigs(registry);
+      = useOwnedBlockFamily || mayHaveRigidAvbdContactConfigs(registry);
   const auto queriedContacts = world.queryContacts(
       CollisionQueryOptions{},
       /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
@@ -831,7 +843,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   }
   recordRigidContactEnvelopeMetrics(world, registry, contacts);
   if (contacts.empty()) {
-    if (projectAvbdRigidPointJoints()) {
+    if (projectRigidBlockPointJoints()) {
       return;
     }
 
@@ -841,16 +853,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
-  // AVBD rigid contact path (PLAN-104): the public AVBD family selects every
-  // supported active free-rigid contact. The compatibility path under another
-  // family still requires every active contact to carry a private opt-in.
-  // Both assemble 6-DOF point-pair rows, solve against velocity-predicted
-  // inertial targets, and project the displacement back into velocities. The
-  // standard rigid position stage then advances poses.
-  const auto avbdConfig
-      = mayUseAvbdContactDetails
-            ? rigidAvbdContactStageConfig(registry, contacts, useAvbdFamily)
-            : std::optional<comps::RigidAvbdContactConfig>{};
+  // Rigid block-descent contact path (PLAN-104): the public VBD and AVBD
+  // families select every supported active free-rigid contact. VBD holds each
+  // conservative row at a finite penalty stiffness; AVBD augments and ramps the
+  // same row families. The compatibility path under another family remains
+  // AVBD-only and requires every active contact to carry a private opt-in.
+  const auto avbdConfig = mayUseAvbdContactDetails
+                              ? rigidAvbdContactStageConfig(
+                                    registry, contacts, useOwnedBlockFamily)
+                              : std::optional<comps::RigidAvbdContactConfig>{};
   if (avbdConfig) {
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = AvbdScratchPtr(
@@ -870,22 +881,26 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         scratch.buildScratch,
         contactOptions);
     const auto expectedPublicContactCount
-        = useAvbdFamily ? countProjectableRigidAvbdContacts(registry, contacts)
-                        : std::optional<std::size_t>{};
+        = useOwnedBlockFamily
+              ? countProjectableRigidAvbdContacts(registry, contacts)
+              : std::optional<std::size_t>{};
     DART_SIMULATION_THROW_T_IF(
-        useAvbdFamily && !expectedPublicContactCount.has_value(),
+        useOwnedBlockFamily && !expectedPublicContactCount.has_value(),
         NotImplementedException,
-        "The AVBD rigid-body solver encountered an active contact envelope it "
-        "cannot project; sequential-impulse fallback is disabled");
+        "The {} rigid-body solver encountered an active contact envelope it "
+        "cannot project; sequential-impulse fallback is disabled",
+        solverFamilyName);
     const bool allContactsCovered
-        = useAvbdFamily ? scratch.snapshot.contacts.size()
-                              == expectedPublicContactCount.value()
-                        : scratch.snapshot.contacts.size() == contacts.size();
+        = useOwnedBlockFamily
+              ? scratch.snapshot.contacts.size()
+                    == expectedPublicContactCount.value()
+              : scratch.snapshot.contacts.size() == contacts.size();
     DART_SIMULATION_THROW_T_IF(
-        useAvbdFamily && !allContactsCovered,
+        useOwnedBlockFamily && !allContactsCovered,
         NotImplementedException,
-        "The AVBD rigid-body solver could not assemble every active contact; "
-        "sequential-impulse fallback is disabled");
+        "The {} rigid-body solver could not assemble every active contact; "
+        "sequential-impulse fallback is disabled",
+        solverFamilyName);
 
     std::size_t appendedJoints = 0u;
     std::size_t appendedDistanceSprings = 0u;
@@ -925,7 +940,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 
       const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
           = rigidAvbdWorldSolveOptions(
-              m_iterations, &*avbdConfig, contactOptions.maxStiffness);
+              m_iterations,
+              formulation,
+              &*avbdConfig,
+              contactOptions.maxStiffness);
 
       const dvbd::AvbdRigidWorldContactSolveResult solveResult
           = dvbd::solveAvbdRigidWorldContactSnapshot(
@@ -956,12 +974,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       }
 
       DART_SIMULATION_THROW_T_IF(
-          useAvbdFamily,
+          useOwnedBlockFamily,
           InvalidOperationException,
-          "The AVBD rigid-body solver assembled active constraints but "
-          "produced no AVBD rows; sequential-impulse fallback is disabled");
+          "The {} rigid-body solver assembled active constraints but produced "
+          "no block-descent rows; sequential-impulse fallback is disabled",
+          solverFamilyName);
     } else if (
-        useAvbdFamily && allContactsCovered
+        useOwnedBlockFamily && allContactsCovered
         && expectedPublicContactCount.value() == 0u) {
       m_avbdScratch->clear();
       return;
@@ -971,12 +990,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   }
 
   DART_SIMULATION_THROW_T_IF(
-      useAvbdFamily,
+      useOwnedBlockFamily,
       InvalidOperationException,
-      "The AVBD rigid-body solver did not resolve the active rigid contacts; "
-      "sequential-impulse fallback is disabled");
+      "The {} rigid-body solver did not resolve the active rigid contacts; "
+      "sequential-impulse fallback is disabled",
+      solverFamilyName);
 
-  if (projectAvbdRigidPointJoints()) {
+  if (projectRigidBlockPointJoints()) {
     // Keep the AVBD joint projection active while ordinary contacts continue
     // through the selected non-AVBD contact solver below.
   } else if (m_avbdScratch != nullptr) {

@@ -947,6 +947,9 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "avbd_articulated_spherical_breakable_joint",
             "avbd_articulated_spherical_pair_breakable_joint",
         },
+        "VBD Rigid Constraints (sx)": {
+            "vbd_paper_breakable_wall",
+        },
         "Planned World Ports": {
             "planned_inverse_kinematics",
             "planned_simbicon_walking",
@@ -10455,6 +10458,141 @@ def test_avbd_paper_breakable_wall_outcome_is_deterministic() -> None:
         "contact_count",
     ):
         assert outcomes[0][key] == pytest.approx(outcomes[1][key])
+
+    for collection in ("bricks", "balls"):
+        positions = [
+            np.asarray(
+                [
+                    np.asarray(body.translation, dtype=float).reshape(3)
+                    for body in setup.info[collection]
+                ]
+            )
+            for setup in setups
+        ]
+        np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1.0e-12)
+    assert [
+        joint.is_broken for joint in setups[0].info["joints"]
+    ] == [joint.is_broken for joint in setups[1].info["joints"]]
+
+
+def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
+    sx = _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_paper_breakable_wall import (
+        build as build_avbd,
+    )
+    from examples.demos.scenes.vbd_paper_breakable_wall import (
+        OUTCOME_ORACLE,
+        build,
+    )
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    reference = setup.info["paper_reference"]
+
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.VBD
+    assert sx_world.rigid_constraint_options.iterations == 20
+    assert sx_world.time_step == pytest.approx(1.0 / 60.0)
+    assert sx_world.num_rigid_bodies == 256
+    assert sx_world.num_joints == 712
+    assert reference["published_facts"]["vbd_outcome"] == (
+        "the wall bends under impact but does not break"
+    )
+    assert (
+        setup.info["scene_spec_fingerprint"]
+        == build_avbd().info["scene_spec_fingerprint"]
+    )
+
+    sx_world.step(n=OUTCOME_ORACLE["evaluation_frame"])
+    bend = setup.info["outcome_metrics"]()
+    assert bend["frame"] == OUTCOME_ORACLE["evaluation_frame"]
+    assert bend["checkpoint"] == "bend"
+    assert bend["status"] == "pass"
+    assert bend["thresholds_pass"] is True
+    assert all(bend["threshold_checks"].values())
+    assert bend["broken_joints"] == 0
+    assert bend["unbroken_joints"] == 712
+    assert (
+        bend["maximum_wall_normal_displacement"]
+        >= OUTCOME_ORACLE["minimum_maximum_wall_normal_displacement"]
+    )
+    assert (
+        bend["rms_wall_normal_displacement"]
+        >= OUTCOME_ORACLE["minimum_rms_wall_normal_displacement"]
+    )
+    assert bend["bent_brick_count"] >= OUTCOME_ORACLE["minimum_bent_bricks"]
+    assert bend["last_step_iterations"] == 20
+
+    bend_capture = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert bend_capture["solver"] == "public_vbd"
+    assert bend_capture["rigid_body_solver"] == "VBD"
+    assert bend_capture["outcome"]["checkpoint"] == "bend"
+    assert bend_capture["outcome"]["thresholds_pass"] is True
+
+    sx_world.step(
+        n=(
+            OUTCOME_ORACLE["retention_evaluation_frame"]
+            - OUTCOME_ORACLE["evaluation_frame"]
+        )
+    )
+    retention = setup.info["outcome_metrics"]()
+    assert retention["frame"] == OUTCOME_ORACLE["retention_evaluation_frame"]
+    assert retention["checkpoint"] == "retention"
+    assert retention["status"] == "pass"
+    assert retention["thresholds_pass"] is True
+    assert all(retention["threshold_checks"].values())
+    assert retention["broken_joints"] == 0
+    assert retention["unbroken_joints"] == 712
+    assert (
+        retention["total_retained_fraction"]
+        >= OUTCOME_ORACLE["minimum_total_retained_fraction"]
+    )
+
+
+def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.vbd_paper_breakable_wall import (
+        OUTCOME_ORACLE,
+        build,
+    )
+
+    setups = [build(), build()]
+    for setup in setups:
+        setup.info["sx_world"].step(n=OUTCOME_ORACLE["evaluation_frame"])
+
+    bend_outcomes = [setup.info["outcome_metrics"]() for setup in setups]
+    for key in (
+        "broken_joints",
+        "unbroken_joints",
+        "maximum_wall_normal_displacement",
+        "rms_wall_normal_displacement",
+        "bent_brick_count",
+        "last_step_iterations",
+        "contact_count",
+    ):
+        assert bend_outcomes[0][key] == pytest.approx(bend_outcomes[1][key])
+
+    for setup in setups:
+        setup.info["sx_world"].step(
+            n=(
+                OUTCOME_ORACLE["retention_evaluation_frame"]
+                - OUTCOME_ORACLE["evaluation_frame"]
+            )
+        )
+    retention_outcomes = [setup.info["outcome_metrics"]() for setup in setups]
+    for key in (
+        "broken_joints",
+        "unbroken_joints",
+        "total_retained_fraction",
+        "last_step_iterations",
+        "contact_count",
+    ):
+        assert retention_outcomes[0][key] == pytest.approx(
+            retention_outcomes[1][key]
+        )
 
     for collection in ("bricks", "balls"):
         positions = [

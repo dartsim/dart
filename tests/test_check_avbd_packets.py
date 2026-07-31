@@ -104,6 +104,44 @@ def test_public_avbd_contact_claim_without_private_config_passes(tmp_path):
     assert module.packet_errors(path) == []
 
 
+def test_public_world_family_with_crossed_point_joint_solver_is_rejected(
+    tmp_path,
+):
+    module = _load_module()
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(
+                rigid_contact_solver="vbd",
+                rigid_contact_selection="world_solver_family",
+                rigid_point_joint_solver="avbd",
+            ),
+        },
+    )
+    errors = module.packet_errors(path)
+    assert any(
+        "rigid_point_joint_solver to be 'none' or match" in error for error in errors
+    )
+
+
+def test_contact_method_with_vbd_point_rows_is_rejected(tmp_path):
+    module = _load_module()
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(
+                rigid_point_joint_solver="vbd",
+            ),
+        },
+    )
+    errors = module.packet_errors(path)
+    assert any("rigid_point_joint_solver 'vbd' requires" in error for error in errors)
+
+
 def test_unknown_solver_name_is_rejected(tmp_path):
     module = _load_module()
     path = _write_packet(

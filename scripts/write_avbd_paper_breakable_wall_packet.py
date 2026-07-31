@@ -126,6 +126,7 @@ SOURCE_PATHS = (
     Path("python/dartpy/_view_quality.py"),
     Path("python/examples/demos/scenes/avbd_paper_breakable_wall.py"),
     Path("tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp"),
+    Path("scripts/avbd_packet_schema.py"),
     Path("scripts/write_avbd_paper_breakable_wall_packet.py"),
 )
 
@@ -372,6 +373,7 @@ def _validate_resolved_configuration(metrics: dict[str, Any]) -> list[dict[str, 
 def _validate_view_report(
     metrics: dict[str, Any],
     *,
+    expected_focus: tuple[str, ...] = VIEW_FOCUS,
     width: int,
     height: int,
 ) -> dict[str, Any]:
@@ -388,7 +390,11 @@ def _validate_view_report(
     _require_exact(report.get("pass"), True, "ViewReport pass")
     _require_exact(report.get("issues"), [], "ViewReport issues")
     _require_exact(report.get("size"), [width, height], "ViewReport size")
-    _require_exact(report.get("focus"), list(VIEW_FOCUS), "ViewReport focus")
+    _require_exact(
+        report.get("focus"),
+        list(expected_focus),
+        "ViewReport focus",
+    )
     camera = report.get("camera")
     if not isinstance(camera, dict):
         raise AvbdPaperBreakableWallPacketError("ViewReport missing camera")
@@ -470,6 +476,7 @@ def _read_scene_metric_events(
     path: Path,
     *,
     expected_frame: int,
+    expected_scene_id: str = SCENE_ID,
 ) -> list[dict[str, Any]]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -499,7 +506,7 @@ def _read_scene_metric_events(
         )
         _require_exact(
             event.get("scene"),
-            SCENE_ID,
+            expected_scene_id,
             f"{path}:{line_number} scene",
         )
         _require_exact(
@@ -842,6 +849,7 @@ def _validate_image_verdict(
     screenshot: Path,
     *,
     expected_frame: int,
+    expected_scene_id: str = SCENE_ID,
 ) -> dict[str, Any]:
     verdict = _load_json(verdict_path)
     _require_exact(
@@ -875,7 +883,7 @@ def _validate_image_verdict(
     metadata = verdict.get("metadata")
     expected_metadata = {
         "frame": str(expected_frame),
-        "scene": SCENE_ID,
+        "scene": expected_scene_id,
         "view": CAMERA_VIEW,
     }
     _require_exact(metadata, expected_metadata, "image verdict metadata")

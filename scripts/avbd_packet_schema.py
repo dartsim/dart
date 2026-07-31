@@ -36,18 +36,20 @@ RESOLVED_SOLVER_IDENTITY_KEY = "resolved_solver_identity"
 RIGID_CONTACT_SELECTION_KEY = "rigid_contact_selection"
 
 # The contact path that actually resolved rigid-rigid contacts in the timed
-# scene. "avbd" may be selected by the public world solver family or by the
-# compatibility-only internal body opt-in; contact-free scenes record "none".
+# scene. "vbd" and "avbd" may be selected by their public world solver
+# families; "avbd" may also be selected by the compatibility-only internal
+# body opt-in. Contact-free scenes record "none".
 ALLOWED_RIGID_CONTACT_SOLVERS = (
     "avbd",
     "boxed_lcp",
     "none",
     "sequential_impulse",
+    "vbd",
 )
 
 # The solver family that resolved rigid-body point-joint/motor/distance-spring
 # rows; joint-free scenes record "none".
-ALLOWED_RIGID_POINT_JOINT_SOLVERS = ("avbd", "none")
+ALLOWED_RIGID_POINT_JOINT_SOLVERS = ("avbd", "none", "vbd")
 
 ALLOWED_RIGID_CONTACT_SELECTIONS = (
     "body_opt_in",
@@ -145,6 +147,14 @@ def resolved_solver_identity_errors(
         )
 
     rigid_contact_solver = identity.get("rigid_contact_solver")
+    rigid_point_joint_solver = identity.get("rigid_point_joint_solver")
+    if version < RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION and (
+        rigid_contact_solver == "vbd" or rigid_point_joint_solver == "vbd"
+    ):
+        errors.append(
+            f"{packet_name}: VBD solver identities require schema_version "
+            f"{RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION} or newer"
+        )
     if selection is None:
         if (
             isinstance(emplaced, bool)
@@ -163,12 +173,26 @@ def resolved_solver_identity_errors(
                 "rigid_contact_selection 'body_opt_in' requires "
                 "rigid_contact_solver 'avbd' and an emplaced private config"
             )
+        if identity.get("rigid_point_joint_solver") == "vbd":
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_point_joint_solver 'vbd' requires "
+                "rigid_contact_selection 'world_solver_family'"
+            )
     elif selection == "world_solver_family":
-        if rigid_contact_solver != "avbd" or emplaced is not False:
+        if rigid_contact_solver not in ("avbd", "vbd") or emplaced is not False:
             errors.append(
                 f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
                 "rigid_contact_selection 'world_solver_family' requires "
-                "rigid_contact_solver 'avbd' without a private body config"
+                "rigid_contact_solver 'vbd' or 'avbd' without a private body "
+                "config"
+            )
+        if rigid_point_joint_solver not in ("none", rigid_contact_solver):
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_contact_selection 'world_solver_family' requires "
+                "rigid_point_joint_solver to be 'none' or match "
+                "rigid_contact_solver"
             )
     elif selection == "contact_solver_method":
         if (
@@ -180,6 +204,12 @@ def resolved_solver_identity_errors(
                 "rigid_contact_selection 'contact_solver_method' requires "
                 "a boxed_lcp or sequential_impulse contact solver without "
                 "a private AVBD body config"
+            )
+        if identity.get("rigid_point_joint_solver") == "vbd":
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_point_joint_solver 'vbd' requires "
+                "rigid_contact_selection 'world_solver_family'"
             )
     elif selection == "not_applicable" and rigid_contact_solver != "none":
         errors.append(
@@ -207,6 +237,7 @@ _REPORT_RIGID_CONTACT_FAMILY_TO_PACKET = {
     "avbd": "avbd",
     "sequential-impulse": "sequential_impulse",
     "boxed-lcp": "boxed_lcp",
+    "vbd": "vbd",
 }
 
 # A non-AVBD public family may still report this exact suffix when a body

@@ -106,6 +106,21 @@ TEST(BuiltInWorldStepSchedule, AvbdUsesSplitContactPipeline)
   expectInlineCapacity(options);
 }
 
+TEST(BuiltInWorldStepSchedule, VbdUsesSplitContactPipeline)
+{
+  auto options = defaultOptions();
+  options.rigidBodySolver = RigidFamily::Vbd;
+
+  EXPECT_EQ(
+      slots(options),
+      (std::vector<Slot>{
+          Slot::RigidBodyVelocity,
+          Slot::RigidBodyContact,
+          Slot::RigidBodyPosition,
+          Slot::Kinematics}));
+  expectInlineCapacity(options);
+}
+
 TEST(BuiltInWorldStepSchedule, EmptyWorldUsesOnlyWorldLevelKinematics)
 {
   sxdetail::BuiltInWorldStepScheduleOptions options;

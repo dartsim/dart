@@ -91,10 +91,11 @@ struct KinematicBodyStepTrace
 /// Internal per-body configuration for AVBD rigid contact.
 ///
 /// This component is intentionally not surfaced through the public `World`
-/// facade. `RigidBodySolver::Avbd` selects AVBD globally and uses these values
-/// only as internal per-body refinements. Compatibility tests may also attach
-/// enabled configs while another public family is selected; only that private
-/// compatibility path may fall back to sequential impulse.
+/// facade. `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd` select their
+/// block-descent formulations globally and use these values only as internal
+/// per-body contact refinements. Compatibility tests may also attach enabled
+/// configs while another public family is selected; that private path remains
+/// AVBD-only and may fall back to sequential impulse.
 struct RigidAvbdContactConfig
 {
   bool enabled = true;
