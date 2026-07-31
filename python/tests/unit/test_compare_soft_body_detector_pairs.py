@@ -1,3 +1,5 @@
+import builtins
+import errno
 import importlib.util
 import json
 import os
@@ -24,6 +26,88 @@ def _load_runner_module():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def test_module_import_does_not_require_posix_fcntl(monkeypatch):
+    original_import = builtins.__import__
+
+    def import_without_fcntl(name, *args, **kwargs):
+        if name == "fcntl":
+            raise ModuleNotFoundError("No module named 'fcntl'")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", import_without_fcntl)
+
+    assert _load_runner_module().SCHEMA_VERSION == "dart.soft_body_detector_pairs/v1"
+
+
+def test_windows_file_lock_uses_one_byte_nonblocking_region(tmp_path):
+    runner = _load_runner_module()
+    lock_path = tmp_path / "runner.lock"
+    calls = []
+
+    class Backend:
+        LK_NBLCK = 17
+
+        @staticmethod
+        def locking(file_descriptor, mode, byte_count):
+            calls.append((file_descriptor, mode, byte_count))
+
+    with lock_path.open("a+b") as stream:
+        runner._acquire_windows_file_lock(stream, Backend)
+        assert calls == [(stream.fileno(), Backend.LK_NBLCK, 1)]
+
+    assert lock_path.read_bytes() == b"\0"
+
+
+def test_windows_file_lock_reports_contention(tmp_path):
+    runner = _load_runner_module()
+
+    class ContendedBackend:
+        LK_NBLCK = 17
+
+        @staticmethod
+        def locking(_file_descriptor, _mode, _byte_count):
+            raise OSError(errno.EACCES, "lock unavailable")
+
+    with (tmp_path / "runner.lock").open("a+b") as stream:
+        with pytest.raises(BlockingIOError):
+            runner._acquire_windows_file_lock(stream, ContendedBackend)
+
+
+def test_benchmark_lock_records_owner_and_releases_on_close(tmp_path, monkeypatch):
+    runner = _load_runner_module()
+    common_dir = tmp_path / ".git"
+    common_dir.mkdir()
+    monkeypatch.setattr(
+        runner.matrix,
+        "git",
+        lambda _root, *_args: str(common_dir),
+    )
+    revision = "a" * 40
+    lock_path = common_dir / "dart-soft-body-benchmark.lock"
+    lock_path.write_text("stale metadata that must be replaced\n", encoding="utf-8")
+
+    stream, acquired_path = runner.acquire_benchmark_lock(tmp_path, revision)
+    try:
+        stream.seek(0)
+        owner = json.loads(stream.read().decode())
+        assert owner["pid"] == os.getpid()
+        assert owner["revision"] == revision
+        assert owner["acquired_at"]
+        with pytest.raises(RuntimeError, match="Another DART soft-body evidence runner"):
+            runner.acquire_benchmark_lock(tmp_path, revision)
+    finally:
+        stream.close()
+
+    replacement, replacement_path = runner.acquire_benchmark_lock(tmp_path, revision)
+    try:
+        replacement.seek(0)
+        replacement_owner = json.loads(replacement.read().decode())
+        assert replacement_owner["revision"] == revision
+    finally:
+        replacement.close()
+    assert acquired_path == replacement_path == lock_path
 
 
 def _write_run(

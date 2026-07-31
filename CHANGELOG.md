@@ -68,6 +68,25 @@
     text-first plus claim-tied OSG visual-debugging route, while preserving
     Claude Code and OpenCode adapters.
 
+  * Add a release-tailored model-upgrade audit and strengthen agent visual
+    verification with durable-context diagnostics, viewport-aware assessed OSG
+    framing, deterministic semantic-review targets and bundles, and fail-closed
+    evidence publication. Release evidence is content-addressed, validates the
+    complete selection contract before any GitHub lookup, requires exact remote
+    size/digest/uploaded-state metadata on retry, and records its
+    path/size/digest/URL bindings so later or partially retried publications
+    cannot replace bytes behind earlier PR URLs. The AI checker also validates
+    branch test-task semantics, including the Release-only CMake `ALL` boundary
+    and its graph-owned CTest/pytest coverage, executes controlled sanitization
+    and failure-propagation probes, and requires canonical C++, AI-infra, and
+    visual pytest tasks to execute test bodies despite ambient selector or
+    collection controls. It also validates Pixi commands across every active
+    durable task document. The required
+    consolidated-DART detector smoke uses a semantically inspected orthogonal
+    view that keeps its shape labels, contact markers, and collision bounds
+    readable.
+    ([#3410](https://github.com/dartsim/dart/pull/3410))
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.

@@ -27,17 +27,27 @@ surface affects shared behavior.
   ```bash
   pixi run sync-ai-commands
   pixi run check-ai-commands
-  pixi run python scripts/check_ai_infrastructure.py --check
-  pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
-  pixi run python scripts/check_ai_infrastructure.py --scenarios
+  pixi run check-ai-infra
+  pixi run test-ai-infra
+  pixi run exercise-agent-scenarios
   pixi run lint
   ```
 
   `check-ai-commands` proves generated parity and manifest ownership. The
-  structural checker validates task/path references, instruction budgets,
-  branch profile, agent/config/hook wiring, and CI coverage. The focused tests
-  cover regressions; the scenario command exercises release routing and
-  unavailable-hook fallbacks without network or model calls.
+  `check-ai-infra` completion gate includes those structural checks and
+  validates the configured Release graph through the CMake File API, expanded
+  target trace, configuration-selected CTest inventory, sanitized GTest
+  contract, and conftest-free pytest provenance. It rejects result-neutralizing
+  CTest properties and explicit local pytest plugins. It executes controlled
+  runner probes for hostile ambient controls, actual test-body execution,
+  successful zero-body rejection, and failure propagation; it does not execute
+  the project suites and does not replace `test-ai-infra`, `test-all`, hosted
+  platform CI, or claim-tied semantic image review. The canonical AI and visual
+  pytest tasks share this guarded runner. The direct structural checker form is
+  reserved for fast staged/setup internals and is not sufficient completion
+  evidence. The focused tests cover regressions; the scenario command exercises
+  release routing and unavailable-hook fallbacks without network or model
+  calls.
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source
@@ -57,9 +67,10 @@ it never configures, builds, prompts, or uses the network. It does not replace
 Use `dart-verify-sim` whenever a claim depends on model/scene structure,
 dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
 or a visual example. Pair a focused text correctness oracle with an assessed,
-claim-tied capture and core `DebugOverlay` layers. If DISPLAY/Xvfb or the
-required renderer is unavailable, record that limitation. Name the replacement
-evidence; never use a screenshot as the sole correctness oracle.
+claim-tied capture, semantic inspection by an image-capable reviewer, and core
+`DebugOverlay` layers. If DISPLAY/Xvfb, the required renderer, or native image
+review is unavailable, record that limitation. Name the replacement evidence;
+never use a screenshot as the sole correctness oracle.
 
 ## Visual Verification (Headless Capture)
 
@@ -100,7 +111,8 @@ is set.
 
 The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
-reported but only gates when you pass `--require-contrast`.
+reported but only gates when you pass `--require-contrast`. This is a machine
+pixel-integrity/reference-diff result, not semantic visual review.
 
 The Release Linux CI job runs a settled-contact `agent-capture` under Xvfb with
 contacts, collision bounds, and labels, requires `image-verdict` to accept the
@@ -112,7 +124,10 @@ the sidecar's count of any filtered DART 6 sentinel contacts, then proves
 contacts, collision bounds, and labels each change pixels independently. This
 keeps the camera assessment, core OSG debug overlay, off-screen
 renderer, artifact write, overlay injection, and image-verdict path covered end
-to end without a display-dependent skip.
+to end without a display-dependent skip. The consolidated `dart` detector's
+multi-shape smoke uses an x-orthogonal camera selected by native semantic image
+inspection so cone, capsule, ellipsoid, and ground labels remain individually
+readable alongside their contact markers and collision bounds.
 
 - Active camera control, view quality, and debug overlays (agent evidence):
 
@@ -125,6 +140,27 @@ to end without a display-dependent skip.
       --auto-views 2 --out /tmp/evidence
   ```
 
+  The v2 capture sidecar provides deterministic native-review targets: the
+  selected still and start/middle/end frames for turntable or motion output.
+  An image-capable agent must actually open those PNGs. Use original detail for
+  small contacts, labels, bounds, or frame axes. Record the visible observation
+  separately from the text oracle; if they disagree, report fail/uncertain,
+  reframe or recapture, and investigate instead of averaging them into a pass.
+  When native image input is unavailable, hand the selected files and sidecar
+  to an image-capable reviewer and record that limitation. Package a
+  reproducible handoff with:
+
+  ```bash
+  pixi run verification-bundle -- --out /tmp/verification-bundle \
+      --question "Does the settled-contact image agree with the text oracle?" \
+      --text /tmp/evidence/capture_capture.json \
+      --text /tmp/evidence/text-oracle.json \
+      --image /tmp/evidence/capture_auto0.png
+  ```
+
+  The bundle copies and hashes the inputs and writes `vlm_prompt.md`; creating
+  it does not mean a semantic review occurred.
+
   Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
   `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
   `labels` (matching DART 7's overlay set).
@@ -134,8 +170,10 @@ to end without a display-dependent skip.
   `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
   `select_viewpoints` deterministically picks azimuth-diverse better views —
   when a report lists issues, reframe or reselect instead of shipping the
-  shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
-  dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
+  shot. Viewport fitting uses the limiting horizontal or vertical field of
+  view, and a world without bounded renderables fails explicitly rather than
+  inventing a radius. Body bounds come from the core `Shape.getBoundingBox()`
+  (now bound in dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
   the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
   grid, the world frame, contacts (implausible sentinel contact points are
   skipped and counted), body frames, velocity arrows, centers of mass,
@@ -157,12 +195,27 @@ to end without a display-dependent skip.
       --labels BEFORE AFTER --out compare.png     # also: blend, diff
   pixi run evidence-select -- candidates.json --out selection.json
   pixi run evidence-publish -- selection.json --environment "..." \
+      --text-oracle "focused test/metrics result" \
+      --visible-observation "what was seen after opening the selected PNGs" \
+      --reconciliation "how image and text agree or disagree" \
+      --semantic-verdict pass --not-proven "explicit claim boundary" \
       --out pr_section.md   # manual placeholders; gh-release needs --yes
   ```
 
   Every artifact must support an explicit claim (`evidence-select` rejects
-  unclaimed ones and records per-artifact rationale); media is GitHub-hosted,
-  never committed to the repository.
+  unclaimed ones and records per-artifact rationale). Publication passes only
+  when claim coverage and the semantic text/image verdict pass, and every
+  publication records at least one thing the selected evidence does not prove.
+  A `gh-release --yes` run does not upload anything when either gate fails.
+  Before mutation, it validates the complete selection contract (claims,
+  artifact kinds and metadata, coverage, rejected entries, byte totals, and
+  pass state), revalidates local sizes and SHA-256 digests, then stages
+  immutable content-addressed assets. A retry accepts an existing asset only
+  when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
+  missing integrity metadata fails closed. It never cross-content-clobbers an
+  existing URL, and the publication manifest binds each source path, size,
+  digest, asset name, and URL so a partial upload is safely retryable.
+  Media is GitHub-hosted, never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

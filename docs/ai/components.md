@@ -14,14 +14,24 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
   `scripts/pretool_guard_bridge.py`: native-Windows forwarding into the shared
   Git Bash guard.
 - `scripts/sync_ai_commands.py`: sync and validation tool.
-- `scripts/check_ai_infrastructure.py`: doctor, drift, and scenario checker.
+- `scripts/check_ai_infrastructure.py`: doctor, drift, scenario, and effective
+  CMake test-graph checker; the Pixi gate couples source contracts to a
+  configured File API graph, expanded command trace, active generated CTest
+  configuration, clean ambient GTest execution, and pinned conftest-free pytest
+  provenance. Controlled runner probes require actual body execution and
+  failure propagation rather than trusting lexical markers, stale build files,
+  result-neutralizing properties, or imported module state.
+- `scripts/run_pytest.py`: shared guarded pytest runner for project, AI-infra,
+  and claim-tied visual gates; starts under Python isolation, clears ambient
+  pytest controls, disables local configuration/plugins, and rejects successful
+  zero-body runs.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
   surfaces, and DART 7 exclusions.
-- `docs/ai/agent-scenarios.json`: seven deterministic contracts covering
-  orientation, small changes, failure diagnosis, docs, components, simulation
-  verification, and release maintenance. The simulation route machine-checks
-  the text-first plus claim-tied visual evidence policy.
+- `docs/ai/agent-scenarios.json`: eight deterministic contracts covering
+  orientation, small changes, failure diagnosis, docs, model upgrades,
+  components, simulation verification, and release maintenance. The simulation
+  route machine-checks text-first evidence and semantic image-review policy.
 - `docs/ai/workflows.md`: human-readable workflow map and gates.
 - `docs/ai/terminology.md`: canonical AI-facing vocabulary.
 - `docs/ai/orchestration.md`: work-packet and orchestrator/executor contract.
@@ -33,6 +43,18 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
 AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
 compact and make rules visible through owner placement, read-order pointers,
 workflow required reading, and generated-adapter sync instead of duplication.
+
+DART's AI infrastructure includes tracked documentation that supplies
+in-session context and across-session project state. That durable layer includes
+the north star and session policy under `docs/ai/`, living priority and gates
+under `docs/plans/`, active handoffs under `docs/dev_tasks/`, and the handbook,
+design, release, or module owners routed into a task.
+
+`dart-model-upgrade` audits that layer for discovery, freshness, duplication,
+context cost, resume quality, and human usability alongside tool config,
+prompts, adapters, agents, hooks, scripts, and tests. Keep the result
+progressively disclosed: audit owner paths and representative live state
+without loading every plan, task, or handbook page into every session.
 
 Use `.claude/` as the editable source. Do not hand-edit generated `.agents/` or
 `.opencode/` files; rerun the sync script instead. `.codex/` is maintained
