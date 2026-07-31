@@ -93,6 +93,7 @@
     contract markers, and gates route through that single owner instead of
     duplicating per-family tiers, and the simulation image-review guidance
     names image-capable targets across both lanes.
+    ([#3418](https://github.com/dartsim/dart/pull/3418))
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
