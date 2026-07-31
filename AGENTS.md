@@ -17,7 +17,7 @@ pixi run build        # Build C++ libraries and utilities
 pixi run test         # Build and run C++ tests
 pixi run build-py-dev # Build pybind11 dartpy bindings
 pixi run test-py      # Run dartpy tests
-pixi run test-all     # Build all default CMake targets
+pixi run test-all     # Build defaults and run C++/Python tests
 pixi run lint         # Format code, docs, TOML, and spelling (auto-fixes)
 pixi run check-lint   # Run the non-mutating lint aggregate
 ```

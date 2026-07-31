@@ -968,7 +968,7 @@ if [ "$verdict" = "commit" ]; then
             *) hook_path="$repo_root/$hook_path" ;;
         esac
         if [ -x "$hook_path" ] \
-            && grep -Fq "DART-MANAGED-HOOK v5  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
+            && grep -Fq "DART-MANAGED-HOOK v6  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
             && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
             exit 0
         fi
@@ -986,7 +986,7 @@ fi
 
 if [ ! -f "$repo_root/scripts/check_agent_hook.py" ]; then
     echo "DART guard: full agent gate unavailable in this worktree; running staged diff fallback" >&2
-    if ! git -C "$repo_root" diff --cached --check >&2; then
+    if ! git -C "$repo_root" -c core.whitespace=cr-at-eol diff --cached --check >&2; then
         echo "DART guard: staged diff check FAILED — commit blocked." >&2
         exit 2
     fi
@@ -995,7 +995,7 @@ fi
 
 if ! "$python_cmd" -c 'import tomllib' >/dev/null 2>&1; then
     echo "DART guard: compatible Python unavailable; running staged diff fallback" >&2
-    if ! git -C "$repo_root" diff --cached --check >&2; then
+    if ! git -C "$repo_root" -c core.whitespace=cr-at-eol diff --cached --check >&2; then
         echo "DART guard: staged diff check FAILED — commit blocked." >&2
         exit 2
     fi
