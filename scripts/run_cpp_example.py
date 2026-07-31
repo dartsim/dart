@@ -412,6 +412,12 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
 
     _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
     _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
+    _option_override(
+        desired,
+        env,
+        "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS",
+        "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE",
+    )
     # The standalone dartsim editor needs the ImGui docking API, which only the
     # fetched docking branch provides (DART_USE_SYSTEM_IMGUI=OFF).
     _option_override(

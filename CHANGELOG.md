@@ -285,6 +285,26 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### GUI, Examples, and Tutorials
 
+- Added opt-in memory-layout diagnostics to `dart-demos` with exact
+  address-ordered World allocator regions, typed ECS page overlays, separate
+  logical capacity/history/process RSS, and explicit evidence limits. The demo
+  panel/session/model are excluded from the `dart-demos` executable by the
+  default-OFF `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS` build option, while enabled
+  builds retain a separate runtime collection toggle. World-side instrumentation
+  is gated by the new default-OFF `DART_BUILD_MEMORY_DIAGNOSTICS` option; when
+  it is off `World` stores no diagnostics state and the step path contains no
+  diagnostics instruction, while `getMemoryDiagnostics()` still reports every
+  value it can read live. Extended the C++ and dartpy snapshots with opt-in
+  region details.
+  ([#3378](https://github.com/dartsim/dart/pull/3378))
+- Fixed Dear ImGui overlay corruption in dense panels. The Filament adapter now
+  advertises `ImGuiBackendFlags_RendererHasVtxOffset`, flattens draw-list
+  indices into a 32-bit buffer as `vertexBase + VtxOffset + rawIndex`, and
+  submits one scissored primitive per visible command. Previously a draw list
+  exceeding 65,535 vertices wrapped its 16-bit indices into stray geometry and
+  discarded `ImDrawCmd::ClipRect`, letting scrolled-off geometry escape the
+  panel viewport. This applies to every GUI build, not only diagnostics builds.
+  ([#3378](https://github.com/dartsim/dart/pull/3378))
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.
   ([#2466](https://github.com/dartsim/dart/pull/2466))
