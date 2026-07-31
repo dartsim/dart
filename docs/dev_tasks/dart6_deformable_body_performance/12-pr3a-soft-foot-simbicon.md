@@ -82,7 +82,11 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   meshes against the ground primitive (the same narrow phase); the native
   `dart` detector dispatches `MeshShape` and `SoftMeshShape` to different
   collide functions and is not a valid configuration for this comparison --
-  the gate asserts the FCL pin. Contact margin is gate-enforced at
+  the gate asserts the FCL pin. Shared narrow phase is *measured*, not argued:
+  an equivalence gate collides both models undeformed at an identical
+  penetrating pose and requires the same foot-ground manifold, currently 48 =
+  48 contacts with a worst pairwise distance of 9e-9 m (the soft mesh stores
+  vertices in single precision). Contact margin is gate-enforced at
   soft >= 1.5x rigid (measured 2.8x: 51.98 vs 18.45).
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).

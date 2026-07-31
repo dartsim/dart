@@ -527,3 +527,103 @@ TEST(SoftFootSimbiconModelTest, MeasuresRecoverablePushForBothFeet)
       << "soft threshold saturated the sweep ceiling, so it is a floor on the "
          "real threshold rather than a measurement";
 }
+
+//==============================================================================
+// Gate 1d: the rigid control and the *undeformed* soft feet must produce the
+// same foot-ground contact manifold. This is the empirical form of the
+// comparability argument: the control shares the soft feet's tessellation and
+// the pinned FCL narrow phase, so at an identical pose, before any deformation
+// exists, the two representations must be indistinguishable to collision. If
+// this holds, whatever the walking gates then measure between the two models
+// is deformation and its dynamics, not collision bookkeeping.
+TEST(SoftFootSimbiconModelTest, ControlMatchesUndeformedSoftManifold)
+{
+  sfs::Model rigid = sfs::createModel(sfs::Feet::Rigid);
+  sfs::Model soft = sfs::createModel(sfs::Feet::Soft);
+
+  // Identical configurations with a guaranteed slight ground penetration, and
+  // no stepping at all: the soft point masses are still exactly at rest.
+  for (sfs::Model* model : {&rigid, &soft}) {
+    Eigen::VectorXd positions = model->atlas->getPositions();
+    positions[4] -= 0.002; // root translation, world-Y (vertical)
+    model->atlas->setPositions(positions);
+  }
+
+  const auto footGroundContacts = [](const sfs::Model& model) {
+    auto group = model.world->getConstraintSolver()->getCollisionGroup();
+    dart::collision::CollisionOption option;
+    option.maxNumContacts = 10000u;
+    dart::collision::CollisionResult result;
+    group->collide(option, &result);
+
+    std::vector<Eigen::Vector3d> points;
+    for (const auto& contact : result.getContacts()) {
+      const auto* body1 = contact.getBodyNodePtr1().get();
+      const auto* body2 = contact.getBodyNodePtr2().get();
+      const bool footInvolved
+          = body1 == model.leftFoot || body1 == model.rightFoot
+            || body2 == model.leftFoot || body2 == model.rightFoot;
+      // Only contacts against the ground: raw group->collide() has no
+      // adjacent-body filter, and foot-vs-shin pairs may legitimately differ
+      // between the two foot representations.
+      const bool otherIsGround
+          = (body1 && body1->getSkeleton() != model.atlas)
+            || (body2 && body2->getSkeleton() != model.atlas);
+      if (footInvolved && otherIsGround)
+        points.push_back(contact.point);
+    }
+    std::sort(points.begin(), points.end(), [](const auto& a, const auto& b) {
+      return std::lexicographical_compare(
+          a.data(), a.data() + 3, b.data(), b.data() + 3);
+    });
+    return points;
+  };
+
+  const auto rigidPoints = footGroundContacts(rigid);
+  const auto softPoints = footGroundContacts(soft);
+
+  ASSERT_GT(rigidPoints.size(), 0u)
+      << "the penetrating pose produced no rigid foot-ground contacts, so "
+         "this gate would be vacuous";
+  ASSERT_EQ(rigidPoints.size(), softPoints.size())
+      << "the rigid control and the undeformed soft feet produce different "
+         "foot-ground manifolds, so the representations are not equivalent to "
+         "collision and the walking comparison would not isolate the soft "
+         "contact pipeline";
+
+  // Matched as sets, one to one, rather than by sorted index: SoftMeshShape
+  // stores its vertices in assimp's single-precision buffers, so the soft
+  // manifold sits ~1e-8 m off the control's double-precision points -- far
+  // below physical relevance but enough to reorder a lexicographic sort
+  // within clusters of nearly-tied coordinates. The tolerance covers float32
+  // rounding at these coordinate magnitudes and nothing else; a genuinely
+  // different contact (the grid spacing is ~0.04 m) cannot hide under it.
+  constexpr double kFloatRoundingTolerance = 1e-6;
+  std::vector<bool> matched(softPoints.size(), false);
+  double worstPairDistance = 0.0;
+  for (std::size_t i = 0; i < rigidPoints.size(); ++i) {
+    double best = 1e9;
+    std::size_t bestIndex = softPoints.size();
+    for (std::size_t j = 0; j < softPoints.size(); ++j) {
+      if (matched[j])
+        continue;
+      const double distance = (rigidPoints[i] - softPoints[j]).norm();
+      if (distance < best) {
+        best = distance;
+        bestIndex = j;
+      }
+    }
+    ASSERT_LT(best, kFloatRoundingTolerance)
+        << "control manifold point " << i << " at "
+        << rigidPoints[i].transpose()
+        << " has no counterpart in the undeformed soft manifold (nearest is "
+        << best << " m away)";
+    matched[bestIndex] = true;
+    worstPairDistance = std::max(worstPairDistance, best);
+  }
+
+  std::cout << "soft_foot_simbicon manifold  rigid_points="
+            << rigidPoints.size() << "  soft_points=" << softPoints.size()
+            << "  worst_pair_distance=" << worstPairDistance
+            << " m  (undeformed, identical pose)\n";
+}
