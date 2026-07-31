@@ -1703,6 +1703,11 @@ def validate_capture_bundle(
 # termination so a timed-out capture still cannot leak descendants.
 _FORCE_KILL_SIGNAL = signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGBREAK
 
+# Resolved at import time so capture-spawn seams (tests replace
+# subprocess.Popen to intercept the capture child) cannot intercept the
+# cleanup tree-kill itself.
+_REAL_POPEN = subprocess.Popen
+
 
 def _process_group_exists(process_group_id: int) -> bool:
     killpg = getattr(os, "killpg", None)
@@ -1720,11 +1725,12 @@ def _process_group_exists(process_group_id: int) -> bool:
 def _kill_process_group(process_group_id: int, signal_number: int) -> None:
     killpg = getattr(os, "killpg", None)
     if killpg is None:
-        subprocess.run(
+        taskkill = _REAL_POPEN(
             ["taskkill", "/T", "/F", "/PID", str(process_group_id)],
-            check=False,
-            capture_output=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
+        taskkill.wait()
         return
     try:
         killpg(process_group_id, signal_number)

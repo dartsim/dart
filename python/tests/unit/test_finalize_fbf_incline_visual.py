@@ -1657,7 +1657,15 @@ def test_interrupt_during_timeout_cleanup_still_kills_descendants(
 
     monkeypatch.setattr(module.subprocess, "Popen", ReadyPopen)
     monkeypatch.setattr(module.time, "sleep", interrupt_cleanup_sleep)
-    with pytest.raises(KeyboardInterrupt):
+    if hasattr(module.os, "killpg"):
+        expected_cleanup_exit = KeyboardInterrupt
+    else:
+        # Windows has no graceful process-group phase: the timeout cleanup
+        # tree-kills immediately, the grace poll never sleeps, so no
+        # interrupt window exists and the timeout itself propagates. The
+        # descendant-death and no-late-write assertions below still hold.
+        expected_cleanup_exit = subprocess.TimeoutExpired
+    with pytest.raises(expected_cleanup_exit):
         module._run_command([sys.executable, "-c", parent_code], timeout=0.5)
 
     child_pid = int(child_pid_path.read_text(encoding="utf-8"))
@@ -1693,7 +1701,7 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
         "time.sleep(60)"
     )
     real_popen = subprocess.Popen
-    real_killpg = module.os.killpg
+    real_kill_process_group = module._kill_process_group
     leader_reaped = False
     force_kill_sent = False
     signals = []
@@ -1728,13 +1736,13 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
         nonlocal force_kill_sent
         if leader_reaped and not force_kill_sent:
             raise PermissionError("Darwin orphaned process group")
-        real_killpg(process_group_id, signal_number)
+        real_kill_process_group(process_group_id, signal_number)
         signals.append(signal_number)
         if signal_number == module._FORCE_KILL_SIGNAL:
             force_kill_sent = True
 
     monkeypatch.setattr(module.subprocess, "Popen", InterruptingPopen)
-    monkeypatch.setattr(module.os, "killpg", signal_group, raising=False)
+    monkeypatch.setattr(module, "_kill_process_group", signal_group)
     with pytest.raises(KeyboardInterrupt):
         module._run_command([sys.executable, "-c", parent_code], timeout=30.0)
 
