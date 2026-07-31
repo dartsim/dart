@@ -24,9 +24,14 @@ Branch:
 
   research/fbf-friction-release620
 
-Pushed head:
+Figure 3/8 evidence capture head:
 
   b708e63e0a9bac8e53cc8ffb872b566aacc6f68c
+
+Current documentation head:
+
+  Query the live local and remote branch. This handoff is an additive
+  documentation-only descendant of the evidence capture head.
 
 Code/runtime checkpoint:
 

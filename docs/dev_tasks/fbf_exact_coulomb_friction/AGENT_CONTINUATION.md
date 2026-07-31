@@ -20,9 +20,12 @@ This section is the current authority. It supersedes every older branch-head,
 runtime-currency, API-default, Figure 3, Figure 8, raw-file, CI, upload, and
 immediate-next-step statement below.
 
-- Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
-  documentation-only descendant of code/runtime checkpoint
-  `0acffc45b81184ef56dbc53ee60f6e25786102c2`. Freshly fetched target
+- Figure 3/8 evidence capture head
+  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a documentation-only
+  descendant of code/runtime checkpoint
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`. This ledger is an additive
+  documentation-only descendant; query the live branch for its pushed head.
+  Freshly fetched target
   `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` is already an ancestor.
   PR #3377 is open, draft, and `BLOCKED` only in the expected
   draft/pending-check sense.
