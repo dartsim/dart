@@ -731,3 +731,57 @@ TEST(ContactArrowLayoutTest, HandlesDegenerateWorldsAndInputs)
             << " m  tiny=" << tinyLayout.getReferenceLength()
             << " m  huge=" << hugeLayout.getReferenceLength() << " m\n";
 }
+
+//==============================================================================
+// A body that leaves the scale must take its weight with it. The floor exists
+// to suppress noise in a contact-free scene, so it must never be carried across
+// a re-derivation as though it were a force someone had measured -- reparking
+// the `sleeping` scene's heavy projectile would otherwise keep crushing the box
+// arrows until the decay caught up with a floor that no longer applies.
+TEST(ContactArrowLayoutTest, DropsTheFloorWhenItsBodyLeavesTheScale)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(1.0, 0.3, box);
+
+  auto projectile = dart::dynamics::Skeleton::create("projectile");
+  auto* projectileBody
+      = projectile->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  projectileBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.4)));
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(500.0);
+  projectileBody->setInertia(inertia);
+  projectileBody->setCollidable(true);
+  world->addSkeleton(projectile);
+
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  // With the heavy projectile in play the floor is high, so a light contact on
+  // the box is correctly suppressed.
+  const double heavyFloor = layout.getReferenceForce();
+  EXPECT_GT(heavyFloor, 200.0);
+  const std::vector<dart::collision::Contact> light
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 3.0, 0.0))};
+  layout.update(*world, light, kMaxArrows);
+  EXPECT_LT(layout.getArrows().front().normalizedMagnitude, 0.05);
+
+  // Repark it. Its weight is no longer carried by any contact, so the floor it
+  // set must go with it on the very next update -- not decay away over seconds.
+  projectileBody->setCollidable(false);
+  layout.update(*world, light, kMaxArrows);
+
+  EXPECT_LT(layout.getReferenceForce(), 0.1 * heavyFloor)
+      << "the reparked projectile's floor outlived it";
+  EXPECT_NEAR(layout.getArrows().front().normalizedMagnitude, 1.0, 1e-9)
+      << "the box contact is still suppressed by a floor that no longer "
+         "applies";
+
+  std::cout << "contact_arrow_floor_release  with_projectile=" << heavyFloor
+            << " N  after_repark=" << layout.getReferenceForce() << " N\n";
+}

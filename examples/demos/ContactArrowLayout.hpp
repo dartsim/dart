@@ -39,6 +39,7 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
 #include <vector>
 
 #include <cstddef>
@@ -131,10 +132,16 @@ public:
     return mReferenceLength;
   }
 
-  /// Force that currently maps to a full-length arrow.
+  /// Force that currently maps to a full-length arrow: the largest contact
+  /// force recently observed, floored so a contact-free scene does not
+  /// normalize numerical noise up to full length.
+  ///
+  /// The two are combined here rather than folded together as they are
+  /// computed, so the floor is never mistaken for something that was measured
+  /// and cannot outlive the body whose weight set it.
   double getReferenceForce() const
   {
-    return mReferenceForce;
+    return std::max(mPeakForce, mFloorForce);
   }
 
 private:
@@ -152,7 +159,7 @@ private:
   static std::size_t sceneFingerprint(const dart::simulation::World& world);
 
   double mReferenceLength = kFallbackReferenceLength;
-  double mReferenceForce = 1.0;
+  double mPeakForce = 0.0;
   double mFloorForce = 1.0;
   double mMobileMass = 0.0;
   std::size_t mSceneFingerprint = 0;

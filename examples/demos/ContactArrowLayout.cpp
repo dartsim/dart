@@ -166,18 +166,28 @@ void ContactArrowLayout::refreshForWorld(const dart::simulation::World& world)
   // old weight after gravity is switched off, and leave the floor at its
   // noise-suppression minimum after gravity is switched on in a zero-gravity
   // scene.
+  const std::size_t fingerprint = sceneFingerprint(world);
+  if (fingerprint != mSceneFingerprint) {
+    // Only the observed peak survives a re-derivation. Carrying the old floor
+    // across would let a body that has just left the scale keep suppressing
+    // everything else, as though its weight had been measured at a contact:
+    // reparking the `sleeping` scene's projectile would go on crushing the box
+    // arrows until the decay caught up with a floor that no longer applies.
+    const double observedPeak = mPeakForce;
+    resetForWorld(world);
+    mPeakForce = observedPeak;
+  }
+
+  // The floor is re-derived every call rather than compared, because gravity is
+  // a live control -- the host has a Gravity checkbox and some scenes have a
+  // gravity slider -- and it is only a multiply against the mass already
+  // measured. Leaving it cached would keep low-force contacts compressed by the
+  // old weight after gravity is switched off, and leave the floor at its
+  // noise-suppression minimum after gravity is switched on in a zero-gravity
+  // scene.
   mFloorForce = std::max(
       kNegligibleForce,
       kFloorForceWeightFraction * mMobileMass * world.getGravity().norm());
-  mReferenceForce = std::max(mReferenceForce, mFloorForce);
-
-  const std::size_t fingerprint = sceneFingerprint(world);
-  if (fingerprint == mSceneFingerprint)
-    return;
-
-  const double trackedForce = mReferenceForce;
-  resetForWorld(world);
-  mReferenceForce = std::max(trackedForce, mFloorForce);
 }
 
 //==============================================================================
@@ -234,7 +244,7 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
   mMobileMass = mobileMass;
   const double weight = mobileMass * world.getGravity().norm();
   mFloorForce = std::max(kNegligibleForce, kFloorForceWeightFraction * weight);
-  mReferenceForce = mFloorForce;
+  mPeakForce = 0.0;
 }
 
 //==============================================================================
@@ -280,7 +290,7 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   // World::setTimeStep() rejects non-finite and non-positive values, so the
   // timestep needs no guard here.
   const double decay = std::exp(-timeStep / kForceDecayTime);
-  mReferenceForce = std::max({peakForce, decay * mReferenceForce, mFloorForce});
+  mPeakForce = std::max(peakForce, decay * mPeakForce);
 
   mArrows.reserve(count);
   for (std::size_t i = 0; i < count; ++i) {
@@ -293,7 +303,8 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
     if (!std::isfinite(magnitude) || magnitude < kNegligibleForce)
       continue;
 
-    const double normalized = std::clamp(magnitude / mReferenceForce, 0.0, 1.0);
+    const double normalized
+        = std::clamp(magnitude / getReferenceForce(), 0.0, 1.0);
 
     ContactArrow arrow;
     arrow.tail = point;
