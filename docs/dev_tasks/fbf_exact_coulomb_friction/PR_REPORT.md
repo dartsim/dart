@@ -1,5 +1,47 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
+## 2026-07-30 Current-Head Figure 3/8 Update
+
+This section supersedes every older branch-head, runtime-currency, API-default,
+Figure 3, Figure 8, raw-file, CI, upload, and immediate-next-step statement
+below.
+
+- PR #3377 is open and draft at pushed head
+  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`, a documentation-only
+  descendant of code/runtime checkpoint `0acffc45b81`. Fresh target
+  `aaf1e5f64dd` is already merged. Sixteen checks pass and four remain in
+  progress at the last query; no current-head failure is carried forward.
+- The PR API section is accurate: `World::create()` defaults to
+  `BoxedLcpConstraintSolver` with FCL primitives; exact FBF is opt-in; boxed
+  fallback defaults on inside that opt-in solver. Strict callers disable
+  fallback and compare the cumulative exact-failure count around every step.
+  Paper/demo policy selections are not global defaults.
+- Current net hygiene is zero tracked task assets and zero tracked ignored
+  files. The seven `data/` paths are intentional provenance/licenses and tiny
+  renderer inputs. Staged infrastructure enforces the role-based
+  `**/assets/` policy and rejects forced-tracked or linked generated evidence.
+  Refresh the PR's currently stale additions count after the next push.
+- Figure 3 exact/boxed/group capture and independent verification pass from
+  `assets/pr_media_current_head_b708_fig03/`; both lanes complete 240/240 and
+  pass the bounded source-terminal outcome. Manual inspection confirms visible
+  checker orientation changes. Clip hashes are `9554598d...`,
+  `e51ad128...`, and `0d15bd65...`; neither superiority nor equivalence
+  follows.
+- Figure 8 finalize, four-time inspection, seal, and standalone verification
+  pass from `assets/pr_media_current_head_b708_fig08/`. Exact is a rejected
+  prefix after completed step 209 (`iteration_cap`, last rendered step 208);
+  boxed completes 1,600 but collapses and fails standing. Group
+  clip/panel/metadata/manual hashes are `3d652018...`, `d6782a65...`,
+  `8923fe54...`, and `6c314283...`. This is a frozen-prefix blocker
+  diagnostic only.
+- Current Figure 3 slots 02/16 and Figure 8 slot 08 require new
+  browser-created user attachments; do not commit media or relabel old URLs.
+  The next long gate is the fresh paired ten-level run. Exact alone requests
+  source continuation, so its group remains policy-asymmetric presentation.
+
+Keep the PR draft. Do not trigger review, mutate AI review threads, or claim
+complete paper reproduction.
+
 ## 2026-07-30 Review-Fix Head Update
 
 This section supersedes every older current-head, API-default, runtime,

@@ -11,6 +11,35 @@ not evidence completion. The broader visual workflow declares 33 runnable
 schedules, 30 of which encode MP4; the additional schedules include DART-only
 diagnostics rather than canonical paper/video rows.
 
+## 2026-07-30 Current-Head Figure 3/8 Currency Boundary
+
+Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
+documentation-only descendant of runtime checkpoint `0acffc45b81`; target
+`aaf1e5f64dd` is already merged. The compatibility default remains boxed LCP
+with FCL primitives through `World::create()`. Exact FBF is opt-in and its
+boxed fallback defaults enabled.
+
+Fresh current-runtime Figure 3 exact/boxed/group evidence passes capture,
+independent verification, bounded outcomes, decode, and manual checker
+orientation inspection under
+`assets/pr_media_current_head_b708_fig03/`. Both lanes finish 240/240, so
+there is no superiority/equivalence result. Current clips are
+`9554598d...` / `e51ad128...` / `0d15bd65...`.
+
+Fresh Figure 8 capture/finalize/manual-seal/standalone-verify passes under
+`assets/pr_media_current_head_b708_fig08/`. Exact is a valid rejected prefix
+through completed step 209 and last rendered step 208; boxed completes 1,600
+but collapses and fails standing. The frozen-prefix group clip is
+`3d652018...`, metadata `8923fe54...`, and manual record `6c314283...`.
+It does not provide a complete exact trajectory, standing success, historical
+invocation, source/backend equivalence, superiority, timing, Figure 8 parity,
+or paper parity.
+
+The compact coverage audit remains 24 partial, 5 blocked, and 0 complete.
+Current Figure 3 slots 02/16 and Figure 8 slot 08 still need new GitHub
+user-attachment URLs. The paired ten-level current-head run remains open and
+policy-asymmetric because only exact requests source continuation.
+
 ## 2026-07-30 Review-Fix Currency Boundary
 
 Current code/runtime checkpoint

@@ -28,6 +28,58 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-30 Current-Head Figure 3/8 Checkpoint
+
+This section supersedes every older branch-head, runtime-currency, API-default,
+Figure 3, Figure 8, file-hygiene, CI, upload, and immediate-next-step statement
+below.
+
+- Pushed topic head is `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`.
+  Its code/runtime checkpoint is
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`; the intervening commit is
+  documentation-only. A fresh fetch confirms `origin/release-6.20` remains
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` and is already merged.
+  PR #3377 remains open and draft.
+- Compatibility defaults are unchanged. `World::create()` installs
+  `BoxedLcpConstraintSolver` with FCL primitive collision. Exact FBF is
+  opt-in through `World::setConstraintSolver()`. Inside that opt-in solver,
+  `fallbackToBoxedLcp` defaults to `true`; source continuation, source inner
+  initialization, colored BGS, and participant affinity default off.
+  Paper/demo policies are explicit scene choices, not global defaults.
+- The live net PR has 164 files, 161,349 additions, and 418 deletions before
+  this documentation update. It tracks zero task `assets/` paths and zero
+  ignored files. Seven intentional `data/` paths are two license/provenance
+  documents plus five small OBJ/MTL/PPM renderer inputs. The staged AI
+  infrastructure check requires the role-based `**/assets/` rule, rejects
+  forced-tracked task assets, and rejects Markdown links to ignored evidence.
+- Fresh Figure 3 capture and independent reuse verification pass under ignored
+  `assets/pr_media_current_head_b708_fig03/`. Exact and boxed each complete
+  240/240 and pass the bounded source-terminal outcome. Manual inspection of
+  steps 0/2/4 and the five-time panel confirms that the renderer-backed
+  checker texture changes orientation visibly. Exact/boxed/group MP4 hashes
+  are `9554598d...`, `e51ad128...`, and `0d15bd65...`; capture/verify summary
+  hashes are `1305c0f8...` and `ef61068a...`. Both solvers pass, so this is
+  neither superiority nor equivalence evidence.
+- Fresh Figure 8 capture/finalize/manual-seal/standalone-verify pass under
+  ignored `assets/pr_media_current_head_b708_fig08/`. Exact fails closed
+  after completed step 209 with `iteration_cap`; step 208 is the last rendered
+  frame. Boxed completes 1,600/1,600 but collapses and fails the standing
+  oracle. The labeled group freezes only the exact last-valid frame. Its
+  clip/panel/metadata/manual hashes are `3d652018...`, `d6782a65...`,
+  `8923fe54...`, and `6c314283...`; status is
+  `valid_current_dart_blocker_diagnostic`, `upload_ready=true`.
+- Current Figure 3 slots 02/16 and Figure 8 slot 08 need new
+  browser-created GitHub user attachments because their current-head MP4
+  bytes differ from the registered streams. Do not commit them or relabel old
+  URLs. The next runtime gate is the paired ten-level exact/boxed capture from
+  one unchanged pushed head. Exact requests source continuation while boxed
+  does not, so that pair is policy-asymmetric presentation, not a solver-only
+  A/B.
+- Sixteen current-head checks pass and four remain in progress at the last live
+  query. Keep the PR draft, do not trigger `@codex review`, and preserve all
+  paper/source/backend/timing claim boundaries. The direct coverage answer
+  remains **No**.
+
 ## 2026-07-30 Review-Fix Handoff
 
 This section supersedes every older branch-head, runtime-currency, CI, review,

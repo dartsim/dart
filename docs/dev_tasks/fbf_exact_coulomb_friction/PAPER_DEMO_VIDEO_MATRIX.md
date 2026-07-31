@@ -4,6 +4,43 @@ Status: active draft gate for PR #3377. The PR must remain draft until every
 required row below has a current GitHub-hosted video URL and passes its solver,
 physical-outcome, and claim-boundary checks.
 
+## 2026-07-30 Current-Head Pending Attachment Delta
+
+Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
+documentation-only descendant of runtime checkpoint `0acffc45b81`. Fresh
+current-runtime candidates are locally sealed but are not published until a
+browser-created `github.com/user-attachments/...` URL is recorded and its
+downloaded bytes match:
+
+- Intended replacement for registered slot 02:
+  `assets/pr_media_current_head_b708_fig03/backspin_author_current_source/clip.mp4`,
+  SHA-256
+  `9554598d9eeb95417955714c85d6d30b5bc91ab9aca34053a218a39688198c6b`;
+  new browser upload required.
+- Intended replacement for registered slot 16:
+  `assets/pr_media_current_head_b708_fig03/groups/backspin_author_current_source__exact_vs_boxed/clip.mp4`,
+  SHA-256
+  `0d15bd65f4345e25adf6e4a28d3b851ee10a458d70b3dd0eae23506b832d899e`;
+  new browser upload required.
+- Intended replacement for registered slot 08:
+  `assets/pr_media_current_head_b708_fig08/groups/fig08_arch101_failed_prefix_vs_boxed/clip.mp4`,
+  SHA-256
+  `3d6520189e610893588c77692c1f460c233ffa92e52125710fdafb20bbad1297`;
+  new browser upload required.
+- Registered slot 09: fresh paired ten-level capture, verification, and manual
+  inspection remain pending.
+
+Figure 3 exact and boxed both complete 240/240 and pass their bounded outcome;
+the checker texture makes orientation changes visible, but supplies no
+superiority/equivalence/parity claim. Figure 8 exact stops after completed
+step 209 and freezes only its last valid step-208 frame; boxed completes 1,600
+but collapses. It is a blocker diagnostic only. Slot 09 will remain
+policy-asymmetric because only exact requests source continuation.
+
+Do not replace the registered ledger URLs until each new stream is uploaded,
+re-downloaded, and hash-verified. Existing URLs remain valid historical
+captured-checkpoint evidence. Never commit these local candidates.
+
 ## 2026-07-30 Review-Fix Runtime Currency Boundary
 
 Runtime checkpoint `0acffc45b81184ef56dbc53ee60f6e25786102c2`

@@ -1,8 +1,140 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-30 review-fix checkpoint
-in [RESUME.md](RESUME.md) and supersedes every archived prompt later in this
-file.
+Use the first prompt below. It reflects the 2026-07-30 current-head Figure 3
+and Figure 8 checkpoint in [RESUME.md](RESUME.md) and supersedes every
+archived prompt later in this file.
+
+```text
+Continue the active DART 6.20 exact-Coulomb FBF task in:
+
+  /home/js/dev/dartsim/dart/task_6
+
+Project home:
+
+  docs/dev_tasks/fbf_exact_coulomb_friction/
+
+The task is incomplete. The answer to whether all paper tests, benchmarks,
+GUI examples, physical outcomes, and performance results are reproduced
+remains "No." Start with AGENTS.md and docs/ai/principles.md, then read only
+the first "2026-07-30 Current Resume Authority" section of RESUME.md and the
+first current-head truth section of AGENT_CONTINUATION.md. They supersede
+older appended history.
+
+Branch:
+
+  research/fbf-friction-release620
+
+Pushed head:
+
+  b708e63e0a9bac8e53cc8ffb872b566aacc6f68c
+
+Code/runtime checkpoint:
+
+  0acffc45b81184ef56dbc53ee60f6e25786102c2
+
+Merged release-6.20 target:
+
+  aaf1e5f64dd47f0350ea1b395bf257bb77b36829
+
+A fresh fetch confirmed that target is unchanged and already an ancestor.
+PR https://github.com/dartsim/dart/pull/3377 is open and draft. Keep it draft.
+At the last query 16 checks passed and four were in progress. Requery live
+state. Do not trigger @codex review, reply to AI review comments, resolve
+review threads, rebase, force-push, or rewrite published history.
+
+The default remains World::create() with BoxedLcpConstraintSolver and FCL
+primitive collision. ExactCoulombFbfConstraintSolver is opt-in through
+World::setConstraintSolver(). Its fallbackToBoxedLcp option defaults true.
+Strict diagnostics set it false and compare the cumulative exact-failure
+count around every World::step(). There is no strictMode option. Source
+continuation, source inner initialization, colored BGS, and participant
+affinity default off. Paper/demo policies are explicit scene choices, not
+global defaults.
+
+Generated-file hygiene is closed at the current tree: zero tracked task
+assets, zero tracked ignored files, and seven intentional data paths (two
+license/provenance docs plus five small OBJ/MTL/PPM renderer inputs).
+docs/dev_tasks/.gitignore has the scalable **/assets/ rule, and staged
+infrastructure rejects forced-tracked or linked task evidence. Historical
+topic history still contains 492 old evidence blobs; final integration needs
+a true squash unless a clean branch reconstruction is separately approved.
+
+Fresh Figure 3 is complete under ignored:
+
+  assets/pr_media_current_head_b708_fig03/
+
+Exact and boxed finish 240/240; capture, reuse verification, bounded outcome,
+decode, and manual checker-orientation inspection pass. Exact/boxed/group
+clip hashes are 9554598d..., e51ad128..., and 0d15bd65....
+The renderer-backed checker texture visibly rotates at steps 0/2/4 and across
+the temporal panel. Both solvers pass; do not claim signed-rate proof,
+equivalence, superiority, renderer/golden parity, timing, Figure 3 parity, or
+paper parity.
+
+Fresh Figure 8 is complete under ignored:
+
+  assets/pr_media_current_head_b708_fig08/
+
+Boxed capture/reuse, exact failed-prefix finalization, manual inspection at
+0.0/0.9/3.3/6.6 seconds, seal, and standalone sealed verify pass. Exact stops
+after completed step 209 with iteration_cap; step 208 is the last rendered
+frame. One accepted-at-cap solve is rejected by the strict evidence policy;
+exact failures and boxed fallbacks are zero. Boxed completes 1,600 but
+collapses and fails standing. Group clip/panel/metadata/manual hashes are
+3d652018..., d6782a65..., 8923fe54..., and 6c314283....
+This is a frozen-prefix blocker diagnostic, not a complete exact trajectory,
+standing success, historical invocation, superiority, timing, Figure 8
+parity, or paper parity.
+
+Next, run the paired ten-level schedule from the same unchanged pushed head
+into fresh ignored:
+
+  assets/pr_media_current_head_b708_card10/
+
+Use:
+
+  .pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py run \
+    --scenario card_house_author_10_impact_source_continuation_current_source \
+    --solver-lane both \
+    --demo build/default/cpp/Release/bin/dart-demos \
+    --output-root docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10 \
+    --allow-long --keep-going \
+    --ffmpeg .pixi/envs/gazebo/bin/ffmpeg \
+    --ffprobe .pixi/envs/gazebo/bin/ffprobe \
+    --python .pixi/envs/default/bin/python \
+    --out docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10/fig10_run_summary.json
+
+Another checkout repeatedly launches all-core builds. Run CPU-pinned and use
+the ignored assets/card10_thermal_guard.sh through /bin/bash; it is not
+executable and must freeze on cc1plus/ninja/ctest or thermal thresholds.
+After capture, run reuse-only verify with the same scenario/lane/tools but no
+--python, fully decode all three MP4s, and manually inspect the paired panel
+plus initial/pre-release/post-release/final frames.
+
+Exact explicitly requests source continuation; boxed does not. No automated
+physical-outcome oracle exists. The valid claim is policy-asymmetric
+qualitative presentation only, never strict success, solver-only A/B,
+superiority, source/trajectory/Tables 6-7 parity, or paper parity.
+
+Current Figure 3 slots 02/16 and Figure 8 slot 08 need new browser-created
+GitHub user attachments because current bytes differ from registered streams.
+Slot 09 needs the final ten-level pair. Never commit videos/raw evidence.
+Upload through the PR browser composer, re-download, verify hashes, and only
+then update PAPER_DEMO_VIDEO_MATRIX.md and the PR body.
+
+Before every checkpoint: run pixi run lint, git diff --check, the compact
+coverage audit, and proportionate infrastructure/docs gates; fetch
+origin/release-6.20 and merge normally if advanced; commit without AI
+attribution; push; then requery PR draft/CI/review state. If a target merge
+changes runtime, rerun runtime-bound evidence rather than relabeling it.
+
+The PR body already contains correct before/after API examples and a defaults
+table. Its additions count is stale; refresh it from live GitHub after the
+next push. Do not mark the task complete until the remaining paper coverage,
+attachments, CI, review, and acceptance gates genuinely close.
+```
+
+## Archived Review-Fix Prompt
 
 ```text
 Continue the active DART 6.20 exact-Coulomb FBF task in:
