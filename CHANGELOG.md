@@ -377,8 +377,8 @@
 
   * Fix the opt-in split-impulse position pass discarding all velocity-phase
     constraint impulses (resting bodies free-fell through geometry while
-    their contacts persisted) by preserving body and joint constraint
-    impulses across the position-correction LCP assembly:
+    their contacts persisted) by preserving body, joint, and soft-body
+    point-mass constraint impulses across the position-correction LCP assembly:
     [#3377](https://github.com/dartsim/dart/pull/3377)
 
   * Add an opt-in per-DoF actuator type API to `Joint`

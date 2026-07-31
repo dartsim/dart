@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
@@ -55,6 +56,7 @@
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -1204,6 +1206,57 @@ WorldPtr World::clone() const
 
     if (parent_candidate)
       worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
+  }
+
+  const auto dartDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(cd);
+  const auto dartDetectorClone
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          worldClone->getCollisionDetector());
+  if (dartDetector && dartDetectorClone) {
+    // cloneWithoutCollisionObjects() cannot remap ShapeFrame pointer keys on
+    // its own. Replace its same-frame copy with World-owned clone mappings so
+    // speculative contact gaps follow the cloned ShapeNodes and SimpleFrames.
+    dartDetectorClone->clearContactGaps();
+    const auto copyContactGap = [&](const dynamics::ShapeFrame* source,
+                                    const dynamics::ShapeFrame* target) {
+      const double gap = dartDetector->getContactGap(source);
+      if (gap > 0.0)
+        dartDetectorClone->setContactGap(target, gap);
+    };
+
+    DART_ASSERT(mSkeletons.size() == worldClone->mSkeletons.size());
+    const std::size_t skeletonCount
+        = std::min(mSkeletons.size(), worldClone->mSkeletons.size());
+    for (std::size_t i = 0; i < skeletonCount; ++i) {
+      const auto& sourceSkeleton = mSkeletons[i];
+      const auto& targetSkeleton = worldClone->mSkeletons[i];
+      DART_ASSERT(
+          sourceSkeleton->getNumBodyNodes()
+          == targetSkeleton->getNumBodyNodes());
+      const std::size_t bodyCount = std::min(
+          sourceSkeleton->getNumBodyNodes(), targetSkeleton->getNumBodyNodes());
+      for (std::size_t body = 0; body < bodyCount; ++body) {
+        const auto* sourceBody = sourceSkeleton->getBodyNode(body);
+        auto* targetBody = targetSkeleton->getBodyNode(body);
+        DART_ASSERT(
+            sourceBody->getNumShapeNodes() == targetBody->getNumShapeNodes());
+        const std::size_t shapeCount = std::min(
+            sourceBody->getNumShapeNodes(), targetBody->getNumShapeNodes());
+        for (std::size_t shape = 0; shape < shapeCount; ++shape) {
+          copyContactGap(
+              sourceBody->getShapeNode(shape), targetBody->getShapeNode(shape));
+        }
+      }
+    }
+
+    DART_ASSERT(mSimpleFrames.size() == worldClone->mSimpleFrames.size());
+    const std::size_t simpleFrameCount
+        = std::min(mSimpleFrames.size(), worldClone->mSimpleFrames.size());
+    for (std::size_t i = 0; i < simpleFrameCount; ++i) {
+      copyContactGap(
+          mSimpleFrames[i].get(), worldClone->mSimpleFrames[i].get());
+    }
   }
 
   return worldClone;

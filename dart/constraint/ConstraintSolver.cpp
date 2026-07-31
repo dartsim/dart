@@ -2747,10 +2747,17 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // persist).
   std::vector<Eigen::Vector6d> savedBodyConstraintImpulses;
   std::vector<double> savedJointConstraintImpulses;
+  std::vector<Eigen::Vector3d> savedPointMassConstraintImpulses;
   for (const auto& skeleton : mSkeletons) {
     for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
-      savedBodyConstraintImpulses.push_back(
-          skeleton->getBodyNode(i)->getConstraintImpulse());
+      auto* bodyNode = skeleton->getBodyNode(i);
+      savedBodyConstraintImpulses.push_back(bodyNode->getConstraintImpulse());
+      if (auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+        for (auto* pointMass : softBodyNode->getPointMasses()) {
+          savedPointMassConstraintImpulses.push_back(
+              pointMass->getConstraintImpulses());
+        }
+      }
     }
     for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
       const auto* joint = skeleton->getJoint(i);
@@ -2773,10 +2780,18 @@ void ConstraintSolver::solvePositionConstrainedGroups()
 
   std::size_t bodyImpulseIndex = 0u;
   std::size_t jointImpulseIndex = 0u;
+  std::size_t pointMassImpulseIndex = 0u;
   for (const auto& skeleton : mSkeletons) {
     for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
-      skeleton->getBodyNode(i)->setConstraintImpulse(
+      auto* bodyNode = skeleton->getBodyNode(i);
+      bodyNode->setConstraintImpulse(
           savedBodyConstraintImpulses[bodyImpulseIndex++]);
+      if (auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+        for (auto* pointMass : softBodyNode->getPointMasses()) {
+          pointMass->setConstraintImpulse(
+              savedPointMassConstraintImpulses[pointMassImpulseIndex++], true);
+        }
+      }
     }
     for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
       auto* joint = skeleton->getJoint(i);
