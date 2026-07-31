@@ -34,6 +34,7 @@
 #define DART_GUI_PANEL_HPP_
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
@@ -48,8 +49,6 @@
 #include <cstddef>
 
 namespace dart::gui {
-
-struct ViewerLifecycleState;
 
 class DART_GUI_API PanelBuilder
 {

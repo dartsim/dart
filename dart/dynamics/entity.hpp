@@ -50,8 +50,6 @@
 namespace dart {
 namespace dynamics {
 
-class Frame;
-
 /// Entity class is a base class for any objects that exist in the kinematic
 /// tree structure of DART.
 ///

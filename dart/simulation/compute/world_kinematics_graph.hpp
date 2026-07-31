@@ -34,6 +34,7 @@
 
 #include <dart/simulation/compute/compute_graph.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/common/stl_allocator.hpp>
 
@@ -46,12 +47,9 @@
 #include <cstdint>
 
 namespace dart::simulation {
-class World;
 }
 
 namespace dart::simulation::compute {
-
-class ComputeExecutor;
 
 /// Builds a graph for the DART 7 World's kinematic cache update stage.
 class DART_SIMULATION_API WorldKinematicsGraph

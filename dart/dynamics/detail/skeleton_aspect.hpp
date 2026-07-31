@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
+#include <dart/dynamics/fwd.hpp>
+
 #include <dart/common/composite.hpp>
 #include <dart/common/embedded_aspect.hpp>
 #include <dart/common/proxy_aspect.hpp>
@@ -44,8 +46,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
 
 namespace detail {
 

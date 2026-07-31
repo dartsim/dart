@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
 #include <dart/export.hpp>
@@ -43,8 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class PrismaticJoint;
 
 namespace detail {
 

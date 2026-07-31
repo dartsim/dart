@@ -34,6 +34,7 @@
 
 #include <dart/simulation/compute/execution_profile.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -41,8 +42,6 @@
 #include <cstddef>
 
 namespace dart::simulation::compute {
-
-class ComputeGraph;
 
 /// Backend-neutral interface for executing experimental compute graphs.
 ///

@@ -32,6 +32,7 @@
 #pragma once
 
 #include <dart/simulation/comps/component_category.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/common/stl_allocator.hpp>
 
@@ -42,10 +43,6 @@
 
 #include <cstddef>
 #include <cstdint>
-
-namespace dart::simulation::io {
-class SerializerRegistry;
-} // namespace dart::simulation::io
 
 namespace dart::simulation::comps {
 

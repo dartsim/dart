@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <chrono>
 #include <mutex>
@@ -45,9 +46,6 @@
 #include <cstddef>
 
 namespace dart::simulation::compute {
-
-class ComputeGraph;
-class ComputeNode;
 
 /// Runtime timing and scheduling data for one compute node execution.
 struct DART_SIMULATION_API ComputeNodeExecutionProfile

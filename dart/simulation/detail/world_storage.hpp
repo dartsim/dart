@@ -40,6 +40,7 @@
 #include <dart/simulation/diff/physical_parameter.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/common/stl_allocator.hpp>
 
@@ -49,10 +50,6 @@
 #include <vector>
 
 #include <cstdint>
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::detail {
 

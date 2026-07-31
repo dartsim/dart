@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_CONTINUOUSCOLLISIONRESULT_HPP_
 #define DART_COLLISION_CONTINUOUSCOLLISIONRESULT_HPP_
 
+#include <dart/collision/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
@@ -41,8 +43,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 struct DART_API ContinuousCollisionHit
 {

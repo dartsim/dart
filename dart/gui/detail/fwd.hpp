@@ -30,26 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-
-#include <dart/collision/native/shapes/shape.hpp>
-
-#include <dart/dynamics/fwd.hpp>
-
-#include <dart/export.hpp>
-
-#include <memory>
+#ifndef DART_GUI_DETAIL_FWD_HPP_
+#define DART_GUI_DETAIL_FWD_HPP_
 
 namespace dart {
-namespace collision {
+namespace gui {
+namespace detail {
 
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
+struct DartScene;
+struct DebugOverlayController;
+struct FilamentRenderContext;
+struct FrameViewport;
+struct GuiScaleState;
+struct IkHandle;
+struct ImGuiOverlay;
+struct InitialSceneState;
+struct PerfHudState;
+struct SceneLights;
+struct SceneRenderable;
+struct ScreenshotCapture;
 
-} // namespace collision
+class SelectionController;
+class SimulationStepper;
+
+enum class ExampleScene;
+
+} // namespace detail
+} // namespace gui
 } // namespace dart
 
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#endif // DART_GUI_DETAIL_FWD_HPP_

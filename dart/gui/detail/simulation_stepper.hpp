@@ -33,18 +33,15 @@
 #ifndef DART_GUI_DETAIL_SIMULATION_STEPPER_HPP_
 #define DART_GUI_DETAIL_SIMULATION_STEPPER_HPP_
 
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/profile.hpp>
 #include <dart/gui/viewer.hpp>
 
+#include <dart/simulation/fwd.hpp>
+
 #include <cstddef>
 
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
-
 namespace dart::gui::detail {
-
-struct DartScene;
 
 class SimulationStepper
 {

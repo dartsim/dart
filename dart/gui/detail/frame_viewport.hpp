@@ -34,6 +34,9 @@
 #define DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <array>
 #include <functional>
@@ -42,24 +45,7 @@
 
 #include <cstddef>
 
-struct GLFWwindow;
-struct ImGuiIO;
-
-namespace filament {
-class Camera;
-class View;
-} // namespace filament
-
-namespace dart::gui {
-
-struct OrbitCameraController;
-struct OrbitCameraControlOptions;
-
-} // namespace dart::gui
-
 namespace dart::gui::detail {
-
-class SelectionController;
 
 struct ViewportPaneFrame
 {

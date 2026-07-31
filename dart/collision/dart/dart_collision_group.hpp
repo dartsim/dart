@@ -34,6 +34,8 @@
 #define DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
 
 #include <dart/collision/collision_group.hpp>
+#include <dart/collision/fwd.hpp>
+#include <dart/collision/native/fwd.hpp>
 
 #include <memory>
 
@@ -41,12 +43,6 @@
 
 namespace dart {
 namespace collision {
-
-namespace native {
-class PersistentManifoldCache;
-} // namespace native
-
-class DartCollisionScene;
 
 class DART_API DartCollisionGroup : public CollisionGroup
 {

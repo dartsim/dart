@@ -33,16 +33,13 @@
 #pragma once
 
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <span>
 #include <vector>
 
 #include <cstddef>
 #include <cstdint>
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::compute {
 

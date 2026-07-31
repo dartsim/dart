@@ -76,6 +76,9 @@ compatibility remains on the active DART 6 LTS branch._
   compatibility-only. ([#2047](https://github.com/dartsim/dart/pull/2047),
   [#2070](https://github.com/dartsim/dart/pull/2070),
   [#2475](https://github.com/dartsim/dart/pull/2475))
+- Removed the installed `dart/collision/collision_fwd.hpp`, which duplicated a
+  subset of `dart::dynamics` declarations; include `<dart/dynamics/fwd.hpp>`
+  instead.
 - Replaced pybind11 dartpy bindings with nanobind and flattened the dartpy
   namespace; legacy modules/camelCase aliases are transition aids, not the DART
   7 public contract. ([#2249](https://github.com/dartsim/dart/pull/2249),
@@ -370,6 +373,10 @@ compatibility remains on the active DART 6 LTS branch._
   backend-neutral lie-group batch helpers, allocator improvements, logging and
   profiling cleanup, and C++23-friendly constants/utilities.
   ([#2490](https://github.com/dartsim/dart/pull/2490))
+- Consolidated forward declarations so each namespace declares its types once in
+  its own `fwd.hpp`, adding `dart/common/fwd.hpp` and
+  `dart/math/optimization/fwd.hpp`; `pixi run check-fwd-headers` keeps consumers
+  from hand-rolling their own declarations.
 
 #### Build, Packaging, and Developer Tooling
 

@@ -56,11 +56,6 @@
 namespace dart {
 namespace dynamics {
 
-class Joint;
-class BodyNode;
-class Skeleton;
-class DegreeOfFreedom;
-
 /// class Joint
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_API Joint

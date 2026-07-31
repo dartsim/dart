@@ -42,6 +42,11 @@ class CollisionDetector;
 class CollisionFilter;
 class CollisionGroup;
 class CollisionObject;
+class DartCollisionScene;
+
+/// Opaque per-contact payload carried through `Contact::userData` by the soft
+/// collision path. Never defined; only ever handled as a pointer.
+class SoftCollisionInfo;
 
 struct CollisionOption;
 class CollisionResult;

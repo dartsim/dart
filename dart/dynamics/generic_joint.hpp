@@ -34,14 +34,13 @@
 #define DART_DYNAMICS_GENERICJOINT_HPP_
 
 #include <dart/dynamics/detail/generic_joint_aspect.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <array>
 #include <string>
 
 namespace dart {
 namespace dynamics {
-
-class DegreeOfFreedom;
 
 template <class ConfigSpaceT>
 class GenericJoint

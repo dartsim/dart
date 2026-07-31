@@ -33,14 +33,14 @@
 #ifndef DART_COMMON_OBSERVER_HPP_
 #define DART_COMMON_OBSERVER_HPP_
 
+#include <dart/common/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <set>
 
 namespace dart {
 namespace common {
-
-class Subject;
 
 /// The Observer class should be inherited by any class that wants to respond
 /// in a customized way to the destruction of a Subject. Simply override the

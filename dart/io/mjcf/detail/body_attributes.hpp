@@ -37,6 +37,7 @@
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/inertial.hpp>
 
 #include <Eigen/Dense>
@@ -49,8 +50,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Size;
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#body

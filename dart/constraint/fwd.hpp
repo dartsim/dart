@@ -45,6 +45,7 @@ class BoxedLcpConstraintSolver;
 class BoxedLcpSolver;
 class ConstrainedGroup;
 class ConstraintBase;
+struct ConstraintInfo;
 class ConstraintSolver;
 class CouplerConstraint;
 class ContactConstraint;

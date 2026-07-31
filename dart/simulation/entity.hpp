@@ -32,13 +32,11 @@
 
 #pragma once
 
+#include <dart/simulation/fwd.hpp>
+
 #include <cstdint>
 
 namespace dart::simulation {
-
-namespace detail {
-struct EntityAccess;
-} // namespace detail
 
 /// Opaque, backend-neutral identifier for an object owned by a `World`.
 ///

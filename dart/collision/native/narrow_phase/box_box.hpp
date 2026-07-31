@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
@@ -41,8 +42,6 @@
 #include <span>
 
 namespace dart::collision::native {
-
-class BoxShape;
 
 struct DART_COLLISION_NATIVE_API BoxPair
 {

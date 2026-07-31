@@ -33,6 +33,7 @@
 #ifndef DART_GUI_DETAIL_RENDERABLE_RESOURCES_HPP_
 #define DART_GUI_DETAIL_RENDERABLE_RESOURCES_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/textures.hpp>
 #include <dart/gui/renderable.hpp>
 
@@ -44,16 +45,6 @@
 #include <vector>
 
 #include <cstddef>
-
-namespace filament {
-
-class Engine;
-class IndexBuffer;
-class Material;
-class MaterialInstance;
-class VertexBuffer;
-
-} // namespace filament
 
 namespace dart::gui::detail {
 

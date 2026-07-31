@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <dart/dynamics/composite_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/geometry.hpp>
 
@@ -45,9 +46,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class FixedJacobianNode;
-class Support;
 
 namespace detail {
 

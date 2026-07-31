@@ -33,7 +33,6 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
-#include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/continuous_collision_option.hpp>
@@ -43,6 +42,8 @@
 #include <dart/collision/fwd.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/observer.hpp>
 

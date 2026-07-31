@@ -35,6 +35,7 @@
 #include <dart/collision/native/aabb.hpp>
 #include <dart/collision/native/collision_filter.hpp>
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <Eigen/Geometry>
@@ -44,8 +45,6 @@
 #include <cstdint>
 
 namespace dart::collision::native {
-
-class CollisionWorld;
 
 /// Lightweight handle to a collision entity in the ECS registry.
 /// Data (shape, transform, AABB) is stored in CollisionWorld's registry.

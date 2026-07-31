@@ -38,6 +38,7 @@
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 
 #include <tinyxml2.h>
 
@@ -47,8 +48,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Body;
 
 class DART_IO_API Inertial final
 {

@@ -35,6 +35,8 @@
 
 #include <dart/gui/export.hpp>
 
+#include <dart/simulation/fwd.hpp>
+
 #include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Core>
@@ -48,10 +50,6 @@
 
 #include <cstddef>
 #include <cstdint>
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::gui {
 

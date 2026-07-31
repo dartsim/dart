@@ -30,26 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-
-#include <dart/collision/native/shapes/shape.hpp>
-
-#include <dart/dynamics/fwd.hpp>
-
-#include <dart/export.hpp>
-
-#include <memory>
+#ifndef DART_IO_MJCF_DETAIL_FWD_HPP_
+#define DART_IO_MJCF_DETAIL_FWD_HPP_
 
 namespace dart {
-namespace collision {
+namespace io {
+namespace MjcfParser {
+namespace detail {
 
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
+class Body;
+class Size;
 
-} // namespace collision
+} // namespace detail
+} // namespace MjcfParser
+} // namespace io
 } // namespace dart
 
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#endif // DART_IO_MJCF_DETAIL_FWD_HPP_

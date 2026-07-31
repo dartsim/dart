@@ -33,18 +33,14 @@
 #ifndef DART_GUI_DETAIL_TEXTURES_HPP_
 #define DART_GUI_DETAIL_TEXTURES_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+
 #include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include <cstdint>
-
-namespace filament {
-class Engine;
-class MaterialInstance;
-class Texture;
-} // namespace filament
 
 namespace dart::gui::detail {
 

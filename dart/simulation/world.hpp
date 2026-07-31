@@ -65,31 +65,6 @@
 
 namespace dart::simulation {
 
-namespace io::detail {
-class SkeletonLoaderWorldAccess;
-} // namespace io::detail
-
-namespace detail {
-struct WorldStorage;
-[[nodiscard]] DART_SIMULATION_API WorldStorage& storageOf(World& world);
-[[nodiscard]] DART_SIMULATION_API const WorldStorage& storageOf(
-    const World& world);
-} // namespace detail
-
-namespace compute {
-class MultibodyContactStage;
-class MultibodyForwardDynamicsStage;
-class MultibodyPositionStage;
-class MultibodyVelocityStage;
-class RigidBodyContactStage;
-class RigidBodyPositionStage;
-class RigidBodyVelocityStage;
-class RigidIpcContactStage;
-class UnifiedConstraintStage;
-} // namespace compute
-
-struct WorldOptions;
-
 /// Options controlling `World::collide()` query filtering.
 struct CollisionQueryOptions
 {

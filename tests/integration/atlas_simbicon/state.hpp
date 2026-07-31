@@ -33,6 +33,10 @@
 #ifndef EXAMPLES_ATLASSIMBICON_STATE_HPP_
 #define EXAMPLES_ATLASSIMBICON_STATE_HPP_
 
+#include "fwd.hpp"
+
+#include <dart/dynamics/fwd.hpp>
+
 #include <dart/all.hpp>
 
 #include <Eigen/Dense>
@@ -49,16 +53,6 @@
 
 #define ATLAS_DEFAULT_CORONAL_CD 0.1
 #define ATLAS_DEFAULT_CORONAL_CV 0.1
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Joint;
-class Skeleton;
-} // namespace dynamics
-} // namespace dart
-
-class TerminalCondition;
 
 //==============================================================================
 /// @brief class State

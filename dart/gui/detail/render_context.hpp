@@ -33,28 +33,14 @@
 #ifndef DART_GUI_DETAIL_RENDER_CONTEXT_HPP_
 #define DART_GUI_DETAIL_RENDER_CONTEXT_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/fwd.hpp>
+
 #include <utils/Entity.h>
 
 #include <array>
 
 #include <cstddef>
-
-namespace filament {
-
-class Camera;
-class Engine;
-class Renderer;
-class Scene;
-class SwapChain;
-class View;
-
-} // namespace filament
-
-namespace dart::gui {
-
-struct RunOptions;
-
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 

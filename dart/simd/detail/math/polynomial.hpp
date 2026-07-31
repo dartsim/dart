@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dart/simd/fwd.hpp>
+
 #include <type_traits>
 
 #include <cmath>
@@ -46,9 +48,6 @@
 #endif
 
 namespace dart::simd {
-
-template <typename T, std::size_t W>
-struct Vec;
 
 template <typename T, std::size_t W>
 Vec<T, W> fmadd(const Vec<T, W>& a, const Vec<T, W>& b, const Vec<T, W>& c);

@@ -33,14 +33,12 @@
 #pragma once
 
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 
 #include <string>
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::io {
 

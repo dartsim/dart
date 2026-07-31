@@ -54,6 +54,7 @@ struct MeshTriangle;
 struct MeshVertex;
 struct OrbitCamera;
 struct OrbitCameraBasis;
+struct OrbitCameraControlOptions;
 struct OrbitCameraController;
 struct OffscreenRenderOptions;
 struct Panel;

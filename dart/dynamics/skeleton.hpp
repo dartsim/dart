@@ -57,12 +57,6 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-template <typename T>
-class BodyNodePool;
-class SkeletonDynamicsView;
-} // namespace detail
-
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class DART_API Skeleton

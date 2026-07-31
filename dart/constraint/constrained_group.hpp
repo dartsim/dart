@@ -50,8 +50,6 @@
 namespace dart {
 namespace constraint {
 
-struct ConstraintInfo;
-
 /// ConstrainedGroup is a group of skeletons that interact each other with
 /// constraints
 /// @sa class ConstraintSolver

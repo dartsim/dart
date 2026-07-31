@@ -30,26 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-
-#include <dart/collision/native/shapes/shape.hpp>
-
-#include <dart/dynamics/fwd.hpp>
-
-#include <dart/export.hpp>
-
-#include <memory>
+#ifndef DART_COMMON_FWD_HPP_
+#define DART_COMMON_FWD_HPP_
 
 namespace dart {
-namespace collision {
+namespace common {
 
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
+class Composite;
+class MemoryAllocator;
+class MemoryManager;
+class Observer;
+class SharedLibrary;
+class Subject;
 
-} // namespace collision
+struct Uri;
+
+namespace detail {
+
+class SharedLibraryManager;
+
+} // namespace detail
+
+} // namespace common
 } // namespace dart
 
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#endif // DART_COMMON_FWD_HPP_

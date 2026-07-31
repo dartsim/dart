@@ -33,19 +33,13 @@
 #ifndef DART_GUI_DETAIL_NATIVE_WINDOW_HPP_
 #define DART_GUI_DETAIL_NATIVE_WINDOW_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
+#include <dart/gui/fwd.hpp>
+
 #include <iosfwd>
 
-struct GLFWwindow;
-
-namespace dart::gui {
-
-struct RunOptions;
-
-} // namespace dart::gui
-
 namespace dart::gui::detail {
-
-struct GuiScaleState;
 
 class ApplicationWindow
 {

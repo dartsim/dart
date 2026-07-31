@@ -63,20 +63,6 @@
 namespace dart {
 namespace dynamics {
 
-class GenCoord;
-class Skeleton;
-class Joint;
-class DegreeOfFreedom;
-class Shape;
-class ShapeNode;
-class CollisionAspect;
-class EndEffector;
-class Marker;
-
-namespace detail {
-class ArticulatedDynamicsAccess;
-} // namespace detail
-
 /// BodyNode class represents a single node of the skeleton.
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically

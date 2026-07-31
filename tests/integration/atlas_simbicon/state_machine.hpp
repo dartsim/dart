@@ -33,14 +33,14 @@
 #ifndef EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
 #define EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
 
+#include "fwd.hpp"
+
 #include <dart/all.hpp>
 
 #include <Eigen/Dense>
 
 #include <string>
 #include <vector>
-
-class State;
 
 /// @brief StateMachine for Atlas robot
 class StateMachine

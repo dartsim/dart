@@ -34,6 +34,7 @@
 #define DART_GUI_DETAIL_APPLICATION_HPP_
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <algorithm>
 #include <string>
@@ -42,10 +43,6 @@
 
 #include <cctype>
 #include <cstddef>
-
-namespace dart::gui {
-struct ApplicationOptions;
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 

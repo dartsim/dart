@@ -34,11 +34,11 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/collision_detector.hpp>
+#include <dart/collision/native/fwd.hpp>
 
 #include <memory>
 
 namespace dart::collision::native {
-class PersistentManifoldCache;
 }
 
 namespace dart {

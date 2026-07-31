@@ -34,14 +34,13 @@
 #define DART_DYNAMICS_DETAIL_BALLJOINTASPECT_HPP_
 
 #include <dart/dynamics/detail/joint_coordinate_chart.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
 #include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {
-
-class BallJoint;
 
 namespace detail {
 

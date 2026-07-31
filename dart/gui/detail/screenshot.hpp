@@ -33,6 +33,7 @@
 #ifndef DART_GUI_DETAIL_SCREENSHOT_HPP_
 #define DART_GUI_DETAIL_SCREENSHOT_HPP_
 
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/profile.hpp>
 
 #include <condition_variable>
@@ -43,8 +44,6 @@
 #include <cstdint>
 
 namespace dart::gui::detail {
-
-struct FilamentRenderContext;
 
 struct ScreenshotCapture
 {

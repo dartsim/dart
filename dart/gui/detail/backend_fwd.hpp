@@ -30,26 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#ifndef DART_GUI_DETAIL_BACKEND_FWD_HPP_
+#define DART_GUI_DETAIL_BACKEND_FWD_HPP_
 
-#include <dart/collision/native/shapes/shape.hpp>
+// Forward declarations for the third-party rendering and UI backends used by
+// dart::gui. Neither Filament, GLFW, nor Dear ImGui ships a forward-declaration
+// header, so this file is the single place where DART declares their types;
+// gui headers include it instead of repeating the declarations.
 
-#include <dart/dynamics/fwd.hpp>
+namespace filament {
 
-#include <dart/export.hpp>
+class Camera;
+class ColorGrading;
+class Engine;
+class IndexBuffer;
+class IndirectLight;
+class Material;
+class MaterialInstance;
+class Renderer;
+class Scene;
+class Skybox;
+class SwapChain;
+class Texture;
+class VertexBuffer;
+class View;
 
-#include <memory>
+} // namespace filament
 
-namespace dart {
-namespace collision {
+struct GLFWwindow;
 
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
+struct ImDrawData;
+struct ImGuiIO;
 
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#endif // DART_GUI_DETAIL_BACKEND_FWD_HPP_

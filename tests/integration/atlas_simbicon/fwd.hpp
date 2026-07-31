@@ -30,26 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#ifndef EXAMPLES_ATLASSIMBICON_FWD_HPP_
+#define EXAMPLES_ATLASSIMBICON_FWD_HPP_
 
-#include <dart/collision/native/shapes/shape.hpp>
+// Forward declarations for this example's global-namespace types, which
+// reference each other across headers.
 
-#include <dart/dynamics/fwd.hpp>
+class Controller;
+class State;
+class StateMachine;
+class TerminalCondition;
 
-#include <dart/export.hpp>
-
-#include <memory>
-
-namespace dart {
-namespace collision {
-
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-DART_API std::unique_ptr<native::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#endif // EXAMPLES_ATLASSIMBICON_FWD_HPP_
