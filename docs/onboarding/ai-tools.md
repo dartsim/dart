@@ -24,16 +24,24 @@ bounded agent profiles from `.codex/agents/`, project defaults from
 `.codex/hooks.json` after the repository is trusted. Use:
 
 ```bash
-pixi run python scripts/setup_ai.py
-pixi run python scripts/check_ai_infrastructure.py --doctor
+pixi run ai-setup
+pixi run ai-doctor
+pixi run ai-doctor --json
 ```
 
-For large, high-value autonomous work, select Codex 5.6 Sol Ultra in the
-session. The project does not pin a model so ordinary maintenance and future
-clients inherit the maintainer's choice. The three project agents are
-read-only: `dart_scout` gathers evidence, `dart_reviewer` audits the current
-diff, and `dart_release_auditor` compares `main` with the DART 6.20 compatibility
-surface.
+The project does not pin a model or reasoning effort. For GPT-5.6, use Sol for
+difficult ambiguous work, Terra for everyday or read-heavy work, and Luna for
+clear repeatable work. Max gives one hard task more reasoning time; Ultra is
+for independently parallelizable work when the user explicitly authorized
+delegation. Most tasks need neither. The three read-only project agents inherit
+the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
+audits the current diff, and `dart_release_auditor` compares `main` with the
+DART 6.20 compatibility surface.
+
+Treat that routing as versioned guidance. Use `dart-model-upgrade` for future
+model or Codex changes; its audit includes configuration, prompts, generated
+adapters, runtime tooling, durable `docs/` context, session handoffs, and a
+representative DART 6 OSG visual-debug investigation.
 
 Inspect project hooks with `/hooks`. Project hooks are advisory and may be
 skipped in an untrusted repository. `pixi run install-hooks` installs the

@@ -106,6 +106,9 @@ def test_verdict_schema_contrast_and_metadata_round_trip(tmp_path: Path) -> None
     assert verdict["checks"]["non_blank"]["pass"] is True
     assert verdict["checks"]["contrast"]["pass"] is True
     assert verdict["metadata"]["backend"] == "llvmpipe"
+    assert verdict["machine_scope"] == "pixel-integrity"
+    assert verdict["semantic_review"]["required"] is True
+    assert verdict["semantic_review"]["performed_by_this_tool"] is False
     assert verdict["thresholds_used"]["diff"]["fail"] == 0.016
 
     loaded = json.loads(json.dumps(verdict))
@@ -172,6 +175,8 @@ def test_diff_catches_seeded_render_regression(tmp_path: Path) -> None:
     verdict = image_verdict.build_verdict(capture, golden)
 
     assert verdict["pass"] is False
+    assert verdict["machine_scope"] == "pixel-integrity-and-reference-diff"
+    assert verdict["semantic_review"]["performed_by_this_tool"] is False
     assert verdict["checks"]["diff"]["pass"] is False
     assert verdict["checks"]["diff"]["pct_pixels_over_threshold"] > 1.0
     assert any("diff pixels over threshold" in reason for reason in verdict["reasons"])

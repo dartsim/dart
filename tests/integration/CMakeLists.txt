@@ -74,7 +74,9 @@ target_include_directories(
 )
 set_tests_properties(
   test_ConstraintSolver
-  PROPERTIES ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+  PROPERTIES
+    ENVIRONMENT "GTEST_FILTER=ConstraintSolver.*"
+    FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 add_test(
   NAME test_AdaptiveSoftContactModel
@@ -90,7 +92,7 @@ add_test(
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
-  PROPERTIES FAIL_REGULAR_EXPRESSION "0 tests"
+  PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})
 
