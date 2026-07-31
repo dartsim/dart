@@ -658,3 +658,76 @@ TEST(ContactArrowLayoutTest, RefreshesWhenASkeletonIsReplacedBySameTopology)
   std::cout << "contact_arrow_replacement  before=" << smallLength
             << " m  after=" << layout.getReferenceLength() << " m\n";
 }
+
+//==============================================================================
+// The defensive and boundary paths: an empty world, a scene too small or too
+// large to size arrows sensibly, a non-positive timestep, and more contacts
+// than the arrow pool allows. None of these should be reachable in a healthy
+// demo, which is exactly why they are worth pinning.
+TEST(ContactArrowLayoutTest, HandlesDegenerateWorldsAndInputs)
+{
+  // An empty world has nothing to measure, so the fallback length stands and
+  // the force floor collapses to the negligible-force threshold.
+  auto empty = dart::simulation::World::create("empty");
+  empty->setTimeStep(0.001);
+  dart_demos::ContactArrowLayout emptyLayout;
+  emptyLayout.resetForWorld(*empty);
+  EXPECT_DOUBLE_EQ(
+      emptyLayout.getReferenceLength(),
+      dart_demos::ContactArrowLayout::kFallbackReferenceLength);
+  EXPECT_TRUE(emptyLayout.update(*empty, {}, kMaxArrows).empty());
+
+  // A scene far smaller than the minimum, and one far larger than the maximum,
+  // both clamp rather than producing invisible or scene-swallowing arrows.
+  dart::dynamics::SkeletonPtr tiny;
+  auto tinyWorld = makeBoxOnGround(0.001, 0.0005, tiny);
+  dart_demos::ContactArrowLayout tinyLayout;
+  tinyLayout.resetForWorld(*tinyWorld);
+  EXPECT_DOUBLE_EQ(
+      tinyLayout.getReferenceLength(),
+      dart_demos::ContactArrowLayout::kMinReferenceLength);
+
+  dart::dynamics::SkeletonPtr huge;
+  auto hugeWorld = makeBoxOnGround(1000.0, 400.0, huge);
+  dart_demos::ContactArrowLayout hugeLayout;
+  hugeLayout.resetForWorld(*hugeWorld);
+  EXPECT_DOUBLE_EQ(
+      hugeLayout.getReferenceLength(),
+      dart_demos::ContactArrowLayout::kMaxReferenceLength);
+
+  // A non-positive timestep must not produce a NaN decay. The reference simply
+  // stops carrying anything forward.
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.5, box);
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  const std::vector<dart::collision::Contact> spike = {
+      makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 900.0, 0.0))};
+  const std::vector<dart::collision::Contact> resting
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 10.0, 0.0))};
+
+  world->setTimeStep(0.0);
+  layout.update(*world, spike, kMaxArrows);
+  ASSERT_NEAR(layout.getReferenceForce(), 900.0, 1e-9);
+  layout.update(*world, resting, kMaxArrows);
+  EXPECT_TRUE(std::isfinite(layout.getReferenceForce()));
+  EXPECT_NEAR(layout.getReferenceForce(), layout.getReferenceForce(), 0.0);
+  EXPECT_TRUE(layout.getArrows().front().head.allFinite());
+
+  // More contacts than the cap: the surplus is dropped, not drawn.
+  world->setTimeStep(0.001);
+  std::vector<dart::collision::Contact> many;
+  for (int i = 0; i < 40; ++i) {
+    many.push_back(makeContact(
+        Eigen::Vector3d(0.1 * i, 0.0, 0.0), Eigen::Vector3d(0.0, 20.0, 0.0)));
+  }
+  const auto& capped = layout.update(*world, many, 8);
+  EXPECT_EQ(capped.size(), 8u);
+  EXPECT_EQ(layout.getArrows().size(), 8u);
+
+  std::cout << "contact_arrow_degenerate  empty="
+            << emptyLayout.getReferenceLength()
+            << " m  tiny=" << tinyLayout.getReferenceLength()
+            << " m  huge=" << hugeLayout.getReferenceLength() << " m\n";
+}

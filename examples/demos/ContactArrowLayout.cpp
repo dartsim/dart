@@ -277,9 +277,9 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   // The decay is derived from the timestep on every call rather than cached,
   // because the demo host lets the user change the timestep while a scene is
   // running; a cached value would silently stretch or compress the recovery.
-  const double decay = (timeStep > 0.0 && std::isfinite(timeStep))
-                           ? std::exp(-timeStep / kForceDecayTime)
-                           : 0.0;
+  // World::setTimeStep() rejects non-finite and non-positive values, so the
+  // timestep needs no guard here.
+  const double decay = std::exp(-timeStep / kForceDecayTime);
   mReferenceForce = std::max({peakForce, decay * mReferenceForce, mFloorForce});
 
   mArrows.reserve(count);
