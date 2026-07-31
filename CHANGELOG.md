@@ -87,6 +87,13 @@
     readable.
     ([#3410](https://github.com/dartsim/dart/pull/3410))
 
+  * Extend the task-shaped AI model-routing guidance to the Claude Code lane
+    (Claude Fable 5 and Opus 5): `docs/ai/README.md` keeps one bounded routing
+    entry per validated tool lane, the model-upgrade workflow, scenario
+    contract markers, and gates route through that single owner instead of
+    duplicating per-family tiers, and the simulation image-review guidance
+    names image-capable targets across both lanes.
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.

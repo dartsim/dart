@@ -118,11 +118,27 @@ through `dart-verify-sim`: the same text oracle, assessed OSG view, and
 claim-specific debug layers. Rendering or native image-review limitations are
 reported rather than converted into model-quality claims.
 
-For GPT-5.6, use Sol for hard ambiguous work, Terra for everyday or read-heavy
-work, and Luna for clear repeatable work. Max spends more reasoning on one
-difficult task; Ultra is useful only for independently parallelizable work when
-delegation is authorized. The project pins neither a model nor an effort.
-Treat this paragraph as replaceable versioned guidance, not a permanent model
+The project pins neither a model nor an effort. Routing is per tool lane, one
+bounded entry per validated lane:
+
+- **Codex — GPT-5.6 family.** Use Sol for hard ambiguous work, Terra for
+  everyday or read-heavy work, and Luna for clear repeatable work. Max spends
+  more reasoning on one difficult task; Ultra is useful only for independently
+  parallelizable work when delegation is authorized. Most tasks need neither.
+- **Claude Code — current Claude models.** Use Fable 5 (`claude-fable-5`, the
+  Mythos-class tier above Opus) for the hardest ambiguous or long-horizon
+  work; Opus 5 (`claude-opus-5`) as the everyday strong default for
+  substantial maintenance work (Claude Code fast mode also runs on Opus);
+  Sonnet 5 for standard bounded work; and Haiku 4.5 for quick lookups.
+  Reasoning effort is a session-level setting; reserve `max` effort for one
+  hard task rather than making it a default. Fable 5 and Opus 5 ship safety
+  classifiers that can occasionally refuse dual-use content; treat such a
+  refusal as expected model behavior rather than a DART harness defect. If
+  the refused task is legitimate DART work, restate it with its
+  physics/simulation context made explicit, and surface it to a maintainer if
+  it still refuses.
+
+Treat these entries as replaceable versioned guidance, not a permanent model
 taxonomy.
 
 ## Release Profile
