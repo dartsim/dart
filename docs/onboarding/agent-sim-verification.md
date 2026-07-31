@@ -116,8 +116,31 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   repro commands) with GitHub-hosted media: `manual` backend emits
   web-editor upload placeholders (the documented user-attachments flow);
   `gh-release` uploads release assets via `gh` but only with `--yes` and
-  maintainer approval. PR-only media never enters git history. The published
-  section must also carry the actual text oracle, visible observation,
+  maintainer approval. Before any GitHub action, it recomputes artifact sizes,
+  SHA-256 hashes, claim coverage, and pass state, then freezes every selected
+  file under its content-addressed name in a temporary staging directory;
+  stale, tampered, incomplete, or inconsistent evidence causes no GitHub
+  mutation. Duplicate local basenames are safe because release assets use the
+  digest rather than the source basename. Existing assets are reused only when
+  GitHub reports the exact size, SHA-256 digest, and `uploaded` state. After
+  creating or updating the release, the publisher re-queries it and verifies
+  every selected asset before reporting success, and it uses each final
+  GitHub-reported download URL only after validating the URL's
+  repository/tag/content-address binding. Missing integrity or URL metadata
+  fails closed. Retries reuse only exact assets already in `uploaded` state
+  and upload absent names; a same-name incomplete, unverifiable, or mismatched
+  asset blocks the retry and requires explicit maintainer approval to delete
+  that exact asset or use a new tag. A mutating attempt atomically replaces
+  prior local success outputs with a non-passing `publishing` record before
+  its first remote mutation, then records `partial_or_unverified` plus bounded
+  recovery guidance if any later step fails. Output paths are preflighted
+  before GitHub access and final section/manifest writes are atomic. The
+  publication manifest binds the attempt, repository, release tag, selection,
+  path, size, digest, asset name, final remote URL, and URL provenance so a
+  later run cannot silently preserve stale success or replace reviewed bytes.
+  Dry-run URLs remain explicitly `predicted`, never remote attestations.
+  PR-only media never enters git history. The published section must also
+  carry the actual text oracle, visible observation,
   reconciliation/verdict, and a non-empty claim boundary describing what the
   evidence does not prove; limitations are added when applicable. "What to
   observe" is the expectation, not proof that an image was inspected.

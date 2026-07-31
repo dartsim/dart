@@ -204,7 +204,27 @@ The follow-up workflow closes these:
   upload placeholders, and the `gh-release` backend uploads release assets
   but only behind `--yes` plus maintainer approval (release-asset images
   render inline in PR bodies; videos render as links — only
-  user-attachments URLs get the inline player).
+  user-attachments URLs get the inline player). Before any GitHub action,
+  publication recomputes artifact sizes and SHA-256 hashes plus claim coverage
+  and pass state, then freezes every selected file in temporary
+  content-addressed staging; any stale, tampered, incomplete, or inconsistent
+  selection fails without a GitHub call. Release assets are content-addressed,
+  so equal local basenames cannot cross-content-clobber. Reusing an existing
+  asset requires an exact GitHub-reported size, SHA-256 digest, and `uploaded`
+  state. After create/upload, publication re-queries the release and verifies
+  every selected remote asset before success; absent or stale integrity
+  metadata fails closed. Success URLs come from that final remote response and
+  are checked against the expected repository, tag, and content-addressed
+  asset name rather than inferred locally. Only absent names or exact assets
+  already in `uploaded` state are safely retryable. A same-name incomplete or
+  unverifiable asset is never deleted or clobbered automatically; recovery
+  requires explicit maintainer approval for that exact deletion or a new tag.
+  Before a mutating attempt, output paths are preflighted and any previous
+  local success is atomically invalidated with a non-passing attempt record.
+  Later failure records `partial_or_unverified`, the observed remote state,
+  and bounded recovery guidance with no publishable URLs. The final
+  publication manifest records attempt and selection identity, repository,
+  release tag, URL provenance, and each path/size/digest/asset/URL binding.
 - **Case study (#2984 retrospective).** Re-verifying the renderer-fidelity
   PR with this workflow (`scripts/write_retro_2984_evidence_packet.py`)
   produced claim-tied evidence its own body declined to attach: a PBR
