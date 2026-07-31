@@ -208,6 +208,14 @@ public:
   /// Applied by runHeadlessShot() right after the scene installs.
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  /// Number of wheel-down ticks runHeadlessShot() injects into the viewer
+  /// event queue while hovering the scene panel, capturing one frame per tick
+  /// next to the --shot path. Exercises the real osgGA -> ImGui scroll path so
+  /// headless captures can prove the Memory tab scrolls without corrupting the
+  /// renderer. Verification-only; compiled out with the diagnostics option.
+  void setDebugScrollMemoryPanelTicks(int ticks);
+#endif
 
   /// Number of world nodes currently registered with the viewer. Exactly one
   /// whenever a scene is active; used by cycleScenes() as a leak audit.
@@ -369,6 +377,7 @@ private:
   bool mDebugRecordProfile = false;
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   bool mDebugMemoryDiagnostics = false;
+  int mDebugScrollMemoryPanelTicks = 0;
 #endif
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;

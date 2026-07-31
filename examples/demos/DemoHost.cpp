@@ -562,6 +562,14 @@ void DemoHost::setDebugRecordProfile(bool on)
   mDebugRecordProfile = on;
 }
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+//==============================================================================
+void DemoHost::setDebugScrollMemoryPanelTicks(int ticks)
+{
+  mDebugScrollMemoryPanelTicks = std::max(0, ticks);
+}
+#endif
+
 //==============================================================================
 void DemoHost::requestScenePanelTab(ScenePanelTab tab)
 {
@@ -1150,6 +1158,36 @@ int DemoHost::runHeadlessShot(
               << "': " << std::strerror(errno) << "\n";
     return 1;
   }
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  if (mDebugScrollMemoryPanelTicks > 0) {
+    if (auto* queue = mViewer->getEventQueue()) {
+      // Hover inside the right-side scene panel so ImGui routes the wheel to
+      // the Memory tab content. osgGA Y grows upward and the ImGui handler
+      // flips it, so mid-height works in either convention; the fixed inset
+      // stays inside the panel for every supported width.
+      const float hoverX = static_cast<float>(width) - 60.0f;
+      const float hoverY = static_cast<float>(height) / 2.0f;
+      mViewer->getCamera()->setViewMatrixAsLookAt(
+          home.eye, home.center, home.up);
+      queue->mouseMotion(hoverX, hoverY);
+      mViewer->frame();
+      for (int tick = 0; tick < mDebugScrollMemoryPanelTicks; ++tick) {
+        queue->mouseMotion(hoverX, hoverY);
+        queue->mouseScroll(::osgGA::GUIEventAdapter::SCROLL_DOWN);
+        mViewer->frame();
+        char scrollSuffix[24];
+        std::snprintf(
+            scrollSuffix, sizeof(scrollSuffix), ".scroll%04d.png", tick);
+        const std::string tickPath = shotPath + scrollSuffix;
+        std::remove(tickPath.c_str());
+        mViewer->captureScreen(tickPath);
+        mViewer
+            ->frame(); // SaveScreen writes this tick's PNG during this frame.
+      }
+    }
+  }
+#endif
 
   // Re-pin the view (realize() may have reset it) and draw, then capture.
   mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
