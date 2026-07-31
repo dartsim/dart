@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "5"
+HOOK_VERSION = "6"
 
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
 # interpreter, then a compatible PATH python3. In an older linked worktree or
@@ -93,7 +93,7 @@ cd "$repo_root" || exit 1
 if [ ! -f scripts/check_agent_hook.py ] \
     || [ -z "$python_cmd" ]; then
     echo "DART pre-commit: full agent gate unavailable in this worktree; running staged diff fallback..." >&2
-    if ! git diff --cached --check; then
+    if ! git -c core.whitespace=cr-at-eol diff --cached --check; then
         echo "DART pre-commit: staged diff check FAILED — commit blocked." >&2
         exit 1
     fi

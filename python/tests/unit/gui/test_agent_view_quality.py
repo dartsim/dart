@@ -264,6 +264,37 @@ def test_frame_region_margin_scales_distance():
     assert far_distance == pytest.approx(2.0 * near_distance)
 
 
+def test_frame_region_fits_portrait_viewport_horizontal_fov():
+    landscape = avq.frame_region(
+        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(640, 480)
+    )
+    portrait = avq.frame_region(
+        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(240, 640)
+    )
+
+    landscape_distance = float(np.linalg.norm(landscape.eye - landscape.center))
+    portrait_distance = float(np.linalg.norm(portrait.eye - portrait.center))
+    half_y = math.radians(30.0) * 0.5
+    half_x = math.atan(math.tan(half_y) * (240.0 / 640.0))
+    assert landscape_distance == pytest.approx(1.0 / math.sin(half_y))
+    assert portrait_distance == pytest.approx(1.0 / math.sin(half_x))
+    assert portrait_distance > landscape_distance
+
+
+@pytest.mark.parametrize(
+    ("radius", "message"),
+    [(0.0, "radius"), (float("nan"), "radius")],
+)
+def test_frame_region_rejects_invalid_bounds(radius, message):
+    with pytest.raises(ValueError, match=message):
+        avq.frame_region([0.0, 0.0, 0.0], radius)
+
+
+def test_select_viewpoints_rejects_world_without_bounded_renderables():
+    with pytest.raises(ValueError, match="no bounded renderables"):
+        avq.select_viewpoints(dart.simulation.World())
+
+
 def test_default_agent_camera_parity():
     # frame_region's distance law matches dart.gui.osg.defaultAgentCamera.
     if not hasattr(dart.gui, "osg"):

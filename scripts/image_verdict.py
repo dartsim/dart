@@ -57,6 +57,19 @@ def build_verdict(
         },
         "metadata": metadata or {},
         "checks": checks,
+        "machine_scope": (
+            "pixel-integrity-and-reference-diff"
+            if reference_path is not None
+            else "pixel-integrity"
+        ),
+        "semantic_review": {
+            "required": True,
+            "performed_by_this_tool": False,
+            "instruction": (
+                "Open the image with an image-capable reviewer and reconcile "
+                "visible observations with the text correctness oracle."
+            ),
+        },
         "thresholds_used": {
             "non_blank": {"min_nonzero_pixels": 1, "min_unique_colors": 2},
             "contrast": checks["contrast"]["thresholds"],

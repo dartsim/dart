@@ -108,6 +108,53 @@ def test_installed_hook_honors_skip_and_dry_run(tmp_path):
     assert "would run selected Python: scripts/check_agent_hook.py" in dry.stderr
 
 
+@pytest.mark.parametrize(
+    ("updated", "expected"),
+    (
+        (b"updated\r\n", 0),
+        (b"updated \r\n", 1),
+    ),
+)
+def test_installed_hook_fallback_accepts_crlf_but_rejects_trailing_space(
+    tmp_path, updated, expected
+):
+    repo, env = _init_repo(tmp_path)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "DART Test"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    path = repo / "legacy.txt"
+    path.write_bytes(b"base\r\n")
+    subprocess.run(["git", "add", "legacy.txt"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "--no-verify", "-q", "-m", "base"],
+        cwd=repo,
+        check=True,
+        env=env,
+    )
+    assert _install(repo, env).returncode == 0
+    path.write_bytes(updated)
+    subprocess.run(["git", "add", "legacy.txt"], cwd=repo, check=True, env=env)
+
+    run = subprocess.run(
+        [str(_hook(repo))],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert run.returncode == expected
+
+
 def test_installed_hook_prefers_repository_pixi_python(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0

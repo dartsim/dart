@@ -9,16 +9,17 @@ supported AI tools.
 - `.opencode/command/` and `.agents/skills/` are generated.
 
 `branch-profile.json` owns machine-readable DART 6.20 facts and DART 7
-exclusions. `agent-scenarios.json` owns the seven deterministic orientation,
-small-change, failure-diagnosis, documentation-update, component-work,
-simulation-verification, and release-maintenance contracts exercised by the
-infrastructure checker.
+exclusions. `agent-scenarios.json` owns the eight deterministic orientation,
+small-change, failure-diagnosis, documentation-update, model-upgrade,
+component-work, simulation-verification, and release-maintenance contracts
+exercised by the infrastructure checker.
 
 ## User-Invoked Workflows
 
 | Capability                 | Codex                       | Claude/OpenCode             | Required docs and public path                                                                                                                                                                               | Minimum gate or exception                                                                                                                                                                                 |
 | -------------------------- | --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `dart-analyze`             | `$dart-analyze`             | `/dart-analyze`             | `docs/ai/principles.md`, `docs/ai/workflows.md`, `docs/ai/verification.md`, `docs/onboarding/ai-tools.md`                                                                                                   | Read-only analysis; no local mutation gate beyond inspected evidence                                                                                                                                      |
+| `dart-model-upgrade`       | `$dart-model-upgrade`       | `/dart-model-upgrade`       | `docs/AGENTS.md`, `docs/README.md`, `docs/ai/principles.md`, `docs/ai/README.md`, `docs/ai/components.md`, `docs/ai/sessions.md`, `docs/ai/workflows.md`, `docs/ai/verification.md`, `docs/ai/branch-profile.json`, `docs/information-architecture.md`, `docs/onboarding/ai-tools.md`, `docs/onboarding/release-management.md`, `docs/dev_tasks/README.md` | Audit-only is read-only; apply mode uses Relevant docs/AI checks from `docs/ai/verification.md`, one representative text-first, semantically inspected DART 6 OSG investigation, and a principle audit; external mutations require explicit approval |
 | `dart-new-task`            | `$dart-new-task`            | `/dart-new-task`            | `docs/onboarding/building.md`, `docs/onboarding/contributing.md`, `docs/onboarding/code-style.md`, `docs/dev_tasks/README.md`, `docs/ai/sessions.md`, `docs/ai/principles.md`, `docs/ai/verification.md`    | Use target-specific gates and task-specific gates from `docs/ai/verification.md`; external mutations require explicit approval                                                                            |
 | `dart-ultrawork`           | `$dart-ultrawork`           | `/dart-ultrawork`           | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/ai/orchestration.md`, `docs/ai/sessions.md`, `docs/ai/verification.md`, `docs/dev_tasks/README.md`; phase-specific owner docs load only when needed | One up-front decision interview or provided brief; project home in `docs/dev_tasks/<task>/`; per-packet task-specific gates; `pixi run lint` before commits; external mutations require explicit approval |
 | `dart-resume`              | `$dart-resume`              | `/dart-resume`              | `docs/dev_tasks/README.md`, `docs/ai/sessions.md`, `docs/ai/verification.md`, `docs/onboarding/ci-cd.md`, `docs/onboarding/contributing.md`                                                                 | Start with `git status --short --branch`; reconstruct the task acceptance contract, execute until criteria and verification are satisfied or a real blocker is recorded; external mutations require explicit approval                                                    |
@@ -45,4 +46,4 @@ infrastructure checker.
 | `dart-test`       | `$dart-test`       | `docs/onboarding/testing.md`, `pixi run test`, `pixi run test-py`                       |
 | `dart-python`     | `$dart-python`     | `docs/onboarding/python-bindings.md`, `python/examples/`, `python/tests/`               |
 | `dart-io`         | `$dart-io`         | `docs/onboarding/io-parsing.md`, `dart/utils/`, `tests/integration/test_DartLoader.cpp` |
-| `dart-verify-sim` | `$dart-verify-sim` | `docs/ai/verification.md`, `pixi run bm-boxes-headless`, `pixi run agent-capture`, `pixi run image-verdict` |
+| `dart-verify-sim` | `$dart-verify-sim` | `docs/ai/verification.md`, `pixi run bm-boxes-headless`, `pixi run agent-capture`, `pixi run image-verdict`, `pixi run verification-bundle` |

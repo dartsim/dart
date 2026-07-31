@@ -51,11 +51,17 @@ branch and adapt it to the DART-6 layout:
   surface and do not import main-only workflows just to make a patch apply.
   Regenerate adapters with `pixi run sync-ai-commands`.
 
-Verify before merging: `pixi run test-all` (full C++ + Python) and, for any
-collision/constraint/parser/default-solver/public-header change,
-`pixi run -e gazebo test-gz`. Run the **full** `pixi run check-lint` (clang-format
-with gersemi, black/isort, and codespell) — the CI "Check Lint" step runs the whole
-aggregate, so checking only the sub-check you touched misses failures.
+Verify before merging: `pixi run test-all` for the complete default CMake graph.
+The branch configuration pins `BUILD_TESTING=ON`, so `ALL` builds the default
+targets and invokes `tests_and_run` and `pytest`. Use `pixi run test` or
+`pixi run test-py` for focused failure attribution; both use the same sanitized
+CTest/pytest runners as the aggregate. Run `pixi run lint` separately because
+`test-all` does not format or check lint. For any
+collision/constraint/parser/default-solver/public-header change, also run
+`pixi run -e gazebo test-gz`. Run the **full** `pixi run check-lint`
+(clang-format with gersemi, black/isort, and codespell) — the CI "Check Lint"
+step runs the whole aggregate, so checking only the sub-check you touched
+misses failures.
 
 Platform gotchas the default Linux/gcc build does not catch:
 

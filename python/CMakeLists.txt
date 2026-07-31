@@ -49,7 +49,8 @@ if(NOT pybind11_FOUND)
 endif()
 
 set(DART_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-set(DART_DARTPY_BUILD_DIR "${DART_PYTHON_BUILD_DIR}/dartpy")
+add_subdirectory(dartpy)
+set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")
 if(WIN32)
   # Use an escaped separator so the full value is passed as a single argument
   set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}\\;${DART_PYTHON_BUILD_DIR}")
@@ -57,7 +58,6 @@ else()
   set(DART_PYTHONPATH "${DART_DARTPY_BUILD_DIR}:${DART_PYTHON_BUILD_DIR}")
 endif()
 
-add_subdirectory(dartpy)
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(tutorials)
