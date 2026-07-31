@@ -1,5 +1,212 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-30 Current Resume Authority
+
+This section supersedes every older branch-head, runtime-currency, API-default,
+Figure 3, Figure 8, raw-file, CI, upload, and immediate-next-step statement
+below. The task remains active and incomplete.
+
+- Worktree:
+  `/home/js/dev/dartsim/dart/task_6`
+- Branch and pushed head:
+  `research/fbf-friction-release620` at
+  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`
+- Code/runtime checkpoint:
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`
+- Merged and freshly fetched target:
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`
+- PR:
+  <https://github.com/dartsim/dart/pull/3377>, open and draft
+
+The target is already an ancestor, so no merge is pending. The worktree was
+clean before this nine-ledger documentation update. At the last live query,
+16 checks passed; Linux release, asserts-enabled Linux, coverage, and FreeBSD
+were in progress. Requery mutable state. Keep the PR draft and do not trigger
+`@codex review`, reply to AI review comments, or resolve review threads.
+
+The compatibility default is:
+
+1. `World::create()` installs `BoxedLcpConstraintSolver`.
+2. The world retains its normal FCL detector with primitive collision shapes.
+3. Exact FBF is opt-in by constructing
+   `ExactCoulombFbfConstraintSolver` and passing it to
+   `World::setConstraintSolver()`.
+4. `ExactCoulombFbfConstraintSolverOptions::fallbackToBoxedLcp` defaults to
+   `true`.
+5. Source continuation, source inner initialization, colored BGS, and
+   participant affinity default off. Contact-row Delassus, warm start,
+   adaptive step persistence, and post-correction cone projection default on.
+6. `DARTCollisionDetector` defaults to `Compact`; `FourPointPlanar` is an
+   explicit paper/demo scene policy.
+
+Strict exact-only diagnostics set `fallbackToBoxedLcp = false`, snapshot
+`getNumExactCoulombFailures()` around every `World::step()`, and stop when the
+cumulative count increases. There is no `strictMode` option.
+
+Current-tree generated-file hygiene is closed:
+
+- `git ls-files 'docs/dev_tasks/**/assets/**'` returns zero paths;
+- `git ls-files -ci --exclude-standard` returns zero paths;
+- seven intentional `data/` paths remain: two license/provenance documents
+  and five small OBJ/MTL/PPM renderer inputs;
+- `docs/dev_tasks/.gitignore` owns the scalable `**/assets/` rule; and
+- staged AI-infrastructure validation rejects missing/negated policy,
+  force-tracked task assets, and Markdown links to ignored task evidence.
+
+Historical topic commits still contain 492 old evidence blobs. Final
+integration must be a true squash unless a clean branch reconstruction and
+force-with-lease are separately approved.
+
+### Current-head Figure 3 is closed
+
+Ignored root:
+
+```text
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_fig03
+```
+
+The three focused backspin tests pass. Exact and boxed capture, independent
+reuse-only verification, full decode, outcome checks, and manual inspection
+pass. Both lanes complete 240/240. Demo/core/runtime-closure hashes are
+`4fc7b431...`, `58fa02a7...`, and `5b5acb31...`; the runtime remained
+unchanged during capture.
+
+Key SHA-256 values:
+
+- capture summary:
+  `1305c0f838572a55a61fc69594d81722a539a596b5da7c43c996f21789e00580`
+- verification summary:
+  `ef61068a55165cbadafb74bdf730a2c6ce9523e171484e9981dc5c096c71111a`
+- exact MP4:
+  `9554598d9eeb95417955714c85d6d30b5bc91ab9aca34053a218a39688198c6b`
+- boxed MP4:
+  `e51ad128a26ed32d853c87b3edbb94818049641eb61bb3b304d3cada6678a48e`
+- paired MP4:
+  `0d15bd65f4345e25adf6e4a28d3b851ee10a458d70b3dd0eae23506b832d899e`
+- paired panel:
+  `5494960599c228da1ee3ed61c72862cf26949a34a2abf487a519a5e464578364`
+- manual record:
+  `1e952fd772e7a632f3a9b8276674026c8353dc06a39ba16edea09934c46cd43b`
+
+Manual inspection of steps 0/2/4 and the five-time panel confirms that the
+renderer-backed checker OBJ/MTL/PPM texture changes orientation visibly. This
+does not prove signed angular direction, exact/boxed equivalence or
+superiority, source/backend equivalence, historical renderer/golden parity,
+timing, Figure 3 parity, or paper parity.
+
+### Current-head Figure 8 is closed
+
+Ignored root:
+
+```text
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_fig08
+```
+
+The three focused Figure 8 tests pass. Boxed capture/reuse verification,
+expected exact failed-prefix finalization, visual inspection at
+0.0/0.9/3.3/6.6 seconds, manual seal, and standalone sealed verification pass.
+
+Exact fails closed after completed step 209 with `iteration_cap`; step 208 is
+the last rendered frame. Its terminal solve has 208 contacts, 5,000
+iterations, residual `1.2582804496066107e-6`, 342 exact attempts/solves, one
+accepted-at-cap solve, zero exact failures, and zero boxed fallbacks. The
+stricter evidence policy rejects that accepted-at-cap event. Boxed completes
+1,600/1,600, but the crown collapses and the standing oracle is false.
+
+Key SHA-256 values:
+
+- boxed capture summary:
+  `f8b1136c73252ac7da5bdf4d1022b6d812007aeb4917936e5a73c8f8e17df5b3`
+- boxed verification summary:
+  `b905beef8bd9cadeba9c6cb9e6d268317f74f874fed936466bb7363942cf3ba9`
+- sealed paired MP4:
+  `3d6520189e610893588c77692c1f460c233ffa92e52125710fdafb20bbad1297`
+- paired panel:
+  `d6782a65ba089dab840eddfc6afbdca89b1ac75d718c7cc8668bef0a8baf9372`
+- sealed metadata:
+  `8923fe54d58b0489c21a714918a3bfec95c509b2070068f295adcf57e6a845a8`
+- manual record:
+  `6c314283e5e81d4913f45de07b7a465fc7067f8f1e375855d6e84b75446b152f`
+
+Status is `valid_current_dart_blocker_diagnostic`, `upload_ready=true`.
+The hstack explicitly freezes only the exact last-valid frame. This is not a
+complete exact trajectory, standing success, historical Figure 8 invocation,
+source/backend equivalence, solver superiority, timing result, Figure 8
+parity, or paper parity.
+
+### Immediate next action: paired ten-level capture
+
+Run from the unchanged pushed head into a fresh ignored root:
+
+```bash
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py run \
+  --scenario card_house_author_10_impact_source_continuation_current_source \
+  --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root \
+    docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10 \
+  --allow-long \
+  --keep-going \
+  --ffmpeg .pixi/envs/gazebo/bin/ffmpeg \
+  --ffprobe .pixi/envs/gazebo/bin/ffprobe \
+  --python .pixi/envs/default/bin/python \
+  --out \
+    docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10/fig10_run_summary.json
+```
+
+The dry run passes. It declares 3,200 substeps per lane and labels the exact
+lane `EXACT COULOMB FBF + SOURCE CONTINUATION` and boxed lane
+`EXISTING BOXED LCP (NO SOURCE CONTINUATION)`. Run it CPU-pinned and guarded;
+another checkout repeatedly launches all-core builds. The ignored
+`assets/card10_thermal_guard.sh` wrapper freezes on `cc1plus`, `ninja`, or
+`ctest` and on the declared temperature thresholds. Invoke the non-executable
+wrapper through `/bin/bash`.
+
+After capture, run reuse-only verification without `--python`:
+
+```bash
+.pixi/envs/default/bin/python scripts/run_fbf_visual_evidence.py verify \
+  --scenario card_house_author_10_impact_source_continuation_current_source \
+  --solver-lane both \
+  --demo build/default/cpp/Release/bin/dart-demos \
+  --output-root \
+    docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10 \
+  --ffmpeg .pixi/envs/gazebo/bin/ffmpeg \
+  --ffprobe .pixi/envs/gazebo/bin/ffprobe \
+  --out \
+    docs/dev_tasks/fbf_exact_coulomb_friction/assets/pr_media_current_head_b708_card10/fig10_verify_summary.json
+```
+
+Fully decode the three MP4s and manually inspect the paired panel plus
+initial/pre-release/post-release/final keyframes. Exact alone requests source
+continuation and no automated physical-outcome oracle exists. Therefore the
+valid result is policy-asymmetric qualitative presentation only—never strict
+success, solver-only A/B evidence, superiority, source/trajectory/Tables 6-7
+parity, or paper parity.
+
+### Publication and checkpoint order
+
+1. Complete and verify the ten-level pair from one unchanged pushed head.
+2. Upload current Figure 3 exact and paired clips (slots 02/16), Figure 8
+   paired clip (slot 08), and the final ten-level paired clip (slot 09) only
+   through the GitHub browser composer. Re-download each stream and verify its
+   SHA-256 before changing the URL ledger or PR body.
+3. Synchronize all nine task ledgers and the draft PR description. The PR
+   body already has correct before/after API examples and defaults; refresh
+   its stale additions count from live GitHub after the push.
+4. Run mandatory `pixi run lint`, `git diff --check`, the compact coverage
+   audit, and proportionate docs/infrastructure checks.
+5. Fetch `origin/release-6.20`; merge normally if it advanced. Do not rebase or
+   force-push. If a merge changes runtime, invalidate and rerun runtime-bound
+   evidence rather than relabeling it.
+6. Commit without AI attribution, push, and requery draft state, checks, and
+   review threads. Do not request review yet.
+
+The prior clean-host one-/four-core packet remains valid only for its captured
+runtime checkpoint after `0acffc45b81` changed runtime code. Do not promote it
+as current-head timing evidence without a fresh preregistered cool/quiet run.
+The paper timing target remains unevaluated.
+
 ## 2026-07-30 Review-Fix Resume Point
 
 This section is the current resume authority. It supersedes every older

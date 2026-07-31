@@ -1,5 +1,36 @@
 # FBF GUI And Video Evidence Report
 
+## 2026-07-30 Current-Head Figure 3/8 Capture Boundary
+
+Current pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
+documentation-only descendant of runtime checkpoint `0acffc45b81`.
+
+Fresh Figure 3 evidence under ignored
+`assets/pr_media_current_head_b708_fig03/` passes exact/boxed capture,
+independent reuse verification, full decode, bounded outcomes, and manual
+inspection. The sphere uses the renderer-backed checker OBJ/MTL/PPM texture;
+steps 0/2/4 and the temporal panel visibly change orientation. Exact and boxed
+both finish 240/240. Exact/boxed/group clip hashes are `9554598d...`,
+`e51ad128...`, and `0d15bd65...`; group panel is `54949605...`.
+The visual does not establish signed spin direction, renderer/golden parity,
+solver equivalence/superiority, timing, Figure 3 parity, or paper parity.
+
+Fresh Figure 8 evidence under ignored
+`assets/pr_media_current_head_b708_fig08/` passes boxed capture/reuse,
+expected exact-prefix finalization, inspection at 0.0/0.9/3.3/6.6 seconds,
+manual seal, and standalone sealed verification. Exact stops after completed
+step 209 with `iteration_cap`; the video explicitly freezes only step 208
+after that point. Boxed finishes 1,600 but visibly collapses and fails the
+standing oracle. Clip/panel/metadata/manual hashes are `3d652018...`,
+`d6782a65...`, `8923fe54...`, and `6c314283...`. This is blocker media, not
+a complete exact trajectory or a success/superiority/parity result.
+
+Current Figure 3 slots 02/16 and Figure 8 slot 08 need new browser-created
+GitHub user attachments and download/hash verification. Until then, registered
+URLs remain captured-checkpoint media. The next capture is the paired
+ten-level continuation presentation in a fresh root; only exact requests
+source continuation. All generated files remain under ignored `assets/`.
+
 ## 2026-07-30 Review-Fix Capture Boundary
 
 Current code/runtime checkpoint

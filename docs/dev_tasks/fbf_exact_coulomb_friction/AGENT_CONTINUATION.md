@@ -14,6 +14,66 @@ tests, benchmarks, and GUI examples from the paper?" is:
 No.
 ```
 
+## 2026-07-30 Current-Head Figure 3/8 Truth Boundary
+
+This section is the current authority. It supersedes every older branch-head,
+runtime-currency, API-default, Figure 3, Figure 8, raw-file, CI, upload, and
+immediate-next-step statement below.
+
+- Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
+  documentation-only descendant of code/runtime checkpoint
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`. Freshly fetched target
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` is already an ancestor.
+  PR #3377 is open, draft, and `BLOCKED` only in the expected
+  draft/pending-check sense.
+- The default is not the new solver. `World::create()` still installs
+  `BoxedLcpConstraintSolver` with FCL primitive collision. Exact FBF requires
+  explicit installation; its boxed fallback defaults enabled. Strict evidence
+  disables fallback and gates every `World::step()` on the cumulative exact
+  failure-count delta. Source continuation, source inner initialization,
+  colored BGS, and participant affinity default off. Contact-row Delassus,
+  warm start/adaptive persistence, and post-correction cone projection default
+  on. `DARTCollisionDetector` defaults to `Compact`.
+- Current-tree hygiene is closed: zero tracked task `assets/`, zero tracked
+  ignored files, and seven intentional `data/` paths. The role-based
+  `docs/dev_tasks/.gitignore` `**/assets/` rule is staged-policy tested; forced
+  tracking or linking generated task evidence fails the infrastructure gate.
+  Published branch history still contains 492 old evidence blobs, so final
+  integration needs a true squash unless a separately approved reconstruction
+  occurs.
+- Figure 3 root `assets/pr_media_current_head_b708_fig03/` passes the three
+  focused text oracles, exact/boxed capture, independent reuse verification,
+  full decode, and manual inspection. Demo/core/closure hashes are
+  `4fc7b431...` / `58fa02a7...` / `5b5acb31...`; both lanes complete
+  240/240 and pass the bounded outcome. Exact/boxed/group clips are
+  `9554598d...` / `e51ad128...` / `0d15bd65...`; group panel is
+  `54949605...`; run/verify summaries are `1305c0f8...` /
+  `ef61068a...`. Checker facets visibly change orientation at steps 0/2/4
+  and across the temporal panel. This supplies no signed-rate, renderer-golden,
+  equivalence, superiority, timing, Figure 3, or paper-parity claim.
+- Figure 8 root `assets/pr_media_current_head_b708_fig08/` passes the three
+  text oracles, boxed capture/reuse verification, expected exact failed-prefix
+  finalization, visual inspection at 0.0/0.9/3.3/6.6 seconds, manual seal, and
+  standalone sealed verification. Exact stops after completed step 209 with
+  `iteration_cap`; one accepted-at-cap solve is rejected by the stricter
+  evidence policy, with zero exact failures and zero boxed fallbacks. Boxed
+  completes 1,600 but collapses. Group clip/panel/metadata/manual hashes are
+  `3d652018...` / `d6782a65...` / `8923fe54...` / `6c314283...`.
+  It is only a frozen-prefix blocker diagnostic.
+- Current Figure 3 slot candidates 02/16 and Figure 8 slot candidate 08 differ
+  from their registered attachment bytes. Upload the ignored MP4s only through
+  the GitHub browser composer, then re-download and hash them before updating
+  the ledger/PR. Existing URLs remain historical captured-checkpoint evidence.
+- At the last live query, 16 checks passed and four were in progress:
+  Linux release, asserts-enabled Linux, coverage, and FreeBSD. Classify only
+  live current-head results. Do not trigger review or mutate AI review threads.
+- Next run
+  `card_house_author_10_impact_source_continuation_current_source` with
+  `--solver-lane both` into fresh ignored
+  `assets/pr_media_current_head_b708_card10/`, from one unchanged pushed head.
+  Exact requests source continuation; boxed does not. Preserve the explicit
+  policy-asymmetry and no-outcome/no-parity boundary.
+
 ## 2026-07-30 Review-Fix Truth Boundary
 
 This section supersedes every older branch-head, runtime-currency, CI, review,
