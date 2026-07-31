@@ -34,7 +34,10 @@
 #include "dart/collision/collision.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Random.hpp"
@@ -813,6 +816,49 @@ TEST(World, SimulationThreadCount)
 
   world->setNumSimulationThreads(1u);
   EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+}
+
+//==============================================================================
+TEST(World, CloneRemapsDartContactGapsToClonedShapeFrames)
+{
+  auto world = World::create();
+  auto detector = collision::DARTCollisionDetector::create();
+  world->setCollisionDetector(detector);
+
+  auto skeleton = Skeleton::create("gap_skeleton");
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+  auto* shapeNode = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->addSkeleton(skeleton);
+
+  auto simpleFrame = SimpleFrame::createShared(Frame::World(), "gap_frame");
+  simpleFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->addSimpleFrame(simpleFrame);
+
+  detector->setContactGap(shapeNode, 0.0125);
+  detector->setContactGap(simpleFrame.get(), 0.025);
+
+  auto clone = world->clone();
+  ASSERT_NE(nullptr, clone);
+  auto cloneDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          clone->getCollisionDetector());
+  ASSERT_NE(nullptr, cloneDetector);
+
+  auto* cloneShapeNode = clone->getSkeleton(0)->getBodyNode(0)->getShapeNode(0);
+  const auto cloneSimpleFrame = clone->getSimpleFrame(0);
+  ASSERT_NE(nullptr, cloneShapeNode);
+  ASSERT_NE(nullptr, cloneSimpleFrame);
+  EXPECT_NE(shapeNode, cloneShapeNode);
+  EXPECT_NE(simpleFrame.get(), cloneSimpleFrame.get());
+  EXPECT_DOUBLE_EQ(0.0125, cloneDetector->getContactGap(cloneShapeNode));
+  EXPECT_DOUBLE_EQ(0.025, cloneDetector->getContactGap(cloneSimpleFrame.get()));
+
+  // The clone must not retain raw keys into the source world.
+  EXPECT_DOUBLE_EQ(0.0, cloneDetector->getContactGap(shapeNode));
+  EXPECT_DOUBLE_EQ(0.0, cloneDetector->getContactGap(simpleFrame.get()));
+  EXPECT_DOUBLE_EQ(0.0125, detector->getContactGap(shapeNode));
+  EXPECT_DOUBLE_EQ(0.025, detector->getContactGap(simpleFrame.get()));
 }
 
 //==============================================================================

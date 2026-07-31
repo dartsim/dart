@@ -170,8 +170,10 @@ struct ExactCoulombFbfConstraintSolverOptions
   /// Fall back to BoxedLcpConstraintSolver for unsupported or failed groups.
   ///
   /// Setting this false leaves every failed or unsupported constrained group
-  /// unsolved. That mode is only for diagnostics/evidence; callers must inspect
-  /// the status after each step and stop rather than advancing a partial world.
+  /// unsolved. That mode is only for diagnostics/evidence. Because one World
+  /// step can solve multiple disconnected groups, callers must snapshot
+  /// getNumExactCoulombFailures() before each step and stop if it increases
+  /// rather than relying only on the status of the last group.
   bool fallbackToBoxedLcp = true;
 
   /// Include DART CFM/slip row regularization in the assembled Delassus matrix.
@@ -841,7 +843,12 @@ public:
   /// Number of groups routed through boxed-LCP fallback.
   std::size_t getNumBoxedLcpFallbacks() const;
 
-  /// Number of exact-Coulomb group solve attempts that failed before fallback.
+  /// Cumulative number of exact-Coulomb group attempts that failed.
+  ///
+  /// In strict mode, snapshot this value before World::step() and stop if it
+  /// increases. getLastExactCoulombStatus() reports only the last constrained
+  /// group attempted, so a later successful group can follow an earlier
+  /// failure in the same step.
   std::size_t getNumExactCoulombFailures() const;
 
   /// Number of exact-Coulomb solves that reused a cached warm start.

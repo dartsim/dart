@@ -57,6 +57,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
@@ -616,6 +617,37 @@ private:
   std::atomic<int> mNumReserveCalls{0};
   mutable std::mutex mReserveThreadMutex;
   std::set<std::thread::id> mReserveThreadIds;
+};
+
+class ClearingPositionPassConstraintSolver final
+  : public constraint::ConstraintSolver
+{
+public:
+  ClearingPositionPassConstraintSolver() = default;
+
+  void addSkeletonForTest(const dynamics::SkeletonPtr& skeleton)
+  {
+    mSkeletons.push_back(skeleton);
+  }
+
+  void runPositionPassForTest()
+  {
+    constraint::ConstrainedGroup group;
+    group.addConstraint(std::make_shared<FakeConstraint>(1u));
+    mConstrainedGroups.push_back(group);
+    solvePositionConstrainedGroups();
+  }
+
+private:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override {}
+
+  void solvePositionConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    // Match the observable side effect of the position-pass unit-impulse
+    // tests: clearing a SoftBodyNode also clears all of its PointMass values.
+    for (const auto& skeleton : mSkeletons)
+      skeleton->clearConstraintImpulses();
+  }
 };
 
 class ExposedExactCoulombParallelEligibilitySolver final
@@ -1656,6 +1688,29 @@ TEST(ConstraintSolver, SplitImpulsePreservesVelocityPhaseContactResponse)
   EXPECT_GT(height, 0.45) << "box fell through the ground: z=" << height;
   EXPECT_LT(height, 0.55);
   EXPECT_LT(box->getVelocities().norm(), 0.05);
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    SplitImpulseRestoresSoftPointMassVelocityPhaseConstraintImpulses)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* softBody = createSoftBody("soft_split_impulse", true, skeletons);
+  auto* pointMass = softBody->addPointMass(dynamics::PointMass::Properties{});
+  ASSERT_NE(nullptr, pointMass);
+
+  const Eigen::Vector3d velocityPhaseImpulse(1.25, -2.5, 3.75);
+  pointMass->setConstraintImpulse(velocityPhaseImpulse, true);
+  ASSERT_TRUE(
+      pointMass->getConstraintImpulses().isApprox(velocityPhaseImpulse));
+
+  ClearingPositionPassConstraintSolver solver;
+  solver.addSkeletonForTest(skeletons.front());
+  solver.runPositionPassForTest();
+
+  EXPECT_TRUE(
+      pointMass->getConstraintImpulses().isApprox(velocityPhaseImpulse));
 }
 
 //==============================================================================
@@ -4049,6 +4104,7 @@ TEST(
   ASSERT_EQ(
       solver.getLastExactCoulombStatus(),
       constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  ASSERT_EQ(solver.getNumExactCoulombFailures(), 1u);
   ASSERT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelEnabled());
   EXPECT_FALSE(
       solver
@@ -4100,6 +4156,7 @@ TEST(
   ASSERT_EQ(
       solver.getLastExactCoulombStatus(),
       constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
   EXPECT_FALSE(solver.getLastExactCoulombColoredBlockGaussSeidelUsed());
   EXPECT_TRUE(solver.getLastFailedExactCoulombColoredBlockGaussSeidelEnabled());
   EXPECT_FALSE(
