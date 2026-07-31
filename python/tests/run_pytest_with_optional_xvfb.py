@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import os
-import shlex
 import shutil
 import subprocess
 import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+GUARDED_RUNNER = ROOT / "scripts" / "run_pytest.py"
+LEGACY_SELECTION_VARIABLES = {
+    "DARTPY_PYTEST_ARGS",
+    "DARTPY_PYTEST_SOURCES",
+}
 
 
 def _has_linux_display() -> bool:
@@ -15,6 +22,12 @@ def _has_linux_display() -> bool:
 
 def _pytest_env() -> dict[str, str]:
     env = os.environ.copy()
+    for name in tuple(env):
+        if (
+            name.upper().startswith("PYTEST_")
+            or name.upper() in LEGACY_SELECTION_VARIABLES
+        ):
+            env.pop(name)
     env.setdefault("PYTHONUNBUFFERED", "1")
     if sys.platform.startswith("linux"):
         env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -22,15 +35,14 @@ def _pytest_env() -> dict[str, str]:
     return env
 
 
-def _pytest_arguments() -> list[str]:
-    extra_args = shlex.split(os.environ.get("DARTPY_PYTEST_ARGS", ""))
-    source_override = os.environ.get("DARTPY_PYTEST_SOURCES")
-    sources = shlex.split(source_override) if source_override else sys.argv[1:]
-    return [*extra_args, *sources]
-
-
 def main() -> int:
-    command = [sys.executable, "-m", "pytest", *_pytest_arguments()]
+    command = [
+        sys.executable,
+        "-I",
+        str(GUARDED_RUNNER),
+        "--repository-conftest",
+        *sys.argv[1:],
+    ]
     env = _pytest_env()
 
     if sys.platform.startswith("linux") and not _has_linux_display():

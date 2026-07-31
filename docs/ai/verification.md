@@ -152,9 +152,13 @@ Use `pixi run ai-doctor` to diagnose discovery or setup failures without
 mutating the checkout. Use `pixi run check-agent-hook` for frequent hook-sized
 feedback only; it is intentionally not completion evidence. The focused
 `test-ai-infra` suite and aggregate `check-ai-infra` gate must pass in addition
-to generated-adapter sync. Run `pixi run exercise-agent-scenarios` directly
-when changing routing fixtures or branch profiles so failures identify the
-specific scenario.
+to generated-adapter sync. The aggregate gate validates canonical runner wiring
+and executes controlled pytest/CTest probes for hostile ambient selectors,
+actual test-body execution, zero-body rejection, and failure propagation. This
+is a shared, model-independent harness invariant; future model upgrades extend
+the comparison cases and the shared gate instead of creating a model-specific
+runner. Run `pixi run exercise-agent-scenarios` directly when changing routing
+fixtures or branch profiles so failures identify the specific scenario.
 
 When AI workflow changes derive implementation tasks, verify that the owning
 plan packet or `docs/dev_tasks/<task>/README.md` records the DART

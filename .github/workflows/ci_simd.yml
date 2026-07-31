@@ -100,7 +100,9 @@ jobs:
 
       - name: Run SIMD tests
         run: |
-          cd build && ctest -R "UNIT_simd" --output-on-failure
+          pixi run python -I scripts/ctest_tier.py \
+            --test-dir build \
+            -R "^UNIT_simd"
 
   simd-arm64-neon:
     if: github.event.deleted != true
@@ -150,4 +152,6 @@ jobs:
 
       - name: Run SIMD tests
         run: |
-          cd build && ctest -R "UNIT_simd" --output-on-failure
+          pixi run python -I scripts/ctest_tier.py \
+            --test-dir build \
+            -R "^UNIT_simd"

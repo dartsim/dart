@@ -11,7 +11,7 @@ from ai_infrastructure import (
     detect_profile,
     format_errors,
     repository_root,
-    run_checks,
+    run_completion_checks,
 )
 
 
@@ -31,7 +31,7 @@ def main() -> int:
     args = parse_args()
     root = repository_root(args.root)
     profile = detect_profile(root, args.profile)
-    errors = run_checks(root, profile)
+    errors = run_completion_checks(root, profile)
     if errors:
         print(format_errors(errors))
         print(

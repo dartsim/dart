@@ -389,8 +389,9 @@ check-dart7-legacy-freeze = { cmd = [
 ] }
 check-dart7-legacy-freeze-meta = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--repository-conftest",
   "python/tests/unit/test_check_dart7_legacy_freeze.py",
   "-q",
 ] }
@@ -472,8 +473,8 @@ exercise-agent-scenarios = { cmd = [
 ] }
 test-ai-infra = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
@@ -778,7 +779,9 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py --target test_simulation_public_header_smoke
-ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_simulation_public_header_smoke$'
+python -I scripts/ctest_tier.py \
+  --test-dir "${BUILD_DIR}" \
+  -R '^test_simulation_public_header_smoke$'
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -1165,8 +1168,15 @@ agent-capture = { cmd = [
 # changes pixels through the real Filament renderer.
 test-agent-visual-e2e = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--pythonpath",
+  "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python",
+  "--pythonpath",
+  "python",
+  "--pythonpath",
+  "scripts",
+  "--repository-conftest",
   "python/tests/unit/test_agent_capture.py::test_run_capture_debug_layers_change_pixels_end_to_end",
   "-q",
 ], depends-on = [
@@ -1310,9 +1320,13 @@ py-ex-atlas-puppet = { depends-on = [
 ] }
 
 test = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1324,9 +1338,11 @@ test = { cmd = [
 ] }
 
 test-no-plane = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1342,9 +1358,13 @@ test-no-plane = { cmd = [
 ] }
 
 test-simulation = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L '^simulation$'",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-L",
+  "^simulation$",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1426,16 +1446,14 @@ python scripts/run_cpp_benchmark.py \
 """], depends-on = [{ task = "build-cuda", args = ["Release"] }] }
 
 test-math = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
         -R "^UNIT_math_"
 """, depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
 test-lcpsolver = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
         -R "^UNIT_math_lcp_"
 """, depends-on = ["build-math-tests"], env = { BUILD_TYPE = "Release" } }
 
@@ -1473,10 +1491,9 @@ test-dart-gui-smoke = { cmd = [
 test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
 test-capsule-ground-contact = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure \
-        -R INTEGRATION_collision_CapsuleGroundContact
+    python -I scripts/ctest_tier.py \
+        --build-type "$BUILD_TYPE" \
+        -R "^INTEGRATION_collision_CapsuleGroundContact$"
 """, depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1570,7 +1587,10 @@ build-coverage = { cmd = [
 set -euo pipefail
 PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests \
-  && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
+  && python -I scripts/ctest_tier.py \
+    --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+    --jobs ${PARALLEL_JOBS} \
+    --timeout 2400
 """,
 ], depends-on = [
   "config-coverage",
@@ -2397,20 +2417,20 @@ check-lint-quick = { depends-on = [
   "check-dart7-promotion-surface",
   "check-collision-runtime-isolation",
 ] }
-test-quick = { cmd = "python scripts/run_cpp_test.py --quick", depends-on = [
+test-quick = { cmd = "python -I scripts/run_cpp_test.py --quick", depends-on = [
   "config",
 ] }
 verify-quick = { depends-on = ["check-lint-quick", "test-quick"] }
 
 # Tier 1 — pre-commit default: lint + Release lib/tests + simulation-quick + python.
 # Builds only the test targets (not examples/tutorials/docs/Debug) to stay lean.
-test-core = { cmd = "python scripts/ctest_tier.py -LE simulation", depends-on = [
+test-core = { cmd = "python -I scripts/ctest_tier.py -LE simulation", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
   ] },
 ] }
-test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L '^simulation$' --exclude-long-poles", depends-on = [
+test-simulation-quick = { cmd = "python -I scripts/ctest_tier.py -L '^simulation$' --exclude-long-poles", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2426,7 +2446,7 @@ test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L '^simulation$' 
 # long-pole CTest shards overlap the rest of the suite instead of one
 # monolithic GTest binary bounding a worker (runtimes:
 # docs/design/local_verification_pipeline.md).
-test-simulation-full = { cmd = "python scripts/ctest_tier.py -L '^simulation$'", depends-on = [
+test-simulation-full = { cmd = "python -I scripts/ctest_tier.py -L '^simulation$'", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2446,7 +2466,7 @@ verify = { depends-on = [
 ] }
 
 # Tier 2 — run every C++ test (all labels), parallel + load-aware.
-test-full = { cmd = "python scripts/ctest_tier.py", depends-on = [
+test-full = { cmd = "python -I scripts/ctest_tier.py", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
@@ -2555,10 +2575,10 @@ test-asan = { cmd = [
   """
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
-ctest \
+python -I scripts/ctest_tier.py \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  --output-on-failure \
-  -LE simulation
+  -LE simulation \
+  --timeout 2400
 """,
 ], depends-on = [
   "build-asan",
@@ -2803,9 +2823,13 @@ DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 18 20
 ] }
 
 test = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2817,9 +2841,13 @@ test = { cmd = [
 ] }
 
 test-no-plane = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --label-exclude simulation",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-LE",
+  "simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2831,9 +2859,13 @@ test-no-plane = { cmd = [
 ] }
 
 test-simulation = { cmd = [
-  "bash",
-  "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L '^simulation$'",
+  "python",
+  "-I",
+  "scripts/ctest_tier.py",
+  "--build-type",
+  "{{ build_type }}",
+  "-L",
+  "^simulation$",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -3218,9 +3250,17 @@ test-gz = { cmd = """
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
         echo "Running gz-physics compatibility tests in parallel..."
-        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS} -E PERFORMANCE_
+        python -I "$ROOT_DIR/scripts/ctest_tier.py" \
+          --test-dir . \
+          --jobs ${DART_PARALLEL_JOBS} \
+          --timeout 2400 \
+          -E PERFORMANCE_
         echo "Running gz-physics performance tests serially..."
-        ctest --output-on-failure --parallel 1 -R PERFORMANCE_
+        python -I "$ROOT_DIR/scripts/ctest_tier.py" \
+          --test-dir . \
+          --jobs 1 \
+          --timeout 2400 \
+          -R PERFORMANCE_
         cd lib
         (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
         echo "✓ Full gz-physics suite passed and DART plugin links successfully!"

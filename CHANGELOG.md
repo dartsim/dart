@@ -404,6 +404,13 @@ compatibility remains on the active DART 6 LTS branch._
   contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403),
   [#3411](https://github.com/dartsim/dart/pull/3411))
+- Made canonical Python, C++, AI-infrastructure, and visual-verification test
+  gates fail closed against ambient pytest/GoogleTest selectors, plugin
+  injection, collection-only success, and empty test inventories, with
+  model-independent semantic probes and an explicitly scoped Linux Debug smoke
+  preserving intentional test selection across Linux, macOS, and Windows task
+  paths.
+  ([#3412](https://github.com/dartsim/dart/pull/3412))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code
   and Codex pre-tool guards enforcing the same policy during agent sessions;

@@ -42,30 +42,18 @@ def test_linux_pytest_env_preserves_gl_overrides(monkeypatch):
     assert env["MESA_LOADER_DRIVER_OVERRIDE"] == "zinc"
 
 
-def test_pytest_arguments_use_argv_by_default(monkeypatch):
+def test_pytest_env_removes_ambient_selection_controls(monkeypatch):
     runner = _load_runner()
-    monkeypatch.setattr(runner.sys, "argv", ["runner", "test_file.py", "-v"])
-    monkeypatch.delenv("DARTPY_PYTEST_ARGS", raising=False)
-    monkeypatch.delenv("DARTPY_PYTEST_SOURCES", raising=False)
+    monkeypatch.setenv("PYTEST_ADDOPTS", "--collect-only")
+    monkeypatch.setenv("PyTeSt_FutureSelector", "skip-everything")
+    monkeypatch.setenv("DARTPY_PYTEST_ARGS", "-k nothing")
+    monkeypatch.setenv("dartpy_pytest_sources", "ignored.py")
 
-    assert runner._pytest_arguments() == ["test_file.py", "-v"]
+    env = runner._pytest_env()
 
-
-def test_pytest_arguments_allow_ci_overrides(monkeypatch):
-    runner = _load_runner()
-    monkeypatch.setattr(runner.sys, "argv", ["runner", "ignored.py"])
-    monkeypatch.setenv("DARTPY_PYTEST_ARGS", "-vv --tb=short")
-    monkeypatch.setenv(
-        "DARTPY_PYTEST_SOURCES",
-        "unit/common/test_string.py unit/math/test_lcp.py",
-    )
-
-    assert runner._pytest_arguments() == [
-        "-vv",
-        "--tb=short",
-        "unit/common/test_string.py",
-        "unit/math/test_lcp.py",
-    ]
+    assert not any(name.upper().startswith("PYTEST_") for name in env)
+    assert "DARTPY_PYTEST_ARGS" not in env
+    assert "dartpy_pytest_sources" not in env
 
 
 def test_main_uses_xvfb_without_linux_display(monkeypatch):
@@ -78,8 +66,6 @@ def test_main_uses_xvfb_without_linux_display(monkeypatch):
 
     monkeypatch.setattr(runner.sys, "platform", "linux")
     monkeypatch.setattr(runner.sys, "argv", ["runner", "test_file.py"])
-    monkeypatch.delenv("DARTPY_PYTEST_ARGS", raising=False)
-    monkeypatch.delenv("DARTPY_PYTEST_SOURCES", raising=False)
     monkeypatch.delenv("DISPLAY", raising=False)
     monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
     monkeypatch.setattr(runner.shutil, "which", lambda name: "/usr/bin/xvfb-run")
@@ -94,5 +80,10 @@ def test_main_uses_xvfb_without_linux_display(monkeypatch):
         "--server-args=-screen 0 1024x768x24",
         sys.executable,
     ]
-    assert command[4:] == ["-m", "pytest", "test_file.py"]
+    assert command[4:] == [
+        "-I",
+        str(runner.GUARDED_RUNNER),
+        "--repository-conftest",
+        "test_file.py",
+    ]
     assert env["LIBGL_ALWAYS_SOFTWARE"] == "1"
