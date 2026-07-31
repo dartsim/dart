@@ -132,7 +132,7 @@ void resetModel(Model& model);
 /// Bounds of the lateral push sweep maxRecoverablePush() searches. Exported so
 /// a caller can tell a measured threshold from one that saturated the ceiling.
 constexpr double kPushSweepStart = 2000.0;
-constexpr double kPushSweepEnd = 12000.0;
+constexpr double kPushSweepEnd = 24000.0;
 constexpr double kPushSweepStep = 2000.0;
 
 /// Largest pelvis push magnitude (N) from which the biped recovers upright,
