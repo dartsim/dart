@@ -23,9 +23,11 @@ DIFF_JOB_ID = "build-diff"
 DEFAULT_OFF_JOB_ID = "build-release"
 DIFF_ENV = "DART_BUILD_DIFF_OVERRIDE: ON"
 DIFF_CONFIG = "pixi run config ON Release"
+GUARDED_CTEST_RUNNER = "python -I scripts/ctest_tier.py"
+GUARDED_PYTEST_RUNNER = "python -I scripts/run_pytest.py"
 DIFF_CTEST = "-R '^test_diff_'"
-DIFF_PYTEST = "pytest -q python/tests/unit/simulation/test_diff.py"
-DIFF_PYTHONPATH = "PYTHONPATH=build/default/cpp/Release/python"
+DIFF_PYTEST = "python/tests/unit/simulation/test_diff.py -q"
+DIFF_PYTHONPATH = "--pythonpath build/default/cpp/Release/python"
 DEFAULT_RELEASE_TEST = "pixi run test ON Release"
 DEFAULT_RELEASE_PYTEST = "pixi run test-py ON Release"
 DEFAULT_OFF_PARITY_STEP = "Run default differentiable OFF parity test"
@@ -116,6 +118,10 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
                     f"{DEFAULT_OFF_PARITY_TARGET} target"
                 )
             )
+        if not _contains(release_parity, GUARDED_CTEST_RUNNER):
+            violations.append(
+                Violation("build-release must use the guarded CTest runner")
+            )
         if DEFAULT_OFF_PARITY_CTEST not in release_parity:
             violations.append(
                 Violation(
@@ -163,7 +169,9 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
             )
 
     ctest_step = _find_step_block(diff_job, "Run differentiable C++ tests")
-    if "ctest --test-dir build/default/cpp/Release" not in ctest_step:
+    if not _contains(ctest_step, GUARDED_CTEST_RUNNER):
+        violations.append(Violation("build-diff must use the guarded CTest runner"))
+    if "--build-type Release" not in ctest_step:
         violations.append(Violation("build-diff must run CTest on the Release tree"))
     if DIFF_CTEST not in ctest_step:
         violations.append(
@@ -171,6 +179,8 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
         )
 
     pytest_step = _find_step_block(diff_job, "Run differentiable Python tests")
+    if not _contains(pytest_step, GUARDED_PYTEST_RUNNER):
+        violations.append(Violation("build-diff must use the guarded pytest runner"))
     if DIFF_PYTHONPATH not in pytest_step:
         violations.append(
             Violation("build-diff must run Python tests against the built dartpy")

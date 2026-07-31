@@ -54,6 +54,7 @@ wiring). For the practical how-to-build guide, see
 
 ```cmake
 DART_BUILD_GUI          = ON   # Filament-backed GUI; Linux x86_64 default
+DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS = OFF # Opt-in dart-demos diagnostics
 DART_USE_SYSTEM_FILAMENT = ON  # Use installed Filament or Filament_ROOT
 DART_FETCH_FILAMENT     = ON   # Fetch pinned Filament archive fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
@@ -214,6 +215,10 @@ dart/
   - `DART_FETCH_FILAMENT=ON` fetches the pinned Filament archive for supported
     platforms.
   - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
+  - `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON` links the opt-in memory-layout
+    panel/session/model into `dart-demos`. It defaults to `OFF`, which removes
+    its object code and scene calls from the executable. Test builds may still
+    compile the isolated diagnostics library for unit coverage.
 
 OpenSceneGraph and Raylib are no longer maintained renderer options in the
 active build.

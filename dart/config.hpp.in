@@ -87,6 +87,8 @@
 
 #cmakedefine01 DART_BUILD_PROFILE
 
+#cmakedefine01 DART_BUILD_MEMORY_DIAGNOSTICS
+
 namespace dart::config {
 
 inline constexpr std::string_view kSourcePath = "@DART_SOURCE_DIR@/";

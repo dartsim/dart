@@ -76,6 +76,7 @@ set(
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_renderer.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_viewport.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/gui_scale.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_draw_data.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/input.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.hpp"

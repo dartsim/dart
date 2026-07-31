@@ -213,25 +213,29 @@ void captureRigidContactForces(
 }
 
 //==============================================================================
-// The boxed-LCP solver returns its impulses in a stacked snapshot (normal rows
-// [0, n) then two friction rows per contact) rather than on the constraints, so
-// copy them back onto the constraints to share the capture path above.
+// The boxed-LCP solver leaves its impulses in allocator-backed stacked scratch
+// (normal rows [0, n), then two friction rows per contact). Copy them back onto
+// the constraints to share the capture path above without materializing the
+// public Eigen snapshot during an allocation-free baked step.
 void writeBoxedLcpImpulsesIntoConstraints(
     std::span<RigidBodyContactConstraint> constraints,
-    const detail::BoxedLcpContactSnapshot& snapshot)
+    std::span<const double> impulses)
 {
   const Eigen::Index n = static_cast<Eigen::Index>(constraints.size());
-  if (n == 0 || snapshot.f.size() < n) {
+  if (n == 0 || impulses.size() < static_cast<std::size_t>(n)) {
     return;
   }
-  const bool hasFrictionRows = snapshot.f.size() == 3 * n;
+  const bool hasFrictionRows
+      = impulses.size() == static_cast<std::size_t>(3 * n);
   for (Eigen::Index i = 0; i < n; ++i) {
     RigidBodyContactConstraint& constraint
         = constraints[static_cast<std::size_t>(i)];
-    constraint.normalImpulse = snapshot.f[i];
+    constraint.normalImpulse = impulses[static_cast<std::size_t>(i)];
     if (hasFrictionRows) {
-      constraint.tangentImpulse1 = snapshot.f[n + 2 * i];
-      constraint.tangentImpulse2 = snapshot.f[n + 2 * i + 1];
+      constraint.tangentImpulse1
+          = impulses[static_cast<std::size_t>(n + 2 * i)];
+      constraint.tangentImpulse2
+          = impulses[static_cast<std::size_t>(n + 2 * i + 1)];
     } else {
       constraint.tangentImpulse1 = 0.0;
       constraint.tangentImpulse2 = 0.0;
@@ -588,8 +592,9 @@ void RigidBodyContactStage::prepare(World& world)
     // allocator. BoxedLcp additionally warms the frame arena for its per-step
     // Delassus/Dantzig dense temporaries; persistent solver state must stay out
     // of the resettable frame scratch.
-    [[maybe_unused]] const auto contacts
-        = world.queryContacts(CollisionQueryOptions{});
+    const auto contacts = world.queryContacts(CollisionQueryOptions{});
+    detail::storageOf(world).lastContactForces.reserve(
+        std::max(contactCapacity, contacts.size()));
     if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
       auto& frameAllocator = world.getMemoryManager().getFrameAllocator();
       {
@@ -893,14 +898,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
     detail::BoxedLcpContactScratch frameScratch(
         world.getMemoryManager().getFrameAllocator());
-    // solveBoxedLcpContacts applies the same velocity impulses as
-    // applyBoxedLcpContacts but also leaves the solved impulses in the
-    // snapshot, which the force capture needs.
-    const detail::BoxedLcpContactSnapshot& snapshot
-        = detail::solveBoxedLcpContacts(
-            registry, contacts, world.getTimeStep(), frameScratch);
+    detail::applyBoxedLcpContacts(
+        registry, contacts, world.getTimeStep(), frameScratch);
     writeBoxedLcpImpulsesIntoConstraints(
-        frameScratch.problem.constraints, snapshot);
+        frameScratch.problem.constraints, frameScratch.systemF);
     captureRigidContactForces(
         registry, world, frameScratch.problem.constraints, world.getTimeStep());
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());

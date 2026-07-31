@@ -58,6 +58,7 @@ set(dartpy_test_utils util.py)
 
 file(GLOB_RECURSE dartpy_test_files "test_*.py")
 set(dartpy_pytest_runner run_pytest_with_optional_xvfb.py)
+set(dartpy_guarded_pytest_runner "${PROJECT_SOURCE_DIR}/scripts/run_pytest.py")
 
 # Add custom target to run the tests
 if(DARTPY_PYTEST_FOUND)
@@ -65,14 +66,18 @@ if(DARTPY_PYTEST_FOUND)
     pytest
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${dartpy_pytest_runner} [sources]"
+      "Running guarded pytest by: ${Python3_EXECUTABLE} -I ${dartpy_pytest_runner} --pythonpath [build paths] [sources]"
     COMMAND
-      ${CMAKE_COMMAND} -E env PYTHONPATH="${DART_PYTHONPATH_ENV}"
-      DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" "${Python3_EXECUTABLE}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/${dartpy_pytest_runner}" ${dartpy_test_files}
-      -v
+      ${CMAKE_COMMAND} -E env DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}"
+      "${Python3_EXECUTABLE}" -I
+      "${CMAKE_CURRENT_SOURCE_DIR}/${dartpy_pytest_runner}" --pythonpath
+      "${DART_PYTHONPATH_ENV}" ${dartpy_test_files} -v
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${dartpy_test_files} ${dartpy_test_utils} ${dartpy_pytest_runner}
+    SOURCES
+      ${dartpy_test_files}
+      ${dartpy_test_utils}
+      ${dartpy_pytest_runner}
+      ${dartpy_guarded_pytest_runner}
     DEPENDS dartpy
   )
 else()
@@ -99,13 +104,14 @@ function(dartpy_add_test test_name) # ARGN for source file
     ${test_name}
     COMMAND
       ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH_ENV} ${Python3_EXECUTABLE} ${source}"
+      "Running guarded pytest by: ${Python3_EXECUTABLE} -I ${dartpy_pytest_runner} --pythonpath [build paths] ${source}"
     COMMAND
-      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH_ENV}"
-      DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}" ${Python3_EXECUTABLE}
-      ${source}
+      ${CMAKE_COMMAND} -E env DARTPY_RUNTIME_DIR="${DART_DARTPY_RUNTIME_DIR}"
+      ${Python3_EXECUTABLE} -I
+      "${CMAKE_CURRENT_SOURCE_DIR}/${dartpy_pytest_runner}" --pythonpath
+      "${DART_PYTHONPATH_ENV}" ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES ${source}
+    SOURCES ${source} ${dartpy_pytest_runner} ${dartpy_guarded_pytest_runner}
     DEPENDS dartpy
   )
 endfunction()
