@@ -784,9 +784,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "paper_parity": False,
         "timing_verdict": None,
         "binary": str(binary),
-        "protocol": str(PROTOCOL.relative_to(ROOT)),
-        "runner": str(Path(__file__).resolve().relative_to(ROOT)),
-        "trace_source": str(TRACE_SOURCE.relative_to(ROOT)),
+        "protocol": PROTOCOL.relative_to(ROOT).as_posix(),
+        "runner": Path(__file__).resolve().relative_to(ROOT).as_posix(),
+        "trace_source": TRACE_SOURCE.relative_to(ROOT).as_posix(),
         "source_identity": identity,
         "affinity": {
             "source": "explicit_taskset",
@@ -799,7 +799,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             for key in ("OMP_NUM_THREADS", "DART_DISABLE_COMPILER_CACHE")
         },
         "artifact_sha256": {
-            str(path.relative_to(output)): _sha256_file(path) for path in payload_paths
+            path.relative_to(output).as_posix(): _sha256_file(path)
+            for path in payload_paths
         },
     }
     metadata_path = output / "metadata.json"
@@ -808,7 +809,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     artifact_index = {
         "schema_version": SCHEMA_VERSION,
         "files": {
-            str(path.relative_to(output)): {
+            path.relative_to(output).as_posix(): {
                 "size_bytes": path.stat().st_size,
                 "sha256": _sha256_file(path),
             }

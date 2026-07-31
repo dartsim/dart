@@ -618,7 +618,9 @@ def summarize_trace_pair(summaries: Sequence[dict[str, Any]]) -> dict[str, Any]:
 def artifact_index(root: Path) -> dict[str, Any]:
     root = root.resolve()
     artifacts = []
-    for path in sorted(root.rglob("*")):
+    for path in sorted(
+        root.rglob("*"), key=lambda entry: entry.relative_to(root).as_posix()
+    ):
         if path.is_symlink():
             raise ValueError(f"artifact bundle contains a symlink: {path}")
         if not path.is_file():

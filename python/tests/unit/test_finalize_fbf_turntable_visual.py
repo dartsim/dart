@@ -327,7 +327,7 @@ def test_trace_and_capture_commands_freeze_contracts_and_order(tmp_path):
         "--python",
         "/python",
         "--out",
-        str(tmp_path / "run-summary.json"),
+        (tmp_path / "run-summary.json").as_posix(),
     ]
     assert module._expected_schedule_output(tmp_path, module.CAPTURE_IDS[0]) == {
         "directory": str(tmp_path / module.CAPTURE_IDS[0]),

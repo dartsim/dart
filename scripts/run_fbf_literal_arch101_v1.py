@@ -261,7 +261,7 @@ def _build_command(binary: Path) -> list[str]:
         "taskset",
         "--cpu-list",
         ",".join(str(cpu) for cpu in EXPECTED_CPUS),
-        str(binary),
+        binary.as_posix(),
         SCENARIO,
         "exact_fbf",
         "1",
@@ -280,7 +280,7 @@ def _build_command(binary: Path) -> list[str]:
 
 
 def _build_collision_probe_command(probe: Path) -> list[str]:
-    return [str(probe), "2"]
+    return [probe.as_posix(), "2"]
 
 
 def _build_dynamics_probe_command(probe: Path) -> list[str]:
@@ -288,7 +288,7 @@ def _build_dynamics_probe_command(probe: Path) -> list[str]:
         "taskset",
         "--cpu-list",
         ",".join(str(cpu) for cpu in EXPECTED_CPUS),
-        str(probe),
+        probe.as_posix(),
         "101",
         "1",
         "native",
@@ -1733,11 +1733,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "binary": str(binary),
         "collision_probe_binary": str(collision_probe),
         "dynamics_probe_binary": str(dynamics_probe),
-        "trace_source": str(TRACE_SOURCE.relative_to(ROOT)),
-        "collision_probe_source": str(COLLISION_PROBE_SOURCE.relative_to(ROOT)),
-        "dynamics_probe_source": str(DYNAMICS_PROBE_SOURCE.relative_to(ROOT)),
-        "runner_source": str(Path(__file__).resolve().relative_to(ROOT)),
-        "protocol": str(PROTOCOL.relative_to(ROOT)),
+        "trace_source": TRACE_SOURCE.relative_to(ROOT).as_posix(),
+        "collision_probe_source": COLLISION_PROBE_SOURCE.relative_to(ROOT).as_posix(),
+        "dynamics_probe_source": DYNAMICS_PROBE_SOURCE.relative_to(ROOT).as_posix(),
+        "runner_source": Path(__file__).resolve().relative_to(ROOT).as_posix(),
+        "protocol": PROTOCOL.relative_to(ROOT).as_posix(),
         "source_identity": identity,
         "collision_probe": probe_validation,
         "dynamic_pair_probe": dynamics_validation,

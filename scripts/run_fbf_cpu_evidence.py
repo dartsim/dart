@@ -1652,7 +1652,8 @@ def _slug(invocation: Invocation) -> str:
 
 
 def _raw_output_path(raw_dir: Path, filename: str) -> Path:
-    if Path(filename).is_absolute():
+    candidate = Path(filename)
+    if candidate.is_absolute() or candidate.root or candidate.drive:
         raise ValueError(f"raw evidence filename must be relative: {filename!r}")
     resolved_dir = raw_dir.resolve()
     resolved_path = (resolved_dir / filename).resolve()

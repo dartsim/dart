@@ -1,8 +1,8 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-30 current-head Figure 3
-and Figure 8 checkpoint in [RESUME.md](RESUME.md) and supersedes every
-archived prompt later in this file.
+Use the first prompt below. It reflects the 2026-07-31 review-fix and
+Windows-CI checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
+prompt later in this file.
 
 ```text
 Continue the active DART 6.20 exact-Coulomb FBF task in:
@@ -35,17 +35,20 @@ Current documentation head:
 
 Code/runtime checkpoint:
 
-  0acffc45b81184ef56dbc53ee60f6e25786102c2
+  051daf4e24036f8a183fee4d37e20e9f04180b12
 
-Merged release-6.20 target:
+Merged release-6.20 tip:
 
-  aaf1e5f64dd47f0350ea1b395bf257bb77b36829
+  718651d0d6e7cb575c6f843a955408bdb55e6139
 
-A fresh fetch confirmed that target is unchanged and already an ancestor.
-PR https://github.com/dartsim/dart/pull/3377 is open and draft. Keep it draft.
-At the last query 16 checks passed and four were in progress. Requery live
-state. Do not trigger @codex review, reply to AI review comments, resolve
-review threads, rebase, force-push, or rewrite published history.
+That tip is already an ancestor through merge ae828798ac9. PR
+https://github.com/dartsim/dart/pull/3377 is open and no longer draft;
+readiness remains a maintainer decision while the completion gates stay
+open. At the last query the only red hosted check was CI Windows / Release
+at ae828798ac9, which the current Windows-portability checkpoint fixes at
+the root cause. Requery live state. Do not trigger @codex review, reply to
+AI review comments, resolve review threads, rebase, force-push, or rewrite
+published history.
 
 The default remains World::create() with BoxedLcpConstraintSolver and FCL
 primitive collision. ExactCoulombFbfConstraintSolver is opt-in through

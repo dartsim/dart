@@ -280,7 +280,7 @@ def _build_command(
     taskset_identity: dict[str, Any] | None = None,
 ) -> list[str]:
     command = [
-        str(binary),
+        binary.as_posix(),
         SCENARIO,
         "exact_fbf",
         "1",
@@ -305,7 +305,7 @@ def _build_reference_command(
     taskset_identity: dict[str, Any] | None = None,
 ) -> list[str]:
     command = [
-        str(binary),
+        binary.as_posix(),
         REFERENCE_SCENARIO,
         "exact_fbf",
         "1",
@@ -717,11 +717,11 @@ def _metadata(
             "size and SHA-256 digest. The full closure was unchanged after both "
             "child traces."
         ),
-        "trace_source": str(source.relative_to(ROOT)),
+        "trace_source": source.relative_to(ROOT).as_posix(),
         "trace_source_sha256": _sha256_file(source),
-        "runner_source": str(runner.relative_to(ROOT)),
+        "runner_source": runner.relative_to(ROOT).as_posix(),
         "runner_source_sha256": _sha256_file(runner),
-        "preregistration": str(PREREGISTRATION.relative_to(ROOT)),
+        "preregistration": PREREGISTRATION.relative_to(ROOT).as_posix(),
         "preregistration_contract_sha256": preregistration_contract_sha256,
         "raw_csv_sha256": _sha256_file(raw_path),
         "stderr_sha256": _sha256_file(stderr_path),

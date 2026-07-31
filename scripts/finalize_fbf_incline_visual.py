@@ -874,7 +874,9 @@ def summarize_trace_pair(parsed: Sequence[dict[str, Any]]) -> dict[str, Any]:
 def artifact_index(root: Path) -> dict[str, Any]:
     root = root.resolve()
     artifacts = []
-    for path in sorted(root.rglob("*")):
+    for path in sorted(
+        root.rglob("*"), key=lambda entry: entry.relative_to(root).as_posix()
+    ):
         if path.is_symlink():
             raise ValueError(f"artifact bundle contains a symlink: {path}")
         if not path.is_file():
@@ -1309,7 +1311,7 @@ def _compare_aggregate_count_projections(
 def _expected_demo_argv(demo: Path, root: Path) -> list[str]:
     output_dir = root / "incline"
     argv = [
-        str(demo),
+        demo.as_posix(),
         "--scene",
         "fbf_paper_incline",
         "--headless",
@@ -1324,13 +1326,14 @@ def _expected_demo_argv(demo: Path, root: Path) -> list[str]:
         "--threads",
         "1",
         "--headless-sidecar",
-        str(output_dir / "timeline.json"),
+        (output_dir / "timeline.json").as_posix(),
     ]
     for step in CAPTURE_STEPS:
         argv.extend(
             (
                 "--headless-shot-at",
-                f"{step}:{output_dir / 'frames' / f'step_{step:06d}.png'}",
+                f"{step}:"
+                f"{(output_dir / 'frames' / f'step_{step:06d}.png').as_posix()}",
             )
         )
     return argv
@@ -1694,17 +1697,37 @@ def validate_capture_bundle(
     }
 
 
+# POSIX process groups are the execution contract: every spawned capture child
+# is a session leader, so signalling its pid-keyed group reaches all
+# descendants. Windows has no os.killpg; degrade to a taskkill tree
+# termination so a timed-out capture still cannot leak descendants.
+_FORCE_KILL_SIGNAL = signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGBREAK
+
+
 def _process_group_exists(process_group_id: int) -> bool:
+    killpg = getattr(os, "killpg", None)
+    if killpg is None:
+        # Without POSIX process groups there is no group-liveness probe; the
+        # taskkill fallback in _kill_process_group is one-shot.
+        return False
     try:
-        os.killpg(process_group_id, 0)
+        killpg(process_group_id, 0)
     except ProcessLookupError:
         return False
     return True
 
 
 def _kill_process_group(process_group_id: int, signal_number: int) -> None:
+    killpg = getattr(os, "killpg", None)
+    if killpg is None:
+        subprocess.run(
+            ["taskkill", "/T", "/F", "/PID", str(process_group_id)],
+            check=False,
+            capture_output=True,
+        )
+        return
     try:
-        os.killpg(process_group_id, signal_number)
+        killpg(process_group_id, signal_number)
     except ProcessLookupError:
         pass
 
@@ -1721,7 +1744,7 @@ def _terminate_process_group(
             # has received SIGKILL.  Darwin can reject signals to the orphaned
             # group after the leader has been reaped, even while a descendant
             # remains.
-            _kill_process_group(process.pid, signal.SIGKILL)
+            _kill_process_group(process.pid, _FORCE_KILL_SIGNAL)
             force_kill_sent = True
             return process.communicate()
 
@@ -1732,7 +1755,7 @@ def _terminate_process_group(
                 timeout=PROCESS_TERMINATION_GRACE_SECONDS
             )
         except subprocess.TimeoutExpired:
-            _kill_process_group(process.pid, signal.SIGKILL)
+            _kill_process_group(process.pid, _FORCE_KILL_SIGNAL)
             force_kill_sent = True
             return process.communicate()
 
@@ -1742,7 +1765,7 @@ def _terminate_process_group(
         return stdout, stderr
     finally:
         if not force_kill_sent:
-            _kill_process_group(process.pid, signal.SIGKILL)
+            _kill_process_group(process.pid, _FORCE_KILL_SIGNAL)
 
 
 def _run_command(
@@ -1771,7 +1794,7 @@ def _run_command(
         _terminate_process_group(process, graceful=False)
         raise
     if _process_group_exists(process.pid):
-        _kill_process_group(process.pid, signal.SIGKILL)
+        _kill_process_group(process.pid, _FORCE_KILL_SIGNAL)
     completed = subprocess.CompletedProcess(
         command,
         process.returncode,
@@ -1790,7 +1813,7 @@ def _trace_argv(trace_binary: Path, scenario: str) -> list[str]:
     if scenario not in SCENARIOS:
         raise ValueError(f"unsupported incline trace scenario: {scenario}")
     return [
-        str(trace_binary),
+        trace_binary.as_posix(),
         scenario,
         "exact_fbf",
         "1",
@@ -1953,9 +1976,10 @@ def _parse_ldd_in_tree_paths(output: str, *, build_root: Path) -> list[Path]:
             fields = line.strip().split()
             if fields:
                 candidate = fields[0]
-        if not candidate.startswith("/"):
+        candidate_path = Path(candidate)
+        if not candidate_path.is_absolute() and not candidate_path.root:
             continue
-        path = Path(candidate).resolve(strict=True)
+        path = candidate_path.resolve(strict=True)
         try:
             path.relative_to(resolved_build_root)
         except ValueError:

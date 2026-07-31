@@ -1112,11 +1112,11 @@ def validate_capture_source_contract() -> dict[str, Any]:
     ]
     return {
         "pass": not missing and not forbidden,
-        "source_path": str(source_path.relative_to(ROOT)),
+        "source_path": source_path.relative_to(ROOT).as_posix(),
         "source_sha256": sha256(source_path),
-        "shared_header_path": str(shared_header_path.relative_to(ROOT)),
+        "shared_header_path": shared_header_path.relative_to(ROOT).as_posix(),
         "shared_header_sha256": sha256(shared_header_path),
-        "trace_path": str(trace_path.relative_to(ROOT)),
+        "trace_path": trace_path.relative_to(ROOT).as_posix(),
         "trace_sha256": sha256(trace_path),
         "required_fragments": {
             "capture_consumer": consumer_required_fragments,
@@ -1587,7 +1587,7 @@ def decode_midpoint(
             f"non_blank={non_blank}"
         )
     return {
-        "path": str(decoded.relative_to(output)),
+        "path": decoded.relative_to(output).as_posix(),
         "sha256": sha256(decoded),
         "seconds": seconds,
         "command": [str(item) for item in command],
@@ -1654,7 +1654,7 @@ def compose_timeline(output: Path, steps: int) -> dict[str, Any]:
 def artifact_index(output: Path, excluded: set[str]) -> dict[str, Any]:
     artifacts = []
     for path in sorted(item for item in output.rglob("*") if item.is_file()):
-        relative = str(path.relative_to(output))
+        relative = path.relative_to(output).as_posix()
         if relative in excluded:
             continue
         artifacts.append(
@@ -2167,7 +2167,9 @@ def verify_pending_hash_dag(
         if sha256(path) != item["sha256"]:
             errors.append(f"artifact-index hash mismatch {item['path']}")
     actual = {
-        str(path.relative_to(output)) for path in output.rglob("*") if path.is_file()
+        path.relative_to(output).as_posix()
+        for path in output.rglob("*")
+        if path.is_file()
     } - excluded
     if actual != listed:
         errors.append(
