@@ -58,10 +58,12 @@
 #include <cerrno>
 #include <cmath>
 #include <cstdio>
+// std::strerror is used on the unconditional headless error path, so this stays
+// outside the diagnostics guard even though std::strcmp below is guarded.
+#include <cstring>
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   #include <cstdlib>
-  #include <cstring>
 #endif
 
 namespace dart_demos {
