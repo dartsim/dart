@@ -153,3 +153,32 @@ def test_combined_trajectory_and_contact_recording_shares_runner() -> None:
     assert trajectory_frames
     assert contact_frames
     assert contact_frames <= trajectory_frames
+
+
+def test_main_factory_alone_does_not_trip_scene_exclusivity_guard(
+    monkeypatch, tmp_path
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    def fake_resolve(*, scene=None, factory=None):
+        captured["scene"] = scene
+        captured["factory"] = factory
+        return trajectory_record.WorldRunner(
+            scene_id="fake", world=object(), step_once=None
+        )
+
+    monkeypatch.setattr(trajectory_record, "resolve_world_runner", fake_resolve)
+    monkeypatch.setattr(
+        trajectory_record,
+        "record_trajectory",
+        lambda runner, steps, bodies: "# fake\n",
+    )
+
+    out = tmp_path / "traj.tsv"
+    exit_code = trajectory_record.main(
+        ["--factory", "some_module:make_world", "--steps", "1", "--out", str(out)]
+    )
+
+    assert exit_code == 0
+    assert captured == {"scene": None, "factory": "some_module:make_world"}
+    assert out.read_text() == "# fake\n"
