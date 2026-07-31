@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_FRAMEALLOCATOR_HPP_
 #define DART_COMMON_FRAMEALLOCATOR_HPP_
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
@@ -51,6 +52,9 @@
 #include <cstdint>
 
 namespace dart::common {
+
+namespace detail {
+}
 
 template <typename T>
 class FrameStlAllocator;
@@ -190,6 +194,8 @@ public:
   [[nodiscard]] size_t overflowBytes() const noexcept;
 
 private:
+  friend class detail::AllocatorMemoryLayoutInspector;
+
   template <typename T>
   friend class FrameStlAllocator;
 

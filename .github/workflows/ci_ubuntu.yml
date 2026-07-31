@@ -235,8 +235,8 @@ jobs:
           pixi run -- cmake --build build/default/cpp/Release \
             --target test_diff_zero_cost_parity \
             --parallel "${DART_PARALLEL_JOBS}"
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            --output-on-failure \
+          pixi run python -I scripts/ctest_tier.py \
+            --build-type Release \
             -R '^test_diff_zero_cost_parity$'
 
       - name: Run Release Python tests
@@ -332,8 +332,8 @@ jobs:
           pixi run -- cmake --build build/default/cpp/Release \
             --target test_diff_zero_cost_parity \
             --parallel "${DART_PARALLEL_JOBS}"
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            --output-on-failure \
+          pixi run python -I scripts/ctest_tier.py \
+            --build-type Release \
             -R '^test_diff_zero_cost_parity$'
 
       - name: Run Release Python tests
@@ -435,15 +435,18 @@ jobs:
 
       - name: Run differentiable C++ tests
         run: |
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            --output-on-failure \
+          pixi run python -I scripts/ctest_tier.py \
+            --build-type Release \
             -R '^test_diff_'
 
       - name: Run differentiable Python tests
         run: |
-          PYTHONPATH=build/default/cpp/Release/python \
           DARTPY_RUNTIME_DIR=build/default/cpp/Release \
-          pixi run -- pytest -q python/tests/unit/simulation/test_diff.py
+          pixi run python -I scripts/run_pytest.py \
+            --pythonpath build/default/cpp/Release/python \
+            --pythonpath build/default/cpp/Release/python/dartpy \
+            --repository-conftest \
+            python/tests/unit/simulation/test_diff.py -q
 
   build-asan:
     needs: changes
@@ -589,19 +592,22 @@ jobs:
 
       - name: Test native collision and default detector paths
         run: |
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            --output-on-failure \
+          pixi run python -I scripts/ctest_tier.py \
+            --build-type Release \
             -L collision-native
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            --output-on-failure \
+          pixi run python -I scripts/ctest_tier.py \
+            --build-type Release \
             -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionBackend)$'
 
       - name: Test dartpy native collision smoke
         run: |
-          PYTHONPATH=build/default/cpp/Release/python \
-            pixi run -- pytest -q \
-              python/tests/unit/collision/test_collision.py \
-              python/tests/unit/simulation/test_world.py
+          pixi run python -I scripts/run_pytest.py \
+            --pythonpath build/default/cpp/Release/python \
+            --pythonpath build/default/cpp/Release/python/dartpy \
+            --repository-conftest \
+            python/tests/unit/collision/test_collision.py \
+            python/tests/unit/simulation/test_world.py \
+            -q
 
   collision-benchmark-guard:
     needs: changes
@@ -737,13 +743,18 @@ jobs:
           # when it is present; CMake falls back to the default linker if the
           # runner image does not provide it. Keep this as a Debug dartpy smoke
           # path; Release and wheel jobs run the full Python suite.
-          DART_USE_MOLD_OVERRIDE=ON \
-          DARTPY_PYTEST_ARGS="-vv --tb=short" \
-          DARTPY_PYTEST_SOURCES="unit/common/test_string.py unit/math/test_lcp.py unit/test_lifetime.py" \
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          DART_PARALLEL_JOBS=4 \
-          pixi run test-py ON Debug
+          export DART_USE_MOLD_OVERRIDE=ON
+          export DART_VERBOSE=ON
+          export DART_PARALLEL_JOBS=4
+          pixi run build-py-dev ON Debug
+          pixi run python -I scripts/run_pytest.py \
+            --pythonpath build/default/cpp/Debug/python \
+            --pythonpath build/default/cpp/Debug/python/dartpy \
+            --repository-conftest \
+            python/tests/unit/common/test_string.py \
+            python/tests/unit/math/test_lcp.py \
+            python/tests/unit/test_lifetime.py \
+            -vv --tb=short
 
   build-asserts:
     needs: changes

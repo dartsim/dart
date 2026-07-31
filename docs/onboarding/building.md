@@ -334,6 +334,10 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `DART_FETCH_FILAMENT` - Fetch a pinned Filament archive for supported platforms when no packaged Filament install is available
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the maintained example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS` - Link the memory-layout diagnostics
+  panel/session/model into `dart-demos` (defaults to `OFF`, so the executable
+  has zero runtime cost from the feature). With Pixi, opt in with
+  `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE=ON`.
 - `DART_BUILD_TUTORIALS` - Kept for compatibility; legacy OSG tutorials are skipped while Filament is the active renderer
 
 Filament with GLFW3 and Dear ImGui is the maintained renderer path. The OSG GUI

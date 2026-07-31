@@ -208,20 +208,16 @@ add_custom_target(
   DEPENDS ${integration_tests} ${unit_tests}
 )
 
-# Add custom target to build all the tests and run the tests
-if(MSVC)
-  add_custom_target(
-    tests_and_run
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
-    DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
-  )
-else()
-  add_custom_target(
-    tests_and_run
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
-  )
-endif()
+# Add custom target to build all the tests and run the tests. The wrapper clears
+# ambient GoogleTest selectors and rejects an empty CTest inventory.
+add_custom_target(
+  tests_and_run
+  COMMAND
+    ${CMAKE_COMMAND} "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
+    "-DDART_CTEST_CONFIGURATION=$<CONFIG>" -P
+    "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
+  DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
+)
 
 dart_format_add(
   helpers/gtest_utils.hpp

@@ -6,6 +6,7 @@ import ast
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -19,15 +20,23 @@ sys.path.insert(0, str(SCRIPTS))
 
 import ai_doctor  # noqa: E402
 import ai_infrastructure as infra  # noqa: E402
+import ctest_tier as ctest_runner  # noqa: E402
 import install_git_hooks  # noqa: E402
 import lint_cmake  # noqa: E402
 import lint_toml  # noqa: E402
 import sync_ai_commands as sync  # noqa: E402
+import test_runner_environment as runner_environment  # noqa: E402
 
 
 @pytest.mark.parametrize(
     "script_name",
-    ("ai_doctor.py", "ai_infrastructure.py", "sync_ai_commands.py"),
+    (
+        "ai_doctor.py",
+        "ai_infrastructure.py",
+        "run_pytest.py",
+        "sync_ai_commands.py",
+        "test_runner_environment.py",
+    ),
 )
 def test_ai_runtime_scripts_support_python_3_11_syntax(script_name):
     path = SCRIPTS / script_name
@@ -591,6 +600,416 @@ def test_auto_profile_uses_manifest_for_topic_or_detached_worktree(tmp_path):
 
 def test_current_main_contract_passes():
     assert infra.run_checks(ROOT, "main") == []
+
+
+def test_current_main_test_runner_contract_and_semantics_pass():
+    assert infra.check_test_runner_contract(ROOT) == []
+    assert infra.check_test_runner_semantics(ROOT) == []
+
+
+def test_gtest_environment_sanitization_is_case_insensitive():
+    environment = runner_environment.sanitized_gtest_environment(
+        {
+            "GTEST_FILTER": "-*",
+            "gtest_future_selector": "skip-everything",
+            "DART_KEEP": "1",
+        }
+    )
+
+    assert environment == {"DART_KEEP": "1"}
+
+
+def test_ctest_tier_supports_guarded_explicit_test_tree(tmp_path, monkeypatch):
+    test_dir = tmp_path / "simd-build"
+    test_dir.mkdir()
+    observed: dict[str, object] = {}
+    monkeypatch.setenv("GTEST_FILTER", "-*")
+    monkeypatch.setenv("DART_KEEP", "1")
+    monkeypatch.setattr(ctest_runner, "compute_load_limit", lambda: None)
+    monkeypatch.setattr(ctest_runner, "resolve_jobs", lambda explicit: 1)
+
+    def fake_run(command, *, env):
+        observed["command"] = command
+        observed["env"] = env
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(ctest_runner.subprocess, "run", fake_run)
+
+    assert (
+        ctest_runner.main(
+            ["--test-dir", str(test_dir), "-R", "^UNIT_simd", "--timeout", "60"]
+        )
+        == 0
+    )
+    assert observed["command"] == [
+        "ctest",
+        "--test-dir",
+        str(test_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+        "--parallel",
+        "1",
+        "--timeout",
+        "60",
+        "-R",
+        "^UNIT_simd",
+    ]
+    assert observed["env"]["DART_KEEP"] == "1"
+    assert "GTEST_FILTER" not in observed["env"]
+
+
+@pytest.mark.parametrize(
+    ("cache_text", "expected_config"),
+    (
+        ("CMAKE_BUILD_TYPE:STRING=Debug\n", []),
+        (
+            "CMAKE_CONFIGURATION_TYPES:STRING=Debug;Release;RelWithDebInfo\n",
+            ["--build-config", "Debug"],
+        ),
+    ),
+)
+def test_ctest_tier_explicit_tree_detects_multi_config(
+    tmp_path, monkeypatch, cache_text, expected_config
+):
+    test_dir = tmp_path / "explicit-build"
+    test_dir.mkdir()
+    (test_dir / "CMakeCache.txt").write_text(cache_text, encoding="utf-8")
+    observed: dict[str, object] = {}
+    monkeypatch.setattr(ctest_runner, "compute_load_limit", lambda: None)
+    monkeypatch.setattr(ctest_runner, "resolve_jobs", lambda explicit: 1)
+
+    def fake_run(command, *, env):
+        observed["command"] = command
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(ctest_runner.subprocess, "run", fake_run)
+
+    assert (
+        ctest_runner.main(
+            [
+                "--test-dir",
+                str(test_dir),
+                "--build-type",
+                "Debug",
+                "-R",
+                "^UNIT_explicit$",
+                "--timeout",
+                "60",
+            ]
+        )
+        == 0
+    )
+    assert observed["command"] == [
+        "ctest",
+        "--test-dir",
+        str(test_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+        *expected_config,
+        "--parallel",
+        "1",
+        "--timeout",
+        "60",
+        "-R",
+        "^UNIT_explicit$",
+    ]
+
+
+RUNNER_CONTRACT_PATHS = (
+    ".github/workflows/ci_simd.yml",
+    ".github/workflows/ci_ubuntu.yml",
+    "pixi.toml",
+    "scripts/run_pytest.py",
+    "scripts/test_runner_environment.py",
+    "scripts/ctest_tier.py",
+    "scripts/run_cpp_test.py",
+    "python/tests/run_pytest_with_optional_xvfb.py",
+    "python/tests/CMakeLists.txt",
+    "cmake/DARTRunCTest.cmake",
+    "tests/CMakeLists.txt",
+)
+
+
+def _copy_runner_contract(tmp_path: Path) -> Path:
+    root = tmp_path / "runner-contract"
+    for relative in RUNNER_CONTRACT_PATHS:
+        source = ROOT / relative
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    return root
+
+
+@pytest.mark.parametrize(
+    ("relative", "old", "new", "expected"),
+    (
+        (
+            "pixi.toml",
+            '"-I",\n  "scripts/run_pytest.py",',
+            '"-m",\n  "pytest",',
+            "must start with",
+        ),
+        (
+            "scripts/ctest_tier.py",
+            "sanitized_gtest_environment()",
+            "os.environ.copy()",
+            "missing test-runner marker",
+        ),
+        (
+            "python/tests/run_pytest_with_optional_xvfb.py",
+            "def main() -> int:",
+            (
+                'AMBIENT = os.environ.get("DARTPY_PYTEST_ARGS")\n\n\n'
+                "def main() -> int:"
+            ),
+            "forbidden test-runner marker",
+        ),
+        (
+            ".github/workflows/ci_ubuntu.yml",
+            "pixi run python -I scripts/run_pytest.py",
+            "pixi run -- pytest",
+            "direct pytest invocation",
+        ),
+        (
+            ".github/workflows/ci_simd.yml",
+            "pixi run python -I scripts/ctest_tier.py",
+            "pixi run -- ctest",
+            "direct ctest invocation",
+        ),
+        (
+            "pixi.toml",
+            "python -I scripts/ctest_tier.py \\\n"
+            '        --build-type "$BUILD_TYPE" \\\n'
+            '        -R "^UNIT_math_"',
+            "ctest \\\n"
+            "        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \\\n"
+            '        -R "^UNIT_math_"',
+            "direct ctest invocation",
+        ),
+    ),
+)
+def test_runner_contract_rejects_execution_bypasses(
+    tmp_path, relative, old, new, expected
+):
+    root = _copy_runner_contract(tmp_path)
+    path = root / relative
+    content = path.read_text(encoding="utf-8")
+    assert old in content
+    path.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+    errors = infra.check_test_runner_contract(root)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("run_step", "expected"),
+    (
+        ("      - run: pixi run -- pytest -q tests/test_example.py\n", "pytest"),
+        (
+            "      - run: |\n"
+            "          cd build\n"
+            "          ctest -R '^UNIT_example$'\n",
+            "ctest",
+        ),
+    ),
+)
+def test_workflow_scan_rejects_direct_runner_scalar_forms(tmp_path, run_step, expected):
+    workflow = tmp_path / ".github" / "workflows" / "test.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "name: bypass\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        f"{run_step}",
+        encoding="utf-8",
+    )
+
+    errors = infra.check_workflow_test_runner_invocations(tmp_path)
+
+    assert any(f"direct {expected} invocation" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    (
+        ("ctest -R '^UNIT_future$'", "ctest"),
+        (
+            ["bash", "-lc", "set -euo pipefail\nctest -R '^UNIT_future$'"],
+            "ctest",
+        ),
+        ("bash -lc \"ctest -R '^UNIT_future$'\"", "ctest"),
+        ("if ctest -R '^UNIT_future$'; then echo passed; fi", "ctest"),
+        ("prepare-tests && python -m pytest -q tests/future.py", "pytest"),
+        ("pixi run -- pytest -q tests/future.py", "pytest"),
+    ),
+)
+def test_pixi_scan_rejects_direct_runner_in_future_task(command, expected):
+    pixi = {"tasks": {"future-subsystem": {"cmd": command}}}
+
+    errors = infra.check_pixi_test_runner_invocations(pixi)
+
+    assert any(f"direct {expected} invocation" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "python -I scripts/ctest_tier.py -R '^UNIT_future$'",
+        "python -I scripts/run_pytest.py -q tests/future.py",
+        "python scripts/cmake_build.py --target pytest",
+    ),
+)
+def test_pixi_scan_accepts_guarded_and_non_runner_commands(command):
+    pixi = {"tasks": {"future-subsystem": {"cmd": command}}}
+
+    assert infra.check_pixi_test_runner_invocations(pixi) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (
+            "pixi run python -I scripts/run_pytest.py",
+            'DARTPY_PYTEST_ARGS="-k nothing" pixi run test-py ON Debug',
+            "legacy pytest selector",
+        ),
+        (
+            "python/tests/unit/math/test_lcp.py",
+            "python/tests/unit/math/missing_smoke.py",
+            "explicit guarded-runner marker",
+        ),
+        (
+            "python/tests/unit/test_lifetime.py \\\n            -vv --tb=short",
+            "python/tests/unit/test_lifetime.py \\\n"
+            "            python/tests/unit/test_added_scope.py \\\n"
+            "            -vv --tb=short",
+            "exactly the three canonical smoke files",
+        ),
+    ),
+)
+def test_runner_contract_rejects_debug_workflow_selection_drift(
+    tmp_path, old, new, expected
+):
+    root = _copy_runner_contract(tmp_path)
+    path = root / ".github" / "workflows" / "ci_ubuntu.yml"
+    content = path.read_text(encoding="utf-8")
+    assert old in content
+    path.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+    errors = infra.check_test_runner_contract(root)
+
+    assert any(expected in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        (
+            "set(_dart_ctest_arguments --output-on-failure --no-tests=error)",
+            "set(_dart_ctest_arguments --show-only --no-tests=error)",
+        ),
+        (
+            'list(APPEND _dart_gtest_unsets "--unset=${_dart_name}")',
+            '# list(APPEND _dart_gtest_unsets "--unset=${_dart_name}")',
+        ),
+        (
+            "execute_process(\n"
+            "  COMMAND\n"
+            '    "${CMAKE_COMMAND}" -E env ${_dart_gtest_unsets}',
+            "return()\n\n"
+            "execute_process(\n"
+            "  COMMAND\n"
+            '    "${CMAKE_COMMAND}" -E env ${_dart_gtest_unsets}',
+        ),
+    ),
+)
+def test_ctest_semantic_probe_rejects_runner_bypasses(tmp_path, old, new):
+    root = tmp_path / "semantic-runner"
+    for relative in (
+        "pyproject.toml",
+        "scripts/run_pytest.py",
+        "cmake/DARTRunCTest.cmake",
+    ):
+        source = ROOT / relative
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    cmake_runner = root / "cmake" / "DARTRunCTest.cmake"
+    content = cmake_runner.read_text(encoding="utf-8")
+    assert old in content
+    cmake_runner.write_text(content.replace(old, new, 1), encoding="utf-8")
+
+    errors = infra.check_test_runner_semantics(root)
+
+    assert any("CTest runner semantic probe" in error for error in errors)
+
+
+def _assert_ctest_lexical_contract_fails(root: Path) -> None:
+    errors = infra.check_test_runner_contract(root)
+    assert any(
+        "cmake/DARTRunCTest.cmake: commands and lexical control flow must "
+        "exactly match" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    "injection",
+    (
+        "set(_dart_gtest_unsets)\n",
+        "set(_dart_ctest_arguments --show-only --no-tests=error)\n",
+        "cmake_language(EXIT 0)\n",
+    ),
+)
+def test_ctest_contract_rejects_dataflow_and_early_exit_bypasses(tmp_path, injection):
+    root = _copy_runner_contract(tmp_path)
+    runner = root / "cmake" / "DARTRunCTest.cmake"
+    text = runner.read_text(encoding="utf-8")
+    final_call = text.rfind("execute_process(")
+    assert final_call > 0
+    runner.write_text(
+        text[:final_call] + injection + text[final_call:],
+        encoding="utf-8",
+    )
+
+    _assert_ctest_lexical_contract_fails(root)
+
+
+@pytest.mark.parametrize(
+    ("opener", "closer"),
+    (
+        ("if(FALSE)\n", "endif()\n"),
+        ("function(unused_ctest_runner)\n", "endfunction()\n"),
+    ),
+)
+def test_ctest_contract_rejects_unreachable_execution(tmp_path, opener, closer):
+    root = _copy_runner_contract(tmp_path)
+    runner = root / "cmake" / "DARTRunCTest.cmake"
+    text = runner.read_text(encoding="utf-8")
+    final_call = text.rfind("execute_process(")
+    assert final_call > 0
+    runner.write_text(
+        text[:final_call] + opener + text[final_call:] + closer,
+        encoding="utf-8",
+    )
+
+    _assert_ctest_lexical_contract_fails(root)
+
+
+def test_ctest_contract_rejects_command_shadowing(tmp_path):
+    root = _copy_runner_contract(tmp_path)
+    runner = root / "cmake" / "DARTRunCTest.cmake"
+    runner.write_text(
+        "macro(execute_process)\n"
+        "  set(_dart_environment_result 0)\n"
+        "endmacro()\n" + runner.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    _assert_ctest_lexical_contract_fails(root)
 
 
 def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():

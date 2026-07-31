@@ -47,6 +47,7 @@ struct Uri;
 
 namespace detail {
 
+class AllocatorMemoryLayoutInspector;
 class SharedLibraryManager;
 
 } // namespace detail

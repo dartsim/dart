@@ -35,6 +35,7 @@
 #include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
+#include <dart/simulation/detail/memory_diagnostics.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
@@ -43,6 +44,11 @@
 #include <dart/simulation/fwd.hpp>
 
 #include <dart/common/stl_allocator.hpp>
+
+// Required for DART_BUILD_MEMORY_DIAGNOSTICS: without it the guard below would
+// silently evaluate to 0 here while world.cpp sees 1, giving translation units
+// disagreeing layouts for WorldStorage.
+#include <dart/config.hpp>
 
 #include <optional>
 #include <set>
@@ -133,6 +139,14 @@ struct WorldStorage
 
   /// The ECS registry holding every entity and component owned by the World.
   WorldRegistry registry;
+
+#if DART_BUILD_MEMORY_DIAGNOSTICS
+  /// Cached frame-scratch counters and opt-in ECS diagnostics collector.
+  ///
+  /// Present only in ``DART_BUILD_MEMORY_DIAGNOSTICS=ON`` builds; otherwise the
+  /// World stores no diagnostics state at all.
+  MemoryDiagnosticsTracker memoryDiagnostics;
+#endif
 
   /// Registered differentiable physical parameters, in registration order. Each
   /// entry pairs the owning rigid-body entity with the parameter to

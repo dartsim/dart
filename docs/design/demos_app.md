@@ -80,6 +80,47 @@ The built-in **Demos** sidebar is an ordinary `dart::gui::Panel`: it lists
 categories and scenes and calls `dart::gui::requestSceneSwitch` on selection, so
 no renderer/UI-toolkit code leaks above the `dart::gui` boundary (PLAN-060).
 
+When `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, each implemented World scene also
+installs a renderer-neutral **Memory Diagnostics** panel from
+`examples/demos/memory_diagnostics.*`. The option defaults to `OFF`; that build
+omits panel/session/model object code, platform process-memory links, and scene
+calls from the `dart-demos` executable instead of paying for a runtime toggle.
+Test builds still compile the isolated library and its unit tests so default CI
+does not lose collector/model coverage. The shared
+`memory_diagnostics_model.*` owns opt-in cadence, bounded history, baselines,
+comparison compatibility, process-resident probes, and evidence quality. The
+branch-local adapter owns World collection and `PanelBuilder` presentation.
+Within an enabled diagnostic build, collection is still runtime opt-in: until
+enabled, the panel does not query the OS, walk World/ECS diagnostics, allocate
+its history ring, or format a sample.
+The panel consumes the public type-erased `WorldMemoryDiagnostics` facade; it
+does not expose EnTT types, component types, registry access, or stable
+component IDs through the examples layer. It explicitly requests packed-layout
+detail only on a due sample; default World diagnostics consumers retain the
+per-storage summary path without scanning every packed component slot.
+The panel presents two deliberately different 2D views. **Address map (actual
+regions)** draws each real free-list backing chunk, frame arena, and frame
+overflow allocation independently, using region-relative byte offsets in
+virtual-address order. Allocator state, logical ECS slot use, and semantic data
+category remain orthogonal: color identifies a known semantic owner, while
+patterns and text preserve state without relying on color alone. Exact typed
+overlays are limited to component pages and entity-index ranges whose pointer
+and byte extent can be observed; other live allocator bytes remain visibly
+unclassified. Raw addresses and gaps between independent allocations do not
+cross the diagnostics boundary.
+
+The secondary **Capacity composition (logical)** grids retain the grouped
+used/live, hole, and reserved summaries. They are explicitly not address order.
+Neither view measures accesses, cache misses, physical-page placement, or GPU
+memory. Address-map detail can be rebinned without recollection, and a bounded
+exact-range table retains text access to diagnostic labels and evidence. Host
+page/cache-line boundary placement remains explicitly unavailable until a
+provider captures the geometry and scrubbed base remainders needed to place it.
+Heavy map rows stay on the current sample and are omitted from the
+180-sample history ring and comparison baseline snapshots. The evidence model,
+branch differences, and validation contract are owned by
+[`memory_layout_diagnostics.md`](memory_layout_diagnostics.md).
+
 CLI: `--scene <id>` selects the initial scene; `--cycle-scenes` advances through
 every scene for a few frames and exits (the headless smoke,
 `EXAMPLE_dart_demos_cycle_headless_smoke`).
@@ -142,9 +183,15 @@ splitters.
 ### Build layout
 
 `examples/demos/` builds the `dart-demos` executable via the shared
-`dart_build_gui_example` helper, linking `dart-io`, `dart-collision-native`, and
-`dart-simulation` while the World implementation still lives in
-that component.
+`dart_build_gui_example` helper. The scene registry is compiled in
+`demos_scenes`. With `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, the branch-local
+panel and shared session/process model are compiled into
+`demos_memory_diagnostics` and linked into those scenes. With the default
+`OFF`, every scene reference and executable link to it are absent. Test builds
+retain the static library solely for the diagnostics unit target; non-test OFF
+builds omit it altogether. The app links the remaining scene library with
+`dart-io`, `dart-collision-native`, and `dart-simulation` while the World
+implementation still lives in that component.
 
 ## Examples vs renderer test fixtures
 
@@ -168,6 +215,6 @@ the renderer.
 - No renderer/backend changes; demos builds on `dart::gui`.
 - No Python-side scene authoring API; `py-demos` is an examples workspace for
   playback, controls, diagnostics, and capture, not an editor.
-- `examples/demos` builds the scenes straight into the `dart-demos` executable.
-  Splitting them into a `demos_scenes` library is a future option, only needed if
-  something other than the app (e.g. a test) must link the scene registry.
+- The examples diagnostics are not a general heap profiler, allocation hook, or
+  GPU-memory surface. Their categories intentionally retain distinct scopes and
+  must not be summed into process RSS.
