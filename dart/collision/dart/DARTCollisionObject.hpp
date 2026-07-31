@@ -48,13 +48,28 @@
 namespace dart {
 namespace collision {
 
-class CollisionObject;
+class DARTCollisionDetector;
+class DARTCollisionGroup;
+class CollisionResult;
+
+namespace detail {
+struct DARTCollisionObjectAccessor;
+struct DARTCollisionObjectEngineData;
+} // namespace detail
+
+namespace native {
+class Aabb;
+class Shape;
+} // namespace native
 
 class DARTCollisionObject : public CollisionObject
 {
 public:
   friend class DARTCollisionDetector;
   friend class DARTCollisionGroup;
+  friend struct detail::DARTCollisionObjectAccessor;
+  friend int collide(
+      CollisionObject* o1, CollisionObject* o2, CollisionResult& result);
 
   enum class CachedShapeKind
   {
@@ -96,11 +111,23 @@ public:
     int count{0};
   };
 
+  const std::vector<Eigen::Vector3d>& getCachedSoftLocalVertices() const;
+
+  const std::vector<int>& getCachedSoftFirstFaceByPointMass() const;
+
+  const std::vector<CachedSoftFace>& getCachedSoftFaces() const;
+
+  const std::vector<CachedSoftFaceBvhNode>& getCachedSoftFaceBvhNodes() const;
+
+  const std::vector<int>& getCachedSoftFaceBvhIndices() const;
+
 protected:
-  /// Constructor
   DARTCollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
+
+  // Documentation inherited
+  void updateEngineData() override;
 
 public:
   const dynamics::Shape* getCachedShape() const;
@@ -123,24 +150,25 @@ public:
 
   bool isCachedPlaneShape() const;
 
-  /// Return the world transform path used by the DART-native collision backend.
+  /// Return the world transform path used by the DART collision backend.
   const Eigen::Isometry3d& getWorldTransformForCollision() const;
 
-  const std::vector<Eigen::Vector3d>& getCachedSoftLocalVertices() const;
-
-  const std::vector<int>& getCachedSoftFirstFaceByPointMass() const;
-
-  const std::vector<CachedSoftFace>& getCachedSoftFaces() const;
-
-  const std::vector<CachedSoftFaceBvhNode>& getCachedSoftFaceBvhNodes() const;
-
-  const std::vector<int>& getCachedSoftFaceBvhIndices() const;
-
 protected:
-  // Documentation inherited
-  void updateEngineData() override;
+  // Internal consolidated-engine inspection seam for specialized detector
+  // objects. This deliberately avoids adding a second public detector API.
+  const native::Shape* getEngineShape() const;
+
+  const Eigen::Isometry3d& getEngineTransform() const;
+
+  const native::Aabb& getEngineAabb() const;
 
 private:
+  detail::DARTCollisionObjectEngineData& getEngineData();
+
+  const detail::DARTCollisionObjectEngineData& getEngineData() const;
+
+  void rebuildEngineShape();
+
   void refreshShapeCache();
 
   void refreshSoftMeshCache();
@@ -151,6 +179,8 @@ private:
 
   void refreshSoftFaceBvhBounds();
 
+  // Keep the pre-consolidation DART 6.20 layout and public cache accessors.
+  // New consolidated-engine state lives in DARTCollisionObjectEngineData.
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType{nullptr};
   std::size_t mCachedShapeFrameVersion{std::numeric_limits<std::size_t>::max()};

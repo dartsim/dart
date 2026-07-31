@@ -32,14 +32,17 @@ on the maintained DART 6 branch:
   dynamics, and contact-aware inverse dynamics rows.
 * **Contact and collision** - stacked-box world-step rows when the Bullet
   collision target is available.
-* **Contact-rich container** - active DART-native and ODE
+* **Contact-rich container** - active ``dart`` and ODE detector
   ``BM_ContactContainerActive`` rows from the DART 6 contact-container
   benchmark.
+* **Deformable bodies** - steady-state ``BM_SoftBodyStep`` rows for the
+  maintained DART 6 soft-body scenes, including one-thread and sixteen-thread
+  CPU rows.
 
 This dashboard is intentionally separate from the DART 7 World dashboard. DART
 7 tracks experimental ``World::step`` solver-family throughput; DART 6 tracks
 the stable LTS benchmark surfaces available on the current ``release-6.*`` line
-including the contact-rich DART 6 rows.
+including the contact-rich and deformable-body DART 6 rows.
 
 Readable labels
 ---------------
@@ -94,6 +97,11 @@ the same ``window.BENCHMARK_DATA`` shape that the hosted dashboard uses, so it
 matches what will be published. Pass ``--append`` to
 ``scripts/preview_performance_dashboard.py`` to accumulate multiple runs into a
 local history.
+
+To preview only the deformable-body rows, run::
+
+   pixi run bm-dashboard-surfaces -- --surface soft-body
+   pixi run bm-dashboard-preview
 
 Add a benchmark to the dashboard
 --------------------------------

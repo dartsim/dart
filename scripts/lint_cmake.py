@@ -20,6 +20,7 @@ SKIP_DIRS = {
     "node_modules",
     "patches",
 }
+GERSEMI_BATCH_SIZE = 100
 
 
 def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
@@ -46,14 +47,15 @@ def run_gersemi(root: pathlib.Path, files: list[pathlib.Path], check: bool) -> i
     if not files:
         return 0
 
-    cmd = ["gersemi"]
-    if check:
-        cmd.append("--check")
-    else:
-        cmd.append("-i")
-    cmd.extend(str(root / path) for path in files)
-    result = subprocess.run(cmd, cwd=root)
-    return result.returncode
+    base_cmd = ["gersemi", "--check" if check else "-i"]
+    for start in range(0, len(files), GERSEMI_BATCH_SIZE):
+        batch = files[start : start + GERSEMI_BATCH_SIZE]
+        cmd = base_cmd + [str(root / path) for path in batch]
+        result = subprocess.run(cmd, cwd=root)
+        if result.returncode != 0:
+            return result.returncode
+
+    return 0
 
 
 def main() -> int:

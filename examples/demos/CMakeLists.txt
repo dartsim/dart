@@ -88,8 +88,8 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
 endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
-  find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
-  find_package(DART 6.17 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
+  find_package(DART 6.20 REQUIRED COMPONENTS ${required_components} CONFIG)
+  find_package(DART 6.20 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
 endif()
 
 # Exact allocator-region capture is available in the in-source DART 6.20

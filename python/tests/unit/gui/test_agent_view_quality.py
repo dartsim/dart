@@ -4,10 +4,9 @@ import math
 import sys
 from pathlib import Path
 
+import dartpy as dart
 import numpy as np
 import pytest
-
-import dartpy as dart
 
 ROOT = Path(__file__).resolve().parents[4]
 SCRIPTS = ROOT / "scripts"
@@ -48,9 +47,7 @@ def _world_with_marker():
 
 def _add_wall(world):
     world.addSkeleton(
-        _box_skeleton(
-            "marker_holder", [0.05, 2.4, 2.4], [0.8, 0.35, 0.4], static=True
-        )
+        _box_skeleton("marker_holder", [0.05, 2.4, 2.4], [0.8, 0.35, 0.4], static=True)
     )
 
 
@@ -172,9 +169,9 @@ def test_distance_and_crop_issues():
     assert {"cropped", "off-frame"} & set(off_report.issues)
 
     close = avq.orbit_camera([0.3, -0.2, 0.4], 0.2, azimuth=0.8, elevation=0.45)
-    assert "too-close" in avq.assess_view(
-        world, close, (320, 240), focus="marker"
-    ).issues
+    assert (
+        "too-close" in avq.assess_view(world, close, (320, 240), focus="marker").issues
+    )
 
 
 def test_resting_contact_is_not_occlusion():
@@ -207,17 +204,34 @@ def test_selection_relaxes_diversity_without_array_equality():
     assert len(avq.select_viewpoints(world, (320, 240), focus="marker", count=9)) == 9
 
 
-def test_raycast_detector_falls_back_to_native():
-    class Native:
+def test_raycast_detector_prefers_bullet():
+    class Bullet:
+        pass
+
+    class DartDetector:
         pass
 
     class Collision:
-        NativeCollisionDetector = Native
+        BulletCollisionDetector = Bullet
+        DARTCollisionDetector = DartDetector
 
     class Dart:
         collision = Collision()
 
-    assert isinstance(avq._raycast_detector(Dart()), Native)
+    assert isinstance(avq._raycast_detector(Dart()), Bullet)
+
+
+def test_raycast_detector_falls_back_to_dart():
+    class DartDetector:
+        pass
+
+    class Collision:
+        DARTCollisionDetector = DartDetector
+
+    class Dart:
+        collision = Collision()
+
+    assert isinstance(avq._raycast_detector(Dart()), DartDetector)
 
 
 def test_report_json_schema():
@@ -248,6 +262,37 @@ def test_frame_region_margin_scales_distance():
     near_distance = float(np.linalg.norm(near.eye - near.center))
     far_distance = float(np.linalg.norm(far.eye - far.center))
     assert far_distance == pytest.approx(2.0 * near_distance)
+
+
+def test_frame_region_fits_portrait_viewport_horizontal_fov():
+    landscape = avq.frame_region(
+        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(640, 480)
+    )
+    portrait = avq.frame_region(
+        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(240, 640)
+    )
+
+    landscape_distance = float(np.linalg.norm(landscape.eye - landscape.center))
+    portrait_distance = float(np.linalg.norm(portrait.eye - portrait.center))
+    half_y = math.radians(30.0) * 0.5
+    half_x = math.atan(math.tan(half_y) * (240.0 / 640.0))
+    assert landscape_distance == pytest.approx(1.0 / math.sin(half_y))
+    assert portrait_distance == pytest.approx(1.0 / math.sin(half_x))
+    assert portrait_distance > landscape_distance
+
+
+@pytest.mark.parametrize(
+    ("radius", "message"),
+    [(0.0, "radius"), (float("nan"), "radius")],
+)
+def test_frame_region_rejects_invalid_bounds(radius, message):
+    with pytest.raises(ValueError, match=message):
+        avq.frame_region([0.0, 0.0, 0.0], radius)
+
+
+def test_select_viewpoints_rejects_world_without_bounded_renderables():
+    with pytest.raises(ValueError, match="no bounded renderables"):
+        avq.select_viewpoints(dart.simulation.World())
 
 
 def test_default_agent_camera_parity():

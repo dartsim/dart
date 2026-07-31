@@ -56,11 +56,12 @@ config = { cmd = """
     cmake \
         -G Ninja \
         -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DDART_DISABLE_COMPILER_CACHE=$DART_DISABLE_COMPILER_CACHE \
+        -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DDART_DISABLE_COMPILER_CACHE="$DART_DISABLE_COMPILER_CACHE" \
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -68,7 +69,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
+        -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
 lint-cpp = { cmd = """
@@ -78,7 +79,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' \
+    black . --extend-exclude '/\\.[^/]+' \
     && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
@@ -92,7 +93,14 @@ import shutil
 import subprocess
 import time
 
-skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+skip_dirs = {
+    '.benchmark_results',
+    '.deps',
+    '.pixi',
+    'build',
+    'external',
+    'node_modules',
+}
 root = pathlib.Path('.')
 toml_files = []
 for path in root.rglob('*.toml'):
@@ -131,7 +139,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' \
+    black . --check --extend-exclude '/\\.[^/]+' \
     && isort . --check --skip-glob '.*'
 """, depends-on = ["config"] }
 
@@ -159,9 +167,19 @@ check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
 ai-setup = { cmd = "python scripts/setup_ai.py" }
 ai-doctor = { cmd = "python scripts/check_ai_infrastructure.py --doctor" }
 check-agent-hook = { cmd = "python scripts/check_agent_hook.py --profile staged" }
-check-ai-infra = { cmd = "python scripts/check_ai_infrastructure.py --check" }
+check-ai-infra = { cmd = "python scripts/check_ai_infrastructure.py --check --semantic-cmake", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
 exercise-agent-scenarios = { cmd = "python scripts/check_ai_infrastructure.py --scenarios" }
-test-ai-infra = { cmd = "python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q" }
+test-ai-infra = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_sync_ai_commands.py",
+  "tests/test_ai_infrastructure.py",
+  "tests/test_install_git_hooks.py",
+  "-q",
+] }
 
 # ssik is an optional, PyPI-only analytical IK solver used only by the
 # ssik_ik_gui scene (dart-demos, C++) and the ssik_analytical_ik (Python)
@@ -274,10 +292,11 @@ py-demos = { cmd = "python -m examples.demos", cwd = "python", depends-on = [
 ], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
 test = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
+        -j \
+        --target tests_and_run
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
 
@@ -289,7 +308,7 @@ test-py = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-all = { cmd = """
-    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
+    cmake --build "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" -j --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 config-asan = { cmd = """
@@ -476,6 +495,7 @@ image-compose = { cmd = ["python", "scripts/image_compose.py"] }
 evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
 
 evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
+verification-bundle = { cmd = ["python", "scripts/verification_bundle.py"] }
 
 # Deterministic headless capture with active camera control (view-quality
 # scored auto viewpoints, focus framing, turntable/motion) and engine-rendered
@@ -492,8 +512,12 @@ agent-capture = { cmd = [
 # rendered case is non-skippable whenever DISPLAY is set; CI runs it under Xvfb.
 test-agent-debug-overlay = { cmd = [
   "python",
-  "-m",
-  "pytest",
+  "-I",
+  "scripts/run_pytest.py",
+  "--pythonpath",
+  "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy",
+  "--pythonpath",
+  "$PIXI_PROJECT_ROOT/scripts",
   "python/tests/unit/gui/test_agent_debug_overlay.py::test_contacts_layer_marks_points_and_normals",
   "python/tests/unit/gui/test_agent_debug_overlay.py::test_engine_rendered_overlay_changes_pixels",
   "python/tests/unit/gui/test_agent_capture.py::test_run_capture_smoke_writes_stills_and_sidecar",
@@ -501,7 +525,7 @@ test-agent-debug-overlay = { cmd = [
   "-q",
 ], depends-on = [
   "build-py-dev",
-], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts" } }
+], env = { BUILD_TYPE = "Release" } }
 
 bm-empty = { cmd = """
     cmake \
@@ -530,6 +554,8 @@ bm-soft-body = { cmd = """
 """, depends-on = [
   "config",
 ], env = { BUILD_TYPE = "Release" } }
+
+bm-soft-body-paired = { cmd = "python scripts/compare_soft_body_detector_pairs.py" }
 
 bm-soft-body-headless = { cmd = """
     cmake \
@@ -778,21 +804,24 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 config = { cmd = """
     cmake \
         -S . \
-        -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -B "build/$PIXI_ENVIRONMENT_NAME/cpp" \
         -DBUILD_SHARED_LIBS=OFF \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
-        -DDART_VERBOSE=$DART_VERBOSE
+        -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
 
 lint-py = { cmd = """
-    black . --exclude '\\..*' && isort . --skip-glob '.*'
+    black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """, depends-on = ["config"] }
 
 lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
@@ -800,8 +829,10 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 lint = { depends-on = ["lint-spell", "lint-py"] }
 
 check-lint-py = { cmd = """
-    black . --check --exclude '\\..*' && isort . --check --skip-glob '.*'
-""", depends-on = ["config"] }
+    black . --check --extend-exclude '/\\.[^/]+' && isort . --check --skip-glob '.*'
+""", depends-on = [
+  "config",
+] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
@@ -854,11 +885,12 @@ config-py = { cmd = """
 """, env = { DART_VERBOSE = "OFF" } }
 
 test = { cmd = """
-    ctest \
-        --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --build-config $BUILD_TYPE \
-        --output-on-failure
-""", depends-on = ["build-tests"], env = { BUILD_TYPE = "Release" } }
+    cmake \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
+        -j \
+        --target tests_and_run
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 test-py = { cmd = """
     cmake \
@@ -870,8 +902,8 @@ test-py = { cmd = """
 
 test-all = { cmd = """
     cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
+        --build "build/$PIXI_ENVIRONMENT_NAME/cpp" \
+        --config "$BUILD_TYPE" \
         -j \
         --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }

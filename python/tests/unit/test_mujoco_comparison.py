@@ -53,7 +53,7 @@ def test_dart_sleep_override_disables_deactivation_for_selected_rows(tmp_path):
 def test_sleep_override_is_serialized_and_rendered_for_blocked_rows(tmp_path):
     runner = _load_runner_module()
     summary = {
-        "detector_override": "native",
+        "detector_override": "dart",
         "dart_sleep_override": "off",
         "scenes": {
             "HUM-ACTIVE": {
@@ -71,6 +71,6 @@ def test_sleep_override_is_serialized_and_rendered_for_blocked_rows(tmp_path):
 
     runner._write_markdown(tmp_path, summary)
     markdown = (tmp_path / "results.md").read_text(encoding="utf-8")
-    assert "DART detector override: `native`" in markdown
+    assert "DART detector override: `dart`" in markdown
     assert "DART sleep override: `off` for every selected scenario" in markdown
     assert "blocked: dart runner failed" in markdown

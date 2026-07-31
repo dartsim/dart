@@ -68,6 +68,25 @@
     text-first plus claim-tied OSG visual-debugging route, while preserving
     Claude Code and OpenCode adapters.
 
+  * Add a release-tailored model-upgrade audit and strengthen agent visual
+    verification with durable-context diagnostics, viewport-aware assessed OSG
+    framing, deterministic semantic-review targets and bundles, and fail-closed
+    evidence publication. Release evidence is content-addressed, validates the
+    complete selection contract before any GitHub lookup, requires exact remote
+    size/digest/uploaded-state metadata on retry, and records its
+    path/size/digest/URL bindings so later or partially retried publications
+    cannot replace bytes behind earlier PR URLs. The AI checker also validates
+    branch test-task semantics, including the Release-only CMake `ALL` boundary
+    and its graph-owned CTest/pytest coverage, executes controlled sanitization
+    and failure-propagation probes, and requires canonical C++, AI-infra, and
+    visual pytest tasks to execute test bodies despite ambient selector or
+    collection controls. It also validates Pixi commands across every active
+    durable task document. The required
+    consolidated-DART detector smoke uses a semantically inspected orthogonal
+    view that keeps its shape labels, contact markers, and collision bounds
+    readable.
+    ([#3410](https://github.com/dartsim/dart/pull/3410))
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
@@ -174,58 +193,80 @@
 
 * Collision
 
-  * Speed up many-object DART-native collision queries by replacing the
-    quadratic brute-force broadphase with a dynamic AABB tree, while preserving
-    deterministic result ordering and streaming boolean-query early exits:
+  * Provide the DART-owned collision backend through the built-in `dart`
+    detector, including soft-body, ellipsoid, cone, and capsule coverage. The
+    released `DARTCollide` entry points and detector ABI remain compatible, as
+    do the earlier 6.20 group and object layouts. The `dart` detector remains
+    opt-in; the built-in default is unchanged (`fcl`):
+    [#3381](https://github.com/dartsim/dart/pull/3381)
+
+  * Speed up many-object collision queries in the `dart` detector by replacing
+    the quadratic brute-force broadphase with a dynamic AABB tree, while
+    preserving deterministic result ordering and streaming boolean-query early
+    exits:
     [#3368](https://github.com/dartsim/dart/pull/3368)
 
-  * Speed up the DART-native collision backend by caching collision-object
+  * Speed up the `dart` collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up contact-heavy DART-native plane workloads by using cached-shape
-    primitive dispatch and deterministic threaded finite-shape-vs-plane contact
-    checks when the simulation thread count is greater than one:
+  * Speed up contact-heavy plane workloads in the `dart` detector by using
+    cached-shape primitive dispatch and deterministic threaded
+    finite-shape-vs-plane contact checks when the simulation thread count is
+    greater than one:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up DART-native broadphase setup by computing transformed cached local
-    bounds directly from center and half-extents instead of visiting all local
-    bounding-box corners:
+  * Restore the released `DARTCollisionDetector` ABI layout after its collision
+    thread-pool state enlarged the installed, derivable class. The
+    worker state now lives behind the collision-object manager already owned by
+    the released base layout while preserving the opt-in threaded behavior:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
+
+  * Speed up broadphase setup in the `dart` detector by computing transformed
+    cached local bounds directly from center and half-extents instead of
+    visiting all local bounding-box corners:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up DART-native finite-shape broadphase sweeps on AVX-width builds by
-    screening sorted AABB candidate batches with `dart/simd`, while keeping
-    baseline-ISA builds on the scalar sweep path:
+  * Speed up finite-shape broadphase sweeps in the `dart` detector on AVX-width
+    builds by screening sorted AABB candidate batches with `dart/simd`, while
+    keeping baseline-ISA builds on the scalar sweep path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Reduce DART-native broadphase setup work by caching local bounds
+  * Reduce broadphase setup work in the `dart` detector by caching local bounds
     center/half-extents and using those cached bounds directly when primitive
     collision objects have an identity linear transform:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up active DART-native contact-heavy scenes by replacing global
-    contact-point duplicate scans with reusable indexed contact aggregation and
-    deferring collision-result lookup-set construction until queried:
+  * Speed up active contact-heavy scenes using the `dart` detector by replacing
+    global contact-point duplicate scans with reusable indexed contact
+    aggregation and deferring collision-result lookup-set construction until
+    queried:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Reduce DART-native finite-plane collision bookkeeping by using internal
-    scratch collision results that skip unused lookup caches and a direct
-    single-plane pair-index path:
+  * Reduce finite-plane collision bookkeeping in the `dart` detector by using
+    internal scratch collision results that skip unused lookup caches and a
+    direct single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up primitive DART-native plane collision dispatch by caching a compact
-    shape kind beside each collision object's cached shape metadata, while
-    preserving the existing fallback path for unsupported shapes:
+  * Add `SoftMeshShape` and `EllipsoidShape` collision support to the built-in
+    `dart` detector, with cached soft geometry and a cache-friendly broadphase
+    for small dynamic groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Reduce DART-native contact merge overhead by probing neighboring
+  * Speed up primitive plane collision dispatch in the `dart` detector by
+    caching a compact shape kind beside each collision object's cached shape
+    metadata, while preserving the existing fallback path for unsupported
+    shapes:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Reduce contact merge overhead in the `dart` detector by probing neighboring
     duplicate-contact grid cells only when a contact point lies near a grid
     boundary, while preserving the exact distance-based duplicate check:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up DART-native finite-shape-vs-plane contact merging by using
-    plane-projected contact-footprint separation to bypass global
+  * Speed up finite-shape-vs-plane contact merging in the `dart` detector by
+    using plane-projected contact-footprint separation to bypass global
     duplicate-contact grid checks when different finite shapes cannot
     contribute duplicate contact points:
     [#3056](https://github.com/dartsim/dart/issues/3056)
@@ -241,38 +282,40 @@
     can skip:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up DART-native collision transform setup for identity-relative
-    `ShapeNode` collision objects by reusing the owning `BodyNode` world
-    transform while refreshing the fast path when shape-node geometry changes:
+  * Speed up collision transform setup in the `dart` detector for
+    identity-relative `ShapeNode` collision objects by reusing the owning
+    `BodyNode` world transform while refreshing the fast path when shape-node
+    geometry changes:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Add DART-native capsule contacts against spheres, boxes, cylinders, planes,
-    and other capsules, with primitive-pair regression coverage and capsule
-    benchmark scenes for comparing native and external collision backends:
+  * Add capsule contacts to the built-in `dart` detector against spheres,
+    boxes, cylinders, planes, and other capsules, with primitive-pair
+    regression coverage and benchmark scenes comparing DART and external
+    collision backends:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Add opt-in DART-native `CollisionDetector::distance()` support for the
-    native detector's supported primitive, plane, convex, compound,
+  * Add opt-in `CollisionDetector::distance()` support to the `dart` detector
+    for supported primitive, plane, convex, compound,
     signed-distance-field, exact mesh-mesh, mesh-SDF, and plane-mesh shape rows,
     with FCL parity coverage for primitive/plane adapter behavior and benchmark
-    rows comparing native and FCL distance queries:
+    rows comparing `dart` and FCL distance queries:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Add opt-in DART-native `CollisionDetector::raycast()` support for the
-    native detector's supported primitive, plane, convex-backed, and mesh shape
+  * Add opt-in `CollisionDetector::raycast()` support to the `dart` detector
+    for supported primitive, plane, convex-backed, and mesh shape
     rows, preserving DART 6 closest-hit, all-hits, sorting, and filter behavior
-    while adding benchmark rows comparing native and Bullet raycast queries:
+    while adding benchmark rows comparing `dart` and Bullet raycast queries:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Add opt-in DART-native `VoxelGridShape` support by converting occupied
-    octree leaves into native compound-box children, routing compound collision
-    through the native child-shape dispatcher, and adding benchmark rows
-    comparing native and FCL VoxelGrid collision queries:
+  * Add opt-in `VoxelGridShape` support to the `dart` detector by converting
+    occupied octree leaves into compound-box children, routing compound
+    collision through the DART child-shape dispatcher, and adding benchmark
+    rows comparing `dart` and FCL VoxelGrid collision queries:
     [#3358](https://github.com/dartsim/dart/pull/3358)
 
-  * Add opt-in DART-native persistent contact manifolds and PGS-compatible
-    cached contact impulse seeding for native-detector contacts, preserving the
-    FCL default detector while reducing repeated native contact reconstruction:
+  * Add opt-in persistent contact manifolds and PGS-compatible cached contact
+    impulse seeding for `dart` detector contacts, preserving the FCL default
+    detector while reducing repeated DART contact reconstruction:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Fix FCL primitive contact normal orientation and switch default FCL primitive
@@ -292,9 +335,9 @@
     distances, shared-object refreshes, and collision-result cache lifetime:
     [#3085](https://github.com/dartsim/dart/pull/3085)
 
-  * Improve explicit DART-native per-pair contact caps by selecting the deepest
-    contact and spatially distributed support contacts instead of truncating
-    backend contact output in iteration order:
+  * Improve explicit per-pair contact caps in the `dart` detector by selecting
+    the deepest contact and spatially distributed support contacts instead of
+    truncating backend contact output in iteration order:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Fix the FCL collision detector adding a default-constructed contact with
@@ -311,6 +354,13 @@
 
 * Dynamics
 
+  * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
+    rigid `BodyNode`: the parser forwarded only the joint type to
+    `createJointAndBodyNodePair`, so the body-node type defaulted to `BodyNode`
+    and `SoftBodyNode::Properties` was sliced away. Soft SDF links now load as
+    `SoftBodyNode`s; rigid links are unchanged and there is no API/ABI change:
+    [#3399](https://github.com/dartsim/dart/pull/3399)
+
   * Fix `BoxedLcpConstraintSolver` propagating non-finite constraint impulses:
     a near-singular contact (e.g. a thin, hard, frictionless geometry) could
     make the primary solver report success while emitting an *infinite* impulse
@@ -319,6 +369,15 @@
     LCP solutions are now rejected so the secondary/fail-safe zeroing path runs,
     guaranteeing finite impulses:
     [#3384](https://github.com/dartsim/dart/pull/3384)
+
+  * Add opt-in adaptive soft contact activation to `SoftBodyNode`
+    (`setAdaptiveContactActivationEnabled` plus ring-count, linger, and
+    deactivation-tolerance tuning and a `getNumActivePointMasses` counter):
+    point masses near contact stay simulated while the rest ride rigidly
+    with the parent body as rigid lumps, following Jain and Liu's soft
+    contact model. Default-off behavior is bit-identical to the previous
+    all-active dynamics:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
     option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
@@ -389,11 +448,11 @@
     [#3369](https://github.com/dartsim/dart/pull/3369)
 
   * Add World-owned simulation memory management and optional
-    `World::enterSimulationMode()` preparation so DART-owned native-collision
-    same-shape simulation steps can run without steady-state heap allocations
+    `World::enterSimulationMode()` preparation so same-shape simulation steps
+    using the `dart` detector can run without steady-state heap allocations
     after explicit preparation or the implicit first step. The default
     construction path remains unchanged, and Bullet/ODE backend-internal
-    allocations stay outside the strict native allocation gate.
+    allocations stay outside the strict DART detector allocation gate.
 
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
     `World::setCollisionDetector(CollisionDetectorType)` /
@@ -431,7 +490,7 @@
 
   * Complete the 3003-body resting-scene performance target from issue #3056:
     the maintained `contact_benchmark` path for `3k_shapes.sdf` with
-    DART-native collision records RTF `81.0689` in the final
+    the `dart` detector records RTF `81.0689` in the final
     anti-overfitting matrix, final hash `0x131b6af79a44ff90`, zero final
     contacts, and `3003 / 3003` mobile skeletons resting. Completion reruns
     preserve the same final state and remain far above the original RTF `1.0`
@@ -451,7 +510,7 @@
     GUI scaling and live rebuild controls, plus a matching
     `BM_INTEGRATION_contact_container` benchmark, so active mixed-shape
     contact workloads can be inspected visually and measured with the
-    DART-native and ODE collision detectors across single-threaded and
+    `dart` and ODE collision detectors across single-threaded and
     multi-threaded simulation. The example renders all status in a single
     auto-sized ImGui panel with smoothed statistics, gives container bodies
     configurable joint-space damping so rolling primitives can settle, and
@@ -517,16 +576,16 @@
     groups prove they are exact built-in fixed-support contact groups:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Reduce DART-native finite-plane contact merge overhead by directly appending
-    single-contact pair results once the disjoint contact-bound proof has
-    already disabled cross-pair duplicate checks:
+  * Reduce finite-plane contact merge overhead in the `dart` detector by
+    directly appending single-contact pair results once the disjoint
+    contact-bound proof has already disabled cross-pair duplicate checks:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
 * Python
 
-  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
-    split-process DART-vs-MuJoCo comparison harness with deterministic
-    generated contact scenes and a pinned MuJoCo Pixi environment:
+  * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
+    deterministic generated contact scenes, selectable DART collision
+    detectors, and a pinned MuJoCo Pixi environment:
     [#3367](https://github.com/dartsim/dart/pull/3367)
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
@@ -541,6 +600,15 @@
 
 * Examples
 
+  * Add two deformable-body flagship scenes to `dart-demos`:
+    `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
+    demonstrating the adaptive contact activation API with live
+    active/inactive instrumentation, and `soft_worm`, an internally actuated
+    five-link chain with soft flesh that crawls through soft contact using a
+    phase-offset sinusoidal gait. Both support the host's headless offscreen
+    capture route, with GUI-free integration gates preserving the adaptive
+    comparison and worm-locomotion contracts:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
   * Add opt-in memory diagnostics to `dart-demos` with exact World
     `MemoryManager` region maps, a typed virtual-address atlas for classic graph
     objects, process RSS/history/baselines, and explicit evidence limits. The

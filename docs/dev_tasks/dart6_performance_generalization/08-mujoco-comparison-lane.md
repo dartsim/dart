@@ -26,7 +26,7 @@ collision-fidelity work needed by the affected rows):
 pixi run build-py-dev && pixi install -e mujoco
 PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
   pixi run python scripts/mujoco_comparison/run_comparison.py \
-  --reps 5 --detector native --dart-sleep off \
+  --reps 5 --detector dart --dart-sleep off \
   --scene ARM-REACHER --scene ARM-PUSHER \
   --scene HUM-FALL --scene HUM-ACTIVE \
   --scene PILE-120 --scene PILE-900 --scene DYN-STIR-120 \
@@ -41,7 +41,7 @@ a parser or runtime failure remains a blocked row rather than evidence.
 
 ## Standings (2026-07-10 prototype rows; quiet-host full matrix pending)
 
-| Class | Scene | DART (native det) | MuJoCo | Verdict |
+| Class | Scene | DART (`dart` detector) | MuJoCo | Verdict |
 | --- | --- | ---: | ---: | --- |
 | Arms | reacher | 0.0200 | 0.0086 | MJ 2.3x (µs-scale) |
 | Arms | pusher | 0.0373 | 0.0065 | MJ 5.7x |
@@ -65,7 +65,7 @@ evidence; restore a locomotion row only with reproducible provenance.
    ~11.35 µs per tiny LCP group (constructLcpTerms ~5 µs/call),
    updateConstraints self ~11.8 µs, integration ~12 µs, vs MuJoCo's whole
    step at 6.5 µs. Packet family WP-SS.1 (small-LCP construct/solve fast
-   path), WP-SS.2 (native small-scene collide overhead; also the S1-60
+   path), WP-SS.2 (`dart` small-scene collide overhead; also the S1-60
    parity gap), WP-SS.3 (integration overhead for small skeletons). Cut
    after fidelity packets land (do not optimize against invalid scenes).
 4. **Active-pile gap (~2.7x)**: #3368's merged AABB-tree removes the
@@ -83,8 +83,7 @@ evidence; restore a locomotion row only with reproducible provenance.
   reports and the harness asserts zero sleeping bodies. A missing/unknown
   sleeping-body count is not evidence of zero sleeping bodies.
 - SLEEP class is the only row where deactivation is the measured feature.
-- Detector rows: `dart` is the headline after the phase-6 consolidation and
-  default flip; reserve `native` for explicit pre-consolidation runs (FCL
-  default mangles capsules -> MJCF rows under the default detector are invalid).
+- Detector rows: `dart` is the DART-owned headline. FCL remains the global
+  default, so capsule-sensitive MJCF rows must select `dart` explicitly.
 - Every claimed row needs: exact command, SHAs, versions, governor, median
   of >=5 reps, finite + contact telemetry both engines.

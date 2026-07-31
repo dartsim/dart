@@ -27,6 +27,7 @@ import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,11 +35,34 @@ import agent_debug_overlay as ado
 import agent_view_quality as avq
 import numpy as np
 
-SCHEMA_VERSION = "dart.agent_capture/v1"
+SCHEMA_VERSION = "dart.agent_capture/v2"
 
 # Default OSG warmup frames before each screenshot; shared by the argument
 # parser and the reproduce-command writer so non-default runs record the flag.
 DEFAULT_WARMUP_FRAMES = 10
+
+
+@dataclass(frozen=True)
+class _ContactSnapshot:
+    """Owned contact values that survive viewer traversal and overlay clears."""
+
+    point: np.ndarray
+    normal: np.ndarray
+    force: np.ndarray
+
+
+def _snapshot_contacts(contacts: Any) -> list[_ContactSnapshot]:
+    # CollisionResult.getContacts() exposes references to DART-owned contacts.
+    # OSG frame traversal can refresh that backing result even without a world
+    # step, so temporal captures must own the values they intend to render.
+    return [
+        _ContactSnapshot(
+            point=np.array(contact.point, dtype=float, copy=True).reshape(3),
+            normal=np.array(contact.normal, dtype=float, copy=True).reshape(3),
+            force=np.array(contact.force, dtype=float, copy=True).reshape(3),
+        )
+        for contact in contacts
+    ]
 
 
 def _import_dartpy() -> Any:
@@ -70,10 +94,10 @@ def _load_factory(spec: str) -> Callable[[], Any]:
     return target
 
 
-def _box_skeleton(
+def _shape_skeleton(
     dart: Any,
     name: str,
-    size: tuple[float, float, float],
+    shape: Any,
     position: tuple[float, float, float],
     *,
     static: bool = False,
@@ -85,7 +109,6 @@ def _box_skeleton(
     else:
         joint, body = skeleton.createFreeJointAndBodyNodePair()
     body.setName(name)
-    shape = dart.dynamics.BoxShape(np.asarray(size, dtype=float))
     shape_node = body.createShapeNode(shape)
     shape_node.createVisualAspect().setColor(list(color))
     shape_node.createCollisionAspect()
@@ -101,6 +124,25 @@ def _box_skeleton(
     return skeleton
 
 
+def _box_skeleton(
+    dart: Any,
+    name: str,
+    size: tuple[float, float, float],
+    position: tuple[float, float, float],
+    *,
+    static: bool = False,
+    color: tuple[float, float, float] = (0.35, 0.55, 0.85),
+) -> Any:
+    return _shape_skeleton(
+        dart,
+        name,
+        dart.dynamics.BoxShape(np.asarray(size, dtype=float)),
+        position,
+        static=static,
+        color=color,
+    )
+
+
 def _make_box_on_ground(dart: Any) -> Any:
     world = dart.simulation.World()
     world.addSkeleton(
@@ -114,6 +156,57 @@ def _make_box_on_ground(dart: Any) -> Any:
         )
     )
     world.addSkeleton(_box_skeleton(dart, "box", (0.2, 0.2, 0.2), (0.0, 0.0, 0.35)))
+    return world
+
+
+def _make_dart_box_on_ground(dart: Any) -> Any:
+    world = _make_box_on_ground(dart)
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    return world
+
+
+def _make_dart_shape_contacts(dart: Any) -> Any:
+    world = dart.simulation.World()
+    world.getConstraintSolver().setCollisionDetector(
+        dart.collision.DARTCollisionDetector()
+    )
+    world.addSkeleton(
+        _box_skeleton(
+            dart,
+            "ground",
+            (2.4, 1.2, 0.1),
+            (0.0, 0.0, -0.05),
+            static=True,
+            color=(0.75, 0.75, 0.78),
+        )
+    )
+
+    shape_specs = (
+        (
+            "ellipsoid",
+            dart.dynamics.EllipsoidShape(np.asarray((0.36, 0.28, 0.5))),
+            (-0.6, 0.0, 0.65),
+            (0.35, 0.62, 0.90),
+        ),
+        (
+            "capsule",
+            dart.dynamics.CapsuleShape(0.13, 0.34),
+            (0.0, 0.0, 0.65),
+            (0.48, 0.78, 0.48),
+        ),
+        (
+            "cone",
+            dart.dynamics.ConeShape(0.2, 0.5),
+            (0.6, 0.0, 0.65),
+            (0.88, 0.52, 0.34),
+        ),
+    )
+    for name, shape, position, color in shape_specs:
+        world.addSkeleton(
+            _shape_skeleton(dart, name, shape, position, static=False, color=color)
+        )
     return world
 
 
@@ -163,6 +256,8 @@ def _make_two_body_contact(dart: Any) -> Any:
 
 _BUILTIN_SCENES: dict[str, Callable[[Any], Any]] = {
     "box_on_ground": _make_box_on_ground,
+    "dart_box_on_ground": _make_dart_box_on_ground,
+    "dart_shape_contacts": _make_dart_shape_contacts,
     "box_stack": _make_box_stack,
     "two_body_contact": _make_two_body_contact,
 }
@@ -177,6 +272,7 @@ def _camera_from_args(args: argparse.Namespace, world: Any) -> avq.AgentCamera:
             elevation=args.camera_elevation,
             fovy_deg=args.fovy_deg,
             margin=args.frame_margin,
+            size=(args.width, args.height),
         )
     return avq.orbit_camera(
         tuple(args.camera_target),
@@ -282,6 +378,47 @@ def _camera_json(camera: avq.AgentCamera) -> dict[str, Any]:
     return camera.to_json()
 
 
+def _review_inspection_targets(
+    artifacts: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Select deterministic stills for native semantic image inspection."""
+    targets: list[dict[str, str]] = []
+    for artifact in artifacts:
+        kind = str(artifact["kind"])
+        path = str(artifact["path"])
+        if kind == "still":
+            targets.append(
+                {
+                    "path": path,
+                    "source_kind": kind,
+                    "phase": "static",
+                }
+            )
+            continue
+        if kind not in {"turntable", "motion"}:
+            continue
+        frame_count = max(0, int(artifact.get("frames", 0)))
+        if frame_count == 0:
+            continue
+        phases_by_index: dict[int, list[str]] = {}
+        for index, phase in (
+            (0, "start"),
+            (frame_count // 2, "middle"),
+            (frame_count - 1, "end"),
+        ):
+            phases_by_index.setdefault(index, []).append(phase)
+        prefix = "turn" if kind == "turntable" else "frame"
+        for index, phases in sorted(phases_by_index.items()):
+            targets.append(
+                {
+                    "path": (Path(path) / f"{prefix}{index:04d}.png").as_posix(),
+                    "source_kind": kind,
+                    "phase": "/".join(phases),
+                }
+            )
+    return targets
+
+
 def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
@@ -360,9 +497,16 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         world.step()
         if tracker is not None:
             tracker.sample()
+    # getLastCollisionResult() is exposed to Python as a result object whose
+    # getContacts() entries reference its contact storage. Keep that owner
+    # alive through rendering; chaining the calls would leave dangling Contact
+    # wrappers as soon as the temporary result object is destroyed.
+    last_collision_result = (
+        world.getLastCollisionResult() if "contacts" in args.layers else None
+    )
     contacts = (
-        list(world.getLastCollisionResult().getContacts())
-        if "contacts" in args.layers
+        _snapshot_contacts(last_collision_result.getContacts())
+        if last_collision_result is not None
         else []
     )
 
@@ -502,9 +646,12 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 world.step()
                 if tracker is not None:
                     tracker.sample()
+            last_collision_result = (
+                world.getLastCollisionResult() if "contacts" in args.layers else None
+            )
             contacts = (
-                list(world.getLastCollisionResult().getContacts())
-                if "contacts" in args.layers
+                _snapshot_contacts(last_collision_result.getContacts())
+                if last_collision_result is not None
                 else []
             )
             camera = _sweep_camera(base, sweep * frame / max(args.motion_frames - 1, 1))
@@ -541,6 +688,9 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     sidecar = {
         "schema_version": SCHEMA_VERSION,
         "scene": scene_id,
+        "collision_detector": world.getConstraintSolver()
+        .getCollisionDetector()
+        .getType(),
         "steps": args.steps,
         "size": [args.width, args.height],
         "fovy_deg": args.fovy_deg,
@@ -551,6 +701,26 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         "motion_frames": args.motion_frames,
         "artifacts": artifacts,
         "reproduce": _reproduce_command(args),
+        "review_contract": {
+            "text_oracle_required": True,
+            "semantic_image_inspection_required": True,
+            "machine_checks_are_not_semantic_review": True,
+            "inspect_artifacts": _review_inspection_targets(artifacts),
+            "temporal_sampling": (
+                "Inspect start/middle/end sequence frames; add intervening "
+                "frames or a grid when the claim depends on a transient event."
+            ),
+            "required_record_fields": [
+                "claim_and_expected_observation",
+                "text_oracle",
+                "visible_observation",
+                "reconciliation_and_verdict",
+                "not_proven_and_limitations",
+            ],
+            "recommended_detail": (
+                "original for fine contacts, labels, bounds, or frame axes"
+            ),
+        },
         "pass": True,
         # Sentinel/garbage contact points the overlay filtered out of the
         # contacts layer (0 for healthy scenes): reviewers must know when the

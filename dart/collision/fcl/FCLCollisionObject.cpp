@@ -179,7 +179,6 @@ void FCLCollisionObject::updateEngineData()
         bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
           const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
-          mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
           bvhModel->replaceVertex(
               dart::collision::fcl::Vector3(vertex[0], vertex[1], vertex[2]));
         }

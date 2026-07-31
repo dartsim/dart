@@ -8,6 +8,9 @@ the scattered per-example programs that used to live under `examples/*`.
 Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
 counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
+The deformable-body flagship scenes are available as
+`--scene adaptive_soft_contact` and `--scene soft_worm`.
+
 ## Architecture
 
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
@@ -175,11 +178,9 @@ whatever the user changes at runtime:
 - `--headless --shot <path> [--steps N]` — off-screen pbuffer capture
   (requires a DISPLAY/GPU; a local self-verification tool, not a CI gate).
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
-  scene with a specific registered backend (`fcl`, `dart`, `native`, `bullet`,
-  or `ode` when available). The toolbar can switch backends while the scene is
-  running. Soft-body scenes should use `dart` or `fcl` for apples-to-apples
-  comparisons; the `native` adapter is selectable for diagnostics, but does not
-  yet cover `SoftMeshShape`.
+  scene with a specific registered backend (`fcl`, `dart`, `bullet`, or `ode`
+  when available). The toolbar can switch backends while the scene is running.
+  The consolidated `dart` detector supports soft-body scenes.
 - `--threads <n>` / `THREADS=<n>` — start with a specific simulation worker
   count (`0` selects hardware concurrency). The toolbar can change this live.
 - `--debug-select-body <name>` / `--debug-record-profile` — hidden hooks that

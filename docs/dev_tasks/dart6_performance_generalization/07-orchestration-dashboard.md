@@ -16,22 +16,22 @@ Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
 criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
 cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
 (08-mujoco-comparison-lane.md) owns that work. #3366 (dartpy getDofs ownership
-bugfix) and #3367 (MuJoCo comparison harness + mujoco env + dartpy native
-binding), #3368 (native AABB-tree broadphase), and #3369 (MJCF stacked joints
-and collision fidelity) have merged. The native small-scene overhead WP-SS
-family remains in flight; the S6 native resting-profile row is resolved by the
-dep-min lane's documented acceptance re-scope.
+bugfix) and #3367 (MuJoCo comparison harness + mujoco env + compiled dartpy
+binding), #3368 (`dart` detector AABB-tree broadphase), and #3369 (MJCF
+stacked joints and collision fidelity) have merged. The `dart` detector
+small-scene overhead WP-SS family remains in flight; the S6 `dart`
+resting-profile row is resolved by the accepted completion audit.
 
 ## Lane status
 
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
 | WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | gated (PG.10 #3339; PG.13 evidence-gated by PG.10 census; PG.14 done #3361 as D3 opt-in matrix-free path; PG.15 done #3353) |
-| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | gated (PG.20 #3329; PG.21 current-base gate rejected after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
+| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | gated (PG.20 #3329; PG.21 current-base gate rejected after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | gated (PG.30 #3310; PG.31 #3341; PG.32 delivered by #3297/#3307; PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phases 0–3 complete (native adapter + capability parity); phase 4 active after #3364, with AABB-tree broadphase merged in #3368 |
+| WS-F DART collision backend | ../../design/dart6_collision_backends.md | lifecycle | delivered for DART 6.20 by #3381; any default or dependency change is later-release work |
 
 ## Packet board
 
@@ -53,7 +53,7 @@ dep-min lane's documented acceptance re-scope.
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
 | WP-PG.30 free-body cache + FD path | WS-C | done — PR #3310 | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
 | WP-PG.31 shallow-support scratch | WS-C | done — #3341 | `wp-pg-31-shallow-support-scratch` / #3341 | Current-base A/B artifact `/tmp/wp_pg31_ab_20260707T184319` (`3964108a675` -> `21f691311df`): no-root-FreeJoint `double_pendulum.world` hashes identical and median step time improved 0.002106 -> 0.001836 ms (DART), 0.001903 -> 0.001644 ms (ODE); generated 120-object DART/ODE guard hashes identical; ODE `BM_ContactContainerActive/120/1/{1,16}` medians 6588 -> 6433 ms and 6998 -> 6468 ms; base and branch both passed 30/30 default 16-thread crash stressors; merged 2026-07-08 |
-| WP-PG.32 frame arena + alloc gate | WS-C | done — #3297/#3307 | `wp-pg-32-frame-allocation-gate` (tracker reconciliation) | Merged #3297 added `FrameAllocator`, `FrameStlAllocator`, World-owned `MemoryManager` preparation, solver/profiler/Dantzig scratch reuse, and `INTEGRATION_StepAllocation` allocation-counting gates. Merged #3307 extended the allocation discipline to soft/deformable paths and recorded the #3307-style performance report: strict zero-regression checker PASS on `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, native DART winning every checksum-equivalent soft-scene/thread row against FCL, and strict soft allocation gates reporting zero `operator new`, zero raw `malloc`, and zero counted allocator growth where available. Local reconciliation-branch verification passed `pixi run test-eigen-overalignment` (148/148), targeted Release allocator build, and `ctest -R '(StepAllocation|FrameAllocator|MemoryManager)'` (3/3) |
+| WP-PG.32 frame arena + alloc gate | WS-C | done — #3297/#3307 | `wp-pg-32-frame-allocation-gate` (tracker reconciliation) | Merged #3297 added `FrameAllocator`, `FrameStlAllocator`, World-owned `MemoryManager` preparation, solver/profiler/Dantzig scratch reuse, and `INTEGRATION_StepAllocation` allocation-counting gates. Merged #3307 extended the allocation discipline to soft/deformable paths and recorded the #3307-style performance report: strict zero-regression checker PASS on `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, the `dart` detector winning every checksum-equivalent soft-scene/thread row against FCL, and strict soft allocation gates reporting zero `operator new`, zero raw `malloc`, and zero counted allocator growth where available. Local reconciliation-branch verification passed `pixi run test-eigen-overalignment` (148/148), targeted Release allocator build, and `ctest -R '(StepAllocation|FrameAllocator|MemoryManager)'` (3/3) |
 | WP-PG.33 SoA integration | WS-C | gated | — | — |
 | WP-PG.40 FP/ISA contracts | WS-D | folded into WP-PG.42 | #3270 closed | maintainer direction: carry D1/D2 evidence with actual SIMD kernel PR |
 | WP-PG.41 batch math seam | WS-D | blocked (PG.10 seam evidence) | — | — |
@@ -67,12 +67,10 @@ against the packet's acceptance evidence.
 
 ## Cross-lane coordination notes
 
-- WS-F consumes WS-D kernels in its phase 4. Phases 0–3 are complete, including
-  the DART 6 native detector adapter and capability parity; phase 4 is active
-  after #3364, and #3368's AABB-tree broadphase is now merged base-branch
-  evidence.
-- WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
-  decision) — see D5 in the README.
+- WS-F shipped as the built-in `dart` detector through #3381. Any later
+  default or dependency change follows
+  `docs/design/dart6_collision_backends.md`.
+- WS-B investment is governed by the current D8 evidence decision.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body
   classification; land WP-PG.30 first when possible.
 - Deactivation-gate work (#3226) is merged; any packet touching sleeping

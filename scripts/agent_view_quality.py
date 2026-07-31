@@ -8,9 +8,9 @@ pick better ones, mirroring the DART 7 `dart.gui.assess_view` /
 
 Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
 occlusion from core raycasts against the world's real collision geometry (the
-Bullet backend, DART 6's only raycast provider); projection uses the same
-look-at + vertical-FOV model the capture helper pins. No GL context is needed
-to assess a view.
+Bullet backend when available, otherwise the built-in DART backend); projection
+uses the same look-at + vertical-FOV model the capture helper pins. No GL
+context is needed to assess a view.
 """
 
 from __future__ import annotations
@@ -89,10 +89,23 @@ def frame_region(
     elevation: float = math.tau / 12.0,
     fovy_deg: float = DEFAULT_FOVY_DEG,
     margin: float = 1.15,
+    size: tuple[int, int] | None = None,
 ) -> AgentCamera:
-    """Camera framing a sphere, matching defaultAgentCamera's distance law."""
-    radius = max(float(radius), 1e-6)
-    distance = radius / math.sin(math.radians(fovy_deg) * 0.5) * float(margin)
+    """Camera framing a sphere against the viewport's limiting field of view."""
+    radius = float(radius)
+    if not math.isfinite(radius) or radius <= 0.0:
+        raise ValueError("framing radius must be finite and positive")
+    half_fovy = math.radians(float(fovy_deg)) * 0.5
+    if not math.isfinite(half_fovy) or not 0.0 < half_fovy < math.pi * 0.5:
+        raise ValueError("vertical field of view must be between 0 and 180 degrees")
+    limiting_half_fov = half_fovy
+    if size is not None:
+        width, height = int(size[0]), int(size[1])
+        if width <= 0 or height <= 0:
+            raise ValueError("viewport width and height must be positive")
+        half_fovx = math.atan(math.tan(half_fovy) * (float(width) / height))
+        limiting_half_fov = min(half_fovy, half_fovx)
+    distance = radius / math.sin(limiting_half_fov) * float(margin)
     return orbit_camera(center, distance, azimuth, elevation, fovy_deg)
 
 
@@ -286,13 +299,13 @@ def _dartpy() -> Any:
 
 
 def _raycast_detector(dart: Any) -> Any:
-    """Prefer Bullet raycasts, with the core native detector as fallback."""
-    for name in ("BulletCollisionDetector", "NativeCollisionDetector"):
+    """Prefer Bullet raycasts, with the built-in DART detector as fallback."""
+    for name in ("BulletCollisionDetector", "DARTCollisionDetector"):
         factory = getattr(dart.collision, name, None)
         if factory is not None:
             return factory()
     raise RuntimeError(
-        "view-quality occlusion requires a raycast-capable Bullet or native "
+        "view-quality occlusion requires a raycast-capable Bullet or DART "
         "collision detector in dartpy"
     )
 
@@ -542,6 +555,7 @@ def frame_body(
     elevation: float = math.tau / 12.0,
     fovy_deg: float = DEFAULT_FOVY_DEG,
     margin: float = 1.6,
+    size: tuple[int, int] | None = None,
 ) -> AgentCamera:
     """Camera targeting one or more named bodies (region reframing)."""
     bounds = body_bounds(world)
@@ -549,7 +563,15 @@ def frame_body(
     corners = np.vstack([b.corners for b in focus_bounds])
     center = 0.5 * (corners.min(axis=0) + corners.max(axis=0))
     radius = 0.5 * float(np.linalg.norm(corners.max(axis=0) - corners.min(axis=0)))
-    return frame_region(center, radius, azimuth, elevation, fovy_deg, margin)
+    return frame_region(
+        center,
+        radius,
+        azimuth,
+        elevation,
+        fovy_deg,
+        margin,
+        size=size,
+    )
 
 
 @dataclass
@@ -578,6 +600,8 @@ def select_viewpoints(
     """Deterministically pick the best viewpoint(s) from a candidate grid."""
     bounds = body_bounds(world)
     focus_bounds, _ = _split_focus(bounds, focus)
+    if not focus_bounds:
+        raise ValueError("cannot select viewpoints: world has no bounded renderables")
     corners = np.vstack([b.corners for b in focus_bounds])
     center = 0.5 * (corners.min(axis=0) + corners.max(axis=0))
     radius = 0.5 * float(np.linalg.norm(corners.max(axis=0) - corners.min(axis=0)))
@@ -587,7 +611,12 @@ def select_viewpoints(
         for azimuth in azimuths:
             for scale in distance_scales:
                 camera = frame_region(
-                    center, radius * float(scale), azimuth, elevation, fovy_deg
+                    center,
+                    radius * float(scale),
+                    azimuth,
+                    elevation,
+                    fovy_deg,
+                    size=size,
                 )
                 report = assess_view(world, camera, size, focus=focus)
                 reason = (

@@ -1,10 +1,9 @@
 # DART vs MuJoCo Comparison Harness (v1)
 
 This package benchmarks DART against MuJoCo across a fixed scene matrix so
-that native-collision-detector performance work (see
-`docs/dev_tasks/dart6_dependency_minimization/`) has a concrete, reproducible
-"do we actually win?" signal instead of only internal before/after
-comparisons.
+that performance work on the built-in `dart` collision detector (see
+`docs/design/dart6_collision_backends.md`) has a concrete, reproducible "do we
+actually win?" signal instead of only internal before/after comparisons.
 
 It is a **v1**: the scene matrix, step counts, and drive-torque magnitudes
 below are considered reasonable starting defaults, not values validated
@@ -195,7 +194,7 @@ wins" / "DART loses" / "within noise band (1.1x)").
 
 ## DART collision detectors (`--detector`)
 
-`dart_runner.py --detector {default,dart,fcl,bullet,ode,native}` selects the
+`dart_runner.py --detector {default,dart,fcl,bullet,ode}` selects the
 collision backend via
 `world.getConstraintSolver().setCollisionDetector(...)`:
 
@@ -203,9 +202,6 @@ collision backend via
 - `dart`/`fcl`/`bullet`/`ode` construct
   `dartpy.collision.{DART,FCL,Bullet,Ode}CollisionDetector()`; `bullet`/`ode`
   exit with a clear error if the optional backend wasn't compiled in.
-- `native` constructs `dartpy.collision.NativeCollisionDetector()`, which is
-  bound by this change. Use `--detector native` to run the comparison with
-  DART's opt-in native collision backend.
 
 `run_comparison.py` uses `default` for every scenario in this v1 (no
 per-detector sweep yet); pass `--detector <name>` to override every
@@ -253,8 +249,8 @@ MuJoCo has no sleeping/deactivation concept, so `sleeping_bodies` is always
   validated against real settling behavior.
 - **No per-detector sweep yet.** `run_comparison.py` only exercises
   `--detector default` per scenario; comparing `fcl`/`dart`/`bullet`/`ode`/
-  `native` against MuJoCo per scene is future work (tracked as a follow-on
-  to closing the performance gap, not part of this v1).
+  against MuJoCo per scene is future work (tracked as a follow-on to closing
+  the performance gap, not part of this v1).
 - **Restitution and MuJoCo torsional/rolling friction** are left at each
   engine's own defaults (DART: 0 restitution; MuJoCo: default `solref`/
   `solimp` and torsional/rolling friction terms) since neither engine

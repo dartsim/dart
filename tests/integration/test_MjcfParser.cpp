@@ -31,7 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/dart.hpp"
 #include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
@@ -371,7 +371,7 @@ TEST(MjcfParserTest, Striker)
   // ((ctA & caB) || (ctB & caA)); asserting zero goal contacts would
   // contradict the model's own semantics.
   world->getConstraintSolver()->setCollisionDetector(
-      collision::NativeCollisionDetector::create());
+      collision::DARTCollisionDetector::create());
 
   for (auto i = 0; i < 50; ++i) {
     world->step();
@@ -494,7 +494,7 @@ TEST(MjcfParserTest, ContypeConaffinityPairRule)
   ASSERT_NE(skelC, nullptr);
 
   world->getConstraintSolver()->setCollisionDetector(
-      collision::NativeCollisionDetector::create());
+      collision::DARTCollisionDetector::create());
 
   world->step();
 
@@ -651,7 +651,7 @@ TEST(MjcfParserTest, HumanoidStackedHingeJoints)
   expectStackedJointDynamicsWellPosed(humanoidSkel);
 
   world->getConstraintSolver()->setCollisionDetector(
-      collision::NativeCollisionDetector::create());
+      collision::DARTCollisionDetector::create());
 
   for (auto i = 0; i < 100; ++i) {
     world->step();
