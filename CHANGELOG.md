@@ -446,8 +446,15 @@ compatibility remains on the active DART 6 LTS branch._
   [#2163](https://github.com/dartsim/dart/pull/2163),
   [#2216](https://github.com/dartsim/dart/pull/2216))
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
-  EnTT 4, fmt/spdlog updates, Assimp 6 support, and C++23 standard-library
-  feature gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+  EnTT 4, urdfdom 6, fmt/spdlog updates, Assimp 6 support, and C++23
+  standard-library feature gates.
+  ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Raised the URDF stack to urdfdom 6 / urdfdom_headers 3, which adds URDF
+  specification 1.2 support. Existing URDFs are unaffected: the relaxed
+  `limit` defaults (missing `effort`/`velocity` resolving to infinity instead
+  of being rejected) apply only to documents that opt in with
+  `<robot version="1.2">`, and documents without a `version` attribute keep
+  the previous parse behavior.
 - Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
   metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
   interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
