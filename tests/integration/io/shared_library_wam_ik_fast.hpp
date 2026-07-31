@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
-#define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+#pragma once
 
 #include "dart/common/shared_library.hpp"
 #include "dart/dynamics/ik_fast.hpp"
@@ -85,5 +84,3 @@ protected:
   // Documentation inherited.
   const char* getIkFastVersion() override;
 };
-
-#endif // DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_

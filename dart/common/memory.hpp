@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORY_HPP_
-#define DART_COMMON_MEMORY_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -181,5 +180,3 @@ public:                                                                        \
   DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)
 
 #include <dart/common/detail/memory-impl.hpp>
-
-#endif // DART_COMMON_MEMORY_HPP_

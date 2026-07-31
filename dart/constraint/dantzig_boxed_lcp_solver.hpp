@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#pragma once
 
 #include <dart/constraint/boxed_lcp_solver.hpp>
 
@@ -66,5 +65,3 @@ public:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_

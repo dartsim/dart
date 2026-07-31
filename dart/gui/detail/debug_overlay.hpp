@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_DEBUG_OVERLAY_HPP_
-#define DART_GUI_DETAIL_DEBUG_OVERLAY_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/backend_fwd.hpp>
@@ -125,5 +124,3 @@ void refreshSelectionDebugLineOverlay(
     std::optional<Renderable>& overlay);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_DEBUG_OVERLAY_HPP_

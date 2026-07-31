@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_PANEL_HPP_
-#define DART_GUI_DETAIL_PANEL_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
@@ -70,5 +69,3 @@ void renderApplicationPanels(
     bool dockingEnabled);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_PANEL_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONRESULT_HPP_
-#define DART_COLLISION_COLLISIONRESULT_HPP_
+#pragma once
 
 #include <dart/collision/contact.hpp>
 
@@ -102,5 +101,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONRESULT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SCREWJOINT_HPP_
-#define DART_DYNAMICS_SCREWJOINT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/screw_joint_aspect.hpp>
 
@@ -124,5 +123,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SCREWJOINT_HPP_

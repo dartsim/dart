@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_TRIMESH_HPP_
-#define DART_MATH_TRIMESH_HPP_
+#pragma once
 
 #include <dart/math/mesh.hpp>
 
@@ -148,5 +147,3 @@ using TriMeshd = TriMesh<double>;
 } // namespace dart
 
 #include <dart/math/detail/tri_mesh-impl.hpp>
-
-#endif // DART_MATH_TRIMESH_HPP_

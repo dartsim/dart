@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENTITYNODE_HPP_
-#define DART_DYNAMICS_ENTITYNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/entity_node_aspect.hpp>
 
@@ -74,5 +73,3 @@ public:
 } // namespace dart
 
 #include <dart/dynamics/detail/entity_node.hpp>
-
-#endif // DART_DYNAMICS_ENTITYNODE_HPP_

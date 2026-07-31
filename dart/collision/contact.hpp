@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_CONTACT_HPP_
-#define DART_COLLISION_CONTACT_HPP_
+#pragma once
 
 #include <dart/collision/fwd.hpp>
 
@@ -128,5 +127,3 @@ struct DART_API Contact
 } // namespace dart
 
 #include <dart/collision/detail/contact-impl.hpp>
-
-#endif // DART_COLLISION_CONTACT_HPP_

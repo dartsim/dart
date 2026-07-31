@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_URI_HPP_
-#define DART_COMMON_URI_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -226,5 +225,3 @@ private:
 
 } // namespace common
 } // namespace dart
-
-#endif // ifndef DART_COMMON_URI_HPP_

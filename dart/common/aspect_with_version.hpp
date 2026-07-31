@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ASPECTWITHVERSION_HPP_
-#define DART_COMMON_ASPECTWITHVERSION_HPP_
+#pragma once
 
 #include <dart/common/detail/aspect_with_version.hpp>
 
@@ -175,5 +174,3 @@ constexpr void (*AspectWithStateAndVersionedProperties<
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_ASPECTWITHVERSION_HPP_

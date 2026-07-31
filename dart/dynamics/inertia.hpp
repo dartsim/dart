@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_INERTIA_HPP_
-#define DART_DYNAMICS_INERTIA_HPP_
+#pragma once
 
 #include <dart/math/math_types.hpp>
 
@@ -181,5 +180,3 @@ public:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_INERTIA_HPP_

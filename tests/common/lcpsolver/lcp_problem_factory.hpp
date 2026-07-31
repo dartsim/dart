@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCP_PROBLEM_FACTORY_HPP_
-#define DART_TESTS_LCP_PROBLEM_FACTORY_HPP_
+#pragma once
 
 #include <dart/math/lcp/lcp_types.hpp>
 
@@ -280,10 +279,9 @@ public:
   static FactoryProblem activeFrictionIndexContact()
   {
     Eigen::MatrixXd A(6, 6);
-    A << 3.0, 0.12, 0.04, 0.08, 0.02, 0.0, 0.12, 2.4, 0.08,
-        0.01, 0.04, 0.0, 0.04, 0.08, 2.1, 0.0, 0.0, 0.03, 0.08,
-        0.01, 0.0, 2.8, 0.10, 0.05, 0.02, 0.04, 0.0, 0.10, 2.2,
-        0.07, 0.0, 0.0, 0.03, 0.05, 0.07, 2.0;
+    A << 3.0, 0.12, 0.04, 0.08, 0.02, 0.0, 0.12, 2.4, 0.08, 0.01, 0.04, 0.0,
+        0.04, 0.08, 2.1, 0.0, 0.0, 0.03, 0.08, 0.01, 0.0, 2.8, 0.10, 0.05, 0.02,
+        0.04, 0.0, 0.10, 2.2, 0.07, 0.0, 0.0, 0.03, 0.05, 0.07, 2.0;
 
     Eigen::VectorXd xStar(6);
     xStar << 0.6, 0.30, -0.24, 0.35, -0.175, 0.05;
@@ -352,9 +350,8 @@ public:
   static FactoryProblem nearSingular4d()
   {
     Eigen::Matrix4d A;
-    A << 0.0010, 0.0001, 0.0000, 0.0000, 0.0001, 1.0000, 0.0200,
-        0.0000, 0.0000, 0.0200, 2.0000, 0.0200, 0.0000, 0.0000, 0.0200,
-        4.0000;
+    A << 0.0010, 0.0001, 0.0000, 0.0000, 0.0001, 1.0000, 0.0200, 0.0000, 0.0000,
+        0.0200, 2.0000, 0.0200, 0.0000, 0.0000, 0.0200, 4.0000;
     Eigen::Vector4d xStar(0.25, 0.20, 0.30, 0.15);
     Eigen::Vector4d b = A * xStar;
 
@@ -522,5 +519,3 @@ private:
 };
 
 } // namespace dart::test
-
-#endif // DART_TESTS_LCP_PROBLEM_FACTORY_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_INVERSEKINEMATICS_HPP_
-#define DART_DYNAMICS_INVERSEKINEMATICS_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/jacobian_node.hpp>
@@ -1375,5 +1374,3 @@ protected:
 } // namespace dart
 
 #include <dart/dynamics/detail/inverse_kinematics.hpp>
-
-#endif // DART_DYNAMICS_INVERSEKINEMATICS_HPP_

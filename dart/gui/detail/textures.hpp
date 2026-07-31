@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_TEXTURES_HPP_
-#define DART_GUI_DETAIL_TEXTURES_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 
@@ -93,5 +92,3 @@ void setPbrTextureParameters(
     TextureColorSpace colorSpace);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_TEXTURES_HPP_

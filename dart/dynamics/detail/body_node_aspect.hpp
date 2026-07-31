@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -143,5 +142,3 @@ using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_

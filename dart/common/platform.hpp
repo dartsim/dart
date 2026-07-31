@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_PLATFORM_HPP_
-#define DART_COMMON_PLATFORM_HPP_
+#pragma once
 
 // Operating systems and architectures
 #if defined(__linux__)
@@ -97,5 +96,3 @@
 #ifndef DART_ARCH_64BITS
   #define DART_ARCH_64BITS 0
 #endif
-
-#endif // DART_COMMON_PLATFORM_HPP_

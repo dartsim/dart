@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
-#define DART_COLLISION_DISTANCE_OPTION_HPP_
+#pragma once
 
 #include <dart/collision/fwd.hpp>
 
@@ -78,5 +77,3 @@ struct DART_API DistanceOption
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DISTANCE_OPTION_HPP_

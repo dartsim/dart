@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_SDF_WRITER_HPP_
-#define DART_IO_SDF_WRITER_HPP_
+#pragma once
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -91,5 +90,3 @@ common::Result<std::string, common::Error> DART_IO_API tryWriteSkeletonToString(
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_SDF_WRITER_HPP_

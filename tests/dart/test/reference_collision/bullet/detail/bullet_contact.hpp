@@ -30,12 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
-#define DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_
+#pragma once
 
-#include "dart/test/reference_collision/bullet/bullet_include.hpp"
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/contact.hpp"
+#include "dart/test/reference_collision/bullet/bullet_include.hpp"
 
 namespace dart::collision::bullet::detail {
 
@@ -56,5 +55,3 @@ inline bool shouldReportContact(
 }
 
 } // namespace dart::collision::bullet::detail
-
-#endif // DART_COLLISION_BULLET_DETAIL_BULLETCONTACT_HPP_

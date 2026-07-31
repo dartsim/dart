@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
-#define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -157,5 +156,3 @@ struct DefaultCombiner
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_DETAIL_CONNECTIONBODY_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FRAME_HPP_
-#define DART_DYNAMICS_FRAME_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
 
@@ -382,5 +381,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_FRAME_HPP_

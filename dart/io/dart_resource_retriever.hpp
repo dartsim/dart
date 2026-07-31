@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_DARTRESOURCERETRIEVER_HPP_
-#define DART_IO_DARTRESOURCERETRIEVER_HPP_
+#pragma once
 
 #include <dart/common/resource_retriever.hpp>
 
@@ -104,5 +103,3 @@ using DartResourceRetrieverPtr = std::shared_ptr<DartResourceRetriever>;
 
 } // namespace io
 } // namespace dart
-
-#endif // ifndef DART_IO_DARTRESOURCERETRIEVER_HPP_

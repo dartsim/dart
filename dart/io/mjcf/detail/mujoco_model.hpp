@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_MUJOCOMODEL_HPP_
-#define DART_IO_MJCF_DETAIL_MUJOCOMODEL_HPP_
+#pragma once
 
 #include <dart/common/resource_retriever.hpp>
 #include <dart/common/uri.hpp>
@@ -121,5 +120,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_MUJOCOMODEL_HPP_

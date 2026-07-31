@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_RENDER_CONTEXT_HPP_
-#define DART_GUI_DETAIL_RENDER_CONTEXT_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/fwd.hpp>
@@ -84,5 +83,3 @@ void endFilamentFrame(FilamentRenderContext& context);
 void destroyFilamentRenderContext(FilamentRenderContext& context);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_RENDER_CONTEXT_HPP_

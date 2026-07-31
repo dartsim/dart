@@ -30,8 +30,7 @@
  *   DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_RENDERABLE_FACTORY_HPP_
-#define DART_GUI_DETAIL_RENDERABLE_FACTORY_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/backend_fwd.hpp>
@@ -67,5 +66,3 @@ std::optional<Renderable> createRenderableFromDescriptor(
     const dart::gui::RenderableDescriptor& descriptor);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_RENDERABLE_FACTORY_HPP_

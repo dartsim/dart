@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_RENDER_ENVIRONMENT_HPP_
-#define DART_GUI_DETAIL_RENDER_ENVIRONMENT_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/fwd.hpp>
@@ -123,5 +122,3 @@ void updateOrbitingKeyLight(
     double orbitPeriodSeconds);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_RENDER_ENVIRONMENT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_VIRTUAL_HPP_
-#define DART_COMMON_VIRTUAL_HPP_
+#pragma once
 
 namespace dart {
 namespace common {
@@ -47,5 +46,3 @@ public:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_VIRTUAL_HPP_

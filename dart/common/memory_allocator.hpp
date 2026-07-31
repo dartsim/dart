@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYALLOCATOR_HPP_
-#define DART_COMMON_MEMORYALLOCATOR_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -144,5 +143,3 @@ public:
 } // namespace dart::common
 
 #include <dart/common/detail/memory_allocator-impl.hpp>
-
-#endif // DART_COMMON_MEMORYALLOCATOR_HPP_

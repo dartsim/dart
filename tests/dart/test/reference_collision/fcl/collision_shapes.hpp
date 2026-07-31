@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
-#define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -346,5 +345,3 @@ template <class BV>
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_

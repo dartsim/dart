@@ -36,8 +36,7 @@
 
 #include <span>
 
-#ifndef DART_DYNAMICS_GROUP_HPP_
-  #define DART_DYNAMICS_GROUP_HPP_
+#pragma once
 
 namespace dart {
 namespace dynamics {
@@ -266,5 +265,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_GROUP_HPP_

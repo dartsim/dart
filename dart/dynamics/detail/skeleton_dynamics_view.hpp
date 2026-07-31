@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SKELETONDYNAMICSVIEW_HPP_
-#define DART_DYNAMICS_DETAIL_SKELETONDYNAMICSVIEW_HPP_
+#pragma once
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/detail/articulated_dynamics_algorithms.hpp>
@@ -142,5 +141,3 @@ private:
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_SKELETONDYNAMICSVIEW_HPP_

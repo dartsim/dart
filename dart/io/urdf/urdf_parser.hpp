@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_URDF_URDFPARSER_HPP_
-#define DART_IO_URDF_URDFPARSER_HPP_
+#pragma once
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -241,5 +240,3 @@ private:
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_URDF_URDFPARSER_HPP_

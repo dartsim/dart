@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_MESH_HPP_
-#define DART_MATH_MESH_HPP_
+#pragma once
 
 #include <Eigen/Core>
 
@@ -111,5 +110,3 @@ using Meshd = Mesh<double>;
 } // namespace dart
 
 #include <dart/math/detail/mesh-impl.hpp>
-
-#endif // DART_MATH_MESH_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDFORASPECT_HPP_
-#define DART_COMMON_SPECIALIZEDFORASPECT_HPP_
+#pragma once
 
 #include <dart/common/composite.hpp>
 #include <dart/common/composite_joiner.hpp>
@@ -209,5 +208,3 @@ public:
 } // namespace dart
 
 #include <dart/common/detail/specialized_for_aspect.hpp>
-
-#endif // DART_COMMON_SPECIALIZEDFORASPECT_HPP_

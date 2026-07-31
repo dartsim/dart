@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_NODE_HPP_
-#define DART_DYNAMICS_NODE_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -269,5 +268,3 @@ protected:
 } // namespace dart
 
 #include <dart/dynamics/detail/node.hpp>
-
-#endif // DART_DYNAMICS_NODE_HPP_

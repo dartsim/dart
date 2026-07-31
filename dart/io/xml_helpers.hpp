@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_XMLHELPERS_HPP_
-#define DART_IO_XMLHELPERS_HPP_
+#pragma once
 
 #include <dart/math/geometry.hpp>
 #include <dart/math/math_types.hpp>
@@ -239,5 +238,3 @@ DART_IO_API std::string toString(tinyxml2::XMLError errorCode);
 } // namespace dart
 
 #include <dart/io/detail/xml_helpers-impl.hpp>
-
-#endif // #ifndef DART_IO_XMLHELPERS_HPP_

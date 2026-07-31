@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_UI_FRAME_HPP_
-#define DART_GUI_DETAIL_UI_FRAME_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/fwd.hpp>
@@ -65,5 +64,3 @@ void updateFrameUi(
     const char* backendName);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_UI_FRAME_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_OPTIMIZATION_FWD_HPP_
-#define DART_MATH_OPTIMIZATION_FWD_HPP_
+#pragma once
 
 // Forward declarations for dart/math/optimization. These live here rather than
 // in dart/math/fwd.hpp because that header pulls in Eigen and defines the
@@ -51,5 +50,3 @@ class Solver;
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_OPTIMIZATION_FWD_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_
-#define DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_
+#pragma once
 
 namespace dart {
 namespace dynamics {
@@ -47,5 +46,3 @@ enum class CoordinateChart : int
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_JOINTCOORDINATECHART_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/mimic_dof_properties.hpp>
 
@@ -169,5 +168,3 @@ public:
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_JOINTASPECT_HPP_

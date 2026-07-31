@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
+#pragma once
+
+#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/fwd.hpp>
-#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 namespace dart {
 namespace collision {
@@ -91,5 +91,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_

@@ -30,13 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_SMARTPOINTER_HPP_
-#define DART_COLLISION_SMARTPOINTER_HPP_
+#pragma once
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 7.0. "                            \
     "Please include dart/collision/fwd.hpp instead.")
 
 #include <dart/collision/fwd.hpp>
-
-#endif // DART_COLLISION_SMARTPOINTER_HPP_

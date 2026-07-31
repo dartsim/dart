@@ -30,12 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_SCENE_HPP_
-#define DART_GUI_SCENE_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/interaction.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
-
-#endif // DART_GUI_SCENE_HPP_

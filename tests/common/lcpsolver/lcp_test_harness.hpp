@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCPTESTHARNESS_HPP_
-#define DART_TESTS_LCPTESTHARNESS_HPP_
+#pragma once
 
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_validation.hpp>
@@ -211,5 +210,3 @@ inline std::string DescribeReport(const LcpSolveReport& report)
 }
 
 } // namespace dart::test
-
-#endif // DART_TESTS_LCPTESTHARNESS_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_APPLICATION_HPP_
-#define DART_GUI_DETAIL_APPLICATION_HPP_
+#pragma once
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/fwd.hpp>
@@ -111,5 +110,3 @@ int runGuiBackendApplication(
     int argc, char* argv[], const dart::gui::ApplicationOptions& options);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_APPLICATION_HPP_

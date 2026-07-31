@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_ICOSPHERE_HPP_
-#define DART_MATH_ICOSPHERE_HPP_
+#pragma once
 
 #include <dart/math/tri_mesh.hpp>
 
@@ -103,5 +102,3 @@ using Icosphered = Icosphere<double>;
 } // namespace dart
 
 #include <dart/math/detail/icosphere-impl.hpp>
-
-#endif // DART_MATH_ICOSPHERE_HPP_

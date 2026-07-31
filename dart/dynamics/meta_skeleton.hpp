@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_METASKELETON_HPP_
-#define DART_DYNAMICS_METASKELETON_HPP_
+#pragma once
 
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -1009,5 +1008,3 @@ public:
 } // namespace dart
 
 #include <dart/dynamics/detail/meta_skeleton-impl.hpp>
-
-#endif // DART_DYNAMICS_METASKELETON_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_VIEWER_HPP_
-#define DART_GUI_VIEWER_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/fwd.hpp>
@@ -421,5 +420,3 @@ DART_GUI_API OrbitCamera fitOrbitCameraToViewport(
     double margin = 1.0);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_VIEWER_HPP_

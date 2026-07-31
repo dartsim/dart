@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_NAMEMANAGER_HPP_
-#define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -317,5 +316,3 @@ const std::string& NameManager<T>::getManagerName() const
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_DETAIL_NAMEMANAGER_HPP_

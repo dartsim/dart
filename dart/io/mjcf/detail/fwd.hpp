@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_FWD_HPP_
-#define DART_IO_MJCF_DETAIL_FWD_HPP_
+#pragma once
 
 namespace dart {
 namespace io {
@@ -45,5 +44,3 @@ class Size;
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_MJCF_DETAIL_FWD_HPP_

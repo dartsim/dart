@@ -8,8 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_
-#define DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_
+#pragma once
 
 #include "memory_diagnostics_model.hpp"
 
@@ -37,5 +36,3 @@ gui::Panel createMemoryDiagnosticsPanel(
     std::function<const simulation::World*()> worldProvider);
 
 } // namespace dart::examples::demos
-
-#endif // DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_HPP_

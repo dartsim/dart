@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONGROUP_HPP_
-#define DART_COLLISION_COLLISIONGROUP_HPP_
+#pragma once
 
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
@@ -595,5 +594,3 @@ private:
 } // namespace dart
 
 #include <dart/collision/detail/collision_group.hpp>
-
-#endif // DART_COLLISION_COLLISIONGROUP_HPP_

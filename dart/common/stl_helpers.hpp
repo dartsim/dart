@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_HPP_
-#define DART_COMMON_STLHELPERS_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -60,5 +59,3 @@ static T getVectorObjectIfAvailable(std::size_t index, std::span<const T> vec)
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_STLHELPERS_HPP_

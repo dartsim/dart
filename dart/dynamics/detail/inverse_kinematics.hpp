@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
-#define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
+#pragma once
 
 #include <dart/dynamics/inverse_kinematics.hpp>
 
@@ -81,5 +80,3 @@ void InverseKinematics::setDofs(std::span<DegreeOfFreedomT* const> _dofs)
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_

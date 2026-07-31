@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_HPP_
-#define DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_HPP_
+#pragma once
 
 //==============================================================================
 /// This macro provides the implementation for most of the member functions in
@@ -55,5 +54,3 @@
     ReturnType, ClassName, Function, Suffix, Args)                             \
   DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(                    \
       ReturnType, ClassName, Function, Suffix, isSpecializedFor, Args)
-
-#endif // DART_COMMON_DETAIL_TEMPLATEJOINERDISPATCHMACRO_HPP_

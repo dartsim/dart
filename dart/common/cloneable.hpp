@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CLONEABLE_HPP_
-#define DART_COMMON_CLONEABLE_HPP_
+#pragma once
 
 #include <dart/common/memory.hpp>
 
@@ -321,5 +320,3 @@ private:
 } // namespace dart
 
 #include <dart/common/detail/cloneable.hpp>
-
-#endif // DART_COMMON_CLONEABLE_HPP_

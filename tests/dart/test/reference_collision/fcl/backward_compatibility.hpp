@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
-#define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -149,5 +148,3 @@ dart::collision::fcl::Vector3 DART_API transform(
 } // namespace fcl
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_

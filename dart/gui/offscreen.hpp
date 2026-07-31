@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OFFSCREEN_HPP_
-#define DART_GUI_OFFSCREEN_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
@@ -139,5 +138,3 @@ DART_GUI_API void compositeDebugLabels(
     bool backdrop = true);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_OFFSCREEN_HPP_

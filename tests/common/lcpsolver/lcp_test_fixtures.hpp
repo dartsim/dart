@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCPTESTFIXTURES_HPP_
-#define DART_TESTS_LCPTESTFIXTURES_HPP_
+#pragma once
 
 #include <dart/math/lcp/lcp_types.hpp>
 
@@ -229,5 +228,3 @@ inline std::vector<LcpFixture> getFrictionIndexFixtures()
 }
 
 } // namespace dart::test
-
-#endif // DART_TESTS_LCPTESTFIXTURES_HPP_

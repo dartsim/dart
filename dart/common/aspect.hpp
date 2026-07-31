@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ASPECT_HPP_
-#define DART_COMMON_ASPECT_HPP_
+#pragma once
 
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/cloneable.hpp>
@@ -212,5 +211,3 @@ protected:
   DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)
 
 #include <dart/common/detail/aspect.hpp>
-
-#endif // DART_COMMON_ASPECT_HPP_

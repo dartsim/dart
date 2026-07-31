@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_BACKEND_FWD_HPP_
-#define DART_GUI_DETAIL_BACKEND_FWD_HPP_
+#pragma once
 
 // Forward declarations for the third-party rendering and UI backends used by
 // dart::gui. Neither Filament, GLFW, nor Dear ImGui ships a forward-declaration
@@ -61,5 +60,3 @@ struct GLFWwindow;
 
 struct ImDrawData;
 struct ImGuiIO;
-
-#endif // DART_GUI_DETAIL_BACKEND_FWD_HPP_

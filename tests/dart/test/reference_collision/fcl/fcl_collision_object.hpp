@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#pragma once
+
+#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 #include <dart/collision/collision_object.hpp>
-#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 #include <dart/export.hpp>
 
@@ -81,5 +81,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_

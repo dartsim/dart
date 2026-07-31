@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FIXEDFRAME_HPP_
-#define DART_DYNAMICS_FIXEDFRAME_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/fixed_frame_aspect.hpp>
 #include <dart/dynamics/frame.hpp>
@@ -101,5 +100,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_FIXEDFRAME_HPP_

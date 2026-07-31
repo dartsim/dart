@@ -30,13 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SMARTPOINTER_HPP_
-#define DART_DYNAMICS_SMARTPOINTER_HPP_
+#pragma once
 
 #pragma message(                                                               \
     "This header has been deprecated in DART 7.0. "                            \
     "Please include dart/dynamics/fwd.hpp instead.")
 
 #include <dart/dynamics/fwd.hpp>
-
-#endif // DART_DYNAMICS_SMARTPOINTER_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCPTESTPROBLEMS_HPP_
-#define DART_TESTS_LCPTESTPROBLEMS_HPP_
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -397,5 +396,3 @@ public:
 
 } // namespace test
 } // namespace dart
-
-#endif // DART_TESTS_LCPTESTPROBLEMS_HPP_

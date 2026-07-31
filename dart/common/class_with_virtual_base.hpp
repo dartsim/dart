@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
-#define DART_COMMON_CLASSWITHVIRTUALBASE_HPP_
+#pragma once
 
 // MSVC requires "construction displacement" (vtordisp) metadata to safely use
 // RTTI (e.g., dynamic_cast) on objects with virtual base classes while they are
@@ -62,5 +61,3 @@
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 #endif
-
-#endif // DART_COMMON_CLASSWITHVIRTUALBASE_HPP_

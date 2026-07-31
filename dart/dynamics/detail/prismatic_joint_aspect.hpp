@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
@@ -83,5 +82,3 @@ using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_

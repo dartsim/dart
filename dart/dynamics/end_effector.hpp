@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENDEFFECTOR_HPP_
-#define DART_DYNAMICS_ENDEFFECTOR_HPP_
+#pragma once
 
 #include <dart/dynamics/composite_node.hpp>
 #include <dart/dynamics/detail/end_effector_aspect.hpp>
@@ -154,5 +153,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_ENDEFFECTOR_HPP_

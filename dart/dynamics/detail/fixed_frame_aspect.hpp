@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -53,5 +52,3 @@ struct DART_API FixedFrameProperties
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_HPP_

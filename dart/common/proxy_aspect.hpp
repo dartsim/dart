@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_PROXYASPECT_HPP_
-#define DART_COMMON_PROXYASPECT_HPP_
+#pragma once
 
 #include <dart/common/detail/proxy_aspect.hpp>
 
@@ -89,5 +88,3 @@ public:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_PROXYASPECT_HPP_

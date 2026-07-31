@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_TYPES_HPP_
-#define DART_IO_MJCF_DETAIL_TYPES_HPP_
+#pragma once
 
 #include <dart/common/platform.hpp>
 
@@ -143,5 +142,3 @@ enum class ActuatorType
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_TYPES_HPP_

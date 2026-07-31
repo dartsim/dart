@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_PANEL_HPP_
-#define DART_GUI_PANEL_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/fwd.hpp>
@@ -354,5 +353,3 @@ struct Panel
 };
 
 } // namespace dart::gui
-
-#endif // DART_GUI_PANEL_HPP_

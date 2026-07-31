@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_COMPILER_HPP_
-#define DART_IO_MJCF_DETAIL_COMPILER_HPP_
+#pragma once
 
 #include <dart/common/platform.hpp>
 #include <dart/common/resource_retriever.hpp>
@@ -111,5 +110,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_COMPILER_HPP_

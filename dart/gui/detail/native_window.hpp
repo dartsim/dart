@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_NATIVE_WINDOW_HPP_
-#define DART_GUI_DETAIL_NATIVE_WINDOW_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/fwd.hpp>
@@ -81,5 +80,3 @@ void resizeAutomaticApplicationWindow(
 bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_NATIVE_WINDOW_HPP_

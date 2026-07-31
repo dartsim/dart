@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_
-#define DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_
+#pragma once
 
 #include <dart/dynamics/ik_fast.hpp>
 
@@ -143,5 +142,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SHAREDLIBRARYIKFAST_HPP_

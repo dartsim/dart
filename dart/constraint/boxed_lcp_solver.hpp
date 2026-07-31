@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
+#pragma once
 
 #include <dart/common/castable.hpp>
 #include <dart/common/deprecated.hpp>
@@ -80,5 +79,3 @@ public:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_

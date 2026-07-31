@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
-#define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -149,5 +148,3 @@ protected:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_CONSTRAINTBASE_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GEOMETRY_HPP_
-#define DART_GUI_GEOMETRY_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 
@@ -106,5 +105,3 @@ DART_GUI_API MeshGeometry makePyramidMeshGeometry(const Eigen::Vector3d& size);
 DART_GUI_API MeshGeometry makeCapsuleMeshGeometry(double radius, double height);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_GEOMETRY_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_CHAIN_HPP_
-#define DART_DYNAMICS_CHAIN_HPP_
+#pragma once
 
 #include <dart/dynamics/linkage.hpp>
 
@@ -140,5 +139,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_CHAIN_HPP_

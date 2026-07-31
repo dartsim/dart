@@ -397,6 +397,9 @@ compatibility remains on the active DART 6 LTS branch._
   its own `fwd.hpp`, adding `dart/common/fwd.hpp` and
   `dart/math/optimization/fwd.hpp`; `pixi run check-fwd-headers` keeps consumers
   from hand-rolling their own declarations.
+- Standardized first-party headers on `#pragma once`, replacing 396 macro
+  include guards; vendored code and generated files keep their upstream form,
+  and `pixi run check-header-guards` enforces the convention.
 
 #### Build, Packaging, and Developer Tooling
 

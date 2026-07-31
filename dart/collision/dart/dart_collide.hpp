@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLIDE_HPP_
-#define DART_COLLISION_DART_DARTCOLLIDE_HPP_
+#pragma once
 
 #include <dart/collision/collision_detector.hpp>
 
@@ -103,5 +102,3 @@ DART_API int collideCylinderPlane(
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DART_DARTCOLLIDE_HPP_

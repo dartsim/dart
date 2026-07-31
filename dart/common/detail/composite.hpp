@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_COMPOSITE_HPP_
-#define DART_COMMON_DETAIL_COMPOSITE_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -244,5 +243,3 @@ void createAspects(T* comp)
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_ASPECT(AspectName)                               \
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(AspectName, AspectName);
-
-#endif // DART_COMMON_DETAIL_COMPOSITE_HPP_

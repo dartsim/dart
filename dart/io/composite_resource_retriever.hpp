@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_COMPOSITERESOURCERETRIEVER_HPP_
-#define DART_IO_COMPOSITERESOURCERETRIEVER_HPP_
+#pragma once
 
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/resource_retriever.hpp>
@@ -98,5 +97,3 @@ using CompositeResourceRetrieverPtr
 
 } // namespace io
 } // namespace dart
-
-#endif // ifndef DART_IO_COMPOSITERESOURCERETRIEVER_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_COMPOSITEJOINER_HPP_
-#define DART_COMMON_COMPOSITEJOINER_HPP_
+#pragma once
 
 #include <dart/common/composite.hpp>
 #include <dart/common/empty.hpp>
@@ -156,5 +155,3 @@ public:
 } // namespace dart
 
 #include <dart/common/detail/composite_joiner.hpp>
-
-#endif // DART_COMMON_COMPOSITEJOINER_HPP_

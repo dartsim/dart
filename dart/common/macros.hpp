@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MACROS_HPP_
-#define DART_COMMON_MACROS_HPP_
+#pragma once
 
 #include <dart/common/logging.hpp>
 
@@ -112,5 +111,3 @@
 #define DART_NOT_IMPLEMENTED                                                   \
   DART_FATAL("Not implemented: {}:{}", __FILE__, __LINE__);                    \
   void(0)
-
-#endif

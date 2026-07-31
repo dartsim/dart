@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_IKFAST_HPP_
-#define DART_DYNAMICS_IKFAST_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -278,5 +277,3 @@ DART_API bool wrapCyclicSolution(
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_IKFAST_HPP_

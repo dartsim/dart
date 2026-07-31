@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_
-#define DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/fixed_jacobian_node.hpp>
 
@@ -166,5 +165,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_FIXEDJACOBIANNODE_HPP_

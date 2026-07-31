@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAPENODE_HPP_
-#define DART_DYNAMICS_SHAPENODE_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/shape_node.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -140,5 +139,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SHAPENODE_HPP_

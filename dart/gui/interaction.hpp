@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_INTERACTION_HPP_
-#define DART_GUI_INTERACTION_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
@@ -102,5 +101,3 @@ DART_GUI_API bool rotateFrameRenderable(
     double angle);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_INTERACTION_HPP_

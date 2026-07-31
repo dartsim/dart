@@ -30,13 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_APPLICATION_RUNNER_HPP_
-#define DART_GUI_DETAIL_APPLICATION_RUNNER_HPP_
+#pragma once
 
 namespace dart::gui::detail {
 
 int runGuiApplication(int argc, char* argv[]);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_APPLICATION_RUNNER_HPP_
