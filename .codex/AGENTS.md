@@ -7,5 +7,4 @@ Maintained Codex runtime configuration for DART 6.20.
 - Keep hooks deterministic, non-interactive, offline, and below 30 seconds.
 - Treat the Codex PreToolUse hook as advisory; `pixi run install-hooks` provides
   the cross-tool git enforcement path.
-- Run `pixi run python scripts/check_ai_infrastructure.py --check` after
-  changing config, agents, or hooks.
+- Run `pixi run check-ai-infra` after changing config, agents, or hooks.

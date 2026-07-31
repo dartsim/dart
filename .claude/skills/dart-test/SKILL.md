@@ -12,7 +12,7 @@ Load this skill when writing or debugging tests.
 ```bash
 pixi run test         # Quick test run
 pixi run test-py      # Python tests
-pixi run test-all     # Build all CMake targets
+pixi run test-all     # Build defaults and run C++/Python tests
 pixi run -e gazebo test-gz # Gazebo/gz-physics compatibility gate
 ```
 
@@ -40,7 +40,7 @@ Before submitting PR:
 
 ```bash
 pixi run lint         # Must pass
-pixi run test-all     # Must pass when all CMake targets should build
+pixi run test-all     # Default build plus C++/Python runtime aggregate
 pixi run -e gazebo test-gz # Must pass when Gazebo/gz-physics compatibility could be affected
 ```
 
@@ -67,8 +67,9 @@ only when capture is unavailable or not applicable.
 - `pixi run build` builds libraries only, NOT every test binary. If you run
   `ctest` directly, build the relevant test target first; `pixi run build-tests`
   builds the release-branch test targets.
-- `pixi run test-all` builds all CMake targets on this branch. Pair it with
-  `pixi run lint`, `pixi run test`, and `pixi run test-py` when those gates are
-  required for the touched surface.
+- `pixi run test-all` builds the default CMake `ALL` graph. The branch config
+  pins `BUILD_TESTING=ON`, so that graph also runs CTest and pytest. Pair it
+  with `pixi run lint`; use `pixi run test` or `pixi run test-py` for focused
+  reruns and clearer failure attribution.
 - For package, collision, constraint, or dependency changes that could affect
   downstream users, run `pixi run -e gazebo test-gz` when practical.

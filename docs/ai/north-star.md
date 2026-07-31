@@ -9,6 +9,9 @@ Near-term AI-assisted work should prioritize:
 - one-dependency or one-vendored-tree cleanup PRs;
 - compatibility evidence for package components and installed headers;
 - release-branch CI and Gazebo gates;
+- branch-local model/tool audits that keep durable project context and
+  text-first, semantically inspected OSG verification discoverable as agents
+  evolve;
 - living roadmap state in `docs/plans/dashboard.md`;
 - clean handoffs through `docs/dev_tasks/`;
 - durable decisions promoted to `docs/design/`, `docs/onboarding/`,
