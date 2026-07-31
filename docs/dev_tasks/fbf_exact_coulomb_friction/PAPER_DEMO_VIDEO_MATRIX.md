@@ -4,6 +4,26 @@ Status: active draft gate for PR #3377. The PR must remain draft until every
 required row below has a current GitHub-hosted video URL and passes its solver,
 physical-outcome, and claim-boundary checks.
 
+## 2026-07-30 Review-Fix Runtime Currency Boundary
+
+Runtime checkpoint `0acffc45b81184ef56dbc53ee60f6e25786102c2`
+postdates the Figure 3, Figure 8, ten-level, and CPU bundles recorded below.
+It changes strict failure gating, Native contact-gap clone remapping, and
+soft-body split-impulse state preservation. Therefore every existing video
+URL and local bundle remains byte-valid captured-checkpoint evidence only; no
+slot is currently promoted as runtime-current for `0acffc45b81`.
+
+The current `World` default is still boxed LCP with FCL primitive collision.
+Exact FBF is opt-in and its boxed fallback defaults on. This compatibility
+default does not relax any media row: strict lanes explicitly disable fallback
+and use the cumulative exact-failure count as the step-wide gate.
+
+Fresh evidence order is Figure 3, Figure 8, then the paired ten-level
+continuation presentation, each from a fresh ignored root and one unchanged
+pushed head. Changed MP4 bytes require a new browser-created GitHub
+user-attachment plus download/hash verification. Never commit the clips or
+generated capture state. Keep PR #3377 draft and do not request review.
+
 ## 2026-07-30 Current-Head Figure 8 Upload Delta
 
 Fresh current-head Figure 8 evidence under ignored

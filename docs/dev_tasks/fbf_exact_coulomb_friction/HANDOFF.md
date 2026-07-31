@@ -1,8 +1,8 @@
 # Fresh Session Handoff Prompt
 
-Use the first prompt below. It reflects the 2026-07-30 current-head
-checkpoint in [RESUME.md](RESUME.md) and supersedes every archived
-prompt later in this file.
+Use the first prompt below. It reflects the 2026-07-30 review-fix checkpoint
+in [RESUME.md](RESUME.md) and supersedes every archived prompt later in this
+file.
 
 ```text
 Continue the active DART 6.20 exact-Coulomb FBF task in:
@@ -23,27 +23,30 @@ Durable branch:
 
   research/fbf-friction-release620
 
-Latest pushed evidence capture head:
+Code/runtime checkpoint (the handoff commit is a docs-only descendant):
 
-  c1ccf49e64aec1bc6f02f1a77e0fe7133288300c
+  0acffc45b81184ef56dbc53ee60f6e25786102c2
 
-Matching pushed code/runtime checkpoint:
+Merged release-6.20 target:
 
-  91eea8541b8908f00a3d21717f0bb832320490ec
+  aaf1e5f64dd47f0350ea1b395bf257bb77b36829
 
-The capture head is a documentation-only descendant of the runtime checkpoint
-below. That runtime checkpoint contains release-6.20 tip
-aaf1e5f64dd47f0350ea1b395bf257bb77b36829. Query the live branch and PR
-#3377 before acting. At the 2026-07-30 handoff the PR is open, draft, and
-mergeable, and every reported hosted check was terminal green except one
-intentional skip. Keep it draft, requery mutable CI, and do not trigger
+The target is present through merge
+91eea8541b8908f00a3d21717f0bb832320490ec. Query the live branch, target,
+PR #3377, checks, and review threads before acting. At the 2026-07-30
+17:29 PDT handoff the worktree was clean, local and remote topic heads
+matched, the PR was open and draft, and fresh hosted checks were still
+running. Keep it draft, classify only current-head checks, and do not trigger
 @codex review.
 
-Commit f36d28eea97 is the Figure 3 documentation seal and fixed execution head
-for the CPU packet; it does not change the runtime hashes below. Preserve the
-later CPU and Figure 8 handoff edits. Before the next commit, run pixi run
-lint and git diff --check, fetch the target, merge it if advanced, and then
-create and push the authorized checkpoint.
+Head 0acffc45b81 closes three valid review findings: strict callers now gate a
+World step on the cumulative exact-failure count; World clone remaps Native
+contact-gap pointer keys to cloned shape frames; and split-impulse position
+solving restores soft-body PointMass velocity-phase impulses. Mandatory lint,
+a compiler-cache-disabled build, the three focused regressions, and the full
+ConstraintSolver, World, exact-solver, and split-impulse suites pass. Do not
+reply to or resolve the three AI review threads, and do not request a new
+review without explicit approval.
 
 Target 46719bf consolidates DART-owned native collision into
 DARTCollisionDetector and removes the public NativeCollisionDetector
@@ -67,21 +70,22 @@ the default:
 - DARTCollisionDetector defaults Compact. FourPointPlanar is a paper/demo
   scene policy, not a new global default.
 
-The current-head cache-enabled build of dart-demos, fbf_paper_trace, and the
-focused exact/collision targets passes. Eleven focused C++ tests and all 478
-visual-evidence tests pass. audit-coverage remains 29 canonical rows = 24
-partial + 5 blocked + 0 complete.
+The current no-cache build of dart-demos, fbf_paper_trace, and the focused
+exact/collision targets passes. The three review regressions and all four
+affected complete test suites pass. The previously recorded visual-evidence
+suite has 478/478 passing tests. audit-coverage remains 29 canonical rows =
+24 partial + 5 blocked + 0 complete.
 
 Current runtime hashes:
 
 - dart-demos:
-  9e4f6c37eff34ba450763a2ef47eaab198508c89ad3e03156685620a7c17dc2f
+  4fc7b4315a8292e288957c8ab2a10ec001f4233835c06c60057117ddedb28c6a
 - libdart.so.6.19.4:
-  0ff1c992e9c2d2304c7c314ffff4cfa84ab37ba4c812207edcd4a48e76bbb0ea
+  58fa02a74d4cb945d7a616ea1b900fd9602d54ca4b12673556dfb5caf8b13bf5
 - fbf_paper_trace:
   d0d65b48833d04a68375ddf0c21e6a6464cc6fe795ab49574f641bdaae4e9a3b
 - visual runtime closure:
-  e6f5771523363ebdf4f11887dc5a82b3d563a3e85cf0268346d999b169292a6c
+  must be freshly computed by the next schema-v3 current-head capture
 
 Three synthetic reduced-contact masonry-arch diagnostics no longer converge
 with the consolidated box-box manifold. They remain explicit expected-failing
@@ -89,11 +93,13 @@ opt-in diagnostics behind DART_RUN_FBF_PAPER_STRESS_TESTS=1. The default
 full-manifold 25-stone gate passes. No tolerance or scientific success
 criterion was loosened.
 
-Every pre-46719 performance packet, Figure 8 capture, and ten-level capture
-binds an older collision runtime. The interrupted cross-head ten-level
-exact/partial-boxed pair is non-evidence and must never be combined or resumed.
+Every existing performance packet, Figure 3 capture, Figure 8 capture, and
+ten-level capture predates runtime head 0acffc45b81. The internal validation
+remains valid for each bound checkpoint, but none is current-head evidence.
+The interrupted cross-head ten-level exact/partial-boxed pair is non-evidence
+and must never be combined or resumed.
 
-Fresh current-head Figure 8 evidence is complete under ignored
+Captured-checkpoint Figure 8 evidence is complete under ignored
 assets/pr_media_current_head_c1cc/. Boxed capture and independent reuse
 verification pass at 1,600/1,600, but the standing oracle is false and the
 crown collapses. Exact stops after completed step 209 with iteration_cap;
@@ -109,19 +115,18 @@ d6782a65..., 389e624b..., and bb14a363.... This is only a labeled
 frozen-prefix blocker diagnostic, not a complete exact trajectory, standing
 result, historical Figure 8 invocation, superiority, timing, or paper parity.
 
-The current Figure 8 clip differs from registered slot 08 (5e83527d...).
-Upload the new bytes through the GitHub browser composer and verify the
-resulting user-attachment download before changing the ledger or PR URL.
-Never commit the MP4. The paired ten-level schedule is now the next
-long-running media gate; run exact and boxed from one fresh root and one
-unchanged pushed head. Exact requests source continuation while boxed does
-not, so keep the policy asymmetry explicit and never call it a solver-only A/B.
+That captured-checkpoint Figure 8 clip differs from registered slot 08
+(5e83527d...). Do not upload it as current-head evidence. First recapture and
+reseal Figure 8 against 0acffc45b81; then upload changed bytes through the
+GitHub browser composer and verify the resulting user-attachment download
+before changing the ledger or PR URL. Never commit the MP4.
 
-Fresh Figure 3 capture-time validation passes under ignored
+Captured-checkpoint Figure 3 validation passes under ignored
 assets/pr_media_current_head_cfd865/. That root name was chosen before the
 final target merge; the capture itself ran after 91eea854 and binds the current
-hashes above. Exact and boxed each complete 240 steps / 241 states and pass the
-bounded source outcome. Exact/boxed/group MP4 SHA-256 values are:
+hashes recorded in its metadata, not the new hashes above. Exact and boxed
+each complete 240 steps / 241 states and pass the bounded source outcome.
+Exact/boxed/group MP4 SHA-256 values are:
 
 - b2c268aa337f8d4e753408c1bbf17ca29dc4300597b64782fcb7344f6c676b30
 - dc3228e2aa8cd18798807325ea6a3bc13dbb79cd3564a3a95b520f0bd56ddd7f
@@ -150,7 +155,8 @@ on 2026-07-30, and every byte stream matched its recorded SHA-256. This proves
 attachment integrity only; it does not promote a partial or blocked coverage
 row.
 
-A fresh matched CPU packet ran from clean head f36d28eea97 and trace binary
+A captured-checkpoint matched CPU packet ran from clean head f36d28eea97 and
+trace binary
 d0d65b48... under ignored
 assets/cpu_current_head_f36d28_20260730T070943/. Its qualifying host samples
 were 66 seconds apart: 60 C / load 0.58, then 58 C / load 0.39, with no
@@ -181,10 +187,12 @@ does not make the evidence complete.
 
 Remaining order:
 
-1. freshly capture and independently verify Figure 8;
-2. run the roughly five-hour paired ten-level exact/boxed capture from one
+1. freshly capture and independently verify Figure 3;
+2. freshly capture, finalize, inspect, seal, and independently verify the
+   Figure 8 frozen-prefix blocker diagnostic;
+3. run the roughly five-hour paired ten-level exact/boxed capture from one
    unchanged head; and
-3. upload changed review videos as GitHub user attachments, not repository
+4. upload changed review videos as GitHub user attachments, not repository
    files, then
    update PAPER_DEMO_VIDEO_MATRIX.md and the draft PR body.
 

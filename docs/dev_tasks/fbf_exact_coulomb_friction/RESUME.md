@@ -1,5 +1,103 @@
 # Resume: FBF exact Coulomb friction
 
+## 2026-07-30 Review-Fix Resume Point
+
+This section is the current resume authority. It supersedes every older
+branch-head, runtime-currency, CI, review, and immediate-next-step statement
+below. The task remains active and incomplete.
+
+- Worktree:
+  `/home/js/dev/dartsim/dart/task_6`
+- Branch and code/runtime checkpoint:
+  `research/fbf-friction-release620` at
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`
+- Merged target:
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` through
+  `91eea8541b8908f00a3d21717f0bb832320490ec`
+- PR:
+  <https://github.com/dartsim/dart/pull/3377>, open and draft
+- State immediately before this documentation-only handoff checkpoint:
+  worktree clean, local and remote topic heads equal at the runtime
+  checkpoint, target still an ancestor, and hosted checks in progress. Query
+  the live branch for the handoff commit and its new checks.
+
+The public compatibility contract is:
+
+1. `World::create()` continues to install `BoxedLcpConstraintSolver` and to
+   use the normal FCL detector with primitive collision shapes.
+2. Exact-Coulomb FBF is opt-in:
+   construct `ExactCoulombFbfConstraintSolver` and pass it to
+   `World::setConstraintSolver()`.
+3. `ExactCoulombFbfConstraintSolverOptions::fallbackToBoxedLcp` defaults to
+   `true`. Unsupported or failed groups therefore retain boxed-LCP behavior
+   unless a caller explicitly requests strict diagnostics.
+4. Strict callers set `fallbackToBoxedLcp = false`, snapshot
+   `getNumExactCoulombFailures()` around every `World::step()`, and stop if
+   the cumulative count increases. `getLastExactCoulombStatus()` alone is not
+   a step-wide gate because one step may solve multiple disconnected groups.
+5. Source continuation, source inner initialization, colored BGS, and
+   participant affinity default off. Contact-row Delassus, warm start,
+   adaptive step persistence, and post-correction cone projection default on.
+   `DARTCollisionDetector` defaults to `Compact`; paper/demo scenes request
+   `FourPointPlanar` explicitly.
+
+Review-fix head `0acffc45b81` closes three valid findings:
+
+- strict exact-only documentation and regression coverage now use the
+  cumulative failure counter;
+- `World::clone()` clears copied Native contact-gap pointer keys and rebuilds
+  them from cloned Skeleton and SimpleFrame shape frames; and
+- split-impulse position solving snapshots and restores soft-body `PointMass`
+  constraint impulses in addition to body and joint impulses.
+
+Mandatory `pixi run lint`, a compiler-cache-disabled `pixi run build`, the
+three new focused regressions, and the complete ConstraintSolver, World,
+exact-solver, and split-impulse test suites pass. Current binary SHA-256
+values are:
+
+- `dart-demos`:
+  `4fc7b4315a8292e288957c8ab2a10ec001f4233835c06c60057117ddedb28c6a`
+- `libdart.so.6.19.4`:
+  `58fa02a74d4cb945d7a616ea1b900fd9602d54ca4b12673556dfb5caf8b13bf5`
+- `fbf_paper_trace`:
+  `d0d65b48833d04a68375ddf0c21e6a6464cc6fe795ab49574f641bdaae4e9a3b`
+
+The review fix changes the runtime closure. Treat the Figure 3 root
+`assets/pr_media_current_head_cfd865/`, CPU root
+`assets/cpu_current_head_f36d28_20260730T070943/`, Figure 8 root
+`assets/pr_media_current_head_c1cc/`, and the existing ten-level bundle as
+captured-checkpoint evidence only. Their internal validation remains valid for
+their bound runtime, but none is current-head evidence for `0acffc45b81`.
+
+Immediate order:
+
+1. Requery the worktree, `origin/release-6.20`, PR draft state, checks, and
+   review threads. Merge the target normally before a follow-up push if it
+   advanced. Never rebase or force-push this published branch without separate
+   approval.
+2. Capture and independently verify Figure 3 from a fresh ignored root against
+   the current demo/core/runtime closure. Inspect checker orientation changes
+   manually. Both solvers previously passed, so do not infer superiority.
+3. Capture Figure 8 boxed, finalize the strict exact failed prefix, inspect,
+   seal, and independently verify it from one fresh current-head root. Preserve
+   the frozen-prefix blocker boundary.
+4. Run the paired ten-level exact/boxed source-continuation schedule from one
+   fresh root and unchanged pushed head, then independently verify, fully
+   decode, and inspect it. Exact requests continuation while boxed does not;
+   it is policy-asymmetric presentation, not a solver-only comparison.
+5. Upload any changed clips only through the GitHub browser composer, verify
+   the downloaded user-attachment bytes, synchronize the nine handoff ledgers
+   and draft PR body, run `pixi run lint`, fetch/merge an advanced target,
+   checkpoint, and push.
+
+Keep PR #3377 draft. Do not request review, reply to AI-generated comments,
+resolve review threads, relabel old attachments as current-head, commit
+generated media/raw data, or claim complete paper parity. The net PR has zero
+tracked task assets; `docs/dev_tasks/.gitignore` owns the scalable
+`**/assets/` policy. Published history still contains 492 old evidence blobs,
+so final integration needs a true squash unless a separately approved clean
+review-branch reconstruction occurs.
+
 ## 2026-07-30 Figure 8 Resume Point
 
 This section supersedes every older Figure 8 currency, upload, and immediate

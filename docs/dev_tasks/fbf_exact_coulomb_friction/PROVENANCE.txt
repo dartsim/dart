@@ -8,7 +8,35 @@ Current-runtime closure and PR-media addendum: 2026-07-29
 Post-merge runtime addendum: 2026-07-29
 Latest-target and compact-coverage addendum: 2026-07-29
 Current-head Figure 8 addendum: 2026-07-30
+Review-fix runtime-currency addendum: 2026-07-30
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
+
+Review-fix runtime-currency boundary
+------------------------------------
+
+Code/runtime checkpoint 0acffc45b81184ef56dbc53ee60f6e25786102c2 contains
+release-6.20 target aaf1e5f64dd47f0350ea1b395bf257bb77b36829. It changes
+strict exact-failure gating, Native contact-gap remapping during World clone,
+and soft-body PointMass state preservation during split-impulse solving.
+Mandatory lint, the compiler-cache-disabled build, three focused regressions,
+and the complete ConstraintSolver, World, exact-solver, and split-impulse
+suites pass.
+
+World::create() still defaults to BoxedLcpConstraintSolver with FCL primitive
+collision. ExactCoulombFbfConstraintSolver is opt-in and
+fallbackToBoxedLcp defaults true. Strict evidence sets it false and compares
+the cumulative failure count around every World::step(). Native collision
+defaults to Compact; FourPointPlanar is an explicit paper/demo policy.
+
+Current dart-demos, core DART, and fbf_paper_trace SHA-256 values are
+4fc7b4315a8292e288957c8ab2a10ec001f4233835c06c60057117ddedb28c6a,
+58fa02a74d4cb945d7a616ea1b900fd9602d54ca4b12673556dfb5caf8b13bf5,
+and d0d65b48833d04a68375ddf0c21e6a6464cc6fe795ab49574f641bdaae4e9a3b.
+All Figure 3, Figure 8, ten-level, and CPU packets recorded below predate this
+runtime closure and are captured-checkpoint evidence only. Fresh current-head
+Figure 3, Figure 8, and paired ten-level evidence remains pending. Generated
+artifacts stay under ignored assets/, and changed review videos must be
+browser-created GitHub user attachments rather than repository files.
 
 Current-head Figure 8 boundary
 -------------------------------

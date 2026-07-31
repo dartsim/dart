@@ -28,6 +28,53 @@ No.
 ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 [HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
+## 2026-07-30 Review-Fix Handoff
+
+This section supersedes every older branch-head, runtime-currency, CI, review,
+and immediate-next-step statement below.
+
+- The latest code/runtime checkpoint is
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2` on
+  `research/fbf-friction-release620`. This handoff is a documentation-only
+  descendant; query the live branch for its pushed commit. The runtime
+  checkpoint contains
+  `origin/release-6.20` tip
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` through merge
+  `91eea8541b8908f00a3d21717f0bb832320490ec`.
+- PR #3377 is open and draft. Immediately before this documentation
+  checkpoint, fresh hosted checks for `0acffc45b81` were still running. Keep
+  the PR draft, classify only live current-head results, and do not trigger
+  `@codex review`.
+- Review-fix head `0acffc45b81` makes strict callers gate each `World::step()`
+  on the cumulative exact-failure counter, remaps Native contact-gap keys to
+  cloned shape frames in `World::clone()`, and preserves soft-body
+  `PointMass` velocity-phase impulses across the split-impulse position pass.
+  The three focused regressions and the full ConstraintSolver, World,
+  exact-solver, and split-impulse suites pass. Mandatory lint and the
+  compiler-cache-disabled build pass.
+- Compatibility defaults are unchanged. `World::create()` installs
+  `BoxedLcpConstraintSolver` with FCL primitive collision. Exact-Coulomb FBF
+  requires an explicit `World::setConstraintSolver()` call. Inside that
+  opt-in solver, `fallbackToBoxedLcp` defaults to `true`; strict diagnostic
+  callers set it to `false` and compare `getNumExactCoulombFailures()` before
+  and after every step. `DARTCollisionDetector` defaults to `Compact`;
+  `FourPointPlanar` remains an explicit paper/demo policy.
+- The freshly linked `dart-demos`, core DART, and `fbf_paper_trace` SHA-256
+  values are `4fc7b431...`, `58fa02a7...`, and `d0d65b48...`.
+  Review-fix head changes the runtime closure. Therefore the Figure 3,
+  Figure 8, ten-level, and one-/four-core packets described below are
+  captured-checkpoint evidence, not current-head evidence.
+- Resume with fresh current-head Figure 3 capture and independent verification,
+  then Figure 8 finalize/seal/verify, then the paired ten-level exact/boxed
+  capture from one unchanged pushed head. Keep every generated artifact under
+  ignored `assets/`; changed review clips require browser-created GitHub user
+  attachments and must never be committed.
+
+The live PR body already contains before/after API examples, the defaults
+table, the strict cumulative-failure-counter example, the captured-checkpoint
+boundaries, and the scalable generated-file policy. No new visual or CPU run
+was started while producing this handoff.
+
 ## 2026-07-30 Current-Head Figure 8 Seal
 
 This section supersedes every older Figure 8 currency, upload, and immediate

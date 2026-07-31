@@ -1,5 +1,39 @@
 # PR Report: Exact Coulomb FBF Reconstruction
 
+## 2026-07-30 Review-Fix Head Update
+
+This section supersedes every older current-head, API-default, runtime,
+capture, performance, CI, review, and immediate-next-step statement below.
+
+- PR #3377 is open and draft. Its current code/runtime checkpoint is
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`, with
+  `release-6.20` tip `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`
+  merged. This report is a documentation-only descendant; query the live
+  pushed head and its checks. No terminal green claim or fresh review request
+  is made.
+- The live PR description contains before/after API examples and the explicit
+  default contract. `World::create()` still uses
+  `BoxedLcpConstraintSolver` plus FCL primitive collision. Exact FBF is
+  opt-in. Its `fallbackToBoxedLcp` option defaults to `true`; strict callers
+  disable it and compare the cumulative exact-failure count around each step.
+  Native manifold mode remains `Compact` by default.
+- Head `0acffc45b81` fixes the strict multi-group gate documentation/test,
+  Native contact-gap remapping in `World::clone()`, and soft-body
+  `PointMass` impulse restoration in split-impulse solving. Lint, the
+  compiler-cache-disabled build, all three focused regressions, and the four
+  affected full suites pass.
+- Fresh demo/core/trace hashes are `4fc7b431...`, `58fa02a7...`, and
+  `d0d65b48...`. The runtime changed, so the prior Figure 3, one-/four-core,
+  Figure 8, and ten-level packets remain valid only for their captured
+  checkpoints. Current-head recapture/reseal is pending in that order.
+- The net PR still tracks zero task `assets/` or generated evidence outputs.
+  Review clips stay outside Git and are published only as GitHub user
+  attachments. Historical topic history still requires a true squash at
+  integration to exclude its 492 old evidence blobs.
+
+Keep the PR draft. Do not trigger review, mutate the three silently fixed AI
+threads, relabel older media as current-head, or claim paper completion.
+
 ## 2026-07-30 Current-Head Figure 8 Update
 
 This section supersedes every older Figure 8 currency, upload, and immediate
