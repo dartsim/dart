@@ -172,6 +172,25 @@ Model createModel(Feet feet)
   if (!atlas)
     throw std::runtime_error("failed to load " + sdfUriFor(feet));
 
+  auto* pelvis = atlas->getBodyNode("pelvis");
+  auto* leftFoot = atlas->getBodyNode("l_foot");
+  auto* rightFoot = atlas->getBodyNode("r_foot");
+  if (!pelvis || !leftFoot || !rightFoot)
+    throw std::runtime_error(
+        sdfUriFor(feet) + ": missing 'pelvis', 'l_foot', or 'r_foot'");
+
+  // Normalize before the skeleton joins the world. ConstraintSolver subscribes
+  // its collision group in addSkeleton(), creating collision objects for every
+  // surface present at that moment; removing a CollisionAspect afterwards
+  // raises the body's shape signal but does not advance the version
+  // CollisionGroup::updateSkeletonSource() checks, so the rigid foot meshes
+  // would stay live in the group and the comparison would keep running on
+  // duplicate surfaces.
+  if (feet == Feet::Soft) {
+    normalizeSoftFoot(leftFoot);
+    normalizeSoftFoot(rightFoot);
+  }
+
   world->addSkeleton(ground);
   world->addSkeleton(atlas);
 
@@ -180,18 +199,6 @@ Model createModel(Feet feet)
   // AtlasSimbiconScene file comment). The root free-joint spin stands Atlas up.
   atlas->setPosition(0, -0.5 * dart::math::constantsd::pi());
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
-  auto* pelvis = atlas->getBodyNode("pelvis");
-  auto* leftFoot = atlas->getBodyNode("l_foot");
-  auto* rightFoot = atlas->getBodyNode("r_foot");
-  if (!pelvis || !leftFoot || !rightFoot)
-    throw std::runtime_error(
-        sdfUriFor(feet) + ": missing 'pelvis', 'l_foot', or 'r_foot'");
-
-  if (feet == Feet::Soft) {
-    normalizeSoftFoot(leftFoot);
-    normalizeSoftFoot(rightFoot);
-  }
 
   model.world = world;
   model.atlas = atlas;

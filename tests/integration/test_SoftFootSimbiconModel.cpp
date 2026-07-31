@@ -322,25 +322,36 @@ TEST(SoftFootSimbiconModelTest, SoftAndRigidBipedsAreComparable)
   // collision mesh is still there, so without intervention a soft foot presents
   // two overlapping surfaces against the rigid foot's one and could win on
   // contact count by duplication rather than deformation.
-  const auto collisionSurfaces = [](dart::dynamics::BodyNode* body) {
+  //
+  // Counted from the constraint solver's collision group, not from the body's
+  // CollisionAspects. Those are what the solver actually collides, and they can
+  // disagree: removing an aspect after the skeleton joins the world does not
+  // retire the collision object the group already created for it, so an
+  // aspect-based count would report a surface gone while it is still live.
+  const auto collisionSurfaces = [](const sfs::Model& model,
+                                    dart::dynamics::BodyNode* body) {
+    const auto group = model.world->getConstraintSolver()->getCollisionGroup();
     std::size_t count = 0;
     std::size_t softSurfaces = 0;
-    body->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
-        [&](const dart::dynamics::ShapeNode* shapeNode) {
-          ++count;
-          if (std::dynamic_pointer_cast<const dart::dynamics::SoftMeshShape>(
-                  shapeNode->getShape())) {
-            ++softSurfaces;
-          }
-        });
+    for (std::size_t i = 0; i < group->getNumShapeFrames(); ++i) {
+      const auto* frame = group->getShapeFrame(i);
+      const auto* shapeNode = frame ? frame->asShapeNode() : nullptr;
+      if (!shapeNode || shapeNode->getBodyNodePtr() != body)
+        continue;
+      ++count;
+      if (std::dynamic_pointer_cast<const dart::dynamics::SoftMeshShape>(
+              shapeNode->getShape())) {
+        ++softSurfaces;
+      }
+    }
     return std::make_pair(count, softSurfaces);
   };
 
   for (const auto& pair :
        {std::make_pair(rigid.leftFoot, soft.leftFoot),
         std::make_pair(rigid.rightFoot, soft.rightFoot)}) {
-    const auto rigidSurfaces = collisionSurfaces(pair.first);
-    const auto softSurfaces = collisionSurfaces(pair.second);
+    const auto rigidSurfaces = collisionSurfaces(rigid, pair.first);
+    const auto softSurfaces = collisionSurfaces(soft, pair.second);
     EXPECT_EQ(softSurfaces.first, rigidSurfaces.first)
         << "the soft foot does not present the same number of collision "
            "surfaces as the rigid foot it replaces";
@@ -352,8 +363,8 @@ TEST(SoftFootSimbiconModelTest, SoftAndRigidBipedsAreComparable)
   std::cout << "soft_foot_simbicon mass  rigid=" << rigidMass
             << " kg  soft=" << softMass
             << " kg  collision_surfaces_per_foot rigid="
-            << collisionSurfaces(rigid.leftFoot).first
-            << " soft=" << collisionSurfaces(soft.leftFoot).first << "\n";
+            << collisionSurfaces(rigid, rigid.leftFoot).first
+            << " soft=" << collisionSurfaces(soft, soft.leftFoot).first << "\n";
 }
 
 //==============================================================================
