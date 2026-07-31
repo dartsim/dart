@@ -69,6 +69,15 @@ void pump(
   layout.update(*world, {}, kMaxArrows);
 }
 
+/// Advances the world clock by one timestep without stepping physics, the way
+/// a running simulation advances it between visualizer updates. The peak's
+/// decay follows this clock, so tests that model "one update per simulation
+/// step" must move it.
+void tick(const dart::simulation::WorldPtr& world)
+{
+  world->setTime(world->getTime() + world->getTimeStep());
+}
+
 //==============================================================================
 dart::collision::Contact makeContact(
     const Eigen::Vector3d& point, const Eigen::Vector3d& force)
@@ -302,8 +311,10 @@ TEST(ContactArrowLayoutTest, ReferenceForceRecoversAfterASpike)
   // One decay time later it is readable again.
   const int stepsPerDecayTime = static_cast<int>(
       dart_demos::ContactArrowLayout::kForceDecayTime / world->getTimeStep());
-  for (int step = 0; step < 4 * stepsPerDecayTime; ++step)
+  for (int step = 0; step < 4 * stepsPerDecayTime; ++step) {
+    tick(world);
     layout.update(*world, resting, kMaxArrows);
+  }
 
   EXPECT_LT(layout.getReferenceForce(), duringSpike);
   EXPECT_GT(layout.getArrows().front().normalizedMagnitude, 0.2)
@@ -378,7 +389,7 @@ TEST(ContactArrowLayoutTest, IgnoresNoncollidableBodies)
 //==============================================================================
 // The host lets the timestep change while a scene runs, so the decay has to
 // follow it rather than whatever it was when the scene was installed.
-TEST(ContactArrowLayoutTest, DecayFollowsTheLiveTimestep)
+TEST(ContactArrowLayoutTest, DecayIsInvariantAcrossTimesteps)
 {
   dart::dynamics::SkeletonPtr box;
   auto world = makeBoxOnGround(10.0, 0.5, box);
@@ -392,11 +403,14 @@ TEST(ContactArrowLayoutTest, DecayFollowsTheLiveTimestep)
   // steps: the reference must land in the same place.
   const auto referenceAfter = [&](double dt, int steps) {
     world->setTimeStep(dt);
+    world->setTime(0.0);
     dart_demos::ContactArrowLayout layout;
     layout.resetForWorld(*world);
     layout.update(*world, spike, kMaxArrows);
-    for (int s = 0; s < steps; ++s)
+    for (int s = 0; s < steps; ++s) {
+      tick(world);
       layout.update(*world, resting, kMaxArrows);
+    }
     return layout.getReferenceForce();
   };
 
@@ -598,8 +612,10 @@ TEST(ContactArrowLayoutTest, ForceFloorFollowsLiveGravity)
   // Switch gravity off. There is no weight left to carry, so that same contact
   // must become readable instead of staying crushed by the old floor.
   world->setGravity(Eigen::Vector3d::Zero());
-  for (int s = 0; s < 3000; ++s) // let the tracked peak decay away
+  for (int s = 0; s < 3000; ++s) { // let the tracked peak decay away
+    tick(world);
     layout.update(*world, small, kMaxArrows);
+  }
   const double zeroGravityReference = layout.getReferenceForce();
   EXPECT_LT(zeroGravityReference, weightedFloor);
   EXPECT_NEAR(layout.getArrows().front().normalizedMagnitude, 1.0, 1e-9)
@@ -784,4 +800,47 @@ TEST(ContactArrowLayoutTest, DropsTheFloorWhenItsBodyLeavesTheScale)
 
   std::cout << "contact_arrow_floor_release  with_projectile=" << heavyFloor
             << " N  after_repark=" << layout.getReferenceForce() << " N\n";
+}
+
+//==============================================================================
+// The decay follows the simulated clock, not the number of updates. The
+// visualizer can be toggled off while the simulation keeps running -- updates
+// stop, the clock does not -- and re-enabling it must not resurrect a spike
+// from seconds ago at full strength. Conversely, while the simulation is
+// paused no simulated time passes, and the picture must hold.
+TEST(ContactArrowLayoutTest, DecayAdvancesWhileUpdatesAreSkipped)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.5, box);
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  const std::vector<dart::collision::Contact> spike = {
+      makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 5000.0, 0.0))};
+  const std::vector<dart::collision::Contact> resting
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 25.0, 0.0))};
+
+  layout.update(*world, spike, kMaxArrows);
+  ASSERT_NEAR(layout.getReferenceForce(), 5000.0, 1e-9);
+
+  // Two simulated seconds pass with no updates at all -- the visualizer is
+  // off while the simulation runs. The first update afterwards must apply the
+  // whole gap at once: exp(-2.0 / 0.5) of the 5000 N spike is about 91.6 N.
+  world->setTime(world->getTime() + 2.0);
+  layout.update(*world, resting, kMaxArrows);
+  EXPECT_LT(layout.getReferenceForce(), 100.0)
+      << "the peak did not decay across the skipped interval";
+  EXPECT_GT(layout.getArrows().front().normalizedMagnitude, 0.2)
+      << "a resting contact is still crushed by a spike from seconds ago";
+
+  // Paused: updates continue but the clock does not move, so the peak holds
+  // rather than decaying by call count.
+  const double heldReference = layout.getReferenceForce();
+  for (int i = 0; i < 100; ++i)
+    layout.update(*world, resting, kMaxArrows);
+  EXPECT_NEAR(layout.getReferenceForce(), heldReference, 1e-9)
+      << "the peak decayed while the simulation was paused";
+
+  std::cout << "contact_arrow_skip_decay  after_2s_gap="
+            << layout.getReferenceForce() << " N\n";
 }

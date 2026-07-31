@@ -245,6 +245,7 @@ void ContactArrowLayout::resetForWorld(const dart::simulation::World& world)
   const double weight = mobileMass * world.getGravity().norm();
   mFloorForce = std::max(kNegligibleForce, kFloorForceWeightFraction * weight);
   mPeakForce = 0.0;
+  mLastWorldTime = world.getTime();
 }
 
 //==============================================================================
@@ -255,7 +256,6 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
 {
   refreshForWorld(world);
 
-  const double timeStep = world.getTimeStep();
   mArrows.clear();
 
   const std::size_t count = std::min(contacts.size(), maxArrows);
@@ -284,12 +284,17 @@ const std::vector<ContactArrow>& ContactArrowLayout::update(
   // lets resting contacts become readable again shortly after an impact,
   // instead of staying crushed to invisibility by a spike seconds in the past.
   //
-  // The decay is derived from the timestep on every call rather than cached,
-  // because the demo host lets the user change the timestep while a scene is
-  // running; a cached value would silently stretch or compress the recovery.
-  // World::setTimeStep() rejects non-finite and non-positive values, so the
-  // timestep needs no guard here.
-  const double decay = std::exp(-timeStep / kForceDecayTime);
+  // The decay follows the world clock, not the number of update() calls. The
+  // two are the same while the visualizer runs every step, but they diverge
+  // exactly when it matters: with the visualizer toggled off the simulation
+  // keeps advancing without updates, and a per-call decay would freeze the
+  // peak and restore a stale spike on re-enable; while paused, no simulated
+  // time passes and the peak correctly holds. A backwards clock (the scene's
+  // world was reset) counts as no elapsed time.
+  const double now = world.getTime();
+  const double elapsed = now > mLastWorldTime ? now - mLastWorldTime : 0.0;
+  mLastWorldTime = now;
+  const double decay = std::exp(-elapsed / kForceDecayTime);
   mPeakForce = std::max(peakForce, decay * mPeakForce);
 
   mArrows.reserve(count);

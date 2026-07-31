@@ -95,8 +95,11 @@ public:
   /// would normalize numerical noise up to full-length arrows.
   static constexpr double kFloorForceWeightFraction = 0.05;
 
-  /// Time constant for the force reference's decay back toward the floor.
-  static constexpr double kForceDecayTime = 0.5; // seconds
+  /// Time constant for the force reference's decay back toward the floor, in
+  /// simulated seconds. The decay follows the world clock, so it advances
+  /// while the visualizer is disabled but the simulation runs, and holds while
+  /// the simulation is paused.
+  static constexpr double kForceDecayTime = 0.5; // simulated seconds
 
   /// Rebinds to a newly installed scene and re-derives both references from
   /// it. Safe to call on a world with no skeletons; the fallback length is
@@ -107,10 +110,10 @@ public:
   ///
   /// Takes the world rather than the pieces it needs from it, because every one
   /// of those pieces is live: scenes spawn and remove skeletons, toggle
-  /// collidability, change gravity, and change the timestep while running. A
-  /// caller that passed them separately would have to remember to re-read each
-  /// one every step, and forgetting silently freezes the scale at whatever it
-  /// was when the scene was installed.
+  /// collidability, and change gravity while running, and the world clock
+  /// drives the peak's decay. A caller that passed them separately would have
+  /// to remember to re-read each one every step, and forgetting silently
+  /// freezes the scale at whatever it was when the scene was installed.
   ///
   /// Contacts with a non-finite point or force, and contacts carrying
   /// negligible force, are dropped rather than laid out, so the result is
@@ -152,16 +155,18 @@ private:
 
   std::vector<ContactArrow> mArrows;
 
-  /// Cheap stand-in for "the set of bodies changed": skeleton count, body
-  /// count and degree-of-freedom count together. World exposes no signal for
-  /// this, and a full re-derivation every step would let the arrow scale drift
-  /// with ordinary motion.
+  /// Cheap stand-in for "the scale-relevant scene changed": skeleton names and
+  /// counts, degree-of-freedom counts, per-body collidability, and quantized
+  /// collision-shape extents together. World exposes no signal for this, and a
+  /// full re-derivation every step would let the arrow scale drift with
+  /// ordinary motion.
   static std::size_t sceneFingerprint(const dart::simulation::World& world);
 
   double mReferenceLength = kFallbackReferenceLength;
   double mPeakForce = 0.0;
   double mFloorForce = 1.0;
   double mMobileMass = 0.0;
+  double mLastWorldTime = 0.0;
   std::size_t mSceneFingerprint = 0;
 };
 
