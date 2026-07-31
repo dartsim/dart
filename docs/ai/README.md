@@ -166,12 +166,29 @@ DART uses the two-role operating model in `docs/ai/orchestration.md`: an
 orchestrator session owns understanding, decomposition, sequencing, and review,
 while executor sessions implement one well-defined work packet at a time.
 
-No project model or reasoning effort is pinned. For the current GPT-5.6 family,
-use Sol for difficult ambiguous work, Terra for everyday or read-heavy work,
-and Luna for clear repeatable work. Max gives one hard task more reasoning
-time; Ultra is for independently parallelizable work when the user explicitly
-authorized delegation. Most tasks need neither. The read-only project profiles
-in `.codex/agents/` inherit the selected parent model.
+No project model or reasoning effort is pinned. Routing is per tool lane, one
+bounded entry per validated lane:
+
+- **Codex — GPT-5.6 family.** Use Sol for difficult ambiguous work, Terra for
+  everyday or read-heavy work, and Luna for clear repeatable work. Max gives
+  one hard task more reasoning time; Ultra is for independently parallelizable
+  work when the user explicitly authorized delegation. Most tasks need
+  neither.
+- **Claude Code — current Claude models.** Use Fable 5 (`claude-fable-5`,
+  the Mythos-class tier above Opus) for the hardest ambiguous or
+  long-horizon work; Opus 5 (`claude-opus-5`) as the everyday strong default
+  for substantial engineering work such as architecture, deep analysis, and
+  agentic coding (Claude Code fast mode also runs on Opus); Sonnet 5 for
+  standard bounded work; and Haiku 4.5 for quick lookups. Reasoning effort
+  is a session-level setting; reserve `max` effort for one hard task rather
+  than making it a default. Fable 5 and Opus 5 ship safety classifiers that
+  can occasionally refuse dual-use content; treat such a refusal as expected
+  model behavior rather than a DART harness defect. If the refused task is
+  legitimate DART work, restate it with its physics/simulation context made
+  explicit, and surface it to a maintainer if it still refuses.
+
+The read-only project profiles in `.codex/agents/` inherit the selected parent
+model.
 
 Treat this routing as versioned guidance, not a permanent model taxonomy. Run
 `dart-model-upgrade` for future model or Codex changes, keep task contracts

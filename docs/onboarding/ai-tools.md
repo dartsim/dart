@@ -2,12 +2,13 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: 2026-07-29. Command/skill/adapter surfaces are
+> **Last Verified**: 2026-07-31. Command/skill/adapter surfaces are
 > continuously machine-verified by `pixi run check-ai-commands` in CI. Claude
-> Code and OpenCode terminology notes were checked against current public docs;
-> Codex notes were checked against the locally tested version recorded in
-> [OpenAI Codex](#openai-codex) plus current OpenAI Codex docs. Gemini notes
-> remain a manual-reference path.
+> Code notes were behaviorally verified on the tested version recorded in
+> [Claude Code](#claude-code); OpenCode terminology notes were checked against
+> current public docs; Codex notes were checked against the locally tested
+> version recorded in [OpenAI Codex](#openai-codex) plus current OpenAI Codex
+> docs. Gemini notes remain a manual-reference path.
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
 ## For Collaborators: Tool Selection
@@ -366,8 +367,13 @@ directly. There is no separate prompt-template folder.
 
 ### Claude Code
 
-**Verified**: capability and adapter surfaces continuously via `pixi run
-check-ai-commands` in CI; behavior notes hand-checked 2026-07
+**Tested Versions**: Claude Code CLI 2.1.220 on Claude Fable 5
+(`claude-fable-5`), 2026-07-31 — `/dart-model-upgrade` exercised end to end:
+command and skill loading, the PreToolUse hook, and native image review of
+`agent-capture` output. Opus 5 routing and image guidance is sourced from
+current official docs; that lane was not separately exercised. Capability and
+adapter surfaces stay continuously machine-verified via
+`pixi run check-ai-commands` in CI.
 
 | Feature      | Location                    | Status                             |
 | ------------ | --------------------------- | ---------------------------------- |
@@ -385,6 +391,13 @@ check-ai-commands` in CI; behavior notes hand-checked 2026-07
   with `ulw:` or the common typo `ultrawok:`, normalize it to the canonical
   `/dart-ultrawork` workflow. These are prompt-level shorthands, not separate
   shared capabilities.
+- Model and reasoning routing for current Claude models lives in
+  `docs/ai/README.md` § "Model Routing"; do not duplicate or pin it here.
+
+Current references:
+[Claude Fable 5 and Mythos 5 announcement](https://www.anthropic.com/news/claude-fable-5-mythos-5),
+[Introducing Claude Fable 5 (API surface)](https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5), and
+[Claude models overview](https://platform.claude.com/docs/en/about-claude/models/overview).
 
 ### OpenCode
 
@@ -878,9 +891,10 @@ when nothing is pending, any check fails, or the head SHA moves.
 
 ## Changelog
 
-| Date     | Change                                                                                       |
-| -------- | -------------------------------------------------------------------------------------------- |
-| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support                          |
-| Jan 2025 | Added collaborator guide and maintenance conventions                                         |
-| Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane    |
-| Jul 2026 | Migrated Codex skills, added project agents/hooks, diagnosis, scenarios, and branch profiles |
+| Date     | Change                                                                                                                                   |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support                                                                      |
+| Jan 2025 | Added collaborator guide and maintenance conventions                                                                                     |
+| Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane                                                |
+| Jul 2026 | Migrated Codex skills, added project agents/hooks, diagnosis, scenarios, and branch profiles                                             |
+| Jul 2026 | Fable 5 audit: Claude 5 lane added to the model-routing owner, capability-based image-review wording, refreshed Claude Code verification |

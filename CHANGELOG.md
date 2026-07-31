@@ -431,6 +431,16 @@ compatibility remains on the active DART 6 LTS branch._
   contacts instead of deep interpenetration.
   ([#3403](https://github.com/dartsim/dart/pull/3403),
   [#3411](https://github.com/dartsim/dart/pull/3411))
+- Extended the task-shaped AI model-routing guidance to the Claude Code lane
+  (Claude Fable 5 and Opus 5): `docs/ai/README.md` now keeps one bounded
+  routing entry per validated tool lane, the reusable model-upgrade workflow
+  routes through that single owner instead of duplicating per-family tiers,
+  and the simulation image-review guidance names image-capable targets
+  capability-neutrally across both lanes.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
+- Fixed the trajectory recorder so its `--factory module:callable` path works
+  instead of tripping its own scene/factory exclusivity guard.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
 - Made canonical Python, C++, AI-infrastructure, and visual-verification test
   gates fail closed against ambient pytest/GoogleTest selectors, plugin
   injection, collection-only success, and empty test inventories, with
