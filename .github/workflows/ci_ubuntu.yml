@@ -47,14 +47,10 @@ jobs:
         run: pixi run check-ai-commands
 
       - name: Check AI infrastructure
-        run: pixi run python scripts/check_ai_infrastructure.py --check
+        run: pixi run check-ai-infra
 
       - name: Test AI infrastructure
-        run: >-
-          pixi run python -m pytest
-          tests/test_sync_ai_commands.py
-          tests/test_ai_infrastructure.py
-          tests/test_install_git_hooks.py -q
+        run: pixi run test-ai-infra
 
       - name: Exercise agent scenarios
         run: pixi run python scripts/check_ai_infrastructure.py --scenarios
@@ -151,7 +147,7 @@ jobs:
             /tmp/dart-agent-visual-smoke/smoke_auto0.png
           pixi run agent-capture -- \
               --scene dart_shape_contacts --steps 500 \
-              --camera-azimuth 0.8 --camera-elevation 0.42 \
+              --camera-azimuth 1.5708 --camera-elevation 0.35 \
               --camera-distance 4.5 --camera-target 0 0 0.2 \
               --layers contacts collision_bounds labels \
               --width 640 --height 480 \

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
+import errno
 import json
 import math
 import os
@@ -868,7 +868,10 @@ def _run_name(
 
 def _terminate_process_group(process: subprocess.Popen[str]) -> str:
     try:
-        os.killpg(process.pid, signal.SIGTERM)
+        if os.name == "nt":
+            process.terminate()
+        else:
+            os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
         pass
     try:
@@ -876,7 +879,10 @@ def _terminate_process_group(process: subprocess.Popen[str]) -> str:
         return output or ""
     except subprocess.TimeoutExpired:
         try:
-            os.killpg(process.pid, signal.SIGKILL)
+            if os.name == "nt":
+                process.kill()
+            else:
+                os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
         output, _ = process.communicate()
@@ -897,7 +903,11 @@ def run_captured_command(
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        start_new_session=True,
+        **(
+            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            if os.name == "nt"
+            else {"start_new_session": True}
+        ),
     )
     try:
         output, _ = process.communicate(timeout=timeout)
@@ -920,27 +930,65 @@ def run_captured_command(
     return result
 
 
+def _acquire_windows_file_lock(stream, backend=None) -> None:
+    if backend is None:
+        import msvcrt as backend
+
+    stream.seek(0, os.SEEK_END)
+    if stream.tell() == 0:
+        stream.write(b"\0")
+        stream.flush()
+    stream.seek(0)
+    try:
+        backend.locking(stream.fileno(), backend.LK_NBLCK, 1)
+    except OSError as exc:
+        contention_errors = {
+            errno.EACCES,
+            errno.EAGAIN,
+            errno.EDEADLK,
+            getattr(errno, "EDEADLOCK", errno.EDEADLK),
+        }
+        if exc.errno in contention_errors:
+            raise BlockingIOError(exc.errno, exc.strerror) from exc
+        raise
+
+
+def _acquire_file_lock(stream) -> None:
+    if os.name == "nt":
+        _acquire_windows_file_lock(stream)
+        return
+
+    import fcntl
+
+    fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
 def acquire_benchmark_lock(root: Path, revision_sha: str):
     common_dir = Path(matrix.git(root, "rev-parse", "--git-common-dir"))
     if not common_dir.is_absolute():
         common_dir = (root / common_dir).resolve()
     lock_path = common_dir / "dart-soft-body-benchmark.lock"
-    stream = lock_path.open("a+", encoding="utf-8")
+    lock_path.touch(exist_ok=True)
+    stream = lock_path.open("r+b")
     try:
-        fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _acquire_file_lock(stream)
     except BlockingIOError:
         stream.close()
         raise RuntimeError(
             f"Another DART soft-body evidence runner holds {lock_path}"
         ) from None
-    stream.seek(0)
-    stream.truncate()
-    stream.write(
+    except BaseException:
+        stream.close()
+        raise
+    payload = (
         json.dumps(
             {"pid": os.getpid(), "revision": revision_sha, "acquired_at": utc_now()}
         )
         + "\n"
-    )
+    ).encode()
+    stream.seek(0)
+    stream.write(payload)
+    stream.truncate()
     stream.flush()
     return stream, lock_path
 
@@ -1347,7 +1395,10 @@ def main(argv: list[str]) -> int:
     lock_stream = None
     previous_signal_handlers = {}
     try:
-        for handled_signal in (signal.SIGTERM, signal.SIGHUP):
+        handled_signals = [signal.SIGTERM]
+        if hasattr(signal, "SIGHUP"):
+            handled_signals.append(signal.SIGHUP)
+        for handled_signal in handled_signals:
             previous_signal_handlers[handled_signal] = signal.getsignal(handled_signal)
             signal.signal(handled_signal, _raise_interrupted)
 

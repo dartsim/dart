@@ -25,9 +25,10 @@ tracked docs and `pixi run ...` commands usable without a specific AI tool.
 
 ## Codex Read-only Specialists
 
-For a complex session using Codex 5.6 Sol Ultra, use bounded parallel discovery
-when it materially reduces uncertainty: `dart_scout` gathers repository
-evidence, `dart_reviewer` reviews the current diff and gates, and
+For a hard single workstream, Codex 5.6 Sol Max can spend more reasoning on the
+same task. Use Ultra only for independently parallelizable discovery or review
+when the user authorized delegation: `dart_scout` gathers repository evidence,
+`dart_reviewer` reviews the current diff and gates, and
 `dart_release_auditor` classifies DART 7 material as apply/adapt/omit for this
 branch. They inherit the parent model, stay read-only, and must receive explicit
 inputs and output contracts. Implementation remains with the parent or a

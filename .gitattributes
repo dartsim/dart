@@ -3,3 +3,6 @@ pixi.lock linguist-language=YAML
 
 # Wavefront OBJ permits blank records, including a trailing blank record.
 *.obj whitespace=-blank-at-eof
+
+# This historical owner uses CRLF; treat its carriage returns as line endings.
+tests/CMakeLists.txt whitespace=cr-at-eol

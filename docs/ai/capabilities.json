@@ -9,6 +9,12 @@
       "gate_profile": "read-only"
     },
     {
+      "name": "dart-model-upgrade",
+      "category": "audit",
+      "status": "active",
+      "gate_profile": "docs-ai"
+    },
+    {
       "name": "dart-new-task",
       "category": "task-lifecycle",
       "status": "active",
