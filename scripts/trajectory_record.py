@@ -511,7 +511,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        runner = resolve_world_runner(scene=args.scene, factory=args.factory)
+        runner = resolve_world_runner(
+            scene=None if args.factory else args.scene, factory=args.factory
+        )
         if args.contacts:
             text = record_contact_events(runner, args.steps)
         else:
