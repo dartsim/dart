@@ -186,6 +186,9 @@ bool addAxialCylinderBoxPatchContacts(
   return true;
 }
 
+// Opt-in helper for CollisionOption::enableFourPointPlanarPatches. Callers
+// must gate it on that flag; the released cylinder-box result for this
+// configuration is a single contact.
 bool addNearlyAxialCylinderBoxFaceContacts(
     double cylinderRadius,
     double cylinderHalfHeight,
@@ -846,7 +849,11 @@ bool collideCylinderBox(
     return true;
   }
 
-  if (addNearlyAxialCylinderBoxFaceContacts(
+  // Opt-in only. The released result for a rotated box over a cylinder cap is
+  // the single deepest-corner contact below, so widening it into a patch would
+  // silently change default Native contact counts and solver forces.
+  if (option.enableFourPointPlanarPatches
+      && addNearlyAxialCylinderBoxFaceContacts(
           cylRadius,
           cylHalfHeight,
           cylinderTransform,

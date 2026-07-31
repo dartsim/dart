@@ -329,6 +329,11 @@ native::CollisionOption makeNativeOption(
     nativeOption.maxNumContacts = 1u;
   }
   nativeOption.collisionFilter = nullptr;
+  // Narrow-phase pairs whose released result is a single point only widen into
+  // a planar patch under the opt-in mode. The contact cap alone cannot carry
+  // that decision, because Compact also requests more than one contact.
+  nativeOption.enableFourPointPlanarPatches
+      = mode == DARTCollisionDetector::ContactManifoldMode::FourPointPlanar;
 
   return nativeOption;
 }
