@@ -14,6 +14,42 @@ tests, benchmarks, and GUI examples from the paper?" is:
 No.
 ```
 
+## 2026-07-30 Review-Fix Truth Boundary
+
+This section supersedes every older branch-head, runtime-currency, CI, review,
+and immediate-next-step statement below.
+
+- Code/runtime checkpoint `0acffc45b81184ef56dbc53ee60f6e25786102c2`
+  on `research/fbf-friction-release620` contains target
+  `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. This handoff is a
+  documentation-only descendant; query its live pushed head and checks.
+  PR #3377 is open and draft.
+- The normal default remains `World::create()` with
+  `BoxedLcpConstraintSolver` and FCL primitive collision. Exact FBF is
+  explicitly installed. Its boxed fallback defaults on; strict diagnostics
+  disable it and gate every step on the cumulative failure-count delta.
+  `DARTCollisionDetector` remains `Compact` by default.
+- Review-fix head uses the cumulative strict failure gate, remaps Native
+  contact-gap keys during `World::clone()`, and restores soft-body
+  `PointMass` impulses after the split-impulse position pass. Mandatory lint,
+  a no-cache build, all three focused regressions, and the four affected full
+  test suites pass.
+- Current demo/core/trace hashes are `4fc7b431...`, `58fa02a7...`, and
+  `d0d65b48...`. Because `0acffc45b81` changes runtime code, the prior
+  Figure 3, CPU, Figure 8, and ten-level packets are captured-checkpoint
+  evidence only.
+- Fresh current-head evidence order is Figure 3, Figure 8, then the paired
+  ten-level continuation presentation. Use fresh ignored roots and one
+  unchanged pushed head. Changed videos require browser-created GitHub user
+  attachments; never commit them.
+- Keep the PR draft and do not trigger review, reply to AI comments, resolve
+  threads, rewrite published history, or promote any old runtime packet to
+  current-head evidence.
+
+The live PR body already contains before/after API examples, a defaults table,
+the strict cumulative-failure-counter example, and the captured-checkpoint
+qualification. This documentation handoff does not add new runtime evidence.
+
 ## 2026-07-30 Current-Head Figure 8 Seal
 
 This section supersedes every older Figure 8 currency, upload, and next-action

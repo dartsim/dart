@@ -1,5 +1,26 @@
 # FBF GUI And Video Evidence Report
 
+## 2026-07-30 Review-Fix Capture Boundary
+
+Current code/runtime checkpoint
+`0acffc45b81184ef56dbc53ee60f6e25786102c2` changes strict failure
+accounting, Native contact-gap clone remapping, and soft-body split-impulse
+state preservation. Consequently the Figure 3, Figure 8, ten-level, and CPU
+artifacts described below are captured-checkpoint evidence, not current-head
+evidence.
+
+The default remains boxed LCP with FCL primitive collision through
+`World::create()`. Exact FBF is explicitly installed; its boxed fallback
+defaults on, while strict evidence disables fallback and gates each step on
+the cumulative exact-failure-count delta. This API default does not promote
+any visual claim.
+
+Resume with fresh Figure 3 capture plus independent verification, then the
+Figure 8 frozen-prefix finalizer/seal/verify path, then the paired ten-level
+continuation presentation. Use fresh ignored roots, manually inspect the
+claim-tied frames, and publish changed review clips only as GitHub user
+attachments. PR #3377 remains draft.
+
 ## 2026-07-30 Current-Head Figure 8 Seal
 
 Fresh Figure 8 evidence under ignored

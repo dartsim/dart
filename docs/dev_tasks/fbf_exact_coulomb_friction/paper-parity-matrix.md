@@ -11,6 +11,26 @@ not evidence completion. The broader visual workflow declares 33 runnable
 schedules, 30 of which encode MP4; the additional schedules include DART-only
 diagnostics rather than canonical paper/video rows.
 
+## 2026-07-30 Review-Fix Currency Boundary
+
+Current code/runtime checkpoint
+`0acffc45b81184ef56dbc53ee60f6e25786102c2` contains target
+`aaf1e5f64dd47f0350ea1b395bf257bb77b36829` and postdates every Figure 3,
+Figure 8, ten-level, and CPU packet below. Those artifacts retain their
+captured-checkpoint validity, but none is current-head proof after the review
+fix.
+
+The compatibility default remains unchanged: `World::create()` installs
+`BoxedLcpConstraintSolver` with FCL primitive collision. Exact FBF is opt-in
+and its boxed fallback defaults enabled. Strict evidence disables fallback and
+must compare the cumulative exact-failure count around each step. Native
+collision defaults to `Compact`; paper/demo `FourPointPlanar` manifolds are
+explicit policies.
+
+Current-head Figure 3 recapture, Figure 8 blocker reseal, and paired ten-level
+capture remain open in that order. This currency reset changes no row status:
+the compact audit remains 24 partial, 5 blocked, and 0 complete.
+
 ## 2026-07-30 Figure 8 Current-Head Currency Boundary
 
 Fresh ignored `assets/pr_media_current_head_c1cc/` evidence binds pushed
