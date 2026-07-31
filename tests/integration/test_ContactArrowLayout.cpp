@@ -844,3 +844,39 @@ TEST(ContactArrowLayoutTest, DecayAdvancesWhileUpdatesAreSkipped)
   std::cout << "contact_arrow_skip_decay  after_2s_gap="
             << layout.getReferenceForce() << " N\n";
 }
+
+//==============================================================================
+// The decay baseline must survive a scene refresh. A fingerprint change while
+// updates are skipped -- the `sleeping` scene launching a projectile with the
+// visualizer off -- re-derives the scale on the next update, and that
+// re-derivation must not erase the skipped interval, or the stale peak comes
+// back undecayed anyway.
+TEST(ContactArrowLayoutTest, DecaySurvivesASceneRefresh)
+{
+  dart::dynamics::SkeletonPtr box;
+  auto world = makeBoxOnGround(10.0, 0.5, box);
+  dart_demos::ContactArrowLayout layout;
+  layout.resetForWorld(*world);
+
+  const std::vector<dart::collision::Contact> spike = {
+      makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 5000.0, 0.0))};
+  const std::vector<dart::collision::Contact> resting
+      = {makeContact(Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 25.0, 0.0))};
+
+  layout.update(*world, spike, kMaxArrows);
+  ASSERT_NEAR(layout.getReferenceForce(), 5000.0, 1e-9);
+
+  // Two simulated seconds pass with no updates, and during them the scene
+  // changes: the box becomes noncollidable, which the next update's refresh
+  // will notice as a new fingerprint.
+  world->setTime(world->getTime() + 2.0);
+  box->getBodyNode(0)->setCollidable(false);
+
+  layout.update(*world, resting, kMaxArrows);
+  EXPECT_LT(layout.getReferenceForce(), 100.0)
+      << "the scene refresh erased the skipped interval and resurrected the "
+         "stale peak";
+
+  std::cout << "contact_arrow_refresh_decay  after_gap_and_refresh="
+            << layout.getReferenceForce() << " N\n";
+}

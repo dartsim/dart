@@ -173,9 +173,16 @@ void ContactArrowLayout::refreshForWorld(const dart::simulation::World& world)
     // everything else, as though its weight had been measured at a contact:
     // reparking the `sleeping` scene's projectile would go on crushing the box
     // arrows until the decay caught up with a floor that no longer applies.
+    // The decay baseline survives too. resetForWorld() re-anchors it to now,
+    // which is right for a scene switch but wrong here: if the fingerprint
+    // change happened while updates were skipped (a projectile launched with
+    // the visualizer off), anchoring to now would erase the skipped interval
+    // and resurrect the stale peak undecayed.
     const double observedPeak = mPeakForce;
+    const double decayBaseline = mLastWorldTime;
     resetForWorld(world);
     mPeakForce = observedPeak;
+    mLastWorldTime = decayBaseline;
   }
 
   // The floor is re-derived every call rather than compared, because gravity is
