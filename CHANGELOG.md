@@ -430,8 +430,10 @@ compatibility remains on the active DART 6 LTS branch._
   routes through that single owner instead of duplicating per-family tiers,
   and the simulation image-review guidance names image-capable targets
   capability-neutrally across both lanes.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
 - Made canonical Python, C++, AI-infrastructure, and visual-verification test
   gates fail closed against ambient pytest/GoogleTest selectors, plugin
   injection, collection-only success, and empty test inventories, with
