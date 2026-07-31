@@ -53,10 +53,11 @@ issues/PRs/branches, commands, and first step when present.
 
 ## Workflow
 
-You are the orchestrator, supervisor, and steerer for the entire task: you
-decompose, delegate, review, and keep evidence honest. Workers implement.
-Use `dart-new-task` instead when the work is a bounded single-session task and
-the user did not ask for autonomous project handling.
+Own understanding, decomposition, sequencing, review, and honest evidence for
+the whole task. Delegate only when the user explicitly requested it and the
+current surface permits it; otherwise execute packets serially. Use
+`dart-new-task` for bounded single-session work unless the user asked for the
+autonomous project-home loop.
 
 A work packet is the unit of handoff: one packet = one branch = one
 verification story, with an objective, scope, non-goals, acceptance
@@ -121,14 +122,13 @@ the real scope materially different stops and reports back.
    deferred. Every delegated packet gets its own contract: GOAL (one
    sentence), DONE WHEN (verifiable), EVIDENCE (what to record), RISKS, and
    NEXT STEP.
-6. **Decompose and route to workers** - Cut work packets per the contract
-   above. In Codex, use the read-only `dart_scout` for bounded discovery,
-   `dart_reviewer` for current-state review, and `dart_release_auditor` for
-   DART 7-to-6 comparison. In Claude, OpenCode, or another client, assign the
-   same contracts to read-only role-separated sessions. Implementation remains
-   with the parent or a scoped executor. With Codex 5.6 Sol Ultra, use bounded
-   parallelism without overlapping write ownership. Without team tooling,
-   execute sequentially via `dart-new-task`.
+6. **Decompose and route** - Cut work packets per the contract above and
+   execute serially by default. When the user explicitly requested delegation,
+   use the read-only `dart_scout` for bounded discovery, `dart_reviewer` for
+   current-state review, and `dart_release_auditor` for DART 7-to-6 comparison.
+   Assign the same contracts to role-separated sessions in other clients.
+   Implementation stays with the parent or a scoped executor. Use parallel
+   writers only with explicit, disjoint ownership.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,
@@ -163,49 +163,25 @@ the real scope materially different stops and reports back.
     rule (active DART 6 LTS branch plus `main`). GitHub mutations only with
     explicit maintainer/user approval.
 
-## Kickoff Prompt Template
+## Prompt Shape
 
-Canonical fresh-session prompt. `TASK`, context, and `Done when` are per-task;
-reuse the `Logistics` block verbatim.
+Use an outcome-first brief. Do not repeat this workflow's logistics or required
+reading in the task prompt; the capability loads them.
 
 ```text
 TASK: <one-sentence objective>
-
-<Per-task context: constraints, quality bar, must/never rules, and pointers
-to the docs, code, branches, or references that define the territory.>
 
 Done when:
 - <verifiable outcome: a file, test, gate, benchmark, or artifact>
 - <verifiable outcome>
 
-Logistics:
-- Run /dart-ultrawork with this task. You are the orchestrator,
-  supervisor, and steerer: decompose, delegate, review, and keep evidence
-  honest.
-- Interview first: ask the maintainer only the consequential decisions that
-  evidence cannot settle; resolve everything else yourself and record the
-  evidence.
-- Use docs/dev_tasks/<task>/ as the project home. Keep README.md,
-  RESUME.md, and any decisions.md / verification.md / progress-log.md
-  sidecars current enough for a zero-context session to resume.
-- Prioritize correctness over speed, but stop once acceptance criteria are
-  satisfied, verification is recorded, docs are current, and known gaps are
-  documented. Manage resources responsibly.
-- Route well-defined implementation packets to Codex executors with GOAL /
-  DONE WHEN / EVIDENCE. Use team mode only when available and file ownership
-  can stay disjoint. Keep authoring and review separate. Use the oracle for
-  critical decisions, hard failures, and research synthesis.
-- Set goal mode to Done-when; use Claude `/goal Run /dart-ultrawork with:
-  <real prompt>` or Codex `/goal $dart-ultrawork <real prompt>`. Treat Claude
-  goal text beginning `ulw:` or `ultrawok:` as shorthand for the same canonical
-  `/dart-ultrawork` workflow, not as separate capabilities.
-- Read docs/ai/principles.md, docs/ai/north-star.md,
-  docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
-- Review loop: use specialized reviewers when available, investigate findings,
-  and require two clean passes on the current state before done.
-- Verification first: task-specific gates and dart-verify-sim evidence when
-  applicable; pixi run lint before commits; GitHub mutations only with approval.
+Constraints/evidence:
+- <task-specific must/never rules and owner references>
+- <known risks, branch/PR facts, or required comparison>
 ```
+
+Put this brief after `/dart-ultrawork` or `$dart-ultrawork`. When goal mode is
+available, make the same `Done when` list the goal contract.
 
 ## Output
 

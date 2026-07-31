@@ -32,9 +32,9 @@ Start with:
 - [`capabilities.json`](capabilities.json)
 - [`branch-profile.json`](branch-profile.json): machine-readable DART 6.20
   facts, required surfaces, and DART 7 exclusions.
-- [`agent-scenarios.json`](agent-scenarios.json): the seven deterministic agent
-  contracts, including simulation verification, from orientation through
-  release maintenance.
+- [`agent-scenarios.json`](agent-scenarios.json): the eight deterministic agent
+  contracts, including model upgrades and simulation verification, from
+  orientation through release maintenance.
 
 ## Architecture And Setup
 
@@ -45,8 +45,8 @@ read-only subagents, and the advisory PreToolUse hook. The installed git hook is
 the cross-tool commit safety path.
 
 ```bash
-pixi run python scripts/setup_ai.py
-pixi run python scripts/check_ai_infrastructure.py --doctor
+pixi run ai-setup
+pixi run ai-doctor
 ```
 
 Codex loads project config, agents, and hooks only for a trusted repository.
@@ -58,11 +58,22 @@ run `pixi run lint` before a commit.
 
 ```bash
 pixi run check-ai-commands
-pixi run python scripts/check_ai_infrastructure.py --check
-pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
-pixi run python scripts/check_ai_infrastructure.py --scenarios
+pixi run check-ai-infra
+pixi run test-ai-infra
+pixi run exercise-agent-scenarios
 pixi run lint
 ```
+
+`check-ai-infra` is the completion gate: it includes the structural checks and
+validates the configured Release test graph through the CMake File API,
+expanded target trace, configuration-selected CTest inventory, clean ambient
+GTest contract, and conftest-free pytest provenance. It also runs controlled
+passing, failing, hostile-environment, and zero-body runner probes; it does not
+run the project test suites and does not replace `test-ai-infra`, `test-all`,
+hosted platform CI, or claim-tied semantic image review. `test-ai-infra` and
+the visual debug-overlay gate use the same guarded pytest runner, which fails
+when no test body executes. The direct structural checker form is reserved for
+fast staged/setup internals and is not sufficient completion evidence.
 
 Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
 adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;
@@ -81,6 +92,38 @@ state before routing bounded work through the release-branch
 orchestrator/executor model. Use `dart-new-task` for ordinary bounded
 single-session work unless the user explicitly asks for autonomous project
 handling.
+
+## Updating Models And Coding Agents
+
+Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
+Claude/OpenCode when a request names a model, reasoning mode, coding-agent
+release, migration, or compatibility audit. It captures the existing release
+harness as a control, refreshes primary guidance, isolates model, effort,
+prompt, configuration, and optional-agent changes, and records
+preserve/update/remove/consolidate/add verdicts.
+
+The workflow is deliberately self-evolving: its model-agnostic intake,
+comparison, verification, and closeout core is audited on every run. An
+`apply` run may improve that source when a target exposes a reusable gap, while
+replacing stale target-specific guidance instead of cloning a workflow.
+
+DART AI infrastructure includes tracked documentation that supplies in-session
+context and across-session project state. Model upgrades therefore audit
+`docs/ai/`, living state in `docs/plans/`, active handoffs in
+`docs/dev_tasks/`, and the handbook/design/release owners routed into a task,
+not only configuration, prompts, adapters, hooks, scripts, and tests.
+
+Every target also exercises one representative DART 6 physics investigation
+through `dart-verify-sim`: the same text oracle, assessed OSG view, and
+claim-specific debug layers. Rendering or native image-review limitations are
+reported rather than converted into model-quality claims.
+
+For GPT-5.6, use Sol for hard ambiguous work, Terra for everyday or read-heavy
+work, and Luna for clear repeatable work. Max spends more reasoning on one
+difficult task; Ultra is useful only for independently parallelizable work when
+delegation is authorized. The project pins neither a model nor an effort.
+Treat this paragraph as replaceable versioned guidance, not a permanent model
+taxonomy.
 
 ## Release Profile
 

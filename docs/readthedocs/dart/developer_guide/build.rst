@@ -30,8 +30,10 @@ Run the relevant verification gates from the same environment:
    pixi run test-py
    pixi run docs-build
 
-``pixi run test-all`` builds the default aggregate CMake target. Run the lint
-and test tasks separately when you need explicit verification output.
+``pixi run test-all`` builds the default aggregate CMake target. The default
+configuration enables testing, so that aggregate also runs CTest and the
+Python tests through the CMake graph. Run lint separately, and use the focused
+test tasks when you need clearer failure output.
 
 Core requirements
 -----------------

@@ -50,7 +50,8 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   the four controller sources** `Controller.cpp/State.cpp/StateMachine.cpp/
   TerminalCondition.cpp` — but NOT `AtlasSimbiconScene.cpp` (GUI). Add
   `add_test(NAME test_SoftFootSimbiconModel COMMAND $<TARGET_FILE:test_ConstraintSolver>
-  --gtest_filter=SoftFootSimbiconModelTest.*)` with the `0 tests` FAIL regex.
+  --gtest_filter=SoftFootSimbiconModelTest.*)` with the digit-bounded
+  `(^|[^0-9])0 tests` FAIL regex.
 
 ## Acceptance gates (paper row)
 
