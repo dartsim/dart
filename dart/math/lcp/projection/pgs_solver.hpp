@@ -34,6 +34,10 @@
 
 #include <dart/math/lcp/lcp_solver.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
+#include <vector>
+
 namespace dart::math {
 
 /// Projected Gauss-Seidel solver for standard and boxed LCPs.
@@ -46,6 +50,51 @@ public:
     bool randomizeConstraintOrder{false};
   };
 
+  /// Reusable work storage for repeated same-shape PGS solves.
+  ///
+  /// Construct with a `dart::common::MemoryAllocator` and warm with
+  /// `reserve()` so repeated solves of the same problem size route every
+  /// work-buffer allocation through the provided allocator instead of the
+  /// global heap (allocator correctness for real-time callers).
+  struct DART_API Scratch
+  {
+    using DoubleAllocator = dart::common::StlAllocator<double>;
+    using IntAllocator = dart::common::StlAllocator<int>;
+
+    Scratch() = default;
+
+    explicit Scratch(dart::common::MemoryAllocator& allocator)
+      : Adata(DoubleAllocator{allocator}),
+        xdata(DoubleAllocator{allocator}),
+        bdata(DoubleAllocator{allocator}),
+        loData(DoubleAllocator{allocator}),
+        hiData(DoubleAllocator{allocator}),
+        w(DoubleAllocator{allocator}),
+        loEff(DoubleAllocator{allocator}),
+        hiEff(DoubleAllocator{allocator}),
+        findexData(IntAllocator{allocator}),
+        order(IntAllocator{allocator})
+    {
+    }
+
+    /// Grow buffer capacities for problems of up to `size` rows so
+    /// repeated same-shape solves do not allocate.
+    void reserve(int size);
+
+    void clear() noexcept;
+
+    std::vector<double, DoubleAllocator> Adata;
+    std::vector<double, DoubleAllocator> xdata;
+    std::vector<double, DoubleAllocator> bdata;
+    std::vector<double, DoubleAllocator> loData;
+    std::vector<double, DoubleAllocator> hiData;
+    std::vector<double, DoubleAllocator> w;
+    std::vector<double, DoubleAllocator> loEff;
+    std::vector<double, DoubleAllocator> hiEff;
+    std::vector<int, IntAllocator> findexData;
+    std::vector<int, IntAllocator> order;
+  };
+
   PgsSolver();
   ~PgsSolver() override = default;
 
@@ -55,6 +104,28 @@ public:
       const LcpProblem& problem,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
+
+  LcpResult solve(
+      const LcpProblem& problem,
+      Eigen::VectorXd& x,
+      Scratch& scratch,
+      const LcpOptions& options);
+
+  /// Solve on caller-owned storage without copying the problem.
+  ///
+  /// `x` must already have `b.size()` entries and is solved in place. With an
+  /// allocator-constructed, `reserve()`-warmed scratch this overload performs
+  /// no global-heap allocation, which is what the boxed-LCP contact path's
+  /// degenerate fallback relies on.
+  LcpResult solve(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& lo,
+      const Eigen::Ref<const Eigen::VectorXd>& hi,
+      const Eigen::Ref<const Eigen::VectorXi>& findex,
+      Eigen::Ref<Eigen::VectorXd> x,
+      Scratch& scratch,
+      const LcpOptions& options);
 
   /// Set solver-specific parameters (e.g., division epsilon, ordering).
   void setParameters(const Parameters& params);

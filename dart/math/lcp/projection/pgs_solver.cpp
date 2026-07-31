@@ -63,6 +63,42 @@ bool validateParameters(
 
 } // namespace
 
+//==============================================================================
+void PgsSolver::Scratch::reserve(int size)
+{
+  if (size <= 0) {
+    return;
+  }
+  const auto problemSize = static_cast<std::size_t>(size);
+  const auto paddedSize = static_cast<std::size_t>(padding(size));
+  Adata.reserve(problemSize * paddedSize);
+  xdata.reserve(problemSize);
+  bdata.reserve(problemSize);
+  loData.reserve(problemSize);
+  hiData.reserve(problemSize);
+  w.reserve(problemSize);
+  loEff.reserve(problemSize);
+  hiEff.reserve(problemSize);
+  findexData.reserve(problemSize);
+  order.reserve(problemSize);
+}
+
+//==============================================================================
+void PgsSolver::Scratch::clear() noexcept
+{
+  Adata.clear();
+  xdata.clear();
+  bdata.clear();
+  loData.clear();
+  hiData.clear();
+  w.clear();
+  loEff.clear();
+  hiEff.clear();
+  findexData.clear();
+  order.clear();
+}
+
+//==============================================================================
 PgsSolver::PgsSolver()
 {
   mDefaultOptions.maxIterations = 30;
@@ -88,13 +124,18 @@ const PgsSolver::Parameters& PgsSolver::getParameters() const
 LcpResult PgsSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {
-  LcpResult result;
+  Scratch scratch;
+  return solve(problem, x, scratch, options);
+}
 
-  const auto& A = problem.A;
-  const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
+//==============================================================================
+LcpResult PgsSolver::solve(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
+  LcpResult result;
 
   std::string problemMessage;
   if (!detail::validateProblem(problem, &problemMessage)) {
@@ -103,7 +144,7 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
-  const auto n = std::ssize(b);
+  const auto n = std::ssize(problem.b);
   if (n == 0) {
     x.resize(0);
     result.status = LcpSolverStatus::Success;
@@ -116,6 +157,53 @@ LcpResult PgsSolver::solve(
 
   if (x.size() != n) {
     x = Eigen::VectorXd::Zero(n);
+  }
+
+  return solve(
+      problem.A,
+      problem.b,
+      problem.lo,
+      problem.hi,
+      problem.findex,
+      x,
+      scratch,
+      options);
+}
+
+//==============================================================================
+LcpResult PgsSolver::solve(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const Eigen::VectorXd>& lo,
+    const Eigen::Ref<const Eigen::VectorXd>& hi,
+    const Eigen::Ref<const Eigen::VectorXi>& findex,
+    Eigen::Ref<Eigen::VectorXd> x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
+  LcpResult result;
+
+  std::string problemMessage;
+  if (!detail::validateProblemView(A, b, lo, hi, findex, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  const Eigen::Index n = b.size();
+  if (x.size() != n) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Solution vector dimensions inconsistent";
+    return result;
+  }
+
+  if (n == 0) {
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
   }
 
   const Parameters* params
@@ -152,19 +240,19 @@ LcpResult PgsSolver::solve(
   const auto problemSize = static_cast<std::size_t>(n);
   const auto paddedSize = static_cast<std::size_t>(nSkip);
 
-  std::vector<double> Adata(problemSize * paddedSize, 0.0);
-  std::vector<double> xdata(problemSize, 0.0);
-  std::vector<double> bdata(problemSize, 0.0);
-  std::vector<double> loData(problemSize, 0.0);
-  std::vector<double> hiData(problemSize, 0.0);
-  std::vector<int> findexData(problemSize, -1);
+  scratch.Adata.assign(problemSize * paddedSize, 0.0);
+  scratch.xdata.assign(problemSize, 0.0);
+  scratch.bdata.assign(problemSize, 0.0);
+  scratch.loData.assign(problemSize, 0.0);
+  scratch.hiData.assign(problemSize, 0.0);
+  scratch.findexData.assign(problemSize, -1);
 
-  std::span<double> aValues{Adata};
-  std::span<double> xValues{xdata};
-  std::span<double> bValues{bdata};
-  std::span<double> loValues{loData};
-  std::span<double> hiValues{hiData};
-  std::span<int> findexValues{findexData};
+  std::span<double> aValues{scratch.Adata};
+  std::span<double> xValues{scratch.xdata};
+  std::span<double> bValues{scratch.bdata};
+  std::span<double> loValues{scratch.loData};
+  std::span<double> hiValues{scratch.hiData};
+  std::span<int> findexValues{scratch.findexData};
 
   auto aRow = [&](int row) -> std::span<double> {
     return aValues.subspan(
@@ -195,7 +283,8 @@ LcpResult PgsSolver::solve(
     }
   }
 
-  std::vector<int> order;
+  auto& order = scratch.order;
+  order.clear();
   order.reserve(static_cast<std::size_t>(n));
 
   bool possibleToTerminate = true;
@@ -295,15 +384,20 @@ LcpResult PgsSolver::solve(
     }
   }
 
-  x = Eigen::Map<Eigen::VectorXd>(xdata.data(), n);
+  x = Eigen::Map<const Eigen::VectorXd>(scratch.xdata.data(), n);
 
-  Eigen::VectorXd wVec = A * x - b;
+  scratch.w.resize(problemSize);
+  Eigen::Map<Eigen::VectorXd> wVec(scratch.w.data(), n);
+  wVec.noalias() = A * x;
+  wVec -= b;
   result.iterations = iterationsUsed;
 
-  Eigen::VectorXd loEff;
-  Eigen::VectorXd hiEff;
+  scratch.loEff.resize(problemSize);
+  scratch.hiEff.resize(problemSize);
+  Eigen::Map<Eigen::VectorXd> loEff(scratch.loEff.data(), n);
+  Eigen::Map<Eigen::VectorXd> hiEff(scratch.hiEff.data(), n);
   std::string boundsMessage;
-  const bool boundsOk = detail::computeEffectiveBounds(
+  const bool boundsOk = detail::computeEffectiveBoundsInto(
       lo, hi, findex, x, loEff, hiEff, &boundsMessage);
   if (!boundsOk) {
     result.status = LcpSolverStatus::InvalidProblem;
@@ -311,8 +405,9 @@ LcpResult PgsSolver::solve(
     return result;
   }
 
-  result.residual = detail::naturalResidualInfinityNorm(x, wVec, loEff, hiEff);
-  result.complementarity = detail::complementarityInfinityNorm(
+  result.residual
+      = detail::naturalResidualInfinityNormView(x, wVec, loEff, hiEff);
+  result.complementarity = detail::complementarityInfinityNormView(
       x, wVec, loEff, hiEff, absTolerance);
   if (x.hasNaN()) {
     result.status = LcpSolverStatus::Failed;
@@ -329,7 +424,7 @@ LcpResult PgsSolver::solve(
     const double validationTol = std::max(absTolerance, compTol);
 
     std::string validationMessage;
-    const bool valid = detail::validateSolution(
+    const bool valid = detail::validateSolutionView(
         x, wVec, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
     if (!valid) {

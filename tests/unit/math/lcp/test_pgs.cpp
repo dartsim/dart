@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <vector>
 
 #include <cmath>
 
@@ -244,4 +245,222 @@ TEST(PgsSolver, HandlesZeroDiagonalEntries)
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_NEAR(x[0], 0.0, 1e-12);
+}
+
+//==============================================================================
+namespace {
+
+// The boxed friction-index problem from SolvesBoxedProblemWithFrictionIndex,
+// shared by the scratch-overload tests below.
+struct BoxedFrictionProblem
+{
+  Eigen::Matrix3d A;
+  Eigen::Vector3d b;
+  Eigen::Vector3d lo = Eigen::Vector3d::Zero();
+  Eigen::Vector3d hi;
+  Eigen::Vector3i findex;
+
+  BoxedFrictionProblem()
+  {
+    A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
+    b = A * Eigen::Vector3d(1.0, 0.2, -0.1);
+    hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
+    findex << -1, 0, 0;
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(PgsSolver, ScratchOverloadMatchesOwningSolve)
+{
+  const BoxedFrictionProblem fixture;
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5000;
+  options.warmStart = false;
+  options.complementarityTolerance = 1e-3;
+
+  Eigen::VectorXd owningX = Eigen::VectorXd::Zero(3);
+  const LcpProblem problem(
+      fixture.A, fixture.b, fixture.lo, fixture.hi, fixture.findex);
+  const auto owningResult = solver.solve(problem, owningX, options);
+  ASSERT_TRUE(owningResult.succeeded());
+
+  PgsSolver::Scratch scratch;
+  Eigen::VectorXd scratchX = Eigen::VectorXd::Zero(3);
+  const auto scratchResult = solver.solve(
+      fixture.A,
+      fixture.b,
+      fixture.lo,
+      fixture.hi,
+      fixture.findex,
+      scratchX,
+      scratch,
+      options);
+
+  EXPECT_EQ(scratchResult.status, owningResult.status);
+  EXPECT_EQ(scratchResult.iterations, owningResult.iterations);
+  for (Eigen::Index i = 0; i < 3; ++i) {
+    EXPECT_DOUBLE_EQ(scratchX[i], owningX[i]);
+  }
+}
+
+//==============================================================================
+TEST(PgsSolver, ScratchOverloadSolvesInPlaceThroughMaps)
+{
+  const BoxedFrictionProblem fixture;
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5000;
+  options.warmStart = false;
+  options.complementarityTolerance = 1e-3;
+
+  // Mirror the boxed-LCP contact fallback: every operand, including the
+  // solution, is a map over caller-owned storage.
+  std::vector<double> aData(9), bData(3), loData(3), hiData(3), xData(3, 0.0);
+  std::vector<int> findexData(3);
+  Eigen::Map<Eigen::MatrixXd>(aData.data(), 3, 3) = fixture.A;
+  Eigen::Map<Eigen::Vector3d>(bData.data()) = fixture.b;
+  Eigen::Map<Eigen::Vector3d>(loData.data()) = fixture.lo;
+  Eigen::Map<Eigen::Vector3d>(hiData.data()) = fixture.hi;
+  Eigen::Map<Eigen::Vector3i>(findexData.data()) = fixture.findex;
+
+  PgsSolver::Scratch scratch;
+  Eigen::Map<Eigen::VectorXd> x(xData.data(), 3);
+  const auto result = solver.solve(
+      Eigen::Map<const Eigen::MatrixXd>(aData.data(), 3, 3),
+      Eigen::Map<const Eigen::VectorXd>(bData.data(), 3),
+      Eigen::Map<const Eigen::VectorXd>(loData.data(), 3),
+      Eigen::Map<const Eigen::VectorXd>(hiData.data(), 3),
+      Eigen::Map<const Eigen::VectorXi>(findexData.data(), 3),
+      x,
+      scratch,
+      options);
+
+  ASSERT_TRUE(result.succeeded());
+  Eigen::VectorXd owningX = Eigen::VectorXd::Zero(3);
+  const LcpProblem problem(
+      fixture.A, fixture.b, fixture.lo, fixture.hi, fixture.findex);
+  ASSERT_TRUE(solver.solve(problem, owningX, options).succeeded());
+  for (Eigen::Index i = 0; i < 3; ++i) {
+    EXPECT_DOUBLE_EQ(x[i], owningX[i]);
+  }
+}
+
+//==============================================================================
+TEST(PgsSolver, ScratchOverloadZeroesNonFiniteWarmStart)
+{
+  const BoxedFrictionProblem fixture;
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5000;
+  options.complementarityTolerance = 1e-3;
+
+  // The contact fallback engages exactly when the pivoting solve leaves
+  // non-finite impulses behind; those entries must restart from zero.
+  PgsSolver::Scratch scratch;
+  Eigen::VectorXd x(3);
+  x << std::numeric_limits<double>::quiet_NaN(), 0.1,
+      -std::numeric_limits<double>::infinity();
+  options.warmStart = true;
+  const auto result = solver.solve(
+      fixture.A,
+      fixture.b,
+      fixture.lo,
+      fixture.hi,
+      fixture.findex,
+      x,
+      scratch,
+      options);
+
+  ASSERT_TRUE(result.succeeded());
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(PgsSolver, ScratchOverloadRejectsMismatchedSolutionSize)
+{
+  const BoxedFrictionProblem fixture;
+
+  PgsSolver solver;
+  PgsSolver::Scratch scratch;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(
+      fixture.A,
+      fixture.b,
+      fixture.lo,
+      fixture.hi,
+      fixture.findex,
+      x,
+      scratch,
+      solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+//==============================================================================
+TEST(PgsSolver, ScratchCapacityIsStableAcrossRepeatedSolves)
+{
+  const BoxedFrictionProblem fixture;
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5000;
+  options.warmStart = false;
+  options.complementarityTolerance = 1e-3;
+
+  PgsSolver::Scratch scratch;
+  scratch.reserve(3);
+
+  const auto solveOnce = [&](Eigen::VectorXd& x) {
+    return solver.solve(
+        fixture.A,
+        fixture.b,
+        fixture.lo,
+        fixture.hi,
+        fixture.findex,
+        x,
+        scratch,
+        options);
+  };
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  ASSERT_TRUE(solveOnce(x).succeeded());
+
+  const auto aCapacity = scratch.Adata.capacity();
+  const auto xCapacity = scratch.xdata.capacity();
+  const auto wCapacity = scratch.w.capacity();
+  const auto orderCapacity = scratch.order.capacity();
+
+  // Repeated same-shape solves must reuse the warmed buffers: capacity growth
+  // here is exactly the global-heap allocation the contact fallback must not
+  // perform after the bake boundary.
+  x.setZero();
+  ASSERT_TRUE(solveOnce(x).succeeded());
+  EXPECT_EQ(scratch.Adata.capacity(), aCapacity);
+  EXPECT_EQ(scratch.xdata.capacity(), xCapacity);
+  EXPECT_EQ(scratch.w.capacity(), wCapacity);
+  EXPECT_EQ(scratch.order.capacity(), orderCapacity);
+
+  // A smaller same-scratch solve shrinks sizes, never capacities.
+  Eigen::Matrix2d smallA;
+  smallA << 4.0, 1.0, 1.0, 3.0;
+  const Eigen::Vector2d smallB = smallA * Eigen::Vector2d(0.5, 0.25);
+  Eigen::VectorXd smallX = Eigen::VectorXd::Zero(2);
+  const auto smallResult = solver.solve(
+      smallA,
+      smallB,
+      Eigen::Vector2d::Zero(),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+      Eigen::Vector2i::Constant(-1),
+      smallX,
+      scratch,
+      options);
+  ASSERT_TRUE(smallResult.succeeded());
+  EXPECT_EQ(scratch.Adata.capacity(), aCapacity);
+  EXPECT_EQ(scratch.xdata.capacity(), xCapacity);
 }
