@@ -117,16 +117,35 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
     PRIVATE ${soft_foot_simbicon_test_sources}
   )
   target_link_libraries(test_ConstraintSolver dart-utils dart-utils-urdf)
+  # The push-recovery sweep is a multi-minute parameter measurement (a dozen
+  # settle+push+recover trials per foot type), so it gets its own CTest entry:
+  # bundled with the correctness gates it exceeds the 30-minute per-test
+  # ceiling on the FreeBSD VM, which runs roughly 35x slower than bare metal.
   add_test(
     NAME test_SoftFootSimbiconModel
     COMMAND
       $<TARGET_FILE:test_ConstraintSolver>
-      --gtest_filter=SoftFootSimbiconModelTest.*
+      "--gtest_filter=SoftFootSimbiconModelTest.*:-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet"
+  )
+  add_test(
+    NAME test_SoftFootSimbiconPushSweep
+    COMMAND
+      $<TARGET_FILE:test_ConstraintSolver>
+      --gtest_filter=SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet
   )
   set_tests_properties(
     test_SoftFootSimbiconModel
+    test_SoftFootSimbiconPushSweep
     PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
   )
+  # Explicit budgets, overriding the CI workflows' `ctest --timeout 1800`
+  # default. Measured on the FreeBSD repro VM, this Atlas world steps ~190x
+  # slower than bare metal (the correctness gates alone took 1161 s there),
+  # so the 30-minute default cannot hold either entry: the gates need ~22
+  # minutes and the sweep projects to ~62. Budgets are sized at roughly twice
+  # the projection.
+  set_tests_properties(test_SoftFootSimbiconModel PROPERTIES TIMEOUT 3600)
+  set_tests_properties(test_SoftFootSimbiconPushSweep PROPERTIES TIMEOUT 7200)
   dart_format_add(${soft_foot_simbicon_test_sources})
 endif()
 

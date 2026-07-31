@@ -87,7 +87,10 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   penetrating pose and requires the same foot-ground manifold, currently 48 =
   48 contacts with a worst pairwise distance of 9e-9 m (the soft mesh stores
   vertices in single precision). Contact margin is gate-enforced at
-  soft >= 1.5x rigid (measured 2.8x: 51.98 vs 18.45).
+  soft >= 1.5x rigid (measured 2.8x: 51.98 vs 18.45). The margin is a ratio
+  with headroom rather than exact values because cross-platform floating-point
+  drift shifts these chaotic trajectories: the FreeBSD CI VM measures 51.1 vs
+  16.1, a 3.2x spread, on the same commit.
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required

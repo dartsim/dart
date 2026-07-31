@@ -143,7 +143,17 @@ APPROVED_CTEST_SELECTIONS = {
         "environment": (),
     },
     "test_SoftFootSimbiconModel": {
-        "arguments": ("--gtest_filter=SoftFootSimbiconModelTest.*",),
+        "arguments": (
+            "--gtest_filter=SoftFootSimbiconModelTest.*"
+            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_SoftFootSimbiconPushSweep": {
+        "arguments": (
+            "--gtest_filter="
+            "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
         "environment": (),
     },
 }
