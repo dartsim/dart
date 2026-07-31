@@ -1,7 +1,7 @@
 # Agent Continuation And Truth Ledger
 
 This is the authoritative status for the active
-`fbf_exact_coulomb_friction` dev task as of 2026-07-30. It supersedes older
+`fbf_exact_coulomb_friction` dev task as of 2026-07-31. It supersedes older
 solver, performance, geometry, GUI, PR, and completion claims in this task
 folder. Do not mark the task complete or retire the folder.
 
@@ -13,6 +13,84 @@ tests, benchmarks, and GUI examples from the paper?" is:
 ```text
 No.
 ```
+
+## 2026-07-31 Review-Fix And Windows-CI Truth Boundary
+
+This section is the current authority for branch head, runtime currency, PR
+state, and CI state. It supersedes those statements in every section below,
+including the 2026-07-30 section. The Figure 3/8 capture content, oracle, and
+claim-boundary statements below remain accurate for their captured runtime and
+are only re-bound, not replaced, by this section.
+
+- Local code/runtime checkpoint is
+  `051daf4e24036f8a183fee4d37e20e9f04180b12`. This ledger is committed inside
+  the single additive Windows-portability checkpoint stacked directly on it;
+  query the live branch for the exact documentation head. Both are unpushed
+  local descendants of `ae828798ac996ecef0961f08797ba1e5089fd1bb`, which
+  merges `release-6.20` tip `718651d0d6e7cb575c6f843a955408bdb55e6139` and
+  already contains `aaf1e5f64dd47f0350ea1b395bf257bb77b36829`. Query the live
+  branch before assuming any of this is pushed.
+- PR #3377 is open and **no longer draft** at the live query for this section.
+  The task's own completion gates are still open, so treat readiness as a
+  maintainer decision, not as evidence that the exit criteria are met. Keep
+  the standing rules: do not trigger `@codex review`, reply to AI review
+  comments, or resolve review threads.
+- The Codex review of `ae828798ac9` raised one P1: the nearly-axial
+  cylinder-box cap-face helper added by this task ran unconditionally, so
+  default `Compact` Native queries silently widened the released single
+  deepest-corner contact into a multi-point patch. It is fixed by routing the
+  helper through the new `native::CollisionOption::enableFourPointPlanarPatches`
+  flag, which `DARTCollisionDetector` sets only in `FourPointPlanar`. The
+  released default contact path is restored, so the CHANGELOG claim that "the
+  default contact path is unchanged" is now true rather than aspirational.
+  `UNIT_collision_dart_engine` covers both sides of the gate.
+- The three earlier Codex findings remain fixed at
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`: cumulative exact-failure gating
+  for strict steps, `World::clone()` contact-gap key remapping, and soft-body
+  PointMass impulse preservation across the split-impulse position pass. Their
+  review threads are still unresolved on GitHub because thread mutation needs
+  maintainer approval, not because the code is unfixed.
+- Hosted `CI Windows / Release` at `ae828798ac9` failed with 37 pytest
+  failures and one teardown error, all inside 14 of this task's harness test
+  modules under `python/tests/unit/`. Its C++ side was green at 162/162. The
+  causes were POSIX-only assumptions, and every one is fixed at the root
+  rather than skipped: frozen argv and artifact-index path contracts now
+  render through `as_posix()` (byte-identical on POSIX); the process-group
+  cleanup resolves a portable `_FORCE_KILL_SIGNAL` and falls back from
+  `os.killpg` to a `taskkill /T /F` tree termination on Windows; the
+  ldd/runtime-closure parsers accept rooted absolute paths on every platform;
+  the CPU-evidence confinement rejects rooted or drive-qualified filenames as
+  non-relative; artifact indexes sort by their serialized POSIX keys; and
+  `.gitattributes` pins LF for `scripts/*.py`, `python/tests/unit/test_*.py`,
+  and `tests/benchmark/integration/*.cpp` so byte-level source-identity pins
+  cannot drift with `autocrlf`. No test was skipped, weakened, or disabled.
+- The portability edit legitimately moved the v1 policy-A/B runner and the
+  shared identity-helper sources, so the v2 wrapper's enforced
+  inherited-runner pin, its frozen protocol-contract hash, and
+  `CARD_HOUSE_CROSS_STEP_POLICY_AB_V2.md` carry a disclosed 2026-07-31
+  execution-identity amendment. The sealed execution-component digest is
+  retained, so a fresh v2 execution still fails closed; re-running that lane
+  requires a v3 protocol with newly sealed components.
+  `finalize_fbf_author_incline_reference.py` is intentionally untouched
+  because its sealed local author bundle binds the finalizer's exact bytes
+  and its suite is inert without the pinned `/tmp` author run.
+- Evidence currency is re-bound, not invalidated. Every sealed Figure 3,
+  Figure 8, ten-level, and CPU bundle was captured at runtime checkpoint
+  `0acffc45b81`, so none of them is same-runtime with `051daf4e240`. The only
+  cylinder-box collision pairs in this task's scenes are the turntable
+  supports in `fbf_paper_trace.cpp` and `FbfPaperFrictionScene.cpp`, and both
+  run under `FourPointPlanar`, which the gate leaves untouched. No captured
+  physical result is expected to change, but every hash-bound same-runtime
+  claim still needs recapture before it may be restated.
+- The harness finalizers hash their own sources and test modules into capture
+  provenance (`visual_runner_test`, `finalizer_test`), so the portability
+  checkpoint moves those provenance hashes. Any pending fresh capture must be
+  taken at or after this checkpoint, never before it.
+- Local verification at this checkpoint: `pixi run lint` pass,
+  `git diff --check` pass, `pixi run build` pass, `pixi run test` 165/165
+  pass at `051daf4e240`, the full FBF harness pytest battery 1,465 passed /
+  3 skipped, the author-incline reference suite 64/64, and the AI
+  infrastructure gate 388/388 on Linux. Hosted CI for this head has not run.
 
 ## 2026-07-30 Current-Head Figure 3/8 Truth Boundary
 

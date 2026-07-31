@@ -2750,9 +2750,10 @@ def _demo_runtime_closure(demo: Path) -> dict[str, Any]:
             reported_name = candidate_text
 
         candidate = Path(candidate_text)
-        if not candidate.is_absolute():
+        if not candidate.is_absolute() and not candidate.root:
             # Entries such as linux-vdso.so are kernel-provided and have no
-            # regular file that can be hashed.
+            # regular file that can be hashed. Rooted POSIX-style paths stay
+            # eligible even where the platform Path type calls them relative.
             continue
         try:
             resolved = candidate.resolve(strict=True)

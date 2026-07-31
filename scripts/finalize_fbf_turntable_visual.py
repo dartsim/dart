@@ -855,7 +855,9 @@ def summarize_trace_lanes(
 def artifact_index(root: Path) -> dict[str, Any]:
     root = root.resolve()
     artifacts = []
-    for path in sorted(root.rglob("*")):
+    for path in sorted(
+        root.rglob("*"), key=lambda entry: entry.relative_to(root).as_posix()
+    ):
         if path.is_symlink():
             raise ValueError(f"turntable bundle contains a symlink: {path}")
         if not path.is_file():
@@ -2055,7 +2057,7 @@ def _trace_argv(trace_binary: Path, scenario: str, lane: str) -> list[str]:
         raise ValueError(f"unsupported turntable trace lane: {lane}")
     contract = LANES[lane]
     return [
-        str(trace_binary),
+        trace_binary.as_posix(),
         scenario,
         "exact_fbf",
         "1",
@@ -2108,23 +2110,23 @@ def _capture_argv(
     ffmpeg: Path,
     ffprobe: Path,
 ) -> list[str]:
-    argv = [str(python), str(runner), "run"]
+    argv = [python.as_posix(), runner.as_posix(), "run"]
     for capture_id in CAPTURE_IDS:
         argv.extend(("--scenario", capture_id))
     argv.extend(
         (
             "--demo",
-            str(demo),
+            demo.as_posix(),
             "--output-root",
-            str(bundle),
+            bundle.as_posix(),
             "--ffmpeg",
-            str(ffmpeg),
+            ffmpeg.as_posix(),
             "--ffprobe",
-            str(ffprobe),
+            ffprobe.as_posix(),
             "--python",
-            str(python),
+            python.as_posix(),
             "--out",
-            str(bundle / "run-summary.json"),
+            (bundle / "run-summary.json").as_posix(),
         )
     )
     return argv
@@ -2900,9 +2902,10 @@ def _parse_ldd_in_tree_paths(output: str, *, build_root: Path) -> list[Path]:
             fields = line.strip().split()
             if fields:
                 candidate = fields[0]
-        if not candidate.startswith("/"):
+        candidate_path = Path(candidate)
+        if not candidate_path.is_absolute() and not candidate_path.root:
             continue
-        path = Path(candidate).resolve(strict=True)
+        path = candidate_path.resolve(strict=True)
         try:
             path.relative_to(build_root.resolve(strict=True))
         except ValueError:

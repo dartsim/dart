@@ -862,10 +862,11 @@ def main(argv=None):
             == set(baseline.SMALL_FIXTURE_SCENARIOS),
         },
         "source_files": {
-            str(BASELINE_PATH.relative_to(REPO_ROOT)): sha256_file(BASELINE_PATH),
-            str(pathlib.Path(__file__).resolve().relative_to(REPO_ROOT)): sha256_file(
-                pathlib.Path(__file__).resolve()
-            ),
+            BASELINE_PATH.relative_to(REPO_ROOT).as_posix(): sha256_file(BASELINE_PATH),
+            pathlib.Path(__file__)
+            .resolve()
+            .relative_to(REPO_ROOT)
+            .as_posix(): sha256_file(pathlib.Path(__file__).resolve()),
             "pixi.lock": sha256_file(REPO_ROOT / "pixi.lock"),
         },
     }

@@ -1,6 +1,52 @@
 # Resume: FBF exact Coulomb friction
 
-## 2026-07-30 Current Resume Authority
+## 2026-07-31 Current Resume Authority
+
+This section supersedes the branch-head, runtime-currency, PR-state, CI, and
+immediate-next-step statements in every section below, including the
+2026-07-30 section. Its API-default and claim-boundary statements are
+unchanged. The task remains active and incomplete.
+
+- Worktree:
+  `/home/js/dev/dartsim/dart/task_6`
+- Branch:
+  `research/fbf-friction-release620`
+- Code/runtime checkpoint:
+  `051daf4e24036f8a183fee4d37e20e9f04180b12`
+- Documentation and test head:
+  the single additive Windows-portability commit containing this file; query
+  the live branch
+- Merged `release-6.20` tip:
+  `718651d0d6e7cb575c6f843a955408bdb55e6139`, through merge
+  `ae828798ac996ecef0961f08797ba1e5089fd1bb`
+- Figure 3/8/ten-level/CPU evidence capture runtime:
+  `0acffc45b81184ef56dbc53ee60f6e25786102c2`
+- PR:
+  <https://github.com/dartsim/dart/pull/3377>, open and no longer draft
+
+Both local commits are unpushed at the time of writing; requery the live
+branch and PR before assuming otherwise. Pushing, PR edits, CI reruns, and
+review-thread mutation still need explicit maintainer approval. Do not trigger
+`@codex review`, reply to AI review comments, or resolve review threads.
+
+This checkpoint closes the Codex P1 on the nearly-axial cylinder-box cap-face
+helper by gating it on the new
+`native::CollisionOption::enableFourPointPlanarPatches` flag, which
+`DARTCollisionDetector` sets only in `FourPointPlanar`, and fixes the 37
+`CI Windows / Release` harness failures at their root causes rather than
+skipping them: `as_posix()` path contracts, a portable process-group kill
+seam with a Windows `taskkill /T /F` tree fallback, rooted-absolute ldd
+parsing, drive-aware output confinement, string-keyed artifact-index
+ordering, and LF-pinned `.gitattributes` for byte-hashed sources. The v2
+policy-A/B inheritance pins carry a disclosed execution-identity amendment,
+and `finalize_fbf_author_incline_reference.py` stays byte-frozen for its
+sealed local bundle. Because this checkpoint moves the core library (at
+`051daf4e240`) and the harness sources that finalizers hash into capture
+provenance, every sealed bundle is now older-runtime: recapture before
+restating any same-runtime claim. See the 2026-07-31 section of
+[AGENT_CONTINUATION.md](AGENT_CONTINUATION.md) for the full boundary.
+
+## 2026-07-30 Superseded Resume Authority
 
 This section supersedes every older branch-head, runtime-currency, API-default,
 Figure 3, Figure 8, raw-file, CI, upload, and immediate-next-step statement

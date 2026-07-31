@@ -875,7 +875,7 @@ def test_trace_capture_and_verification_argv_freeze_runtime_contract(tmp_path):
         "--threads",
         "1",
         "--headless-sidecar",
-        str(tmp_path / "incline/timeline.json"),
+        (tmp_path / "incline/timeline.json").as_posix(),
     ]
     assert demo_argv.count("--headless-shot-at") == 61
     assert demo_argv[-1].startswith("120:")
@@ -1398,14 +1398,14 @@ def test_timeout_cleanup_does_not_repeat_force_kill_after_interrupt(monkeypatch)
 
     def force_kill(process_group_id, signal_number):
         assert process_group_id == process.pid
-        assert signal_number == module.signal.SIGKILL
+        assert signal_number == module._FORCE_KILL_SIGNAL
         force_kills.append(signal_number)
         if len(force_kills) > 1:
             raise PermissionError("redundant force kill")
 
     def terminate(owned_process):
         assert owned_process is process
-        module._kill_process_group(process.pid, module.signal.SIGKILL)
+        module._kill_process_group(process.pid, module._FORCE_KILL_SIGNAL)
         raise KeyboardInterrupt
 
     monkeypatch.setattr(module.subprocess, "Popen", lambda *args, **kwargs: process)
@@ -1414,7 +1414,7 @@ def test_timeout_cleanup_does_not_repeat_force_kill_after_interrupt(monkeypatch)
 
     with pytest.raises(KeyboardInterrupt):
         module._run_command(["capture"], timeout=0.5)
-    assert force_kills == [module.signal.SIGKILL]
+    assert force_kills == [module._FORCE_KILL_SIGNAL]
 
 
 def test_timeout_cleanup_sends_only_one_force_kill_after_grace_timeout(
@@ -1441,6 +1441,7 @@ def test_timeout_cleanup_sends_only_one_force_kill_after_grace_timeout(
         lambda process_group_id, signal_number: signals.append(
             (process_group_id, signal_number)
         ),
+        raising=False,
     )
 
     assert module._terminate_process_group(UnresponsiveProcess()) == (
@@ -1449,7 +1450,7 @@ def test_timeout_cleanup_sends_only_one_force_kill_after_grace_timeout(
     )
     assert signals == [
         (12345, module.signal.SIGTERM),
-        (12345, module.signal.SIGKILL),
+        (12345, module._FORCE_KILL_SIGNAL),
     ]
 
 
@@ -1467,11 +1468,11 @@ def test_timeout_cleanup_force_kills_if_initial_signal_is_interrupted(monkeypatc
         if signal_number == module.signal.SIGTERM:
             raise KeyboardInterrupt
 
-    monkeypatch.setattr(module.os, "killpg", signal_group)
+    monkeypatch.setattr(module.os, "killpg", signal_group, raising=False)
 
     with pytest.raises(KeyboardInterrupt):
         module._terminate_process_group(Process())
-    assert signals == [module.signal.SIGTERM, module.signal.SIGKILL]
+    assert signals == [module.signal.SIGTERM, module._FORCE_KILL_SIGNAL]
 
 
 def test_timeout_cleanup_propagates_force_kill_permission_error(monkeypatch):
@@ -1488,15 +1489,15 @@ def test_timeout_cleanup_propagates_force_kill_permission_error(monkeypatch):
     def signal_group(process_group_id, signal_number):
         assert process_group_id == 12345
         signals.append(signal_number)
-        if signal_number == module.signal.SIGKILL:
+        if signal_number == module._FORCE_KILL_SIGNAL:
             raise PermissionError("force kill denied")
 
-    monkeypatch.setattr(module.os, "killpg", signal_group)
+    monkeypatch.setattr(module.os, "killpg", signal_group, raising=False)
 
     with pytest.raises(PermissionError, match="force kill denied"):
         module._terminate_process_group(UnresponsiveProcess())
     assert signals[0] == module.signal.SIGTERM
-    assert signals.count(module.signal.SIGKILL) >= 1
+    assert signals.count(module._FORCE_KILL_SIGNAL) >= 1
 
 
 def test_forceful_cleanup_kills_group_before_darwin_orphan_eperm(monkeypatch):
@@ -1520,16 +1521,16 @@ def test_forceful_cleanup_kills_group_before_darwin_orphan_eperm(monkeypatch):
         if leader_reaped and descendant_alive:
             raise PermissionError("Darwin orphaned process group")
         events.append(signal_number)
-        if signal_number == module.signal.SIGKILL:
+        if signal_number == module._FORCE_KILL_SIGNAL:
             descendant_alive = False
 
-    monkeypatch.setattr(module.os, "killpg", signal_group)
+    monkeypatch.setattr(module.os, "killpg", signal_group, raising=False)
 
     assert module._terminate_process_group(Process(), graceful=False) == (
         "stdout",
         "stderr",
     )
-    assert events == [module.signal.SIGKILL, "reap leader"]
+    assert events == [module._FORCE_KILL_SIGNAL, "reap leader"]
     assert descendant_alive is False
 
 
@@ -1729,15 +1730,15 @@ def test_run_command_interrupt_cleans_descendants_before_reraising(
             raise PermissionError("Darwin orphaned process group")
         real_killpg(process_group_id, signal_number)
         signals.append(signal_number)
-        if signal_number == module.signal.SIGKILL:
+        if signal_number == module._FORCE_KILL_SIGNAL:
             force_kill_sent = True
 
     monkeypatch.setattr(module.subprocess, "Popen", InterruptingPopen)
-    monkeypatch.setattr(module.os, "killpg", signal_group)
+    monkeypatch.setattr(module.os, "killpg", signal_group, raising=False)
     with pytest.raises(KeyboardInterrupt):
         module._run_command([sys.executable, "-c", parent_code], timeout=30.0)
 
-    assert signals == [module.signal.SIGKILL]
+    assert signals == [module._FORCE_KILL_SIGNAL]
     child_pid = int(child_pid_path.read_text(encoding="utf-8"))
     time.sleep(1.7)
     assert not late_write_path.exists()

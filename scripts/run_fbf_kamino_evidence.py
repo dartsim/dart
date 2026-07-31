@@ -913,9 +913,10 @@ def main(argv: list[str] | None = None) -> int:
         encoding="utf-8",
     )
     metadata["source_files"] = {
-        str(Path(__file__).resolve().relative_to(repo_root)): {
-            "sha256": _sha256(Path(__file__).resolve())
-        }
+        Path(__file__)
+        .resolve()
+        .relative_to(repo_root)
+        .as_posix(): {"sha256": _sha256(Path(__file__).resolve())}
     }
     metadata["artifacts"] = {
         name: _artifact_binding(output_dir / name)

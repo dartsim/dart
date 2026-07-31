@@ -716,15 +716,40 @@ def _parse_ldd_in_tree_paths(output: str, *, build_root: Path) -> list[Path]:
             fields = line.split("=>", 1)[1].strip().split()
         else:
             fields = line.strip().split()
-        if not fields or not fields[0].startswith("/"):
+        if not fields:
             continue
-        path = Path(fields[0]).resolve(strict=True)
+        candidate = Path(fields[0])
+        if not candidate.is_absolute() and not candidate.root:
+            continue
+        path = candidate.resolve(strict=True)
         try:
             path.relative_to(resolved_build_root)
         except ValueError:
             continue
         paths.add(path)
     return sorted(paths, key=lambda path: path.as_posix())
+
+
+# POSIX process groups are the execution contract: every spawned capture child
+# is a session leader, so signalling its pid-keyed group reaches all
+# descendants. Windows has no os.killpg; degrade to a taskkill tree
+# termination so a timed-out capture still cannot leak descendants.
+_FORCE_KILL_SIGNAL = signal.SIGKILL if hasattr(signal, "SIGKILL") else signal.SIGBREAK
+
+
+def _kill_process_group(process_group_id: int, signal_number: int) -> None:
+    killpg = getattr(os, "killpg", None)
+    if killpg is None:
+        subprocess.run(
+            ["taskkill", "/T", "/F", "/PID", str(process_group_id)],
+            check=False,
+            capture_output=True,
+        )
+        return
+    try:
+        killpg(process_group_id, signal_number)
+    except ProcessLookupError:
+        pass
 
 
 def _run_command(
@@ -744,13 +769,13 @@ def _run_command(
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGTERM)
+        _kill_process_group(process.pid, signal.SIGTERM)
         try:
             stdout, stderr = process.communicate(
                 timeout=PROCESS_TERMINATION_GRACE_SECONDS
             )
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
+            _kill_process_group(process.pid, _FORCE_KILL_SIGNAL)
             stdout, stderr = process.communicate()
         raise subprocess.TimeoutExpired(argv, timeout, output=stdout, stderr=stderr)
     completed = subprocess.CompletedProcess(argv, process.returncode, stdout, stderr)
@@ -841,7 +866,7 @@ def _query_contract(
 def _expected_demo_argv(demo: Path, root: Path) -> list[str]:
     output = root / CAPTURE_DIR
     return [
-        str(demo),
+        demo.as_posix(),
         "--scene",
         SCENE_ID,
         "--headless",
@@ -854,9 +879,9 @@ def _expected_demo_argv(demo: Path, root: Path) -> list[str]:
         "--threads",
         "1",
         "--headless-sidecar",
-        str(output / "timeline.json"),
+        (output / "timeline.json").as_posix(),
         "--headless-shot-at",
-        f"0:{output / 'frames/step_000000.png'}",
+        f"0:{(output / 'frames/step_000000.png').as_posix()}",
     ]
 
 

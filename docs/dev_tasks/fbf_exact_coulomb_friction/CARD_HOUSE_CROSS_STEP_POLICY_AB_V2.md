@@ -72,8 +72,6 @@ scientific-gate behavior.
 
 The following predecessor identities are frozen from the sole v1 execution:
 
-- inherited v1 runner SHA-256:
-  `47f32dc5cdab8457ec92438200bfd39fd3f78240b3ce9faa926a2b56fd6c25d8`;
 - trace source SHA-256:
   `797c74753946ca7cf7f8e3680863b1acb13f53779c8c550f3427b76e337990db`;
 - identity-helper source SHA-256:
@@ -91,6 +89,15 @@ DART library, and every resolved regular shared-library identity, not only
 the executable file. V2 refuses to execute if either this component digest or
 the inherited v1 runner digest differs. It must use a fresh output directory.
 Timing remains diagnostic-only.
+
+2026-07-31 execution-identity amendment: the v1 runner and the shared
+identity helper were corrected for Windows-portable path rendering after the
+sealed execution, so the enforced inherited v1 runner SHA-256 is now
+`0d4909fed7c34e077a0e47e85f78e680268382069dbda2bb723f21c8c954abbe`. No
+frozen scientific parameter, gate, or policy changed. The sealed component
+digest above still binds the pre-correction helper and trace sources, so a
+fresh v2 execution fails closed; re-executing this lane requires a v3
+protocol with newly sealed execution components.
 
 The inherited no-retuning rule applies. Any further correction requires v3
 and another fresh output directory. The runner never launches a 600-step child

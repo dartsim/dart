@@ -41,7 +41,7 @@ def test_frozen_v2_protocol_hash_is_exact():
     module = _load_module()
 
     assert module._protocol_contract_sha256() == (
-        "084731bea140d8911570155ec41f15d11eb47047ed8e4c03d5dc04df729fdd21"
+        "7846269bdaf2db88137e71f9bf9051da61e3caf9131c6eb899374504ab5946b1"
     )
 
 
