@@ -242,6 +242,13 @@ struct DART_COLLISION_NATIVE_API CollisionOption
 
   const CollisionFilter* collisionFilter = nullptr;
 
+  /// Enables opt-in planar face patches for shape pairs whose released
+  /// narrow-phase result is a single point. It stays false by default so
+  /// direct native queries keep their released contact counts and forces;
+  /// DARTCollisionDetector sets it only in
+  /// ContactManifoldMode::FourPointPlanar.
+  bool enableFourPointPlanarPatches = false;
+
   [[nodiscard]] static CollisionOption binaryCheck()
   {
     return {false, 1, nullptr};

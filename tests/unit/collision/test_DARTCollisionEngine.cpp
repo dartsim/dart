@@ -1512,6 +1512,46 @@ TEST(DARTCollisionDetector, FourPointPlanarCylinderBoxAxialPatchSmallTilt)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, CompactCylinderBoxNearlyAxialFaceStaysSinglePoint)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_EQ(
+      collision::DARTCollisionDetector::ContactManifoldMode::Compact,
+      detector->getContactManifoldMode());
+  auto cylinderFrame
+      = makeFrame(std::make_shared<dynamics::CylinderShape>(2.0, 0.1));
+  auto boxFrame = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.3)));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear()
+      = Eigen::AngleAxisd(0.25 * std::acos(-1.0), Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+  transform.translation() = Eigen::Vector3d(1.0, 0.0, 0.195);
+  boxFrame->setRelativeTransform(transform);
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), boxFrame.get());
+
+  collision::CollisionOption option(true, 10u);
+  option.maxNumContactsPerPair = 10u;
+  collision::CollisionResult compactResult;
+  ASSERT_TRUE(group->collide(option, &compactResult));
+
+  // The released cylinder-box result for a rotated box over a cap is the
+  // single deepest-corner contact. The default mode must keep it.
+  ASSERT_EQ(1u, compactResult.getNumContacts());
+  const auto& contact = compactResult.getContact(0);
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.005, contact.penetrationDepth, 1e-12);
+  EXPECT_NEAR(0.0475, contact.point.z(), 1e-12);
+
+  detector->setContactManifoldMode(
+      collision::DARTCollisionDetector::ContactManifoldMode::FourPointPlanar);
+  collision::CollisionResult optInResult;
+  ASSERT_TRUE(group->collide(option, &optInResult));
+  EXPECT_EQ(4u, optInResult.getNumContacts());
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, CollidesCylinderPlane)
 {
   auto detector = collision::DARTCollisionDetector::create();
