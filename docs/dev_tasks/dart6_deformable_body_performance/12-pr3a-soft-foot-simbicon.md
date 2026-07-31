@@ -64,27 +64,51 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   point-mass state, the gait phase, the contact bookkeeping, the world clock and
   resting snapshots, and rebuilding the collision detector's incremental
   broadphase.
-- **Push recovery: measured, currently NOT reproducing.** Once the two models
-  are made comparable, `maxRecoverablePush` gives soft 4000 N against rigid
-  8000 N, so the paper's "withstands larger perturbations" does not hold with
-  the shipped soft-feet asset. The gate records both thresholds and asserts only
-  that neither saturated the sweep. A stiffness sweep shows the cause is the
-  asset's compliance, not the contact model: at kv 1e6 / damp 5e3 the soft feet
-  recover 12000 N and do beat rigid, against the shipped kv 5e4 / damp 1e3.
-  **Open decision for a maintainer**: retune the shared asset, override the
-  stiffness scene-locally, or accept the negative result. Until then this row is
-  carried by the contact-count claim only.
-- **Comparable models**: the rigid and soft bipeds must weigh the same and
-  present the same number of foot collision surfaces, normalized on the loaded
-  instance rather than in the shared `dart://sample` asset. A `<soft_shape>`'s
-  `<total_mass>` is added on top of its link mass, and its generated
-  `SoftMeshShape` is collidable in addition to the link's rigid STL collision
-  mesh; without correcting both, the gates measure ground load and duplicated
-  geometry rather than deformability.
+- **Push recovery: measured, not asserted.** Soft 4000 N vs rigid 8000 N — the
+  paper's claim does not reproduce. The gate records both thresholds and asserts
+  only that neither saturated the sweep. See *Open maintainer decisions*.
+- **Comparable models**: equal total mass and one foot collision surface each,
+  normalized on the loaded instance, not in the shared `dart://sample` asset.
+  `<total_mass>` adds to the link mass, and the generated `SoftMeshShape` is
+  collidable alongside the link's rigid STL mesh; uncorrected, the gates measure
+  ground load and duplicated geometry rather than deformability.
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required
   for the model test).
+
+## Open maintainer decisions
+
+Both block the Jain/Liu push-recovery claim. The contact-count claim is
+unaffected and reproduces (52.0 soft vs 44.4 rigid).
+
+**1. Soft-foot stiffness — the feet are too compliant for a 147 kg Atlas.**
+
+- Measured: soft recovers 4000 N, rigid 8000 N.
+- Cause is compliance, not the contact model. Recoverable push by
+  `kv` / `damp`: 5e4/1e3 (shipped) 4000 N · 2e5/1e3 4000 N · 1e6/1e3 6000 N ·
+  1e6/5e3 **12000 N** (beats rigid).
+- Options: (a) retune `atlas_v3_no_head_soft_feet.sdf` — shared asset, changes
+  behavior for `test_SdfParser` and downstream; (b) override stiffness
+  scene-locally in `normalizeSoftFoot()` — contained, but the demo then differs
+  from the asset it loads; (c) accept the negative result.
+
+**2. Foot inertia and COM — equal mass is not equal dynamics.**
+
+- The 0.5 kg of point masses contribute inertia at their distributed rest
+  positions. `normalizeSoftFoot()` scales the link inertia by the retained mass
+  only, so the soft foot's principal moments land ~1.8-2.0x the rigid foot's and
+  its COM shifts.
+- Matching the combined rest-pose inertia may be unrealizable: the point masses
+  alone already exceed the rigid foot's moments, so the link would need negative
+  inertia.
+- Options: (a) redesign the soft foot geometry (fewer/closer point masses, or a
+  thinner soft layer) so the combined inertia can match; (b) match mass and COM
+  only and document the residual inertia difference; (c) accept it.
+
+Until resolved, the push-recovery row is carried by the contact-count claim
+only, and `MeasuresRecoverablePushForBothFeet` publishes numbers rather than
+asserting the comparison.
 
 ## Constraints
 
