@@ -78,8 +78,12 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
   the rigid contact count by an order of magnitude by itself (STL mesh 44.4,
   analytic box 3.6, matched mesh 18.45), which is why anything short of the
   same tessellation measures the collision representation rather than
-  deformability. Contact margin is gate-enforced at soft >= 1.5x rigid
-  (measured 2.8x: 51.98 vs 18.45).
+  deformability. The detector is pinned to FCL, where both foot types are BVH
+  meshes against the ground primitive (the same narrow phase); the native
+  `dart` detector dispatches `MeshShape` and `SoftMeshShape` to different
+  collide functions and is not a valid configuration for this comparison --
+  the gate asserts the FCL pin. Contact margin is gate-enforced at
+  soft >= 1.5x rigid (measured 2.8x: 51.98 vs 18.45).
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required

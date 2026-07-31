@@ -239,6 +239,17 @@ Model createModel(Feet feet)
   // Single-threaded stepping so two runs of the same model are bit-identical.
   world->setNumSimulationThreads(1);
 
+  // The comparison is only valid under FCL, so the detector is pinned rather
+  // than inherited from the solver default. Under FCL both foot types become
+  // BVH meshes (MeshShape via createMesh, SoftMeshShape via createSoftMesh)
+  // colliding against the ground primitive through the same narrow phase; the
+  // native `dart` detector instead dispatches MeshShape and SoftMeshShape to
+  // different collide functions with different contact placement, which would
+  // reintroduce a representation difference between the control and the soft
+  // feet. The comparability gate asserts this configuration.
+  world->getConstraintSolver()->setCollisionDetector(
+      dart::collision::FCLCollisionDetector::create());
+
   dart::utils::DartLoader urdfLoader;
   auto ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
   if (!ground)
