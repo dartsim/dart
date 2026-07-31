@@ -44,6 +44,7 @@ _WRITER_CASES = {
         {
             "avbd_rigid_contact_config_emplaced": False,
             "recorded_from": "breakable joint scale benchmark row family",
+            "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
             "rigid_point_joint_solver": "avbd",
         },
@@ -58,6 +59,7 @@ _WRITER_CASES = {
         {
             "avbd_rigid_contact_config_emplaced": False,
             "recorded_from": "breakable motor scale benchmark row family",
+            "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
             "rigid_point_joint_solver": "avbd",
         },
@@ -72,6 +74,7 @@ _WRITER_CASES = {
         {
             "avbd_rigid_contact_config_emplaced": False,
             "recorded_from": "friction coefficient sweep benchmark scene counters",
+            "rigid_contact_selection": "contact_solver_method",
             "rigid_contact_solver": "sequential_impulse",
             "rigid_point_joint_solver": "none",
         },
@@ -86,6 +89,7 @@ _WRITER_CASES = {
         {
             "avbd_rigid_contact_config_emplaced": False,
             "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+            "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
             "rigid_point_joint_solver": "avbd",
         },
@@ -109,11 +113,30 @@ def test_builder_output_passes_schema_contract():
         assert schema.resolved_solver_identity_errors(packet, "case") == []
 
 
+def test_contact_solver_method_rejects_private_avbd_body_config():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family="sequential-impulse",
+        rigid_point_joint_solver="none",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="resolved report",
+    )
+    identity["avbd_rigid_contact_config_emplaced"] = True
+    packet = {
+        "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: identity,
+    }
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any("without a private AVBD body config" in error for error in errors)
+
+
 @pytest.mark.parametrize(
     ("report_family", "expected"),
     [
         ("sequential-impulse", "sequential_impulse"),
         ("boxed-lcp", "boxed_lcp"),
+        ("avbd", "avbd"),
         ("sequential-impulse + avbd (opt-in)", "avbd"),
         ("SEQUENTIAL-IMPULSE", "sequential_impulse"),
     ],
@@ -154,9 +177,40 @@ def test_avbd_substitution_requires_emplaced_config():
         )
 
 
+def test_public_avbd_family_records_selection_without_private_config():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family="avbd",
+        rigid_point_joint_solver="avbd",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="World resolved-configuration report",
+        rigid_contact_selection="world_solver_family",
+    )
+    assert identity == {
+        "avbd_rigid_contact_config_emplaced": False,
+        "recorded_from": "World resolved-configuration report",
+        "rigid_contact_selection": "world_solver_family",
+        "rigid_contact_solver": "avbd",
+        "rigid_point_joint_solver": "avbd",
+    }
+
+
+def test_public_avbd_family_requires_explicit_selection_source():
+    with pytest.raises(ValueError):
+        schema.make_resolved_solver_identity(
+            resolved_rigid_contact_family="avbd",
+            rigid_point_joint_solver="avbd",
+            avbd_rigid_contact_config_emplaced=False,
+            recorded_from="World resolved-configuration report",
+        )
+
+
 def test_unrecognized_report_family_raises():
     with pytest.raises(ValueError):
         schema.resolved_rigid_contact_solver_from_report("magic-solver")
+    with pytest.raises(ValueError):
+        schema.resolved_rigid_contact_solver_from_report("magic-avbd-solver")
+    with pytest.raises(ValueError):
+        schema.resolved_rigid_contact_solver_from_report("magic + avbd (opt-in)")
     with pytest.raises(ValueError):
         schema.resolved_rigid_contact_solver_from_report("")
 

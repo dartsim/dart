@@ -192,11 +192,12 @@ constexpr std::size_t kVariationalOptionTailBytes
     = sizeof(std::size_t) + sizeof(double);
 constexpr std::size_t kComputeAcceleratorPolicyTailBytes = sizeof(std::uint8_t);
 constexpr std::size_t kDifferentiableParameterTailBytes = sizeof(std::size_t);
+constexpr std::size_t kRigidConstraintIterationTailBytes = sizeof(std::size_t);
 constexpr std::size_t kWorldOptionTailBytes
     = sizeof(std::uint8_t) + kSolverOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
       + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
-      + kDifferentiableParameterTailBytes;
+      + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes;
 
 dart::simulation::JointSpec makeJointSpec(
     std::string_view name,
@@ -1060,6 +1061,7 @@ TEST(Serialization, PreservesWorldSolverOptions)
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 8u);
   EXPECT_EQ(
       world2.getMultibodyOptions().integrationFamily,
       sx::MultibodyIntegrationFamily::Variational);
@@ -1073,6 +1075,117 @@ TEST(Serialization, PreservesWorldSolverOptions)
   EXPECT_EQ(
       world2.getComputeAcceleratorPolicy(),
       sx::ComputeAcceleratorPolicy::PreferAccelerated);
+}
+
+TEST(Serialization, PreservesPublicAvbdSolverFamily)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Avbd);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 20u);
+  EXPECT_EQ(
+      world2.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+}
+
+TEST(Serialization, RejectsMissingRigidConstraintIterationBudget)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(serialized.size(), sizeof(std::size_t));
+  serialized.resize(serialized.size() - sizeof(std::size_t));
+  std::stringstream truncated(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(truncated), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsAvbdSolverInPreAvbdFormat)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(
+      serialized.size(), 2u * sizeof(std::uint32_t) + sizeof(std::size_t));
+  serialized.resize(serialized.size() - sizeof(std::size_t));
+  constexpr std::uint32_t legacyVersion = 28u;
+  std::memcpy(
+      serialized.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  std::stringstream downgraded(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(downgraded), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsNonDefaultRigidConstraintOptionsForIpc)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(serialized.size(), sizeof(std::size_t));
+  const std::size_t nonDefaultIterations = 20u;
+  std::memcpy(
+      serialized.data() + serialized.size() - sizeof(std::size_t),
+      &nonDefaultIterations,
+      sizeof(nonDefaultIterations));
+  std::stringstream incompatible(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(incompatible), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsAvbdSolverForLoadedMultibodyTopology)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  [[maybe_unused]] auto multibody = world1.addMultibody("robot");
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  const std::size_t solverSuffixBytes
+      = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
+        + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
+        + kDifferentiableParameterTailBytes
+        + kRigidConstraintIterationTailBytes;
+  ASSERT_GE(serialized.size(), solverSuffixBytes + kSolverOptionTailBytes);
+  serialized[serialized.size() - solverSuffixBytes - kSolverOptionTailBytes]
+      = static_cast<char>(2u);
+  std::stringstream incompatible(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(incompatible), sx::InvalidOperationException);
 }
 
 TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
@@ -1226,7 +1339,8 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   const std::size_t solverSuffixBytes
       = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
         + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
-        + kDifferentiableParameterTailBytes;
+        + kDifferentiableParameterTailBytes
+        + kRigidConstraintIterationTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
@@ -1244,8 +1358,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
         };
 
   const std::size_t deactivationOffset
-      = validRecord.size() - kDifferentiableParameterTailBytes
-        - kComputeAcceleratorPolicyTailBytes - kDeactivationOptionTailBytes;
+      = validRecord.size() - kRigidConstraintIterationTailBytes
+        - kDifferentiableParameterTailBytes - kComputeAcceleratorPolicyTailBytes
+        - kDeactivationOptionTailBytes;
   const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
@@ -1256,11 +1371,18 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
       toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
 
   const std::size_t computePolicyOffset = validRecord.size()
+                                          - kRigidConstraintIterationTailBytes
                                           - kDifferentiableParameterTailBytes
                                           - kComputeAcceleratorPolicyTailBytes;
   const std::uint8_t invalidComputePolicy = 99u;
   expectInvalidTailField(
       computePolicyOffset, &invalidComputePolicy, sizeof(invalidComputePolicy));
+
+  const std::size_t invalidRigidConstraintIterations = 0u;
+  expectInvalidTailField(
+      validRecord.size() - kRigidConstraintIterationTailBytes,
+      &invalidRigidConstraintIterations,
+      sizeof(invalidRigidConstraintIterations));
 }
 
 // Test loadBinary resets solver-family and policy metadata when reading records

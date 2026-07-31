@@ -135,7 +135,10 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      after commandVelocity. Clean break: DART 7 has no compatibility debt, so
 //      packets written with the three-field actuation record (versions <= 27)
 //      no longer round-trip comps.JointActuation.
-constexpr std::uint32_t kBinaryFormatVersion = 28;
+//   29: World stores the rigid contact-stage iteration budget after
+//      differentiable physical-parameter registrations, and the rigid-body
+//      solver enum gains the AVBD value.
+constexpr std::uint32_t kBinaryFormatVersion = 29;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

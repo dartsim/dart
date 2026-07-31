@@ -88,13 +88,13 @@ struct KinematicBodyStepTrace
   Transform endTransform;
 };
 
-/// Internal opt-in configuration for the first AVBD rigid contact World slice.
+/// Internal per-body configuration for AVBD rigid contact.
 ///
 /// This component is intentionally not surfaced through the public `World`
-/// facade. When every rigid contact in the contact stage has at least one body
-/// with an enabled config, supported free rigid-body contacts route through the
-/// private 6-DOF AVBD point-pair row projection. Unsupported envelopes fall
-/// back to the default sequential-impulse path.
+/// facade. `RigidBodySolver::Avbd` selects AVBD globally and uses these values
+/// only as internal per-body refinements. Compatibility tests may also attach
+/// enabled configs while another public family is selected; only that private
+/// compatibility path may fall back to sequential impulse.
 struct RigidAvbdContactConfig
 {
   bool enabled = true;

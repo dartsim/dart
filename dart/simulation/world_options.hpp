@@ -49,16 +49,23 @@ enum class RigidBodySolver
 {
   SequentialImpulse,
   Ipc,
+  /// Augmented vertex block descent for free rigid-body contact and public
+  /// rigid-body pair constraints. This family uses the same split
+  /// velocity/contact/position schedule as sequential impulse, but the contact
+  /// stage resolves every supported active rigid contact through AVBD.
+  Avbd,
 };
 
 /// Selects how the rigid-body contact stage resolves active contacts.
 ///
-/// This is an explicit, documented opt-in. It is independent of the
+/// This is an explicit, documented opt-in within the
+/// `RigidBodySolver::SequentialImpulse` family. It is independent of the
 /// differentiable flag: a non-differentiable world may use either method, and a
 /// differentiable world defaults to the same `SequentialImpulse` path as any
-/// other. The enum names the contact formulation, without exposing backend,
-/// registry, ECS storage, or concrete solver-object types, so it is safe on the
-/// public facade surface.
+/// other. `RigidBodySolver::Avbd` owns its contact formulation and therefore
+/// cannot be combined with a non-default value here. The enum names the contact
+/// formulation without exposing backend, registry, ECS storage, or concrete
+/// solver-object types, so it is safe on the public facade surface.
 enum class ContactSolverMethod
 {
   /// Sequential-impulse (Gauss-Seidel) normal+friction solve. The default and
@@ -70,6 +77,17 @@ enum class ContactSolverMethod
   /// tangent rows per active rigid-body contact (`findex`-coupled box bounds).
   /// Mixed articulated scenes use the unified constraint/contact path.
   BoxedLcp,
+};
+
+/// Domain-scoped tuning for the built-in rigid constraint stage.
+///
+/// The positive iteration budget controls sequential-impulse contact sweeps
+/// and AVBD rigid contact, joint, motor, and spring sweeps. The IPC family and
+/// mixed semi-implicit multibody worlds bypass this stage and therefore accept
+/// only the default options.
+struct RigidConstraintOptions
+{
+  std::size_t iterations = 8;
 };
 
 /// Selects how the differentiable contact stage produces its BACKWARD-pass
@@ -180,8 +198,13 @@ struct WorldOptions
   Eigen::Vector3d gravity{0.0, 0.0, -9.81};
 
   /// Free rigid-body solver family used by the built-in `World::step()`
-  /// schedule. Defaults to sequential impulse.
+  /// schedule. Defaults to sequential impulse. `Avbd` is an explicit opt-in
+  /// for free rigid-body contact and pair constraints; it does not silently
+  /// substitute sequential impulse for unsupported contact envelopes.
   RigidBodySolver rigidBodySolver = RigidBodySolver::SequentialImpulse;
+
+  /// Tuning for the built-in rigid constraint stage.
+  RigidConstraintOptions rigidConstraintOptions;
 
   /// Multibody domain method-family options used by the built-in
   /// `World::step()` schedule. Defaults to semi-implicit integration.

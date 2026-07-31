@@ -4323,6 +4323,7 @@ def main(argv: list[str] | None = None) -> int:
             "screenshot": str(screenshot_png),
             "video": None,
         },
+        "camera": camera_options,
         "capture": capture_metadata,
         "resolved_solver_identity": None,
         "scene_metrics": None,

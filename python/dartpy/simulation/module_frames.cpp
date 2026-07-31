@@ -440,6 +440,19 @@ void defSimPartFrames(nb::module_& m)
         return format_repr("LoopClosureRuntimePolicy", fields);
       });
 
+  nb::class_<sim::RigidConstraintOptions>(m, "RigidConstraintOptions")
+      .def(
+          nb::new_([](std::size_t iterations) {
+            return sim::RigidConstraintOptions{.iterations = iterations};
+          }),
+          nb::arg("iterations") = 8)
+      .def_rw("iterations", &sim::RigidConstraintOptions::iterations)
+      .def("__repr__", [](const sim::RigidConstraintOptions& self) {
+        return format_repr(
+            "RigidConstraintOptions",
+            {{"iterations", std::to_string(self.iterations)}});
+      });
+
   nb::class_<sim::MultibodyOptions>(m, "MultibodyOptions")
       .def(
           nb::new_([](sim::MultibodyIntegrationFamily integrationFamily,

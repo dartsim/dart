@@ -3758,6 +3758,14 @@ def test_visual_capture_records_env_and_metadata(
             "DART_TEST_CAPTURE_VALUE=new",
             "--metadata",
             "max_friction=2.5",
+            "--camera-azimuth",
+            "90",
+            "--camera-elevation",
+            "6",
+            "--camera-distance",
+            "11",
+            "--camera-target",
+            "0,0,1.4",
             "--output-dir",
             str(output),
         ]
@@ -3769,3 +3777,9 @@ def test_visual_capture_records_env_and_metadata(
     manifest = capture_py_demo.json.loads((output / "manifest.json").read_text())
     assert manifest["scene_environment"] == {"DART_TEST_CAPTURE_VALUE": "new"}
     assert manifest["metadata"] == {"max_friction": "2.5"}
+    assert manifest["camera"] == {
+        "azimuth": 90.0,
+        "distance": 11.0,
+        "elevation": 6.0,
+        "target": [0.0, 0.0, 1.4],
+    }

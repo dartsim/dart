@@ -219,11 +219,12 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
     )
 
     packet = json.loads(output.read_text(encoding="utf-8"))
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == 3
     assert packet["packet"] == "avbd_friction_coefficient_sweep"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
         "recorded_from": "friction coefficient sweep benchmark scene counters",
+        "rigid_contact_selection": "contact_solver_method",
         "rigid_contact_solver": "sequential_impulse",
         "rigid_point_joint_solver": "none",
     }

@@ -22,18 +22,22 @@ from collections.abc import Mapping
 from typing import Any
 
 # Current AVBD packet schema version. Packets written at this version or
-# newer must carry RESOLVED_SOLVER_IDENTITY_KEY.
-AVBD_PACKET_SCHEMA_VERSION = 2
+# newer must carry RESOLVED_SOLVER_IDENTITY_KEY and record how rigid contact
+# selected the reported solver family.
+AVBD_PACKET_SCHEMA_VERSION = 3
 
 # First schema version that requires the resolved-solver-identity field.
 SOLVER_IDENTITY_MIN_SCHEMA_VERSION = 2
 
+# First schema version that requires the rigid-contact selection source.
+RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION = 3
+
 RESOLVED_SOLVER_IDENTITY_KEY = "resolved_solver_identity"
+RIGID_CONTACT_SELECTION_KEY = "rigid_contact_selection"
 
 # The contact path that actually resolved rigid-rigid contacts in the timed
-# scene. "avbd" is valid only when the scene emplaces the internal AVBD
-# rigid-contact opt-in config so that every active contact has a configured
-# body; contact-free scenes record "none".
+# scene. "avbd" may be selected by the public world solver family or by the
+# compatibility-only internal body opt-in; contact-free scenes record "none".
 ALLOWED_RIGID_CONTACT_SOLVERS = (
     "avbd",
     "boxed_lcp",
@@ -44,6 +48,13 @@ ALLOWED_RIGID_CONTACT_SOLVERS = (
 # The solver family that resolved rigid-body point-joint/motor/distance-spring
 # rows; joint-free scenes record "none".
 ALLOWED_RIGID_POINT_JOINT_SOLVERS = ("avbd", "none")
+
+ALLOWED_RIGID_CONTACT_SELECTIONS = (
+    "body_opt_in",
+    "contact_solver_method",
+    "not_applicable",
+    "world_solver_family",
+)
 
 _REQUIRED_ENUM_FIELDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("rigid_contact_solver", ALLOWED_RIGID_CONTACT_SOLVERS),
@@ -108,6 +119,24 @@ def resolved_solver_identity_errors(
             "avbd_rigid_contact_config_emplaced must be a boolean"
         )
 
+    selection = identity.get(RIGID_CONTACT_SELECTION_KEY)
+    selection_required = version >= RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION
+    if selection is None:
+        if selection_required:
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                f"{RIGID_CONTACT_SELECTION_KEY} is required at schema_version "
+                f"{version}"
+            )
+    elif not isinstance(selection, str) or selection not in (
+        ALLOWED_RIGID_CONTACT_SELECTIONS
+    ):
+        errors.append(
+            f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+            f"{RIGID_CONTACT_SELECTION_KEY} must be one of "
+            f"{sorted(ALLOWED_RIGID_CONTACT_SELECTIONS)}, got {selection!r}"
+        )
+
     recorded_from = identity.get("recorded_from")
     if not isinstance(recorded_from, str) or not recorded_from:
         errors.append(
@@ -115,15 +144,48 @@ def resolved_solver_identity_errors(
             "must be a non-empty string naming how the identity was captured"
         )
 
-    if (
-        isinstance(emplaced, bool)
-        and not emplaced
-        and identity.get("rigid_contact_solver") == "avbd"
-    ):
+    rigid_contact_solver = identity.get("rigid_contact_solver")
+    if selection is None:
+        if (
+            isinstance(emplaced, bool)
+            and not emplaced
+            and rigid_contact_solver == "avbd"
+        ):
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_contact_solver cannot be 'avbd' when "
+                "avbd_rigid_contact_config_emplaced is false"
+            )
+    elif selection == "body_opt_in":
+        if rigid_contact_solver != "avbd" or emplaced is not True:
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_contact_selection 'body_opt_in' requires "
+                "rigid_contact_solver 'avbd' and an emplaced private config"
+            )
+    elif selection == "world_solver_family":
+        if rigid_contact_solver != "avbd" or emplaced is not False:
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_contact_selection 'world_solver_family' requires "
+                "rigid_contact_solver 'avbd' without a private body config"
+            )
+    elif selection == "contact_solver_method":
+        if (
+            rigid_contact_solver not in ("boxed_lcp", "sequential_impulse")
+            or emplaced is not False
+        ):
+            errors.append(
+                f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                "rigid_contact_selection 'contact_solver_method' requires "
+                "a boxed_lcp or sequential_impulse contact solver without "
+                "a private AVBD body config"
+            )
+    elif selection == "not_applicable" and rigid_contact_solver != "none":
         errors.append(
             f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
-            "rigid_contact_solver cannot be 'avbd' when "
-            "avbd_rigid_contact_config_emplaced is false"
+            "rigid_contact_selection 'not_applicable' requires "
+            "rigid_contact_solver 'none'"
         )
 
     return errors
@@ -142,29 +204,36 @@ def resolved_solver_identity_errors(
 
 # Report rigid-contact ``resolved`` family strings → packet enum values.
 _REPORT_RIGID_CONTACT_FAMILY_TO_PACKET = {
+    "avbd": "avbd",
     "sequential-impulse": "sequential_impulse",
     "boxed-lcp": "boxed_lcp",
 }
 
-# The report appends this marker to the resolved rigid-contact family when a
-# body carries the internal AVBD rigid-contact opt-in (the WP-091.1 silent
-# substitution, made explicit in slice 2).
-_REPORT_AVBD_CONTACT_MARKER = "avbd"
+# A non-AVBD public family may still report this exact suffix when a body
+# carries the compatibility-only internal AVBD rigid-contact opt-in.
+_REPORT_AVBD_CONTACT_OPT_IN_SUFFIX = " + avbd (opt-in)"
 
 
 def resolved_rigid_contact_solver_from_report(resolved_family: str) -> str:
     """Map a report rigid-contact ``resolved`` family string to the packet enum.
 
     ``resolved_family`` is the string the C++ report records for the
-    ``rigid-contact`` domain (e.g. ``"sequential-impulse"``, ``"boxed-lcp"``,
-    or a ``"... + avbd (opt-in)"`` substitution). Raises ``ValueError`` for an
-    empty or unrecognized family so a report-vocabulary change cannot silently
-    produce an out-of-contract packet enum.
+    ``rigid-contact`` domain (e.g. ``"avbd"``, ``"sequential-impulse"``,
+    ``"boxed-lcp"``, or a ``"... + avbd (opt-in)"`` substitution). Raises
+    ``ValueError`` for an empty or unrecognized family so a report-vocabulary
+    change cannot silently produce an out-of-contract packet enum.
     """
     text = resolved_family.strip().lower()
     if not text:
         raise ValueError("resolved rigid-contact family must be non-empty")
-    if _REPORT_AVBD_CONTACT_MARKER in text:
+    if text.endswith(_REPORT_AVBD_CONTACT_OPT_IN_SUFFIX):
+        base_family = text[: -len(_REPORT_AVBD_CONTACT_OPT_IN_SUFFIX)]
+        if base_family not in ("boxed-lcp", "sequential-impulse"):
+            raise ValueError(
+                "unrecognized AVBD opt-in base rigid-contact family "
+                f"{base_family!r}; expected 'boxed-lcp' or "
+                "'sequential-impulse'"
+            )
         return "avbd"
     try:
         return _REPORT_RIGID_CONTACT_FAMILY_TO_PACKET[text]
@@ -172,7 +241,7 @@ def resolved_rigid_contact_solver_from_report(resolved_family: str) -> str:
         raise ValueError(
             f"unrecognized resolved rigid-contact family {resolved_family!r}; "
             f"known: {sorted(_REPORT_RIGID_CONTACT_FAMILY_TO_PACKET)} "
-            f"(plus an '{_REPORT_AVBD_CONTACT_MARKER}' substitution marker)"
+            f"(plus an '{_REPORT_AVBD_CONTACT_OPT_IN_SUFFIX}' suffix)"
         ) from None
 
 
@@ -182,6 +251,7 @@ def make_resolved_solver_identity(
     rigid_point_joint_solver: str,
     avbd_rigid_contact_config_emplaced: bool,
     recorded_from: str,
+    rigid_contact_selection: str | None = None,
 ) -> dict[str, Any]:
     """Build a validated ``resolved_solver_identity`` object from the report.
 
@@ -198,9 +268,18 @@ def make_resolved_solver_identity(
             resolved_rigid_contact_family
         )
 
+    if rigid_contact_selection is None:
+        if rigid_contact_solver == "none":
+            rigid_contact_selection = "not_applicable"
+        elif rigid_contact_solver in ("boxed_lcp", "sequential_impulse"):
+            rigid_contact_selection = "contact_solver_method"
+        elif avbd_rigid_contact_config_emplaced:
+            rigid_contact_selection = "body_opt_in"
+
     identity: dict[str, Any] = {
         "avbd_rigid_contact_config_emplaced": bool(avbd_rigid_contact_config_emplaced),
         "recorded_from": recorded_from,
+        RIGID_CONTACT_SELECTION_KEY: rigid_contact_selection,
         "rigid_contact_solver": rigid_contact_solver,
         "rigid_point_joint_solver": rigid_point_joint_solver,
     }

@@ -26,6 +26,7 @@ def _identity(**overrides):
         "rigid_point_joint_solver": "avbd",
         "avbd_rigid_contact_config_emplaced": False,
         "recorded_from": "scene-construction audit (WP-091.1)",
+        "rigid_contact_selection": "contact_solver_method",
     }
     identity.update(overrides)
     return identity
@@ -67,7 +68,7 @@ def test_new_version_packet_with_identity_passes(tmp_path):
     assert module.main(["--packet", str(path)]) == 0
 
 
-def test_avbd_contact_claim_without_emplaced_config_is_rejected(tmp_path):
+def test_avbd_contact_claim_with_wrong_selection_source_is_rejected(tmp_path):
     module = _load_module()
     path = _write_packet(
         tmp_path,
@@ -81,7 +82,26 @@ def test_avbd_contact_claim_without_emplaced_config_is_rejected(tmp_path):
         },
     )
     errors = module.packet_errors(path)
-    assert any("cannot be 'avbd' when" in error for error in errors), errors
+    assert any(
+        "contact_solver_method" in error and "sequential_impulse" in error
+        for error in errors
+    ), errors
+
+
+def test_public_avbd_contact_claim_without_private_config_passes(tmp_path):
+    module = _load_module()
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(
+                rigid_contact_solver="avbd",
+                rigid_contact_selection="world_solver_family",
+            ),
+        },
+    )
+    assert module.packet_errors(path) == []
 
 
 def test_unknown_solver_name_is_rejected(tmp_path):

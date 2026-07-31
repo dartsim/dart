@@ -300,10 +300,16 @@ inline void clearAvbdRigidWorldContactSnapshot(
 
 struct AvbdRigidWorldContactSolveOptions
 {
+  // Constraint-family parameters stay independent of whether contact rows are
+  // present. Contact stages may opt into the contact-family override below
+  // without retuning disconnected joint, motor, or spring rows.
   AvbdRowWarmStartOptions warmStart;
   AvbdRigidPointAttachmentOptions row;
-  AvbdRigidPointPairFrictionOptions friction;
   AvbdRigidPointPairDistanceSpringOptions distanceSpring;
+  bool hasContactFamilyOverride = false;
+  AvbdRowWarmStartOptions contactWarmStart;
+  AvbdRigidPointAttachmentOptions contactRow;
+  AvbdRigidPointPairFrictionOptions friction;
   AvbdRigidBlockDescentOptions descent;
 };
 
@@ -2282,6 +2288,9 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   }
 
   scratch.clear();
+  const AvbdRowWarmStartOptions& contactWarmStart
+      = options.hasContactFamilyOverride ? options.contactWarmStart
+                                         : options.warmStart;
   auto& normalRows = scratch.normalRows;
   auto& frictionRows = scratch.frictionRows;
   buildAvbdRigidContactManifoldRows(
@@ -2294,7 +2303,13 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       normalRows,
       frictionRows,
       scratch.contactRows,
-      options.warmStart);
+      contactWarmStart);
+  if (options.hasContactFamilyOverride) {
+    for (AvbdRigidBodyPointPairRow& row : normalRows) {
+      row.hasSolveOptionsOverride = true;
+      row.solveOptionsOverride = options.contactRow;
+    }
+  }
   result.normalRows = normalRows.size();
   result.frictionRows = 2u * frictionRows.size();
 

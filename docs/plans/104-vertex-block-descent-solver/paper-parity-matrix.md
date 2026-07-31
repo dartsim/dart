@@ -46,6 +46,12 @@ below, so neither solver family has a paper-parity claim.
 the row still records an explicit blocker. It is negative evidence against a
 complete claim, not permission to generalize from the artifact.
 
+The public-AVBD breakable-wall packet strengthens the evidence for Figure 13
+and official-video row 12 without changing these counts: both rows remain
+partial because the scene is a publication-shaped reconstruction, the exact
+source constants are unpublished, and the matched four-method, CUDA, and
+comparable-performance evidence is still absent.
+
 ## Authoritative Sources
 
 The contracts pin the exact source identity. Changing a pin or silently

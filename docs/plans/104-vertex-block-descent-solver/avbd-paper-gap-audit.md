@@ -54,25 +54,24 @@ paper-inspired row update. For this paper, "implemented" means:
 
 ## Solver-Identity Relabel (PLAN-091 WP-091.1)
 
-No `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene cited by this audit
-emplaces the internal AVBD rigid-contact opt-in config
-(`comps::RigidAvbdContactConfig`), because AVBD contact is not
-facade-selectable, so every rigid contact in those scenes ran DART's default
-sequential-impulse contact path. The native-runner timing ratios for contact
-scenes are whole-pipeline `World::step` comparisons, not AVBD-contact-solver
-comparisons: the pure-contact rows (2D Dynamic Friction, Static Friction,
-Pyramid, Cards, Stack, and Stack Ratio; 3D Ground, Dynamic Friction, Static
-Friction, Pyramid, Stack, and Stack Ratio) timed no AVBD rows at all; the
-joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and Net; 3D Soft
-Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows while
-their ordinary contacts ran sequential impulse; and incidental link-link
-contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging Rope; 3D
-Rope and Heavy Rope) also ran sequential impulse. Faster-than-native rows in
-the gap matrix and performance targets below carry this classification. This
-relabel changes no committed packet bytes and neither closes nor reopens any
-PLAN-104 completion gate; new AVBD evidence packets must machine-record
-`resolved_solver_identity` at AVBD packet schema version 2, enforced by
+The historical `avbd-demo2d`/`avbd-demo3d` benchmark and py-demo packets cited
+by this audit neither selected the new public AVBD rigid-body family nor
+emplaced the compatibility-only internal AVBD rigid-contact opt-in
+(`comps::RigidAvbdContactConfig`). Every rigid contact in those scenes
+therefore ran DART's default sequential-impulse path. Their native-runner
+timing ratios remain whole-pipeline `World::step` comparisons, not
+AVBD-contact-solver comparisons: pure-contact rows timed no AVBD rows;
+joint-plus-contact rows timed AVBD point-joint/motor/spring rows while
+ordinary contacts ran sequential impulse; and incidental chain contacts also
+ran sequential impulse. Faster-than-native rows below retain this historical
+classification. New packets must machine-record `resolved_solver_identity`
+and `rigid_contact_selection` at AVBD packet schema version 3, enforced by
 `pixi run check-avbd-packets`.
+
+The public `RigidBodySolver::Avbd` family now provides an explicit, reported
+world-level AVBD contact/joint selection without the private body opt-in. Its
+first paper-shaped evidence is the Figure 13 wall packet below; this addition
+does not retroactively change any source-row packet identity.
 
 ## Verified Reference Details
 
@@ -474,6 +473,17 @@ exact-parent mutation, allocation gates, docked lifecycle capture, and
 candidate-only 2/8/32-motor benchmark close the prior load-accounting gap
 without claiming the paper wall, broad fracture corpus, CUDA parity, or a
 paper/reference performance win.
+[`avbd-paper-breakable-wall-packet.json`](avbd-paper-breakable-wall-packet.json)
+adds the first publication-shaped Figure 13 row through the public AVBD
+world-family selector. The 252-brick, 712-attachment, three-impact scene runs
+at 1/60 s with 20 contact/joint projection sweeps. A deterministic frame-120
+oracle requires damage in all three impact bands, bounded fracture, retained
+outside and total wall fractions, finite state, and the exact public solver identity;
+frame-60/frame-120 renders passed machine pixel-integrity and native semantic
+review against the pinned paper page. The five-repeat Release benchmark is
+absolute DART CPU timing only. Exact scene constants were not published, and
+the Sequential Impulse, XPBD, and VBD rows, source-matched video edit, CUDA
+path, broad fracture corpus, and comparable performance remain open.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,
@@ -655,9 +665,13 @@ first two gaps are closed on CPU.
 closes the third narrowly with physical accepted finite-row and bounded-motor
 load aggregation, timestep-unit invariance, break/reset/re-arm and save/load
 oracles, exact-parent mutation evidence, allocation gates, an assessed docked
-capture, and candidate-only scale data. The paper wall, broad joint/fracture
-corpus, unified rows, CUDA, and comparable paper/reference performance remain
-open. Non-topology
+capture, and candidate-only scale data. The adjacent
+[`avbd-paper-breakable-wall-packet.json`](avbd-paper-breakable-wall-packet.json)
+now covers the publication-shaped AVBD Figure 13 outcome with a deterministic
+fracture/localization oracle, assessed impact/outcome frames, allocation
+gates, and absolute CPU timing. Exact unpublished source constants, the
+four-method comparison, broad joint/fracture corpus, unified rows, CUDA, and
+comparable paper/reference performance remain open. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
 poses, and public same-multibody/world-link articulated
@@ -787,10 +801,10 @@ records validated benchmark JSON plus finite replay plot data, and
 renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
-cloth-plus-articulated-rigid coupling scenes. The next articulated mechanism
-slice should broaden the now-covered finite-row load/fracture lifecycle into
-the paper wall and remaining joint/attachment corpus before treating the A5
-joint-family surface as broad.
+cloth-plus-articulated-rigid coupling scenes. The next fracture slice should
+extend the publication-shaped AVBD wall into the source-matched four-method
+comparison, CUDA, and the remaining joint/attachment corpus before treating
+the A5 joint-family surface as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

@@ -44,6 +44,7 @@ namespace dart::simulation::detail {
 enum class BuiltInRigidBodySolverFamily
 {
   SequentialImpulse,
+  Avbd,
   Ipc,
 };
 
@@ -148,7 +149,8 @@ struct BuiltInWorldStepSchedule
 [[nodiscard]] constexpr bool builtInRigidSolverUsesSplitPipeline(
     BuiltInRigidBodySolverFamily family) noexcept
 {
-  return family == BuiltInRigidBodySolverFamily::SequentialImpulse;
+  return family == BuiltInRigidBodySolverFamily::SequentialImpulse
+         || family == BuiltInRigidBodySolverFamily::Avbd;
 }
 
 /// The single stage that owns rigid-body contact and advancement for families
@@ -157,7 +159,7 @@ struct BuiltInWorldStepSchedule
     [[maybe_unused]] BuiltInRigidBodySolverFamily family) noexcept
 {
   // Ipc is currently the only rigid family with a combined contact-and-advance
-  // stage; the split pipeline (sequential impulse) never reaches here.
+  // stage; the split families (sequential impulse and AVBD) never reach here.
   return BuiltInWorldStepStageSlot::RigidIpcContact;
 }
 

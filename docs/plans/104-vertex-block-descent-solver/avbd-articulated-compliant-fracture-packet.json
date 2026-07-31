@@ -360,11 +360,12 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "contact-free py-demo, focused World tests, and articulated finite-load benchmark row family",
+    "rigid_contact_selection": "not_applicable",
     "rigid_contact_solver": "none",
     "rigid_point_joint_solver": "avbd"
   },
   "scene": "avbd_articulated_compliant_breakable_motor",
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "complete_paper_reproduction": false,
     "contract_rows": [

@@ -951,6 +951,7 @@ world = sx.World(
     time_step=0.001,
     gravity=(0.0, 0.0, -9.81),
     rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
+    rigid_constraint_options=sx.RigidConstraintOptions(iterations=8),
     multibody_options=sx.MultibodyOptions(
         integration_family=sx.MultibodyIntegrationFamily.SEMI_IMPLICIT
     ),
@@ -976,6 +977,15 @@ The current dartpy binding exposes World-level solver defaults and policies as
 constructor keywords rather than a bound `sx.WorldOptions` object. If Python
 later gains `sx.WorldOptions`, it should preserve the same field names and
 validation behavior as those constructor keywords.
+
+For supported free-rigid AVBD contact and pair constraints, callers select
+`sx.RigidBodySolver.AVBD` and a positive
+`sx.RigidConstraintOptions(iterations=...)` budget. That family owns its
+contact formulation and rejects an incompatible
+`sx.ContactSolverMethod.BOXED_LCP` selection instead of falling back.
+The budget applies only while the split rigid constraint stage is active.
+IPC and mixed semi-implicit multibody worlds accept only the default options
+and report the budget as not applicable.
 
 ### Loading And Source Geometry
 

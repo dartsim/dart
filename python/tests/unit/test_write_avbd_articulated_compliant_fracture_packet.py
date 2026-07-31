@@ -345,7 +345,11 @@ def test_packet_records_finite_load_fracture_evidence(tmp_path: Path) -> None:
     )
 
     packet = json.loads(output.read_text(encoding="utf-8"))
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == 3
+    assert (
+        packet["resolved_solver_identity"]["rigid_contact_selection"]
+        == "not_applicable"
+    )
     assert packet["resolved_solver_identity"]["rigid_contact_solver"] == "none"
     assert packet["resolved_solver_identity"]["rigid_point_joint_solver"] == "avbd"
     assert packet["load_contract"]["joint_aggregation"] == (

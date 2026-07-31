@@ -2,11 +2,11 @@
 """Validate committed AVBD evidence packets against the shared schema.
 
 Enforces PLAN-091 WP-091.1: AVBD packets at the current schema version
-must machine-record the resolved solver configuration that actually ran
-(``resolved_solver_identity``). Packets committed before the identity
-contract stay readable through a legacy allowlist, but new packet files
-must be written at the current schema version. The field contract lives
-in ``scripts/avbd_packet_schema.py``.
+must machine-record the resolved solver configuration and the rigid-contact
+selection source that actually ran (``resolved_solver_identity``). Packets
+committed before the identity contract stay readable through a legacy
+allowlist, but new packet files must be written at the current schema version.
+The field contract lives in ``scripts/avbd_packet_schema.py``.
 """
 
 from __future__ import annotations

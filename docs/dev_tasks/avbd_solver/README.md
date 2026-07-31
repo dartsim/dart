@@ -26,25 +26,29 @@ This folder is the temporary working surface; the durable owner is the plan.
   has been pushed. The Section 3.5 packet is committed locally at
   `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
   finite-row packet at `761263bbd41`; the articulated finite-motor packet at
-  `9ebd9b895b1`; the articulated finite-fracture packet is the current local
-  unpushed closeout.
-- **Current packet:** same-multibody finite-stiffness articulated point joints
-  now account for accepted finite-row force and bounded motor projection load
-  in public force/torque units. All rows owned by a joint contribute to one L2
-  threshold; fracture clears finite row state, later steps skip the broken
-  joint, reset re-engages it, and weak re-arm can break it again.
+  `9ebd9b895b1`; and the articulated finite-fracture packet at `131981788fa`.
+  The public AVBD/Figure 13 slice is the current local unpushed closeout.
+- **Current packet:** C++ and dartpy callers can explicitly select the public
+  AVBD rigid-body family and its positive contact/joint projection budget.
+  Selection survives binary save/load and replay, reports `avbd`, and rejects
+  unsupported combinations instead of silently falling back. Mixed
+  semi-implicit multibody worlds use the unified constraint stage, so they
+  accept only the default rigid constraint options and report the split-stage
+  budget as not applicable. The new publication-shaped Figure 13 wall uses
+  252 staggered bricks, 712 breakable attachments, three impacts, a
+  deterministic localization/retention oracle, assessed impact/outcome
+  captures, allocation gates, and an absolute CPU benchmark.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
-- **Latest verified local packet:** focused finite-only, motor-only
-  two-timestep, combined-load, break/reset/re-arm, and save/load behavior;
-  warmed allocation; Python scene; exact-parent mutation; docked assessed
-  visual; and candidate-only scale evidence advance
-  `avbd.method.joints_and_attachments`,
-  `avbd.method.finite_stiffness_ramping`, `avbd.method.motors`, and
-  `avbd.method.fracture` without completing any row. The paper wall, broad
-  joint/fracture corpus, unified rows, CUDA, and source-matched
-  achieved-accuracy performance remain open.
+- **Latest verified local packet:**
+  [`../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json)
+  binds the public solver identity, exact paper/page hashes, frame-60 and
+  frame-120 scene metrics, camera and image-verdict hashes, native semantic
+  review, first-post-bake allocation tests, and five-repeat Release timing.
+  Figure 13 and video row 12 remain partial: exact source constants, the
+  Sequential Impulse, XPBD, and VBD comparison rows, CUDA, and comparable
+  performance are open.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -54,22 +58,33 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the focused finite-only, bounded-motor,
-  combined-load, break/reset/re-arm, and save/load C++ oracles; all 55 AVBD
-  breakage tests; all three articulated finite-row post-bake allocation
-  policies; six packet-writer tests; and the focused Python lifecycle oracle
-  pass. The two mutation-sensitive C++ tests fail in five required cases on
-  exact parent `9ebd9b895b1`. The assessed 149-frame docking-build capture and
-  pinned 2/8/32-motor candidate-only benchmark are recorded in the packet.
-  The Release build, complete variational binary (186/186), aggregate C++ unit
-  tier (168/168), full Python tier (1658 passed, 20 skipped), PLAN-104 parity
-  contract (176 rows), AVBD packets (55), and PLAN-122 allocation matrix
-  (18 rows, 14 closed) pass. The simulation label passes 77/79 active entries;
-  only the split global-heap and raw-malloc binaries fail on the same four
-  unrelated signatures previously reproduced on exact parent (320/80 global
-  bytes and 320/1376 raw bytes), while all three new finite articulated gates
-  pass inside those splits. Two monolithic entries remain intentionally
-  disabled.
+- **Current local gates:** public solver/schedule/serialization/Python tests,
+  both Figure 13 scene oracles, all three public-AVBD post-bake allocation
+  policies, all 16 fail-closed packet-writer tests, the full 273-test migrated
+  packet/schema set, all 56 working-tree AVBD packet schemas, three exact
+  deterministic outcome runs, both assessed captures, and the five-repeat
+  benchmark pass. The final broad local gates pass: default `pixi run build`,
+  all 168 unit targets, all 445 `test_world` cases, all 15 resolved-
+  configuration cases, all 20 contact-parity cases, and 1,677 Python tests
+  with 20 expected skips. `pixi run -e cuda test-all` passes all seven phases,
+  including the GUI-disabled Python catalog, documentation, all eight CUDA
+  runtime tests, and CUDA benchmark smoke. The first CUDA run exposed and the
+  candidate now covers a headless `OrbitCamera` assumption in the Figure 13
+  scene. The boxed-LCP fallback allocation regression found by the full World
+  gate is also fixed: the runtime applies the allocation-free contact path and
+  copies its existing force vector instead of allocating a differentiable
+  snapshot. The final dual review found one additional fail-closed contract
+  gap:
+  non-default rigid iteration options were reported as applied in mixed
+  semi-implicit multibody worlds even though the unified stage ignored them.
+  Construction, runtime mutation, method-family transitions, load, and step
+  entry now reject that combination; the resolved report marks the default
+  budget not applicable. Both post-fix review lanes approve the result. The
+  exact post-fix reruns pass the uncached default build, 1,677 Python tests
+  with 20 expected skips, and all seven CUDA `test-all` phases; the eight CUDA
+  runtime tests include the 208.75-second Jacobi batch case. Packet provenance
+  was regenerated after formatting with zero source-hash mismatches, and the
+  PLAN-122 allocation matrix passes with 18 rows, 14 closed.
 
 ## Goal
 
@@ -79,10 +94,11 @@ paper/site/video/demo reproduction in DART tests/benchmarks/`py-demos`, and
 performance that beats the reference demo repositories and published paper
 numbers.
 
-## Non-Goals For Early Phases
+## Non-Goals For Current Phases
 
-- Do not expose AVBD, row storage, solver registries, CUDA types, or ECS details
-  as public API.
+- Keep the public AVBD surface to the DART-owned method-family selector and
+  validated iteration policy; do not expose row storage, solver registries,
+  CUDA types, or ECS details.
 - Do not vendor or runtime-link the AVBD demo repositories.
 - Do not claim AVBD parity from the scalar row utility, a CPU-only slice, or one
   demo scene.
@@ -100,15 +116,16 @@ numbers.
 
 ## Immediate Next Steps
 
-Continue PLAN-104 with the paper wall/broader fracture and joint corpus,
-unified rigid/soft rows, or another highest-priority missing paper mechanism.
-Keep every dependent figure/demo/performance row partial until source-matched
-CPU and CUDA evidence closes it.
+Extend the publication-shaped AVBD wall into a source-matched four-method
+comparison and CUDA row, or continue with unified rigid/soft rows and the
+remaining fracture and joint corpus. Keep every dependent
+figure/demo/performance row partial until source-matched CPU and CUDA evidence
+closes it.
 
 Two smaller deferred maintenance items remain valid but do not outrank the
 missing paper mechanism: hoist the duplicated `makeCollisionPairKey` into a
 shared `detail` header, and upgrade the Spring / Spring Ratio packets from
-legacy schema version 1 to version 2 with a `resolved_solver_identity`.
+legacy schema version 1 to the current solver-identity contract.
 
 ## Verified Local Packet: Section 3.5 Quasi-Newton Hessian
 
@@ -267,6 +284,39 @@ The linked method rows remain partial.
 The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
 All linked canonical method rows remain partial.
+
+## Verified Local Packet: Public AVBD Figure 13 Wall
+
+- **Value:** make supported free-rigid AVBD contact and pair constraints an
+  explicit public `World` family, then use that exact family for the first
+  publication-shaped breakable-wall outcome.
+- **Public contract:** `RigidBodySolver::Avbd` /
+  `sx.RigidBodySolver.AVBD`, a positive `RigidConstraintOptions::iterations` /
+  `sx.RigidConstraintOptions(iterations=...)` policy, binary and replay
+  persistence, resolved-family reporting, and fail-closed rejection of
+  unsupported or incompatible configuration.
+- **Scene/oracle:** 252 staggered bricks, 712 breakable fixed attachments,
+  three 100 kg balls, 1/60 s, and 20 projection sweeps. At frame 120, the
+  deterministic oracle records 359 broken and 353 unbroken attachments,
+  displaced-brick counts `[4, 10, 6]`, 91.16% outside-wall retention, and
+  82.54% total retention. Frame 60 remains explicitly pre-evaluation because
+  its `[3, 9, 4]` counts leave one band below the final threshold.
+- **Runtime evidence:** the public AVBD contact-plus-breakable-row fixture
+  passes world-base, global-`new`, and raw-malloc first-post-bake gates. The
+  frame-60 and frame-120 software captures bind the exact front camera and
+  pass engine ViewReports, pixel integrity, and image-capable semantic review
+  against the pinned paper page. The scene and benchmark share fingerprint
+  `2a746821cc10faee`.
+- **Performance boundary:** five Release repetitions record 7.739 ms median
+  CPU time per step. This is absolute DART timing only; the paper and source
+  publish no directly comparable timing for this scene.
+- **Non-goals:** exact replay of unpublished source constants, the Sequential
+  Impulse, XPBD, and VBD comparison rows, source-matched video edit, broad
+  fracture corpus, unified rows, and CUDA.
+
+The durable evidence is
+[`../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
+Figure 13 and official-video row 12 remain partial.
 
 ## History
 

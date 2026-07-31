@@ -457,13 +457,28 @@ public:
 
   /// Select the solver family used by the default rigid-body step pipeline.
   ///
-  /// The default remains SequentialImpulse. Ipc is experimental and currently
-  /// handles free mesh-like rigid bodies through the internal rigid IPC stage.
-  /// Throws if Ipc is selected while public rigid-body fixed joints exist.
+  /// The default remains SequentialImpulse. Avbd is an explicit opt-in for
+  /// free rigid-body contact and public rigid-body pair constraints. Ipc is
+  /// experimental and currently handles free mesh-like rigid bodies through
+  /// the internal rigid IPC stage. Unsupported family/domain combinations
+  /// throw rather than falling through to another solver.
   void setRigidBodySolver(RigidBodySolver solver);
 
   /// Get the solver family used by the default rigid-body step pipeline.
   [[nodiscard]] RigidBodySolver getRigidBodySolver() const noexcept;
+
+  /// Set domain-scoped tuning for the built-in rigid constraint stage.
+  ///
+  /// The iteration budget controls sequential-impulse contact sweeps and AVBD
+  /// rigid contact, joint, motor, and spring sweeps. The IPC family and mixed
+  /// semi-implicit multibody worlds bypass this stage and accept only the
+  /// default options. Otherwise safe to change in simulation mode; the next
+  /// step uses the new options.
+  void setRigidConstraintOptions(const RigidConstraintOptions& options);
+
+  /// Get domain-scoped tuning for the built-in rigid constraint stage.
+  [[nodiscard]] const RigidConstraintOptions& getRigidConstraintOptions()
+      const noexcept;
 
   void setTimeStep(double timeStep);
   [[nodiscard]] double getTimeStep() const noexcept;
@@ -478,11 +493,13 @@ public:
   /// Set the rigid-body contact resolution method this World uses.
   ///
   /// Selected via `WorldOptions::contactSolverMethod` (default
-  /// `SequentialImpulse`) and independent of the differentiable flag. The
-  /// `BoxedLcp` value opts the rigid-body contact stage into the boxed-LCP
-  /// normal solve; all other behavior is unchanged. Safe to change at any time:
-  /// when the World is already in simulation mode, the step pipeline cache is
-  /// rebuilt for the new contact method.
+  /// `SequentialImpulse`) and independent of the differentiable flag. Under
+  /// the `RigidBodySolver::SequentialImpulse` family, `BoxedLcp` opts the
+  /// rigid-body contact stage into the boxed-LCP normal solve. The
+  /// `RigidBodySolver::Avbd` family owns its contact formulation and rejects
+  /// `BoxedLcp`. Safe to change at any time: when the World is already in
+  /// simulation mode, the step pipeline cache is rebuilt for the new contact
+  /// method.
   /// @throws InvalidArgumentException if `method` is not a valid
   ///         `ContactSolverMethod` enumerator.
   void setContactSolverMethod(ContactSolverMethod method);
@@ -985,7 +1002,8 @@ private:
   static CollisionQueryCachePtr makeCollisionQueryCache(
       common::MemoryManager& memoryManager);
   static StepPipelineCachePtr makeStepPipelineCache(
-      common::MemoryManager& memoryManager);
+      common::MemoryManager& memoryManager,
+      std::size_t rigidConstraintIterations);
   struct ReplayState;
   struct ReplayStateDeleter
   {
@@ -1092,6 +1110,7 @@ private:
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
+  RigidConstraintOptions m_rigidConstraintOptions;
   double m_timeStep{0.001};
   bool m_differentiable{false};
   ContactSolverMethod m_contactSolverMethod{

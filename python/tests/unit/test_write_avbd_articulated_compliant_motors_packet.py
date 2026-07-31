@@ -277,7 +277,7 @@ def test_avbd_articulated_compliant_motors_packet_records_evidence(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == 3
     assert packet["scene"] == "avbd_articulated_compliant_motors"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
@@ -285,6 +285,7 @@ def test_avbd_articulated_compliant_motors_packet_records_evidence(
             "contact-free py-demo and articulated compliant-motor "
             "benchmark row family"
         ),
+        "rigid_contact_selection": "not_applicable",
         "rigid_contact_solver": "none",
         "rigid_point_joint_solver": "avbd",
     }

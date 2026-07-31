@@ -1585,11 +1585,12 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "breakable motor scale benchmark row family",
+    "rigid_contact_selection": "not_applicable",
     "rigid_contact_solver": "none",
     "rigid_point_joint_solver": "avbd"
   },
   "scene": "avbd_breakable_motor_scale",
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "broad_motor_lifecycle_complete": false,
     "row_families": [

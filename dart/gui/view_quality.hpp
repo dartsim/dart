@@ -77,7 +77,7 @@ struct ViewQualityReport
 /// via `pickNearestRenderable` rays from the eye to the focus corners and
 /// centroid (excluding focus hits, counting a hit only when it is meaningfully
 /// closer than the sample), and ambiguity as the worst pairwise IoU of the
-/// viewport-clipped screen boxes of fully-in-front bodies, gated by a
+/// viewport-clipped screen boxes of fully-in-front subject bodies, gated by a
 /// depth-gap test so overlapping-but-coplanar bodies do not register.
 DART_GUI_API ViewQualityReport assessView(
     const std::vector<RenderableDescriptor>& descriptors,

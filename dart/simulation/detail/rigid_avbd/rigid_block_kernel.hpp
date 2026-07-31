@@ -206,6 +206,13 @@ struct AvbdRigidAngularPairRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidPointAttachmentOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
 struct AvbdRigidBodyPointAttachmentRow
 {
   std::uint32_t body = 0;
@@ -217,6 +224,8 @@ struct AvbdRigidBodyPointPairRow
   std::uint32_t bodyA = 0;
   std::uint32_t bodyB = 0;
   AvbdRigidPointPairRow row;
+  bool hasSolveOptionsOverride = false;
+  AvbdRigidPointAttachmentOptions solveOptionsOverride;
 };
 
 struct AvbdRigidBodyPointPairDistanceSpringRow
@@ -313,13 +322,6 @@ struct AvbdRigidContactManifoldPoint
   std::uint32_t row = 0;
 };
 
-struct AvbdRigidPointAttachmentOptions
-{
-  double alpha = 0.0;
-  double beta = 1.0;
-  double maxStiffness = std::numeric_limits<double>::infinity();
-};
-
 struct AvbdRigidPointPairFrictionOptions
 {
   double alpha = 0.0;
@@ -346,6 +348,14 @@ struct AvbdRigidBlockDescentStats
   std::size_t iterations = 0;
   std::size_t bodyUpdates = 0;
 };
+
+//==============================================================================
+inline const AvbdRigidPointAttachmentOptions& avbdRigidPointPairSolveOptions(
+    const AvbdRigidBodyPointPairRow& row,
+    const AvbdRigidPointAttachmentOptions& fallback) noexcept
+{
+  return row.hasSolveOptionsOverride ? row.solveOptionsOverride : fallback;
+}
 
 struct AvbdRigidBodyRowIndexScratch
 {
@@ -3914,6 +3924,8 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           const AvbdRigidBodyPointPairRow& indexedRow,
           PointPairWorldPointCache& cache) {
         const AvbdRigidPointPairRow& row = indexedRow.row;
+        const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+            = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
         const AvbdRigidBodyState& stateA = states[indexedRow.bodyA];
         const AvbdRigidBodyState& stateB = states[indexedRow.bodyB];
         const PointPairWorldPointCache& points
@@ -3928,7 +3940,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        rowOptions.alpha);
+                        effectiveRowOptions.alpha);
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
@@ -4264,12 +4276,15 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
             if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
               continue;
             }
+            const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+                = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
             if (avbdRigidRowUsesFiniteMaterial(
                     indexedRow.row.materialStiffness)) {
               indexedRow.row.state.lambda = 0.0;
               const double maxStiffness = std::min(
-                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-              if (rowOptions.beta >= 0.0
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
+              if (effectiveRowOptions.beta >= 0.0
                   && indexedRow.row.state.stiffness >= maxStiffness) {
                 indexedRow.row.state.stiffness = maxStiffness;
                 continue;
@@ -4285,23 +4300,24 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
             if (avbdRigidRowUsesFiniteMaterial(
                     indexedRow.row.materialStiffness)) {
               const double maxStiffness = std::min(
-                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
               indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
                   indexedRow.row.state.stiffness,
                   rawConstraintValue,
-                  rowOptions.beta,
+                  effectiveRowOptions.beta,
                   maxStiffness);
             } else {
               const double constraintValue = regularizeAvbdConstraintValue(
                   rawConstraintValue,
                   indexedRow.row.previousConstraintValue,
-                  rowOptions.alpha);
+                  effectiveRowOptions.alpha);
               indexedRow.row.state = updateAvbdHardConstraintRow(
                   indexedRow.row.state,
                   constraintValue,
-                  rowOptions.beta,
+                  effectiveRowOptions.beta,
                   indexedRow.row.bounds,
-                  rowOptions.maxStiffness);
+                  effectiveRowOptions.maxStiffness);
             }
           }
         });

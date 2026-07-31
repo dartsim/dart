@@ -45,6 +45,7 @@ from .scenes.avbd_demo3d_static_friction import SCENE as AVBD_DEMO3D_STATIC_FRIC
 from .scenes.avbd_demo3d_stack import SCENE as AVBD_DEMO3D_STACK
 from .scenes.avbd_demo3d_stack_ratio import SCENE as AVBD_DEMO3D_STACK_RATIO
 from .scenes.avbd_demo3d_soft_body import SCENE as AVBD_DEMO3D_SOFT_BODY
+from .scenes.avbd_paper_breakable_wall import SCENE as AVBD_PAPER_BREAKABLE_WALL
 from .scenes.avbd_articulated_breakable_joint import (
     SCENE as AVBD_ARTICULATED_BREAKABLE_JOINT,
 )
@@ -308,6 +309,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         AVBD_DEMO3D_SOFT_BODY,
         AVBD_DEMO3D_BRIDGE,
         AVBD_DEMO3D_BREAKABLE,
+        AVBD_PAPER_BREAKABLE_WALL,
         AVBD_RIGID_FIXED_JOINT_CONTACT,
         AVBD_RIGID_REVOLUTE_MOTOR,
         AVBD_RIGID_PRISMATIC_MOTOR,

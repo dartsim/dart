@@ -35,12 +35,15 @@
 // alongside the step profile. Today requested == resolved (no substitution);
 // later slices classify the known silent substitutions.
 
+#include <dart/simulation/body/contact.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
 
@@ -138,21 +141,87 @@ TEST(ResolvedConfiguration, ReflectsRequestedContactMethod)
   EXPECT_EQ(contact->resolved, "boxed-lcp");
 }
 
+TEST(ResolvedConfiguration, RecordsPublicAvbdFamilyAsRequested)
+{
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world(options);
+  auto parent = world.addRigidBody("parent");
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("child", childOptions);
+  world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  world.enterSimulationMode();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_FALSE(config.hasSubstitution());
+
+  const auto* rigid = findNote(config, "rigid-body");
+  ASSERT_NE(rigid, nullptr);
+  EXPECT_EQ(rigid->requested, "avbd");
+  EXPECT_EQ(rigid->resolved, "avbd");
+
+  const auto* contact = findNote(config, "rigid-contact");
+  ASSERT_NE(contact, nullptr);
+  EXPECT_EQ(contact->requested, "avbd");
+  EXPECT_EQ(contact->resolved, "avbd");
+  EXPECT_EQ(contact->reason, "as requested");
+
+  const auto* pairConstraint = findNote(config, "rigid-pair-constraint");
+  ASSERT_NE(pairConstraint, nullptr);
+  EXPECT_EQ(pairConstraint->requested, "avbd");
+  EXPECT_EQ(pairConstraint->resolved, "avbd");
+  EXPECT_EQ(pairConstraint->reason, "as requested");
+
+  const auto* iterations = findNote(config, "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->requested, "20");
+  EXPECT_EQ(iterations->resolved, "20");
+}
+
 namespace {
 
 // Emplace the internal AVBD rigid-contact opt-in on a body. The opt-in is not
 // facade-selectable (PLAN-091 WP-091.1), so the resolved contact path then
 // differs from the requested ContactSolverMethod.
-sx::RigidBody addBodyWithAvbdContactConfig(sx::World& world)
+sx::RigidBody addCollisionBody(
+    sx::World& world, std::string_view name, double x)
 {
   sx::RigidBodyOptions options;
-  options.position = Eigen::Vector3d(0.0, 0.0, 0.5);
-  auto body = world.addRigidBody("avbd_body", options);
+  options.position = Eigen::Vector3d(x, 0.0, 0.5);
+  auto body = world.addRigidBody(name, options);
   body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
-  auto& registry = sx::detail::registryOf(world);
-  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      sx::detail::toRegistryEntity(body.getEntity()));
   return body;
+}
+
+sx::RigidBody addBodyWithAvbdContactConfig(
+    sx::World& world, bool enabled = true)
+{
+  auto body = addCollisionBody(world, "avbd_body", 0.0);
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(body.getEntity()));
+  config.enabled = enabled;
+  return body;
+}
+
+void addMixedRigidAndMultibodyContactScene(sx::World& world)
+{
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions rigidOptions;
+  rigidOptions.position = Eigen::Vector3d(0.0, 0.0, 0.75);
+  auto rigidBody = world.addRigidBody("mixed_rigid", rigidOptions);
+  rigidBody.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto multibody = world.addMultibody("mixed_multibody");
+  auto base = multibody.addLink("base");
+  base.setMass(1.0);
+  base.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 }
 
 } // namespace
@@ -161,7 +230,9 @@ TEST(ResolvedConfiguration, RecordsAvbdContactSubstitution)
 {
   sx::World world;
   addBodyWithAvbdContactConfig(world);
+  addCollisionBody(world, "plain_body", 0.5);
   world.enterSimulationMode();
+  world.step();
 
   const auto& config = world.getResolvedConfiguration();
   EXPECT_TRUE(config.hasSubstitution());
@@ -173,12 +244,190 @@ TEST(ResolvedConfiguration, RecordsAvbdContactSubstitution)
   EXPECT_NE(contact->resolved.find("avbd"), std::string::npos);
 }
 
+TEST(ResolvedConfiguration, DisabledAvbdContactConfigDoesNotClaimAvbd)
+{
+  sx::World world;
+  addBodyWithAvbdContactConfig(world, false);
+  addCollisionBody(world, "plain_body", 0.5);
+  world.enterSimulationMode();
+  world.step();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_FALSE(config.hasSubstitution());
+  const auto* contact = findNote(config, "rigid-contact");
+  ASSERT_NE(contact, nullptr);
+  EXPECT_EQ(contact->requested, "sequential-impulse");
+  EXPECT_EQ(contact->resolved, "sequential-impulse");
+  EXPECT_NE(contact->reason.find("disabled"), std::string::npos);
+}
+
+TEST(ResolvedConfiguration, UncoveredAvbdContactPairDoesNotClaimAvbd)
+{
+  sx::World world;
+  addBodyWithAvbdContactConfig(world);
+  addCollisionBody(world, "plain_body_a", 0.5);
+  addCollisionBody(world, "plain_body_b", 1.0);
+  world.enterSimulationMode();
+  world.step();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_FALSE(config.hasSubstitution());
+  const auto* contact = findNote(config, "rigid-contact");
+  ASSERT_NE(contact, nullptr);
+  EXPECT_EQ(contact->requested, "sequential-impulse");
+  EXPECT_EQ(contact->resolved, "sequential-impulse");
+  EXPECT_NE(contact->reason.find("does not cover"), std::string::npos);
+}
+
+TEST(ResolvedConfiguration, RecordsAvbdPairConstraintSubstitution)
+{
+  sx::World world;
+  auto parent = world.addRigidBody("parent");
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("child", childOptions);
+  world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  world.enterSimulationMode();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_TRUE(config.hasSubstitution());
+
+  const auto* pairConstraint = findNote(config, "rigid-pair-constraint");
+  ASSERT_NE(pairConstraint, nullptr);
+  EXPECT_TRUE(pairConstraint->isSubstitution());
+  EXPECT_EQ(pairConstraint->requested, "sequential-impulse");
+  EXPECT_EQ(pairConstraint->resolved, "avbd");
+}
+
+TEST(ResolvedConfiguration, RecordsIpcPairConstraintsWithoutAvbdSubstitution)
+{
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  sx::World world(options);
+  auto parent = world.addRigidBody("parent");
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("child", childOptions);
+  world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  world.enterSimulationMode();
+
+  const auto& config = world.getResolvedConfiguration();
+  EXPECT_FALSE(config.hasSubstitution());
+
+  const auto* pairConstraint = findNote(config, "rigid-pair-constraint");
+  ASSERT_NE(pairConstraint, nullptr);
+  EXPECT_EQ(pairConstraint->requested, "ipc");
+  EXPECT_EQ(pairConstraint->resolved, "ipc");
+  EXPECT_NE(pairConstraint->reason.find("IPC articulation"), std::string::npos);
+
+  const auto* iterations = findNote(config, "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->resolved, "not-applicable");
+}
+
+TEST(ResolvedConfiguration, RuntimeIterationMutationRefreshesReport)
+{
+  sx::World world;
+  world.enterSimulationMode();
+
+  world.setRigidConstraintOptions({.iterations = 3u});
+
+  const auto* iterations = findNote(
+      world.getResolvedConfiguration(), "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->requested, "3");
+  EXPECT_EQ(iterations->resolved, "3");
+}
+
+TEST(
+    ResolvedConfiguration,
+    MixedSemiImplicitWorldMarksRigidIterationsNotApplicable)
+{
+  sx::World world;
+  addMixedRigidAndMultibodyContactScene(world);
+  world.enterSimulationMode();
+
+  const auto* iterations = findNote(
+      world.getResolvedConfiguration(), "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->requested, "not-applicable");
+  EXPECT_EQ(iterations->resolved, "not-applicable");
+  EXPECT_NE(iterations->reason.find("unified constraint"), std::string::npos);
+
+  ASSERT_FALSE(world.collide().empty());
+  EXPECT_NO_THROW(world.step());
+  EXPECT_EQ(world.computeStepMetrics().lastStepIterations, 0u);
+
+  EXPECT_THROW(
+      world.setRigidConstraintOptions({.iterations = 3u}),
+      sx::InvalidOperationException);
+  EXPECT_EQ(world.getRigidConstraintOptions().iterations, 8u);
+
+  iterations = findNote(
+      world.getResolvedConfiguration(), "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->resolved, "not-applicable");
+}
+
+TEST(
+    ResolvedConfiguration,
+    MixedSemiImplicitWorldRejectsNonDefaultIterationsAtEntry)
+{
+  sx::WorldOptions options;
+  options.rigidConstraintOptions.iterations = 3u;
+  sx::World world(options);
+  addMixedRigidAndMultibodyContactScene(world);
+
+  EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+}
+
+TEST(
+    ResolvedConfiguration,
+    MixedWorldRejectsSemiImplicitTransitionWithNonDefaultIterations)
+{
+  sx::WorldOptions options;
+  options.rigidConstraintOptions.iterations = 3u;
+  options.multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
+  sx::World world(options);
+  addMixedRigidAndMultibodyContactScene(world);
+  world.enterSimulationMode();
+
+  const auto* iterations = findNote(
+      world.getResolvedConfiguration(), "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->requested, "3");
+  EXPECT_EQ(iterations->resolved, "3");
+
+  EXPECT_THROW(
+      world.setMultibodyOptions(
+          {.integrationFamily = sx::MultibodyIntegrationFamily::SemiImplicit}),
+      sx::InvalidOperationException);
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily,
+      sx::MultibodyIntegrationFamily::Variational);
+
+  iterations = findNote(
+      world.getResolvedConfiguration(), "rigid-constraint-iterations");
+  ASSERT_NE(iterations, nullptr);
+  EXPECT_EQ(iterations->resolved, "3");
+  EXPECT_NO_THROW(world.step());
+}
+
 TEST(ResolvedConfiguration, StrictResolutionRejectsSubstitution)
 {
   sx::WorldOptions options;
   options.strictSolverResolution = true;
   sx::World world(options);
   addBodyWithAvbdContactConfig(world);
+  addCollisionBody(world, "plain_body", 0.5);
 
   EXPECT_THROW(world.enterSimulationMode(), std::exception);
 }

@@ -38,6 +38,7 @@
 #include "dart/simulation/comps/joint.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
+#include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
 #include "dart/simulation/compute/detail/stage_scratch.hpp"
 #include "dart/simulation/compute/detail/world_step_stages.hpp"
 #include "dart/simulation/compute/rigid_body_constraint.hpp"
@@ -91,7 +92,9 @@ bool mayHaveRigidAvbdContactConfigs(const detail::WorldRegistry& registry)
 
 //==============================================================================
 std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
-    const detail::WorldRegistry& registry, std::span<const Contact> contacts)
+    const detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    bool selectAllContacts)
 {
   std::optional<comps::RigidAvbdContactConfig> merged;
   for (const Contact& contact : contacts) {
@@ -99,7 +102,7 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
         registry, detail::toRegistryEntity(contact.bodyA.getEntity()));
     const auto* configB = enabledRigidAvbdContactConfig(
         registry, detail::toRegistryEntity(contact.bodyB.getEntity()));
-    if (configA == nullptr && configB == nullptr) {
+    if (!selectAllContacts && configA == nullptr && configB == nullptr) {
       return std::nullopt;
     }
 
@@ -126,8 +129,71 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
     }
   }
 
+  if (selectAllContacts && !merged.has_value()) {
+    merged.emplace();
+  }
   return merged;
 }
+
+//==============================================================================
+dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
+    std::size_t iterations,
+    const comps::RigidAvbdContactConfig* contactConfig = nullptr,
+    double contactMaxStiffness = std::numeric_limits<double>::infinity())
+{
+  dvbd::AvbdRigidWorldContactSolveOptions options;
+  options.descent.iterations = iterations;
+  options.descent.regularization = 1e-12;
+
+  if (contactConfig != nullptr) {
+    options.hasContactFamilyOverride = true;
+    options.contactWarmStart.alpha = contactConfig->alpha;
+    options.contactWarmStart.gamma = contactConfig->gamma;
+    options.contactWarmStart.maxStiffness = contactMaxStiffness;
+    options.contactRow.alpha = contactConfig->alpha;
+    options.contactRow.beta = contactConfig->beta;
+    options.contactRow.maxStiffness = contactMaxStiffness;
+    options.friction.alpha = contactConfig->alpha;
+    options.friction.beta = contactConfig->beta;
+    options.friction.maxStiffness = contactMaxStiffness;
+  }
+  return options;
+}
+
+//==============================================================================
+std::optional<std::size_t> countProjectableRigidAvbdContacts(
+    const detail::WorldRegistry& registry, std::span<const Contact> contacts)
+{
+  std::size_t count = 0u;
+  for (const Contact& contact : contacts) {
+    if (contact.depth <= 0.0) {
+      continue;
+    }
+    if (!std::isfinite(contact.depth) || !contact.point.allFinite()
+        || !contact.normal.allFinite() || contact.normal.squaredNorm() <= 0.0) {
+      return std::nullopt;
+    }
+
+    const entt::entity entityA
+        = detail::toRegistryEntity(contact.bodyA.getEntity());
+    const entt::entity entityB
+        = detail::toRegistryEntity(contact.bodyB.getEntity());
+    if (entityA == entt::null || entityB == entt::null || entityA == entityB) {
+      return std::nullopt;
+    }
+
+    const auto bodyA = dvbd::avbdRigidWorldProjectableBody(registry, entityA);
+    const auto bodyB = dvbd::avbdRigidWorldProjectableBody(registry, entityB);
+    if (!bodyA || !bodyB) {
+      return std::nullopt;
+    }
+    if (!bodyA.isStatic || !bodyB.isStatic) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 struct RigidContactCandidate
 {
   entt::entity entity = entt::null;
@@ -213,25 +279,25 @@ void captureRigidContactForces(
 }
 
 //==============================================================================
-// The boxed-LCP solver returns its impulses in a stacked snapshot (normal rows
+// The boxed-LCP solver returns its impulses in a stacked buffer (normal rows
 // [0, n) then two friction rows per contact) rather than on the constraints, so
 // copy them back onto the constraints to share the capture path above.
 void writeBoxedLcpImpulsesIntoConstraints(
     std::span<RigidBodyContactConstraint> constraints,
-    const detail::BoxedLcpContactSnapshot& snapshot)
+    std::span<const double> impulses)
 {
-  const Eigen::Index n = static_cast<Eigen::Index>(constraints.size());
-  if (n == 0 || snapshot.f.size() < n) {
+  const std::size_t n = constraints.size();
+  if (n == 0u || impulses.size() < n) {
     return;
   }
-  const bool hasFrictionRows = snapshot.f.size() == 3 * n;
-  for (Eigen::Index i = 0; i < n; ++i) {
-    RigidBodyContactConstraint& constraint
-        = constraints[static_cast<std::size_t>(i)];
-    constraint.normalImpulse = snapshot.f[i];
+  const bool hasFrictionRows = n <= std::numeric_limits<std::size_t>::max() / 3u
+                               && impulses.size() == 3u * n;
+  for (std::size_t i = 0; i < n; ++i) {
+    RigidBodyContactConstraint& constraint = constraints[i];
+    constraint.normalImpulse = impulses[i];
     if (hasFrictionRows) {
-      constraint.tangentImpulse1 = snapshot.f[n + 2 * i];
-      constraint.tangentImpulse2 = snapshot.f[n + 2 * i + 1];
+      constraint.tangentImpulse1 = impulses[n + 2u * i];
+      constraint.tangentImpulse2 = impulses[n + 2u * i + 1u];
     } else {
       constraint.tangentImpulse1 = 0.0;
       constraint.tangentImpulse2 = 0.0;
@@ -566,6 +632,8 @@ void RigidBodyContactStage::prepare(World& world)
   constraints.clear();
 
   const auto& registry = dart::simulation::detail::registryOf(world);
+  const bool useAvbdFamily
+      = world.getRigidBodySolver() == RigidBodySolver::Avbd;
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(world);
   std::size_t contactCapacity = 0u;
   if (!skipContactQuery) {
@@ -583,6 +651,7 @@ void RigidBodyContactStage::prepare(World& world)
               : std::numeric_limits<std::size_t>::max();
     contactCapacity = contactConstraintCapacity;
     constraints.reserve(contactCapacity);
+    detail::storageOf(world).lastContactForces.reserve(contactCapacity);
     // Warm the collision-query cache and its contact buffer at bake time so
     // baked steps reuse the reserved capacity instead of growing the world
     // allocator. BoxedLcp additionally warms the frame arena for its per-step
@@ -615,7 +684,8 @@ void RigidBodyContactStage::prepare(World& world)
   const std::size_t distanceSpringCapacity
       = distanceSpringStorage != nullptr ? distanceSpringStorage->size() : 0u;
   const std::size_t avbdContactCapacity
-      = contactCapacity != 0u && mayHaveRigidAvbdContactConfigs(registry)
+      = contactCapacity != 0u
+                && (useAvbdFamily || mayHaveRigidAvbdContactConfigs(registry))
             ? contactCapacity
             : 0u;
   if (avbdContactCapacity == 0u && jointCapacity == 0u
@@ -649,6 +719,8 @@ void RigidBodyContactStage::prepare(World& world)
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
+  const bool useAvbdFamily
+      = world.getRigidBodySolver() == RigidBodySolver::Avbd;
 
   const auto projectAvbdRigidPointJoints = [&]() {
     const bool hasPointJointConfigs
@@ -705,9 +777,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     dvbd::predictAvbdRigidWorldContactInertialTargets(
         registry, scratch.snapshot, timeStep);
 
-    dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
-    solveOptions.descent.iterations = m_iterations;
-    solveOptions.descent.regularization = 1e-12;
+    const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
+        = rigidAvbdWorldSolveOptions(m_iterations);
     const dvbd::AvbdRigidWorldContactSolveResult solveResult
         = dvbd::solveAvbdRigidWorldContactSnapshot(
             scratch.snapshot,
@@ -748,7 +819,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   }
 
   const bool mayUseAvbdContactDetails
-      = mayHaveRigidAvbdContactConfigs(registry);
+      = useAvbdFamily || mayHaveRigidAvbdContactConfigs(registry);
   const auto queriedContacts = world.queryContacts(
       CollisionQueryOptions{},
       /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
@@ -770,16 +841,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     return;
   }
 
-  // Internal AVBD rigid contact path (PLAN-104 AVBD): when every active contact
-  // has at least one body carrying the private opt-in config, assemble the
-  // contact manifold into 6-DOF point-pair rows, solve against the
-  // velocity-predicted inertial target, then project the solved displacement
-  // back into velocities. The standard rigid position stage still advances
-  // poses, so default pipeline ordering is unchanged. Unsupported envelopes
-  // fall through to the sequential-impulse path below.
-  const auto avbdConfig = mayUseAvbdContactDetails
-                              ? rigidAvbdContactStageConfig(registry, contacts)
-                              : std::optional<comps::RigidAvbdContactConfig>{};
+  // AVBD rigid contact path (PLAN-104): the public AVBD family selects every
+  // supported active free-rigid contact. The compatibility path under another
+  // family still requires every active contact to carry a private opt-in.
+  // Both assemble 6-DOF point-pair rows, solve against velocity-predicted
+  // inertial targets, and project the displacement back into velocities. The
+  // standard rigid position stage then advances poses.
+  const auto avbdConfig
+      = mayUseAvbdContactDetails
+            ? rigidAvbdContactStageConfig(registry, contacts, useAvbdFamily)
+            : std::optional<comps::RigidAvbdContactConfig>{};
   if (avbdConfig) {
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = AvbdScratchPtr(
@@ -798,6 +869,24 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         scratch.snapshot,
         scratch.buildScratch,
         contactOptions);
+    const auto expectedPublicContactCount
+        = useAvbdFamily ? countProjectableRigidAvbdContacts(registry, contacts)
+                        : std::optional<std::size_t>{};
+    DART_SIMULATION_THROW_T_IF(
+        useAvbdFamily && !expectedPublicContactCount.has_value(),
+        NotImplementedException,
+        "The AVBD rigid-body solver encountered an active contact envelope it "
+        "cannot project; sequential-impulse fallback is disabled");
+    const bool allContactsCovered
+        = useAvbdFamily ? scratch.snapshot.contacts.size()
+                              == expectedPublicContactCount.value()
+                        : scratch.snapshot.contacts.size() == contacts.size();
+    DART_SIMULATION_THROW_T_IF(
+        useAvbdFamily && !allContactsCovered,
+        NotImplementedException,
+        "The AVBD rigid-body solver could not assemble every active contact; "
+        "sequential-impulse fallback is disabled");
+
     std::size_t appendedJoints = 0u;
     std::size_t appendedDistanceSprings = 0u;
     if (dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry)) {
@@ -827,27 +916,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       scratch.distanceSprings.clear();
     }
 
-    if (scratch.snapshot.contacts.size() == contacts.size()
+    if (allContactsCovered
         && (!scratch.snapshot.contacts.empty() || appendedJoints != 0u
             || appendedDistanceSprings != 0u)) {
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
           registry, scratch.snapshot, timeStep);
 
-      dvbd::AvbdRigidWorldContactSolveOptions solveOptions;
-      solveOptions.warmStart.alpha = avbdConfig->alpha;
-      solveOptions.warmStart.gamma = avbdConfig->gamma;
-      solveOptions.warmStart.maxStiffness = contactOptions.maxStiffness;
-      solveOptions.row.alpha = avbdConfig->alpha;
-      solveOptions.row.beta = avbdConfig->beta;
-      solveOptions.row.maxStiffness = contactOptions.maxStiffness;
-      solveOptions.friction.alpha = avbdConfig->alpha;
-      solveOptions.friction.beta = avbdConfig->beta;
-      solveOptions.friction.maxStiffness = contactOptions.maxStiffness;
-      solveOptions.distanceSpring.beta = avbdConfig->beta;
-      solveOptions.distanceSpring.maxStiffness = contactOptions.maxStiffness;
-      solveOptions.descent.iterations = m_iterations;
-      solveOptions.descent.regularization = 1e-12;
+      const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
+          = rigidAvbdWorldSolveOptions(
+              m_iterations, &*avbdConfig, contactOptions.maxStiffness);
 
       const dvbd::AvbdRigidWorldContactSolveResult solveResult
           = dvbd::solveAvbdRigidWorldContactSnapshot(
@@ -876,10 +954,27 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
           return;
         }
       }
+
+      DART_SIMULATION_THROW_T_IF(
+          useAvbdFamily,
+          InvalidOperationException,
+          "The AVBD rigid-body solver assembled active constraints but "
+          "produced no AVBD rows; sequential-impulse fallback is disabled");
+    } else if (
+        useAvbdFamily && allContactsCovered
+        && expectedPublicContactCount.value() == 0u) {
+      m_avbdScratch->clear();
+      return;
     }
 
     m_avbdScratch->clear();
   }
+
+  DART_SIMULATION_THROW_T_IF(
+      useAvbdFamily,
+      InvalidOperationException,
+      "The AVBD rigid-body solver did not resolve the active rigid contacts; "
+      "sequential-impulse fallback is disabled");
 
   if (projectAvbdRigidPointJoints()) {
     // Keep the AVBD joint projection active while ordinary contacts continue
@@ -895,14 +990,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
     detail::BoxedLcpContactScratch frameScratch(
         world.getMemoryManager().getFrameAllocator());
-    // solveBoxedLcpContacts applies the same velocity impulses as
-    // applyBoxedLcpContacts but also leaves the solved impulses in the
-    // snapshot, which the force capture needs.
-    const detail::BoxedLcpContactSnapshot& snapshot
-        = detail::solveBoxedLcpContacts(
-            registry, contacts, world.getTimeStep(), frameScratch);
+    // Keep the step on the allocation-free apply path. The solved impulse
+    // buffer remains available in frame scratch for force capture; requesting
+    // the full differentiable snapshot here would allocate its Eigen matrices
+    // on every step.
+    detail::applyBoxedLcpContacts(
+        registry, contacts, world.getTimeStep(), frameScratch);
     writeBoxedLcpImpulsesIntoConstraints(
-        frameScratch.problem.constraints, snapshot);
+        frameScratch.problem.constraints, frameScratch.systemF);
     captureRigidContactForces(
         registry, world, frameScratch.problem.constraints, world.getTimeStep());
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
@@ -1019,6 +1114,59 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 std::size_t RigidBodyContactStage::getIterations() const noexcept
 {
   return m_iterations;
+}
+
+//==============================================================================
+avbd_replay::RigidAvbdWarmStartReplayState
+RigidBodyContactStage::captureAvbdWarmStartReplayState(
+    common::MemoryAllocator& allocator) const
+{
+  avbd_replay::RigidAvbdWarmStartReplayState state(allocator);
+  if (m_avbdScratch == nullptr) {
+    return state;
+  }
+
+  const auto copyRecords = [](auto& destination, const auto& inventory) {
+    destination.assign(inventory.records().begin(), inventory.records().end());
+  };
+  copyRecords(state.normalRows, m_avbdScratch->normalInventory);
+  copyRecords(state.frictionRows, m_avbdScratch->frictionInventory);
+  copyRecords(state.jointLinearRows, m_avbdScratch->jointLinearInventory);
+  copyRecords(state.jointAngularRows, m_avbdScratch->jointAngularInventory);
+  copyRecords(state.motorRows, m_avbdScratch->motorInventory);
+  copyRecords(state.distanceSpringRows, m_avbdScratch->distanceSpringInventory);
+  return state;
+}
+
+//==============================================================================
+void RigidBodyContactStage::restoreAvbdWarmStartReplayState(
+    const avbd_replay::RigidAvbdWarmStartReplayState& replayState)
+{
+  if (m_avbdScratch == nullptr) {
+    m_avbdScratch = AvbdScratchPtr(
+        createAvbdScratch(m_memoryManager),
+        AvbdScratchDeleter{m_memoryManager});
+  }
+
+  m_avbdScratch->clear();
+  const auto restoreRecords = [](auto& inventory, const auto& records) {
+    inventory.records().assign(records.begin(), records.end());
+  };
+  restoreRecords(m_avbdScratch->normalInventory, replayState.normalRows);
+  restoreRecords(m_avbdScratch->frictionInventory, replayState.frictionRows);
+  restoreRecords(
+      m_avbdScratch->jointLinearInventory, replayState.jointLinearRows);
+  restoreRecords(
+      m_avbdScratch->jointAngularInventory, replayState.jointAngularRows);
+  restoreRecords(m_avbdScratch->motorInventory, replayState.motorRows);
+  restoreRecords(
+      m_avbdScratch->distanceSpringInventory, replayState.distanceSpringRows);
+}
+
+//==============================================================================
+void RigidBodyContactStage::setIterations(std::size_t iterations) noexcept
+{
+  m_iterations = std::max<std::size_t>(1, iterations);
 }
 
 } // namespace dart::simulation::compute
