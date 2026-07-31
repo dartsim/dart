@@ -1492,6 +1492,14 @@ void renderMemoryMapLegend(bool objectAtlas)
         "point only");
     ImGui::PopTextWrapPos();
   }
+  ImGui::PushTextWrapPos(0.0f);
+  ImGui::TextDisabled(
+      objectAtlas
+          ? "Zigzag break between page runs = unobserved address gap; the "
+            "runs are not contiguous with each other"
+          : "Zigzag break between row groups = address discontinuity; each "
+            "row group is one contiguous backing allocation");
+  ImGui::PopTextWrapPos();
 }
 
 //==============================================================================
@@ -1515,10 +1523,11 @@ void renderMemoryMapRegion(
   const float rowHeight = std::max(13.0f, 17.0f * static_cast<float>(guiScale));
 
   ImGui::PushID(region.id.c_str());
-  ImGui::Text(
-      "%s  |  %s",
+  ImGui::TextWrapped(
+      "%s  |  %s  |  %s",
       region.label.c_str(),
-      formatBytes(static_cast<double>(region.sizeBytes), false).c_str());
+      formatBytes(static_cast<double>(region.sizeBytes), false).c_str(),
+      objectAtlas ? "contiguous host-page run" : "contiguous backing bytes");
   ImGui::TextDisabled("%s evidence", metricQualityLabel(region.quality));
   ImGui::TextWrapped("Source: %s", region.source.c_str());
   if (region.pageSizeBytes) {
@@ -1983,6 +1992,48 @@ void renderExactMemoryRangeTable(
 }
 
 //==============================================================================
+/// Draws a full-width zigzag break between two map row groups so an address
+/// discontinuity is impossible to mistake for continued contiguous bytes. The
+/// zigzag shape is deliberately distinct from the in-cell hatch/dot patterns,
+/// which encode storage state within one contiguous group.
+void renderAddressDiscontinuitySeparator(bool objectAtlas, double guiScale)
+{
+  constexpr int kSeparatorVertexStop = 40 * 1024;
+  const float bandHeight = std::max(7.0f, 9.0f * static_cast<float>(guiScale));
+  const float width = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+  ImDrawList* drawList = ImGui::GetWindowDrawList();
+  const ImVec2 origin = ImGui::GetCursorScreenPos();
+  ImGui::Dummy(ImVec2(width, bandHeight));
+
+  const ImU32 color = IM_COL32(235, 239, 245, 205);
+  const float step = std::max(7.0f, 9.0f * static_cast<float>(guiScale));
+  const float lowY = origin.y + bandHeight - 1.0f;
+  const float highY = origin.y + 1.0f;
+  ImVec2 previous(origin.x, lowY);
+  bool rising = true;
+  for (float x = origin.x + step; x <= origin.x + width;
+       x += step, rising = !rising) {
+    // An anti-aliased two-point line uses at most eight vertices.
+    if (!hasMemoryMapVertexCapacity(drawList, kSeparatorVertexStop, 8)) {
+      break;
+    }
+    const ImVec2 current(x, rising ? highY : lowY);
+    drawList->AddLine(previous, current, color, 1.5f);
+    previous = current;
+  }
+
+  ImGui::PushTextWrapPos(0.0f);
+  ImGui::TextDisabled(
+      objectAtlas
+          ? "unobserved address gap -- the next page run is not contiguous "
+            "with the previous one"
+          : "address discontinuity -- the next row group is a separate "
+            "backing allocation");
+  ImGui::PopTextWrapPos();
+  ImGui::Spacing();
+}
+
+//==============================================================================
 void renderMemoryMapSection(
     const std::vector<MemoryMapRegion>& regions,
     double guiScale,
@@ -1997,7 +2048,12 @@ void renderMemoryMapSection(
   }
 
   renderMemoryMapLegend(objectAtlas);
+  bool firstRegion = true;
   for (const auto& region : regions) {
+    if (!firstRegion) {
+      renderAddressDiscontinuitySeparator(objectAtlas, guiScale);
+    }
+    firstRegion = false;
     renderMemoryMapRegion(region, guiScale, objectAtlas, maxRows);
     ImGui::Spacing();
   }
