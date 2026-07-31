@@ -125,7 +125,7 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
   )
   set_tests_properties(
     test_SoftFootSimbiconModel
-    PROPERTIES FAIL_REGULAR_EXPRESSION "0 tests"
+    PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
   )
   dart_format_add(${soft_foot_simbicon_test_sources})
 endif()

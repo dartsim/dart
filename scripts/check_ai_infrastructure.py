@@ -142,6 +142,10 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=SoftWormModelTest.*",),
         "environment": (),
     },
+    "test_SoftFootSimbiconModel": {
+        "arguments": ("--gtest_filter=SoftFootSimbiconModelTest.*",),
+        "environment": (),
+    },
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
