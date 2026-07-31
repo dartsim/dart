@@ -8,9 +8,13 @@ below. The task remains active and incomplete.
 
 - Worktree:
   `/home/js/dev/dartsim/dart/task_6`
-- Branch and pushed head:
-  `research/fbf-friction-release620` at
+- Branch:
+  `research/fbf-friction-release620`
+- Figure 3/8 evidence capture head:
   `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`
+- Current documentation head:
+  query the live local/remote branch; this resume file is an additive
+  documentation-only descendant of the evidence capture head
 - Code/runtime checkpoint:
   `0acffc45b81184ef56dbc53ee60f6e25786102c2`
 - Merged and freshly fetched target:

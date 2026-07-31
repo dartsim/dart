@@ -2,8 +2,10 @@
 
 ## 2026-07-30 Current-Head Figure 3/8 Capture Boundary
 
-Current pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
-documentation-only descendant of runtime checkpoint `0acffc45b81`.
+Figure 3/8 evidence capture head
+`b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a documentation-only
+descendant of runtime checkpoint `0acffc45b81`. This report is an additive
+documentation descendant; query the live branch for its pushed head.
 
 Fresh Figure 3 evidence under ignored
 `assets/pr_media_current_head_b708_fig03/` passes exact/boxed capture,

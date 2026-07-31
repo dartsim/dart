@@ -34,8 +34,10 @@ This section supersedes every older branch-head, runtime-currency, API-default,
 Figure 3, Figure 8, file-hygiene, CI, upload, and immediate-next-step statement
 below.
 
-- Pushed topic head is `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`.
-  Its code/runtime checkpoint is
+- Figure 3/8 evidence capture head is
+  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`. This handoff is an additive
+  documentation-only descendant; query the live branch for its pushed head.
+  The code/runtime checkpoint is
   `0acffc45b81184ef56dbc53ee60f6e25786102c2`; the intervening commit is
   documentation-only. A fresh fetch confirms `origin/release-6.20` remains
   `aaf1e5f64dd47f0350ea1b395bf257bb77b36829` and is already merged.

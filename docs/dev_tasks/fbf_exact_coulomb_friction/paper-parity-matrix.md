@@ -13,8 +13,10 @@ diagnostics rather than canonical paper/video rows.
 
 ## 2026-07-30 Current-Head Figure 3/8 Currency Boundary
 
-Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
-documentation-only descendant of runtime checkpoint `0acffc45b81`; target
+Figure 3/8 evidence capture head
+`b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a documentation-only
+descendant of runtime checkpoint `0acffc45b81`; this matrix is an additive
+documentation descendant, so query the live pushed head. Target
 `aaf1e5f64dd` is already merged. The compatibility default remains boxed LCP
 with FCL primitives through `World::create()`. Exact FBF is opt-in and its
 boxed fallback defaults enabled.

@@ -15,9 +15,11 @@ Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
 Current-head Figure 3/8 reseal boundary
 ---------------------------------------
 
-Pushed topic head b708e63e0a9bac8e53cc8ffb872b566aacc6f68c is a
-documentation-only descendant of code/runtime checkpoint
-0acffc45b81184ef56dbc53ee60f6e25786102c2. Freshly fetched
+Figure 3/8 evidence capture head b708e63e0a9bac8e53cc8ffb872b566aacc6f68c
+is a documentation-only descendant of code/runtime checkpoint
+0acffc45b81184ef56dbc53ee60f6e25786102c2. This provenance ledger is an
+additive documentation descendant; query the live branch for its pushed head.
+Freshly fetched
 origin/release-6.20 remains aaf1e5f64dd47f0350ea1b395bf257bb77b36829
 and is already merged. World::create() still defaults to
 BoxedLcpConstraintSolver with FCL primitive collision. Exact FBF is opt-in;

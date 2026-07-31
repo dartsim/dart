@@ -6,8 +6,10 @@ physical-outcome, and claim-boundary checks.
 
 ## 2026-07-30 Current-Head Pending Attachment Delta
 
-Pushed head `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a
-documentation-only descendant of runtime checkpoint `0acffc45b81`. Fresh
+Figure 3/8 evidence capture head
+`b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a documentation-only
+descendant of runtime checkpoint `0acffc45b81`. This ledger is an additive
+documentation descendant; query the live branch for its pushed head. Fresh
 current-runtime candidates are locally sealed but are not published until a
 browser-created `github.com/user-attachments/...` URL is recorded and its
 downloaded bytes match:

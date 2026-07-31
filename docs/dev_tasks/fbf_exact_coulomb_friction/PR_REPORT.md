@@ -6,9 +6,10 @@ This section supersedes every older branch-head, runtime-currency, API-default,
 Figure 3, Figure 8, raw-file, CI, upload, and immediate-next-step statement
 below.
 
-- PR #3377 is open and draft at pushed head
-  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c`, a documentation-only
-  descendant of code/runtime checkpoint `0acffc45b81`. Fresh target
+- PR #3377 is open and draft. Figure 3/8 evidence capture head
+  `b708e63e0a9bac8e53cc8ffb872b566aacc6f68c` is a documentation-only
+  descendant of code/runtime checkpoint `0acffc45b81`; this report is a later
+  additive documentation descendant, so query the live pushed head. Fresh target
   `aaf1e5f64dd` is already merged. Sixteen checks pass and four remain in
   progress at the last query; no current-head failure is carried forward.
 - The PR API section is accurate: `World::create()` defaults to
