@@ -201,11 +201,12 @@ DemoScene makeSoftFootSimbiconScene()
           "%d steps). 'r' restarts the biped in place, keeping the current "
           "feet. 't' selects the other foot geometry, which needs a new world "
           "and so takes effect on the host's Reset or Rebuild.\n\n"
-          "Compare the two. Soft feet spread more contact points (about 52 vs "
-          "44 over a settled window), which is the Jain/Liu 2011 result. They "
-          "do NOT withstand larger pushes here: measured recovery is 4000 N "
-          "soft against 8000 N rigid, because this asset's feet (kv 5e4) are "
-          "too compliant for a 147 kg Atlas.",
+          "Compare the two. Both foot types collide as the same rest-pose "
+          "box; only the soft one deforms. Soft feet spread far more contact "
+          "points (about 52 vs 4 over a settled window), which is the "
+          "Jain/Liu 2011 result. They do NOT withstand larger pushes here: "
+          "measured recovery is 4000 N soft against 8000 N rigid, because "
+          "this asset's feet (kv 5e4) are too compliant for a 147 kg Atlas.",
           sfs::kDefaultPushMagnitude,
           sfs::kPushSteps);
     };

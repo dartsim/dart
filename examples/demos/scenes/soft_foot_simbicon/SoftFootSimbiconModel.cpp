@@ -99,6 +99,16 @@ bool survivesPush(Feet feet, double magnitude)
 }
 
 //==============================================================================
+/// Rest-pose collision box of the soft feet, mirrored from the `<soft_shape>`
+/// element of `atlas_v3_no_head_soft_feet.sdf`. The rigid control's feet
+/// collide as this exact box (see normalizeRigidFoot), so the two models
+/// differ only in whether the box deforms; the comparability gate checks it
+/// against the soft feet's actual point-mass rest positions rather than
+/// trusting a second copy of the numbers.
+const Eigen::Vector3d kSoftFootRestBoxSize(0.275, 0.15, 0.075);
+const Eigen::Vector3d kSoftFootRestBoxOffset(0.05, 0.0, -0.06);
+
+//==============================================================================
 /// Makes a loaded soft foot directly comparable with the rigid foot it
 /// replaces, by changing the loaded instance rather than the shared
 /// `dart://sample` asset, which other callers and `test_SdfParser` also load.
@@ -149,6 +159,45 @@ void normalizeSoftFoot(dart::dynamics::BodyNode* foot)
   soft->setInertia(inertia);
 }
 
+//==============================================================================
+/// Makes the rigid control comparable with the soft feet it is measured
+/// against, again on the loaded instance.
+///
+/// The rigid SDF's feet collide with `l_foot.stl` / `r_foot.stl` while the
+/// soft feet collide with the box surface generated from `<soft_shape>`. A
+/// triangle mesh and a box produce inherently different contact manifolds, so
+/// leaving the STL in the control would let the contact-count comparison
+/// measure collision representation rather than compliance. The control's
+/// feet collide as the soft rest box instead -- same size, same offset -- and
+/// keep the STL for visuals only.
+void normalizeRigidFoot(dart::dynamics::BodyNode* foot)
+{
+  // The friction coefficient rides along from the surface being replaced, so
+  // the swap changes geometry and nothing else. The Atlas SDFs declare no
+  // custom <surface>, so today this copies the default; the copy is here so
+  // that stays true if the asset ever gains one.
+  double frictionCoeff = 1.0;
+  bool sawCollision = false;
+  foot->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+      [&](dart::dynamics::ShapeNode* shapeNode) {
+        if (!sawCollision && shapeNode->getDynamicsAspect() != nullptr) {
+          frictionCoeff = shapeNode->getDynamicsAspect()->getFrictionCoeff();
+          sawCollision = true;
+        }
+        shapeNode->removeCollisionAspect();
+      });
+  if (!sawCollision)
+    throw std::runtime_error(
+        std::string(foot->getName()) + ": no collision surface to replace");
+
+  auto* boxNode = foot->createShapeNodeWith<
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(kSoftFootRestBoxSize));
+  boxNode->setRelativeTranslation(kSoftFootRestBoxOffset);
+  boxNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+}
+
 } // namespace
 
 //==============================================================================
@@ -189,6 +238,9 @@ Model createModel(Feet feet)
   if (feet == Feet::Soft) {
     normalizeSoftFoot(leftFoot);
     normalizeSoftFoot(rightFoot);
+  } else {
+    normalizeRigidFoot(leftFoot);
+    normalizeRigidFoot(rightFoot);
   }
 
   world->addSkeleton(ground);

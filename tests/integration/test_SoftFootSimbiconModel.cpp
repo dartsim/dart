@@ -360,6 +360,54 @@ TEST(SoftFootSimbiconModelTest, SoftAndRigidBipedsAreComparable)
     EXPECT_EQ(rigidSurfaces.second, 0u);
   }
 
+  // And the same rest-pose collision geometry. The rigid control's one surface
+  // must be a box matching the soft foot's point-mass rest AABB -- measured
+  // from the point masses themselves, not from a second copy of the SDF
+  // numbers -- so the comparison isolates whether that box deforms. A triangle
+  // mesh against a box grid would let the contact counts measure collision
+  // representation instead.
+  const auto rigidCollisionBox
+      = [](const sfs::Model& model,
+           dart::dynamics::BodyNode* body) -> const dart::dynamics::ShapeNode* {
+    const auto group = model.world->getConstraintSolver()->getCollisionGroup();
+    for (std::size_t i = 0; i < group->getNumShapeFrames(); ++i) {
+      const auto* frame = group->getShapeFrame(i);
+      const auto* shapeNode = frame ? frame->asShapeNode() : nullptr;
+      if (shapeNode && shapeNode->getBodyNodePtr() == body)
+        return shapeNode;
+    }
+    return nullptr;
+  };
+  for (const auto& pair :
+       {std::make_pair(rigid.leftFoot, soft.leftFoot),
+        std::make_pair(rigid.rightFoot, soft.rightFoot)}) {
+    auto* softFoot = dynamic_cast<dart::dynamics::SoftBodyNode*>(pair.second);
+    ASSERT_NE(softFoot, nullptr);
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(1e9);
+    Eigen::Vector3d hi = Eigen::Vector3d::Constant(-1e9);
+    for (std::size_t i = 0; i < softFoot->getNumPointMasses(); ++i) {
+      const Eigen::Vector3d& rest
+          = softFoot->getPointMass(i)->getRestingPosition();
+      lo = lo.cwiseMin(rest);
+      hi = hi.cwiseMax(rest);
+    }
+
+    const auto* boxNode = rigidCollisionBox(rigid, pair.first);
+    ASSERT_NE(boxNode, nullptr);
+    const auto box = std::dynamic_pointer_cast<const dart::dynamics::BoxShape>(
+        boxNode->getShape());
+    ASSERT_NE(box, nullptr)
+        << "the rigid control's foot does not collide as a box";
+    EXPECT_LT((box->getSize() - (hi - lo)).cwiseAbs().maxCoeff(), 1e-6)
+        << "rigid collision box size differs from the soft rest extents";
+    EXPECT_LT(
+        (boxNode->getRelativeTransform().translation() - 0.5 * (hi + lo))
+            .cwiseAbs()
+            .maxCoeff(),
+        1e-6)
+        << "rigid collision box center differs from the soft rest center";
+  }
+
   std::cout << "soft_foot_simbicon mass  rigid=" << rigidMass
             << " kg  soft=" << softMass
             << " kg  collision_surfaces_per_foot rigid="

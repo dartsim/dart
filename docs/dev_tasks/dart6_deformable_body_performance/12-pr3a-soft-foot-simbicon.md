@@ -68,11 +68,14 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 - **Push recovery: measured, not asserted.** Soft 4000 N vs rigid 8000 N — the
   paper's claim does not reproduce. The gate records both thresholds and asserts
   only that neither saturated the sweep. See *Open maintainer decisions*.
-- **Comparable models**: equal total mass and one foot collision surface each,
-  normalized on the loaded instance, not in the shared `dart://sample` asset.
-  `<total_mass>` adds to the link mass, and the generated `SoftMeshShape` is
-  collidable alongside the link's rigid STL mesh; uncorrected, the gates measure
-  ground load and duplicated geometry rather than deformability.
+- **Comparable models**: equal total mass, one foot collision surface each, and
+  the same rest-pose collision geometry -- the rigid control's feet collide as
+  the soft feet's rest box (checked against the point masses' actual rest AABB),
+  not as the SDF's STL meshes. All normalized on the loaded instance, before it
+  joins the world, never in the shared `dart://sample` asset. Uncorrected, the
+  gates measure ground load, duplicated geometry, or mesh-vs-box contact
+  manifolds rather than deformability; the STL control alone inflated the rigid
+  contact count from 3.6 to 44.4.
 - **Contact count: soft maintains ≥ rigid** foot contacts over a settled window
   (paper: soft maintains more contact points).
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required
@@ -81,7 +84,9 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 ## Open maintainer decisions
 
 Both block the Jain/Liu push-recovery claim. The contact-count claim is
-unaffected and reproduces (52.0 soft vs 44.4 rigid).
+unaffected and reproduces (52.0 soft vs 3.6 rigid, with both foot types
+colliding as the same rest-pose box so the gap is compliance, not collision
+representation).
 
 **1. Soft-foot stiffness — the feet are too compliant for a 147 kg Atlas.**
 
