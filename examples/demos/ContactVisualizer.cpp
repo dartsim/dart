@@ -92,6 +92,19 @@ void ContactVisualizer::ensurePool(std::size_t count)
   const double shaftRadius
       = std::clamp(0.02 * mLayout.getReferenceLength(), 0.0015, 0.05);
 
+  // Arrows already in the pool are resized too. The reference length moves when
+  // a scene spawns, removes, or reactivates bodies, and leaving the pool alone
+  // would keep drawing at the old thickness -- or mix two thicknesses once the
+  // pool grew.
+  if (shaftRadius != mShaftRadius) {
+    for (auto& arrow : mArrows) {
+      auto properties = arrow->getProperties();
+      properties.mRadius = shaftRadius;
+      arrow->setProperties(properties);
+    }
+    mShaftRadius = shaftRadius;
+  }
+
   while (mFrames.size() < count) {
     auto frame = std::make_shared<dart::dynamics::SimpleFrame>(
         dart::dynamics::Frame::World());
