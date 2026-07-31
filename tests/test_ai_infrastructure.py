@@ -1031,8 +1031,9 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "existing model with existing prompt/settings",
         "target at the preserved effort and one lower effort",
         "structural checks into model-quality",
-        "Max gives one difficult task more reasoning",
-        "Ultra is for independently parallelizable work",
+        "Deeper reasoning modes give one difficult task more time",
+        "explicit user authorization for delegation",
+        '`docs/ai/README.md` § "Model Routing"',
         "Do not silently substitute a different model",
         "durable context and project-state layer",
         "`docs/plans/dashboard.md`",
@@ -1053,6 +1054,11 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "text/image disagreement",
     ):
         assert marker in text
+
+    routing_owner = (ROOT / "docs" / "ai" / "README.md").read_text()
+    assert "## Model Routing" in routing_owner
+    assert "**Codex — " in routing_owner
+    assert "**Claude Code — " in routing_owner
 
     compliance = sync.parse_command_frontmatter(
         (ROOT / ".claude" / "commands" / "dart-audit-agent-compliance.md").read_text()
