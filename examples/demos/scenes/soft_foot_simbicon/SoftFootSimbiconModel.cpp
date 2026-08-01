@@ -345,54 +345,75 @@ void normalizeRigidFoot(dart::dynamics::BodyNode* foot)
 /// with a height of 0.05. The tile floor references this so switching floors
 /// never moves the surface the biped spawns above.
 constexpr double kGroundTopY = -0.925;
-constexpr double kFloorTileThickness = 0.05;
+
+} // namespace
 
 //==============================================================================
-/// Builds the seeded noisy tile floor: a single immobile skeleton of
-/// kFloorTilesX * kFloorTilesZ welded 5x5 cm box tiles whose tops are dug 0 to
-/// `amplitude` meters below the flat ground plane (see the header note on why
-/// down rather than up). The heights come from the fixed kFloorSeed stream in
-/// row-major tile order, so every build at a given amplitude is identical on
-/// every platform.
+std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
+    double amplitude)
+{
+  // Shared-vertex quad lattice with seeded 3-axis offsets (see the header):
+  // horizontal jitter breaks the regular walls an axis-aligned tile grid
+  // would present, vertical offsets dig 0..amplitude below the plane. The
+  // horizontal clamp keeps neighboring vertices ordered (no fold-over), so
+  // the sheet stays manifold at any requested amplitude. Draws come from the
+  // fixed kFloorSeed stream in row-major vertex order, three per vertex, so
+  // every build at a given amplitude is identical on every platform.
+  const double horizontalClamp = std::min(amplitude, 0.4 * kFloorTileSize);
+  const int verticesX = kFloorTilesX + 1;
+  const int verticesZ = kFloorTilesZ + 1;
+
+  std::uint64_t state = kFloorSeed;
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  mesh->reserveVertices(
+      static_cast<std::size_t>(verticesX)
+      * static_cast<std::size_t>(verticesZ));
+  for (int i = 0; i < verticesX; ++i) {
+    for (int j = 0; j < verticesZ; ++j) {
+      const double jitterX = horizontalClamp * nextSymmetricUniform(state);
+      const double drop = amplitude * nextUniform(state);
+      const double jitterZ = horizontalClamp * nextSymmetricUniform(state);
+      mesh->addVertex(Eigen::Vector3d(
+          (i - 0.5 * (verticesX - 1)) * kFloorTileSize + jitterX,
+          kGroundTopY - drop,
+          kFloorPatchMinZ + j * kFloorTileSize + jitterZ));
+    }
+  }
+  const auto vertex = [verticesZ](int i, int j) {
+    return static_cast<std::size_t>(i) * static_cast<std::size_t>(verticesZ)
+           + static_cast<std::size_t>(j);
+  };
+  for (int i = 0; i < kFloorTilesX; ++i) {
+    for (int j = 0; j < kFloorTilesZ; ++j) {
+      mesh->addTriangle(vertex(i, j), vertex(i, j + 1), vertex(i + 1, j + 1));
+      mesh->addTriangle(vertex(i, j), vertex(i + 1, j + 1), vertex(i + 1, j));
+    }
+  }
+  return mesh;
+}
+
+namespace {
+
+//==============================================================================
+/// Wraps makeNoisyFloorMesh() as the single immobile floor skeleton.
 dart::dynamics::SkeletonPtr buildNoisyTileFloor(double amplitude)
 {
   auto floor = dart::dynamics::Skeleton::create("noisy_tile_floor");
-  std::uint64_t state = kFloorSeed;
 
-  for (int i = 0; i < kFloorTilesX; ++i) {
-    for (int j = 0; j < kFloorTilesZ; ++j) {
-      const double drop = amplitude * nextUniform(state);
+  dart::dynamics::WeldJoint::Properties jointProperties;
+  jointProperties.mName = "floor_joint";
+  dart::dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "floor_mesh";
+  auto pair = floor->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      nullptr, jointProperties, bodyProperties);
 
-      dart::dynamics::WeldJoint::Properties jointProperties;
-      jointProperties.mName
-          = "tile_joint_" + std::to_string(i) + "_" + std::to_string(j);
-      dart::dynamics::BodyNode::Properties bodyProperties;
-      bodyProperties.mName
-          = "tile_" + std::to_string(i) + "_" + std::to_string(j);
-
-      auto pair = floor->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
-          nullptr, jointProperties, bodyProperties);
-
-      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-      tf.translation() = Eigen::Vector3d(
-          (i - 0.5 * (kFloorTilesX - 1)) * kFloorTileSize,
-          kGroundTopY - drop - 0.5 * kFloorTileThickness,
-          kFloorPatchMinZ + (j + 0.5) * kFloorTileSize);
-      pair.first->setTransformFromParentBodyNode(tf);
-
-      auto* shapeNode = pair.second->createShapeNodeWith<
-          dart::dynamics::VisualAspect,
-          dart::dynamics::CollisionAspect,
-          dart::dynamics::DynamicsAspect>(
-          std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
-              kFloorTileSize, kFloorTileThickness, kFloorTileSize)));
-
-      // Checkerboard shading so captures show tiles rather than a flat plane.
-      const double shade = ((i + j) % 2 == 0) ? 0.55 : 0.45;
-      shapeNode->getVisualAspect()->setColor(
-          Eigen::Vector4d(shade, shade, shade + 0.05, 1.0));
-    }
-  }
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(), makeNoisyFloorMesh(amplitude)));
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector4d(0.5, 0.5, 0.55, 1.0));
 
   floor->setMobile(false);
   return floor;

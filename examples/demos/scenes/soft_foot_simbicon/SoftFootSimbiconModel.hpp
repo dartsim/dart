@@ -71,11 +71,15 @@ enum class Feet
   Soft,  ///< SoftBodyNode feet (atlas_v3_no_head_soft_feet.sdf)
 };
 
-/// Noisy tile floor, per the Jain/Liu noisy-floor experiment: 5x5 cm tiles
-/// whose heights vary by up to the chosen amplitude. Tile tops are dug *down*
-/// from the flat ground plane (spanning [-amplitude, 0] relative to it) so a
-/// freshly spawned biped can never start intersecting a raised tile; the paper
-/// only constrains the offsets' spread, not their sign.
+/// Noisy floor, per the Jain/Liu noisy-floor experiment: a continuous 5 cm
+/// quad lattice whose shared vertices receive seeded random offsets in the
+/// horizontal axes (up to +-amplitude, clamped to 40% of the pitch so the
+/// sheet stays manifold) and vertically (0 to amplitude, dug *down* from the
+/// flat ground plane so a freshly spawned biped can never start intersecting
+/// a raised vertex; the paper constrains the offsets' spread, not their
+/// sign). An earlier revision used axis-aligned box tiles with vertical
+/// drops only; review correctly flagged that a regular lattice of vertical
+/// walls is not the paper's surface, and hands the rigid foot a keying grid.
 inline constexpr double kFloorTileSize = 0.05;
 /// The amplitude the paper's noisy-floor experiment uses (0-2 cm offsets).
 inline constexpr double kFloorPaperAmplitude = 0.02;
@@ -118,8 +122,15 @@ struct Model
 
 /// Builds the Atlas-on-ground SIMBICON world for the requested foot geometry.
 /// A positive floorAmplitude replaces the flat ground with the seeded noisy
-/// tile floor of that height amplitude (see kFloorTileSize).
+/// mesh floor of that offset amplitude (see kFloorTileSize).
 Model createModel(Feet feet, double floorAmplitude = 0.0);
+
+/// The deterministic noisy-floor surface itself: the jittered quad lattice
+/// described at kFloorTileSize, as a triangle mesh. Exposed so the structure
+/// gate can regenerate and inspect the exact vertices the world collides
+/// with, instead of trusting a second copy of the numbers.
+std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
+    double amplitude);
 
 /// Schedules a pelvis push: `force` (N, world frame) applied for `steps` steps.
 void applyPush(Model& model, const Eigen::Vector3d& force, int steps);

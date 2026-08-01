@@ -775,27 +775,36 @@ TEST(SoftFootSimbiconModelTest, MotorNoiseIsScopedDeterministicAndEffective)
 }
 
 //==============================================================================
-// Gate 6: the noisy tile floor is what the Jain/Liu row specifies and is
-// reproducible: paper-sized tiles, heights seeded deterministically (two
-// builds agree exactly), spread bounded by the amplitude, and dug down from
-// the flat plane so the spawned biped can never start inside a raised tile.
+// Gate 6: the noisy floor is what the Jain/Liu row specifies and is
+// reproducible: a continuous jittered quad lattice whose shared vertices
+// carry seeded offsets in ALL THREE axes (the row's "vertical and
+// horizontal positions"), generated deterministically (two builds agree
+// exactly), vertically dug down from the flat plane so the spawned biped
+// can never start inside it, and horizontally clamped so the sheet stays
+// manifold.
 TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
 {
   const double amplitude = sfs::kFloorPaperAmplitude;
 
-  sfs::Model first = sfs::createModel(sfs::Feet::Soft, amplitude);
-  sfs::Model second = sfs::createModel(sfs::Feet::Soft, amplitude);
-  EXPECT_EQ(first.floorAmplitude, amplitude);
+  const auto mesh = sfs::makeNoisyFloorMesh(amplitude);
+  const auto again = sfs::makeNoisyFloorMesh(amplitude);
+  ASSERT_NE(mesh, nullptr);
+  ASSERT_NE(again, nullptr);
 
-  auto* firstFloor = first.world->getSkeleton("noisy_tile_floor").get();
-  auto* secondFloor = second.world->getSkeleton("noisy_tile_floor").get();
-  ASSERT_NE(firstFloor, nullptr);
-  ASSERT_NE(secondFloor, nullptr);
-  const std::size_t expectedTiles
-      = static_cast<std::size_t>(sfs::kFloorTilesX)
-        * static_cast<std::size_t>(sfs::kFloorTilesZ);
-  ASSERT_EQ(firstFloor->getNumBodyNodes(), expectedTiles);
-  ASSERT_EQ(secondFloor->getNumBodyNodes(), expectedTiles);
+  const std::size_t verticesX = static_cast<std::size_t>(sfs::kFloorTilesX) + 1;
+  const std::size_t verticesZ = static_cast<std::size_t>(sfs::kFloorTilesZ) + 1;
+  ASSERT_EQ(mesh->getVertices().size(), verticesX * verticesZ);
+  ASSERT_EQ(
+      mesh->getTriangles().size(),
+      2u * static_cast<std::size_t>(sfs::kFloorTilesX)
+          * static_cast<std::size_t>(sfs::kFloorTilesZ));
+
+  // Deterministic: two generations are identical vertex-for-vertex.
+  ASSERT_EQ(again->getVertices().size(), mesh->getVertices().size());
+  for (std::size_t v = 0; v < mesh->getVertices().size(); ++v) {
+    ASSERT_TRUE(mesh->getVertices()[v] == again->getVertices()[v])
+        << "vertex " << v << " differs between two builds";
+  }
 
   // The flat ground's top, measured from a flat build rather than duplicated
   // as a constant here: box collision shape, center + half height.
@@ -815,38 +824,60 @@ TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
       });
   ASSERT_TRUE(std::isfinite(flatTop));
 
-  double highestTop = -std::numeric_limits<double>::infinity();
-  double lowestTop = std::numeric_limits<double>::infinity();
-  for (std::size_t i = 0; i < firstFloor->getNumBodyNodes(); ++i) {
-    auto* firstTile = firstFloor->getBodyNode(i);
-    auto* secondTile = secondFloor->getBodyNode(i);
-    ASSERT_EQ(firstTile->getName(), secondTile->getName());
-    ASSERT_TRUE(
-        firstTile->getWorldTransform().matrix()
-        == secondTile->getWorldTransform().matrix())
-        << "tile " << firstTile->getName()
-        << " differs between two builds at the same amplitude";
-
-    const auto box = std::dynamic_pointer_cast<dart::dynamics::BoxShape>(
-        firstTile->getShapeNode(0)->getShape());
-    ASSERT_NE(box, nullptr);
-    EXPECT_EQ(box->getSize().x(), sfs::kFloorTileSize);
-    EXPECT_EQ(box->getSize().z(), sfs::kFloorTileSize);
-
-    const double top = firstTile->getWorldTransform().translation().y()
-                       + 0.5 * box->getSize().y();
-    highestTop = std::max(highestTop, top);
-    lowestTop = std::min(lowestTop, top);
+  const double horizontalClamp = std::min(amplitude, 0.4 * sfs::kFloorTileSize);
+  double highest = -std::numeric_limits<double>::infinity();
+  double lowest = std::numeric_limits<double>::infinity();
+  double maxHorizontalDeviation = 0.0;
+  for (std::size_t i = 0; i < verticesX; ++i) {
+    for (std::size_t j = 0; j < verticesZ; ++j) {
+      const Eigen::Vector3d& v = mesh->getVertices()[i * verticesZ + j];
+      const double latticeX
+          = (static_cast<double>(i) - 0.5 * static_cast<double>(verticesX - 1))
+            * sfs::kFloorTileSize;
+      const double latticeZ
+          = sfs::kFloorPatchMinZ + static_cast<double>(j) * sfs::kFloorTileSize;
+      const double deviation
+          = std::max(std::abs(v.x() - latticeX), std::abs(v.z() - latticeZ));
+      EXPECT_LE(deviation, horizontalClamp + 1e-12)
+          << "vertex (" << i << "," << j << ") jitters past the manifold clamp";
+      maxHorizontalDeviation = std::max(maxHorizontalDeviation, deviation);
+      highest = std::max(highest, v.y());
+      lowest = std::min(lowest, v.y());
+    }
   }
 
-  EXPECT_LE(highestTop, flatTop + 1e-12)
-      << "a tile rises above the flat plane, so a spawned biped could start "
-         "intersecting it";
-  EXPECT_GE(lowestTop, flatTop - amplitude - 1e-12)
-      << "a tile drops below the declared amplitude";
-  EXPECT_GT(highestTop - lowestTop, 0.25 * amplitude)
+  EXPECT_LE(highest, flatTop + 1e-12)
+      << "a floor vertex rises above the flat plane, so a spawned biped "
+         "could start intersecting it";
+  EXPECT_GE(lowest, flatTop - amplitude - 1e-12)
+      << "a floor vertex drops below the declared amplitude";
+  EXPECT_GT(highest - lowest, 0.25 * amplitude)
       << "the seeded heights are nearly uniform, so the floor is not "
          "meaningfully noisy";
+  EXPECT_GT(maxHorizontalDeviation, 0.25 * horizontalClamp)
+      << "the seeded horizontal offsets are nearly zero, so the floor is a "
+         "regular lattice rather than the row's jittered surface";
+
+  // The world's floor is the same generated sheet: one immobile body whose
+  // MeshShape spans the generator's exact bounding box.
+  sfs::Model noisy = sfs::createModel(sfs::Feet::Soft, amplitude);
+  EXPECT_EQ(noisy.floorAmplitude, amplitude);
+  auto floorSkeleton = noisy.world->getSkeleton("noisy_tile_floor");
+  ASSERT_NE(floorSkeleton, nullptr);
+  ASSERT_EQ(floorSkeleton->getNumBodyNodes(), 1u);
+  EXPECT_FALSE(floorSkeleton->isMobile());
+  const auto shape = std::dynamic_pointer_cast<dart::dynamics::MeshShape>(
+      floorSkeleton->getBodyNode(0)->getShapeNode(0)->getShape());
+  ASSERT_NE(shape, nullptr);
+  Eigen::Vector3d meshMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d meshMax = -meshMin;
+  for (const auto& v : mesh->getVertices()) {
+    meshMin = meshMin.cwiseMin(v);
+    meshMax = meshMax.cwiseMax(v);
+  }
+  EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(meshMin, 1e-9));
+  EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(meshMax, 1e-9));
 }
 
 //==============================================================================
@@ -897,17 +928,22 @@ TEST(SoftFootSimbiconModelTest, MeasuresMotorNoiseToleranceForBothFeet)
 }
 
 //==============================================================================
-// Gate 8 (own CTest entry, long-measurement): the Jain/Liu noisy-floor row,
-// measured as each arm's robust push-recovery threshold standing on the
-// paper's own 2 cm seeded tile floor (kFloorGateAmplitude; the floor alone
-// does not discriminate -- both arms idle in place through 3.2 cm).
-// Measured 2026-08-01 with phase-strided replicas on the extended patch:
-// the rough floor RAISES the rigid control's robust threshold to 14000 N
-// (the dug-down tiles key the foot against lateral sliding; 5/5 through
-// 14000, 2/5 at 16000) and COLLAPSES the soft arm to 2000 N (1/5 already
-// at 4000). This is the sharpest form of the open gap gates 3 and 7
-// record; the parity matrix owns the claim status. The gate protects the
-// measurement at its measured floors.
+// Gate 8 (own CTest entry, long-measurement): push recovery standing on the
+// paper's 2 cm noisy floor (kFloorGateAmplitude). This is an ADJACENT
+// measurement for the noisy-floor row, not its outcome: the row's own claim
+// is course tracking while walking, which needs the biped-walk row's gait
+// and stays unmeasured (the matrix says so). The floor alone does not
+// discriminate -- both arms idle in place through 3.2 cm.
+//
+// Measured 2026-08-01 on the spec's jittered shared-vertex mesh (review
+// hypothesized the earlier axis-aligned tile lattice gifted the rigid foot
+// a keying grid; re-testing on the faithful surface REFUTED that -- the
+// effect strengthened): the rough floor RAISES the rigid control's robust
+// threshold to 20000 N (5/5 through 18000, 4/5 at 20000) and COLLAPSES the
+// soft arm to 2000 N (0/5 already at 4000). This is the sharpest form of
+// the open gap gates 3 and 7 record. The rigid floor sits one magnitude
+// inside the measured threshold because the 20000 N edge replica is a 4/5
+// majority.
 TEST(SoftFootSimbiconModelTest, MeasuresNoisyFloorToleranceForBothFeet)
 {
   std::string rigidCurve;
@@ -932,9 +968,10 @@ TEST(SoftFootSimbiconModelTest, MeasuresNoisyFloorToleranceForBothFeet)
   ASSERT_LT(softPush, sfs::kPushSweepEnd)
       << "soft threshold saturated the sweep ceiling";
 
-  EXPECT_GE(rigidPush, 14000.0)
+  EXPECT_GE(rigidPush, 18000.0)
       << "the rigid control's robust threshold on the 2 cm floor regressed "
-         "below its measured 14000 N";
+         "below 18000 N (measured 20000 N; the floor sits one magnitude "
+         "inside because the edge replica is a 4/5 majority)";
   EXPECT_GE(softPush, 2000.0)
       << "the soft feet's robust threshold on the 2 cm floor regressed "
          "below their measured 2000 N";
