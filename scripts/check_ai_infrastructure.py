@@ -142,6 +142,20 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=SoftWormModelTest.*",),
         "environment": (),
     },
+    "test_SoftFootSimbiconModel": {
+        "arguments": (
+            "--gtest_filter=SoftFootSimbiconModelTest.*"
+            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_SoftFootSimbiconPushSweep": {
+        "arguments": (
+            "--gtest_filter="
+            "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
     "test_ContactArrowLayout": {
         "arguments": ("--gtest_filter=ContactArrowLayoutTest.*",),
         "environment": (),
