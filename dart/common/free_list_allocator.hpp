@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_FREELISTALLOCATOR_HPP_
 #define DART_COMMON_FREELISTALLOCATOR_HPP_
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
@@ -46,7 +47,6 @@
 namespace dart::common {
 
 namespace detail {
-class AllocatorMemoryLayoutInspector;
 }
 
 /// Most general heap memory allocator for allocating memory of various sizes.

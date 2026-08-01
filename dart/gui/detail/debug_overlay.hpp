@@ -34,17 +34,12 @@
 #define DART_GUI_DETAIL_DEBUG_OVERLAY_HPP_
 
 #include <dart/gui/debug.hpp>
+#include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/renderable_resources.hpp>
 #include <dart/gui/gizmo.hpp>
 
 #include <optional>
 #include <vector>
-
-namespace filament {
-class Engine;
-class Material;
-class Scene;
-} // namespace filament
 
 namespace dart::gui::detail {
 

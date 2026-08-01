@@ -33,6 +33,7 @@
 #ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/joint.hpp>
 
 #include <dart/math/helpers.hpp>
@@ -43,8 +44,6 @@ namespace dart {
 namespace dynamics {
 
 // Forward declare the GenericJoint class
-template <class ConfigSpaceT>
-class GenericJoint;
 
 namespace detail {
 

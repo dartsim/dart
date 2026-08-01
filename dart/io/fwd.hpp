@@ -42,6 +42,8 @@ class FileInfoDof;
 class PackageResourceRetriever;
 class UrdfParser;
 
+struct ReadOptions;
+
 } // namespace io
 } // namespace dart
 

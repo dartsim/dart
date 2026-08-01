@@ -33,15 +33,13 @@
 #pragma once
 
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart::collision::native {
-
-class BoxShape;
-class CapsuleShape;
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideCapsuleBox(
     const CapsuleShape& capsule,

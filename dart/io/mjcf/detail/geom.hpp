@@ -37,6 +37,7 @@
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/default.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/geom_attributes.hpp>
 #include <dart/io/mjcf/detail/types.hpp>
 
@@ -46,8 +47,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Body;
 
 class DART_IO_API Geom final
 {

@@ -33,26 +33,10 @@
 #ifndef DART_GUI_DETAIL_RENDER_ENVIRONMENT_HPP_
 #define DART_GUI_DETAIL_RENDER_ENVIRONMENT_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/fwd.hpp>
+
 #include <utils/Entity.h>
-
-namespace filament {
-
-class Camera;
-class ColorGrading;
-class Engine;
-class IndirectLight;
-class Scene;
-class Skybox;
-class View;
-
-} // namespace filament
-
-namespace dart::gui {
-
-struct OrbitCamera;
-struct RenderSettings;
-
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 

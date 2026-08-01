@@ -14,6 +14,7 @@ This document describes the code style conventions used in the DART project.
 
 - [C++ Style](#c-style)
   - [Header Style](#header-style)
+  - [Forward Declarations](#forward-declarations)
   - [Source Style](#source-style)
   - [Smart Pointers](#smart-pointers)
   - [Macro Conventions](#macro-conventions)
@@ -211,6 +212,48 @@ private:
 
 #endif // DART_EXAMPLE_EXAMPLECLASS_HPP_
 ```
+
+### Forward Declarations
+
+Every namespace that needs forward declarations owns exactly one
+`fwd.hpp` (`dart/common/fwd.hpp`, `dart/dynamics/fwd.hpp`,
+`dart/simulation/fwd.hpp`, `dart/gui/detail/fwd.hpp`, ...). Declare a type once
+there and `#include` that header from anywhere that only needs the declaration.
+Do not hand-roll `namespace dart::x { class Foo; }` blocks in consuming headers:
+they drift out of sync and hide who owns the type.
+
+```cpp
+// Wrong: a private copy of somebody else's declaration.
+namespace dart::simulation::compute {
+class MultibodyContactStage;
+} // namespace dart::simulation::compute
+
+// Right.
+#include <dart/simulation/fwd.hpp>
+```
+
+Two cases legitimately stay in place, and `pixi run lint` allows them:
+
+- **In-file ordering.** A primary template whose specializations follow in the
+  same file, or any entity the same file goes on to define (for example a class
+  named in a `friend` declaration before its definition).
+- **File-local tag types that are never defined.** These need an entry in
+  `ALLOWLIST` in `scripts/check_fwd_headers.py` with a comment explaining why.
+
+Third-party namespaces are out of scope, except the render/UI backends used by
+`dart::gui` (Filament, GLFW, Dear ImGui), which are declared once in
+`dart/gui/detail/backend_fwd.hpp`.
+
+Keep a `fwd.hpp` cheap: declarations and, at most, the export header. A forward
+header that pulls in a third-party library brings its names into every consumer
+and can change overload resolution there. `dart/math/fwd.hpp` is the exception
+that proves the rule — it includes Eigen and defines the `dart::math`
+`Matrix`/`Vector` aliases, so it is a types header, not a declaration header.
+That is why `dart/math/optimization` has its own `fwd.hpp` for its class
+declarations. Add a subfolder `fwd.hpp` in the same situation.
+
+`pixi run check-fwd-headers` enforces this; it also runs as part of
+`pixi run lint` and `pixi run check-lint`.
 
 ### API Boundary Style
 

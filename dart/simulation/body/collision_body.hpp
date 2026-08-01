@@ -41,9 +41,6 @@
 
 namespace dart::simulation {
 
-class RigidBody;
-class Link;
-
 /// Lightweight handle to a body that can carry collision geometry.
 ///
 /// A collision body is either a `RigidBody` or a multibody `Link`. This handle

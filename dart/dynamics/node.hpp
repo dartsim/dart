@@ -47,9 +47,6 @@
 namespace dart {
 namespace dynamics {
 
-class BodyNode;
-class Node;
-
 //==============================================================================
 class DART_API NodeDestructor final
 {

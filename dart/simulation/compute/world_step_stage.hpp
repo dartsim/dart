@@ -37,6 +37,7 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/stl_allocator.hpp>
 
 #include <array>
@@ -44,10 +45,6 @@
 #include <vector>
 
 #include <cstddef>
-
-namespace dart::common {
-class MemoryAllocator;
-} // namespace dart::common
 
 namespace dart::simulation::compute {
 

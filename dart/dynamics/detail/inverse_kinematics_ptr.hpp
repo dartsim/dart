@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 #include <dart/dynamics/detail/body_node_ptr.hpp>
 #include <dart/dynamics/detail/node_ptr.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/invalid_index.hpp>
 
 #include <compare>
@@ -41,9 +42,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
-class JacobianNode;
 
 /// TemplateInverseKinematicsPtr is a templated class that enables users to
 /// create a reference-counting InverseKinematicsPtr. Holding onto an

@@ -33,14 +33,14 @@
 #ifndef DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
 #define DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
 
+#include <dart/collision/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <functional>
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 /// Advancement strategy for iterative continuous collision queries.
 enum class ContinuousCollisionAdvancement

@@ -33,6 +33,8 @@
 #ifndef DART_MATH_OPTIMIZATION_SOLVER_HPP_
 #define DART_MATH_OPTIMIZATION_SOLVER_HPP_
 
+#include <dart/math/optimization/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
@@ -44,8 +46,6 @@
 
 namespace dart {
 namespace math {
-
-class Problem;
 
 /// Abstract class that provides a common interface for different Solvers. The
 /// different Solver implementations each use a different nonlinear problem

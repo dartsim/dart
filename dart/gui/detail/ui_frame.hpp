@@ -33,36 +33,13 @@
 #ifndef DART_GUI_DETAIL_UI_FRAME_HPP_
 #define DART_GUI_DETAIL_UI_FRAME_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
+#include <dart/gui/fwd.hpp>
+
 #include <vector>
 
-struct GLFWwindow;
-struct ImGuiIO;
-
-namespace filament {
-class Engine;
-class Material;
-class Scene;
-} // namespace filament
-
-namespace dart::gui {
-
-struct Panel;
-struct ProfileAccumulator;
-struct OrbitCameraController;
-struct ViewerLifecycleState;
-
-} // namespace dart::gui
-
 namespace dart::gui::detail {
-
-struct DartScene;
-struct DebugOverlayController;
-enum class ExampleScene;
-struct FrameViewport;
-struct GuiScaleState;
-struct ImGuiOverlay;
-struct PerfHudState;
-class SelectionController;
 
 void updateFrameUi(
     GLFWwindow* window,

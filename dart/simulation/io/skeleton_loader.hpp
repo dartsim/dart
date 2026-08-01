@@ -32,27 +32,17 @@
 #pragma once
 
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 
+#include <dart/dynamics/fwd.hpp>
+
+#include <dart/common/fwd.hpp>
+
 #include <dart/io/export.hpp>
+#include <dart/io/fwd.hpp>
 
 #include <string>
-
-namespace dart::common {
-struct Uri;
-} // namespace dart::common
-
-namespace dart::dynamics {
-class Skeleton;
-} // namespace dart::dynamics
-
-namespace dart::io {
-struct DART_IO_API ReadOptions;
-} // namespace dart::io
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::io {
 

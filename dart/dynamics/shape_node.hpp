@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_SHAPENODE_HPP_
 
 #include <dart/dynamics/detail/shape_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/inertia.hpp>
 
 #include <dart/common/signal.hpp>
@@ -44,10 +45,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class VisualAspect;
-class CollisionAspect;
-class DynamicsAspect;
 
 class DART_API ShapeNode : public detail::ShapeNodeCompositeBase
 {

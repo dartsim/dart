@@ -35,6 +35,7 @@
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -45,8 +46,6 @@
 #include <cstdint>
 
 namespace dart::gui {
-
-struct OrbitCamera;
 
 struct DART_GUI_API RenderedImage
 {

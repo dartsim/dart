@@ -34,12 +34,11 @@
 
 #include <dart/simulation/compute/execution_profile.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <string>
 
 namespace dart::simulation::compute {
-
-class ComputeGraph;
 
 /// Options for exporting a compute graph to Graphviz DOT.
 struct DART_SIMULATION_API ComputeGraphDotOptions

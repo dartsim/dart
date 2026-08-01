@@ -36,6 +36,7 @@
 #include <dart/simulation/compute/rigid_body_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
@@ -50,8 +51,6 @@
 #include <cstddef>
 
 namespace dart::simulation::compute {
-
-class ComputeExecutor;
 
 /// Which solver domain a unified-constraint row belongs to.
 enum class UnifiedContactDomain

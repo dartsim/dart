@@ -36,21 +36,13 @@
 #include <dart/constraint/constraint_base.hpp>
 
 #include <dart/collision/collision_detector.hpp>
+#include <dart/collision/fwd.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/math_types.hpp>
 
 namespace dart {
-
-namespace collision {
-class SoftCollisionInfo;
-} // namespace collision
-
-namespace dynamics {
-class BodyNode;
-class SoftBodyNode;
-class PointMass;
-class Skeleton;
-} // namespace dynamics
 
 namespace constraint {
 

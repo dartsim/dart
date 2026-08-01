@@ -33,13 +33,15 @@
 #ifndef DART_DYNAMICS_FWD_HPP_
 #define DART_DYNAMICS_FWD_HPP_
 
-#include <dart/dynamics/detail/body_node_ptr.hpp>
-#include <dart/dynamics/detail/degree_of_freedom_ptr.hpp>
-#include <dart/dynamics/detail/inverse_kinematics_ptr.hpp>
-#include <dart/dynamics/detail/joint_ptr.hpp>
-#include <dart/dynamics/detail/node_ptr.hpp>
-
 #include <dart/common/smart_pointer.hpp>
+
+//==============================================================================
+// Plain declarations.
+//
+// This section must stay free of DART includes: dart/dynamics/detail/*_ptr.hpp
+// include this header to reach the declarations below, so anything they need
+// has to be declared before this header includes them further down.
+//==============================================================================
 
 namespace dart {
 namespace dynamics {
@@ -115,6 +117,66 @@ class VisualAspect;
 class VoxelGridShape;
 class WeldJoint;
 class ZeroDofJoint;
+
+// ShapeFrame aspects
+class CollisionAspect;
+class DynamicsAspect;
+
+class NodeDestructor;
+class PointMassNotifier;
+class Support;
+
+// Smart-pointer class templates, defined in dart/dynamics/detail/*_ptr.hpp and
+// aliased at the bottom of this header.
+template <class BodyNodeT>
+class TemplateBodyNodePtr;
+template <class BodyNodeT>
+class TemplateWeakBodyNodePtr;
+template <class DegreeOfFreedomT, class BodyNodeT>
+class TemplateDegreeOfFreedomPtr;
+template <class DegreeOfFreedomT, class BodyNodeT>
+class TemplateWeakDegreeOfFreedomPtr;
+template <class IkType, class JacobianNodePtrT>
+class TemplateInverseKinematicsPtr;
+template <class InverseKinematicsT, class JacobianNodePtrT>
+class TemplateWeakInverseKinematicsPtr;
+template <class JointT, class BodyNodeT>
+class TemplateJointPtr;
+template <class JointT, class BodyNodeT>
+class TemplateWeakJointPtr;
+template <class NodeT, class BodyNodeT>
+class TemplateNodePtr;
+template <class NodeT, class BodyNodeT>
+class TemplateWeakNodePtr;
+
+namespace detail {
+
+class ArticulatedDynamicsAccess;
+class SkeletonDynamicsView;
+template <typename T>
+class BodyNodePool;
+
+} // namespace detail
+
+} // namespace dynamics
+} // namespace dart
+
+//==============================================================================
+// Smart-pointer class template definitions.
+//==============================================================================
+
+#include <dart/dynamics/detail/body_node_ptr.hpp>
+#include <dart/dynamics/detail/degree_of_freedom_ptr.hpp>
+#include <dart/dynamics/detail/inverse_kinematics_ptr.hpp>
+#include <dart/dynamics/detail/joint_ptr.hpp>
+#include <dart/dynamics/detail/node_ptr.hpp>
+
+//==============================================================================
+// Smart-pointer aliases.
+//==============================================================================
+
+namespace dart {
+namespace dynamics {
 
 DART_COMMON_DECLARE_SHARED_WEAK(ShapeFrame)
 DART_COMMON_DECLARE_SHARED_WEAK(SimpleFrame)

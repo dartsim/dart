@@ -38,6 +38,7 @@
 #include <dart/io/mjcf/detail/camera.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/geom.hpp>
 #include <dart/io/mjcf/detail/inertial.hpp>
 #include <dart/io/mjcf/detail/joint.hpp>
@@ -52,8 +53,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Size;
 
 class DART_IO_API Body final
 {

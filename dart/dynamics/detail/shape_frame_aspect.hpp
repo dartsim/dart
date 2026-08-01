@@ -44,11 +44,6 @@
 namespace dart {
 namespace dynamics {
 
-class VisualAspect;
-class CollisionAspect;
-class DynamicsAspect;
-class ShapeFrame;
-
 namespace detail {
 
 struct DART_API VisualAspectProperties

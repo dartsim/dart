@@ -43,10 +43,6 @@
 
 namespace dart {
 
-namespace dynamics {
-class Skeleton;
-} // namespace dynamics
-
 namespace constraint {
 
 enum class ConstraintPhase

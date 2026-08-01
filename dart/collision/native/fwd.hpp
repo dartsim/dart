@@ -47,13 +47,22 @@ struct CollisionOption;
 class Aabb;
 
 class Shape;
-class SphereShape;
 class BoxShape;
+class CapsuleShape;
+class ConvexShape;
+class CylinderShape;
+class MeshShape;
+class PlaneShape;
 class SdfShape;
+class SphereShape;
 class SignedDistanceField;
 
 class CollisionObject;
 class CollisionGroup;
+class CollisionWorld;
+
+struct CcdOption;
+struct CcdPrimitiveResult;
 
 struct CollisionFilterData;
 class CollisionFilter;

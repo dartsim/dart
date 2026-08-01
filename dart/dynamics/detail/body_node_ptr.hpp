@@ -33,6 +33,8 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
+#include <dart/dynamics/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <atomic>
@@ -41,8 +43,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
 
 //==============================================================================
 struct MutexedWeakSkeletonPtr

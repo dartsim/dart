@@ -45,6 +45,7 @@
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -55,10 +56,6 @@
 #include <entt/entity/entity.hpp>
 
 #include <vector>
-
-namespace dart::simulation::comps {
-struct MultibodyStructure;
-} // namespace dart::simulation::comps
 
 namespace dart::simulation::detail {
 

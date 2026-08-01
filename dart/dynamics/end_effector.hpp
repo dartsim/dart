@@ -36,6 +36,7 @@
 #include <dart/dynamics/composite_node.hpp>
 #include <dart/dynamics/detail/end_effector_aspect.hpp>
 #include <dart/dynamics/fixed_jacobian_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/aspect.hpp>
 #include <dart/common/aspect_with_version.hpp>
@@ -45,10 +46,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
-class Skeleton;
-class EndEffector;
 
 //==============================================================================
 class DART_API Support final

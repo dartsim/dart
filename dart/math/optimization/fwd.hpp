@@ -30,42 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISION_FWD_HPP_
-#define DART_COLLISION_COLLISION_FWD_HPP_
+#ifndef DART_MATH_OPTIMIZATION_FWD_HPP_
+#define DART_MATH_OPTIMIZATION_FWD_HPP_
 
-#include <memory>
+// Forward declarations for dart/math/optimization. These live here rather than
+// in dart/math/fwd.hpp because that header pulls in Eigen and defines the
+// dart::math Matrix/Vector aliases; including it just for a class declaration
+// would change name lookup in every consumer.
 
 namespace dart {
-namespace dynamics {
+namespace math {
 
-class BodyNode;
-class MetaSkeleton;
-class Shape;
-class ShapeFrame;
-class ShapeNode;
-class Skeleton;
+class Function;
+class GradientDescentSolver;
+class ModularFunction;
+class MultiFunction;
+class NullFunction;
+class Problem;
+class Solver;
 
-using ShapePtr = std::shared_ptr<Shape>;
-using ConstShapePtr = std::shared_ptr<const Shape>;
-using WeakShapePtr = std::weak_ptr<Shape>;
-using WeakConstShapePtr = std::weak_ptr<const Shape>;
-
-using MetaSkeletonPtr = std::shared_ptr<MetaSkeleton>;
-using ConstMetaSkeletonPtr = std::shared_ptr<const MetaSkeleton>;
-using WeakMetaSkeletonPtr = std::weak_ptr<MetaSkeleton>;
-using WeakConstMetaSkeletonPtr = std::weak_ptr<const MetaSkeleton>;
-
-template <class BodyNodeT>
-class TemplateBodyNodePtr;
-template <class BodyNodeT>
-class TemplateWeakBodyNodePtr;
-
-using BodyNodePtr = TemplateBodyNodePtr<BodyNode>;
-using ConstBodyNodePtr = TemplateBodyNodePtr<const BodyNode>;
-using WeakBodyNodePtr = TemplateWeakBodyNodePtr<BodyNode>;
-using WeakConstBodyNodePtr = TemplateWeakBodyNodePtr<const BodyNode>;
-
-} // namespace dynamics
+} // namespace math
 } // namespace dart
 
-#endif // DART_COLLISION_COLLISION_FWD_HPP_
+#endif // DART_MATH_OPTIMIZATION_FWD_HPP_

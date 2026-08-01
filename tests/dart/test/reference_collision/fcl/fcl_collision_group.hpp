@@ -34,12 +34,12 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 
 #include <dart/collision/collision_group.hpp>
+#include <dart/collision/fwd.hpp>
 #include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
 class FCLCollisionObjectUserData;
 
 class FCLCollisionGroup : public CollisionGroup

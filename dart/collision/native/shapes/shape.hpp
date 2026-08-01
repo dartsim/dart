@@ -34,17 +34,13 @@
 
 #include <dart/collision/native/aabb.hpp>
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/sdf/signed_distance_field.hpp>
 
 #include <memory>
 #include <vector>
 
 namespace dart::collision::native {
-
-class SphereShape;
-class BoxShape;
-class CapsuleShape;
-class CylinderShape;
 
 namespace detail {
 

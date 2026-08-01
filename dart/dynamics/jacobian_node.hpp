@@ -46,10 +46,6 @@
 namespace dart {
 namespace dynamics {
 
-class Skeleton;
-class DegreeOfFreedom;
-class InverseKinematics;
-
 /// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.

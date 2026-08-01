@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_FRAMEALLOCATOR_HPP_
 #define DART_COMMON_FRAMEALLOCATOR_HPP_
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
@@ -53,7 +54,6 @@
 namespace dart::common {
 
 namespace detail {
-class AllocatorMemoryLayoutInspector;
 }
 
 template <typename T>

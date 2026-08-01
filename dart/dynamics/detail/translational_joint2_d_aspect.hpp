@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 
 #include <dart/dynamics/detail/planar_joint_aspect.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
 #include <dart/export.hpp>
@@ -44,8 +45,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class TranslationalJoint2D;
 
 namespace detail {
 

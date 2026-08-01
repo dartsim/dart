@@ -33,29 +33,14 @@
 #ifndef DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
 #define DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
 
+#include <dart/gui/detail/backend_fwd.hpp>
+
 #include <utils/Entity.h>
 
 #include <vector>
 
 #include <cstddef>
 #include <cstdint>
-
-namespace filament {
-
-class Camera;
-class Engine;
-class IndexBuffer;
-class Material;
-class MaterialInstance;
-class Scene;
-class Texture;
-class VertexBuffer;
-class View;
-
-} // namespace filament
-
-struct ImDrawData;
-struct ImGuiIO;
 
 namespace dart::gui::detail {
 

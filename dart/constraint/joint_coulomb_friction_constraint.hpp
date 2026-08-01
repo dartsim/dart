@@ -35,12 +35,9 @@
 
 #include <dart/constraint/constraint_base.hpp>
 
-namespace dart {
+#include <dart/dynamics/fwd.hpp>
 
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
+namespace dart {
 
 namespace constraint {
 

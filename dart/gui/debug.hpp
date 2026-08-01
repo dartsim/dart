@@ -36,6 +36,8 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
 
+#include <dart/simulation/fwd.hpp>
+
 #include <dart/collision/fwd.hpp>
 
 #include <dart/dynamics/fwd.hpp>
@@ -45,12 +47,6 @@
 
 #include <string>
 #include <vector>
-
-namespace dart::simulation {
-class World;
-struct Contact;
-struct ContactForce;
-} // namespace dart::simulation
 
 namespace dart::gui {
 

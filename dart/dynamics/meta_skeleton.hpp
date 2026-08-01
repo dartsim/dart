@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_METASKELETON_HPP_
 
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/invalid_index.hpp>
 
 #include <dart/math/geometry.hpp>
@@ -54,12 +55,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
-class SoftBodyNode;
-class PointMass;
-class Joint;
-class DegreeOfFreedom;
 
 /// MetaSkeleton is a pure abstract base class that provides a common interface
 /// for obtaining data (such as Jacobians and Mass Matrices) from groups of

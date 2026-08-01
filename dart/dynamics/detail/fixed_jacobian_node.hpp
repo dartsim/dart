@@ -35,12 +35,11 @@
 
 #include <dart/dynamics/entity_node.hpp>
 #include <dart/dynamics/fixed_frame.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/templated_jacobian_node.hpp>
 
 namespace dart {
 namespace dynamics {
-
-class FixedJacobianNode;
 
 namespace detail {
 

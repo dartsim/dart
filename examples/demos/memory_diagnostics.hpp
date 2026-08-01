@@ -15,13 +15,14 @@
 
 #include <dart/gui/panel.hpp>
 
+#include <dart/simulation/fwd.hpp>
+
 #include <functional>
 #include <string>
 
 #include <cstdint>
 
 namespace dart::simulation {
-class World;
 }
 
 namespace dart::examples::demos {

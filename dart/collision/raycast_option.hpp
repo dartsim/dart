@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_RAYCASTOPTION_HPP_
 #define DART_COLLISION_RAYCASTOPTION_HPP_
 
+#include <dart/collision/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <functional>
@@ -42,8 +44,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 struct DART_API RaycastOption
 {

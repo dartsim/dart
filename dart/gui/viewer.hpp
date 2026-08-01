@@ -34,6 +34,7 @@
 #define DART_GUI_VIEWER_HPP_
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -46,8 +47,6 @@
 #include <cstdint>
 
 namespace dart::gui {
-
-struct RenderableDescriptor;
 
 struct PickRay
 {

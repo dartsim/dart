@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_HPP_
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/point_mass.hpp>
 
 #include <dart/common/requires_aspect.hpp>
@@ -49,9 +50,6 @@ namespace dynamics {
 const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
 const double DART_DEFAULT_EDGE_STIFNESS = 1.0;
 const double DART_DEFAULT_DAMPING_COEFF = 0.01;
-
-class SoftBodyNode;
-class SoftMeshShape;
 
 namespace detail {
 

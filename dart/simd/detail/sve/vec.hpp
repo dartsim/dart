@@ -8,6 +8,7 @@
 #pragma once
 
 #include <dart/simd/config.hpp>
+#include <dart/simd/fwd.hpp>
 
 #if defined(DART_SIMD_SVE)
 
@@ -17,9 +18,6 @@
   #include <cstdint>
 
 namespace dart::simd {
-
-template <typename T, std::size_t Width>
-struct VecMask;
 
 template <>
 struct Vec<float, 4>

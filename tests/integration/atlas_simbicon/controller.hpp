@@ -33,13 +33,13 @@
 #ifndef EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
 #define EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
 
+#include "fwd.hpp"
+
 #include <dart/all.hpp>
 
 #include <Eigen/Dense>
 
 #include <vector>
-
-class StateMachine;
 
 /// @brief Implementation of Simbicon (Simple biped locomotion control) for
 /// Atlas robot

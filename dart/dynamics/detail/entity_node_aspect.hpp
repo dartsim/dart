@@ -33,15 +33,13 @@
 #ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/node.hpp>
 
 #include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {
-
-template <class Base>
-class EntityNode;
 
 namespace detail {
 

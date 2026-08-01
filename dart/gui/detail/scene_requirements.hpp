@@ -33,6 +33,7 @@
 #ifndef DART_GUI_DETAIL_SCENE_REQUIREMENTS_HPP_
 #define DART_GUI_DETAIL_SCENE_REQUIREMENTS_HPP_
 
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/renderable.hpp>
 
@@ -42,8 +43,6 @@
 #include <cstddef>
 
 namespace dart::gui::detail {
-
-struct SceneRenderable;
 
 struct SceneContentCounts
 {

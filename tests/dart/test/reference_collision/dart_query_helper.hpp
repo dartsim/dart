@@ -40,14 +40,14 @@
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
 
+#include <dart/collision/fwd.hpp>
+
 #include <Eigen/Core>
 
 #include <vector>
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 bool dartCollide(
     const std::vector<CollisionObject*>& objects1,

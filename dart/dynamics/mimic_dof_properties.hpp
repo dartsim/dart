@@ -33,12 +33,12 @@
 #ifndef DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
 #define DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
 
+#include <dart/dynamics/fwd.hpp>
+
 #include <cstddef>
 
 namespace dart {
 namespace dynamics {
-
-class Joint;
 
 /// Type of coupling constraint used for a mimic joint.
 enum class MimicConstraintType

@@ -32,7 +32,9 @@
 
 #pragma once
 
+#include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/renderable_resources.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/renderable.hpp>
 
 #include <Eigen/Geometry>
@@ -40,16 +42,6 @@
 #include <functional>
 #include <optional>
 #include <vector>
-
-namespace filament {
-class Engine;
-class Scene;
-} // namespace filament
-
-namespace dart::gui {
-struct OrbitCamera;
-struct RenderSettings;
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 

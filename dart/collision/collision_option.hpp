@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_COLLISIONOPTION_HPP_
 #define DART_COLLISION_COLLISIONOPTION_HPP_
 
+#include <dart/collision/fwd.hpp>
+
 #include <dart/export.hpp>
 
 #include <memory>
@@ -41,8 +43,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionFilter;
 
 struct DART_API CollisionOption
 {

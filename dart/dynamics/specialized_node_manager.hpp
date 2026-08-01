@@ -34,15 +34,13 @@
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 
 #include <dart/dynamics/detail/basic_node_manager.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/node_manager_joiner.hpp>
 
 #include <dart/common/virtual.hpp>
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
-class Skeleton;
 
 //==============================================================================
 /// Declaration of the variadic template

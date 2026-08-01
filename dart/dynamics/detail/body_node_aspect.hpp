@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 
 #include <dart/dynamics/entity.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/node.hpp>
 
@@ -44,8 +45,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
 
 namespace detail {
 
