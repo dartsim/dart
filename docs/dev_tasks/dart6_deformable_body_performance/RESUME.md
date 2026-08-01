@@ -45,8 +45,7 @@ bundled into as few PRs as review quality allows. The parity rows (items
 1-5) close only with gate evidence — the matrix's acceptance rule allows
 them no deferral. An explicitly approved disposition is an alternative only
 where an item's own acceptance text offers one (item 7's negative
-disposition and item 9's disposition); item 6 closes with an approved
-definition.
+disposition and item 9's disposition).
 
 Remaining items (parity rows from `02-paper-parity-matrix.md` and
 `10-full-parity-execution-plan.md` section 5, plus acceptance work):
@@ -58,7 +57,10 @@ Remaining items (parity rows from `02-paper-parity-matrix.md` and
 4. Four-link flexible-foot comparison row (same controller and seed).
 5. Hand/arm models and manipulation rows (finger flick, arm fold, pinch
    grasp).
-6. Competitive-envelope definition (10-plan section 8).
+6. Apply the competitive envelope to the performance-acceptance evidence.
+   The definition itself is closed: `decisions.md` item 2 (in-tree backends
+   plus normalized paper metrics) was confirmed by the maintainer
+   2026-07-23 — do not reopen it.
 7. WP-DB.07 multicore scaling: representative evidence or an approved
    negative disposition.
 8. WP-DB.08 pre-default `dart` detector gates (coverage, allocation,

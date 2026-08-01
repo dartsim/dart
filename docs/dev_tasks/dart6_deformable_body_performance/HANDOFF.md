@@ -50,7 +50,9 @@ ordered item list and takeover detail. Completed packet specs such as
 - Build the remaining Jain/Liu scene rows: noisy-floor biped, soft-contact
   walk, hand/arm manipulation (finger flick, arm fold, pinch grasp), and the
   four-link flexible-foot comparison.
-- Define and approve the competitive implementation envelope.
+- Apply the approved competitive envelope (`decisions.md` item 2, confirmed
+  2026-07-23: in-tree backends plus normalized paper metrics) to the
+  performance-acceptance evidence; the definition itself is closed.
 - Complete the four-link flexible rigid-foot versus deformable-foot
   comparison.
 - Resolve WP-DB.07 multicore scaling with representative evidence or an

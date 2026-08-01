@@ -18,8 +18,9 @@ PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
 push-recovery row reproduces and is gate-asserted; its motor-noise clause
 stays open in §5. Goal (maintainer direction, 2026-08-01): fully complete
 Part A for the DART 6.20 release, bundling the remaining rows into as few
-PRs as review quality allows. Still-open decision the plan does not close on
-its own: the competitive-envelope definition (§8).
+PRs as review quality allows. The competitive-envelope definition is settled
+(`decisions.md` item 2, maintainer-confirmed 2026-07-23); what remains of it
+is the performance-acceptance evidence it defines (§8).
 
 # Part A — active DART 6 plan (Jain/Liu lane)
 
@@ -178,9 +179,10 @@ What must be **built/authored** for PR-3:
   Jain/Liu scenes — noisy-floor locomotion and the hand/manipulation rows, which
   carry many simultaneous soft contacts — are the DART 6 place to demonstrate a
   real threads>1 speedup.
-- **Competitive envelope**: `decisions.md` item 2 (in-tree backends + normalized
-  paper metrics; external engines out of scope) still needs formal sign-off —
-  needed to define "beat competing implementations". **Decision request.**
+- **Competitive envelope**: settled. `decisions.md` item 2 (in-tree backends +
+  normalized paper metrics; external engines out of scope) was confirmed by
+  the maintainer 2026-07-23 as the definition of "beat competing
+  implementations"; apply it, do not reopen it.
 - **SIMD**: apply the `dart/simd/` contract to the vectorizable point-mass and
   soft-contact kernels; report SIMD-off/on.
 
@@ -192,7 +194,8 @@ What must be **built/authored** for PR-3:
 2. **FEM integration seam — no longer a DART 6 question.** What was learned about
    DART 6's per-step seam is retained in `11-fem-integration-seam.md` because it
    constrains any future per-step extension, deformable or not.
-3. **Competitive-envelope definition**: needs sign-off (see §8).
+3. **Competitive-envelope definition — settled 2026-07-23** (`decisions.md`
+   item 2; see §8). No longer an open decision.
 4. **Model authoring**: the hand/arm assets and the four-link flexible foot must
    be created or sourced, with licensing and provenance confirmed. No tet meshes
    are needed; those belonged to the retired lane.
@@ -207,7 +210,7 @@ What must be **built/authored** for PR-3:
 2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
    hand/arm models that must be authored and their manipulation scenes, then the
    four-link flexible-foot comparison.
-3. Confirm the competitive-envelope definition (§8) before the
+3. Apply the approved competitive envelope (`decisions.md` item 2) at the
    performance-acceptance stage.
 4. Per-row acceptance plus at least two clean independent reviews and a durable
    demo artifact for each behavior-bearing row; promote durable facts to their
