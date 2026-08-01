@@ -262,7 +262,8 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - Durable promotion has started in
   `docs/background/deformable_body_paper_targets.md`,
   `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this
-  temporary task folder, complete or explicitly disposition the remaining
-  competitive-envelope, flexible-foot, scaling, collision-coverage, paired
-  benchmark, and cross-branch bug-fix work, then verify that no required fact
-  remains owned only by this folder.
+  temporary task folder, complete the remaining work — parity rows (such as
+  the flexible-foot comparison) close only with gate evidence, and an
+  explicitly approved disposition substitutes only where an item's own
+  acceptance text offers one (WP-DB.07 scaling, the paired benchmark) —
+  then verify that no required fact remains owned only by this folder.
