@@ -220,10 +220,16 @@ used samples a chaotic outcome map, not a threshold:
 - Robust thresholds at shipped parameters: clean **soft 4000 N vs rigid
   8000 N**; 20% held motor noise **4000 vs 4000** (the noise pulls the
   rigid arm down to the soft arm's level); paper's 2 cm floor **2000 vs
-  14000** (dug-down tiles key the rigid foot against lateral sliding; the
-  soft arm collapses). No configuration shows a soft advantage. The
-  paper's soft-advantage ordering does not reproduce robustly; the parity
-  matrix carries the open gap.
+  20000** (the rough surface anchors the rigid foot against lateral
+  sliding; the soft arm collapses). Review hypothesized the anchoring was
+  an artifact of the first floor implementation's regular tile lattice;
+  re-testing on the spec's jittered shared-vertex mesh (horizontal and
+  vertical offsets) REFUTED that -- the effect strengthened (14000 on the
+  box lattice, 20000 on the faithful surface). No configuration shows a
+  soft advantage. The paper's soft-advantage ordering does not reproduce
+  robustly; the parity matrix carries the open gap, and the noisy-floor
+  row's own course-tracking outcome stays unmeasured pending the walking
+  gait.
 - Parameter scans (ensemble): kv 5e3-1e4 at damp 1e3-4e3 monotonizes the
   soft response and lifts its ceiling to 6000 N — still below the rigid
   8000 N; kv 1e3 collapses. Asset tuning alone does not restore the paper's
@@ -238,8 +244,8 @@ used samples a chaotic outcome map, not a threshold:
   paper's ordering at a grounded parameter regime.
 
 Gates now protect the measured floors (rigid/soft: clean 8000/4000, noise
-4000/4000, floor 14000/2000) and print the full curves; no soft ≥ rigid
-assertion is made anywhere until the gap closes.
+4000/4000, floor 18000/2000 with 20000/2000 measured) and print the full
+curves; no soft ≥ rigid assertion is made anywhere until the gap closes.
 
 ## Constraints
 

@@ -269,7 +269,7 @@ DemoScene makeSoftFootSimbiconScene()
           "settled window, gate-enforced at 1.5x) -- that Jain/Liu 2011 "
           "claim reproduces. Robust push recovery currently favors the "
           "rigid control instead (ensemble-measured, rigid vs soft: 8000 "
-          "vs 4000 N clean, 4000 vs 4000 under 20%% motor noise, 14000 vs "
+          "vs 4000 N clean, 4000 vs 4000 under 20%% motor noise, 20000 vs "
           "2000 on the 2 cm floor); the paper's soft-advantage ordering is "
           "an open gap tracked in the parity matrix, and the gates publish "
           "the measured curves.",
