@@ -92,10 +92,12 @@ DemoScene makeSoftFootSimbiconScene()
   //
   // Two environment variables exist so headless evidence capture is
   // reproducible, since the keyboard controls below cannot be reached without a
-  // window: DART_DEMO_SOFT_FOOT_FEET selects rigid or soft geometry, and
+  // window: DART_DEMO_SOFT_FOOT_FEET selects rigid or soft geometry,
   // DART_DEMO_SOFT_FOOT_PUSH_STEP schedules one automatic sideways push at the
   // given step so a capture shows the push-recovery behavior rather than a
-  // biped standing still. Neither affects interactive use.
+  // biped standing still, and DART_DEMO_SOFT_FOOT_PUSH_N overrides that
+  // push's magnitude so a capture can bracket the recovery threshold. None of
+  // them affects interactive use.
   auto feetSelection = std::make_shared<sfs::Feet>(sfs::Feet::Soft);
   if (const char* feetEnv = std::getenv("DART_DEMO_SOFT_FOOT_FEET")) {
     if (std::string(feetEnv) == "rigid")
@@ -105,8 +107,13 @@ DemoScene makeSoftFootSimbiconScene()
     const char* stepEnv = std::getenv("DART_DEMO_SOFT_FOOT_PUSH_STEP");
     return stepEnv != nullptr ? std::atoi(stepEnv) : 0;
   }();
+  const double scriptedPushMagnitude = []() {
+    const char* magnitudeEnv = std::getenv("DART_DEMO_SOFT_FOOT_PUSH_N");
+    return magnitudeEnv != nullptr ? std::atof(magnitudeEnv)
+                                   : sfs::kDefaultPushMagnitude;
+  }();
 
-  scene.factory = [feetSelection, scriptedPushStep] {
+  scene.factory = [feetSelection, scriptedPushStep, scriptedPushMagnitude] {
     auto state = std::make_shared<SoftFootSimbiconState>();
     state->model = sfs::createModel(*feetSelection);
 
@@ -117,12 +124,12 @@ DemoScene makeSoftFootSimbiconScene()
         ::osg::Vec3d(0.00, 0.00, 0.00),
         ::osg::Vec3d(0.00, 0.10, 0.00)};
 
-    setup.preStep = [state, scriptedPushStep] {
+    setup.preStep = [state, scriptedPushStep, scriptedPushMagnitude] {
       if (scriptedPushStep > 0
           && state->model.world->getSimFrames() == scriptedPushStep) {
         sfs::applyPush(
             state->model,
-            Eigen::Vector3d(0.0, 0.0, 1.0) * sfs::kDefaultPushMagnitude,
+            Eigen::Vector3d(0.0, 0.0, 1.0) * scriptedPushMagnitude,
             sfs::kPushSteps);
       }
       if (state->finite)
@@ -203,12 +210,11 @@ DemoScene makeSoftFootSimbiconScene()
           "feet. 't' selects the other foot geometry, which needs a new world "
           "and so takes effect on the host's Reset or Rebuild.\n\n"
           "Compare the two. Both foot types collide as the same rest-pose "
-          "mesh; only the soft one deforms. Soft feet spread far more contact "
-          "points (about 52 vs 18 over a settled window, a 2.8x spread the "
-          "regression gate enforces at 1.5x), which is the Jain/Liu 2011 "
-          "result. They do NOT withstand larger pushes here: measured "
-          "recovery is 4000 N soft against 12000 N rigid, because this "
-          "asset's feet (kv 5e4) are too compliant for a 147 kg Atlas.",
+          "mesh with the same rest inertia; only the soft one deforms. Soft "
+          "feet spread far more contact points (about 51 vs 16 over a "
+          "settled window, gate-enforced at 1.5x) and recover from larger "
+          "pushes (measured 18000 N soft vs 8000 N rigid, gate-asserted "
+          "soft >= rigid) -- both Jain/Liu 2011 results.",
           sfs::kDefaultPushMagnitude,
           sfs::kPushSteps);
     };
