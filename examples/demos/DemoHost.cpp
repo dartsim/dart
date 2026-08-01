@@ -1672,6 +1672,12 @@ void DemoHost::renderViewMenu()
       && std::isfinite(guiScale)) {
     mGuiScale = dart::gui::osg::sanitizeGuiScale(guiScale);
     mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
+#ifdef IMGUI_HAS_DOCK
+    // The default dock fractions depend on the scale; rebuild the layout so
+    // the toolbar and side panels resize with the new content instead of
+    // clipping until a manual "Reset layout".
+    mDockLayoutResetRequested = true;
+#endif
   }
 
 #ifdef IMGUI_HAS_DOCK
