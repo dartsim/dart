@@ -1233,6 +1233,38 @@ TEST(ExactCoulombFbfConstraintSolver, CanDisableFallback)
   EXPECT_FALSE(scalar->wasApplied());
 }
 
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    UnsupportedGroupRecordsAttemptedContactCount)
+{
+  const Eigen::Matrix<double, 6, 6> delassus
+      = Eigen::Matrix<double, 6, 6>::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto isotropic = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto anisotropic = std::make_shared<ContactLikeConstraint>(
+      3, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.7, activeRow);
+  dart::constraint::ConstrainedGroup group;
+  group.addConstraint(isotropic);
+  group.addConstraint(anisotropic);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          UnsupportedProblem);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombBuildStatus(),
+      dart::constraint::detail::ExactCoulombConstraintBuildStatus::
+          UnsupportedAnisotropicFriction);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 2u);
+}
+
 TEST(ExactCoulombFbfConstraintSolver, RejectsInvalidStepSizeScale)
 {
   const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
