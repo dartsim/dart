@@ -278,6 +278,8 @@ makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceScene();
 /// traveling-wave gait.
 [[nodiscard]] DemoScene makeSoftWormScene();
 
+[[nodiscard]] DemoScene makeSoftFootSimbiconScene();
+
 /// Soft Bodies > soft_bodies: soft-body simulation with recorded-state
 /// playback, ported from examples/soft_bodies.
 [[nodiscard]] DemoScene makeSoftBodiesScene();
