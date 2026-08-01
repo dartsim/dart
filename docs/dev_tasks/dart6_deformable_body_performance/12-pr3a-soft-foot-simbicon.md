@@ -144,6 +144,15 @@ distribution).
   is kv 5e4 / damp 4e3 (all four adjacent cells also 18000 N; contacts 51.4),
   so the chosen values are not a knife-edge. `test_SdfParser` asserts only
   structure, so the asset change is behavioral for this demo alone.
+- **Asset-level on purpose, with maintainer approval.** AGENTS.md preserves
+  default simulation behavior "unless a maintainer approves otherwise", and
+  the maintainer directed these decisions toward root causes over local
+  workarounds (2026-08-01). The root cause is the asset: its shipped damping
+  makes the biped it was authored for fall at a 4000 N push in its own demo.
+  A scene-local `setDampingCoefficient()` override was explicitly rejected --
+  it would leave every other consumer of `dart://sample/...soft_feet.sdf`
+  with the invalid value while the demo silently diverged from the asset it
+  claims to load.
 
 **2. Foot inertia and COM — RESOLVED: the control carries the soft combined
 rest-pose inertia.**
