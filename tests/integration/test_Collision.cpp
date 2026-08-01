@@ -1802,26 +1802,31 @@ TEST_F(Collision, DartCylinderFinitePrimitivePairs)
 
   CollisionResult cylinderBox;
   ASSERT_TRUE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
-  ASSERT_EQ(cylinderBox.getNumContacts(), 1u);
-  EXPECT_EQ(
-      cylinderBox.getContact(0).collisionObject1->getShapeFrame(),
-      cylinderFrame.get());
-  EXPECT_EQ(
-      cylinderBox.getContact(0).collisionObject2->getShapeFrame(),
-      boxFrame.get());
-  EXPECT_TRUE(cylinderBox.getContact(0).point.allFinite());
-  EXPECT_TRUE(cylinderBox.getContact(0).normal.allFinite());
-  EXPECT_GT(cylinderBox.getContact(0).penetrationDepth, 0.0);
+  // Side-on-face is a contact line; both clipped endpoints are emitted.
+  ASSERT_EQ(cylinderBox.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < cylinderBox.getNumContacts(); ++i) {
+    EXPECT_EQ(
+        cylinderBox.getContact(i).collisionObject1->getShapeFrame(),
+        cylinderFrame.get());
+    EXPECT_EQ(
+        cylinderBox.getContact(i).collisionObject2->getShapeFrame(),
+        boxFrame.get());
+    EXPECT_TRUE(cylinderBox.getContact(i).point.allFinite());
+    EXPECT_TRUE(cylinderBox.getContact(i).normal.allFinite());
+    EXPECT_GT(cylinderBox.getContact(i).penetrationDepth, 0.0);
+  }
 
   CollisionResult boxCylinder;
   ASSERT_TRUE(boxGroup->collide(cylinderGroup.get(), option, &boxCylinder));
-  ASSERT_EQ(boxCylinder.getNumContacts(), 1u);
-  EXPECT_TRUE(boxCylinder.getContact(0).normal.isApprox(
-      -cylinderBox.getContact(0).normal, 1e-8));
-  EXPECT_NEAR(
-      boxCylinder.getContact(0).penetrationDepth,
-      cylinderBox.getContact(0).penetrationDepth,
-      1e-8);
+  ASSERT_EQ(boxCylinder.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < boxCylinder.getNumContacts(); ++i) {
+    EXPECT_TRUE(boxCylinder.getContact(i).normal.isApprox(
+        -cylinderBox.getContact(0).normal, 1e-8));
+    EXPECT_NEAR(
+        boxCylinder.getContact(i).penetrationDepth,
+        cylinderBox.getContact(0).penetrationDepth,
+        1e-8);
+  }
 
   boxFrame->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
   cylinderBox.clear();
@@ -1831,33 +1836,42 @@ TEST_F(Collision, DartCylinderFinitePrimitivePairs)
   boxFrame->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
   cylinderBox.clear();
   ASSERT_TRUE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
-  ASSERT_EQ(cylinderBox.getNumContacts(), 1u);
-  EXPECT_NEAR(cylinderBox.getContact(0).penetrationDepth, 0.0, 1e-12);
+  // Touching side-on-face cases also carry the two clipped line endpoints.
+  ASSERT_EQ(cylinderBox.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < cylinderBox.getNumContacts(); ++i) {
+    EXPECT_NEAR(cylinderBox.getContact(i).penetrationDepth, 0.0, 1e-12);
+  }
 
   boxCylinder.clear();
   ASSERT_TRUE(boxGroup->collide(cylinderGroup.get(), option, &boxCylinder));
-  ASSERT_EQ(boxCylinder.getNumContacts(), 1u);
-  EXPECT_TRUE(boxCylinder.getContact(0).normal.isApprox(
-      -cylinderBox.getContact(0).normal, 1e-8));
-  EXPECT_NEAR(boxCylinder.getContact(0).penetrationDepth, 0.0, 1e-12);
+  ASSERT_EQ(boxCylinder.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < boxCylinder.getNumContacts(); ++i) {
+    EXPECT_TRUE(boxCylinder.getContact(i).normal.isApprox(
+        -cylinderBox.getContact(0).normal, 1e-8));
+    EXPECT_NEAR(boxCylinder.getContact(i).penetrationDepth, 0.0, 1e-12);
+  }
 
   boxFrame->setTranslation(Eigen::Vector3d::Zero());
   cylinderFrame->setTranslation(Eigen::Vector3d(-1.0, 0.25, 0.0));
 
   boxCylinder.clear();
   ASSERT_TRUE(boxGroup->collide(cylinderGroup.get(), option, &boxCylinder));
-  ASSERT_EQ(boxCylinder.getNumContacts(), 1u);
-  EXPECT_TRUE(boxCylinder.getContact(0).point.allFinite());
-  EXPECT_TRUE(boxCylinder.getContact(0).normal.allFinite());
-  EXPECT_NEAR(boxCylinder.getContact(0).normal.norm(), 1.0, 1e-12);
-  EXPECT_NEAR(boxCylinder.getContact(0).penetrationDepth, 0.0, 1e-12);
+  ASSERT_EQ(boxCylinder.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < boxCylinder.getNumContacts(); ++i) {
+    EXPECT_TRUE(boxCylinder.getContact(i).point.allFinite());
+    EXPECT_TRUE(boxCylinder.getContact(i).normal.allFinite());
+    EXPECT_NEAR(boxCylinder.getContact(i).normal.norm(), 1.0, 1e-12);
+    EXPECT_NEAR(boxCylinder.getContact(i).penetrationDepth, 0.0, 1e-12);
+  }
 
   cylinderBox.clear();
   ASSERT_TRUE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
-  ASSERT_EQ(cylinderBox.getNumContacts(), 1u);
-  EXPECT_TRUE(cylinderBox.getContact(0).normal.isApprox(
-      -boxCylinder.getContact(0).normal, 1e-8));
-  EXPECT_NEAR(cylinderBox.getContact(0).penetrationDepth, 0.0, 1e-12);
+  ASSERT_EQ(cylinderBox.getNumContacts(), 2u);
+  for (std::size_t i = 0; i < cylinderBox.getNumContacts(); ++i) {
+    EXPECT_TRUE(cylinderBox.getContact(i).normal.isApprox(
+        -boxCylinder.getContact(0).normal, 1e-8));
+    EXPECT_NEAR(cylinderBox.getContact(i).penetrationDepth, 0.0, 1e-12);
+  }
 
   cylinderFrame->setTranslation(Eigen::Vector3d::Zero());
   cylinder2Frame->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));

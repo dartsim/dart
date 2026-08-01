@@ -531,8 +531,9 @@ manifold-only state: stable cylinder supports reduce trajectory-average
 churn enough to recover it (intermediate interleaves: manifold-only
 1.95x vs the 3-contact era; full bundle 1.21x vs the same arm; direct
 vs audit 1.009x). Criterion 1 therefore holds at ≈3.5x of the round-2
-baseline (the audited 3.51x carries over at parity) — no chaining
-caveats required.
+baseline (the audited 3.51x carries over at parity; the only
+remaining cross-session link is that standing audit record itself, whose
+trajectory today's audit arm reproduces bit-exactly).
 
 **S6 / criterion 2 final evidence**: the fixture is chaotically marginal
 on every stack. Seed matrix (20000 steps, seeds 3056/101/202/303/404):
@@ -550,6 +551,66 @@ the precise remaining question is deactivation-latch behavior for large
 single-island piles near true stillness, plus rolling friction as the
 physical feature a mixed roller pile needs to rest deterministically.
 Neither is a detector-stream defect; both are recorded under D10.
+
+### 2026-08-01 spin-canonicalization — the criterion-2 closer
+
+The evidence audit flagged that "bounded penetration" was over-asserted:
+the cylinder-stability build's own S6 runs showed monotonically GROWING
+penetration on some seeds (seed 101: 0.100 → 0.137 m across a 60k run,
+~2.6 µm/step — the original #3056 creep signature). Scene-dump
+reconstruction identified the creeping body exactly: an **upright
+cylinder standing on its flat end-cap with an arbitrary spin about its
+own axis** (dump quaternion pure-z). The aligned analytic cap-patch path
+in `collideCylinderBox` demanded exact rotational identity
+(`isApprox(Identity, 1e-12)`), so a spun-but-upright cylinder —
+physically identical to an unspun one (surface of revolution) — fell to
+the convex fallback, whose degenerate rim points cannot support a loaded
+cap: the cylinder sinks through its support without bound.
+
+Fix: detect a box axis parallel to the cylinder axis, canonicalize the
+spin and axis permutation away, and reuse the existing aligned math
+(`alignedBoxAxis` + spin-canonical frame). The side-line path was also
+hoisted ahead of the aligned block (its lateral branch would otherwise
+answer side-lying cylinders with one rocking point) and gated to
+genuinely shallow poses (declines once an axis endpoint reaches the face
+plane, keeping deep overlaps on the legacy minimal-translation paths).
+Two stale single-support pins were modernized to the line-manifold
+behavior (`Collision.DartCylinderFinitePrimitivePairs`,
+`DARTCollisionDetector.CollidesCylinderBox`,
+`CylinderCollision.CollidesCylinderBox`), and
+`SpunUprightCapOnFaceUsesStablePatch` pins spin-invariance (spun and
+unspun caps must emit identical world contacts). Cylinder suite 32/32;
+full suite 154/154.
+
+**Outcome — the S6 pile now genuinely deactivates under defaults:**
+
+- 60k trend runs, seeds 3056 and 101 (the never-slept canonical and the
+  worst creeper): both end **71/71 resting, max penetration 0** (fully
+  frozen by ~50k steps; penetration monotonically declining before
+  freeze — the growth mechanism is gone).
+- 5-seed 20k matrix on the final build: seeds 101/202/303/404 all end
+  **71/71 resting, penetration 0, zero contacts**; canonical 3056 ends
+  1/71 with penetration 8.0e-4 still declining (sleep latency beyond
+  the 20 s window; full rest confirmed at 60k). The previously-accepted
+  audit-era stack managed 3/5 on the same matrix.
+- Parity interleave (7 ABAB pairs, quiet host): current bundle median
+  **7.307 vs audit stack 7.725 ms/step — 0.946x, the bundle is now
+  slightly FASTER than the audited pre-consolidation stack** while
+  carrying fuller manifolds. Criterion 1 ≈ 3.7x of the round-2 baseline.
+- Guard state: S2/S3/S4/S5 dart hashes unchanged from the
+  cylinder-stability rows (`0x266da31836a314a6`, `0x6088ea0177efa6a`,
+  `0x70bf5dd9e4f15051`, `0xd8de4ae15996321f`); S1 re-baselines to
+  `120: 290 contacts / 178 pairs / 0xfc20c4880fdbca05` and
+  `60: 88 / 74 / 0x6dab35ce2618d422`. The whole bundle is a single-file
+  dart-detector narrowphase change set, so FCL/Bullet/ODE remain
+  structurally untouched (verified bit-identical on the earlier bundle
+  states).
+
+Artifacts: `~/dart-wsg-evidence-20260731/aug01/` (60k trend logs
+`S6_60k_canon_seed*.log`, reval guard/seed/parity logs under
+`effrad_reval/`, probe JSONs, seed matrices, scripts, and the seed-101
+final-scene dump + reconstruction diagnostic that identified the
+creeping body).
 
 ## Prior art — round-1 experiment branches (read before claiming packets)
 

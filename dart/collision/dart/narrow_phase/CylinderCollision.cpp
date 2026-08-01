@@ -432,16 +432,32 @@ bool tryAddCylinderBoxSideLineContacts(
   const Eigen::Vector3d segmentEnd = center + axis * cylinderHalfHeight;
   const Eigen::Vector3d segmentDelta = segmentEnd - segmentStart;
 
+  // A tilted cylinder's support distance along the face normal is the
+  // radius scaled by the axis-normal complement, not the full radius; the
+  // full radius would fabricate shallow contacts (and overstate depths) in
+  // a band of up to r * dot^2 / 2 near separation.
+  const double axisNormalDot = axis[faceAxis];
+  const double effectiveRadius
+      = cylinderRadius * std::sqrt(1.0 - axisNormalDot * axisNormalDot);
+
   // Side-surface penetration is linear along the axis; keep the interval
   // where it is non-negative.
   const auto sidePenetrationAt = [&](const Eigen::Vector3d& axisPoint) {
     const double clearance
         = faceSign * axisPoint[faceAxis] - boxHalfExtents[faceAxis];
-    return cylinderRadius - clearance;
+    return effectiveRadius - clearance;
   };
   const double penStart = sidePenetrationAt(segmentStart);
   const double penEnd = sidePenetrationAt(segmentEnd);
   if (penStart < -kContactEpsilon && penEnd < -kContactEpsilon) {
+    return false;
+  }
+  // Only genuinely shallow side-resting poses belong to this path: once an
+  // axis endpoint reaches the face plane (penetration beyond the support
+  // radius) the geometry is a deep overlap, which stays with the legacy
+  // minimal-translation paths.
+  if (penStart > effectiveRadius + kContactEpsilon
+      || penEnd > effectiveRadius + kContactEpsilon) {
     return false;
   }
 
@@ -504,7 +520,7 @@ bool tryAddCylinderBoxSideLineContacts(
     ContactPoint contact;
     contact.position
         = boxTransform
-          * (axisPoint - normalLocal * (cylinderRadius - 0.5 * depth));
+          * (axisPoint - normalLocal * (effectiveRadius - 0.5 * depth));
     contact.normal = normalWorld;
     contact.depth = depth;
     manifold.addContact(contact);
@@ -837,14 +853,62 @@ bool collideCylinderBox(
   const Eigen::Isometry3d cylInv = cylinderTransform.inverse();
   const Eigen::Isometry3d boxInCyl = cylInv * boxTransform;
 
-  if (boxInCyl.linear().isApprox(Eigen::Matrix3d::Identity(), 1e-12)) {
-    const Eigen::Vector3d center = boxInCyl.translation();
-    const double minX = center.x() - boxHalf.x();
-    const double maxX = center.x() + boxHalf.x();
-    const double minY = center.y() - boxHalf.y();
-    const double maxY = center.y() + boxHalf.y();
-    const double minZ = center.z() - boxHalf.z();
-    const double maxZ = center.z() + boxHalf.z();
+  // A side-lying cylinder needs the two-point contact-line manifold before
+  // any single-point path (aligned lateral or convex fallback) can answer
+  // with one rocking support; the helper gates itself to near-face-parallel
+  // poses and declines everything else.
+  if (tryAddCylinderBoxSideLineContacts(
+          cylRadius,
+          cylHalfHeight,
+          cylinderTransform,
+          boxHalf,
+          boxTransform,
+          result,
+          option)) {
+    return true;
+  }
+
+  // Cylinder-box contact is invariant under spin about the cylinder axis
+  // (surface of revolution), so the aligned analytic path must not demand
+  // exact rotational identity: detect a box axis parallel to the cylinder
+  // axis, canonicalize the spin and axis permutation away, and reuse the
+  // aligned math. Without this, an upright cylinder that settled with an
+  // arbitrary spin falls to the convex fallback, whose degenerate rim
+  // points let a loaded cylinder creep through its support (issue #3056
+  // S6 seed-101 evidence: monotonic ~2.6 um/step sinking).
+  constexpr double kAxisParallelTolerance = 1e-9;
+  const Eigen::Matrix3d boxRotInCyl = boxInCyl.linear();
+  int alignedBoxAxis = -1;
+  for (int k = 0; k < 3; ++k) {
+    if (std::abs(std::abs(boxRotInCyl(2, k)) - 1.0) <= kAxisParallelTolerance) {
+      alignedBoxAxis = k;
+      break;
+    }
+  }
+  if (alignedBoxAxis >= 0) {
+    const int transverse1 = (alignedBoxAxis + 1) % 3;
+    const int transverse2 = (alignedBoxAxis + 2) % 3;
+    Eigen::Vector3d spinX = boxRotInCyl.col(transverse1);
+    spinX.z() = 0.0;
+    const double spinXNorm = spinX.norm();
+    Eigen::Matrix3d spin = Eigen::Matrix3d::Identity();
+    if (spinXNorm > 1e-12) {
+      spinX /= spinXNorm;
+      spin.col(0) = spinX;
+      spin.col(1) = Eigen::Vector3d::UnitZ().cross(spinX);
+      spin.col(2) = Eigen::Vector3d::UnitZ();
+    }
+    Eigen::Isometry3d canonTransform = cylinderTransform;
+    canonTransform.linear() = cylinderTransform.linear() * spin;
+    const Eigen::Vector3d center = spin.transpose() * boxInCyl.translation();
+    const Eigen::Vector3d half(
+        boxHalf[transverse1], boxHalf[transverse2], boxHalf[alignedBoxAxis]);
+    const double minX = center.x() - half.x();
+    const double maxX = center.x() + half.x();
+    const double minY = center.y() - half.y();
+    const double maxY = center.y() + half.y();
+    const double minZ = center.z() - half.z();
+    const double maxZ = center.z() + half.z();
 
     const double zOverlap
         = std::min(cylHalfHeight, maxZ) - std::max(-cylHalfHeight, minZ);
@@ -886,7 +950,7 @@ bool collideCylinderBox(
       contactLocal.z() = topAxialContact ? minZ : maxZ;
       return addAxialCylinderBoxPatchContacts(
           cylRadius,
-          cylinderTransform,
+          canonTransform,
           minX,
           maxX,
           minY,
@@ -919,10 +983,9 @@ bool collideCylinderBox(
       return true;
     }
 
-    const Eigen::Vector3d normalWorld
-        = cylinderTransform.rotation() * normalLocal;
+    const Eigen::Vector3d normalWorld = canonTransform.rotation() * normalLocal;
     const Eigen::Vector3d contactWorld
-        = cylinderTransform * contactLocal - normalWorld * (penetration * 0.5);
+        = canonTransform * contactLocal - normalWorld * (penetration * 0.5);
 
     ContactPoint contact;
     contact.position = contactWorld;
@@ -983,17 +1046,6 @@ bool collideCylinderBox(
   }
 
   if (!foundCollision) {
-    if (tryAddCylinderBoxSideLineContacts(
-            cylRadius,
-            cylHalfHeight,
-            cylinderTransform,
-            boxHalf,
-            boxTransform,
-            result,
-            option)) {
-      return true;
-    }
-
     if (collideCylinderPlaneLikeBox(
             cylRadius,
             cylHalfHeight,

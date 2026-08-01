@@ -54,30 +54,34 @@ persistence (pair churn), not sleep policy (a tolerance raise was
 measured and rejected: it triggers freeze-under-load penetration
 explosions). 154/154 C++ tests pass; lint/check-lint clean.
 
-**2026-08-01 update — D9 and D10 are DECIDED (maintainer delegated the
-calls; see README "Open decisions" for the full records).** The
-maintainer authorized evidence-based self-decision preferring root-cause
-fixes; the session then measured old-vs-new contact streams directly
-(probe suite over constructed micro-pose sweeps, both engines' dartpy
-builds), found and fixed two cylinder stream defects (wandering
-side-line point; intermittently missed crossed contacts — Codex
-independently confirmed the GJK-fallback root cause), and re-measured:
-the complete WP-PG.50 bundle is **speed-parity with the audited old
-stack on the primary fixture (direct interleave 1.009x)**, so criterion
-1 holds at ≈3.5x with no chaining caveats, and D9 = SHIP. The 5-seed x
-3-stack S6 matrix proved the mixed-pile all-resting outcome chaotic on
-every stack (audit stack itself 3/5), so D10 re-anchors criterion 2 on
-the universally-held bounded-penetration property plus pinned
-stream-quality tests, with bounded follow-ups recorded
-(deactivation latch at true stillness; rolling friction; parallel-line
-1-point contacts). Work is preserved as LOCAL commits on
-`wp-pg-wsg-rebaseline-20260731` (never pushed; push/PR still needs
-explicit approval), and the raw artifacts live at
-`~/dart-wsg-evidence-20260731/` (probe JSONs, seed matrices, A/B TSVs,
-guard logs, WS-G results, S6 GUI capture) because the July /tmp
-references were already lost once. Next action: maintainer approval to
-push the branch and open the WP-PG.50 PR (fill the CHANGELOG `#PENDING`
-link at that moment).
+**2026-08-01 final — D9 and D10 DECIDED and criterion 2 MET (the
+maintainer delegated both calls in-session on 2026-08-01 with a
+root-cause, evidence-based, A/B-verified mandate; full records in README
+"Open decisions").** The session measured old-vs-new contact streams on
+constructed micro-pose sweeps, then fixed four detector stream defects
+as one bundle: the 3-contact solver-facing clamp, wandering cylinder
+side-line points (2-point line manifolds + effective-radius correction),
+intermittently missed crossed-cylinder contacts, and — the criterion-2
+closer — spin-variant aligned cylinder-box handling (an upright cylinder
+with arbitrary spin fell off the stable cap-patch path onto degenerate
+convex rim points and crept without bound; found via a 60k trend audit
++ final-scene reconstruction, fixed by spin/permutation
+canonicalization). Final state: S6 sleeps **71/71 with penetration 0**
+on 60k runs of the canonical seed and the worst creeper; 4/5 seeds
+fully deactivate within the original 20k window (audit-era stack: 3/5);
+the bundle is **0.946x vs the audited pre-consolidation stack**
+(slightly faster) on the direct S1 interleave; 154/154 C++ tests,
+cylinder suite 32/32; S2-S5 dart guard hashes stable across the last
+two fix iterations; S1 re-baselined
+(`120: 290/178 0xfc20c4880fdbca05`, `60: 88/74 0x6dab35ce2618d422`).
+Codex provided the independent cylinder root-cause confirmation and the
+code-review lane whose effective-radius finding was verified and
+applied. Work is preserved as LOCAL commits on
+`wp-pg-wsg-rebaseline-20260731` (never pushed; push/PR needs explicit
+approval); raw artifacts and scripts are archived at
+`~/dart-wsg-evidence-20260731/` including the `aug01/` tree. Next
+action: maintainer approval to push the branch and open the WP-PG.50 PR
+(fill the CHANGELOG `#PENDING` link then).
 
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
@@ -216,6 +220,18 @@ option-off/option-on evidence.
 
 ## Session log (round-2 execution)
 
+- 2026-08-01 (later): The evidence audit caught "bounded penetration"
+  over-asserted — 60k trends showed seed-101 penetration GROWING
+  0.100 → 0.137 m. Final-scene reconstruction identified an upright
+  spun cylinder creeping through its cap support: the aligned cap-patch
+  path demanded exact rotational identity, so spun uprights fell to
+  degenerate convex rim points. Fixed by spin/permutation
+  canonicalization of the aligned cylinder-box path (+ side-line hoist
+  with a shallow-pose gate); four stale single-support test pins
+  modernized to line manifolds; spin-invariance pinned. Outcome: S6
+  71/71 pen 0 at 60k on both probe seeds, 4/5 seeds sleeping within
+  20k, parity interleave 0.946x (bundle faster than the audited stack)
+  — criterion 2 met on original terms, D10's re-anchoring superseded.
 - 2026-08-01: Maintainer delegated D9/D10 with a root-cause,
   evidence-based mandate. Stream-quality probe suite (micro-pose sweeps
   on constructed states, old vs new dartpy builds) showed parity or

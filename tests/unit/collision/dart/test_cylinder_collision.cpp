@@ -42,6 +42,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -309,10 +311,24 @@ TEST(CylinderCollision, CollidesCylinderBox)
       result);
 
   ASSERT_TRUE(hit);
-  ASSERT_EQ(1u, result.numContacts());
-  EXPECT_TRUE(
-      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
-  EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
+  // The vertical side-on-face contact is a line clipped to the box face's
+  // z-extent; both endpoints are emitted as stable supports (previously a
+  // single rocking point).
+  ASSERT_EQ(2u, result.numContacts());
+  double minZ = result.getContact(0).position.z();
+  double maxZ = result.getContact(1).position.z();
+  if (minZ > maxZ) {
+    std::swap(minZ, maxZ);
+  }
+  // The side-line clip applies a 1e-9 slab tolerance by design.
+  EXPECT_NEAR(-0.5, minZ, 2e-9);
+  EXPECT_NEAR(0.5, maxZ, 2e-9);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    EXPECT_TRUE(
+        result.getContact(i).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+    EXPECT_NEAR(0.375, result.getContact(i).position.x(), 1e-12);
+    EXPECT_NEAR(0.25, result.getContact(i).depth, 1e-12);
+  }
 }
 
 TEST(CylinderCollision, RotatedCylinderBoxCornerContactPositionLiesInOverlap)
@@ -395,8 +411,50 @@ TEST(CylinderCollision, SideOnFaceEmitsStableEndpointContacts)
           (second.getContact(i).position - first.getContact(j).position)
               .norm());
     }
-    EXPECT_LT(best, 1e-3);
+    EXPECT_LT(best, 2e-4);
   }
+}
+
+TEST(CylinderCollision, TiltedSeparationIsNotFabricated)
+{
+  // A tilted cylinder's support distance along the face normal is
+  // r * sqrt(1 - dot^2), not r. Using the full radius fabricated shallow
+  // contacts in the band between the two values; this pins the corrected
+  // boundary from both sides.
+  CylinderShape cylinder(0.05, 0.2);
+  BoxShape floorBox(Eigen::Vector3d(1.0, 1.0, 0.1));
+
+  const double axisNormalDot = 0.04;
+  const double effectiveRadius
+      = 0.05 * std::sqrt(1.0 - axisNormalDot * axisNormalDot);
+  const double endpointDrop = 0.1 * axisNormalDot;
+  const Eigen::Isometry3d tilted = rotatedAroundX(std::acos(axisNormalDot));
+
+  const auto collideAtCenterHeight = [&](double zc, CollisionResult& result) {
+    Eigen::Isometry3d tf = tilted;
+    tf.translation() = Eigen::Vector3d(0.0, 0.0, zc);
+    return collideCylinderBox(
+        cylinder, tf, floorBox, translated(0.0, 0.0, -0.1), result);
+  };
+
+  // Deep-endpoint clearance 1e-5 ABOVE the true support: separated, but
+  // inside the full-radius formula's false-contact band.
+  CollisionResult separated;
+  EXPECT_FALSE(
+      collideAtCenterHeight(effectiveRadius + 1e-5 + endpointDrop, separated));
+  EXPECT_EQ(0u, separated.numContacts());
+
+  // Deep-endpoint clearance 1e-5 BELOW the true support: a genuine graze
+  // whose deepest contact must report the exact tiny depth.
+  CollisionResult grazing;
+  ASSERT_TRUE(
+      collideAtCenterHeight(effectiveRadius - 1e-5 + endpointDrop, grazing));
+  ASSERT_GE(grazing.numContacts(), 1u);
+  double maxDepth = 0.0;
+  for (std::size_t i = 0; i < grazing.numContacts(); ++i) {
+    maxDepth = std::max(maxDepth, grazing.getContact(i).depth);
+  }
+  EXPECT_NEAR(1e-5, maxDepth, 1e-9);
 }
 
 TEST(CylinderCollision, TiltedSideOnFaceKeepsBothEndpointDepths)
@@ -442,6 +500,45 @@ TEST(CylinderCollision, CrossedCylindersKeepShallowContact)
     EXPECT_NEAR(0.001, result.getContact(0).depth, 1e-9);
     EXPECT_TRUE(
         result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-9));
+  }
+}
+
+TEST(CylinderCollision, SpunUprightCapOnFaceUsesStablePatch)
+{
+  // Cylinder-box contact is invariant under spin about the cylinder axis.
+  // An upright cylinder that settled with an arbitrary spin must take the
+  // same stable analytic cap-patch path as the unspun one — previously the
+  // aligned path demanded exact rotational identity, so spun cylinders
+  // fell to the convex fallback whose degenerate rim points let a loaded
+  // cylinder creep through its support (issue #3056 S6 seed evidence).
+  CylinderShape cylinder(0.5, 1.0);
+  BoxShape floorBox(Eigen::Vector3d(5.0, 5.0, 0.1));
+
+  const auto collideWithSpin = [&](double spin) {
+    Eigen::Isometry3d tf = rotatedAroundZ(spin);
+    tf.translation() = Eigen::Vector3d(0.3, 0.2, 0.45);
+    CollisionResult result;
+    EXPECT_TRUE(collideCylinderBox(
+        cylinder, tf, floorBox, translated(0.0, 0.0, -0.1), result));
+    return result;
+  };
+
+  const CollisionResult unspun = collideWithSpin(0.0);
+  const CollisionResult spun = collideWithSpin(0.145);
+
+  ASSERT_GE(unspun.numContacts(), 3u);
+  ASSERT_EQ(unspun.numContacts(), spun.numContacts());
+  for (std::size_t i = 0; i < spun.numContacts(); ++i) {
+    EXPECT_NEAR(0.05, spun.getContact(i).depth, 1e-12);
+    EXPECT_TRUE(
+        spun.getContact(i).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+    double best = std::numeric_limits<double>::infinity();
+    for (std::size_t j = 0; j < unspun.numContacts(); ++j) {
+      best = std::min(
+          best,
+          (spun.getContact(i).position - unspun.getContact(j).position).norm());
+    }
+    EXPECT_LT(best, 1e-9);
   }
 }
 
