@@ -492,7 +492,9 @@ bm-boxes-headless = { cmd = """
 # Off-screen still capture of a dart-demos scene via the dart-gui-osg
 # OffscreenViewer helper. On a headless host (no X server) prefix with
 # xvfb-run, e.g. `xvfb-run -a -s '-screen 0 1280x1024x24' pixi run capture`.
-# width/height set the off-screen render size.
+# width/height set the off-screen render size. Uses the same docking-ImGui
+# configuration as `pixi run demos` so captures show the workspace users
+# actually get (config-demos), not the fixed-layout fallback.
 capture = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -501,7 +503,7 @@ capture = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos \
         --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }}
 """, depends-on = [
-  "config",
+  "config-demos",
 ], args = [
   { arg = "scene", default = "sleeping" },
   { arg = "out", default = "capture.png" },
