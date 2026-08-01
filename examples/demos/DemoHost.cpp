@@ -1687,6 +1687,12 @@ void DemoHost::renderViewMenu()
     // clipping until a manual "Reset layout".
     mDockLayoutResetRequested = true;
 #endif
+    // The fixed-layout chrome measurements also depend on the scale, and the
+    // Diagnostics measurement echoes the previously assigned height (its log
+    // child fills the remaining space), so a stale value would ratchet.
+    // Re-seed both from the scale-based estimate next frame.
+    mMeasuredToolbarHeight = 0.0f;
+    mMeasuredBottomHeight = 0.0f;
   }
 
 #ifdef IMGUI_HAS_DOCK
