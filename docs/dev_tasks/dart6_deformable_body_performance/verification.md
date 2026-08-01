@@ -56,9 +56,14 @@ control arm):
 ```bash
 DART_DEMO_SOFT_FOOT_FEET=soft DART_DEMO_SOFT_FOOT_PUSH_STEP=650 \
 DART_DEMO_SOFT_FOOT_PUSH_N=6000 \
+  xvfb-run -a -s '-screen 0 1280x1024x24' \
   ./build/default/cpp/Release/bin/dart-demos --scene soft_foot_simbicon \
   --headless --steps 2250 --shot end.png
 ```
+
+The `xvfb-run` wrapper is required on displayless hosts: the `--headless
+--shot` path renders through a GLX pbuffer, which still needs an X server
+(`docs/ai/verification.md`); with a real display the wrapper can be dropped.
 
 Results: equal-mass arms, a single collision surface per foot, identical
 rest tessellation, per-foot inertial equality to 1e-9, and an
