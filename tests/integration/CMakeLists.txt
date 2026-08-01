@@ -168,6 +168,16 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
     test_SoftFootSimbiconPushSweep
     PROPERTIES LABELS "no-coverage-value"
   )
+  # The sweep additionally carries `long-measurement`, which the FreeBSD VM
+  # job excludes: it passed there in 3674 s but consumed half the job's
+  # 120-minute wall clock and starved the remaining suite, while re-running
+  # the same code paths the 19-minute correctness gates (which stay in that
+  # job) already exercise. Labels are cumulative, so the coverage exclusion
+  # above still applies to both entries.
+  set_tests_properties(
+    test_SoftFootSimbiconPushSweep
+    PROPERTIES LABELS "no-coverage-value;long-measurement"
+  )
   dart_format_add(${soft_foot_simbicon_test_sources})
 endif()
 

@@ -101,12 +101,20 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 The Atlas world is expensive on instrumented or emulated runners: measured
 slowdowns are ~190x on the FreeBSD VM and ~490x under the gcov coverage build.
 Both CTest entries carry explicit TIMEOUT budgets (3600 s gates / 7200 s
-sweep), and both are labeled `no-coverage-value` and excluded from the
-coverage job's ctest run: coverage-report strips `*/examples/*` and
-`*/tests/*` from coverage.info, and the dart-core paths these tests drive are
-already executed by the other soft-body suites, so the pair spent ~3 h of the
-coverage job for lines the report cannot attribute to them. Every functional
-CI job (Linux/macOS/arm64/FreeBSD, Debug and Release) still runs both entries.
+sweep), and two label-scoped exclusions keep constrained runners honest:
+
+- `no-coverage-value` (both entries) excludes them from the coverage job:
+  coverage-report strips `*/examples/*` and `*/tests/*` from coverage.info,
+  and the dart-core paths these tests drive are already executed by the other
+  soft-body suites, so the pair spent ~3 h of the coverage job for lines the
+  report cannot attribute to them.
+- `long-measurement` (sweep only) excludes it from the FreeBSD VM job: the
+  sweep passed there in 3674 s but consumed half the job's 120-minute wall
+  clock and starved the remaining 125 tests, while adding no portability
+  signal beyond the 19-minute correctness gates, which stay in that job.
+
+Every other CI job (Linux/macOS/arm64, Debug and Release) runs both entries,
+and FreeBSD still runs the full correctness suite.
 
 ## Open maintainer decisions
 
