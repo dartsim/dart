@@ -30,10 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_
-#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_
+#pragma once
 
 // Backward-compatibility header.
 #include <dart/dynamics/detail/assimp_input_resource_adaptor.hpp>
-
-#endif // DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_PUBLIC_HPP_

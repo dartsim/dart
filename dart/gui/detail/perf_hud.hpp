@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_PERF_HUD_HPP_
-#define DART_GUI_DETAIL_PERF_HUD_HPP_
+#pragma once
 
 #include <dart/gui/fwd.hpp>
 
@@ -86,5 +85,3 @@ void drawPerfHud(
     const char* backendName);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_PERF_HUD_HPP_

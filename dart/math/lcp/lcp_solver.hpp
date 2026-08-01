@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_LCPSOLVER_HPP_
-#define DART_MATH_LCP_LCPSOLVER_HPP_
+#pragma once
 
 #include <dart/math/lcp/lcp_types.hpp>
 
@@ -147,5 +146,3 @@ using LcpSolverFactory = std::function<LcpSolverPtr()>;
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_LCP_LCPSOLVER_HPP_

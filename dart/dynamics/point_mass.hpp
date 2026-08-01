@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_POINTMASS_HPP_
-#define DART_DYNAMICS_POINTMASS_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -701,5 +700,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_POINTMASS_HPP_

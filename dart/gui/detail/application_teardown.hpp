@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_
-#define DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/debug_overlay.hpp>
@@ -81,5 +80,3 @@ void destroyApplicationResources(
     MaterialResources& materialResources);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_

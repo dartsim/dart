@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_STATE_HPP_
-#define EXAMPLES_ATLASSIMBICON_STATE_HPP_
+#pragma once
 
 #include "fwd.hpp"
 
@@ -325,5 +324,3 @@ private:
   /// @brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_STATE_HPP_

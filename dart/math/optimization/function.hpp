@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_OPTIMIZATION_FUNCTION_HPP_
-#define DART_MATH_OPTIMIZATION_FUNCTION_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -201,5 +200,3 @@ public:
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_OPTIMIZATION_FUNCTION_HPP_

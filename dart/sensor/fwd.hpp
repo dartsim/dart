@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SENSOR_FWD_HPP_
-#define DART_SENSOR_FWD_HPP_
+#pragma once
 
 #include <dart/common/smart_pointer.hpp>
 
@@ -46,5 +45,3 @@ DART_COMMON_DECLARE_SHARED_WEAK(SensorManager)
 
 } // namespace sensor
 } // namespace dart
-
-#endif // DART_SENSOR_FWD_HPP_

@@ -8,8 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
-#define DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
+#pragma once
 
 #include "memory_map_model.hpp"
 
@@ -222,5 +221,3 @@ private:
 };
 
 } // namespace dart::examples::demos
-
-#endif // DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_

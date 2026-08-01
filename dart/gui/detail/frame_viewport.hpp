@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
-#define DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
+#pragma once
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/detail/backend_fwd.hpp>
@@ -140,5 +139,3 @@ FrameViewport updateFrameViewport(
     const dart::gui::ViewportLayoutOptions& layoutOptions);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_

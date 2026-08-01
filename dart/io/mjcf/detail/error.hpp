@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_ERROR_HPP_
-#define DART_IO_MJCF_DETAIL_ERROR_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 
@@ -119,5 +118,3 @@ void appendErrorRange(Errors& errors, Range&& newErrors)
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_ERROR_HPP_

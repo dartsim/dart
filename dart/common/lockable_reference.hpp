@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCKABLEREFERENCE_HPP_
-#define DART_COMMON_LOCKABLEREFERENCE_HPP_
+#pragma once
 
 #include <concepts>
 #include <iterator>
@@ -185,5 +184,3 @@ private:
 } // namespace dart
 
 #include <dart/common/detail/lockable_reference-impl.hpp>
-
-#endif // DART_COMMON_LOCKABLEREFERENCE_HPP_

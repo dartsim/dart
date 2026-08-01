@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SCENES_HPP_
-#define DART_GUI_DETAIL_SCENES_HPP_
+#pragma once
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
@@ -403,5 +402,3 @@ std::vector<dart::gui::RenderableDescriptor> collectSceneRenderables(
     const DartScene& scene);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SCENES_HPP_

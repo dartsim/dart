@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_NODEMANAGERJOINER_HPP_
-#define DART_DYNAMICS_NODEMANAGERJOINER_HPP_
+#pragma once
 
 #include <dart/common/empty.hpp>
 
@@ -186,5 +185,3 @@ public:
 } // namespace dart
 
 #include <dart/dynamics/detail/node_manager_joiner.hpp>
-
-#endif // DART_DYNAMICS_NODEMANAGERJOINER_HPP_

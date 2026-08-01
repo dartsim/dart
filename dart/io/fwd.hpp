@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_FWD_HPP_
-#define DART_IO_FWD_HPP_
+#pragma once
 
 namespace dart {
 namespace io {
@@ -46,5 +45,3 @@ struct ReadOptions;
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_FWD_HPP_

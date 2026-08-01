@@ -8,8 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_MEMORY_MAP_MODEL_HPP_
-#define DART_EXAMPLES_DEMOS_MEMORY_MAP_MODEL_HPP_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -180,5 +179,3 @@ MemoryMapRow makeMemoryMapRow(
     std::size_t maximumCells = 64);
 
 } // namespace dart::examples::demos
-
-#endif // DART_EXAMPLES_DEMOS_MEMORY_MAP_MODEL_HPP_

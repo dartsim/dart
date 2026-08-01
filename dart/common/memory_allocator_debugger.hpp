@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
-#define DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_
+#pragma once
 
 #include <dart/common/memory_allocator.hpp>
 
@@ -117,5 +116,3 @@ private:
 } // namespace dart::common
 
 #include <dart/common/detail/memory_allocator_debugger-impl.hpp>
-
-#endif // DART_COMMON_MEMORYALLOCATORDEBUGGER_HPP_

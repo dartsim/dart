@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_URDF_WRITER_HPP_
-#define DART_IO_URDF_WRITER_HPP_
+#pragma once
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -76,5 +75,3 @@ common::Result<std::string, common::Error> DART_IO_API tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton, const WriteOptions& options);
 
 } // namespace dart::io::UrdfWriter
-
-#endif // DART_IO_URDF_WRITER_HPP_

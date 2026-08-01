@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_WELD_HPP_
-#define DART_IO_MJCF_DETAIL_WELD_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/default.hpp>
@@ -80,5 +79,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_WELD_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
-#define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#pragma once
 
 #include <dart/collision/collision_group.hpp>
 
@@ -83,5 +82,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETINCLUDE_HPP_
-#define DART_COLLISION_BULLET_BULLETINCLUDE_HPP_
+#pragma once
 
 // clang-format off
 
@@ -43,5 +42,3 @@
 #include <btBulletCollisionCommon.h>
 
 // clang-format on
-
-#endif // DART_COLLISION_BULLET_BULLETINCLUDE_HPP_

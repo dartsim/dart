@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_
+#pragma once
 
 #include <dart/math/helpers.hpp>
 
@@ -63,5 +62,3 @@ struct DART_API MarkerProperties
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_MARKERASPECT_HPP_

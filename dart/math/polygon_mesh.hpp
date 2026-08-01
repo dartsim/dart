@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_POLYGONMESH_HPP_
-#define DART_MATH_POLYGONMESH_HPP_
+#pragma once
 
 #include <dart/math/mesh.hpp>
 #include <dart/math/tri_mesh.hpp>
@@ -131,5 +130,3 @@ using PolygonMeshd = PolygonMesh<double>;
 } // namespace dart
 
 #include <dart/math/detail/polygon_mesh-impl.hpp>
-
-#endif // DART_MATH_POLYGONMESH_HPP_

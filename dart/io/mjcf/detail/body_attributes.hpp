@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_BODYATTRIBUTES_HPP_
-#define DART_IO_MJCF_DETAIL_BODYATTRIBUTES_HPP_
+#pragma once
 
 #include <dart/math/math_types.hpp>
 
@@ -107,5 +106,3 @@ DART_IO_API Errors appendBodyAttributes(
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_BODYATTRIBUTES_HPP_

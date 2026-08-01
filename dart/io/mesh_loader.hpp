@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MESHLOADER_HPP_
-#define DART_IO_MESHLOADER_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/assimp_input_resource_adaptor.hpp>
 
@@ -381,5 +380,3 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_MESHLOADER_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STOPWATCH_HPP_
-#define DART_COMMON_STOPWATCH_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -153,5 +152,3 @@ using StopwatchNS = Stopwatch<std::chrono::nanoseconds>;
 } // namespace dart::common
 
 #include <dart/common/detail/stopwatch-impl.hpp>
-
-#endif // DART_COMMON_STOPWATCH_HPP_

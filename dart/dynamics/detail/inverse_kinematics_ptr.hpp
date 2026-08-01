@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
-#define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
+#pragma once
 #include <dart/dynamics/detail/body_node_ptr.hpp>
 #include <dart/dynamics/detail/node_ptr.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -320,5 +319,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_

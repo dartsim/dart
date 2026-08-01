@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
-#define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -346,5 +345,3 @@ inline int tri_tri_intersect(
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BOXSHAPE_HPP_
-#define DART_DYNAMICS_BOXSHAPE_HPP_
+#pragma once
 
 #include <dart/dynamics/shape.hpp>
 
@@ -86,5 +85,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_BOXSHAPE_HPP_

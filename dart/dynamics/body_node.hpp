@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODE_HPP_
-#define DART_DYNAMICS_BODYNODE_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -1300,5 +1299,3 @@ DART_API const BodyNode::Properties& getDefaultBodyNodeProperties();
 } // namespace dart
 
 #include <dart/dynamics/detail/body_node.hpp>
-
-#endif // DART_DYNAMICS_BODYNODE_HPP_

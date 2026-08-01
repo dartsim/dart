@@ -36,8 +36,7 @@
  * @note Lightweight dependencies: common only
  */
 
-#ifndef DART_UNITTESTS_COMMON_HELPERS_HPP_
-#define DART_UNITTESTS_COMMON_HELPERS_HPP_
+#pragma once
 
 #include "dart/common/diagnostics.hpp"
 #include "dart/common/resource_retriever.hpp"
@@ -126,5 +125,3 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
 };
 
 DART_SUPPRESS_DEPRECATED_END
-
-#endif // DART_UNITTESTS_COMMON_HELPERS_HPP_

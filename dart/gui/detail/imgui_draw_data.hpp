@@ -8,8 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_GUI_DETAIL_IMGUI_DRAW_DATA_HPP_
-#define DART_GUI_DETAIL_IMGUI_DRAW_DATA_HPP_
+#pragma once
 
 #include <imgui.h>
 
@@ -128,5 +127,3 @@ inline ImGuiOverlayDrawPlan buildImGuiOverlayDrawPlan(
 }
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_IMGUI_DRAW_DATA_HPP_

@@ -1,5 +1,4 @@
-#ifndef DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_
-#define DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_
+#pragma once
 
 #include "dart/common/deprecated.hpp"
 
@@ -30,5 +29,3 @@ namespace [[deprecated(
 using namespace math::lcp;
 } // namespace lcpsolver
 } // namespace dart
-
-#endif // DART_LCPSOLVER_DETAIL_DEPRECATEDNAMESPACE_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ARTICULATEDDYNAMICSALGORITHMS_HPP_
-#define DART_DYNAMICS_DETAIL_ARTICULATEDDYNAMICSALGORITHMS_HPP_
+#pragma once
 
 #include <dart/dynamics/body_node.hpp>
 
@@ -602,5 +601,3 @@ void abaBatch(std::span<Model> models, AbaOptions options = {})
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_ARTICULATEDDYNAMICSALGORITHMS_HPP_

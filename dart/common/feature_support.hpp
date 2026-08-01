@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_FEATURE_SUPPORT_HPP_
-#define DART_COMMON_FEATURE_SUPPORT_HPP_
+#pragma once
 
 // Centralized C++23 (and selected core-language) feature detection for DART.
 //
@@ -193,5 +192,3 @@
 #else
   #define DART_HAS_STD_MDSPAN 0
 #endif
-
-#endif // DART_COMMON_FEATURE_SUPPORT_HPP_

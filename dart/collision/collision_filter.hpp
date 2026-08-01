@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONFILTER_HPP_
-#define DART_COLLISION_COLLISIONFILTER_HPP_
+#pragma once
 
 #include <dart/collision/detail/unordered_pairs.hpp>
 #include <dart/collision/fwd.hpp>
@@ -111,5 +110,3 @@ private:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONFILTER_HPP_

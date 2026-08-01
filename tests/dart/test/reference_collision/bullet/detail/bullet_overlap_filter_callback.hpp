@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
-#define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+#pragma once
 
 #include <dart/test/reference_collision/bullet/bullet_include.hpp>
 #include <dart/collision/collision_option.hpp>
@@ -68,5 +67,3 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 } // namespace detail
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_

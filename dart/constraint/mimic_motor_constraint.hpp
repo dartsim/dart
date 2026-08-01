@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
-#define DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
+#pragma once
 
 #include <dart/constraint/constraint_base.hpp>
 
@@ -171,5 +170,3 @@ private:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_

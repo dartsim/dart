@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SIGNAL_HPP_
-#define DART_COMMON_SIGNAL_HPP_
+#pragma once
 
 #include <dart/common/detail/connection_body.hpp>
 
@@ -242,5 +241,3 @@ private:
 } // namespace dart
 
 #include <dart/common/detail/signal.hpp>
-
-#endif // DART_COMMON_SIGNAL_HPP_

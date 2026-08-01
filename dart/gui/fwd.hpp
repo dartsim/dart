@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#pragma once
 
 namespace dart {
 namespace gui {
@@ -74,5 +73,3 @@ struct ViewerLifecycleState;
 
 } // namespace gui
 } // namespace dart
-
-#endif // DART_GUI_FWD_HPP_

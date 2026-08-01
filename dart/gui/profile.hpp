@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_PROFILE_HPP_
-#define DART_GUI_PROFILE_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 
@@ -79,5 +78,3 @@ DART_GUI_API double elapsedMs(ProfileAccumulator::Clock::time_point start);
 DART_GUI_API void printProfile(const ProfileAccumulator& profile);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_PROFILE_HPP_

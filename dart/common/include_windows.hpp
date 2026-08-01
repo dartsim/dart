@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_INCLUDEWINDOWS_HPP_
-#define DART_COMMON_INCLUDEWINDOWS_HPP_
+#pragma once
 
 #ifdef _WIN32
   #ifdef NOMINMAX
@@ -46,5 +45,3 @@
     #undef far
   #endif
 #endif
-
-#endif // DART_COMMON_INCLUDEWINDOWS_HPP_

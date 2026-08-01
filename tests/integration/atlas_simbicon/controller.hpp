@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
-#define EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
+#pragma once
 
 #include "fwd.hpp"
 
@@ -199,5 +198,3 @@ private:
   /// @brief Whether to print messages about the internal state
   bool mVerbosity;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_

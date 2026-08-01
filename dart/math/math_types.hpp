@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_MATHTYPES_HPP_
-#define DART_MATH_MATHTYPES_HPP_
+#pragma once
 
 #include <dart/common/memory.hpp>
 
@@ -65,5 +64,3 @@ using Jacobian = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_MATHTYPES_HPP_

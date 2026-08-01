@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EMBEDDEDASPECT_HPP_
-#define DART_COMMON_EMBEDDEDASPECT_HPP_
+#pragma once
 
 #include <dart/common/composite_joiner.hpp>
 #include <dart/common/detail/embedded_aspect.hpp>
@@ -462,5 +461,3 @@ protected:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_EMBEDDEDASPECT_HPP_

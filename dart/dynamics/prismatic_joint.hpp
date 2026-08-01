@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_PRISMATICJOINT_HPP_
-#define DART_DYNAMICS_PRISMATICJOINT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/prismatic_joint_aspect.hpp>
 
@@ -118,5 +117,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_PRISMATICJOINT_HPP_

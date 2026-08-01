@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_
-#define DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_
+#pragma once
 
 #include <dart/dynamics/composite_node.hpp>
 
@@ -89,5 +88,3 @@ void CompositePropertiesNode<Base>::copyNodePropertiesTo(
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_COMPOSITENODE_HPP_

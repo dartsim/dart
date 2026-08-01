@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SIMPLEFRAME_HPP_
-#define DART_DYNAMICS_SIMPLEFRAME_HPP_
+#pragma once
 
 #include <dart/dynamics/shape_node.hpp>
 
@@ -243,5 +242,3 @@ public:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SIMPLEFRAME_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UNITTESTS_IO_ROUND_TRIP_HELPERS_HPP_
-#define DART_UNITTESTS_IO_ROUND_TRIP_HELPERS_HPP_
+#pragma once
 
 #include "helpers/gtest_utils.hpp"
 
@@ -149,5 +148,3 @@ const ShapeT* requireShape(
 }
 
 } // namespace dart::test
-
-#endif // DART_UNITTESTS_IO_ROUND_TRIP_HELPERS_HPP_

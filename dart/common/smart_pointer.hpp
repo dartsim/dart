@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SMARTPOINTER_HPP_
-#define DART_COMMON_SMARTPOINTER_HPP_
+#pragma once
 
 #include <memory>
 
@@ -52,5 +51,3 @@
   DART_COMMON_DECLARE_SHARED_WEAK(X)                                           \
   using Unique##X##Ptr = std::unique_ptr<X>;                                   \
   using UniqueConst##X##Ptr = std::unique_ptr<const X>;
-
-#endif // DART_COMMON_SMARTPOINTER_HPP_

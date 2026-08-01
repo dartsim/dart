@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CASTABLE_HPP_
-#define DART_COMMON_CASTABLE_HPP_
+#pragma once
 
 #include <string_view>
 
@@ -98,5 +97,3 @@ private:
 } // namespace dart::common
 
 #include <dart/common/detail/castable-impl.hpp>
-
-#endif // DART_COMMON_CASTABLE_HPP_

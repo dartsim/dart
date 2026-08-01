@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SCENE_STARTUP_HPP_
-#define DART_GUI_DETAIL_SCENE_STARTUP_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/debug_overlay.hpp>
@@ -64,5 +63,3 @@ std::optional<InitialSceneState> createInitialSceneState(
     std::ostream& errors);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SCENE_STARTUP_HPP_

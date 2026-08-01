@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_MESHATTRIBUTES_HPP_
-#define DART_IO_MJCF_DETAIL_MESHATTRIBUTES_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
@@ -65,5 +64,3 @@ appendMeshAttributes(MeshAttributes& attributes, tinyxml2::XMLElement* element);
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_MESHATTRIBUTES_HPP_

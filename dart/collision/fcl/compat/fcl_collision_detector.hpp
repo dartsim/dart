@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_COMPAT_FCLCOLLISIONDETECTOR_HPP_
-#define DART_COLLISION_FCL_COMPAT_FCLCOLLISIONDETECTOR_HPP_
+#pragma once
 
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
@@ -133,5 +132,3 @@ using FCLCollisionGroup = DartCollisionGroup;
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FCL_COMPAT_FCLCOLLISIONDETECTOR_HPP_

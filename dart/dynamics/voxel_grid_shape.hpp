@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
-#define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -223,5 +222,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_VOXELGRIDSHAPE_HPP_

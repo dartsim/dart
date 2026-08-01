@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBJECT_HPP_
-#define DART_COMMON_SUBJECT_HPP_
+#pragma once
 
 #include <dart/common/fwd.hpp>
 
@@ -82,5 +81,3 @@ protected:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_SUBJECT_HPP_

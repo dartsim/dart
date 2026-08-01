@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
-#define DART_COLLISION_COLLISIONOBJECT_HPP_
+#pragma once
 
 #include <dart/collision/fwd.hpp>
 
@@ -88,5 +87,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOBJECT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DEBUG_HPP_
-#define DART_GUI_DEBUG_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
@@ -232,5 +231,3 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     simulation::World& world, const DebugDrawOptions& options = {});
 
 } // namespace dart::gui
-
-#endif // DART_GUI_DEBUG_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODY_NODE_POOL_HPP_
-#define DART_DYNAMICS_DETAIL_BODY_NODE_POOL_HPP_
+#pragma once
 
 #include <dart/common/memory_allocator.hpp>
 
@@ -296,5 +295,3 @@ std::shared_ptr<typename BodyNodePool<T>::Chunk> BodyNodePool<T>::getChunkFor(
 }
 
 } // namespace dart::dynamics::detail
-
-#endif // DART_DYNAMICS_DETAIL_BODY_NODE_POOL_HPP_

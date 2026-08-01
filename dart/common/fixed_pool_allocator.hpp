@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_FIXEDPOOLALLOCATOR_HPP_
-#define DART_COMMON_FIXEDPOOLALLOCATOR_HPP_
+#pragma once
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
@@ -256,5 +255,3 @@ private:
 };
 
 } // namespace dart::common
-
-#endif // DART_COMMON_FIXEDPOOLALLOCATOR_HPP_

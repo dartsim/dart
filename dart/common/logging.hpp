@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOGGING_HPP_
-#define DART_COMMON_LOGGING_HPP_
+#pragma once
 
 #include <source_location>
 
@@ -310,5 +309,3 @@ void fatal(const S& format_str, Args&&... args);
 } // namespace dart::common
 
 #include <dart/common/detail/logging-impl.hpp>
-
-#endif // DART_COMMON_LOGGING_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCP_SOLVER_MANIFEST_HPP_
-#define DART_TESTS_LCP_SOLVER_MANIFEST_HPP_
+#pragma once
 
 #include <dart/math/lcp/all.hpp>
 
@@ -247,5 +246,3 @@ inline constexpr std::size_t countSolversSupporting(LcpProblemSupport support)
 }
 
 } // namespace dart::test
-
-#endif // DART_TESTS_LCP_SOLVER_MANIFEST_HPP_

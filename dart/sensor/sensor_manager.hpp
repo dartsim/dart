@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SENSOR_SENSORMANAGER_HPP_
-#define DART_SENSOR_SENSORMANAGER_HPP_
+#pragma once
 
 #include <dart/common/name_manager.hpp>
 #include <dart/common/signal.hpp>
@@ -109,5 +108,3 @@ private:
 
 } // namespace sensor
 } // namespace dart
-
-#endif // DART_SENSOR_SENSORMANAGER_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
-#define DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -68,5 +67,3 @@ struct MimicDofProperties
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_MIMICDOFPROPERTIES_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_RENDERABLE_HPP_
-#define DART_GUI_RENDERABLE_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 
@@ -293,5 +292,3 @@ DART_GUI_API RenderableSetUpdatePlan planRenderableSetUpdate(
     const std::vector<ActiveRenderableState>& activeRenderableStates);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_RENDERABLE_HPP_

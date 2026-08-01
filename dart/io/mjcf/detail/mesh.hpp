@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_MESH_HPP_
-#define DART_IO_MJCF_DETAIL_MESH_HPP_
+#pragma once
 
 #include <dart/dynamics/mesh_shape.hpp>
 
@@ -100,5 +99,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_MESH_HPP_

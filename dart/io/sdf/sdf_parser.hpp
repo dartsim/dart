@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_SDFPARSER_HPP_
-#define DART_IO_SDFPARSER_HPP_
+#pragma once
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -92,5 +91,3 @@ dynamics::SkeletonPtr DART_IO_API readSkeleton(
 
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_SDFPARSER_HPP_

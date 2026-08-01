@@ -257,6 +257,8 @@ check-dartpy-import-layout = { cmd = "python scripts/check_dartpy_import_layout.
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 lint-fwd-headers = { cmd = ["python", "scripts/check_fwd_headers.py"] }
 check-fwd-headers = { cmd = ["python", "scripts/check_fwd_headers.py"] }
+lint-header-guards = { cmd = ["python", "scripts/check_header_guards.py"] }
+check-header-guards = { cmd = ["python", "scripts/check_header_guards.py"] }
 lint-sdf-sdformat-boundary = { cmd = [
   "python",
   "scripts/check_sdf_sdformat_boundary.py",
@@ -329,6 +331,7 @@ lint = { depends-on = [
   "check-native-collision-superset",
   "lint-api-boundaries",
   "lint-fwd-headers",
+  "lint-header-guards",
   "lint-sdf-sdformat-boundary",
   "lint-dart7-legacy-freeze",
   "lint-compute-backend-boundaries",
@@ -517,6 +520,7 @@ check-lint = { depends-on = [
   "check-dartpy-import-layout",
   "check-api-boundaries",
   "check-fwd-headers",
+  "check-header-guards",
   "check-sdf-sdformat-boundary",
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
@@ -2431,6 +2435,7 @@ check-lint-quick = { depends-on = [
   "check-docs-policy",
   "check-api-boundaries",
   "check-fwd-headers",
+  "check-header-guards",
   "check-dart7-promotion-surface",
   "check-collision-runtime-isolation",
 ] }
@@ -2726,6 +2731,7 @@ lint = { depends-on = [
   "audit-collision-compat-facades",
   "lint-api-boundaries",
   "lint-fwd-headers",
+  "lint-header-guards",
   "lint-sdf-sdformat-boundary",
   "lint-dart7-legacy-freeze",
   "lint-lcp-solver-roster",
@@ -2755,6 +2761,7 @@ check-lint = { depends-on = [
   "check-dart7-legacy-freeze-meta",
   "check-api-boundaries",
   "check-fwd-headers",
+  "check-header-guards",
   "check-sdf-sdformat-boundary",
   "check-lcp-solver-roster",
   "check-ai-commands",

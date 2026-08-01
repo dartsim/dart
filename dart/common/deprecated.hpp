@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DEPRECATED_HPP_
-#define DART_COMMON_DEPRECATED_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -58,5 +57,3 @@
 // Warning suppression helpers (DART_SUPPRESS_*) now live in
 // dart/common/Diagnostics.hpp to decouple general diagnostics utilities from
 // the DART_DEPRECATED attribute helpers in this header.
-
-#endif // DART_COMMON_DEPRECATED_HPP_

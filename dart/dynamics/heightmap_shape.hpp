@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
-#define DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
+#pragma once
 
 #include <dart/dynamics/shape.hpp>
 
@@ -191,5 +190,3 @@ using HeightmapShaped = HeightmapShape<double>;
 } // namespace dart
 
 #include <dart/dynamics/detail/heightmap_shape-impl.hpp>
-
-#endif // DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_

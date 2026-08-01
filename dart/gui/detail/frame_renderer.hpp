@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_FRAME_RENDERER_HPP_
-#define DART_GUI_DETAIL_FRAME_RENDERER_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/fwd.hpp>
@@ -59,5 +58,3 @@ FrameRenderResult renderApplicationFrame(
     dart::gui::ProfileAccumulator& profile);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_FRAME_RENDERER_HPP_

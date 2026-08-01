@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_FWD_HPP_
-#define EXAMPLES_ATLASSIMBICON_FWD_HPP_
+#pragma once
 
 // Forward declarations for this example's global-namespace types, which
 // reference each other across headers.
@@ -40,5 +39,3 @@ class Controller;
 class State;
 class StateMachine;
 class TerminalCondition;
-
-#endif // EXAMPLES_ATLASSIMBICON_FWD_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/planar_joint_aspect.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -138,5 +137,3 @@ using TranslationalJoint2DBase = common::EmbedPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_
-#define DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_
+#pragma once
 
 #include <unordered_map>
 #include <unordered_set>
@@ -141,5 +140,3 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
 } // namespace detail
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DETAIL_UNORDEREDPAIRS_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SIMULATION_STEPPER_HPP_
-#define DART_GUI_DETAIL_SIMULATION_STEPPER_HPP_
+#pragma once
 
 #include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/profile.hpp>
@@ -64,5 +63,3 @@ bool advanceSimulationSteps(
     dart::gui::ProfileAccumulator& profile);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SIMULATION_STEPPER_HPP_

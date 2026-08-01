@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_FWD_HPP_
-#define DART_COMMON_FWD_HPP_
+#pragma once
 
 namespace dart {
 namespace common {
@@ -54,5 +53,3 @@ class SharedLibraryManager;
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_FWD_HPP_

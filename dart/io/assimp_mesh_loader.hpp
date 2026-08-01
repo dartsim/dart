@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_ASSIMPMESHLOADER_HPP_
-#define DART_IO_ASSIMPMESHLOADER_HPP_
+#pragma once
 
 // Backward-compatibility header for the Assimp-backed mesh loader.
 #include <dart/io/mesh_loader.hpp>
@@ -47,5 +46,3 @@ using AssimpMeshLoaderd = AssimpMeshLoader<double>;
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_ASSIMPMESHLOADER_HPP_

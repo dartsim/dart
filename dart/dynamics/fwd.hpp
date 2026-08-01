@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_FWD_HPP_
-#define DART_DYNAMICS_FWD_HPP_
+#pragma once
 
 #include <dart/common/smart_pointer.hpp>
 
@@ -304,5 +303,3 @@ DART_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_FWD_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
-#define DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
+#pragma once
 
 #include <dart/dynamics/shape.hpp>
 
@@ -138,5 +137,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_LINESEGMENTSHAPE_HPP_

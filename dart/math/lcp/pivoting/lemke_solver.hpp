@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_
-#define DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_
+#pragma once
 
 #include <dart/math/lcp/lcp_solver.hpp>
 
@@ -85,5 +84,3 @@ public:
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_LCP_PIVOTING_LEMKESOLVER_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
-#define DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_
+#pragma once
 
 #include <dart/collision/collision_detector.hpp>
 #include <dart/collision/collision_group.hpp>
@@ -62,5 +61,3 @@ CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args)
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DETAIL_COLLISIONDETECTOR_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_DART_SHAPE_ADAPTER_HPP_
+#pragma once
 
 #include <dart/collision/native/shapes/shape.hpp>
 
@@ -51,5 +50,3 @@ DART_API std::unique_ptr<native::Shape> adaptShape(
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DART_SHAPE_ADAPTER_HPP_

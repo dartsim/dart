@@ -30,8 +30,7 @@
  *   DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
-#define DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
+#pragma once
 
 #include <dart/gui/detail/backend_fwd.hpp>
 
@@ -90,5 +89,3 @@ void destroyConfiguredImGuiOverlay(
     ::filament::Engine& engine, ImGuiOverlay& overlay);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_

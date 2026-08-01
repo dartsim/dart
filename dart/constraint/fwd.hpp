@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_FWD_HPP_
-#define DART_CONSTRAINT_FWD_HPP_
+#pragma once
 
 #include <dart/common/smart_pointer.hpp>
 
@@ -97,5 +96,3 @@ DART_COMMON_DECLARE_SHARED_WEAK(BalanceConstraint)
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_FWD_HPP_

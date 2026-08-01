@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
-#define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -295,5 +294,3 @@ bool CollisionGroup::isSubscribedTo(
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
