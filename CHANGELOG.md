@@ -212,7 +212,7 @@
     detector on the dense active-container fixture while reporting fuller
     manifolds. FCL, Bullet, and ODE results are bit-identical;
     the built-in default (`fcl`) is unchanged:
-    [#PENDING](https://github.com/dartsim/dart/pulls)
+    [#3428](https://github.com/dartsim/dart/pull/3428)
 
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
