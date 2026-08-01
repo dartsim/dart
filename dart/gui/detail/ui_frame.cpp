@@ -436,14 +436,58 @@ std::vector<std::string> mergeDockLayoutSideHistory(
   return history;
 }
 
+// Desired extent of one dock region in framebuffer pixels: the largest
+// authored panel size on that side (width for columns, height for bars),
+// falling back to the built-in chrome sizes, times the effective UI scale.
+// Panel sizes are authored at scale 1.0 in logical pixels; the viewport is
+// framebuffer pixels, so content pixels are the only sound basis for region
+// fractions. Fraction floors multiplied by the scale would double-count on
+// HiDPI, where the window itself already grows with the DPI scale.
+float defaultDockRegionExtentPx(
+    const std::vector<dart::gui::Panel>& panels,
+    dart::gui::DockSide side,
+    float scale)
+{
+  using dart::gui::DockSide;
+
+  const bool horizontal = side == DockSide::Left || side == DockSide::Right;
+  float extent = 0.0f;
+  for (const auto& panel : panels) {
+    if (panel.dockSide != side || !panel.initialSize.has_value()) {
+      continue;
+    }
+    extent = std::max(
+        extent, static_cast<float>((*panel.initialSize)[horizontal ? 0 : 1]));
+  }
+  if (extent <= 0.0f) {
+    switch (side) {
+      case DockSide::Top:
+        extent = 64.0f; // one toolbar row plus the dock tab bar
+        break;
+      case DockSide::Bottom:
+        extent = 110.0f; // the built-in status panel
+        break;
+      case DockSide::Left:
+        extent = 280.0f;
+        break;
+      case DockSide::Right:
+        extent = 340.0f;
+        break;
+      case DockSide::Center:
+      case DockSide::None:
+        break;
+    }
+  }
+  return extent * scale;
+}
+
 // Builds a default IDE-style dock layout: top/bottom bars span full width and
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
 // DockSide; panels sharing a side become tabs. Only sides actually used are
-// split, so unused regions take no space. Panel sizes are authored at scale
-// 1.0, so every derived region fraction multiplies by `uiScale`; otherwise a
-// --gui-scale 2 run doubles the content but keeps scale-1 regions, truncating
-// the toolbar and sidebar.
+// split, so unused regions take no space. Region fractions derive from the
+// content's scaled pixel extents against the actual viewport, so they stay
+// snug on any window size, DPI, and --gui-scale combination.
 void buildDefaultDockLayout(
     ImGuiID dockId, const std::vector<dart::gui::Panel>& panels, float uiScale)
 {
@@ -461,34 +505,14 @@ void buildDefaultDockLayout(
   bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
-  float topFraction = 0.07f * scale;
-  float bottomFraction = 0.12f * scale;
   for (const auto& panel : panels) {
     switch (panel.dockSide) {
       case DockSide::Top:
         useTop = true;
-        if (panel.initialSize.has_value()) {
-          const float viewportHeight = ImGui::GetMainViewport()->Size.y;
-          if (viewportHeight > 0.0f) {
-            topFraction = std::max(
-                topFraction,
-                static_cast<float>((*panel.initialSize)[1]) * scale
-                    / viewportHeight);
-          }
-        }
         break;
       case DockSide::Bottom:
         useApplicationBottom = true;
         useBottom = true;
-        if (panel.initialSize.has_value()) {
-          const float viewportHeight = ImGui::GetMainViewport()->Size.y;
-          if (viewportHeight > 0.0f) {
-            bottomFraction = std::max(
-                bottomFraction,
-                static_cast<float>((*panel.initialSize)[1]) * scale
-                    / viewportHeight);
-          }
-        }
         break;
       case DockSide::Left:
         useLeft = true;
@@ -512,12 +536,30 @@ void buildDefaultDockLayout(
       static_cast<int>(ImGuiDockNodeFlags_DockSpace)
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
-  // Scaled content needs proportionally larger regions, but cap every region
-  // so the central viewport survives even at --gui-scale 4 in a small window.
-  topFraction = std::clamp(topFraction, 0.07f, std::min(0.18f * scale, 0.35f));
-  bottomFraction = std::clamp(bottomFraction, 0.10f, 0.45f);
-  const float leftFraction = std::clamp(0.24f * scale, 0.24f, 0.42f);
-  const float rightFraction = std::clamp(0.34f * scale, 0.34f, 0.48f);
+  // Convert content pixel extents into split fractions against the axis each
+  // split actually divides (top splits the full height; bottom the remainder;
+  // left the full width; right the remainder). Caps keep the central viewport
+  // usable even at --gui-scale 4 in a small window.
+  const float viewportWidth = std::max(1.0f, ImGui::GetMainViewport()->Size.x);
+  const float viewportHeight = std::max(1.0f, ImGui::GetMainViewport()->Size.y);
+  const float topFraction = std::clamp(
+      defaultDockRegionExtentPx(panels, DockSide::Top, scale) / viewportHeight,
+      0.03f,
+      0.35f);
+  const float bottomFraction = std::clamp(
+      defaultDockRegionExtentPx(panels, DockSide::Bottom, scale)
+          / std::max(1.0f, viewportHeight * (1.0f - topFraction)),
+      0.05f,
+      0.45f);
+  const float leftFraction = std::clamp(
+      defaultDockRegionExtentPx(panels, DockSide::Left, scale) / viewportWidth,
+      0.06f,
+      0.42f);
+  const float rightFraction = std::clamp(
+      defaultDockRegionExtentPx(panels, DockSide::Right, scale)
+          / std::max(1.0f, viewportWidth * (1.0f - leftFraction)),
+      0.06f,
+      0.48f);
 
   ImGuiID center = dockId;
   ImGuiID top = 0;
@@ -633,11 +675,54 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
               ? previousTarget
               : findDockTargetForPreviousSide(sideHistory, panel.dockSide);
     if (historicalTarget == 0) {
-      // A new side appeared and there is no existing dock node to join. Fall
-      // back to the default builder so the new panel is still docked instead of
-      // floating over the viewport.
-      buildDefaultDockLayout(dockId, panels, uiScale);
-      return initialFocusPanelsForDefaultDockLayout(panels);
+      // A side with no live dock node appeared (for example the first demo had
+      // no right-column panel). Split the live central node for just that side
+      // instead of rebuilding the default layout: a demo switch must never
+      // discard the user's resized dock tree.
+      ImGuiDockNode* central = ImGui::DockBuilderGetCentralNode(dockId);
+      if (central == nullptr) {
+        buildDefaultDockLayout(dockId, panels, uiScale);
+        return initialFocusPanelsForDefaultDockLayout(panels);
+      }
+      if (panel.dockSide == dart::gui::DockSide::Center) {
+        ImGui::DockBuilderDockWindow(panel.title.c_str(), central->ID);
+        ImGui::DockBuilderFinish(dockId);
+        focusedTitles.push_back(panel.title);
+        continue;
+      }
+      ImGuiDir direction = ImGuiDir_Right;
+      bool horizontal = true;
+      switch (panel.dockSide) {
+        case dart::gui::DockSide::Top:
+          direction = ImGuiDir_Up;
+          horizontal = false;
+          break;
+        case dart::gui::DockSide::Bottom:
+          direction = ImGuiDir_Down;
+          horizontal = false;
+          break;
+        case dart::gui::DockSide::Left:
+          direction = ImGuiDir_Left;
+          break;
+        case dart::gui::DockSide::Right:
+        case dart::gui::DockSide::Center:
+        case dart::gui::DockSide::None:
+          break;
+      }
+      const float scale
+          = (std::isfinite(uiScale) && uiScale > 0.0f) ? uiScale : 1.0f;
+      const float axisExtent = horizontal ? central->Size.x : central->Size.y;
+      const float fraction = std::clamp(
+          defaultDockRegionExtentPx(panels, panel.dockSide, scale)
+              / std::max(1.0f, axisExtent),
+          0.10f,
+          0.60f);
+      const ImGuiID sideNode = ImGui::DockBuilderSplitNode(
+          central->ID, direction, fraction, nullptr, nullptr);
+      ImGui::DockBuilderDockWindow(panel.title.c_str(), sideNode);
+      ImGui::DockBuilderFinish(dockId);
+      focusedTitles.push_back(panel.title);
+      continue;
     }
 
     ImGui::DockBuilderDockWindow(panel.title.c_str(), historicalTarget);
