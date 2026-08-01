@@ -2678,6 +2678,7 @@ void ExactCoulombFbfConstraintSolver::solveConstrainedGroup(
 bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
     ConstrainedGroup& group)
 {
+  const std::size_t attemptedContactCount = group.getNumConstraints();
   ExactCoulombContactRowParallelEvidence contactRowParallelEvidence;
   ExactCoulombCpuRecorder contactRowCpuRecorder;
   ExactCoulombCpuRecorder coloredBlockGaussSeidelCpuRecorder;
@@ -2729,6 +2730,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         math::detail::ExactCoulombFbfStatus::InvalidInput,
         mLastExactCoulombResidualDetails,
         mLastExactCoulombIterations);
+    recordExactCoulombLastFailureState(
+        this,
+        mLastExactCoulombStatus,
+        mLastExactCoulombBuildStatus,
+        attemptedContactCount);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2741,6 +2747,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         math::detail::ExactCoulombFbfStatus::InvalidInput,
         mLastExactCoulombResidualDetails,
         mLastExactCoulombIterations);
+    recordExactCoulombLastFailureState(
+        this,
+        mLastExactCoulombStatus,
+        mLastExactCoulombBuildStatus,
+        attemptedContactCount);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2792,6 +2803,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         math::detail::ExactCoulombFbfStatus::InvalidInput,
         mLastExactCoulombResidualDetails,
         mLastExactCoulombIterations);
+    recordExactCoulombLastFailureState(
+        this,
+        mLastExactCoulombStatus,
+        mLastExactCoulombBuildStatus,
+        attemptedContactCount);
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2824,6 +2840,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
             math::detail::ExactCoulombFbfStatus::InvalidInput,
             mLastExactCoulombResidualDetails,
             mLastExactCoulombIterations);
+        recordExactCoulombLastFailureState(
+            this,
+            mLastExactCoulombStatus,
+            mLastExactCoulombBuildStatus,
+            attemptedContactCount);
         ++mNumExactCoulombFailures;
         return false;
       }
