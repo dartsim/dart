@@ -797,8 +797,12 @@ void DemoHost::processPendingSwitch()
   }
 
   mLastSwitchFailed = false;
+  // Rebuild/Reset re-run the factory of the demo that is already active; that
+  // must reset only the physics, not the user's camera pose. Only a switch to
+  // a different demo applies the new scene's home framing.
+  const bool sameSceneReactivation = requestedId == mCurrentSceneId;
   teardownCurrentScene();
-  installScene(*scene, std::move(setup));
+  installScene(*scene, std::move(setup), !sameSceneReactivation);
   mCurrentSceneId = scene->id;
   mCurrentSceneTitle = scene->title;
   mStatusLine = "Running demo '" + scene->title + "'";
@@ -850,7 +854,8 @@ void DemoHost::teardownCurrentScene()
 }
 
 //==============================================================================
-void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
+void DemoHost::installScene(
+    const DemoScene& scene, DemoSceneSetup setup, bool applyCameraHomePose)
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   ++mMemoryDiagnosticsGeneration;
@@ -941,13 +946,18 @@ void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
     }
   }
 
-  const CameraHome defaultHome{
-      ::osg::Vec3d(6.0, 8.0, 4.0),
-      ::osg::Vec3d(0.0, 0.0, 1.0),
-      ::osg::Vec3d(0.0, 0.0, 1.0)};
-  applyCameraHome(
-      mCurrentCameraHome.value_or(defaultHome),
-      mViewer->getCameraManipulator() != nullptr);
+  // Rebuilding the active demo keeps the user's camera pose; the scene's home
+  // framing still refreshes above (mCurrentCameraHome) so "Reset camera" and
+  // the offscreen capture home keep using the scene's canonical view.
+  if (applyCameraHomePose) {
+    const CameraHome defaultHome{
+        ::osg::Vec3d(6.0, 8.0, 4.0),
+        ::osg::Vec3d(0.0, 0.0, 1.0),
+        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    applyCameraHome(
+        mCurrentCameraHome.value_or(defaultHome),
+        mViewer->getCameraManipulator() != nullptr);
+  }
 }
 
 //==============================================================================

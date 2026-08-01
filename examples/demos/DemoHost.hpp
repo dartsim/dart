@@ -281,7 +281,13 @@ private:
   void teardownCurrentScene();
 
   /// Builds and registers `setup` as the current scene.
-  void installScene(const DemoScene& scene, DemoSceneSetup setup);
+  /// Installs a freshly built scene. `applyCameraHomePose` places the camera
+  /// at the scene's home framing; Rebuild/Reset of the already-active demo
+  /// passes false so only the physics resets, never the user's camera pose.
+  void installScene(
+      const DemoScene& scene,
+      DemoSceneSetup setup,
+      bool applyCameraHomePose = true);
 
   /// Installs a minimal, guaranteed-safe empty world. Used only when the very
   /// first scene selection fails and there is no previous scene to fall back

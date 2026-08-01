@@ -612,8 +612,11 @@
     (adopting the DART 7 demos host design): a DockSpace over the viewport
     with a transparent central 3D node, a deterministic default layout
     (toolbar top, navigator left, scene panel right, diagnostics bottom),
-    user-rearrangeable panels with View > "Reset layout", and a stable scene
-    panel dock identity across scene switches. `pixi run demos` builds against
+    user-rearrangeable panels with View > "Reset layout", a stable scene
+    panel dock identity across scene switches, and Rebuild/Reset of the
+    active demo now resets only the physics while preserving the user's
+    camera pose (switching to a different demo still applies that scene's
+    home framing). `pixi run demos` builds against
     the bundled docking ImGui; system-ImGui builds keep the fixed layout,
     which now sizes the toolbar and diagnostics regions from measured content
     so `--gui-scale` values above 1 no longer clip or overlap the chrome. The
