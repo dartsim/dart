@@ -477,6 +477,39 @@ TEST(SoftFootSimbiconModelTest, SoftAndRigidBipedsAreComparable)
         << "control inertia differs from the soft combined rest-pose inertia";
   }
 
+  // And the same controller-observed center of mass. SIMBICON's balance
+  // feedback reads the State COM signal, which must include soft point masses
+  // -- Skeleton::getCOM() does not, and through that lens the soft biped
+  // reads about a kilogram lighter with a center shifted toward the torso.
+  // The first checks below are non-vacuity guards: the point-aware signal
+  // must actually differ from the Skeleton-level one for the soft model, or
+  // this gate would pass trivially.
+  const auto observedCom = [](const sfs::Model& model) {
+    double totalMass = 0.0;
+    Eigen::Vector3d weighted = Eigen::Vector3d::Zero();
+    for (std::size_t i = 0; i < model.atlas->getNumBodyNodes(); ++i) {
+      const auto* body = model.atlas->getBodyNode(i);
+      weighted += body->getMass() * body->getCOM();
+      totalMass += body->getMass();
+      const auto* softBody
+          = dynamic_cast<const dart::dynamics::SoftBodyNode*>(body);
+      if (softBody == nullptr)
+        continue;
+      for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j) {
+        const auto* point = softBody->getPointMass(j);
+        weighted += point->getMass() * point->getWorldPosition();
+        totalMass += point->getMass();
+      }
+    }
+    return Eigen::Vector3d(weighted / totalMass);
+  };
+  ASSERT_GT((observedCom(soft) - soft.atlas->getCOM()).norm(), 1e-3)
+      << "the point-aware COM does not differ from Skeleton::getCOM() for the "
+         "soft model, so this gate is not exercising the soft branch";
+  EXPECT_LT(
+      (observedCom(soft) - observedCom(rigid)).cwiseAbs().maxCoeff(), 1e-9)
+      << "the controller-observed rest COM differs between the two bipeds";
+
   std::cout << "soft_foot_simbicon mass  rigid=" << rigidMass
             << " kg  soft=" << softMass
             << " kg  collision_surfaces_per_foot rigid="
@@ -546,8 +579,15 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
 //    4000. Damping is what the recovery mechanism needed: absorbing the
 //    perturbation is the paper's own story.
 //
-// Measured with both fixes: soft 18000 N vs control 8000 N, alongside the
-// contact gate's 51.4-vs-15.6 spread, so the two Jain/Liu claims hold
+// A third confound surfaced in review and is fixed in the controller itself:
+// SIMBICON's balance feedback read Skeleton::getCOM(), which is blind to soft
+// point masses, so it observed the soft biped as a kilogram lighter with a
+// shifted center. State::getCOM()/getCOMVelocity() now accumulate point
+// masses; re-measuring moved the settled contacts 51.4 -> 51.2 and left both
+// thresholds unchanged, so the conclusions survive the corrected sensor.
+//
+// Measured with all fixes: soft 18000 N vs control 8000 N, alongside the
+// contact gate's 51.2-vs-15.6 spread, so the two Jain/Liu claims hold
 // together at the shipped asset values.
 TEST(SoftFootSimbiconModelTest, MeasuresRecoverablePushForBothFeet)
 {

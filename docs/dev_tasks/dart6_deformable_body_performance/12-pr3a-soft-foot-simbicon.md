@@ -126,12 +126,12 @@ and FreeBSD still runs the full correctness suite.
 Both former blockers of the Jain/Liu push-recovery claim are resolved with
 measurements; the claim now reproduces and is gate-asserted (18000 N soft vs
 8000 N rigid). The contact-count claim is
-unaffected and reproduces (51.4 soft vs 15.64 rigid, a 3.3x spread with both
+unaffected and reproduces (51.2 soft vs 15.64 rigid, a 3.3x spread with both
 foot types colliding as the same rest-pose mesh tessellation and rest inertia,
 so the gap is compliance rather than collision representation or mass
 distribution).
 
-**1. Soft-foot damping (was framed as stiffness) — RESOLVED: asset retuned,
+**1. Soft-foot damping (was framed as stiffness) — RESOLVED: asset re-tuned,
 `<damp>` 1000 → 4000, `kv` unchanged.**
 
 - A 4x2 (kv, damp) grid on the soft arm — stand stability, settled contact
@@ -169,9 +169,26 @@ rest-pose inertia.**
   the live body and requires equality to 1e-9.
 - A/B: the matched tensor moved the control's threshold 12000 → 8000 N and its
   settled contacts 18.45 → 15.64, quantifying how much of the earlier gap was
-  this confound.
+  this confound. (Contact figures elsewhere reflect the follow-up
+  controller-sensor fix: soft 51.2.)
 
-`MeasuresRecoverablePushForBothFeet` now asserts the paper's comparison
+**3. Controller-observed COM (review finding) — RESOLVED: the SIMBICON COM
+signal is point-mass-aware.**
+
+- `State::getCOM()`/`getCOMVelocity()` read `Skeleton` aggregates that sum
+  `BodyNode::getMass()` non-virtually, so the balance feedback observed the
+  soft biped as ~1 kg lighter with a center shifted several millimetres --
+  a different character than the one being simulated. The State signals now
+  accumulate soft point masses (a no-op for rigid skeletons, so the
+  atlas_simbicon demo is unchanged up to summation order), and the
+  comparability gate asserts the observed rest COM matches across models to
+  1e-9, with a non-vacuity guard that the point-aware signal really differs
+  from the Skeleton one.
+- A/B with the corrected sensor: both push thresholds unchanged (18000 /
+  8000 N); settled contacts 51.4 -> 51.2. The confound was real and the
+  conclusions survive it.
+
+`MeasuresRecoverablePushForBothFeet` asserts the paper's comparison
 (soft ≥ rigid) on same-run measurements.
 
 ## Constraints
