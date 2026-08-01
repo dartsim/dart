@@ -292,10 +292,12 @@ compatibility remains on the active DART 6 LTS branch._
   `pixi run demos` now builds against the fetched Dear ImGui docking branch
   (matching `pixi run dartsim` and `pixi run py-demos`), scene control panels
   dock into the right column instead of floating over the viewport, the
-  default dock layout scales with the effective `--gui-scale`, the Simulation
-  toolbar region hugs its content, and the built-in status panel names the
-  running demo instead of the internal fixture. System-ImGui builds keep the
-  floating-panel fallback.
+  default dock layout sizes its regions from the panels' scaled content on any
+  window/DPI combination, the Simulation toolbar region hugs its content and
+  grows once when the capture/playback controls appear, demo switches preserve
+  the user's dock tree (a newly introduced side splits the live central node),
+  and the built-in status panel names the running demo instead of the internal
+  fixture. System-ImGui builds keep the floating-panel fallback.
   ([#3425](https://github.com/dartsim/dart/pull/3425))
 - Fixed the Dear ImGui overlay disappearing entirely when built against system
   ImGui 1.92.9: the Filament adapter iterated the obsolete

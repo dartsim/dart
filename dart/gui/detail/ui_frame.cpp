@@ -774,6 +774,48 @@ std::vector<std::string_view> initialFocusPanelsForDefaultDockLayout(
   return titles;
 }
 
+// Grows the top dock bar once whenever its panel content becomes taller (for
+// example the Simulation panel's capture/playback rows or a scene-activation
+// message appearing), so newly revealed controls stay visible instead of
+// scrolling. Growth is one-shot per content increase and the node never
+// shrinks automatically, so a user-dragged splitter position sticks and the
+// idle bar stays snug.
+void growTopDockBarForExpandedContent(
+    const std::vector<dart::gui::Panel>& panels,
+    dart::gui::ViewerLifecycleState& lifecycle)
+{
+  float contentHeight = 0.0f;
+  ImGuiDockNode* node = nullptr;
+  for (const auto& panel : panels) {
+    if (panel.dockSide != dart::gui::DockSide::Top || panel.title.empty()) {
+      continue;
+    }
+    ImGuiWindow* window = ImGui::FindWindowByName(panel.title.c_str());
+    if (window == nullptr || window->DockNode == nullptr) {
+      continue;
+    }
+    contentHeight = std::max(contentHeight, window->ContentSize.y);
+    node = window->DockNode;
+  }
+  const bool grew
+      = contentHeight
+        > static_cast<float>(lifecycle.dockedTopPanelLastContentHeight) + 0.5f;
+  lifecycle.dockedTopPanelLastContentHeight
+      = static_cast<double>(contentHeight);
+  if (node == nullptr || contentHeight <= 0.0f || !grew) {
+    return;
+  }
+
+  const float needed = contentHeight + ImGui::GetFrameHeight()
+                       + ImGui::GetStyle().WindowPadding.y * 2.0f;
+  if (needed <= node->Size.y) {
+    return;
+  }
+  const float capped
+      = std::min(needed, ImGui::GetMainViewport()->Size.y * 0.35f);
+  ImGui::DockBuilderSetNodeSize(node->ID, ImVec2(node->Size.x, capped));
+}
+
 void selectInitialDockedPanels(std::span<const std::string_view> titles)
 {
   for (const std::string_view title : titles) {
@@ -851,6 +893,7 @@ void updateFrameUi(
       lifecycle.dockedPanelLayoutSideHistory = mergeDockLayoutSideHistory(
           dockSignature, lifecycle.dockedPanelLayoutSideHistory);
     }
+    growTopDockBarForExpandedContent(panels, lifecycle);
     ImGui::DockSpaceOverViewport(
         dockId,
         ImGui::GetMainViewport(),
