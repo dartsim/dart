@@ -308,6 +308,15 @@ compatibility remains on the active DART 6 LTS branch._
   discarded `ImDrawCmd::ClipRect`, letting scrolled-off geometry escape the
   panel viewport. This applies to every GUI build, not only diagnostics builds.
   ([#3378](https://github.com/dartsim/dart/pull/3378))
+- Fixed the Dear ImGui overlay rendering nothing when built against system
+  Dear ImGui 1.92.9. That release regressed the obsolete
+  `ImDrawData::CmdListsCount` mirror to always report 0 (fixed upstream in
+  1.92.9b), so the Filament overlay gathered no vertices, produced an empty
+  draw plan, and dropped its renderable entirely. The overlay paths now read
+  the canonical `ImDrawData::CmdLists.Size`, which is correct on every
+  supported Dear ImGui version. Affects builds using
+  `DART_USE_SYSTEM_IMGUI=ON` (the recommendation for package distributions);
+  the fetched default pin is 1.92.8 and was never affected.
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.
   ([#2466](https://github.com/dartsim/dart/pull/2466))
