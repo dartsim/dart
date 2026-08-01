@@ -156,6 +156,10 @@ APPROVED_CTEST_SELECTIONS = {
         ),
         "environment": (),
     },
+    "test_ContactArrowLayout": {
+        "arguments": ("--gtest_filter=ContactArrowLayoutTest.*",),
+        "environment": (),
+    },
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {

@@ -33,6 +33,12 @@ The deformable-body flagship scenes are available as
 - **Visual debugging** (`Inspector`, `ContactVisualizer`, `DragForce`,
   `LogCapture`, `Profiler`): host-level, scene-agnostic facilities wired into
   the composed step/refresh hooks and the Diagnostics panel.
+  `ContactVisualizer` splits into the ImGui toggle plus `ContactArrowLayout`,
+  a GUI-free piece that turns contact forces into arrow endpoints. Arrow length
+  is scene-relative, not a fixed newtons-to-meters constant: the longest arrow
+  is the largest contact force currently on screen, drawn at a fraction of the
+  mobile skeletons' size. Scenes get this for free and need no per-scene
+  tuning. `tests/integration/test_ContactArrowLayout.cpp` gates it.
 
 ## Adding a scene
 
