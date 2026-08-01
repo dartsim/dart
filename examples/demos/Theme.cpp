@@ -140,7 +140,9 @@ void applyModernDarkColors()
 
   colors[ImGuiCol_TextSelectedBg] = accentSoft;
   colors[ImGuiCol_DragDropTarget] = accent;
-  colors[ImGuiCol_NavHighlight] = accent;
+  // ImGuiCol_NavCursor is the 1.91.4+ name for ImGuiCol_NavHighlight; the
+  // bundled docking build disables the obsolete alias.
+  colors[ImGuiCol_NavCursor] = accent;
 
 #ifdef IMGUI_HAS_DOCK
   // Docking-branch-only slots, matching the DART 7 demos host theme.

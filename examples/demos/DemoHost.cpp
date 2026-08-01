@@ -141,8 +141,12 @@ float calcButtonWidth(const char* label)
 void sameLineIfEnoughRoom(float nextItemWidth)
 {
   const ImGuiStyle& style = ImGui::GetStyle();
+  // Content right edge in screen coordinates. The cursor sits at the start of
+  // the next line here (the previous item ended the line), so cursor + avail
+  // spans the full content width; GetContentRegionMax() is obsolete and
+  // removed from the bundled docking build.
   const float windowRight
-      = ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x;
+      = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
   const float nextRight
       = ImGui::GetItemRectMax().x + style.ItemSpacing.x + nextItemWidth;
   if (nextRight <= windowRight)

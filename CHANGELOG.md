@@ -619,7 +619,12 @@
     so `--gui-scale` values above 1 no longer clip or overlap the chrome. The
     demos CLI also accepts `--gui-scale=N`, seeds the scale from
     `DART_GUI_SCALE`, and the View menu GUI-scale slider covers the full
-    supported `[0.5, 4]` range:
+    supported `[0.5, 4]` range. The demos chrome, theme, and
+    memory-diagnostics sources now use current ImGui 1.92 APIs (the bundled
+    docking build disables obsolete symbols), and the draw-list-bound
+    regression test reads `ImDrawData::CmdLists` directly, so it holds on
+    both the bundled docking branch and system ImGui 1.92.9, whose legacy
+    `CmdListsCount` mirror is stuck at zero:
     [#3426](https://github.com/dartsim/dart/pull/3426)
   * Add two deformable-body flagship scenes to `dart-demos`:
     `adaptive_soft_contact`, a soft ellipsoid with a moving pusher

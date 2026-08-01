@@ -373,10 +373,22 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
   io.DisplaySize = ImVec2(1600.0f, 1400.0f);
   io.DeltaTime = 1.0f / 60.0f;
   io.IniFilename = nullptr;
+#if IMGUI_VERSION_NUM >= 19200
+  // Declare the 1.92 texture protocol so NewFrame() builds and manages the
+  // font atlas itself: the legacy GetTexDataAsRGBA32() bake is obsolete-gated
+  // in the bundled docking build, and without either path the atlas builder
+  // stays null. This logic-only test inspects draw lists and never samples
+  // the texture.
+  io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+  io.Fonts->AddFontDefault();
+#else
+  // Pre-1.92 ImGui requires the font atlas to be baked before NewFrame();
+  // this legacy call also implicitly adds the default font.
   unsigned char* pixels = nullptr;
   int textureWidth = 0;
   int textureHeight = 0;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &textureWidth, &textureHeight);
+#endif
 
   struct FrameDrawStats
   {
@@ -404,14 +416,17 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
     stats.windowVisible = windowVisible;
     const ImDrawData* drawData = ImGui::GetDrawData();
     if (drawData != nullptr) {
-      stats.drawListCount = drawData->CmdListsCount;
-      for (int index = 0; index < drawData->CmdListsCount; ++index) {
+      // CmdLists.Size, not the legacy CmdListsCount mirror: builds with
+      // IMGUI_DISABLE_OBSOLETE_FUNCTIONS (the bundled docking-branch target)
+      // leave that obsolete field at zero.
+      stats.drawListCount = drawData->CmdLists.Size;
+      for (int index = 0; index < drawData->CmdLists.Size; ++index) {
         stats.maximumVertices = std::max(
             stats.maximumVertices, drawData->CmdLists[index]->VtxBuffer.Size);
       }
-      if (drawData->CmdListsCount > 0) {
+      if (drawData->CmdLists.Size > 0) {
         stats.lastDrawListVertices
-            = drawData->CmdLists[drawData->CmdListsCount - 1]->VtxBuffer.Size;
+            = drawData->CmdLists[drawData->CmdLists.Size - 1]->VtxBuffer.Size;
       }
     }
     return stats;
