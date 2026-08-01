@@ -87,6 +87,14 @@
     readable.
     ([#3410](https://github.com/dartsim/dart/pull/3410))
 
+  * Extend the task-shaped AI model-routing guidance to the Claude Code lane
+    (Claude Fable 5 and Opus 5): `docs/ai/README.md` keeps one bounded routing
+    entry per validated tool lane, the model-upgrade workflow, scenario
+    contract markers, and gates route through that single owner instead of
+    duplicating per-family tiers, and the simulation image-review guidance
+    names image-capable targets across both lanes.
+    ([#3418](https://github.com/dartsim/dart/pull/3418))
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
@@ -630,6 +638,13 @@
     capture route, with GUI-free integration gates preserving the adaptive
     comparison and worm-locomotion contracts:
     [#3382](https://github.com/dartsim/dart/pull/3382)
+  * Add opt-in memory diagnostics to `dart-demos` with exact World
+    `MemoryManager` region maps, a typed virtual-address atlas for classic graph
+    objects, process RSS/history/baselines, and explicit evidence limits. The
+    feature is compiled out by default and can be enabled with
+    `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, leaving the ordinary demo runtime
+    path free of diagnostics state, branches, probes, and link dependencies.
+    ([#3379](https://github.com/dartsim/dart/pull/3379))
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized

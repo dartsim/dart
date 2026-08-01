@@ -142,6 +142,24 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": ("--gtest_filter=SoftWormModelTest.*",),
         "environment": (),
     },
+    "test_SoftFootSimbiconModel": {
+        "arguments": (
+            "--gtest_filter=SoftFootSimbiconModelTest.*"
+            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_SoftFootSimbiconPushSweep": {
+        "arguments": (
+            "--gtest_filter="
+            "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_ContactArrowLayout": {
+        "arguments": ("--gtest_filter=ContactArrowLayoutTest.*",),
+        "environment": (),
+    },
 }
 SAFE_ZERO_TEST_PATTERN = r"(^|[^0-9])0 tests"
 RESULT_NEUTRALIZING_CTEST_PROPERTIES = {
@@ -4241,8 +4259,9 @@ def exercise_scenarios(
                 "existing model/settings",
                 "one lower effort",
                 "structural",
-                "Max gives one hard task more reasoning time",
-                "Ultra is for independently",
+                "Deeper reasoning modes give one difficult task more time",
+                "explicit user authorization for delegation",
+                '`docs/ai/README.md` § "Updating Models And Coding Agents"',
                 "Do not substitute a model",
                 "durable project context",
                 "`docs/plans/dashboard.md`",

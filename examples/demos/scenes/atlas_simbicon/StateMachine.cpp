@@ -42,6 +42,7 @@ namespace atlas_simbicon {
 StateMachine::StateMachine(const std::string& name)
   : mName(name),
     mCurrentState(nullptr),
+    mInitialState(nullptr),
     mBeginTime(0.0),
     mEndTime(0.0),
     mFrame(0),
@@ -85,6 +86,13 @@ void StateMachine::setInitialState(State* state)
   DART_ASSERT(_containState(state));
 
   mCurrentState = state;
+  mInitialState = state;
+}
+
+//==============================================================================
+State* StateMachine::getInitialState() const
+{
+  return mInitialState;
 }
 
 //==============================================================================
