@@ -49,9 +49,16 @@ point-mass-aware SIMBICON COM sensor).
 Commands: the registered ctest targets `test_SoftFootSimbiconModel`
 (comparability, contact-spreading, finite-state gates) and
 `test_SoftFootSimbiconPushSweep`
-(`SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet`); headless
-reproduce via `dart-demos --scene soft_foot_simbicon` with
-`DART_DEMO_SOFT_FOOT_FEET` / `_PUSH_STEP` / `_PUSH_N`.
+(`SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet`). Headless
+reproduce (the #3423 evidence capture; swap `soft` for `rigid` for the
+control arm):
+
+```bash
+DART_DEMO_SOFT_FOOT_FEET=soft DART_DEMO_SOFT_FOOT_PUSH_STEP=650 \
+DART_DEMO_SOFT_FOOT_PUSH_N=6000 \
+  ./build/default/cpp/Release/bin/dart-demos --scene soft_foot_simbicon \
+  --headless --steps 2250 --shot end.png
+```
 
 Results: equal-mass arms, a single collision surface per foot, identical
 rest tessellation, per-foot inertial equality to 1e-9, and an

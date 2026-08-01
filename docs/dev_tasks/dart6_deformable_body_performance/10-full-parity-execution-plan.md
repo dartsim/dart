@@ -84,9 +84,10 @@ Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 
 No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
 shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
-resolved decisions), satisfying the **biped push recovery** row — contacts
-51.2 soft vs 15.64 rigid and recoverable push 18000 N soft vs 8000 N rigid,
-both gate-asserted; only its motor-noise clause remains open in §5.
+resolved decisions), completing the push/contact portion of the **biped push
+recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
+18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
+against the §1 Done rule until its motor-noise clause (§5) has evidence.
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
@@ -145,9 +146,11 @@ deformable substrate. What exists to reuse:
   `add_test --gtest_filter`). Headless PNG capture via `--headless --shot --steps`.
 
 What must be **built/authored** for PR-3:
-- soft-foot SIMBICON integration: point the existing controller at the soft-feet
-  Atlas + a ground plane; rigid-vs-soft **push-recovery threshold** regression;
-  contact-count time series; finite-state gate.
+- ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as
+  `soft_foot_simbicon` with the push-recovery threshold, contact-count, and
+  finite-state gates. What remains from that row is the **motor-noise
+  variant** of the same rigid-vs-soft comparison (deterministic seeded noise
+  on the controller torques; soft sustains at least the rigid level).
 - **noisy-floor** scene: seeded 5×5 cm tiles with 0–2 cm random offsets;
   deterministic rigid-vs-soft outcome.
 - **biped walk** with soft contact (LCP cadence per paper).
