@@ -154,7 +154,11 @@ if(TARGET dart-demos)
     )
     unset(_dart_demos_memory_artifact_label)
     unset(_dart_demos_memory_artifact_test)
-    foreach(test_target IN ITEMS tests tests_and_run)
+    # tests_no_simulation is the ASAN build target, and the ASAN ctest run only
+    # filters out the `simulation` label. The artifact tests registered above
+    # carry no such label, so they still run there and need the executable
+    # built; without this dependency they fail on a missing dart-demos.
+    foreach(test_target IN ITEMS tests tests_no_simulation tests_and_run)
       if(TARGET ${test_target})
         add_dependencies(${test_target} dart-demos)
       endif()
@@ -253,6 +257,9 @@ if(
     UNIT_examples_demos_MemoryDiagnostics
     PROPERTIES LABELS "examples;gui;memory-diagnostics;simulation"
   )
+  # Deliberately excludes tests_no_simulation: this test carries the
+  # `simulation` label, so the ASAN ctest run filters it out and never needs
+  # the executable built.
   foreach(test_target IN ITEMS tests tests_and_run)
     if(TARGET ${test_target})
       add_dependencies(${test_target} UNIT_examples_demos_MemoryDiagnostics)
