@@ -276,7 +276,7 @@ def test_avbd_articulated_compliant_joints_packet_records_evidence(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["scene"] == "avbd_articulated_compliant_joints"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,

@@ -129,7 +129,7 @@ def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_data(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_paper_scale_high_ratio_iteration_sweep"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,

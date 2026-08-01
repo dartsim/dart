@@ -929,8 +929,9 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     world.enter_simulation_mode()
     world.step()
 
+    assert world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
     assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
-    assert float(link.linear_velocity[0]) < 0.0
+    assert float(link.linear_velocity[0]) == pytest.approx(0.0, abs=1.0e-12)
     with pytest.raises(Exception, match="simulation mode"):
         world.add_joint(
             base,

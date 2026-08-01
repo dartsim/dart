@@ -46,6 +46,7 @@
 #include "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/rigid_contact/boxed_lcp_contact.hpp"
 #include "dart/simulation/detail/rigid_contact/rigid_contact_assembly.hpp"
+#include "dart/simulation/detail/rigid_pair_constraint.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/detail/world_storage.hpp"
 #include "dart/simulation/world.hpp"
@@ -59,6 +60,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <optional>
 #include <span>
@@ -444,6 +446,579 @@ void resolveRigidBodyContactPositions(
   }
 }
 
+struct RigidSequentialImpulseJointConstraint
+{
+  entt::entity joint = entt::null;
+  entt::entity bodyA = entt::null;
+  entt::entity bodyB = entt::null;
+  Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = detail::kRigidPairConstraintAllAxesMask;
+  std::uint8_t angularAxisMask = detail::kRigidPairConstraintAllAxesMask;
+  bool staticA = false;
+  bool staticB = false;
+  double invMassA = 0.0;
+  double invMassB = 0.0;
+  Eigen::Matrix3d invInertiaA = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d invInertiaB = Eigen::Matrix3d::Zero();
+  bool useLinearMotor = false;
+  bool useAngularMotor = false;
+  double motorTargetSpeed = 0.0;
+  double motorMaxForce = std::numeric_limits<double>::infinity();
+  double motorMaxTorque = std::numeric_limits<double>::infinity();
+  double breakForce = 0.0;
+  std::array<double, 3> linearImpulses{};
+  std::array<double, 3> angularImpulses{};
+  double linearMotorImpulse = 0.0;
+  double angularMotorImpulse = 0.0;
+};
+
+//==============================================================================
+bool rigidSequentialImpulseJointAxisEnabled(std::uint8_t mask, int axis)
+{
+  return (mask & (std::uint8_t{1u} << static_cast<unsigned int>(axis))) != 0u;
+}
+
+//==============================================================================
+Eigen::Quaterniond normalizedRigidSequentialImpulseOrientation(
+    const Eigen::Quaterniond& orientation)
+{
+  return detail::normalizeRigidPairConstraintOrientation(orientation);
+}
+
+//==============================================================================
+Eigen::Vector3d rigidSequentialImpulseJointWorldArm(
+    const comps::Transform& transform, const Eigen::Vector3d& localAnchor)
+{
+  return normalizedRigidSequentialImpulseOrientation(transform.orientation)
+         * localAnchor;
+}
+
+//==============================================================================
+Eigen::Vector3d rigidSequentialImpulseJointAngularVelocity(
+    const comps::Velocity& velocity, bool prescribed)
+{
+  return prescribed ? Eigen::Vector3d::Zero() : velocity.angular;
+}
+
+//==============================================================================
+std::size_t expectedRigidSequentialImpulseJointCount(
+    const detail::WorldRegistry& registry)
+{
+  std::size_t expected = 0u;
+  const auto view = registry.view<
+      comps::JointModel,
+      comps::JointState,
+      comps::JointActuation>();
+  for (const entt::entity entity : view) {
+    const auto& model = view.get<comps::JointModel>(entity);
+    const auto& state = view.get<comps::JointState>(entity);
+    if (state.broken || model.parentLink == entt::null
+        || model.childLink == entt::null
+        || model.parentLink == model.childLink) {
+      continue;
+    }
+
+    const bool rigidA = registry.all_of<comps::RigidBodyTag>(model.parentLink);
+    const bool rigidB = registry.all_of<comps::RigidBodyTag>(model.childLink);
+    if (rigidA && rigidB) {
+      DART_SIMULATION_THROW_T_IF(
+          !model.hasRigidBodyPairConstraintGeometry,
+          InvalidOperationException,
+          "Sequential-impulse rigid joint is missing its canonical pair-row "
+          "geometry");
+    }
+
+    // The count must accept exactly the joints the shared extractor accepts,
+    // including its degenerate and non-finite skip rules, so a legitimately
+    // skipped joint never trips the coverage check mid-step.
+    const std::optional<detail::RigidPairConstraintEligibility> eligibility
+        = detail::eligibleRigidPairConstraint(
+            registry,
+            entity,
+            model,
+            state,
+            [](entt::entity, const comps::JointModel& joint) {
+              return detail::rigidPairConstraintGeometryFromJointModel(joint);
+            });
+    if (eligibility.has_value()) {
+      ++expected;
+    }
+  }
+  return expected;
+}
+
+//==============================================================================
+double rigidSequentialImpulseLinearEffectiveMass(
+    const RigidSequentialImpulseJointConstraint& constraint,
+    const Eigen::Vector3d& armA,
+    const Eigen::Vector3d& armB,
+    const Eigen::Vector3d& axis)
+{
+  const Eigen::Vector3d crossA = armA.cross(axis);
+  const Eigen::Vector3d crossB = armB.cross(axis);
+  return constraint.invMassA + constraint.invMassB
+         + axis.dot(
+             (constraint.invInertiaA * crossA).cross(armA)
+             + (constraint.invInertiaB * crossB).cross(armB));
+}
+
+//==============================================================================
+double rigidSequentialImpulseAngularEffectiveMass(
+    const RigidSequentialImpulseJointConstraint& constraint,
+    const Eigen::Vector3d& axis)
+{
+  return axis.dot((constraint.invInertiaA + constraint.invInertiaB) * axis);
+}
+
+//==============================================================================
+void applyRigidSequentialImpulseJointLinearImpulse(
+    detail::WorldRegistry& registry,
+    const RigidSequentialImpulseJointConstraint& constraint,
+    const Eigen::Vector3d& armA,
+    const Eigen::Vector3d& armB,
+    const Eigen::Vector3d& impulse)
+{
+  auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+  auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+  velocityB.linear += constraint.invMassB * impulse;
+  velocityB.angular += constraint.invInertiaB * armB.cross(impulse);
+  velocityA.linear -= constraint.invMassA * impulse;
+  velocityA.angular -= constraint.invInertiaA * armA.cross(impulse);
+}
+
+//==============================================================================
+void applyRigidSequentialImpulseJointAngularImpulse(
+    detail::WorldRegistry& registry,
+    const RigidSequentialImpulseJointConstraint& constraint,
+    const Eigen::Vector3d& impulse)
+{
+  auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+  auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+  velocityB.angular += constraint.invInertiaB * impulse;
+  velocityA.angular -= constraint.invInertiaA * impulse;
+}
+
+//==============================================================================
+template <typename ConstraintVector>
+std::size_t assembleRigidSequentialImpulseJointsInto(
+    ConstraintVector& constraints,
+    const detail::WorldRegistry& registry,
+    std::span<const detail::RigidPairConstraintInput> inputs)
+{
+  constraints.clear();
+  constraints.reserve(inputs.size());
+  std::size_t activeRows = 0u;
+
+  for (const auto& input : inputs) {
+    const auto* model = registry.try_get<comps::JointModel>(input.joint);
+    const auto* state = registry.try_get<comps::JointState>(input.joint);
+    DART_SIMULATION_THROW_T_IF(
+        model == nullptr || state == nullptr || state->broken,
+        InvalidOperationException,
+        "Sequential-impulse rigid joint extraction produced a stale or "
+        "broken joint row");
+    const bool validBodyA = registry.all_of<
+        comps::RigidBodyTag,
+        comps::Transform,
+        comps::Velocity,
+        comps::MassProperties>(input.bodyA);
+    const bool validBodyB = registry.all_of<
+        comps::RigidBodyTag,
+        comps::Transform,
+        comps::Velocity,
+        comps::MassProperties>(input.bodyB);
+    DART_SIMULATION_THROW_T_IF(
+        input.bodyA == entt::null || input.bodyB == entt::null
+            || input.bodyA == input.bodyB || !validBodyA || !validBodyB,
+        NotImplementedException,
+        "Sequential-impulse rigid pair constraints require two distinct free "
+        "rigid-body endpoints");
+    DART_SIMULATION_THROW_T_IF(
+        !input.anchorsAreLocal || !input.anchorA.allFinite()
+            || !input.anchorB.allFinite()
+            || !input.targetRelativeOrientation.coeffs().allFinite()
+            || input.targetRelativeOrientation.norm() == 0.0
+            || !input.linearAxes.allFinite() || !input.angularAxes.allFinite(),
+        InvalidOperationException,
+        "Sequential-impulse rigid pair constraint geometry is invalid");
+
+    RigidSequentialImpulseJointConstraint constraint;
+    constraint.joint = input.joint;
+    constraint.bodyA = input.bodyA;
+    constraint.bodyB = input.bodyB;
+    constraint.localAnchorA = input.anchorA;
+    constraint.localAnchorB = input.anchorB;
+    constraint.targetRelativeOrientation
+        = normalizedRigidSequentialImpulseOrientation(
+            input.targetRelativeOrientation);
+    constraint.linearAxisMask = input.linearAxisMask;
+    constraint.angularAxisMask = input.angularAxisMask;
+    for (int axis = 0; axis < 3; ++axis) {
+      if (rigidSequentialImpulseJointAxisEnabled(
+              constraint.linearAxisMask, axis)) {
+        const double norm = input.linearAxes.col(axis).norm();
+        DART_SIMULATION_THROW_T_IF(
+            !(norm > 0.0) || !std::isfinite(norm),
+            InvalidOperationException,
+            "Sequential-impulse rigid joint has an invalid linear row axis");
+        constraint.linearAxes.col(axis) = input.linearAxes.col(axis) / norm;
+        ++activeRows;
+      }
+      if (rigidSequentialImpulseJointAxisEnabled(
+              constraint.angularAxisMask, axis)) {
+        const double norm = input.angularAxes.col(axis).norm();
+        DART_SIMULATION_THROW_T_IF(
+            !(norm > 0.0) || !std::isfinite(norm),
+            InvalidOperationException,
+            "Sequential-impulse rigid joint has an invalid angular row axis");
+        constraint.angularAxes.col(axis) = input.angularAxes.col(axis) / norm;
+        ++activeRows;
+      }
+    }
+
+    if (input.useLinearMotor) {
+      const double norm = input.linearAxes.col(2).norm();
+      DART_SIMULATION_THROW_T_IF(
+          !(norm > 0.0) || !std::isfinite(norm)
+              || !std::isfinite(input.motorTargetSpeed)
+              || !(input.motorMaxForce > 0.0)
+              || std::isnan(input.motorMaxForce),
+          InvalidOperationException,
+          "Sequential-impulse rigid joint has an invalid linear motor row");
+      constraint.linearAxes.col(2) = input.linearAxes.col(2) / norm;
+    }
+    if (input.useAngularMotor) {
+      const double norm = input.angularAxes.col(2).norm();
+      DART_SIMULATION_THROW_T_IF(
+          !(norm > 0.0) || !std::isfinite(norm)
+              || !std::isfinite(input.motorTargetSpeed)
+              || !(input.motorMaxTorque > 0.0)
+              || std::isnan(input.motorMaxTorque),
+          InvalidOperationException,
+          "Sequential-impulse rigid joint has an invalid angular motor row");
+      constraint.angularAxes.col(2) = input.angularAxes.col(2) / norm;
+    }
+
+    constraint.staticA
+        = detail::hasPrescribedRigidBodyContactResponse(registry, input.bodyA);
+    constraint.staticB
+        = detail::hasPrescribedRigidBodyContactResponse(registry, input.bodyB);
+    const auto& massA = registry.get<comps::MassProperties>(input.bodyA);
+    const auto& massB = registry.get<comps::MassProperties>(input.bodyB);
+    const auto& transformA = registry.get<comps::Transform>(input.bodyA);
+    const auto& transformB = registry.get<comps::Transform>(input.bodyB);
+    constraint.invMassA
+        = constraint.staticA ? 0.0 : detail::inverseMassOf(massA);
+    constraint.invMassB
+        = constraint.staticB ? 0.0 : detail::inverseMassOf(massB);
+    constraint.invInertiaA
+        = constraint.staticA ? Eigen::Matrix3d::Zero()
+                             : detail::inverseWorldInertiaOf(massA, transformA);
+    constraint.invInertiaB
+        = constraint.staticB ? Eigen::Matrix3d::Zero()
+                             : detail::inverseWorldInertiaOf(massB, transformB);
+    DART_SIMULATION_THROW_T_IF(
+        constraint.staticA && constraint.staticB,
+        InvalidOperationException,
+        "Sequential-impulse rigid pair constraint has no dynamic endpoint");
+
+    constraint.useLinearMotor = input.useLinearMotor;
+    constraint.useAngularMotor = input.useAngularMotor;
+    constraint.motorTargetSpeed = input.motorTargetSpeed;
+    constraint.motorMaxForce = input.motorMaxForce;
+    constraint.motorMaxTorque = input.motorMaxTorque;
+    constraint.breakForce = model->breakForce;
+    if (constraint.useLinearMotor) {
+      ++activeRows;
+    }
+    if (constraint.useAngularMotor) {
+      ++activeRows;
+    }
+    constraints.push_back(constraint);
+  }
+
+  return activeRows;
+}
+
+//==============================================================================
+template <typename ConstraintVector>
+void sweepRigidSequentialImpulseJoints(
+    detail::WorldRegistry& registry,
+    ConstraintVector& constraints,
+    double timeStep)
+{
+  for (auto& constraint : constraints) {
+    const auto& transformA = registry.get<comps::Transform>(constraint.bodyA);
+    const auto& transformB = registry.get<comps::Transform>(constraint.bodyB);
+    const Eigen::Vector3d armA = rigidSequentialImpulseJointWorldArm(
+        transformA, constraint.localAnchorA);
+    const Eigen::Vector3d armB = rigidSequentialImpulseJointWorldArm(
+        transformB, constraint.localAnchorB);
+
+    for (int row = 0; row < 3; ++row) {
+      if (!rigidSequentialImpulseJointAxisEnabled(
+              constraint.linearAxisMask, row)) {
+        continue;
+      }
+      const Eigen::Vector3d axis = constraint.linearAxes.col(row);
+      const double effectiveMass = rigidSequentialImpulseLinearEffectiveMass(
+          constraint, armA, armB, axis);
+      if (!(effectiveMass > 0.0) || !std::isfinite(effectiveMass)) {
+        continue;
+      }
+
+      const auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+      const auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+      const double relativeVelocity = (computeRigidBodyContactPointVelocity(
+                                           velocityB, armB, constraint.staticB)
+                                       - computeRigidBodyContactPointVelocity(
+                                           velocityA, armA, constraint.staticA))
+                                          .dot(axis);
+      const double lambda = -relativeVelocity / effectiveMass;
+      if (!std::isfinite(lambda) || lambda == 0.0) {
+        continue;
+      }
+      constraint.linearImpulses[static_cast<std::size_t>(row)] += lambda;
+      applyRigidSequentialImpulseJointLinearImpulse(
+          registry, constraint, armA, armB, lambda * axis);
+    }
+
+    for (int row = 0; row < 3; ++row) {
+      if (!rigidSequentialImpulseJointAxisEnabled(
+              constraint.angularAxisMask, row)) {
+        continue;
+      }
+      const Eigen::Vector3d axis = constraint.angularAxes.col(row);
+      const double effectiveMass
+          = rigidSequentialImpulseAngularEffectiveMass(constraint, axis);
+      if (!(effectiveMass > 0.0) || !std::isfinite(effectiveMass)) {
+        continue;
+      }
+
+      const auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+      const auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+      const double relativeVelocity
+          = (rigidSequentialImpulseJointAngularVelocity(
+                 velocityB, constraint.staticB)
+             - rigidSequentialImpulseJointAngularVelocity(
+                 velocityA, constraint.staticA))
+                .dot(axis);
+      const double lambda = -relativeVelocity / effectiveMass;
+      if (!std::isfinite(lambda) || lambda == 0.0) {
+        continue;
+      }
+      constraint.angularImpulses[static_cast<std::size_t>(row)] += lambda;
+      applyRigidSequentialImpulseJointAngularImpulse(
+          registry, constraint, lambda * axis);
+    }
+
+    if (constraint.useLinearMotor) {
+      const Eigen::Vector3d axis = constraint.linearAxes.col(2);
+      const double effectiveMass = rigidSequentialImpulseLinearEffectiveMass(
+          constraint, armA, armB, axis);
+      if (effectiveMass > 0.0 && std::isfinite(effectiveMass)) {
+        const auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+        const auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+        const double relativeVelocity
+            = (computeRigidBodyContactPointVelocity(
+                   velocityB, armB, constraint.staticB)
+               - computeRigidBodyContactPointVelocity(
+                   velocityA, armA, constraint.staticA))
+                  .dot(axis);
+        const double limit = constraint.motorMaxForce * timeStep;
+        const double candidate
+            = constraint.linearMotorImpulse
+              + (constraint.motorTargetSpeed - relativeVelocity)
+                    / effectiveMass;
+        const double clamped = std::clamp(candidate, -limit, limit);
+        const double lambda = clamped - constraint.linearMotorImpulse;
+        constraint.linearMotorImpulse = clamped;
+        if (std::isfinite(lambda) && lambda != 0.0) {
+          applyRigidSequentialImpulseJointLinearImpulse(
+              registry, constraint, armA, armB, lambda * axis);
+        }
+      }
+    }
+
+    if (constraint.useAngularMotor) {
+      const Eigen::Vector3d axis = constraint.angularAxes.col(2);
+      const double effectiveMass
+          = rigidSequentialImpulseAngularEffectiveMass(constraint, axis);
+      if (effectiveMass > 0.0 && std::isfinite(effectiveMass)) {
+        const auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+        const auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+        const double relativeVelocity
+            = (rigidSequentialImpulseJointAngularVelocity(
+                   velocityB, constraint.staticB)
+               - rigidSequentialImpulseJointAngularVelocity(
+                   velocityA, constraint.staticA))
+                  .dot(axis);
+        const double limit = constraint.motorMaxTorque * timeStep;
+        const double candidate
+            = constraint.angularMotorImpulse
+              + (constraint.motorTargetSpeed - relativeVelocity)
+                    / effectiveMass;
+        const double clamped = std::clamp(candidate, -limit, limit);
+        const double lambda = clamped - constraint.angularMotorImpulse;
+        constraint.angularMotorImpulse = clamped;
+        if (std::isfinite(lambda) && lambda != 0.0) {
+          applyRigidSequentialImpulseJointAngularImpulse(
+              registry, constraint, lambda * axis);
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+template <typename ConstraintVector>
+std::size_t markBrokenRigidSequentialImpulseJoints(
+    detail::WorldRegistry& registry,
+    const ConstraintVector& constraints,
+    double timeStep)
+{
+  if (!(timeStep > 0.0) || !std::isfinite(timeStep)) {
+    return 0u;
+  }
+
+  const double inverseTimeStep = 1.0 / timeStep;
+  std::size_t broken = 0u;
+  for (const auto& constraint : constraints) {
+    if (!(constraint.breakForce > 0.0)
+        || !std::isfinite(constraint.breakForce)) {
+      continue;
+    }
+
+    double impulseSquared = 0.0;
+    for (const double impulse : constraint.linearImpulses) {
+      impulseSquared += impulse * impulse;
+    }
+    for (const double impulse : constraint.angularImpulses) {
+      impulseSquared += impulse * impulse;
+    }
+    impulseSquared
+        += constraint.linearMotorImpulse * constraint.linearMotorImpulse;
+    impulseSquared
+        += constraint.angularMotorImpulse * constraint.angularMotorImpulse;
+    const double load = std::sqrt(impulseSquared) * inverseTimeStep;
+    if (load < constraint.breakForce) {
+      continue;
+    }
+
+    auto& state = registry.get<comps::JointState>(constraint.joint);
+    if (!state.broken) {
+      state.broken = true;
+      ++broken;
+    }
+  }
+  return broken;
+}
+
+//==============================================================================
+void applyRigidSequentialImpulseOrientationCorrection(
+    comps::Transform& transform, const Eigen::Vector3d& rotationVector)
+{
+  const double angle = rotationVector.norm();
+  if (!(angle > 0.0) || !std::isfinite(angle)) {
+    return;
+  }
+
+  Eigen::Quaterniond correction(
+      Eigen::AngleAxisd(angle, rotationVector / angle));
+  transform.orientation = normalizedRigidSequentialImpulseOrientation(
+      correction
+      * normalizedRigidSequentialImpulseOrientation(transform.orientation));
+}
+
+//==============================================================================
+template <typename ConstraintVector>
+void postStabilizeRigidSequentialImpulseJoints(
+    detail::WorldRegistry& registry,
+    const ConstraintVector& constraints,
+    std::size_t iterations)
+{
+  constexpr double correctionFactor
+      = detail::kRigidContactPositionCorrectionFactor;
+  for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+    for (const auto& constraint : constraints) {
+      if (registry.get<comps::JointState>(constraint.joint).broken) {
+        continue;
+      }
+
+      auto& transformA = registry.get<comps::Transform>(constraint.bodyA);
+      auto& transformB = registry.get<comps::Transform>(constraint.bodyB);
+      for (int row = 0; row < 3; ++row) {
+        if (!rigidSequentialImpulseJointAxisEnabled(
+                constraint.linearAxisMask, row)) {
+          continue;
+        }
+
+        const Eigen::Vector3d armA = rigidSequentialImpulseJointWorldArm(
+            transformA, constraint.localAnchorA);
+        const Eigen::Vector3d armB = rigidSequentialImpulseJointWorldArm(
+            transformB, constraint.localAnchorB);
+        const Eigen::Vector3d axis = constraint.linearAxes.col(row);
+        const double effectiveMass = rigidSequentialImpulseLinearEffectiveMass(
+            constraint, armA, armB, axis);
+        if (!(effectiveMass > 0.0) || !std::isfinite(effectiveMass)) {
+          continue;
+        }
+
+        const Eigen::Vector3d anchorA = transformA.position + armA;
+        const Eigen::Vector3d anchorB = transformB.position + armB;
+        const double error = axis.dot(anchorB - anchorA);
+        const double lambda = -correctionFactor * error / effectiveMass;
+        if (!std::isfinite(lambda) || lambda == 0.0) {
+          continue;
+        }
+        const Eigen::Vector3d correction = lambda * axis;
+        transformB.position += constraint.invMassB * correction;
+        transformA.position -= constraint.invMassA * correction;
+        applyRigidSequentialImpulseOrientationCorrection(
+            transformB, constraint.invInertiaB * armB.cross(correction));
+        applyRigidSequentialImpulseOrientationCorrection(
+            transformA, -constraint.invInertiaA * armA.cross(correction));
+      }
+
+      for (int row = 0; row < 3; ++row) {
+        if (!rigidSequentialImpulseJointAxisEnabled(
+                constraint.angularAxisMask, row)) {
+          continue;
+        }
+
+        const Eigen::Vector3d axis = constraint.angularAxes.col(row);
+        const double effectiveMass
+            = rigidSequentialImpulseAngularEffectiveMass(constraint, axis);
+        if (!(effectiveMass > 0.0) || !std::isfinite(effectiveMass)) {
+          continue;
+        }
+        const Eigen::Quaterniond orientationA
+            = normalizedRigidSequentialImpulseOrientation(
+                transformA.orientation);
+        const Eigen::Quaterniond targetOrientationB
+            = normalizedRigidSequentialImpulseOrientation(
+                orientationA * constraint.targetRelativeOrientation);
+        const double error = axis.dot(
+            detail::rigidPairConstraintOrientationError(
+                transformB.orientation, targetOrientationB));
+        const double lambda = -correctionFactor * error / effectiveMass;
+        if (!std::isfinite(lambda) || lambda == 0.0) {
+          continue;
+        }
+        const Eigen::Vector3d correction = lambda * axis;
+        applyRigidSequentialImpulseOrientationCorrection(
+            transformB, constraint.invInertiaB * correction);
+        applyRigidSequentialImpulseOrientationCorrection(
+            transformA, -constraint.invInertiaA * correction);
+      }
+    }
+  }
+}
+
 } // namespace
 
 struct RigidBodyContactStage::AvbdScratch
@@ -484,6 +1059,26 @@ struct RigidBodyContactStage::AvbdScratch
     motorInventory.records().clear();
     distanceSpringInventory.records().clear();
     solveScratch.clear();
+  }
+
+  void clearPointJointWarmStart()
+  {
+    pointJoints.clear();
+    jointLinearInventory.records().clear();
+    jointAngularInventory.records().clear();
+    motorInventory.records().clear();
+  }
+
+  void clearContactWarmStart()
+  {
+    normalInventory.records().clear();
+    frictionInventory.records().clear();
+  }
+
+  void clearSequentialImpulseOwnedWarmStart()
+  {
+    clearContactWarmStart();
+    clearPointJointWarmStart();
   }
 
   void reserve(
@@ -538,14 +1133,27 @@ struct RigidBodyContactStage::AvbdScratch
 //==============================================================================
 struct RigidBodyContactStage::ContactScratch
 {
+  using RigidPairInputAllocator
+      = common::StlAllocator<detail::RigidPairConstraintInput>;
+  using SequentialImpulseJointAllocator
+      = common::StlAllocator<RigidSequentialImpulseJointConstraint>;
+
   ContactScratch() = default;
 
   explicit ContactScratch(common::MemoryAllocator& allocator)
-    : problem(allocator)
+    : problem(allocator),
+      rigidPairInputs(RigidPairInputAllocator{allocator}),
+      sequentialImpulseJoints(SequentialImpulseJointAllocator{allocator})
   {
   }
 
   RigidBodyContactProblem problem;
+  std::vector<detail::RigidPairConstraintInput, RigidPairInputAllocator>
+      rigidPairInputs;
+  std::vector<
+      RigidSequentialImpulseJointConstraint,
+      SequentialImpulseJointAllocator>
+      sequentialImpulseJoints;
 };
 
 //==============================================================================
@@ -674,6 +1282,10 @@ void RigidBodyContactStage::prepare(World& world)
 
   const bool mayHavePointJointConfigs
       = dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
+  const std::size_t rigidPairCapacity
+      = registry
+            .view<comps::JointModel, comps::JointState, comps::JointActuation>()
+            .size_hint();
   const std::size_t jointCapacity
       = mayHavePointJointConfigs
             ? registry
@@ -682,6 +1294,10 @@ void RigidBodyContactStage::prepare(World& world)
                       dvbd::AvbdRigidWorldPointJointConfig>()
                   .size_hint()
             : 0u;
+  m_contactScratch->rigidPairInputs.clear();
+  m_contactScratch->rigidPairInputs.reserve(rigidPairCapacity);
+  m_contactScratch->sequentialImpulseJoints.clear();
+  m_contactScratch->sequentialImpulseJoints.reserve(rigidPairCapacity);
   const auto* distanceSpringStorage
       = registry.storage<dvbd::AvbdRigidWorldDistanceSpringConfig>();
   const std::size_t distanceSpringCapacity
@@ -723,6 +1339,8 @@ void RigidBodyContactStage::prepare(World& world)
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
+  const bool useSequentialImpulseFamily
+      = world.getRigidBodySolver() == RigidBodySolver::SequentialImpulse;
   const bool useVbdFamily = world.getRigidBodySolver() == RigidBodySolver::Vbd;
   const bool useAvbdFamily
       = world.getRigidBodySolver() == RigidBodySolver::Avbd;
@@ -734,9 +1352,74 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
                   AugmentedLagrangian;
   const std::string_view solverFamilyName = useVbdFamily ? "VBD" : "AVBD";
 
+  if (m_contactScratch == nullptr) {
+    m_contactScratch = ContactScratchPtr(
+        createContactScratch(m_memoryManager),
+        ContactScratchDeleter{m_memoryManager});
+  }
+  auto& sequentialImpulseJoints = m_contactScratch->sequentialImpulseJoints;
+  auto& rigidPairInputs = m_contactScratch->rigidPairInputs;
+  rigidPairInputs.clear();
+  sequentialImpulseJoints.clear();
+  if (useSequentialImpulseFamily && m_avbdScratch != nullptr) {
+    // Sequential Impulse owns public hard pair rows independently of AVBD.
+    // Crossing through this family invalidates AVBD's accumulated joint and
+    // motor multipliers, while AVBD compatibility distance-spring state
+    // remains live.
+    m_avbdScratch->clearPointJointWarmStart();
+  }
+  std::size_t sequentialImpulseJointRows = 0u;
+  if (useSequentialImpulseFamily) {
+    const std::size_t expectedJointCount
+        = expectedRigidSequentialImpulseJointCount(registry);
+    if (expectedJointCount == 0u) {
+      // Broken, degenerate, or static-static rigid pair constraints own no
+      // rows; the shared eligibility rule decides both the count and the
+      // extraction.
+    } else {
+      detail::extractRigidPairConstraintInputsInto(
+          registry,
+          rigidPairInputs,
+          /*includeWorldAnchors=*/false);
+      DART_SIMULATION_THROW_T_IF(
+          rigidPairInputs.size() != expectedJointCount,
+          InvalidOperationException,
+          "Sequential-impulse rigid joint extraction covered {} of {} active "
+          "public pair constraints",
+          rigidPairInputs.size(),
+          expectedJointCount);
+      sequentialImpulseJointRows = assembleRigidSequentialImpulseJointsInto(
+          sequentialImpulseJoints, registry, rigidPairInputs);
+    }
+  }
+
+  const auto sweepSequentialImpulseJoints = [&]() {
+    sweepRigidSequentialImpulseJoints(
+        registry, sequentialImpulseJoints, world.getTimeStep());
+  };
+  const auto runSequentialImpulseJointSweeps = [&]() {
+    if (sequentialImpulseJointRows == 0u) {
+      return;
+    }
+    recordSolverDiagnostics(world, m_iterations);
+    for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
+      sweepSequentialImpulseJoints();
+    }
+  };
+  const auto finalizeSequentialImpulseJoints = [&]() {
+    if (sequentialImpulseJointRows == 0u) {
+      return;
+    }
+    (void)markBrokenRigidSequentialImpulseJoints(
+        registry, sequentialImpulseJoints, world.getTimeStep());
+    postStabilizeRigidSequentialImpulseJoints(
+        registry, sequentialImpulseJoints, m_iterations);
+  };
+
   const auto projectRigidBlockPointJoints = [&]() {
     const bool hasPointJointConfigs
-        = dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
+        = !useSequentialImpulseFamily
+          && dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
     const bool hasDistanceSpringConfigs
         = dvbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(registry);
     if (!hasPointJointConfigs && !hasDistanceSpringConfigs) {
@@ -820,12 +1503,19 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   };
 
   if (shouldSkipRigidBodyContactQuery(world)) {
-    if (projectRigidBlockPointJoints()) {
+    const bool projectedRigidBlockRows = projectRigidBlockPointJoints();
+    if (!useSequentialImpulseFamily && projectedRigidBlockRows) {
       return;
     }
+    runSequentialImpulseJointSweeps();
+    finalizeSequentialImpulseJoints();
 
     if (m_avbdScratch != nullptr) {
-      m_avbdScratch->clear();
+      if (useSequentialImpulseFamily) {
+        m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
+      } else {
+        m_avbdScratch->clear();
+      }
     }
     return;
   }
@@ -843,12 +1533,19 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
   }
   recordRigidContactEnvelopeMetrics(world, registry, contacts);
   if (contacts.empty()) {
-    if (projectRigidBlockPointJoints()) {
+    const bool projectedRigidBlockRows = projectRigidBlockPointJoints();
+    if (!useSequentialImpulseFamily && projectedRigidBlockRows) {
       return;
     }
+    runSequentialImpulseJointSweeps();
+    finalizeSequentialImpulseJoints();
 
     if (m_avbdScratch != nullptr) {
-      m_avbdScratch->clear();
+      if (useSequentialImpulseFamily) {
+        m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
+      } else {
+        m_avbdScratch->clear();
+      }
     }
     return;
   }
@@ -904,7 +1601,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 
     std::size_t appendedJoints = 0u;
     std::size_t appendedDistanceSprings = 0u;
-    if (dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry)) {
+    if (!useSequentialImpulseFamily
+        && dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry)) {
       dvbd::extractAvbdRigidWorldPointJointInputsInto(
           registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
       if (!scratch.pointJoints.empty()) {
@@ -969,6 +1667,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, scratch.snapshot, timeStep);
         if (projection.bodies != 0u) {
+          runSequentialImpulseJointSweeps();
+          finalizeSequentialImpulseJoints();
           return;
         }
       }
@@ -986,7 +1686,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       return;
     }
 
-    m_avbdScratch->clear();
+    if (useSequentialImpulseFamily) {
+      // The private AVBD contact compatibility path declined this envelope,
+      // so SI owns the fallback contact and hard-joint rows. Preserve the
+      // independently active distance-spring continuation inventory.
+      m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
+    } else {
+      m_avbdScratch->clear();
+    }
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -996,11 +1703,23 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       "sequential-impulse fallback is disabled",
       solverFamilyName);
 
+  if (useSequentialImpulseFamily && m_avbdScratch != nullptr) {
+    // This contact envelope reached the SI-owned path rather than the explicit
+    // private AVBD compatibility path above. Its normal and friction
+    // multipliers must not survive a later runtime switch back to AVBD.
+    m_avbdScratch->clearContactWarmStart();
+  }
+
   if (projectRigidBlockPointJoints()) {
-    // Keep the AVBD joint projection active while ordinary contacts continue
-    // through the selected non-AVBD contact solver below.
+    // Keep explicitly configured AVBD distance springs active while ordinary
+    // contacts and public hard pair constraints continue through their
+    // selected non-AVBD solvers below.
   } else if (m_avbdScratch != nullptr) {
-    m_avbdScratch->clear();
+    if (useSequentialImpulseFamily) {
+      m_avbdScratch->clearPointJointWarmStart();
+    } else {
+      m_avbdScratch->clear();
+    }
   }
 
   // Opt-in boxed-LCP path (PLAN-080 WS4): assemble and solve the Coulomb
@@ -1020,7 +1739,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         frameScratch.problem.constraints, frameScratch.systemF);
     captureRigidContactForces(
         registry, world, frameScratch.problem.constraints, world.getTimeStep());
+    runSequentialImpulseJointSweeps();
+    (void)markBrokenRigidSequentialImpulseJoints(
+        registry, sequentialImpulseJoints, world.getTimeStep());
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
+    // The contact-unaware joint pass runs last and may re-introduce shallow
+    // contact penetration; the SI wall oracles budget that residual.
+    postStabilizeRigidSequentialImpulseJoints(
+        registry, sequentialImpulseJoints, m_iterations);
     return;
   }
 
@@ -1038,7 +1764,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       constraints.begin(), constraints.end(), [](const auto& constraint) {
         return constraint.friction > 0.0;
       });
-  if (!constraints.empty()) {
+  if (!constraints.empty() || sequentialImpulseJointRows != 0u) {
     recordSolverDiagnostics(world, m_iterations);
   }
 
@@ -1068,66 +1794,64 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         registry, constraint, lambda * constraint.normal);
   };
 
-  if (!hasFrictionConstraints) {
-    for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
-      for (auto& constraint : constraints) {
-        solveNormalImpulse(constraint);
-      }
-    }
-  } else {
-    for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
-      for (auto& constraint : constraints) {
-        solveNormalImpulse(constraint);
+  for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
+    sweepSequentialImpulseJoints();
+    for (auto& constraint : constraints) {
+      solveNormalImpulse(constraint);
 
-        // Coulomb friction along each tangent, clamped to the friction pyramid
-        // bounded by the accumulated normal impulse.
-        if (constraint.friction > 0.0) {
-          const double frictionLimit
-              = constraint.friction * constraint.normalImpulse;
-          const auto solveFriction = [&](const Eigen::Vector3d& tangent,
-                                         double tangentMass,
-                                         double& tangentImpulse) {
-            if (tangentMass <= 0.0 || frictionLimit <= 0.0) {
-              return;
-            }
-            const auto& velocityA
-                = registry.get<comps::Velocity>(constraint.bodyA);
-            const auto& velocityB
-                = registry.get<comps::Velocity>(constraint.bodyB);
-            const Eigen::Vector3d tangentVelocity
-                = computeRigidBodyContactPointVelocity(
-                      velocityB, constraint.armB, constraint.staticB)
-                  - computeRigidBodyContactPointVelocity(
-                      velocityA, constraint.armA, constraint.staticA);
-            double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
-            const double clampedTangent = std::clamp(
-                tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
-            tangentLambda = clampedTangent - tangentImpulse;
-            tangentImpulse = clampedTangent;
-            if (tangentLambda == 0.0) {
-              return;
-            }
+      // Coulomb friction along each tangent, clamped to the friction pyramid
+      // bounded by the accumulated normal impulse.
+      if (hasFrictionConstraints && constraint.friction > 0.0) {
+        const double frictionLimit
+            = constraint.friction * constraint.normalImpulse;
+        const auto solveFriction = [&](const Eigen::Vector3d& tangent,
+                                       double tangentMass,
+                                       double& tangentImpulse) {
+          if (tangentMass <= 0.0 || frictionLimit <= 0.0) {
+            return;
+          }
+          const auto& velocityA
+              = registry.get<comps::Velocity>(constraint.bodyA);
+          const auto& velocityB
+              = registry.get<comps::Velocity>(constraint.bodyB);
+          const Eigen::Vector3d tangentVelocity
+              = computeRigidBodyContactPointVelocity(
+                    velocityB, constraint.armB, constraint.staticB)
+                - computeRigidBodyContactPointVelocity(
+                    velocityA, constraint.armA, constraint.staticA);
+          double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
+          const double clampedTangent = std::clamp(
+              tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
+          tangentLambda = clampedTangent - tangentImpulse;
+          tangentImpulse = clampedTangent;
+          if (tangentLambda == 0.0) {
+            return;
+          }
 
-            const Eigen::Vector3d tangentImpulseVector
-                = tangentLambda * tangent;
-            applyRigidBodyContactImpulse(
-                registry, constraint, tangentImpulseVector);
-          };
-          solveFriction(
-              constraint.tangent1,
-              constraint.tangentMass1,
-              constraint.tangentImpulse1);
-          solveFriction(
-              constraint.tangent2,
-              constraint.tangentMass2,
-              constraint.tangentImpulse2);
-        }
+          const Eigen::Vector3d tangentImpulseVector = tangentLambda * tangent;
+          applyRigidBodyContactImpulse(
+              registry, constraint, tangentImpulseVector);
+        };
+        solveFriction(
+            constraint.tangent1,
+            constraint.tangentMass1,
+            constraint.tangentImpulse1);
+        solveFriction(
+            constraint.tangent2,
+            constraint.tangentMass2,
+            constraint.tangentImpulse2);
       }
     }
   }
 
   captureRigidContactForces(registry, world, constraints, world.getTimeStep());
+  (void)markBrokenRigidSequentialImpulseJoints(
+      registry, sequentialImpulseJoints, world.getTimeStep());
   resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
+  // The contact-unaware joint pass runs last and may re-introduce shallow
+  // contact penetration; the SI wall oracles budget that residual.
+  postStabilizeRigidSequentialImpulseJoints(
+      registry, sequentialImpulseJoints, m_iterations);
 }
 
 //==============================================================================

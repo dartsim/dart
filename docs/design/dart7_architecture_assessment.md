@@ -166,13 +166,14 @@ record solver identity, and flagship AVBD contact-scene packets recorded
 sequential-impulse contact path. Those rows are now relabeled, the shared
 packet contract records both resolved solver and rigid-contact selection
 source, and the public-AVBD Figure 13 packet uses that contract. One matched
-public fixed-penalty VBD/AVBD Figure 13 comparison now shares a single scene
-builder and fingerprint across its demos and benchmark, binds independent
-outcome oracles and assessed renders, and keeps its same-host timing ratio
-descriptive. The broader substrate gap remains: this is one scenario-specific
-writer rather than a generic harness, legacy packets cannot be generalized
-beyond their recorded identities, and there is still no shared cross-family
-accuracy/performance substrate.
+public Sequential Impulse/VBD/AVBD Figure 13 comparison now shares a single
+scene builder and fingerprint across its demos and benchmark, binds
+independent outcome oracles and assessed renders, records broken-joint
+identities plus retained-row residuals, and keeps its same-host timing ratios
+descriptive. The broader substrate gap remains: XPBD is absent, this is one
+scenario-specific writer rather than a generic harness, legacy packets cannot
+be generalized beyond their recorded identities, and there is still no shared
+cross-family accuracy/performance substrate.
 
 ### F5 — Facade erosion at the edges
 

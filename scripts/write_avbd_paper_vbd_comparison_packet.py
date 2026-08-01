@@ -19,6 +19,7 @@ if str(SCRIPT_DIR) not in sys.path:
 import write_avbd_paper_breakable_wall_packet as shared  # noqa: E402
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
+    PAPER_PACKET_SOURCE_PATHS,
     make_resolved_solver_identity,
 )
 
@@ -41,25 +42,25 @@ RIGID_BODIES = 256
 COLLISION_SHAPES = 256
 BREAKABLE_JOINTS = 712
 IMPACTING_BALLS = 3
-BREAK_FORCE = 8500.0
-CAMERA_DISTANCE = 11.0
-CAMERA_TARGET = (0.0, 0.0, 1.4)
-CAMERA_VIEW = "front"
-VIEW_FOCUS = (
-    "vbd_paper_wall_brick_00_00_visual",
-    "vbd_paper_wall_brick_00_20_visual",
-    "vbd_paper_wall_brick_11_00_visual",
-    "vbd_paper_wall_brick_11_20_visual",
+BREAK_FORCE = shared.BREAK_FORCE
+CAMERA_DISTANCE = shared.CAMERA_DISTANCE
+CAMERA_TARGET = shared.CAMERA_TARGET
+CAMERA_VIEW = shared.CAMERA_VIEW
+VIEW_FOCUS = tuple(
+    f"vbd_paper_wall_brick_{row:02d}_{column:02d}_visual"
+    for row in range(12)
+    for column in range(21)
 )
 
 CHECKPOINTS = {
-    14: {
+    18: {
         "label": "bend",
         "checkpoint": "bend",
         "threshold_checks": {
             "bend_is_spatially_resolved": True,
             "finite_state": True,
             "no_fracture": True,
+            "retained_joint_rows_satisfied": True,
             "topology_retained": True,
             "wall_bend_is_distributed": True,
             "wall_bends": True,
@@ -71,6 +72,7 @@ CHECKPOINTS = {
         "threshold_checks": {
             "finite_state": True,
             "no_fracture": True,
+            "retained_joint_rows_satisfied": True,
             "topology_retained": True,
             "wall_retained": True,
         },
@@ -78,13 +80,20 @@ CHECKPOINTS = {
 }
 
 OUTCOME_ORACLE = {
-    "evaluation_frame": 14,
+    "impact_damage_displacement_threshold": 0.1,
+    "retained_displacement_threshold": 0.5,
+    "impact_band_radius": 0.85,
+    "outside_radius": 1.15,
+    "evaluation_frame": 18,
     "retention_evaluation_frame": 120,
+    "joint_evidence_frames": [18, 120],
     "maximum_broken_joints": 0,
+    "maximum_unbroken_joint_angular_residual_radians": 0.02,
+    "maximum_unbroken_joint_linear_residual": 0.025,
     "minimum_unbroken_joints": BREAKABLE_JOINTS,
-    "minimum_maximum_wall_normal_displacement": 0.20,
-    "minimum_rms_wall_normal_displacement": 0.10,
-    "bent_brick_displacement_threshold": 0.10,
+    "minimum_maximum_wall_normal_displacement": 0.10,
+    "minimum_rms_wall_normal_displacement": 0.05,
+    "bent_brick_displacement_threshold": 0.05,
     "minimum_bent_bricks": 100,
     "minimum_total_retained_fraction": 0.99,
 }
@@ -92,6 +101,7 @@ OUTCOME_ORACLE = {
 BENCHMARK_RUNS = {
     "avbd": "BM_AvbdPaperBreakableWallStep/iterations:120",
     "vbd": "BM_VbdPaperBreakableWallStep/iterations:120",
+    "sequential-impulse": ("BM_SequentialImpulsePaperBreakableWallStep/iterations:120"),
 }
 
 RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
@@ -106,21 +116,8 @@ RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
 )
 
 REPO_ROOT = SCRIPT_DIR.parent
-SOURCE_PATHS = (
-    Path("dart/simulation/world.cpp"),
-    Path("dart/simulation/world.hpp"),
-    Path("dart/simulation/world_options.hpp"),
-    Path("dart/simulation/compute/rigid_body_contact_stage.cpp"),
-    Path("dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp"),
-    Path("dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"),
-    Path("dart/simulation/detail/world_step_schedule.hpp"),
-    Path("python/examples/demos/scenes/avbd_paper_breakable_wall.py"),
-    Path("python/examples/demos/scenes/vbd_paper_breakable_wall.py"),
-    Path("python/tests/integration/test_demos_cycle.py"),
-    Path("tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp"),
-    Path("tests/unit/simulation/world/test_world.cpp"),
-    Path("scripts/avbd_packet_schema.py"),
-    Path("scripts/write_avbd_paper_vbd_comparison_packet.py"),
+SOURCE_PATHS = tuple(
+    Path(path) for path in PAPER_PACKET_SOURCE_PATHS[DEFAULT_OUTPUT.name]
 )
 
 
@@ -289,8 +286,51 @@ def _validate_outcome(
         expected_frame * TIME_STEP,
         f"frame {expected_frame} outcome world_time",
     )
+    shared._validate_joint_evidence(
+        outcome,
+        expected_broken_count=0,
+        expected_broken_ids_sha256=(
+            "e3b0c44298fc1c149afbf4c8996fb924" "27ae41e4649b934ca495991b7852b855"
+        ),
+        expected_outside_unbroken_count=484,
+        label=f"frame {expected_frame} outcome",
+    )
+    shared._require_exact(
+        outcome.get("broken_joint_impact_region_counts"),
+        [0, 0, 0],
+        f"frame {expected_frame} broken_joint_impact_region_counts",
+    )
+    shared._require_exact(
+        outcome.get("broken_joints_outside_impact_regions"),
+        0,
+        f"frame {expected_frame} broken_joints_outside_impact_regions",
+    )
+    maximum_linear_residual = shared._finite_number(
+        outcome.get("maximum_unbroken_joint_linear_residual"),
+        f"frame {expected_frame} maximum_unbroken_joint_linear_residual",
+    )
+    if (
+        maximum_linear_residual
+        > OUTCOME_ORACLE["maximum_unbroken_joint_linear_residual"]
+    ):
+        raise AvbdPaperVbdComparisonPacketError(
+            f"frame {expected_frame} retained-joint linear residual exceeds "
+            "the VBD oracle"
+        )
+    maximum_angular_residual = shared._finite_number(
+        outcome.get("maximum_unbroken_joint_angular_residual_radians"),
+        f"frame {expected_frame} " "maximum_unbroken_joint_angular_residual_radians",
+    )
+    if (
+        maximum_angular_residual
+        > OUTCOME_ORACLE["maximum_unbroken_joint_angular_residual_radians"]
+    ):
+        raise AvbdPaperVbdComparisonPacketError(
+            f"frame {expected_frame} retained-joint angular residual exceeds "
+            "the VBD oracle"
+        )
 
-    if expected_frame == 14:
+    if expected_frame == 18:
         minimums = {
             "maximum_wall_normal_displacement": (
                 OUTCOME_ORACLE["minimum_maximum_wall_normal_displacement"]
@@ -310,15 +350,13 @@ def _validate_outcome(
                     f"frame {expected_frame} outcome {key} must be >= "
                     f"{minimum}, got {value}"
                 )
-        if (
-            shared._finite_number(
-                outcome.get("contact_count"),
-                "frame 14 outcome contact_count",
-            )
-            <= 0.0
-        ):
+        contact_count = shared._finite_number(
+            outcome.get("contact_count"),
+            "frame 18 outcome contact_count",
+        )
+        if contact_count < 0.0:
             raise AvbdPaperVbdComparisonPacketError(
-                "frame 14 must record active impact contact"
+                "frame 18 outcome contact_count must be non-negative"
             )
     else:
         retained = shared._finite_number(
@@ -535,6 +573,11 @@ def _validate_capture(
         logged_latest=events[-1],
         width=width,
     )
+    capture_source_provenance = shared._validate_capture_provenance(
+        manifest,
+        metrics_events=metrics_events,
+        screenshot=screenshot,
+    )
     return (
         {
             "camera": shared._validate_camera(manifest),
@@ -549,6 +592,7 @@ def _validate_capture(
                 "sha256": shared._sha256(manifest_path),
             },
             "scene_metrics": scene_metrics,
+            "source_provenance": capture_source_provenance,
             "scene_metrics_events": {
                 "event_count": len(events),
                 "file": metrics_events.name,
@@ -734,6 +778,7 @@ def _validate_benchmark(
         "release",
         "benchmark library_build_type",
     )
+    benchmark_source_provenance = shared._validate_benchmark_source_provenance(context)
     avbd_median = float(methods["avbd"]["timing"]["median_cpu_time_per_step_ns"])
     vbd_median = float(methods["vbd"]["timing"]["median_cpu_time_per_step_ns"])
     return {
@@ -747,12 +792,15 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
+                "benchmark_source_sha256",
+                "capture_source_provenance_digest",
             )
             if key in context
         },
         "json_sha256": shared._sha256(benchmark_path),
         "methods": methods,
         "scene_spec_fingerprint": expected_fingerprint,
+        "source_provenance": benchmark_source_provenance,
         "comparison": {
             "basis": (
                 "same executable, host, reconstructed scene fingerprint, "
@@ -941,6 +989,25 @@ def _validate_avbd_packet(
             shared.RIGID_CONSTRAINT_ITERATIONS,
             f"linked AVBD frame {expected_frame} outcome iterations",
         )
+        shared._validate_joint_evidence(
+            outcome,
+            expected_broken_count=expected_outcome["broken_joints"],
+            expected_broken_ids_sha256=shared.OUTCOME_ORACLE[
+                "expected_broken_joint_ids_sha256"
+            ],
+            expected_outside_unbroken_count=405,
+            label=f"linked AVBD frame {expected_frame} outcome",
+        )
+        shared._require_exact(
+            outcome.get("broken_joint_impact_region_counts"),
+            [18, 44, 13],
+            f"linked AVBD frame {expected_frame} impact-region counts",
+        )
+        shared._require_exact(
+            outcome.get("broken_joints_outside_impact_regions"),
+            79,
+            f"linked AVBD frame {expected_frame} outside-region count",
+        )
 
     semantic = visual.get("semantic_review")
     if not isinstance(semantic, dict) or semantic.get("verdict") != "pass":
@@ -1121,7 +1188,7 @@ def _validate_visual_review(
             )
 
     expected = {
-        "bend_frame_14": bend_screenshot,
+        "bend_frame_18": bend_screenshot,
         "retention_frame_120": retention_screenshot,
         "paper_figure_13_reference": paper_figure,
     }
@@ -1185,12 +1252,12 @@ def make_packet(
 ) -> dict[str, Any]:
     bend, bend_screenshot = _validate_capture(
         bend_capture_manifest,
-        expected_frame=14,
+        expected_frame=18,
     )
     bend["image_verdict"] = shared._validate_image_verdict(
         bend_image_verdict_json,
         bend_screenshot,
-        expected_frame=14,
+        expected_frame=18,
         expected_scene_id=SCENE_ID,
     )
     retention, retention_screenshot = _validate_capture(
@@ -1290,29 +1357,43 @@ def make_packet(
             ),
         },
         "reproduction": {
-            "benchmark_command": (
-                "pixi run bm -- bm_avbd_rigid_fixed_joint -- "
-                "--benchmark_filter="
-                "'^BM_(Avbd|Vbd)PaperBreakableWallStep/iterations:120$' "
-                "--benchmark_repetitions=5 "
-                "--benchmark_report_aggregates_only=true "
-                "--benchmark_out=<benchmark-json> "
-                "--benchmark_out_format=json"
+            "benchmark_command": shared._benchmark_reproduction_command(
+                "^BM_(Avbd|Vbd)PaperBreakableWallStep/iterations:120$"
             ),
             "capture_commands": [
                 (
                     "pixi run py-demo-capture -- "
-                    f"--scene {SCENE_ID} --frames 14 --width 1280 "
-                    "--height 720 --view front --camera-distance 11 "
-                    "--camera-target 0,0,1.4 --capture-label bend "
+                    f"--scene {SCENE_ID} --frames 18 --width 1280 "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label bend "
                     "--output-dir <bend-capture-dir>"
                 ),
                 (
                     "pixi run py-demo-capture -- "
                     f"--scene {SCENE_ID} --frames 120 --width 1280 "
-                    "--height 720 --view front --camera-distance 11 "
-                    "--camera-target 0,0,1.4 --capture-label retention "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label retention "
                     "--output-dir <retention-capture-dir>"
+                ),
+            ],
+            "image_verdict_commands": [
+                (
+                    "pixi run image-verdict -- "
+                    f"<bend-capture-dir>/{SCENE_ID}_bend.png "
+                    f"--meta scene={SCENE_ID} --meta frame=18 "
+                    f"--meta view={CAMERA_VIEW} "
+                    "--out <bend-capture-dir>/image_verdict.json"
+                ),
+                (
+                    "pixi run image-verdict -- "
+                    f"<retention-capture-dir>/{SCENE_ID}_retention.png "
+                    f"--meta scene={SCENE_ID} --meta frame=120 "
+                    f"--meta view={CAMERA_VIEW} "
+                    "--out <retention-capture-dir>/image_verdict.json"
                 ),
             ],
         },

@@ -128,7 +128,7 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_breakable_joint_scale"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,

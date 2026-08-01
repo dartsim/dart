@@ -72,7 +72,10 @@ enum class ActuatorType
 ///
 /// The policy applies to public world-owned point-joint facades. A finite
 /// linear or angular stiffness makes the matching projected rows finite-
-/// stiffness rows; infinity keeps the default hard-constraint behavior.
+/// stiffness rows under the VBD and AVBD rigid-body families; infinity keeps
+/// the default hard-constraint behavior. The default Sequential Impulse
+/// family supports hard rows only and fails closed before the next step when
+/// a finite stiffness is configured.
 struct JointConstraintProjectionPolicy
 {
   /// Starting projection stiffness. Infinity keeps the hard-start projection.

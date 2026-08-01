@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import html
 from html.parser import HTMLParser
+from hashlib import sha256
 import importlib.util
 import json
 import pathlib
@@ -334,6 +335,22 @@ def test_visual_capture_manifest_records_image_evidence(
     }
     assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
     assert pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).is_file()
+    source_provenance = manifest["capture_source_provenance"]
+    assert source_provenance["algorithm"] == (
+        "sha256-length-prefixed-capture-source-tree-v1"
+    )
+    assert source_provenance["file_count"] > 0
+    assert len(source_provenance["digest"]) == 64
+    artifact_provenance = manifest["capture_artifact_provenance"]
+    assert artifact_provenance["algorithm"] == "sha256-v1"
+    assert artifact_provenance["screenshot_sha256"] == sha256(
+        pathlib.Path(manifest["artifacts"]["screenshot"]).read_bytes()
+    ).hexdigest()
+    assert artifact_provenance["scene_metrics_events_sha256"] == sha256(
+        pathlib.Path(
+            manifest["artifacts"]["scene_metrics_events"]
+        ).read_bytes()
+    ).hexdigest()
     assert len(list((output / "png_frames").glob("frame_*.png"))) == 2
     assert manifest["resolved_solver_identity"] == {
         "executor": "Sequential",

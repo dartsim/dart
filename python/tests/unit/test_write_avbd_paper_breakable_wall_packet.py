@@ -52,29 +52,83 @@ def _sha256(path: Path) -> str:
     return sha256(path.read_bytes()).hexdigest()
 
 
-def _outcome(frame: int) -> dict[str, Any]:
+def _broken_joint_records(
+    *,
+    broken_count: int,
+    impact_region_counts: tuple[int, int, int],
+) -> list[dict[str, Any]]:
+    records = []
+    impact_region_count = sum(impact_region_counts)
+    impact_indices = [
+        impact_index
+        for impact_index, count in enumerate(impact_region_counts)
+        for _ in range(count)
+    ]
+    for index in range(broken_count):
+        within_region = index < impact_region_count
+        impact_index = impact_indices[index] if within_region else index % 3
+        records.append(
+            {
+                "angular_residual_radians": 0.01 + 0.0001 * index,
+                "child": {
+                    "body": "brick",
+                    "column": (index + 1) % 21,
+                    "row": (index // 21) % 12,
+                },
+                "id": f"fixture_joint_{index:03d}",
+                "initial_anchor": [
+                    float(index % 21),
+                    0.0,
+                    float((index // 21) % 12),
+                ],
+                "kind": "horizontal" if index % 2 == 0 else "vertical",
+                "linear_residual": 0.001 + 0.000001 * index,
+                "nearest_impact_distance": 0.5 if within_region else 2.0,
+                "nearest_impact_index": impact_index,
+                "parent": {
+                    "body": "brick",
+                    "column": index % 21,
+                    "row": (index // 21) % 12,
+                },
+                "within_impact_band": within_region,
+                "within_impact_region": within_region,
+            }
+        )
+    return records
+
+
+def _broken_joint_ids_sha256(records: list[dict[str, Any]]) -> str:
+    digest = sha256()
+    for joint_id in sorted(record["id"] for record in records):
+        encoded_id = joint_id.encode("utf-8")
+        digest.update(struct.pack("<Q", len(encoded_id)))
+        digest.update(encoded_id)
+    return digest.hexdigest()
+
+
+def _outcome(module, frame: int) -> dict[str, Any]:
     expected = {
         60: {
-            "bands": [3, 9, 4],
-            "broken": 359,
-            "damage": False,
+            "bands": [13, 14, 12],
+            "broken": 154,
+            "damage": True,
             "evaluated": False,
-            "outside": 0.9337016574585635,
+            "outside": 1.0,
             "status": "pre-evaluation",
             "thresholds_pass": False,
-            "total": 0.8611111111111112,
-            "unbroken": 353,
+            "total": 0.996031746031746,
+            "unbroken": 558,
         },
         120: {
-            "bands": [4, 10, 6],
-            "broken": 359,
+            "bands": [11, 14, 11],
+            "broken": 154,
             "damage": True,
             "evaluated": True,
-            "outside": 0.9116022099447514,
+            "outside": 0.9943181818181818,
             "status": "pass",
             "thresholds_pass": True,
-            "total": 0.8253968253968254,
-            "unbroken": 353,
+            "total": 0.9920634920634921,
+            "unbroken": 558,
         },
     }.get(
         frame,
@@ -90,30 +144,72 @@ def _outcome(frame: int) -> dict[str, Any]:
             "unbroken": 712,
         },
     )
+    records = (
+        _broken_joint_records(
+            broken_count=expected["broken"],
+            impact_region_counts=(18, 44, 13),
+        )
+        if frame in (60, 120)
+        else []
+    )
+    identity_digest = _broken_joint_ids_sha256(
+        _broken_joint_records(
+            broken_count=expected["broken"],
+            impact_region_counts=(18, 44, 13),
+        )
+    )
     return {
         "ball_positions": [[0.0, 1.0, 2.0]] * 3,
         "ball_velocities": [[3.0, 4.0, 5.0]] * 3,
+        "broken_joint_identity_count": expected["broken"],
+        "broken_joint_ids_sha256": identity_digest,
+        "broken_joint_impact_region_counts": (
+            [18, 44, 13] if expected["broken"] else [0, 0, 0]
+        ),
+        "broken_joint_records": records,
         "broken_joints": expected["broken"],
+        "broken_joints_outside_impact_regions": (
+            expected["broken"] - 75
+            if expected["broken"]
+            else 0
+        ),
         "contact_count": 12,
         "evaluated": expected["evaluated"],
         "frame": frame,
         "impact_band_displaced_counts": expected["bands"],
         "last_step_iterations": 20,
         "max_brick_displacement": 3.0,
+        "maximum_outside_impact_unbroken_joint_angular_residual_radians": (
+            0.0003
+        ),
+        "maximum_outside_impact_unbroken_joint_linear_residual": 0.001,
+        "maximum_unbroken_joint_angular_residual_radians": 0.0003,
+        "maximum_unbroken_joint_linear_residual": 0.001,
         "outside_brick_count": 181,
+        "outside_impact_unbroken_joint_residual_count": (
+            405 if expected["broken"] else 484
+        ),
         "outside_retained_fraction": expected["outside"],
+        "joint_residuals_finite": True,
+        "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.0001,
+        "rms_outside_impact_unbroken_joint_linear_residual": 0.0005,
+        "rms_unbroken_joint_angular_residual_radians": 0.0001,
+        "rms_unbroken_joint_linear_residual": 0.0005,
         "status": expected["status"],
         "threshold_checks": {
+            "damage_in_three_impact_bands": expected["damage"],
             "finite_state": True,
             "fracture_activated": True,
-            "fracture_localized": True,
+            "fracture_count_bounded": True,
+            "fracture_identity_matches": True,
             "outside_wall_retained": True,
-            "damage_in_three_impact_bands": expected["damage"],
+            "retained_joint_rows_satisfied": True,
             "total_wall_retained": True,
         },
         "thresholds_pass": expected["thresholds_pass"],
         "total_retained_fraction": expected["total"],
         "unbroken_joints": expected["unbroken"],
+        "unbroken_joint_residual_count": expected["unbroken"],
         "world_time": frame / 60.0,
     }
 
@@ -121,12 +217,12 @@ def _outcome(frame: int) -> dict[str, Any]:
 def _metrics(module, frame: int) -> dict[str, Any]:
     return {
         "ball_count": 3,
-        "break_force": 8500.0,
+        "break_force": module.BREAK_FORCE,
         "breakable_joints": 712,
         "brick_count": 252,
         "collision_shapes": 256,
         "executor": "World.step default",
-        "outcome": _outcome(frame),
+        "outcome": _outcome(module, frame),
         "outcome_oracle": dict(module.OUTCOME_ORACLE),
         "paper_locator": module.PAPER_LOCATOR,
         "rigid_bodies": 256,
@@ -164,17 +260,12 @@ def _metrics(module, frame: int) -> dict[str, Any]:
         "time_step_ms": 1000.0 / 60.0,
         "view_report": {
             "camera": {
-                "azimuth": -1.5707963267948966,
-                "distance": 11.0,
-                "elevation": 0.0,
-                "target": [0.0, 0.0, 1.4],
+                "azimuth": module.CAMERA_AZIMUTH,
+                "distance": module.CAMERA_DISTANCE,
+                "elevation": module.CAMERA_ELEVATION,
+                "target": list(module.CAMERA_TARGET),
             },
-            "focus": [
-                "avbd_paper_wall_brick_00_00_visual",
-                "avbd_paper_wall_brick_00_20_visual",
-                "avbd_paper_wall_brick_11_00_visual",
-                "avbd_paper_wall_brick_11_20_visual",
-            ],
+            "focus": list(module.VIEW_FOCUS),
             "issues": [],
             "metrics": {
                 "ambiguity_iou": 0.0,
@@ -221,9 +312,11 @@ def _write_capture(module, tmp_path: Path, frame: int, label: str) -> tuple[Path
             "video": None,
         },
         "camera": {
-            "distance": 11.0,
-            "target": [0.0, 0.0, 1.4],
-            "view": "front",
+            "azimuth": module.math.degrees(module.CAMERA_AZIMUTH),
+            "distance": module.CAMERA_DISTANCE,
+            "elevation": module.math.degrees(module.CAMERA_ELEVATION),
+            "target": list(module.CAMERA_TARGET),
+            "view": module.CAMERA_PRESET,
         },
         "capture": {
             "converted_frames": frame,
@@ -231,6 +324,14 @@ def _write_capture(module, tmp_path: Path, frame: int, label: str) -> tuple[Path
             "requested_frames": frame,
             "width": 8,
         },
+        "capture_artifact_provenance": {
+            "algorithm": module.CAPTURE_ARTIFACT_PROVENANCE_ALGORITHM,
+            "scene_metrics_events_sha256": _sha256(metrics_log),
+            "screenshot_sha256": _sha256(screenshot),
+        },
+        "capture_source_provenance": (
+            module.compute_capture_source_provenance(module.REPO_ROOT)
+        ),
         "capture_label": label,
         "force_drag": None,
         "resolved_solver_identity": {
@@ -262,7 +363,7 @@ def _write_capture(module, tmp_path: Path, frame: int, label: str) -> tuple[Path
         "metadata": {
             "frame": str(frame),
             "scene": module.SCENE_ID,
-            "view": "front",
+            "view": module.CAMERA_VIEW,
         },
         "pass": True,
         "schema_version": "dart.image_verdict/v1",
@@ -326,6 +427,14 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
             {
                 "benchmarks": rows,
                 "context": {
+                    "benchmark_source_sha256": _sha256(
+                        module.REPO_ROOT / module.BENCHMARK_SOURCE_PATH
+                    ),
+                    "capture_source_provenance_digest": (
+                        module.compute_capture_source_provenance(
+                            module.REPO_ROOT
+                        )["digest"]
+                    ),
                     "executable": (
                         "build/default/cpp/Release/bin/"
                         "bm_avbd_rigid_fixed_joint"
@@ -345,6 +454,13 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
 
 
 def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
+    fixture_records = _broken_joint_records(
+        broken_count=154,
+        impact_region_counts=(18, 44, 13),
+    )
+    module.OUTCOME_ORACLE["expected_broken_joint_ids_sha256"] = (
+        _broken_joint_ids_sha256(fixture_records)
+    )
     impact_manifest, impact_verdict = _write_capture(
         module, tmp_path, 60, "impact"
     )
@@ -403,7 +519,7 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
         ),
         "verdict": "pass",
         "visible_observation": (
-            "The fixed front views show damage at each target band and "
+            "The fixed front-oblique views show damage at each target band and "
             "substantial upper and side wall regions still standing."
         ),
     }
@@ -430,7 +546,7 @@ def test_make_packet_records_public_avbd_figure13_evidence(
 
     packet = module.make_packet(**inputs)
 
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
         "recorded_from": (
@@ -459,10 +575,18 @@ def test_make_packet_records_public_avbd_figure13_evidence(
     ("mutation", "message"),
     [
         ("camera", "serialized camera"),
+        ("capture_source", "capture source provenance digest"),
+        ("capture_artifact", "capture artifact screenshot_sha256"),
         ("view_report_gate", "ambiguity_iou fails"),
         ("solver", "resolve public_avbd"),
         ("oracle", "outcome threshold_checks"),
+        ("joint_identity", "broken-joint identity digest"),
+        ("joint_residual", "retained-joint linear residual exceeds"),
         ("benchmark", "public_avbd_family"),
+        (
+            "benchmark_source",
+            "benchmark capture_source_provenance_digest",
+        ),
         ("events_empty", "expected 60 scene metric events"),
         ("events_unrelated", "event must be"),
         ("events_count", "expected 60 scene metric events"),
@@ -487,6 +611,16 @@ def test_make_packet_fails_closed_on_mismatched_evidence(
         path = inputs["impact_capture_manifest"]
         data = json.loads(path.read_text())
         del data["camera"]
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "capture_source":
+        path = inputs["impact_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["capture_source_provenance"]["digest"] = "0" * 64
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "capture_artifact":
+        path = inputs["impact_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["capture_artifact_provenance"]["screenshot_sha256"] = "0" * 64
         path.write_text(json.dumps(data), encoding="utf-8")
     elif mutation == "view_report_gate":
         path = inputs["impact_capture_manifest"]
@@ -515,7 +649,7 @@ def test_make_packet_fails_closed_on_mismatched_evidence(
         path = inputs["outcome_capture_manifest"]
         data = json.loads(path.read_text())
         data["scene_metrics"]["latest"]["metrics"]["outcome"]["threshold_checks"][
-            "fracture_localized"
+            "fracture_count_bounded"
         ] = False
         path.write_text(json.dumps(data), encoding="utf-8")
         events_path = Path(data["artifacts"]["scene_metrics_events"])
@@ -525,7 +659,7 @@ def test_make_packet_fails_closed_on_mismatched_evidence(
             if line
         ]
         events[-1]["metrics"]["outcome"]["threshold_checks"][
-            "fracture_localized"
+            "fracture_count_bounded"
         ] = False
         events_path.write_text(
             "".join(json.dumps(event) + "\n" for event in events),
@@ -536,6 +670,37 @@ def test_make_packet_fails_closed_on_mismatched_evidence(
         data = json.loads(path.read_text())
         data["benchmarks"][0]["public_avbd_family"] = 0.0
         path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "benchmark_source":
+        path = inputs["benchmark_json"]
+        data = json.loads(path.read_text())
+        data["context"]["capture_source_provenance_digest"] = "0" * 64
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation in {"joint_identity", "joint_residual"}:
+        path = inputs["outcome_capture_manifest"]
+        data = json.loads(path.read_text())
+        latest_outcome = data["scene_metrics"]["latest"]["metrics"]["outcome"]
+        events_path = Path(data["artifacts"]["scene_metrics_events"])
+        events = [
+            json.loads(line)
+            for line in events_path.read_text().splitlines()
+            if line
+        ]
+        event_outcome = events[-1]["metrics"]["outcome"]
+        if mutation == "joint_identity":
+            latest_outcome["broken_joint_records"][0]["id"] = "mutated"
+            event_outcome["broken_joint_records"][0]["id"] = "mutated"
+        else:
+            latest_outcome[
+                "maximum_unbroken_joint_linear_residual"
+            ] = 0.1
+            event_outcome[
+                "maximum_unbroken_joint_linear_residual"
+            ] = 0.1
+        path.write_text(json.dumps(data), encoding="utf-8")
+        events_path.write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
     elif mutation.startswith("events_"):
         manifest = json.loads(inputs["impact_capture_manifest"].read_text())
         events_path = Path(manifest["artifacts"]["scene_metrics_events"])

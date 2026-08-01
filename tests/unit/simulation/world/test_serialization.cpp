@@ -2123,6 +2123,7 @@ TEST(Serialization, RigidBodyJointAvbdStiffnessRoundTripsDesignMode)
   namespace sx = dart::simulation;
 
   sx::World world1;
+  world1.setRigidBodySolver(sx::RigidBodySolver::Avbd);
 
   sx::RigidBodyOptions parentOptions;
   parentOptions.isStatic = true;

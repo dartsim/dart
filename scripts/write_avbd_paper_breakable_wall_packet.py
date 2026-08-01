@@ -18,7 +18,15 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
+    PAPER_PACKET_SOURCE_PATHS,
     make_resolved_solver_identity,
+)
+from capture_source_provenance import (  # noqa: E402
+    CAPTURE_ARTIFACT_PROVENANCE_ALGORITHM,
+    CAPTURE_SOURCE_PROVENANCE_ALGORITHM,
+    CAPTURE_SOURCE_ROOTS,
+    CaptureSourceProvenanceError,
+    compute_capture_source_provenance,
 )
 
 DEFAULT_OUTPUT = Path(
@@ -28,6 +36,7 @@ DEFAULT_OUTPUT = Path(
 SCENE_ID = "avbd_paper_breakable_wall"
 BENCHMARK_NAME = "BM_AvbdPaperBreakableWallStep"
 BENCHMARK_RUN = f"{BENCHMARK_NAME}/iterations:120"
+BENCHMARK_SOURCE_PATH = Path("tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp")
 PAPER_LOCATOR = "Section 5.4 and Figure 13, PDF page 10"
 PAPER_PDF_SHA256 = "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6"
 PAPER_FIGURE_SHA256 = "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b"
@@ -39,66 +48,79 @@ RIGID_BODIES = 256
 COLLISION_SHAPES = 256
 BREAKABLE_JOINTS = 712
 IMPACTING_BALLS = 3
-BREAK_FORCE = 8500.0
-CAMERA_DISTANCE = 11.0
-CAMERA_TARGET = (0.0, 0.0, 1.4)
-CAMERA_VIEW = "front"
-VIEW_FOCUS = (
-    "avbd_paper_wall_brick_00_00_visual",
-    "avbd_paper_wall_brick_00_20_visual",
-    "avbd_paper_wall_brick_11_00_visual",
-    "avbd_paper_wall_brick_11_20_visual",
+BREAK_FORCE = 5000.0
+CAMERA_AZIMUTH = -5.0 * math.pi / 8.0
+CAMERA_ELEVATION = 0.62
+CAMERA_DISTANCE = 22.0
+CAMERA_TARGET = (0.0, 0.45, 1.6)
+CAMERA_PRESET = "front"
+CAMERA_VIEW = "front-oblique"
+VIEW_FOCUS = tuple(
+    f"avbd_paper_wall_brick_{row:02d}_{column:02d}_visual"
+    for row in range(12)
+    for column in range(21)
 )
 
 OUTCOME_ORACLE = {
-    "displacement_threshold": 0.5,
     "evaluation_frame": 120,
     "impact_band_radius": 0.85,
-    "maximum_broken_joints": 500,
-    "minimum_broken_joints": 300,
+    "impact_damage_displacement_threshold": 0.1,
+    "joint_evidence_frames": [60, 120],
+    "maximum_broken_joints": 250,
+    "maximum_unbroken_joint_angular_residual_radians": 0.001,
+    "maximum_unbroken_joint_linear_residual": 0.002,
+    "minimum_broken_joints": 150,
     "minimum_displaced_bricks_per_impact_band": 4,
-    "minimum_outside_retained_fraction": 0.8,
-    "minimum_total_retained_fraction": 0.7,
-    "minimum_unbroken_joints": 200,
+    "minimum_outside_retained_fraction": 0.95,
+    "minimum_total_retained_fraction": 0.95,
+    "minimum_unbroken_joints": 450,
     "outside_radius": 1.15,
+    "retained_displacement_threshold": 0.5,
+    "expected_broken_joint_ids_sha256": (
+        "31b187538ac1549563be368a4d7e304d1caef6ea11ba65b624d48f5f27468503"
+    ),
 }
 
 EXPECTED_OUTCOMES = {
     60: {
-        "broken_joints": 359,
+        "broken_joints": 154,
         "evaluated": False,
-        "impact_band_displaced_counts": [3, 9, 4],
-        "outside_retained_fraction": 0.9337016574585635,
+        "impact_band_displaced_counts": [13, 14, 12],
+        "outside_retained_fraction": 1.0,
         "status": "pre-evaluation",
         "threshold_checks": {
-            "damage_in_three_impact_bands": False,
+            "damage_in_three_impact_bands": True,
             "finite_state": True,
             "fracture_activated": True,
-            "fracture_localized": True,
+            "fracture_count_bounded": True,
+            "fracture_identity_matches": True,
             "outside_wall_retained": True,
+            "retained_joint_rows_satisfied": True,
             "total_wall_retained": True,
         },
         "thresholds_pass": False,
-        "total_retained_fraction": 0.8611111111111112,
-        "unbroken_joints": 353,
+        "total_retained_fraction": 0.996031746031746,
+        "unbroken_joints": 558,
     },
     120: {
-        "broken_joints": 359,
+        "broken_joints": 154,
         "evaluated": True,
-        "impact_band_displaced_counts": [4, 10, 6],
-        "outside_retained_fraction": 0.9116022099447514,
+        "impact_band_displaced_counts": [11, 14, 11],
+        "outside_retained_fraction": 0.9943181818181818,
         "status": "pass",
         "threshold_checks": {
             "damage_in_three_impact_bands": True,
             "finite_state": True,
             "fracture_activated": True,
-            "fracture_localized": True,
+            "fracture_count_bounded": True,
+            "fracture_identity_matches": True,
             "outside_wall_retained": True,
+            "retained_joint_rows_satisfied": True,
             "total_wall_retained": True,
         },
         "thresholds_pass": True,
-        "total_retained_fraction": 0.8253968253968254,
-        "unbroken_joints": 353,
+        "total_retained_fraction": 0.9920634920634921,
+        "unbroken_joints": 558,
     },
 }
 
@@ -114,20 +136,8 @@ RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
 )
 
 REPO_ROOT = SCRIPT_DIR.parent
-SOURCE_PATHS = (
-    Path("dart/gui/view_quality.cpp"),
-    Path("dart/gui/view_quality.hpp"),
-    Path("dart/simulation/world.cpp"),
-    Path("dart/simulation/world.hpp"),
-    Path("dart/simulation/world_options.hpp"),
-    Path("dart/simulation/compute/rigid_body_contact_stage.cpp"),
-    Path("dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp"),
-    Path("dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"),
-    Path("python/dartpy/_view_quality.py"),
-    Path("python/examples/demos/scenes/avbd_paper_breakable_wall.py"),
-    Path("tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp"),
-    Path("scripts/avbd_packet_schema.py"),
-    Path("scripts/write_avbd_paper_breakable_wall_packet.py"),
+SOURCE_PATHS = tuple(
+    Path(path) for path in PAPER_PACKET_SOURCE_PATHS[DEFAULT_OUTPUT.name]
 )
 
 
@@ -147,6 +157,25 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--paper-figure-image", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     return parser.parse_args(argv)
+
+
+def _benchmark_reproduction_command(filter_pattern: str) -> str:
+    return (
+        "capture_source_digest=$(pixi run python "
+        "scripts/capture_source_provenance.py --digest-only) && "
+        "benchmark_source_digest=$(sha256sum "
+        f"{BENCHMARK_SOURCE_PATH.as_posix()} | cut -d' ' -f1) && "
+        "pixi run bm -- bm_avbd_rigid_fixed_joint -- "
+        f"--benchmark_filter='{filter_pattern}' "
+        "--benchmark_repetitions=5 "
+        "--benchmark_report_aggregates_only=true "
+        "--benchmark_context=capture_source_provenance_digest="
+        "$capture_source_digest "
+        "--benchmark_context=benchmark_source_sha256="
+        "$benchmark_source_digest "
+        "--benchmark_out=<benchmark-json> "
+        "--benchmark_out_format=json"
+    )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -285,13 +314,384 @@ def _validate_finite_tree(value: object, label: str) -> None:
     )
 
 
+def _validate_sha256_hex(value: object, label: str) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} must be a 64-character lowercase hexadecimal string"
+        )
+    try:
+        parsed = int(value, 16)
+    except ValueError as exc:
+        raise AvbdPaperBreakableWallPacketError(f"{label} must be hexadecimal") from exc
+    if f"{parsed:064x}" != value:
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} must use canonical lowercase hexadecimal"
+        )
+    return value
+
+
+def _validate_capture_provenance(
+    manifest: dict[str, Any],
+    *,
+    metrics_events: Path,
+    screenshot: Path,
+) -> dict[str, Any]:
+    recorded_source = manifest.get("capture_source_provenance")
+    if not isinstance(recorded_source, dict):
+        raise AvbdPaperBreakableWallPacketError(
+            "capture manifest missing capture_source_provenance"
+        )
+    _require_exact(
+        recorded_source.get("algorithm"),
+        CAPTURE_SOURCE_PROVENANCE_ALGORITHM,
+        "capture source provenance algorithm",
+    )
+    _require_exact(
+        recorded_source.get("roots"),
+        list(CAPTURE_SOURCE_ROOTS),
+        "capture source provenance roots",
+    )
+    recorded_digest = _validate_sha256_hex(
+        recorded_source.get("digest"),
+        "capture source provenance digest",
+    )
+    recorded_file_count = recorded_source.get("file_count")
+    if (
+        not isinstance(recorded_file_count, int)
+        or isinstance(recorded_file_count, bool)
+        or recorded_file_count < 1
+    ):
+        raise AvbdPaperBreakableWallPacketError(
+            "capture source provenance file_count must be a positive integer"
+        )
+    recorded_head = recorded_source.get("git_head")
+    if (
+        not isinstance(recorded_head, str)
+        or len(recorded_head) != 40
+        or any(character not in "0123456789abcdef" for character in recorded_head)
+    ):
+        raise AvbdPaperBreakableWallPacketError(
+            "capture source provenance git_head must be a lowercase Git object ID"
+        )
+    try:
+        current_source = compute_capture_source_provenance(REPO_ROOT)
+    except CaptureSourceProvenanceError as exc:
+        raise AvbdPaperBreakableWallPacketError(
+            f"cannot validate capture source provenance: {exc}"
+        ) from exc
+    _require_exact(
+        recorded_file_count,
+        current_source["file_count"],
+        "capture source provenance file_count",
+    )
+    _require_exact(
+        recorded_digest,
+        current_source["digest"],
+        "capture source provenance digest",
+    )
+
+    recorded_artifacts = manifest.get("capture_artifact_provenance")
+    if not isinstance(recorded_artifacts, dict):
+        raise AvbdPaperBreakableWallPacketError(
+            "capture manifest missing capture_artifact_provenance"
+        )
+    _require_exact(
+        recorded_artifacts.get("algorithm"),
+        CAPTURE_ARTIFACT_PROVENANCE_ALGORITHM,
+        "capture artifact provenance algorithm",
+    )
+    _require_exact(
+        _validate_sha256_hex(
+            recorded_artifacts.get("scene_metrics_events_sha256"),
+            "capture artifact scene_metrics_events_sha256",
+        ),
+        _sha256(metrics_events),
+        "capture artifact scene_metrics_events_sha256",
+    )
+    _require_exact(
+        _validate_sha256_hex(
+            recorded_artifacts.get("screenshot_sha256"),
+            "capture artifact screenshot_sha256",
+        ),
+        _sha256(screenshot),
+        "capture artifact screenshot_sha256",
+    )
+    return {
+        "algorithm": CAPTURE_SOURCE_PROVENANCE_ALGORITHM,
+        "digest": recorded_digest,
+        "file_count": recorded_file_count,
+        "git_head": recorded_head,
+        "roots": list(CAPTURE_SOURCE_ROOTS),
+    }
+
+
+def _validate_benchmark_source_provenance(
+    context: dict[str, Any],
+) -> dict[str, str]:
+    try:
+        current_source = compute_capture_source_provenance(REPO_ROOT)
+    except CaptureSourceProvenanceError as exc:
+        raise AvbdPaperBreakableWallPacketError(
+            f"cannot validate benchmark source provenance: {exc}"
+        ) from exc
+    capture_digest = _validate_sha256_hex(
+        context.get("capture_source_provenance_digest"),
+        "benchmark capture_source_provenance_digest",
+    )
+    _require_exact(
+        capture_digest,
+        current_source["digest"],
+        "benchmark capture_source_provenance_digest",
+    )
+    benchmark_source_hash = _validate_sha256_hex(
+        context.get("benchmark_source_sha256"),
+        "benchmark benchmark_source_sha256",
+    )
+    _require_exact(
+        benchmark_source_hash,
+        _sha256(REPO_ROOT / BENCHMARK_SOURCE_PATH),
+        "benchmark benchmark_source_sha256",
+    )
+    return {
+        "benchmark_source_sha256": benchmark_source_hash,
+        "capture_source_provenance_digest": capture_digest,
+    }
+
+
+def _validate_joint_endpoint(value: object, label: str) -> None:
+    if not isinstance(value, dict):
+        raise AvbdPaperBreakableWallPacketError(f"{label} must be an object")
+    if set(value) != {"body", "column", "row"}:
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} must contain only body, column, and row"
+        )
+    body = value.get("body")
+    column = value.get("column")
+    row = value.get("row")
+    if body == "ground":
+        if column is not None or row is not None:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{label} ground endpoint must use null grid coordinates"
+            )
+        return
+    if body != "brick":
+        raise AvbdPaperBreakableWallPacketError(f"{label}.body must be ground or brick")
+    if (
+        not isinstance(column, int)
+        or isinstance(column, bool)
+        or not 0 <= column < 21
+        or not isinstance(row, int)
+        or isinstance(row, bool)
+        or not 0 <= row < 12
+    ):
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} brick grid coordinates are out of range"
+        )
+
+
+def _validate_joint_evidence(
+    outcome: dict[str, Any],
+    *,
+    expected_broken_count: int,
+    expected_broken_ids_sha256: str,
+    expected_outside_unbroken_count: int,
+    label: str,
+) -> None:
+    _require_exact(
+        outcome.get("joint_residuals_finite"),
+        True,
+        f"{label} joint_residuals_finite",
+    )
+    _require_exact(
+        outcome.get("broken_joint_identity_count"),
+        expected_broken_count,
+        f"{label} broken_joint_identity_count",
+    )
+    _require_exact(
+        outcome.get("unbroken_joint_residual_count"),
+        BREAKABLE_JOINTS - expected_broken_count,
+        f"{label} unbroken_joint_residual_count",
+    )
+    _require_exact(
+        outcome.get("outside_impact_unbroken_joint_residual_count"),
+        expected_outside_unbroken_count,
+        f"{label} outside_impact_unbroken_joint_residual_count",
+    )
+
+    records = outcome.get("broken_joint_records")
+    if not isinstance(records, list):
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} broken_joint_records must be a list"
+        )
+    _require_exact(
+        len(records),
+        expected_broken_count,
+        f"{label} broken_joint_records count",
+    )
+    record_ids = []
+    derived_impact_counts = [0, 0, 0]
+    derived_outside_count = 0
+    for index, record in enumerate(records):
+        record_label = f"{label} broken_joint_records[{index}]"
+        if not isinstance(record, dict):
+            raise AvbdPaperBreakableWallPacketError(f"{record_label} must be an object")
+        expected_keys = {
+            "angular_residual_radians",
+            "child",
+            "id",
+            "initial_anchor",
+            "kind",
+            "linear_residual",
+            "nearest_impact_distance",
+            "nearest_impact_index",
+            "parent",
+            "within_impact_band",
+            "within_impact_region",
+        }
+        if set(record) != expected_keys:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label} has an unexpected field set"
+            )
+        joint_id = record.get("id")
+        if not isinstance(joint_id, str) or not joint_id:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label}.id must be non-empty"
+            )
+        record_ids.append(joint_id)
+        _require_exact(
+            record.get("kind") in {"horizontal", "vertical", "base"},
+            True,
+            f"{record_label}.kind validity",
+        )
+        _validate_joint_endpoint(record.get("parent"), f"{record_label}.parent")
+        _validate_joint_endpoint(record.get("child"), f"{record_label}.child")
+        anchor = record.get("initial_anchor")
+        if not isinstance(anchor, list) or len(anchor) != 3:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label}.initial_anchor must have three coordinates"
+            )
+        for coordinate_index, coordinate in enumerate(anchor):
+            _finite_number(
+                coordinate,
+                f"{record_label}.initial_anchor[{coordinate_index}]",
+            )
+        for residual_key in (
+            "angular_residual_radians",
+            "linear_residual",
+            "nearest_impact_distance",
+        ):
+            if (
+                _finite_number(
+                    record.get(residual_key),
+                    f"{record_label}.{residual_key}",
+                )
+                < 0.0
+            ):
+                raise AvbdPaperBreakableWallPacketError(
+                    f"{record_label}.{residual_key} must be non-negative"
+                )
+        impact_index = record.get("nearest_impact_index")
+        if (
+            not isinstance(impact_index, int)
+            or isinstance(impact_index, bool)
+            or not 0 <= impact_index < 3
+        ):
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label}.nearest_impact_index must be 0, 1, or 2"
+            )
+        within_band = record.get("within_impact_band")
+        within_region = record.get("within_impact_region")
+        if not isinstance(within_band, bool) or not isinstance(within_region, bool):
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label} impact-membership fields must be booleans"
+            )
+        if within_band and not within_region:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{record_label} impact-band membership must imply region membership"
+            )
+        if within_region:
+            derived_impact_counts[impact_index] += 1
+        else:
+            derived_outside_count += 1
+
+    if len(set(record_ids)) != len(record_ids):
+        raise AvbdPaperBreakableWallPacketError(
+            f"{label} broken joint IDs must be unique"
+        )
+    identity_digest = sha256()
+    for joint_id in sorted(record_ids):
+        encoded_id = joint_id.encode("utf-8")
+        identity_digest.update(struct.pack("<Q", len(encoded_id)))
+        identity_digest.update(encoded_id)
+    recorded_digest = _validate_sha256_hex(
+        outcome.get("broken_joint_ids_sha256"),
+        f"{label} broken_joint_ids_sha256",
+    )
+    _require_exact(
+        recorded_digest,
+        identity_digest.hexdigest(),
+        f"{label} broken-joint identity digest",
+    )
+    _require_exact(
+        recorded_digest,
+        expected_broken_ids_sha256,
+        f"{label} expected broken-joint identity digest",
+    )
+    _require_exact(
+        outcome.get("broken_joint_impact_region_counts"),
+        derived_impact_counts,
+        f"{label} broken_joint_impact_region_counts",
+    )
+    _require_exact(
+        outcome.get("broken_joints_outside_impact_regions"),
+        derived_outside_count,
+        f"{label} broken_joints_outside_impact_regions",
+    )
+
+    residual_pairs = (
+        (
+            "maximum_unbroken_joint_linear_residual",
+            "rms_unbroken_joint_linear_residual",
+        ),
+        (
+            "maximum_unbroken_joint_angular_residual_radians",
+            "rms_unbroken_joint_angular_residual_radians",
+        ),
+        (
+            "maximum_outside_impact_unbroken_joint_linear_residual",
+            "rms_outside_impact_unbroken_joint_linear_residual",
+        ),
+        (
+            "maximum_outside_impact_unbroken_joint_angular_residual_radians",
+            "rms_outside_impact_unbroken_joint_angular_residual_radians",
+        ),
+    )
+    for maximum_key, rms_key in residual_pairs:
+        maximum = _finite_number(outcome.get(maximum_key), f"{label} {maximum_key}")
+        rms = _finite_number(outcome.get(rms_key), f"{label} {rms_key}")
+        if maximum < 0.0 or rms < 0.0 or rms > maximum:
+            raise AvbdPaperBreakableWallPacketError(
+                f"{label} {maximum_key}/{rms_key} residual summary is invalid"
+            )
+
+
 def _validate_camera(manifest: dict[str, Any]) -> dict[str, Any]:
     camera = manifest.get("camera")
     if not isinstance(camera, dict):
         raise AvbdPaperBreakableWallPacketError(
             "capture manifest missing serialized camera"
         )
-    _require_exact(camera.get("view"), CAMERA_VIEW, "camera view")
+    _require_exact(camera.get("view"), CAMERA_PRESET, "camera preset")
+    _require_close(
+        camera.get("azimuth"),
+        math.degrees(CAMERA_AZIMUTH),
+        "camera azimuth",
+    )
+    _require_close(
+        camera.get("elevation"),
+        math.degrees(CAMERA_ELEVATION),
+        "camera elevation",
+    )
     _require_close(camera.get("distance"), CAMERA_DISTANCE, "camera distance")
     target = camera.get("target")
     if not isinstance(target, list) or len(target) != 3:
@@ -301,7 +701,10 @@ def _validate_camera(manifest: dict[str, Any]) -> dict[str, Any]:
     for index, expected in enumerate(CAMERA_TARGET):
         _require_close(target[index], expected, f"camera target[{index}]")
     return {
+        "azimuth": CAMERA_AZIMUTH,
         "distance": CAMERA_DISTANCE,
+        "elevation": CAMERA_ELEVATION,
+        "preset": CAMERA_PRESET,
         "target": list(CAMERA_TARGET),
         "view": CAMERA_VIEW,
     }
@@ -400,13 +803,13 @@ def _validate_view_report(
         raise AvbdPaperBreakableWallPacketError("ViewReport missing camera")
     _require_close(
         camera.get("azimuth"),
-        -0.5 * math.pi,
-        "ViewReport front-camera azimuth",
+        CAMERA_AZIMUTH,
+        "ViewReport camera azimuth",
     )
     _require_close(
         camera.get("elevation"),
-        0.0,
-        "ViewReport front-camera elevation",
+        CAMERA_ELEVATION,
+        "ViewReport camera elevation",
     )
     _require_close(camera.get("distance"), CAMERA_DISTANCE, "ViewReport distance")
     target = camera.get("target")
@@ -677,6 +1080,47 @@ def _validate_scene_metrics(
         expected_outcome["threshold_checks"],
         f"frame {expected_frame} outcome threshold_checks",
     )
+    _validate_joint_evidence(
+        outcome,
+        expected_broken_count=expected_outcome["broken_joints"],
+        expected_broken_ids_sha256=OUTCOME_ORACLE["expected_broken_joint_ids_sha256"],
+        expected_outside_unbroken_count=405,
+        label=f"frame {expected_frame} outcome",
+    )
+    _require_exact(
+        outcome.get("broken_joint_impact_region_counts"),
+        [18, 44, 13],
+        f"frame {expected_frame} broken_joint_impact_region_counts",
+    )
+    _require_exact(
+        outcome.get("broken_joints_outside_impact_regions"),
+        79,
+        f"frame {expected_frame} broken_joints_outside_impact_regions",
+    )
+    maximum_linear_residual = _finite_number(
+        outcome.get("maximum_unbroken_joint_linear_residual"),
+        f"frame {expected_frame} maximum_unbroken_joint_linear_residual",
+    )
+    if (
+        maximum_linear_residual
+        > OUTCOME_ORACLE["maximum_unbroken_joint_linear_residual"]
+    ):
+        raise AvbdPaperBreakableWallPacketError(
+            f"frame {expected_frame} retained-joint linear residual exceeds "
+            "the AVBD oracle"
+        )
+    maximum_angular_residual = _finite_number(
+        outcome.get("maximum_unbroken_joint_angular_residual_radians"),
+        f"frame {expected_frame} " "maximum_unbroken_joint_angular_residual_radians",
+    )
+    if (
+        maximum_angular_residual
+        > OUTCOME_ORACLE["maximum_unbroken_joint_angular_residual_radians"]
+    ):
+        raise AvbdPaperBreakableWallPacketError(
+            f"frame {expected_frame} retained-joint angular residual exceeds "
+            "the AVBD oracle"
+        )
     if (
         _finite_number(
             outcome.get("max_brick_displacement"),
@@ -815,6 +1259,11 @@ def _validate_capture(
         logged_latest=metric_events[-1],
         width=width,
     )
+    capture_source_provenance = _validate_capture_provenance(
+        manifest,
+        metrics_events=metrics_events,
+        screenshot=screenshot,
+    )
 
     return (
         {
@@ -830,6 +1279,7 @@ def _validate_capture(
                 "sha256": _sha256(manifest_path),
             },
             "scene_metrics": scene_metrics,
+            "source_provenance": capture_source_provenance,
             "scene_metrics_events": {
                 "event_count": len(metric_events),
                 "file": metrics_events.name,
@@ -1060,6 +1510,7 @@ def _validate_benchmark(
         "release",
         "benchmark library_build_type",
     )
+    benchmark_source_provenance = _validate_benchmark_source_provenance(context)
     return {
         "benchmark": BENCHMARK_NAME,
         "context": {
@@ -1072,9 +1523,12 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
+                "benchmark_source_sha256",
+                "capture_source_provenance_digest",
             )
             if key in context
         },
+        "source_provenance": benchmark_source_provenance,
         "json_sha256": _sha256(benchmark_path),
         "rows": packet_rows,
         "scene_spec_fingerprint": expected_scene_spec_fingerprint,
@@ -1321,15 +1775,15 @@ def make_packet(
                 "time_step": TIME_STEP,
             },
             "reconstructed_because_unpublished": {
-                "ball_mass": 100.0,
+                "ball_mass": 40.0,
                 "ball_radius": 0.48,
                 "ball_speed": 24.0,
                 "break_force": BREAK_FORCE,
-                "brick_density": 4.0,
+                "brick_density": 200.0,
                 "brick_size": [0.6, 0.3, 0.25],
                 "target_coordinates_xz": [
                     [-3.1, 1.55],
-                    [0.0, 1.75],
+                    [-0.31, 1.75],
                     [3.1, 2.35],
                 ],
                 "wall_layout": {
@@ -1361,27 +1815,24 @@ def make_packet(
             "semantic_review": semantic_review,
         },
         "reproduction": {
-            "benchmark_command": (
-                "pixi run bm -- bm_avbd_rigid_fixed_joint -- "
-                f"--benchmark_filter='^{BENCHMARK_RUN}$' "
-                "--benchmark_repetitions=5 "
-                "--benchmark_report_aggregates_only=true "
-                "--benchmark_out=<benchmark-json> "
-                "--benchmark_out_format=json"
-            ),
+            "benchmark_command": _benchmark_reproduction_command(f"^{BENCHMARK_RUN}$"),
             "capture_commands": [
                 (
                     "pixi run py-demo-capture -- "
                     f"--scene {SCENE_ID} --frames 60 --width 1280 "
-                    "--height 720 --view front --camera-distance 11 "
-                    "--camera-target 0,0,1.4 --capture-label impact "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label impact "
                     "--output-dir <impact-capture-dir>"
                 ),
                 (
                     "pixi run py-demo-capture -- "
                     f"--scene {SCENE_ID} --frames 120 --width 1280 "
-                    "--height 720 --view front --camera-distance 11 "
-                    "--camera-target 0,0,1.4 --capture-label outcome "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label outcome "
                     "--output-dir <outcome-capture-dir>"
                 ),
             ],
@@ -1390,14 +1841,14 @@ def make_packet(
                     "pixi run image-verdict -- "
                     f"<impact-capture-dir>/{SCENE_ID}_impact.png "
                     f"--meta scene={SCENE_ID} --meta frame=60 "
-                    "--meta view=front "
+                    f"--meta view={CAMERA_VIEW} "
                     "--out <impact-capture-dir>/image_verdict.json"
                 ),
                 (
                     "pixi run image-verdict -- "
                     f"<outcome-capture-dir>/{SCENE_ID}_outcome.png "
                     f"--meta scene={SCENE_ID} --meta frame=120 "
-                    "--meta view=front "
+                    f"--meta view={CAMERA_VIEW} "
                     "--out <outcome-capture-dir>/image_verdict.json"
                 ),
             ],

@@ -345,7 +345,7 @@ def test_packet_records_finite_load_fracture_evidence(tmp_path: Path) -> None:
     )
 
     packet = json.loads(output.read_text(encoding="utf-8"))
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert (
         packet["resolved_solver_identity"]["rigid_contact_selection"]
         == "not_applicable"

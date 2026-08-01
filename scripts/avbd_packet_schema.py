@@ -24,7 +24,88 @@ from typing import Any
 # Current AVBD packet schema version. Packets written at this version or
 # newer must carry RESOLVED_SOLVER_IDENTITY_KEY and record how rigid contact
 # selected the reported solver family.
-AVBD_PACKET_SCHEMA_VERSION = 3
+AVBD_PACKET_SCHEMA_VERSION = 4
+
+# Exact ordered source-provenance contracts for the current Figure 13 packet
+# chain. Writers and the committed-packet checker consume this one mapping so
+# deleting, adding, or reordering a bound source cannot be hidden by
+# recomputing the packet digest.
+PAPER_PACKET_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
+    "avbd-paper-breakable-wall-packet.json": (
+        "dart/gui/view_quality.cpp",
+        "dart/gui/view_quality.hpp",
+        "dart/simulation/world.cpp",
+        "dart/simulation/world.hpp",
+        "dart/simulation/world_options.hpp",
+        "dart/simulation/comps/joint.hpp",
+        "dart/simulation/compute/detail/world_step_stages.hpp",
+        "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "dart/simulation/detail/rigid_pair_constraint.hpp",
+        "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+        "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+        "dart/simulation/detail/world_step_schedule.hpp",
+        "python/dartpy/_view_quality.py",
+        "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "python/tests/integration/test_demos_cycle.py",
+        "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "tests/unit/simulation/world/test_world.cpp",
+        "scripts/avbd_packet_schema.py",
+        "scripts/capture_py_demo.py",
+        "scripts/capture_source_provenance.py",
+        "scripts/write_avbd_paper_breakable_wall_packet.py",
+    ),
+    "avbd-paper-vbd-comparison-packet.json": (
+        "dart/simulation/world.cpp",
+        "dart/simulation/world.hpp",
+        "dart/simulation/world_options.hpp",
+        "dart/simulation/comps/joint.hpp",
+        "dart/simulation/compute/detail/world_step_stages.hpp",
+        "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "dart/simulation/detail/rigid_pair_constraint.hpp",
+        "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+        "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+        "dart/simulation/detail/world_step_schedule.hpp",
+        "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
+        "python/tests/integration/test_demos_cycle.py",
+        "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "tests/unit/simulation/world/test_world.cpp",
+        "scripts/avbd_packet_schema.py",
+        "scripts/capture_py_demo.py",
+        "scripts/capture_source_provenance.py",
+        "scripts/write_avbd_paper_vbd_comparison_packet.py",
+    ),
+    "avbd-paper-sequential-impulse-comparison-packet.json": (
+        "dart/simulation/world.cpp",
+        "dart/simulation/world.hpp",
+        "dart/simulation/world_options.hpp",
+        "dart/simulation/comps/joint.hpp",
+        "dart/simulation/compute/detail/world_step_stages.hpp",
+        "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "dart/simulation/detail/rigid_pair_constraint.hpp",
+        "dart/simulation/detail/world_step_schedule.hpp",
+        "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
+        "python/examples/demos/scenes/sequential_impulse_paper_breakable_wall.py",
+        "python/tests/integration/test_demos_cycle.py",
+        "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "tests/unit/simulation/contact/test_boxed_lcp_contact.cpp",
+        "tests/unit/simulation/world/test_world.cpp",
+        "tests/unit/simulation/world/test_world_resolved_configuration.cpp",
+        "tests/test_avbd_packet_schema.py",
+        "scripts/avbd_packet_schema.py",
+        "scripts/capture_py_demo.py",
+        "scripts/capture_source_provenance.py",
+        "scripts/write_avbd_paper_breakable_wall_packet.py",
+        "scripts/write_avbd_paper_vbd_comparison_packet.py",
+        "scripts/write_avbd_paper_sequential_impulse_comparison_packet.py",
+    ),
+}
+
+# Schema version 4 narrowed 'contact_solver_method' point-joint identities to
+# 'none' or 'sequential_impulse'. Older packets legitimately recorded 'avbd'
+# there because public pair constraints then ran the private AVBD projection.
+CONTACT_METHOD_POINT_JOINT_MIN_SCHEMA_VERSION = 4
 
 # First schema version that requires the resolved-solver-identity field.
 SOLVER_IDENTITY_MIN_SCHEMA_VERSION = 2
@@ -49,7 +130,12 @@ ALLOWED_RIGID_CONTACT_SOLVERS = (
 
 # The solver family that resolved rigid-body point-joint/motor/distance-spring
 # rows; joint-free scenes record "none".
-ALLOWED_RIGID_POINT_JOINT_SOLVERS = ("avbd", "none", "vbd")
+ALLOWED_RIGID_POINT_JOINT_SOLVERS = (
+    "avbd",
+    "none",
+    "sequential_impulse",
+    "vbd",
+)
 
 ALLOWED_RIGID_CONTACT_SELECTIONS = (
     "body_opt_in",
@@ -73,6 +159,11 @@ def packet_schema_version_errors(
         return [f"{packet_name}: schema_version must be an integer"]
     if version < 1:
         return [f"{packet_name}: schema_version must be >= 1"]
+    if version > AVBD_PACKET_SCHEMA_VERSION:
+        return [
+            f"{packet_name}: schema_version {version} is newer than the "
+            f"supported version {AVBD_PACKET_SCHEMA_VERSION}"
+        ]
     return []
 
 
@@ -155,6 +246,15 @@ def resolved_solver_identity_errors(
             f"{packet_name}: VBD solver identities require schema_version "
             f"{RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION} or newer"
         )
+    if (
+        version < RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION
+        and rigid_point_joint_solver == "sequential_impulse"
+    ):
+        errors.append(
+            f"{packet_name}: Sequential Impulse point-joint solver identities "
+            "require schema_version "
+            f"{RIGID_CONTACT_SELECTION_MIN_SCHEMA_VERSION} or newer"
+        )
     if selection is None:
         if (
             isinstance(emplaced, bool)
@@ -184,8 +284,8 @@ def resolved_solver_identity_errors(
             errors.append(
                 f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
                 "rigid_contact_selection 'world_solver_family' requires "
-                "rigid_contact_solver 'vbd' or 'avbd' without a private body "
-                "config"
+                "rigid_contact_solver 'avbd' or 'vbd' "
+                "without a private body config"
             )
         if rigid_point_joint_solver not in ("none", rigid_contact_solver):
             errors.append(
@@ -205,11 +305,20 @@ def resolved_solver_identity_errors(
                 "a boxed_lcp or sequential_impulse contact solver without "
                 "a private AVBD body config"
             )
-        if identity.get("rigid_point_joint_solver") == "vbd":
+        if version >= CONTACT_METHOD_POINT_JOINT_MIN_SCHEMA_VERSION:
+            if rigid_point_joint_solver not in ("none", "sequential_impulse"):
+                errors.append(
+                    f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
+                    "rigid_contact_selection 'contact_solver_method' requires "
+                    "rigid_point_joint_solver 'none' or 'sequential_impulse' "
+                    "from schema_version "
+                    f"{CONTACT_METHOD_POINT_JOINT_MIN_SCHEMA_VERSION} onward"
+                )
+        elif rigid_point_joint_solver == "vbd":
             errors.append(
                 f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
-                "rigid_point_joint_solver 'vbd' requires "
-                "rigid_contact_selection 'world_solver_family'"
+                "rigid_contact_selection 'contact_solver_method' cannot carry "
+                "rigid_point_joint_solver 'vbd'"
             )
     elif selection == "not_applicable" and rigid_contact_solver != "none":
         errors.append(

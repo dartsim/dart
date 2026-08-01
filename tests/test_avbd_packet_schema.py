@@ -216,6 +216,18 @@ def test_public_vbd_family_records_matching_world_owned_rows():
     assert identity["rigid_point_joint_solver"] == "vbd"
 
 
+def test_public_sequential_impulse_family_records_matching_world_owned_rows():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family="sequential-impulse",
+        rigid_point_joint_solver="sequential_impulse",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="World resolved-configuration report",
+    )
+    assert identity["rigid_contact_solver"] == "sequential_impulse"
+    assert identity["rigid_point_joint_solver"] == "sequential_impulse"
+    assert identity["rigid_contact_selection"] == "contact_solver_method"
+
+
 def test_public_world_family_rejects_contradictory_point_joint_family():
     packet = {
         "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
@@ -235,32 +247,39 @@ def test_public_world_family_rejects_contradictory_point_joint_family():
     )
 
 
-@pytest.mark.parametrize(
-    ("selection", "contact_solver", "emplaced"),
-    [
-        ("body_opt_in", "avbd", True),
-        ("contact_solver_method", "sequential_impulse", False),
-    ],
-)
-def test_vbd_point_rows_require_public_vbd_world_family(
-    selection,
-    contact_solver,
-    emplaced,
-):
+def test_vbd_point_rows_require_public_vbd_world_family():
     packet = {
         "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
         schema.RESOLVED_SOLVER_IDENTITY_KEY: {
-            "avbd_rigid_contact_config_emplaced": emplaced,
+            "avbd_rigid_contact_config_emplaced": False,
             "recorded_from": "impossible VBD point-row identity",
-            "rigid_contact_selection": selection,
-            "rigid_contact_solver": contact_solver,
+            "rigid_contact_selection": "contact_solver_method",
+            "rigid_contact_solver": "sequential_impulse",
             "rigid_point_joint_solver": "vbd",
         },
     }
 
     errors = schema.resolved_solver_identity_errors(packet, "case")
 
-    assert any("rigid_point_joint_solver 'vbd' requires" in error for error in errors)
+    assert any(
+        "requires rigid_point_joint_solver 'none' or 'sequential_impulse'" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize("contact_solver", ["boxed_lcp", "sequential_impulse"])
+def test_contact_method_can_select_contacts_with_sequential_impulse_point_rows(
+    contact_solver,
+):
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family=contact_solver.replace("_", "-"),
+        rigid_point_joint_solver="sequential_impulse",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="World resolved-configuration report",
+    )
+    assert identity["rigid_contact_selection"] == "contact_solver_method"
+    assert identity["rigid_contact_solver"] == contact_solver
+    assert identity["rigid_point_joint_solver"] == "sequential_impulse"
 
 
 def test_schema_v2_cannot_claim_vbd_without_selection_source_contract():
@@ -278,6 +297,26 @@ def test_schema_v2_cannot_claim_vbd_without_selection_source_contract():
 
     assert any(
         "VBD solver identities require schema_version 3" in error for error in errors
+    )
+
+
+def test_schema_v2_cannot_claim_sequential_impulse_point_rows():
+    packet = {
+        "schema_version": 2,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": False,
+            "recorded_from": "pre-selection-source schema",
+            "rigid_contact_solver": "sequential_impulse",
+            "rigid_point_joint_solver": "sequential_impulse",
+        },
+    }
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any(
+        "Sequential Impulse point-joint solver identities require "
+        "schema_version 3" in error
+        for error in errors
     )
 
 
@@ -300,3 +339,49 @@ def test_invalid_point_joint_solver_rejected():
             avbd_rigid_contact_config_emplaced=False,
             recorded_from="bad point-joint solver",
         )
+
+
+def _contact_method_identity_packet(version, point_joint_solver):
+    return {
+        "schema_version": version,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": False,
+            "recorded_from": "resolved configuration report",
+            "rigid_contact_selection": "contact_solver_method",
+            "rigid_contact_solver": "sequential_impulse",
+            "rigid_point_joint_solver": point_joint_solver,
+        },
+    }
+
+
+def test_contact_method_v3_accepts_legacy_avbd_point_rows():
+    # Pre-slice packets legitimately recorded 'avbd' point-joint identities
+    # under 'contact_solver_method' because public pair constraints then ran
+    # the private AVBD projection; version 3 packets must stay valid.
+    packet = _contact_method_identity_packet(3, "avbd")
+    assert schema.resolved_solver_identity_errors(packet, "case") == []
+
+
+def test_contact_method_current_version_rejects_avbd_point_rows():
+    packet = _contact_method_identity_packet(schema.AVBD_PACKET_SCHEMA_VERSION, "avbd")
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+    assert any(
+        "rigid_point_joint_solver 'none' or 'sequential_impulse'" in error
+        for error in errors
+    )
+
+
+def test_contact_method_v3_still_rejects_vbd_point_rows():
+    packet = _contact_method_identity_packet(3, "vbd")
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+    assert any(
+        "cannot carry rigid_point_joint_solver 'vbd'" in error for error in errors
+    )
+
+
+def test_future_schema_version_is_rejected_fail_closed():
+    packet = {"schema_version": schema.AVBD_PACKET_SCHEMA_VERSION + 1}
+
+    errors = schema.packet_schema_version_errors(packet, "case")
+
+    assert any("newer than the supported version" in error for error in errors)

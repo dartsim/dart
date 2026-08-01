@@ -151,7 +151,11 @@ def _add_source_box(
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, _GRAVITY))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, 0.0, _GRAVITY),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+    )
 
     ground = _add_source_box(
         world,
@@ -179,11 +183,15 @@ def build() -> SceneSetup:
         joint = world.add_joint(
             parent,
             child,
-                        sx.JointSpec(
+            sx.JointSpec(
                 name=f"avbd_demo3d_breakable_joint_{index:02d}",
                 type=sx.JointType.FIXED,
             )
         )
+        # Preserve the source scene's numeric control. The source breaks only
+        # its torque-arm-scaled angular dual vector, whereas DART's public
+        # break_force covers the combined physical fixed-joint row load. This
+        # is a source-shaped lifecycle row, not a source-trajectory oracle.
         joint.break_force = _BREAK_FORCE
         joints.append(joint)
 
@@ -312,7 +320,7 @@ def build() -> SceneSetup:
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"breakable joints: {len(joints)}")
         builder.text(f"broken joints: {broken}")
-        builder.text(f"break force: {_BREAK_FORCE:.1f} N")
+        builder.text(f"source numeric break threshold: {_BREAK_FORCE:.1f}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"min chain z: {min(chain_z):.3f} m")
         builder.text(f"top block z: {max(falling_z):.3f} m")

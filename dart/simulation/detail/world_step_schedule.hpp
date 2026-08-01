@@ -161,7 +161,8 @@ struct BuiltInWorldStepSchedule
     [[maybe_unused]] BuiltInRigidBodySolverFamily family) noexcept
 {
   // Ipc is currently the only rigid family with a combined contact-and-advance
-  // stage; the split families (sequential impulse and AVBD) never reach here.
+  // stage; the split families (sequential impulse, VBD, and AVBD) never reach
+  // here.
   return BuiltInWorldStepStageSlot::RigidIpcContact;
 }
 

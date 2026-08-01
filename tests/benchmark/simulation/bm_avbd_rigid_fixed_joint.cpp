@@ -2104,7 +2104,7 @@ struct PaperBreakableWallFixture
 std::uint64_t paperBreakableWallFingerprint(
     const std::vector<std::array<std::uint64_t, 3>>& topologyRecords)
 {
-  constexpr std::string_view kTag = "avbd-paper-breakable-wall/v1";
+  constexpr std::string_view kTag = "avbd-paper-breakable-wall/v3";
   constexpr double kTimeStep = 1.0 / 60.0;
   constexpr double kGravity = -9.81;
   constexpr std::uint64_t kConstraintIterations = 20;
@@ -2112,15 +2112,15 @@ std::uint64_t paperBreakableWallFingerprint(
   constexpr std::uint64_t kRows = 12;
   constexpr std::array<double, 3> kBrickSize{0.60, 0.30, 0.25};
   constexpr std::array<double, 10> kBodyParameters{
-      4.0, 0.50, 0.62, 0.27, 0.02, 0.48, 100.0, 0.30, -5.0, 24.0};
+      200.0, 0.50, 0.62, 0.27, 0.02, 0.48, 40.0, 0.30, -5.0, 24.0};
   constexpr std::array<std::array<double, 2>, 3> kImpactTargets{{
       {-3.10, 1.55},
-      {0.00, 1.75},
+      {-0.31, 1.75},
       {3.10, 2.35},
   }};
   constexpr std::array<double, 3> kGroundSize{16.0, 16.0, 0.50};
   constexpr double kGroundFriction = 0.60;
-  constexpr double kBreakForce = 8500.0;
+  constexpr double kBreakForce = 5000.0;
 
   Fnv1a64 fingerprint;
   fingerprint.updateString(kTag);
@@ -2164,18 +2164,18 @@ PaperBreakableWallFixture makePaperBreakableWallWorld(
   constexpr int kVerticalJoints = (kRows - 1) * (2 * kColumns - 1);
   constexpr int kBaseJoints = kColumns;
   constexpr int kJointCount = kHorizontalJoints + kVerticalJoints + kBaseJoints;
-  constexpr double kBrickDensity = 4.0;
+  constexpr double kBrickDensity = 200.0;
   constexpr double kSpacingX = 0.62;
   constexpr double kSpacingZ = 0.27;
   constexpr double kBaseClearance = 0.02;
-  constexpr double kBreakForce = 8500.0;
+  constexpr double kBreakForce = 5000.0;
   constexpr double kBallRadius = 0.48;
-  constexpr double kBallMass = 100.0;
+  constexpr double kBallMass = 40.0;
   constexpr double kBallLaunchSpeed = 24.0;
   const Eigen::Vector3d brickSize(0.60, 0.30, 0.25);
   const std::array<Eigen::Vector2d, 3> impactTargets{
       Eigen::Vector2d(-3.10, 1.55),
-      Eigen::Vector2d(0.00, 1.75),
+      Eigen::Vector2d(-0.31, 1.75),
       Eigen::Vector2d(3.10, 2.35)};
 
   sx::WorldOptions options;
@@ -2185,7 +2185,9 @@ PaperBreakableWallFixture makePaperBreakableWallWorld(
   options.rigidConstraintOptions.iterations = 20;
   auto world = std::make_unique<sx::World>(options);
   const std::string solverPrefix
-      = solver == sx::RigidBodySolver::Vbd ? "vbd" : "avbd";
+      = solver == sx::RigidBodySolver::SequentialImpulse ? "sequential_impulse"
+        : solver == sx::RigidBodySolver::Vbd             ? "vbd"
+                                                         : "avbd";
 
   auto ground = addAvbdDemo3dSourceBox(
       *world,
@@ -4049,7 +4051,9 @@ void runPaperBreakableWallStepBenchmark(
   constexpr std::size_t kTrajectoryFrames = 120;
   auto fixture = makePaperBreakableWallWorld(solver);
   fixture.world->enterSimulationMode();
-  const std::string bodyPrefix = std::string(solverKey) + "_paper_wall_ball_";
+  std::string objectKey(solverKey);
+  std::ranges::replace(objectKey, '-', '_');
+  const std::string bodyPrefix = objectKey + "_paper_wall_ball_";
 
   const auto bodyNames = fixture.world->getRigidBodyNames();
   std::size_t collisionShapeCount = 0;
@@ -4175,6 +4179,14 @@ static void BM_VbdPaperBreakableWallStep(benchmark::State& state)
   runPaperBreakableWallStepBenchmark(state, sx::RigidBodySolver::Vbd, "vbd");
 }
 BENCHMARK(BM_VbdPaperBreakableWallStep)->Iterations(120);
+
+//==============================================================================
+static void BM_SequentialImpulsePaperBreakableWallStep(benchmark::State& state)
+{
+  runPaperBreakableWallStepBenchmark(
+      state, sx::RigidBodySolver::SequentialImpulse, "sequential-impulse");
+}
+BENCHMARK(BM_SequentialImpulsePaperBreakableWallStep)->Iterations(120);
 
 //==============================================================================
 static void BM_AvbdRigidBreakableJointStep(benchmark::State& state)

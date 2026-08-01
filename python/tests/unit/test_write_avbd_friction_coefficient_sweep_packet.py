@@ -219,7 +219,7 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
     )
 
     packet = json.loads(output.read_text(encoding="utf-8"))
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_friction_coefficient_sweep"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,

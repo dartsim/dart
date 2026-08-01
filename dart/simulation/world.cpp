@@ -359,12 +359,12 @@ struct World::ReplayState
     double pitch = 0.0;
     entt::entity parentLink = entt::null;
     entt::entity childLink = entt::null;
-    bool hasRigidBodyFixedJointAnchors = false;
-    Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+    bool hasRigidBodyPairConstraintGeometry = false;
+    Eigen::Vector3d rigidBodyPairConstraintLocalAnchorParent
         = Eigen::Vector3d::Zero();
-    Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild
+    Eigen::Vector3d rigidBodyPairConstraintLocalAnchorChild
         = Eigen::Vector3d::Zero();
-    Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+    Eigen::Quaterniond rigidBodyPairConstraintTargetRelativeOrientation
         = Eigen::Quaterniond::Identity();
   };
 
@@ -661,15 +661,15 @@ bool sameReplayJointLayout(
          && jointModel.pitch == layout.pitch
          && jointModel.parentLink == layout.parentLink
          && jointModel.childLink == layout.childLink
-         && jointModel.hasRigidBodyFixedJointAnchors
-                == layout.hasRigidBodyFixedJointAnchors
-         && jointModel.rigidBodyFixedJointLocalAnchorParent.isApprox(
-             layout.rigidBodyFixedJointLocalAnchorParent, 0.0)
-         && jointModel.rigidBodyFixedJointLocalAnchorChild.isApprox(
-             layout.rigidBodyFixedJointLocalAnchorChild, 0.0)
-         && jointModel.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+         && jointModel.hasRigidBodyPairConstraintGeometry
+                == layout.hasRigidBodyPairConstraintGeometry
+         && jointModel.rigidBodyPairConstraintLocalAnchorParent.isApprox(
+             layout.rigidBodyPairConstraintLocalAnchorParent, 0.0)
+         && jointModel.rigidBodyPairConstraintLocalAnchorChild.isApprox(
+             layout.rigidBodyPairConstraintLocalAnchorChild, 0.0)
+         && jointModel.rigidBodyPairConstraintTargetRelativeOrientation.coeffs()
                 .isApprox(
-                    layout.rigidBodyFixedJointTargetRelativeOrientation
+                    layout.rigidBodyPairConstraintTargetRelativeOrientation
                         .coeffs(),
                     0.0);
 }
@@ -2182,6 +2182,38 @@ bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
 }
 
 //==============================================================================
+bool hasFiniteStiffnessRigidBodyJointRows(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::JointModel>();
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::JointModel>(entity);
+    if (!isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+
+    const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity);
+    if (config == nullptr || !config->enabled) {
+      continue;
+    }
+
+    const bool hasFiniteLinearRows
+        = config->linearAxisMask != 0u
+          && !std::isinf(config->linearMaterialStiffness);
+    const bool hasFiniteAngularRows
+        = config->angularAxisMask != 0u
+          && !std::isinf(config->angularMaterialStiffness);
+    if (hasFiniteLinearRows || hasFiniteAngularRows) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
 void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
@@ -2195,6 +2227,14 @@ void validateRigidBodyJointPipelineSupport(
   if (!hasRigidBodyAvbdPairConstraints(world)) {
     return;
   }
+
+  DART_SIMULATION_THROW_T_IF(
+      solver == RigidBodySolver::SequentialImpulse
+          && hasFiniteStiffnessRigidBodyJointRows(world),
+      InvalidOperationException,
+      "The Sequential Impulse rigid-body solver supports hard rigid-body "
+      "joint rows only; finite constraint projection stiffness requires the "
+      "VBD or AVBD rigid-body solver");
 
   if (solver == RigidBodySolver::Ipc) {
     DART_SIMULATION_THROW_T_IF(
@@ -2218,8 +2258,8 @@ void validateRigidBodyJointPipelineSupport(
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body VBD and AVBD pair constraints are not supported in worlds "
-      "with multibody structures");
+      "Public rigid-body pair constraints are not supported in worlds with "
+      "multibody structures under Sequential Impulse, VBD, or AVBD");
 }
 
 //==============================================================================
@@ -4318,11 +4358,13 @@ void World::recordResolvedConfiguration()
              : "as requested"});
   }
 
-  const bool hasAvbdPairConstraints
-      = detail::deformable_vbd::mayHaveAvbdRigidWorldPointJointConfigs(registry)
-        || detail::deformable_vbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(
-            registry);
-  if (!hasAvbdPairConstraints) {
+  const bool hasRigidPointJoints
+      = detail::deformable_vbd::mayHaveAvbdRigidWorldPointJointConfigs(
+          registry);
+  const bool hasRigidDistanceSprings
+      = detail::deformable_vbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(
+          registry);
+  if (!hasRigidPointJoints && !hasRigidDistanceSprings) {
     m_resolvedConfiguration.notes.push_back(
         {"rigid-pair-constraint",
          "inactive",
@@ -4341,13 +4383,29 @@ void World::recordResolvedConfiguration()
          "ipc",
          "public fixed and revolute pair constraints enter the IPC "
          "articulation equality solve"});
+  } else if (hasRigidPointJoints && !hasRigidDistanceSprings) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         rigidSolver,
+         rigidSolver,
+         "hard public rigid pair constraints use solver-owned "
+         "sequential-impulse rows"});
+  } else if (!hasRigidPointJoints && hasRigidDistanceSprings) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         rigidSolver,
+         "avbd-distance-spring",
+         "experimental finite-stiffness distance springs retain their "
+         "explicit AVBD compatibility projection"});
   } else {
     m_resolvedConfiguration.notes.push_back(
         {"rigid-pair-constraint",
          rigidSolver,
-         "avbd",
-         "public rigid pair constraints use AVBD projection; select the AVBD "
-         "rigid-body family to make this method explicit"});
+         std::string(rigidSolver) + " + avbd-distance-spring",
+         "hard public rigid pair constraints use solver-owned "
+         "sequential-impulse rows while experimental finite-stiffness "
+         "distance springs retain their explicit AVBD compatibility "
+         "projection"});
   }
 
   const std::string rigidConstraintIterations
@@ -4576,7 +4634,7 @@ Multibody World::addMultibody(std::string_view name)
       hasRigidBodyAvbdPairConstraints(*this),
       InvalidOperationException,
       "Multibody structures are not supported in worlds with rigid-body "
-      "VBD or AVBD pair constraints");
+      "pair constraints under Sequential Impulse, VBD, or AVBD");
 
   std::string candidateName;
   if (name.empty()) {
@@ -4862,12 +4920,12 @@ Joint World::createArticulatedPointJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    jointModel.hasRigidBodyFixedJointAnchors = true;
-    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyPairConstraintGeometry = true;
+    jointModel.rigidBodyPairConstraintLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyPairConstraintLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation.normalize();
   }
 
   return Joint(detail::fromRegistryEntity(jointEntity), this);
@@ -5374,12 +5432,12 @@ Joint World::createRigidBodyPointJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    jointModel.hasRigidBodyFixedJointAnchors = true;
-    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyPairConstraintGeometry = true;
+    jointModel.rigidBodyPairConstraintLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyPairConstraintLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation.normalize();
   }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(jointModel.getDOF());
@@ -7948,14 +8006,14 @@ void World::recordReplayFrame()
     state.layout.pitch = joint.pitch;
     state.layout.parentLink = joint.parentLink;
     state.layout.childLink = joint.childLink;
-    state.layout.hasRigidBodyFixedJointAnchors
-        = joint.hasRigidBodyFixedJointAnchors;
-    state.layout.rigidBodyFixedJointLocalAnchorParent
-        = joint.rigidBodyFixedJointLocalAnchorParent;
-    state.layout.rigidBodyFixedJointLocalAnchorChild
-        = joint.rigidBodyFixedJointLocalAnchorChild;
-    state.layout.rigidBodyFixedJointTargetRelativeOrientation
-        = joint.rigidBodyFixedJointTargetRelativeOrientation;
+    state.layout.hasRigidBodyPairConstraintGeometry
+        = joint.hasRigidBodyPairConstraintGeometry;
+    state.layout.rigidBodyPairConstraintLocalAnchorParent
+        = joint.rigidBodyPairConstraintLocalAnchorParent;
+    state.layout.rigidBodyPairConstraintLocalAnchorChild
+        = joint.rigidBodyPairConstraintLocalAnchorChild;
+    state.layout.rigidBodyPairConstraintTargetRelativeOrientation
+        = joint.rigidBodyPairConstraintTargetRelativeOrientation;
     captureReplayVector(jointState.position, state.position);
     captureReplayVector(jointState.velocity, state.velocity);
     captureReplayVector(jointState.acceleration, state.acceleration);

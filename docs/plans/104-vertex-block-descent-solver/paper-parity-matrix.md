@@ -46,12 +46,13 @@ below, so neither solver family has a paper-parity claim.
 the row still records an explicit blocker. It is negative evidence against a
 complete claim, not permission to generalize from the artifact.
 
-The public-AVBD breakable-wall packet and matched fixed-penalty VBD comparison
-packet strengthen the evidence for Figure 13 and official-video row 12 without
-changing these counts. Both rows remain partial because the shared scene is a
-publication-shaped reconstruction, the exact source constants are unpublished,
-and the Sequential Impulse, XPBD, source-edit, CUDA, and achieved-accuracy
-reference-performance evidence is still absent.
+The public AVBD breakable-wall packet and matched fixed-penalty VBD plus
+Sequential Impulse comparison packets strengthen the evidence for Figure 13
+and official-video row 12 without changing these counts. Both canonical rows
+remain partial because the shared scene is a publication-shaped
+reconstruction, the exact source constants are unpublished, and XPBD, the
+source-matched four-method edit, CUDA, and achieved-accuracy reference-
+performance evidence are still absent.
 
 ## Authoritative Sources
 

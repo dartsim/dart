@@ -14144,13 +14144,14 @@ TEST(
   EXPECT_EQ(
       restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyPairConstraintGeometry);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorParent
+       - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorChild - childAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
@@ -14584,13 +14585,14 @@ TEST(
   ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
   EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
   EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
-  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyPairConstraintGeometry);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorParent
+       - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorChild - childAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
@@ -14789,13 +14791,14 @@ TEST(
   ASSERT_EQ(restoredJointModel.limits.effortUpper.size(), 1);
   EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortLower[0], -1000.0);
   EXPECT_DOUBLE_EQ(restoredJointModel.limits.effortUpper[0], 1000.0);
-  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyPairConstraintGeometry);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorParent
+       - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorChild - childAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
@@ -14991,13 +14994,14 @@ TEST(
   EXPECT_EQ(
       restoredJointModel.childLink,
       sx::detail::toRegistryEntity(restoredChild->getEntity()));
-  EXPECT_TRUE(restoredJointModel.hasRigidBodyFixedJointAnchors);
+  EXPECT_TRUE(restoredJointModel.hasRigidBodyPairConstraintGeometry);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorParent - parentAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorParent
+       - parentAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
-      (restoredJointModel.rigidBodyFixedJointLocalAnchorChild - childAnchor)
+      (restoredJointModel.rigidBodyPairConstraintLocalAnchorChild - childAnchor)
           .norm(),
       1e-12);
   EXPECT_LT(
@@ -16454,4 +16458,65 @@ TEST(VariationalLinkContact, SphereContactStopsSlidingLink)
   // ...and sphere-sphere contact stopped it: it did not pass through the fixed
   // sphere (the overshoot is a bounded penalty penetration).
   EXPECT_LT(maxX, touchX + 0.08);
+}
+
+//==============================================================================
+// The solver-neutral rigid pair-constraint helpers and the private AVBD
+// kernel currently keep separate definitions of the same masks, basis
+// construction, normalization, and orientation-error math. This pin turns
+// silent drift between the two owners into a test failure until the
+// definitions are consolidated into one.
+TEST(RigidPairConstraintNeutralHelpers, MatchPrivateAvbdKernelDefinitions)
+{
+  namespace neutral = dart::simulation::detail;
+
+  const Eigen::Vector3d axisSamples[] = {
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(0.3, -0.7, 0.648).normalized(),
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0),
+  };
+  for (const Eigen::Vector3d& axis : axisSamples) {
+    const Eigen::Matrix3d neutral
+        = neutral::rigidPairConstraintAxesFromFreeAxis(axis);
+    const Eigen::Matrix3d kernel = dvbd::avbdRigidJointAxesFromFreeAxis(axis);
+    EXPECT_TRUE(neutral.isApprox(kernel, 0.0)) << axis.transpose();
+  }
+
+  const Eigen::Quaterniond orientationSamples[] = {
+      Eigen::Quaterniond::Identity(),
+      Eigen::Quaterniond(0.2, 0.4, -0.3, 0.6),
+      Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0),
+      Eigen::Quaterniond(2.0, 0.0, 0.0, 0.0),
+  };
+  for (const Eigen::Quaterniond& orientation : orientationSamples) {
+    const Eigen::Quaterniond neutral
+        = neutral::normalizeRigidPairConstraintOrientation(orientation);
+    const Eigen::Quaterniond kernel
+        = dvbd::normalizeAvbdRigidOrientation(orientation);
+    EXPECT_TRUE(neutral.coeffs().isApprox(kernel.coeffs(), 0.0))
+        << orientation.coeffs().transpose();
+  }
+
+  const Eigen::Quaterniond current(
+      Eigen::AngleAxisd(0.9, Eigen::Vector3d(0.2, 0.5, -0.4).normalized()));
+  const Eigen::Quaterniond target(
+      Eigen::AngleAxisd(-2.4, Eigen::Vector3d(0.7, -0.1, 0.3).normalized()));
+  EXPECT_TRUE(
+      neutral::rigidPairConstraintOrientationError(current, target)
+          .isApprox(dvbd::avbdRigidBodyOrientationError(current, target), 0.0));
+
+  static_assert(
+      neutral::kRigidPairConstraintAllAxesMask
+      == dvbd::kAvbdRigidJointAllAxesMask);
+  for (std::uint8_t axis = 0u; axis < 4u; ++axis) {
+    EXPECT_EQ(
+        dvbd::avbdRigidJointAxisBit(axis),
+        neutral::rigidPairConstraintAxisBit(axis));
+    EXPECT_EQ(
+        dvbd::avbdRigidJointAllButAxisMask(axis),
+        neutral::rigidPairConstraintAllButAxisMask(axis));
+  }
 }

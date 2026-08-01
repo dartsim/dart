@@ -80,6 +80,109 @@ def _source_provenance(module) -> dict[str, Any]:
     }
 
 
+def _empty_joint_evidence(
+    *,
+    maximum_angular: float,
+    maximum_linear: float,
+    rms_angular: float,
+    rms_linear: float,
+) -> dict[str, Any]:
+    return {
+        "broken_joint_identity_count": 0,
+        "broken_joint_ids_sha256": sha256().hexdigest(),
+        "broken_joint_impact_region_counts": [0, 0, 0],
+        "broken_joint_records": [],
+        "broken_joints_outside_impact_regions": 0,
+        "joint_residuals_finite": True,
+        "maximum_outside_impact_unbroken_joint_angular_residual_radians": (
+            maximum_angular
+        ),
+        "maximum_outside_impact_unbroken_joint_linear_residual": maximum_linear,
+        "maximum_unbroken_joint_angular_residual_radians": maximum_angular,
+        "maximum_unbroken_joint_linear_residual": maximum_linear,
+        "outside_impact_unbroken_joint_residual_count": 484,
+        "rms_outside_impact_unbroken_joint_angular_residual_radians": (
+            rms_angular
+        ),
+        "rms_outside_impact_unbroken_joint_linear_residual": rms_linear,
+        "rms_unbroken_joint_angular_residual_radians": rms_angular,
+        "rms_unbroken_joint_linear_residual": rms_linear,
+        "unbroken_joint_residual_count": 712,
+    }
+
+
+def _avbd_joint_records() -> list[dict[str, Any]]:
+    impact_indices = [0] * 18 + [1] * 44 + [2] * 13
+    records = []
+    for index in range(154):
+        within_region = index < len(impact_indices)
+        records.append(
+            {
+                "angular_residual_radians": 0.01 + index * 0.0001,
+                "child": {
+                    "body": "brick",
+                    "column": (index + 1) % 21,
+                    "row": (index // 21) % 12,
+                },
+                "id": f"fixture_joint_{index:03d}",
+                "initial_anchor": [
+                    float(index % 21),
+                    0.0,
+                    float((index // 21) % 12),
+                ],
+                "kind": "horizontal" if index % 2 == 0 else "vertical",
+                "linear_residual": 0.001 + index * 0.000001,
+                "nearest_impact_distance": 0.5 if within_region else 2.0,
+                "nearest_impact_index": (
+                    impact_indices[index] if within_region else index % 3
+                ),
+                "parent": {
+                    "body": "brick",
+                    "column": index % 21,
+                    "row": (index // 21) % 12,
+                },
+                "within_impact_band": within_region,
+                "within_impact_region": within_region,
+            }
+        )
+    return records
+
+
+def _joint_ids_sha256(records: list[dict[str, Any]]) -> str:
+    digest = sha256()
+    for joint_id in sorted(record["id"] for record in records):
+        encoded = joint_id.encode("utf-8")
+        digest.update(struct.pack("<Q", len(encoded)))
+        digest.update(encoded)
+    return digest.hexdigest()
+
+
+def _linked_avbd_outcome(module, frame: int) -> dict[str, Any]:
+    records = _avbd_joint_records()
+    return dict(module.shared.EXPECTED_OUTCOMES[frame]) | {
+        "broken_joint_identity_count": 154,
+        "broken_joint_ids_sha256": _joint_ids_sha256(records),
+        "broken_joint_impact_region_counts": [18, 44, 13],
+        "broken_joint_records": records,
+        "broken_joints_outside_impact_regions": 79,
+        "frame": frame,
+        "joint_residuals_finite": True,
+        "last_step_iterations": 20,
+        "maximum_outside_impact_unbroken_joint_angular_residual_radians": (
+            0.0003
+        ),
+        "maximum_outside_impact_unbroken_joint_linear_residual": 0.001,
+        "maximum_unbroken_joint_angular_residual_radians": 0.0003,
+        "maximum_unbroken_joint_linear_residual": 0.001,
+        "outside_impact_unbroken_joint_residual_count": 405,
+        "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.0001,
+        "rms_outside_impact_unbroken_joint_linear_residual": 0.0005,
+        "rms_unbroken_joint_angular_residual_radians": 0.0001,
+        "rms_unbroken_joint_linear_residual": 0.0005,
+        "unbroken_joint_residual_count": 558,
+    }
+
+
 def _outcome(module, frame: int) -> dict[str, Any]:
     generic = {
         "ball_positions": [[0.0, 1.0, 2.0]] * 3,
@@ -103,21 +206,30 @@ def _outcome(module, frame: int) -> dict[str, Any]:
         "total_retained_fraction": 1.0,
         "unbroken_joints": 712,
         "world_time": frame / 60.0,
-    }
-    if frame == 14:
+    } | _empty_joint_evidence(
+        maximum_angular=0.0,
+        maximum_linear=0.0,
+        rms_angular=0.0,
+        rms_linear=0.0,
+    )
+    if frame == 18:
         return generic | {
-            "bent_brick_count": 131,
-            "contact_count": 26,
+            "bent_brick_count": 120,
             "evaluated": True,
-            "max_brick_displacement": 0.22961765643338428,
-            "maximum_wall_normal_displacement": 0.22961612378147464,
-            "rms_wall_normal_displacement": 0.12274369318326252,
+            "max_brick_displacement": 0.13266478096099812,
+            "maximum_wall_normal_displacement": 0.13266478096099812,
+            "rms_wall_normal_displacement": 0.06264039944471685,
             "status": "pass",
             "threshold_checks": dict(
-                module.CHECKPOINTS[14]["threshold_checks"]
+                module.CHECKPOINTS[18]["threshold_checks"]
             ),
             "thresholds_pass": True,
-        }
+        } | _empty_joint_evidence(
+            maximum_angular=0.013,
+            maximum_linear=0.016,
+            rms_angular=0.003,
+            rms_linear=0.004,
+        )
     if frame == 120:
         return generic | {
             "checkpoint": "retention",
@@ -130,14 +242,19 @@ def _outcome(module, frame: int) -> dict[str, Any]:
                 module.CHECKPOINTS[120]["threshold_checks"]
             ),
             "thresholds_pass": True,
-        }
+        } | _empty_joint_evidence(
+            maximum_angular=0.0013,
+            maximum_linear=0.011,
+            rms_angular=0.00012,
+            rms_linear=0.0033,
+        )
     return generic
 
 
 def _metrics(module, frame: int) -> dict[str, Any]:
     return {
         "ball_count": 3,
-        "break_force": 8500.0,
+        "break_force": module.BREAK_FORCE,
         "breakable_joints": 712,
         "brick_count": 252,
         "collision_shapes": 256,
@@ -180,10 +297,10 @@ def _metrics(module, frame: int) -> dict[str, Any]:
         "time_step_ms": 1000.0 / 60.0,
         "view_report": {
             "camera": {
-                "azimuth": -1.5707963267948966,
-                "distance": 11.0,
-                "elevation": 0.0,
-                "target": [0.0, 0.0, 1.4],
+                "azimuth": module.shared.CAMERA_AZIMUTH,
+                "distance": module.shared.CAMERA_DISTANCE,
+                "elevation": module.shared.CAMERA_ELEVATION,
+                "target": list(module.shared.CAMERA_TARGET),
             },
             "focus": list(module.VIEW_FOCUS),
             "issues": [],
@@ -236,9 +353,11 @@ def _write_capture(
             "video": None,
         },
         "camera": {
-            "distance": 11.0,
-            "target": [0.0, 0.0, 1.4],
-            "view": "front",
+            "azimuth": module.math.degrees(module.shared.CAMERA_AZIMUTH),
+            "distance": module.shared.CAMERA_DISTANCE,
+            "elevation": module.math.degrees(module.shared.CAMERA_ELEVATION),
+            "target": list(module.shared.CAMERA_TARGET),
+            "view": module.shared.CAMERA_PRESET,
         },
         "capture": {
             "converted_frames": frame,
@@ -246,6 +365,16 @@ def _write_capture(
             "requested_frames": frame,
             "width": 8,
         },
+        "capture_artifact_provenance": {
+            "algorithm": module.shared.CAPTURE_ARTIFACT_PROVENANCE_ALGORITHM,
+            "scene_metrics_events_sha256": _sha256(metrics_log),
+            "screenshot_sha256": _sha256(screenshot),
+        },
+        "capture_source_provenance": (
+            module.shared.compute_capture_source_provenance(
+                module.shared.REPO_ROOT
+            )
+        ),
         "capture_label": label,
         "force_drag": None,
         "resolved_solver_identity": {
@@ -274,7 +403,7 @@ def _write_capture(
         "metadata": {
             "frame": str(frame),
             "scene": module.SCENE_ID,
-            "view": "front",
+            "view": module.CAMERA_VIEW,
         },
         "pass": True,
         "schema_version": "dart.image_verdict/v1",
@@ -347,6 +476,15 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
             {
                 "benchmarks": rows,
                 "context": {
+                    "benchmark_source_sha256": _sha256(
+                        module.shared.REPO_ROOT
+                        / module.shared.BENCHMARK_SOURCE_PATH
+                    ),
+                    "capture_source_provenance_digest": (
+                        module.shared.compute_capture_source_provenance(
+                            module.shared.REPO_ROOT
+                        )["digest"]
+                    ),
                     "executable": (
                         "build/default/cpp/Release/bin/"
                         "bm_avbd_rigid_fixed_joint"
@@ -366,10 +504,13 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
 
 
 def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
+    module.shared.OUTCOME_ORACLE["expected_broken_joint_ids_sha256"] = (
+        _joint_ids_sha256(_avbd_joint_records())
+    )
     bend_manifest, bend_verdict = _write_capture(
         module,
         tmp_path,
-        14,
+        18,
         "bend",
     )
     retention_manifest, retention_verdict = _write_capture(
@@ -406,7 +547,7 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
         "inspected_images": [
             {
                 "file": str(bend_screenshot),
-                "role": "bend_frame_14",
+                "role": "bend_frame_18",
                 "sha256": _sha256(bend_screenshot),
             },
             {
@@ -446,11 +587,7 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
             "image_verdict": {"pass": True, "sha256": "4" * 64},
             "scene_metrics": {
                 "frame": 60,
-                "outcome": dict(module.shared.EXPECTED_OUTCOMES[60])
-                | {
-                    "frame": 60,
-                    "last_step_iterations": 20,
-                },
+                "outcome": _linked_avbd_outcome(module, 60),
                 "outcome_oracle": dict(module.shared.OUTCOME_ORACLE),
                 "scene_spec_fingerprint": "0123456789abcdef",
             },
@@ -460,11 +597,7 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
             "image_verdict": {"pass": True, "sha256": "5" * 64},
             "scene_metrics": {
                 "frame": 120,
-                "outcome": dict(module.shared.EXPECTED_OUTCOMES[120])
-                | {
-                    "frame": 120,
-                    "last_step_iterations": 20,
-                },
+                "outcome": _linked_avbd_outcome(module, 120),
                 "outcome_oracle": dict(module.shared.OUTCOME_ORACLE),
                 "scene_spec_fingerprint": "0123456789abcdef",
             },
@@ -550,7 +683,7 @@ def test_make_packet_records_matched_vbd_and_avbd_evidence(
 
     packet = module.make_packet(**inputs)
 
-    assert packet["schema_version"] == 3
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["resolved_solver_identity"]["rigid_contact_solver"] == "vbd"
     assert packet["linked_avbd_evidence"]["resolved_solver_identity"][
         "rigid_contact_solver"
@@ -559,7 +692,7 @@ def test_make_packet_records_matched_vbd_and_avbd_evidence(
         packet["visual_evidence"]["bend"]["scene_metrics"]["outcome"][
             "bent_brick_count"
         ]
-        == 131
+        == 120
     )
     assert packet["visual_evidence"]["retention"]["scene_metrics"]["outcome"][
         "unbroken_joints"
@@ -588,7 +721,9 @@ def test_make_packet_records_matched_vbd_and_avbd_evidence(
     ("mutation", "message"),
     [
         ("solver", "capture resolved_solver_identity"),
+        ("capture_source", "capture source provenance digest"),
         ("fracture", "broken_joints"),
+        ("joint_residual", "retained-joint linear residual exceeds"),
         ("benchmark", "expected aggregates"),
         ("linked_hash", "linked AVBD benchmark JSON hash"),
         ("linked_outcome", "frame 120 outcome status"),
@@ -610,6 +745,11 @@ def test_make_packet_fails_closed_on_mismatched_comparison_evidence(
         path = inputs["bend_capture_manifest"]
         data = json.loads(path.read_text())
         data["resolved_solver_identity"]["solver"] = "public_avbd"
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "capture_source":
+        path = inputs["bend_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["capture_source_provenance"]["digest"] = "0" * 64
         path.write_text(json.dumps(data), encoding="utf-8")
     elif mutation == "fracture":
         path = inputs["bend_capture_manifest"]
@@ -638,6 +778,26 @@ def test_make_packet_fails_closed_on_mismatched_comparison_evidence(
             if not row["run_name"].startswith("BM_Avbd")
         ]
         path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "joint_residual":
+        path = inputs["bend_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["scene_metrics"]["latest"]["metrics"]["outcome"][
+            "maximum_unbroken_joint_linear_residual"
+        ] = 0.03
+        path.write_text(json.dumps(data), encoding="utf-8")
+        events_path = Path(data["artifacts"]["scene_metrics_events"])
+        events = [
+            json.loads(line)
+            for line in events_path.read_text().splitlines()
+            if line
+        ]
+        events[-1]["metrics"]["outcome"][
+            "maximum_unbroken_joint_linear_residual"
+        ] = 0.03
+        events_path.write_text(
+            "".join(json.dumps(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
     elif mutation == "linked_hash":
         path = inputs["avbd_packet"]
         data = json.loads(path.read_text())

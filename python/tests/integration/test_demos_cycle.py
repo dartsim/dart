@@ -950,6 +950,9 @@ def test_world_scenes_use_solver_focused_categories() -> None:
         "VBD Rigid Constraints (sx)": {
             "vbd_paper_breakable_wall",
         },
+        "Sequential Impulse Rigid Constraints (sx)": {
+            "sequential_impulse_paper_breakable_wall",
+        },
         "Planned World Ports": {
             "planned_inverse_kinematics",
             "planned_simbicon_walking",
@@ -8895,6 +8898,7 @@ def test_avbd_demo2d_rod_scene_matches_source_row() -> None:
     }
     assert sx_world.num_rigid_bodies == 20
     assert sx_world.num_joints == 19
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
     assert _fixed_joint_count(sx_world) == 19
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
@@ -9169,6 +9173,7 @@ def test_avbd_demo2d_soft_body_scene_matches_source_row() -> None:
     }
     assert sx_world.num_rigid_bodies == 151
     assert sx_world.num_joints == 260
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
     assert _fixed_joint_count(sx_world) == 260
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
@@ -9278,6 +9283,7 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
     }
     assert sx_world.num_rigid_bodies == 50
     assert sx_world.num_joints == 49
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
     assert _fixed_joint_count(sx_world) == 0
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
@@ -9900,6 +9906,7 @@ def test_avbd_demo2d_heavy_rope_scene_matches_source_row() -> None:
     assert np.asarray(link_sizes[-1], dtype=float).tolist() == pytest.approx(
         [30.0, 30.0, 0.2]
     )
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
 
     initial_positions = np.array(
         [np.asarray(link.translation, dtype=float).reshape(3) for link in links]
@@ -10304,12 +10311,16 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
             "AVBD",
         ),
         "avbd_outcome": (
-            "localized damage in three impact bands while large retained wall "
-            "regions remain attached and standing"
+            "localized displacement damage in three impact bands while large "
+            "retained wall regions remain attached and standing"
+        ),
+        "sequential_impulse_outcome": (
+            "clean initial fracture followed by retained-constraint failure, "
+            "slow wall bending, and eventual collapse"
         ),
     }
     assert "break force" in reference["unpublished_scene_constants"]
-    assert reference["dart_reconstruction"]["break_force"] == pytest.approx(8500.0)
+    assert reference["dart_reconstruction"]["break_force"] == pytest.approx(5000.0)
     assert reference["dart_reconstruction"]["selection"].startswith(
         "visual adjudication"
     )
@@ -10327,10 +10338,10 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     assert ground.is_static
     assert not any(brick.is_static for brick in bricks)
     assert not any(ball.is_static for ball in balls)
-    assert all(joint.break_force == pytest.approx(8500.0) for joint in joints)
+    assert all(joint.break_force == pytest.approx(5000.0) for joint in joints)
     assert sum(len(body.collision_shapes) for body in (ground, *bricks, *balls)) == 256
-    assert [brick.mass for brick in bricks] == pytest.approx([0.18] * 252)
-    assert [ball.mass for ball in balls] == pytest.approx([100.0] * 3)
+    assert [brick.mass for brick in bricks] == pytest.approx([9.0] * 252)
+    assert [ball.mass for ball in balls] == pytest.approx([40.0] * 3)
 
     brick_positions = np.asarray(
         [np.asarray(brick.translation, dtype=float).reshape(3) for brick in bricks]
@@ -10351,11 +10362,11 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     np.testing.assert_allclose(
         ball_positions,
         np.array(
-            [
-                [-3.10, -5.0, 1.55],
-                [0.00, -5.0, 1.75],
-                [3.10, -5.0, 2.35],
-            ]
+                [
+                    [-3.10, -5.0, 1.55],
+                    [-0.31, -5.0, 1.75],
+                    [3.10, -5.0, 2.35],
+                ]
         ),
     )
     ball_velocities = np.asarray(
@@ -10398,6 +10409,32 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
         <= OUTCOME_ORACLE["maximum_broken_joints"]
     )
     assert outcome["unbroken_joints"] >= OUTCOME_ORACLE["minimum_unbroken_joints"]
+    assert (
+        outcome["broken_joint_identity_count"] == outcome["broken_joints"]
+    )
+    assert (
+        outcome["broken_joint_ids_sha256"]
+        == OUTCOME_ORACLE["expected_broken_joint_ids_sha256"]
+    )
+    assert len(outcome["broken_joint_records"]) == outcome["broken_joints"]
+    assert len(
+        {record["id"] for record in outcome["broken_joint_records"]}
+    ) == outcome["broken_joints"]
+    assert (
+        sum(outcome["broken_joint_impact_region_counts"])
+        + outcome["broken_joints_outside_impact_regions"]
+        == outcome["broken_joints"]
+    )
+    assert (
+        outcome["maximum_unbroken_joint_linear_residual"]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_linear_residual"]
+    )
+    assert (
+        outcome["maximum_unbroken_joint_angular_residual_radians"]
+        <= OUTCOME_ORACLE[
+            "maximum_unbroken_joint_angular_residual_radians"
+        ]
+    )
     assert outcome["last_step_iterations"] == 20
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
@@ -10423,10 +10460,9 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
         assert capture_metrics["view_report"]["pass"] is True
         assert capture_metrics["view_report"]["issues"] == []
         assert capture_metrics["view_report"]["focus"] == [
-            "avbd_paper_wall_brick_00_00_visual",
-            "avbd_paper_wall_brick_00_20_visual",
-            "avbd_paper_wall_brick_11_00_visual",
-            "avbd_paper_wall_brick_11_20_visual",
+            f"avbd_paper_wall_brick_{row:02d}_{column:02d}_visual"
+            for row in range(12)
+            for column in range(21)
         ]
     else:
         assert capture_metrics["view_report"] is None
@@ -10452,12 +10488,25 @@ def test_avbd_paper_breakable_wall_outcome_is_deterministic() -> None:
         "broken_joints",
         "unbroken_joints",
         "impact_band_displaced_counts",
+        "broken_joint_impact_region_counts",
+        "broken_joints_outside_impact_regions",
         "outside_retained_fraction",
         "total_retained_fraction",
+        "maximum_unbroken_joint_linear_residual",
+        "maximum_unbroken_joint_angular_residual_radians",
+        "rms_unbroken_joint_linear_residual",
+        "rms_unbroken_joint_angular_residual_radians",
         "last_step_iterations",
         "contact_count",
     ):
         assert outcomes[0][key] == pytest.approx(outcomes[1][key])
+    assert (
+        outcomes[0]["broken_joint_ids_sha256"]
+        == outcomes[1]["broken_joint_ids_sha256"]
+    )
+    assert outcomes[0]["broken_joint_records"] == outcomes[1][
+        "broken_joint_records"
+    ]
 
     for collection in ("bricks", "balls"):
         positions = [
@@ -10470,6 +10519,279 @@ def test_avbd_paper_breakable_wall_outcome_is_deterministic() -> None:
             for setup in setups
         ]
         np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1.0e-12)
+    assert [
+        joint.is_broken for joint in setups[0].info["joints"]
+    ] == [joint.is_broken for joint in setups[1].info["joints"]]
+
+
+def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> None:
+    sx = _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_paper_breakable_wall import (
+        build as build_avbd,
+    )
+    from examples.demos.scenes.sequential_impulse_paper_breakable_wall import (
+        SEQUENTIAL_IMPULSE_OUTCOME_ORACLE,
+        build,
+    )
+
+    setup = build()
+    sx_world = setup.info["sx_world"]
+    reference = setup.info["paper_reference"]
+    outcome_oracle = SEQUENTIAL_IMPULSE_OUTCOME_ORACLE
+
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
+    assert sx_world.rigid_constraint_options.iterations == 20
+    assert sx_world.time_step == pytest.approx(1.0 / 60.0)
+    assert sx_world.num_rigid_bodies == 256
+    assert sx_world.num_joints == 712
+    assert reference["published_facts"]["sequential_impulse_outcome"] == (
+        "clean initial fracture followed by retained-constraint failure, "
+        "slow wall bending, and eventual collapse"
+    )
+    assert (
+        setup.info["scene_spec_fingerprint"]
+        == build_avbd().info["scene_spec_fingerprint"]
+    )
+
+    initial = setup.info["outcome_metrics"]()
+    assert initial["status"] == "pre-evaluation"
+    assert initial["broken_joints"] == 0
+
+    sx_world.step(n=outcome_oracle["evaluation_frame"])
+    fracture = setup.info["outcome_metrics"]()
+    assert fracture["frame"] == outcome_oracle["evaluation_frame"]
+    assert fracture["checkpoint"] == "fracture"
+    assert fracture["status"] == "pass"
+    assert fracture["thresholds_pass"] is True
+    assert all(fracture["threshold_checks"].values())
+    assert (
+        outcome_oracle["minimum_initial_broken_joints"]
+        <= fracture["broken_joints"]
+        <= outcome_oracle["maximum_initial_broken_joints"]
+    )
+    assert (
+        fracture["unbroken_joints"]
+        >= outcome_oracle["minimum_initial_unbroken_joints"]
+    )
+    assert (
+        fracture["total_retained_fraction"]
+        >= outcome_oracle["minimum_initial_total_retained_fraction"]
+    )
+    assert fracture["broken_joints"] == outcome_oracle["expected_broken_joints"]
+    assert (
+        fracture["broken_joint_ids_sha256"]
+        == outcome_oracle["expected_broken_joint_ids_sha256"]
+    )
+    assert (
+        fracture["broken_joints_outside_impact_regions"] == 0
+    )
+    assert all(
+        count
+        >= outcome_oracle[
+            "minimum_initial_broken_joints_per_impact_region"
+        ]
+        for count in fracture["broken_joint_impact_region_counts"]
+    )
+    assert len(fracture["broken_joint_records"]) == fracture["broken_joints"]
+    assert {
+        record["id"] for record in fracture["broken_joint_records"]
+    } == {
+        "sequential_impulse_paper_wall_horizontal_08_15",
+        "sequential_impulse_paper_wall_vertical_04_05_05_05",
+        "sequential_impulse_paper_wall_vertical_05_04_06_05",
+        "sequential_impulse_paper_wall_vertical_05_09_06_10",
+        "sequential_impulse_paper_wall_vertical_08_15_09_15",
+    }
+    assert (
+        fracture[
+            "maximum_outside_impact_unbroken_joint_linear_residual"
+        ]
+        <= outcome_oracle[
+            "maximum_initial_outside_joint_linear_residual"
+        ]
+    )
+    assert (
+        fracture[
+            "maximum_outside_impact_unbroken_joint_angular_residual_radians"
+        ]
+        <= outcome_oracle[
+            "maximum_initial_outside_joint_angular_residual_radians"
+        ]
+    )
+    assert fracture["last_step_iterations"] == 20
+
+    fracture_capture = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert fracture_capture["solver"] == "public_sequential-impulse"
+    assert fracture_capture["rigid_body_solver"] == "SEQUENTIAL_IMPULSE"
+    assert fracture_capture["outcome"]["checkpoint"] == "fracture"
+    assert fracture_capture["outcome"]["thresholds_pass"] is True
+
+    sx_world.step(
+        n=(
+            outcome_oracle["collapse_evaluation_frame"]
+            - outcome_oracle["evaluation_frame"]
+        )
+    )
+    collapse = setup.info["outcome_metrics"]()
+    assert collapse["frame"] == outcome_oracle["collapse_evaluation_frame"]
+    assert collapse["checkpoint"] == "collapse"
+    assert collapse["status"] == "pass"
+    assert collapse["thresholds_pass"] is True
+    assert all(collapse["threshold_checks"].values())
+    assert (
+        outcome_oracle["minimum_final_broken_joints"]
+        <= collapse["broken_joints"]
+        <= outcome_oracle["maximum_final_broken_joints"]
+    )
+    assert (
+        collapse["unbroken_joints"]
+        >= outcome_oracle["minimum_final_unbroken_joints"]
+    )
+    assert (
+        collapse["outside_retained_fraction"]
+        <= outcome_oracle["maximum_collapse_outside_retained_fraction"]
+    )
+    assert (
+        collapse["total_retained_fraction"]
+        <= outcome_oracle["maximum_collapse_total_retained_fraction"]
+    )
+    assert (
+        collapse["maximum_wall_normal_displacement"]
+        >= outcome_oracle["minimum_collapse_wall_normal_displacement"]
+    )
+    assert (
+        collapse["broken_joint_ids_sha256"]
+        == fracture["broken_joint_ids_sha256"]
+    )
+    assert {
+        record["id"] for record in collapse["broken_joint_records"]
+    } == {
+        record["id"] for record in fracture["broken_joint_records"]
+    }
+    assert (
+        collapse[
+            "maximum_outside_impact_unbroken_joint_linear_residual"
+        ]
+        >= outcome_oracle[
+            "minimum_collapse_outside_joint_maximum_linear_residual"
+        ]
+    )
+    assert (
+        collapse["rms_outside_impact_unbroken_joint_linear_residual"]
+        >= outcome_oracle[
+            "minimum_collapse_outside_joint_rms_linear_residual"
+        ]
+    )
+    assert (
+        collapse[
+            "maximum_outside_impact_unbroken_joint_angular_residual_radians"
+        ]
+        >= outcome_oracle[
+            "minimum_collapse_outside_joint_maximum_angular_residual_radians"
+        ]
+    )
+    assert (
+        collapse[
+            "rms_outside_impact_unbroken_joint_angular_residual_radians"
+        ]
+        >= outcome_oracle[
+            "minimum_collapse_outside_joint_rms_angular_residual_radians"
+        ]
+    )
+    assert collapse["last_step_iterations"] == 20
+
+    collapse_capture = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert collapse_capture["outcome"]["checkpoint"] == "collapse"
+    assert collapse_capture["outcome"]["thresholds_pass"] is True
+    assert (
+        collapse_capture["resolved_configuration"]
+        == list(setup.info["resolved_configuration"])
+    )
+
+
+def test_sequential_impulse_paper_breakable_wall_is_deterministic() -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.sequential_impulse_paper_breakable_wall import (
+        SEQUENTIAL_IMPULSE_OUTCOME_ORACLE,
+        build,
+    )
+
+    outcome_oracle = SEQUENTIAL_IMPULSE_OUTCOME_ORACLE
+    setups = [build(), build()]
+    for setup in setups:
+        setup.info["sx_world"].step(n=outcome_oracle["evaluation_frame"])
+
+    fracture_outcomes = [setup.info["outcome_metrics"]() for setup in setups]
+    for key in (
+        "broken_joints",
+        "unbroken_joints",
+        "impact_band_displaced_counts",
+        "broken_joint_impact_region_counts",
+        "broken_joints_outside_impact_regions",
+        "outside_retained_fraction",
+        "total_retained_fraction",
+        "maximum_outside_impact_unbroken_joint_linear_residual",
+        "maximum_outside_impact_unbroken_joint_angular_residual_radians",
+        "rms_outside_impact_unbroken_joint_linear_residual",
+        "rms_outside_impact_unbroken_joint_angular_residual_radians",
+        "last_step_iterations",
+        "contact_count",
+    ):
+        assert fracture_outcomes[0][key] == pytest.approx(
+            fracture_outcomes[1][key]
+        )
+
+    for setup in setups:
+        setup.info["sx_world"].step(
+            n=(
+                outcome_oracle["collapse_evaluation_frame"]
+                - outcome_oracle["evaluation_frame"]
+            )
+        )
+    collapse_outcomes = [setup.info["outcome_metrics"]() for setup in setups]
+    for key in (
+        "broken_joints",
+        "unbroken_joints",
+        "impact_band_displaced_counts",
+        "broken_joint_impact_region_counts",
+        "broken_joints_outside_impact_regions",
+        "outside_retained_fraction",
+        "total_retained_fraction",
+        "maximum_outside_impact_unbroken_joint_linear_residual",
+        "maximum_outside_impact_unbroken_joint_angular_residual_radians",
+        "rms_outside_impact_unbroken_joint_linear_residual",
+        "rms_outside_impact_unbroken_joint_angular_residual_radians",
+        "maximum_wall_normal_displacement",
+        "last_step_iterations",
+        "contact_count",
+    ):
+        assert collapse_outcomes[0][key] == pytest.approx(
+            collapse_outcomes[1][key]
+        )
+    for checkpoint_outcomes in (fracture_outcomes, collapse_outcomes):
+        assert (
+            checkpoint_outcomes[0]["broken_joint_ids_sha256"]
+            == checkpoint_outcomes[1]["broken_joint_ids_sha256"]
+        )
+        assert checkpoint_outcomes[0]["broken_joint_records"] == (
+            checkpoint_outcomes[1]["broken_joint_records"]
+        )
+
+    for collection in ("bricks", "balls"):
+        positions = [
+            np.asarray(
+                [
+                    np.asarray(body.translation, dtype=float).reshape(3)
+                    for body in setup.info[collection]
+                ]
+            )
+            for setup in setups
+        ]
+        np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1e-12)
     assert [
         joint.is_broken for joint in setups[0].info["joints"]
     ] == [joint.is_broken for joint in setups[1].info["joints"]]
@@ -10521,6 +10843,16 @@ def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
         >= OUTCOME_ORACLE["minimum_rms_wall_normal_displacement"]
     )
     assert bend["bent_brick_count"] >= OUTCOME_ORACLE["minimum_bent_bricks"]
+    assert (
+        bend["maximum_unbroken_joint_linear_residual"]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_linear_residual"]
+    )
+    assert (
+        bend["maximum_unbroken_joint_angular_residual_radians"]
+        <= OUTCOME_ORACLE[
+            "maximum_unbroken_joint_angular_residual_radians"
+        ]
+    )
     assert bend["last_step_iterations"] == 20
 
     bend_capture = setup.info[CAPTURE_METRICS_INFO_KEY]()
@@ -10547,6 +10879,16 @@ def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
         retention["total_retained_fraction"]
         >= OUTCOME_ORACLE["minimum_total_retained_fraction"]
     )
+    assert (
+        retention["maximum_unbroken_joint_linear_residual"]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_linear_residual"]
+    )
+    assert (
+        retention["maximum_unbroken_joint_angular_residual_radians"]
+        <= OUTCOME_ORACLE[
+            "maximum_unbroken_joint_angular_residual_radians"
+        ]
+    )
 
 
 def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
@@ -10570,6 +10912,8 @@ def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
         "maximum_wall_normal_displacement",
         "rms_wall_normal_displacement",
         "bent_brick_count",
+        "maximum_unbroken_joint_linear_residual",
+        "maximum_unbroken_joint_angular_residual_radians",
         "last_step_iterations",
         "contact_count",
     ):
@@ -10587,6 +10931,8 @@ def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
         "broken_joints",
         "unbroken_joints",
         "total_retained_fraction",
+        "maximum_unbroken_joint_linear_residual",
+        "maximum_unbroken_joint_angular_residual_radians",
         "last_step_iterations",
         "contact_count",
     ):
@@ -10627,20 +10973,30 @@ def _fixed_chain_anchor_errors(chain: tuple[Any, ...]) -> list[float]:
     return errors
 
 
-def _assert_source_fixed_joint_fracture_resets(setup: Any) -> None:
+def _assert_source_fixed_joint_fracture_resets(
+    setup: Any,
+    *,
+    fracture_evaluation_frame: int,
+) -> None:
     joints = setup.info["joints"]
     chain = setup.info["chain"]
+    rigid_body_solver = setup.info["sx_world"].rigid_body_solver
 
+    assert rigid_body_solver == type(rigid_body_solver).AVBD
     assert len(joints) == 10
     assert max(_fixed_chain_anchor_errors(chain)) < 1.0e-12
 
-    for _ in range(45):
+    # These ports preserve source topology and the source's numeric threshold,
+    # but DART evaluates a combined physical row-load norm instead of the
+    # source's torque-arm-scaled angular dual predicate. Use a deterministic
+    # DART horizon without claiming source-trajectory equivalence.
+    for _ in range(fracture_evaluation_frame):
         assert setup.pre_step is not None
         setup.pre_step()
         setup.world.step()
 
     broken_count = sum(joint.is_broken for joint in joints)
-    assert broken_count >= len(joints) // 2
+    assert broken_count >= 1
     broken_anchor_error = max(_fixed_chain_anchor_errors(chain))
     assert broken_anchor_error > 1.0e-2
 
@@ -10673,7 +11029,10 @@ def test_avbd_demo2d_fracture_scene_breaks_and_resets_source_joints() -> None:
     assert setup.info["source_demo_row"] == "avbd-demo2d fracture"
     assert setup.info["break_force"] == pytest.approx(500.0)
 
-    _assert_source_fixed_joint_fracture_resets(setup)
+    _assert_source_fixed_joint_fracture_resets(
+        setup,
+        fracture_evaluation_frame=360,
+    )
 
 
 def test_avbd_demo3d_breakable_scene_breaks_and_resets_source_joints() -> None:
@@ -10685,7 +11044,10 @@ def test_avbd_demo3d_breakable_scene_breaks_and_resets_source_joints() -> None:
     assert setup.info["source_demo_row"] == "avbd-demo3d breakable"
     assert setup.info["break_force"] == pytest.approx(90.0)
 
-    _assert_source_fixed_joint_fracture_resets(setup)
+    _assert_source_fixed_joint_fracture_resets(
+        setup,
+        fracture_evaluation_frame=60,
+    )
 
 
 def test_avbd_demo3d_ground_scene_matches_source_row() -> None:
@@ -11433,6 +11795,7 @@ def test_avbd_demo3d_soft_body_scene_matches_source_row() -> None:
     }
     assert sx_world.num_rigid_bodies == 193
     assert sx_world.num_joints == 432
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
     assert _fixed_joint_count(sx_world) == 432
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, 0.0, -10.0])

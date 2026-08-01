@@ -47,6 +47,10 @@ namespace dart::simulation {
 /// World step pipeline.
 enum class RigidBodySolver
 {
+  /// Velocity-level projected Gauss-Seidel for free-rigid contacts and hard
+  /// public rigid-body pair constraints, followed by non-velocity positional
+  /// stabilization. Breakable-joint loads are derived from the accumulated
+  /// constraint impulses over the step.
   SequentialImpulse,
   Ipc,
   /// Augmented vertex block descent for free rigid-body contact and public
@@ -87,10 +91,12 @@ enum class ContactSolverMethod
 
 /// Domain-scoped tuning for the built-in rigid constraint stage.
 ///
-/// The positive iteration budget controls sequential-impulse contact sweeps
-/// and VBD/AVBD rigid contact, joint, motor, and spring sweeps. The IPC family
-/// and mixed semi-implicit multibody worlds bypass this stage and therefore
-/// accept only the default options.
+/// The positive iteration budget controls sequential-impulse contact and hard
+/// pair-constraint sweeps, plus VBD/AVBD rigid contact, joint, motor, and
+/// spring sweeps. Under Sequential Impulse the same budget additionally runs
+/// a separate non-velocity joint post-stabilization pass after contact
+/// position correction. The IPC family and mixed semi-implicit multibody
+/// worlds bypass this stage and therefore accept only the default options.
 struct RigidConstraintOptions
 {
   std::size_t iterations = 8;

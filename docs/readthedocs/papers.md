@@ -780,9 +780,12 @@ Related public resources:
   correction, warm-started dual/stiffness state, rigid-body 6-DOF blocks,
   articulated joints, fracture limits, and unified soft/rigid interactions.
   DART now has one publication-shaped Figure 13 reconstruction with matched
-  public fixed-penalty VBD and public AVBD CPU rows, independent numeric and
-  assessed visual outcomes, and descriptive same-host timing; it is not an
-  exact source replay or an achieved-accuracy performance comparison.
+  public Sequential Impulse, fixed-penalty VBD, and AVBD CPU rows. Independent
+  numeric and assessed visual outcomes record exact broken-joint identities
+  and retained-row residuals as well as wall displacement; the same-host
+  timing remains descriptive. This is not an exact source replay, a
+  four-method result (XPBD is still missing), or an achieved-accuracy
+  performance comparison.
   Full completion requires CPU and GPU implementations, all paper/site/video
   experiments and demos integrated into DART tests/benchmarks/`py-demos`, and
   benchmark packets proving DART beats the reference demo repositories and the

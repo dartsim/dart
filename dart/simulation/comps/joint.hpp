@@ -197,7 +197,7 @@ struct JointLimits
 /// live in `JointState`; commanded inputs live in `JointActuation`.
 ///
 /// Field usage by joint type:
-/// - Fixed:      rigidBodyFixedJointLocalAnchor* for public rigid-body joints
+/// - Fixed:      rigidBodyPairConstraintLocalAnchor* for public rigid pairs
 /// - Revolute:   axis
 /// - Prismatic:  axis
 /// - Screw:      axis, pitch
@@ -227,8 +227,8 @@ struct JointModel
   /// (per generalized coordinate).
   JointVector coulombFriction;
 
-  /// Maximum physical AVBD row-load norm before the joint is marked broken. A
-  /// value of 0 disables automatic breakage.
+  /// Maximum physical solver-row load norm before the joint is marked broken.
+  /// A value of 0 disables automatic breakage.
   double breakForce = 0.0;
 
   JointLimits limits;
@@ -242,11 +242,12 @@ struct JointModel
   entt::entity parentLink = entt::null;
   entt::entity childLink = entt::null;
 
-  bool hasRigidBodyFixedJointAnchors = false;
-  Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+  bool hasRigidBodyPairConstraintGeometry = false;
+  Eigen::Vector3d rigidBodyPairConstraintLocalAnchorParent
       = Eigen::Vector3d::Zero();
-  Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild = Eigen::Vector3d::Zero();
-  Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+  Eigen::Vector3d rigidBodyPairConstraintLocalAnchorChild
+      = Eigen::Vector3d::Zero();
+  Eigen::Quaterniond rigidBodyPairConstraintTargetRelativeOrientation
       = Eigen::Quaterniond::Identity();
 
   static constexpr auto entityFields()
@@ -296,7 +297,7 @@ struct JointState
   JointVector velocity;
   JointVector acceleration;
 
-  /// Whether the joint has been broken by an AVBD break-force threshold.
+  /// Whether the joint has been broken by a solver break-force threshold.
   bool broken = false;
 };
 

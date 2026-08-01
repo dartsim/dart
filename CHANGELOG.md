@@ -205,12 +205,23 @@ compatibility remains on the active DART 6 LTS branch._
 - Added explicit experimental fixed-penalty VBD and augmented-Lagrangian AVBD
   rigid-body families to the DART 7 `World` C++ and dartpy facades, including
   typed rigid-constraint options, binary/replay persistence, fail-closed
-  configuration, and matched publication-shaped breakable-wall demos with
-  quantitative, allocation, performance, and assessed visual evidence.
+  configuration, and matched publication-shaped breakable-wall demos. The
+  matched Figure 13 evidence records exact broken-joint identities,
+  retained-row residuals, allocation gates, descriptive performance, and
+  assessed visuals across Sequential Impulse, VBD, and AVBD.
   Claim-tied view assessment now scopes ambiguity to an explicitly named
   subject while still treating other renderables as possible occluders, so
   dense debris scenes cannot reject a clear subject view because of an
   unrelated overlapping pair.
+  ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
+- Changed the default Sequential Impulse rigid-body family to own hard
+  fixed/spherical/revolute/prismatic pair constraints, bounded velocity
+  motors, impulse-derived fracture, and non-velocity post-stabilization in the
+  same projected Gauss-Seidel sweeps as contacts, instead of routing public
+  pair constraints through the private AVBD projection; finite-stiffness pair
+  rows fail closed to the VBD/AVBD families, and bounded velocity-motor loads
+  now count toward the public break threshold identically across Sequential
+  Impulse, VBD, and AVBD.
   ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default

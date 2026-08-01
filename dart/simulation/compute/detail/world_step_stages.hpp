@@ -390,15 +390,17 @@ public:
 /// `RigidBodySolver::SequentialImpulse` family, two contact-policy paths are
 /// available via `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +
-///     friction impulse solve with positional correction.
+///     friction impulse solve, interleaved with solver-owned hard rigid
+///     pair-constraint rows, with positional correction/post-stabilization.
 ///   - `BoxedLcp`: an opt-in boxed-LCP normal/friction solve via the pivoting
-///     Dantzig solver. Articulated-link contacts are handled by the unified
-///     constraint/contact path, not by this free-rigid stage.
+///     Dantzig solver; hard rigid pair constraints still use their
+///     sequential-impulse rows. Articulated-link contacts are handled by the
+///     unified constraint/contact path, not by this free-rigid stage.
 ///
-/// Internal PLAN-104 compatibility tests may still opt specific rigid bodies
-/// into the private `RigidAvbdContactConfig` row projection while the public
-/// family remains sequential impulse. That compatibility path does not expose
-/// AVBD row storage or solver registries through the facade.
+/// Internal PLAN-104 compatibility tests may still opt specific rigid
+/// contacts and experimental distance springs into private AVBD projection
+/// while the public family remains sequential impulse. Public hard pair
+/// constraints never use that compatibility path.
 class DART_SIMULATION_API RigidBodyContactStage final : public WorldStepStage
 {
 public:

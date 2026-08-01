@@ -1,0 +1,1787 @@
+{
+  "benchmark": {
+    "comparison": {
+      "basis": "same benchmark JSON, executable, host, reconstructed scene fingerprint, trajectory length, time step, and 20-sweep budget",
+      "sequential_impulse_to_avbd_median_cpu_cost_ratio": 1.6599077466380054,
+      "sequential_impulse_to_vbd_median_cpu_cost_ratio": 1.721873569759987
+    },
+    "context": {
+      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
+      "capture_source_provenance_digest": "556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12",
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "host_name": "mark26",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "json_sha256": "c2c81c26ca0fa96d1cf11da4c5a166a3a2eb7ead9b80aafac207c20f03cf7c67",
+    "method": {
+      "benchmark": "BM_SequentialImpulsePaperBreakableWallStep",
+      "rows": [
+        {
+          "aggregate_name": "mean",
+          "aggregate_unit": "time",
+          "breakable_joints": 712.0,
+          "collision_shapes": 256.0,
+          "cpu_time": 14264147.031666646,
+          "family_index": 2,
+          "impacting_balls": 3.0,
+          "iterations": 5,
+          "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_mean",
+          "per_family_instance_index": 0,
+          "public_sequential-impulse_family": 1.0,
+          "real_time": 14266776.791773736,
+          "repetitions": 5,
+          "resolved_rigid_body_sequential-impulse": 1.0,
+          "resolved_rigid_constraint_iterations": 1.0,
+          "resolved_rigid_contact_sequential-impulse": 1.0,
+          "resolved_rigid_pair_constraint_sequential-impulse": 1.0,
+          "rigid_bodies": 256.0,
+          "rigid_body_joints": 712.0,
+          "rigid_constraint_iterations": 20.0,
+          "run_name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120",
+          "run_type": "aggregate",
+          "runtime_contract_passed": 1.0,
+          "scene_spec_fingerprint_hi": 2359557114.0,
+          "scene_spec_fingerprint_lo": 12836073.0,
+          "threads": 1,
+          "time_unit": "ns",
+          "trajectory_frames": 120.0
+        },
+        {
+          "aggregate_name": "median",
+          "aggregate_unit": "time",
+          "breakable_joints": 712.0,
+          "collision_shapes": 256.0,
+          "cpu_time": 14296124.958333323,
+          "family_index": 2,
+          "impacting_balls": 3.0,
+          "iterations": 5,
+          "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_median",
+          "per_family_instance_index": 0,
+          "public_sequential-impulse_family": 1.0,
+          "real_time": 14296776.22509189,
+          "repetitions": 5,
+          "resolved_rigid_body_sequential-impulse": 1.0,
+          "resolved_rigid_constraint_iterations": 1.0,
+          "resolved_rigid_contact_sequential-impulse": 1.0,
+          "resolved_rigid_pair_constraint_sequential-impulse": 1.0,
+          "rigid_bodies": 256.0,
+          "rigid_body_joints": 712.0,
+          "rigid_constraint_iterations": 20.0,
+          "run_name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120",
+          "run_type": "aggregate",
+          "runtime_contract_passed": 1.0,
+          "scene_spec_fingerprint_hi": 2359557114.0,
+          "scene_spec_fingerprint_lo": 12836073.0,
+          "threads": 1,
+          "time_unit": "ns",
+          "trajectory_frames": 120.0
+        },
+        {
+          "aggregate_name": "stddev",
+          "aggregate_unit": "time",
+          "breakable_joints": 0.0,
+          "collision_shapes": 0.0,
+          "cpu_time": 302014.5610465137,
+          "family_index": 2,
+          "impacting_balls": 0.0,
+          "iterations": 5,
+          "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_stddev",
+          "per_family_instance_index": 0,
+          "public_sequential-impulse_family": 0.0,
+          "real_time": 302252.06561056466,
+          "repetitions": 5,
+          "resolved_rigid_body_sequential-impulse": 0.0,
+          "resolved_rigid_constraint_iterations": 0.0,
+          "resolved_rigid_contact_sequential-impulse": 0.0,
+          "resolved_rigid_pair_constraint_sequential-impulse": 0.0,
+          "rigid_bodies": 0.0,
+          "rigid_body_joints": 0.0,
+          "rigid_constraint_iterations": 0.0,
+          "run_name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120",
+          "run_type": "aggregate",
+          "runtime_contract_passed": 0.0,
+          "scene_spec_fingerprint_hi": 0.0,
+          "scene_spec_fingerprint_lo": 0.0,
+          "threads": 1,
+          "time_unit": "ns",
+          "trajectory_frames": 0.0
+        },
+        {
+          "aggregate_name": "cv",
+          "aggregate_unit": "percentage",
+          "breakable_joints": 0.0,
+          "collision_shapes": 0.0,
+          "cpu_time": 0.02117298429243868,
+          "family_index": 2,
+          "impacting_balls": 0.0,
+          "iterations": 5,
+          "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_cv",
+          "per_family_instance_index": 0,
+          "public_sequential-impulse_family": 0.0,
+          "real_time": 0.02118572891564716,
+          "repetitions": 5,
+          "resolved_rigid_body_sequential-impulse": 0.0,
+          "resolved_rigid_constraint_iterations": 0.0,
+          "resolved_rigid_contact_sequential-impulse": 0.0,
+          "resolved_rigid_pair_constraint_sequential-impulse": 0.0,
+          "rigid_bodies": 0.0,
+          "rigid_body_joints": 0.0,
+          "rigid_constraint_iterations": 0.0,
+          "run_name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120",
+          "run_type": "aggregate",
+          "runtime_contract_passed": 0.0,
+          "scene_spec_fingerprint_hi": 0.0,
+          "scene_spec_fingerprint_lo": 0.0,
+          "threads": 1,
+          "time_unit": "ns",
+          "trajectory_frames": 0.0
+        }
+      ],
+      "stability": {
+        "cpu_time_cv_fraction": 0.02117298429243868,
+        "real_time_cv_fraction": 0.02118572891564716,
+        "repetitions": 5
+      },
+      "timing": {
+        "mean_cpu_time_per_step_ns": 14264147.031666646,
+        "mean_real_time_per_step_ns": 14266776.791773736,
+        "median_cpu_time_per_step_ns": 14296124.958333323,
+        "median_real_time_per_step_ns": 14296776.22509189
+      }
+    },
+    "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+    "source_provenance": {
+      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
+      "capture_source_provenance_digest": "556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12"
+    }
+  },
+  "claim_boundary": "This packet covers the matched Sequential Impulse Figure 13 row and links the same-host AVBD/VBD comparison packet. Together they establish three of the four published comparison rows. It does not reproduce XPBD, claim exact unpublished source-scene constants, establish CUDA parity, or compare against a published/source timing.",
+  "correctness": {
+    "determinism_test": "test_sequential_impulse_paper_breakable_wall_is_deterministic",
+    "outcome_test": "test_sequential_impulse_paper_breakable_wall_matches_figure13_contract",
+    "public_configuration": {
+      "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+      "rigid_constraint_options": {
+        "iterations": 20
+      },
+      "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+      "time_step": 0.016666666666666666
+    },
+    "solver_kernel_tests": [
+      "SequentialImpulseContact.HardFixedJointCancelsRelativeVelocity",
+      "SequentialImpulseContact.ContactAndFixedJointRowsConvergeTogether",
+      "SequentialImpulseContact.FixedJointBreaksFromImpulseLoadAndStaysExcluded",
+      "SequentialImpulseContact.PublicFixedJointPostStabilizesWithoutVelocityInjection"
+    ]
+  },
+  "linked_avbd_vbd_evidence": {
+    "benchmark_method_timings": {
+      "avbd": {
+        "median_cpu_time_per_step_ns": 8612602.108333336
+      },
+      "vbd": {
+        "median_cpu_time_per_step_ns": 8302656.600000003
+      }
+    },
+    "file": "avbd-paper-vbd-comparison-packet.json",
+    "nested_avbd_resolved_solver_identity": {
+      "avbd_rigid_contact_config_emplaced": false,
+      "recorded_from": "engine World.resolved_configuration in both captures plus benchmark runtime resolved-configuration counters",
+      "rigid_contact_selection": "world_solver_family",
+      "rigid_contact_solver": "avbd",
+      "rigid_point_joint_solver": "avbd"
+    },
+    "nested_avbd_sha256": "3e15adb9093c10567c0f8c22c5f8e8ad4e5d47a7acd5aca7a107fb97de7fc54c",
+    "nested_avbd_source_provenance_digest": "c74dfeb782dbd1d51d9648e699d8afcb5f6cb01838b3c19cf7861b0c4cbdb53d",
+    "resolved_solver_identity": {
+      "avbd_rigid_contact_config_emplaced": false,
+      "recorded_from": "engine World.resolved_configuration in both VBD captures plus benchmark runtime resolved-configuration counters",
+      "rigid_contact_selection": "world_solver_family",
+      "rigid_contact_solver": "vbd",
+      "rigid_point_joint_solver": "vbd"
+    },
+    "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+    "sha256": "9f8e6dbc9cb2f37af5d268fa83c13e67f3185cb39e14cebf413a288b6ee298d8",
+    "source_provenance_digest": "567be3b170e62e1bab54061878b6a1e31d5d42839ecac0b59cca85ba4904f9a9",
+    "visual_evidence": {
+      "bend_screenshot": {
+        "file": "vbd_paper_breakable_wall_bend.png",
+        "sha256": "a94339bf5f07c337133ceb5790b96db33e90471cf24abca7a15f6efccb4d0676"
+      },
+      "retention_screenshot": {
+        "file": "vbd_paper_breakable_wall_retention.png",
+        "sha256": "039ee1fe05fc7fc0c350da8818be4acc7d812d7d13fcab481b18562adc84751e"
+      },
+      "semantic_review": {
+        "sha256": "3e8e2020f849d57b0908092f5a83b4fe1675d451190d1d05a5c09a71c37d1ab4",
+        "verdict": "pass"
+      }
+    }
+  },
+  "packet": "avbd_paper_sequential_impulse_comparison",
+  "paper_reference": {
+    "figure": {
+      "file": "paper-10.png",
+      "height": 1760,
+      "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b",
+      "width": 1360
+    },
+    "locator": "Section 5.4 and Figure 13, PDF page 10",
+    "paper_pdf": {
+      "file": "avbd.pdf",
+      "sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6"
+    }
+  },
+  "performance_claim_boundary": "The ratios are descriptive same-host CPU costs for three public DART families running the identical reconstructed scene and 20-sweep budget. They are not paper/reference speedup claims.",
+  "publication_observation": "The Figure 13 Sequential Impulse row shows a clean initial fracture followed by retained-constraint failure, slow bending, and collapse.",
+  "reconstruction": {
+    "matched_with_avbd_and_vbd": {
+      "break_force": 5000.0,
+      "breakable_joints": 712,
+      "bricks": 252,
+      "impacting_balls": 3,
+      "scene_spec_fingerprint": "8ca3fbfa00c3dce9"
+    },
+    "published": {
+      "constraint_iterations_or_substeps": 20,
+      "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+      "time_step": 0.016666666666666666
+    },
+    "unpublished": "wall dimensions, body materials, ball properties and launch conditions, break threshold, and exact source scene"
+  },
+  "reproduction": {
+    "benchmark_command": "capture_source_digest=$(pixi run python scripts/capture_source_provenance.py --digest-only) && benchmark_source_digest=$(sha256sum tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp | cut -d' ' -f1) && pixi run bm -- bm_avbd_rigid_fixed_joint -- --benchmark_filter='^BM_(Avbd|Vbd|SequentialImpulse)PaperBreakableWallStep/iterations:120$' --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_context=capture_source_provenance_digest=$capture_source_digest --benchmark_context=benchmark_source_sha256=$benchmark_source_digest --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_commands": [
+      "pixi run py-demo-capture -- --scene sequential_impulse_paper_breakable_wall --frames 14 --width 1280 --height 720 --view front --camera-azimuth -112.5 --camera-elevation 35.52338329811104 --camera-distance 22 --camera-target 0,0.45,1.6 --capture-label fracture --output-dir <fracture-capture-dir>",
+      "pixi run py-demo-capture -- --scene sequential_impulse_paper_breakable_wall --frames 120 --width 1280 --height 720 --view front --camera-azimuth -112.5 --camera-elevation 35.52338329811104 --camera-distance 22 --camera-target 0,0.45,1.6 --capture-label collapse --output-dir <collapse-capture-dir>"
+    ],
+    "image_verdict_commands": [
+      "pixi run image-verdict -- <fracture-capture-dir>/sequential_impulse_paper_breakable_wall_fracture.png --meta scene=sequential_impulse_paper_breakable_wall --meta frame=14 --meta view=front-oblique --out <fracture-capture-dir>/image_verdict.json",
+      "pixi run image-verdict -- <collapse-capture-dir>/sequential_impulse_paper_breakable_wall_collapse.png --meta scene=sequential_impulse_paper_breakable_wall --meta frame=120 --meta view=front-oblique --out <collapse-capture-dir>/image_verdict.json"
+    ]
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "engine World.resolved_configuration in both Sequential Impulse captures plus benchmark runtime resolved-configuration counters",
+    "rigid_contact_selection": "contact_solver_method",
+    "rigid_contact_solver": "sequential_impulse",
+    "rigid_point_joint_solver": "sequential_impulse"
+  },
+  "scene": "sequential_impulse_paper_breakable_wall",
+  "schema_version": 4,
+  "source_provenance": {
+    "algorithm": "sha256-length-prefixed-path-and-content-v1",
+    "digest": "2bdeeb389535dfae885c5a94d76090daf51c51280461488940aec8ff7ad5b62c",
+    "files": [
+      {
+        "path": "dart/simulation/world.cpp",
+        "sha256": "23502cd1a7366c83afe8f7c9d7b7d0a0ebeaf32d27d75a35f65b57ccd9d0e09c"
+      },
+      {
+        "path": "dart/simulation/world.hpp",
+        "sha256": "a95470a832553e59a19b8a25f38e524e1f449d17a65d31c3185969d2275323da"
+      },
+      {
+        "path": "dart/simulation/world_options.hpp",
+        "sha256": "bcc8e950d73534a2d5dc953431939b2fa776235d188fb685bf65589b4d556b34"
+      },
+      {
+        "path": "dart/simulation/comps/joint.hpp",
+        "sha256": "dbbab333dfeb086f280675a31badc7756bc74606100e72081a6c6140d4b61617"
+      },
+      {
+        "path": "dart/simulation/compute/detail/world_step_stages.hpp",
+        "sha256": "e03ffa5b25dc6d96f088936f8838a9f1be6c658d34d08589347564436862ce05"
+      },
+      {
+        "path": "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "sha256": "755238810875628ce13315b113ac2d766992d0c305783c26d194bbd84fd0b89c"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_pair_constraint.hpp",
+        "sha256": "735a62ae1b673ea68d7d26002cc0b72412f239216718e49ffab38b42b40cfffe"
+      },
+      {
+        "path": "dart/simulation/detail/world_step_schedule.hpp",
+        "sha256": "547ba1920a79a2e860fafb1fe59bba644a01ddb1caff0d50ef8440f2774aa386"
+      },
+      {
+        "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "sha256": "40675bcd66d2ae543dc1bd60a435926dd6969893eb0a92aa451fe66f9b8bda12"
+      },
+      {
+        "path": "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
+        "sha256": "5de40f443b26a7695593a97bd77eecd0d9c2a43bfe0083c95503008a66601acc"
+      },
+      {
+        "path": "python/examples/demos/scenes/sequential_impulse_paper_breakable_wall.py",
+        "sha256": "b81de2437cb3f10ded0722d1cedd4e791cc7395cb0addffae932cd5b9df239d1"
+      },
+      {
+        "path": "python/tests/integration/test_demos_cycle.py",
+        "sha256": "dd33a2c2190b6b13c7c8a408863fa20dbfc24174fd64587ee9c2ed88bb23c5ba"
+      },
+      {
+        "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370"
+      },
+      {
+        "path": "tests/unit/simulation/contact/test_boxed_lcp_contact.cpp",
+        "sha256": "1967493f533b813068e12e57fb83b1c37dff4c8c01500934b4e57c9d58f19fdc"
+      },
+      {
+        "path": "tests/unit/simulation/world/test_world.cpp",
+        "sha256": "59f5d6d12b3b6ce021279b254807623cff56432107906cfda56204145d81a507"
+      },
+      {
+        "path": "tests/unit/simulation/world/test_world_resolved_configuration.cpp",
+        "sha256": "09f3935b94bb3489aa32edb5f8e9ed71b72c165a5c58e7e2a5e7a5e0d156958c"
+      },
+      {
+        "path": "tests/test_avbd_packet_schema.py",
+        "sha256": "1e0892f2721b458e945762653c59461333a7eccef782c6a9d2f984a869047579"
+      },
+      {
+        "path": "scripts/avbd_packet_schema.py",
+        "sha256": "d2cf699fd9f19fe97fa992977f56c00a43745a0659bda4deb8e10e6fe91e021c"
+      },
+      {
+        "path": "scripts/capture_py_demo.py",
+        "sha256": "669e72ccf230a0c89f5d1505e648b7e4c7f189b6f79738790be9c4fe101a95ee"
+      },
+      {
+        "path": "scripts/capture_source_provenance.py",
+        "sha256": "f81a59a95a97a3efb5901d1eb6507dd1272f75cd2a4320db6d863cb48186b612"
+      },
+      {
+        "path": "scripts/write_avbd_paper_breakable_wall_packet.py",
+        "sha256": "fa4704b68dffeb11b0357d91642c4ca2917cb22b1d182f21d6353cb1c6db7aaa"
+      },
+      {
+        "path": "scripts/write_avbd_paper_vbd_comparison_packet.py",
+        "sha256": "b64a04d92d44256e065921f352867a0f73b94a7b3304055590f9d920a3c1515c"
+      },
+      {
+        "path": "scripts/write_avbd_paper_sequential_impulse_comparison_packet.py",
+        "sha256": "164454810354c0ca838108ec64908bb4f55915461510e9008d8083d8f50effc7"
+      }
+    ]
+  },
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.paper.fig.13"
+    ],
+    "covered_slice": "matched CPU Sequential Impulse fracture/collapse row plus linked AVBD and VBD numeric, performance, and assessed visual evidence"
+  },
+  "visual_evidence": {
+    "collapse": {
+      "camera": {
+        "azimuth": -1.9634954084936207,
+        "distance": 22.0,
+        "elevation": 0.62,
+        "preset": "front",
+        "target": [
+          0.0,
+          0.45,
+          1.6
+        ],
+        "view": "front-oblique"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 120,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 2140,
+            "dark_pixels": 1821,
+            "mid_pixels": 222190,
+            "p05": 89.727,
+            "p95": 156.511,
+            "pass": false,
+            "reasons": [
+              "luminance spread 66.8 < 90.0"
+            ],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 66.783,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "120",
+          "scene": "sequential_impulse_paper_breakable_wall",
+          "view": "front-oblique"
+        },
+        "pass": true,
+        "sha256": "437869fed1bcbfe98b29deefe356b681cd940123cfccc72db6fd23014fc4598c"
+      },
+      "label": "collapse",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "e0a4dbb060e94e8dc33e4725b338ffd8b269a11e3eb7a115ba6d82344bc49191"
+      },
+      "scene_metrics": {
+        "event_count": 120,
+        "frame": 120,
+        "outcome": {
+          "ball_positions": [
+            [
+              -2.823407270204711,
+              -1.9964783776457302,
+              0.4798999933213929
+            ],
+            [
+              -0.4030899465597143,
+              -1.7901292504238324,
+              0.4798926016051247
+            ],
+            [
+              2.792525803850125,
+              -1.9820853128063278,
+              0.4798992077416022
+            ]
+          ],
+          "ball_velocities": [
+            [
+              0.18993701566694202,
+              -1.5788668529469876,
+              0.0
+            ],
+            [
+              -0.09200454541823079,
+              -2.0647076465525855,
+              0.0
+            ],
+            [
+              -0.2503186510668152,
+              -1.8806071817353243,
+              0.0
+            ]
+          ],
+          "bent_brick_count": 231,
+          "broken_joint_identity_count": 5,
+          "broken_joint_ids_sha256": "c85184879b1b9036ff582731031fc49c56b4149e93ded45780b06352bd94d61d",
+          "broken_joint_impact_region_counts": [
+            2,
+            1,
+            2
+          ],
+          "broken_joint_records": [
+            {
+              "angular_residual_radians": 0.007639439172825061,
+              "child": {
+                "body": "brick",
+                "column": 16,
+                "row": 8
+              },
+              "id": "sequential_impulse_paper_wall_horizontal_08_15",
+              "initial_anchor": [
+                3.7199999999999998,
+                0.0,
+                2.305
+              ],
+              "kind": "horizontal",
+              "linear_residual": 0.0031360180359977156,
+              "nearest_impact_distance": 0.6216309194369273,
+              "nearest_impact_index": 2,
+              "parent": {
+                "body": "brick",
+                "column": 15,
+                "row": 8
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.0154271084015484,
+              "child": {
+                "body": "brick",
+                "column": 5,
+                "row": 5
+              },
+              "id": "sequential_impulse_paper_wall_vertical_04_05_05_05",
+              "initial_anchor": [
+                -2.79,
+                0.0,
+                1.495
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.037736875998829376,
+              "nearest_impact_distance": 0.31484122982862334,
+              "nearest_impact_index": 0,
+              "parent": {
+                "body": "brick",
+                "column": 5,
+                "row": 4
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.07714932310673095,
+              "child": {
+                "body": "brick",
+                "column": 5,
+                "row": 6
+              },
+              "id": "sequential_impulse_paper_wall_vertical_05_04_06_05",
+              "initial_anchor": [
+                -3.1,
+                0.0,
+                1.7650000000000001
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.018153176120324972,
+              "nearest_impact_distance": 0.21500000000000008,
+              "nearest_impact_index": 0,
+              "parent": {
+                "body": "brick",
+                "column": 4,
+                "row": 5
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.07234892308213017,
+              "child": {
+                "body": "brick",
+                "column": 10,
+                "row": 6
+              },
+              "id": "sequential_impulse_paper_wall_vertical_05_09_06_10",
+              "initial_anchor": [
+                0.0,
+                0.0,
+                1.7650000000000001
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.014267758734447411,
+              "nearest_impact_distance": 0.3103626910567699,
+              "nearest_impact_index": 1,
+              "parent": {
+                "body": "brick",
+                "column": 9,
+                "row": 5
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.023975617988176143,
+              "child": {
+                "body": "brick",
+                "column": 15,
+                "row": 9
+              },
+              "id": "sequential_impulse_paper_wall_vertical_08_15_09_15",
+              "initial_anchor": [
+                3.41,
+                0.0,
+                2.575
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.00781340209082128,
+              "nearest_impact_distance": 0.3830469945058962,
+              "nearest_impact_index": 2,
+              "parent": {
+                "body": "brick",
+                "column": 15,
+                "row": 8
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            }
+          ],
+          "broken_joints": 5,
+          "broken_joints_outside_impact_regions": 0,
+          "checkpoint": "collapse",
+          "contact_count": 348,
+          "evaluated": true,
+          "frame": 120,
+          "impact_band_displaced_counts": [
+            13,
+            14,
+            13
+          ],
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_residuals_finite": true,
+          "last_step_iterations": 20,
+          "max_brick_displacement": 4.132287697782797,
+          "maximum_outside_impact_unbroken_joint_angular_residual_radians": 0.7270477152430048,
+          "maximum_outside_impact_unbroken_joint_linear_residual": 0.06345950838997977,
+          "maximum_unbroken_joint_angular_residual_radians": 0.7270477152430048,
+          "maximum_unbroken_joint_linear_residual": 0.06345950838997977,
+          "maximum_wall_normal_displacement": 2.877607267738441,
+          "outside_brick_count": 176,
+          "outside_impact_unbroken_joint_residual_count": 484,
+          "outside_retained_fraction": 0.2727272727272727,
+          "retained_displacement_threshold": 0.5,
+          "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.21636200813390374,
+          "rms_outside_impact_unbroken_joint_linear_residual": 0.020763053093004316,
+          "rms_unbroken_joint_angular_residual_radians": 0.18745704364465998,
+          "rms_unbroken_joint_linear_residual": 0.020576676770653134,
+          "rms_wall_normal_displacement": 1.6472793285561675,
+          "status": "pass",
+          "threshold_checks": {
+            "damage_in_three_impact_bands": true,
+            "finite_state": true,
+            "fracture_identity_unchanged": true,
+            "initial_fracture_remains_visible": true,
+            "outside_wall_collapses": true,
+            "retained_rows_fail_outside_impacts": true,
+            "wall_collapses": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 0.19047619047619047,
+          "unbroken_joint_residual_count": 707,
+          "unbroken_joints": 707,
+          "world_time": 1.9999999999999978
+        },
+        "outcome_oracle": {
+          "collapse_evaluation_frame": 120,
+          "evaluation_frame": 14,
+          "expected_broken_joint_ids_sha256": "c85184879b1b9036ff582731031fc49c56b4149e93ded45780b06352bd94d61d",
+          "expected_broken_joints": 5,
+          "expected_outside_impact_unbroken_joint_count": 484,
+          "impact_band_radius": 0.85,
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_evidence_frames": [
+            14,
+            120
+          ],
+          "maximum_collapse_outside_retained_fraction": 0.35,
+          "maximum_collapse_total_retained_fraction": 0.25,
+          "maximum_final_broken_joints": 30,
+          "maximum_initial_broken_joints": 20,
+          "maximum_initial_outside_joint_angular_residual_radians": 0.13,
+          "maximum_initial_outside_joint_linear_residual": 0.04,
+          "minimum_collapse_outside_joint_maximum_angular_residual_radians": 0.6,
+          "minimum_collapse_outside_joint_maximum_linear_residual": 0.05,
+          "minimum_collapse_outside_joint_rms_angular_residual_radians": 0.18,
+          "minimum_collapse_outside_joint_rms_linear_residual": 0.015,
+          "minimum_collapse_wall_normal_displacement": 2.0,
+          "minimum_displaced_bricks_per_impact_band": 10,
+          "minimum_final_broken_joints": 3,
+          "minimum_final_unbroken_joints": 680,
+          "minimum_initial_broken_joints": 3,
+          "minimum_initial_broken_joints_per_impact_region": 1,
+          "minimum_initial_total_retained_fraction": 0.95,
+          "minimum_initial_unbroken_joints": 690,
+          "outside_radius": 1.15,
+          "retained_displacement_threshold": 0.5
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "hard public rigid pair constraints use solver-owned sequential-impulse rows",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 5000.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_sequential-impulse",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.9634954084936207,
+            "distance": 22.0,
+            "elevation": 0.62,
+            "target": [
+              0.0,
+              0.45,
+              1.6
+            ]
+          },
+          "focus": [
+            "sequential_impulse_paper_wall_brick_00_00_visual",
+            "sequential_impulse_paper_wall_brick_00_01_visual",
+            "sequential_impulse_paper_wall_brick_00_02_visual",
+            "sequential_impulse_paper_wall_brick_00_03_visual",
+            "sequential_impulse_paper_wall_brick_00_04_visual",
+            "sequential_impulse_paper_wall_brick_00_05_visual",
+            "sequential_impulse_paper_wall_brick_00_06_visual",
+            "sequential_impulse_paper_wall_brick_00_07_visual",
+            "sequential_impulse_paper_wall_brick_00_08_visual",
+            "sequential_impulse_paper_wall_brick_00_09_visual",
+            "sequential_impulse_paper_wall_brick_00_10_visual",
+            "sequential_impulse_paper_wall_brick_00_11_visual",
+            "sequential_impulse_paper_wall_brick_00_12_visual",
+            "sequential_impulse_paper_wall_brick_00_13_visual",
+            "sequential_impulse_paper_wall_brick_00_14_visual",
+            "sequential_impulse_paper_wall_brick_00_15_visual",
+            "sequential_impulse_paper_wall_brick_00_16_visual",
+            "sequential_impulse_paper_wall_brick_00_17_visual",
+            "sequential_impulse_paper_wall_brick_00_18_visual",
+            "sequential_impulse_paper_wall_brick_00_19_visual",
+            "sequential_impulse_paper_wall_brick_00_20_visual",
+            "sequential_impulse_paper_wall_brick_01_00_visual",
+            "sequential_impulse_paper_wall_brick_01_01_visual",
+            "sequential_impulse_paper_wall_brick_01_02_visual",
+            "sequential_impulse_paper_wall_brick_01_03_visual",
+            "sequential_impulse_paper_wall_brick_01_04_visual",
+            "sequential_impulse_paper_wall_brick_01_05_visual",
+            "sequential_impulse_paper_wall_brick_01_06_visual",
+            "sequential_impulse_paper_wall_brick_01_07_visual",
+            "sequential_impulse_paper_wall_brick_01_08_visual",
+            "sequential_impulse_paper_wall_brick_01_09_visual",
+            "sequential_impulse_paper_wall_brick_01_10_visual",
+            "sequential_impulse_paper_wall_brick_01_11_visual",
+            "sequential_impulse_paper_wall_brick_01_12_visual",
+            "sequential_impulse_paper_wall_brick_01_13_visual",
+            "sequential_impulse_paper_wall_brick_01_14_visual",
+            "sequential_impulse_paper_wall_brick_01_15_visual",
+            "sequential_impulse_paper_wall_brick_01_16_visual",
+            "sequential_impulse_paper_wall_brick_01_17_visual",
+            "sequential_impulse_paper_wall_brick_01_18_visual",
+            "sequential_impulse_paper_wall_brick_01_19_visual",
+            "sequential_impulse_paper_wall_brick_01_20_visual",
+            "sequential_impulse_paper_wall_brick_02_00_visual",
+            "sequential_impulse_paper_wall_brick_02_01_visual",
+            "sequential_impulse_paper_wall_brick_02_02_visual",
+            "sequential_impulse_paper_wall_brick_02_03_visual",
+            "sequential_impulse_paper_wall_brick_02_04_visual",
+            "sequential_impulse_paper_wall_brick_02_05_visual",
+            "sequential_impulse_paper_wall_brick_02_06_visual",
+            "sequential_impulse_paper_wall_brick_02_07_visual",
+            "sequential_impulse_paper_wall_brick_02_08_visual",
+            "sequential_impulse_paper_wall_brick_02_09_visual",
+            "sequential_impulse_paper_wall_brick_02_10_visual",
+            "sequential_impulse_paper_wall_brick_02_11_visual",
+            "sequential_impulse_paper_wall_brick_02_12_visual",
+            "sequential_impulse_paper_wall_brick_02_13_visual",
+            "sequential_impulse_paper_wall_brick_02_14_visual",
+            "sequential_impulse_paper_wall_brick_02_15_visual",
+            "sequential_impulse_paper_wall_brick_02_16_visual",
+            "sequential_impulse_paper_wall_brick_02_17_visual",
+            "sequential_impulse_paper_wall_brick_02_18_visual",
+            "sequential_impulse_paper_wall_brick_02_19_visual",
+            "sequential_impulse_paper_wall_brick_02_20_visual",
+            "sequential_impulse_paper_wall_brick_03_00_visual",
+            "sequential_impulse_paper_wall_brick_03_01_visual",
+            "sequential_impulse_paper_wall_brick_03_02_visual",
+            "sequential_impulse_paper_wall_brick_03_03_visual",
+            "sequential_impulse_paper_wall_brick_03_04_visual",
+            "sequential_impulse_paper_wall_brick_03_05_visual",
+            "sequential_impulse_paper_wall_brick_03_06_visual",
+            "sequential_impulse_paper_wall_brick_03_07_visual",
+            "sequential_impulse_paper_wall_brick_03_08_visual",
+            "sequential_impulse_paper_wall_brick_03_09_visual",
+            "sequential_impulse_paper_wall_brick_03_10_visual",
+            "sequential_impulse_paper_wall_brick_03_11_visual",
+            "sequential_impulse_paper_wall_brick_03_12_visual",
+            "sequential_impulse_paper_wall_brick_03_13_visual",
+            "sequential_impulse_paper_wall_brick_03_14_visual",
+            "sequential_impulse_paper_wall_brick_03_15_visual",
+            "sequential_impulse_paper_wall_brick_03_16_visual",
+            "sequential_impulse_paper_wall_brick_03_17_visual",
+            "sequential_impulse_paper_wall_brick_03_18_visual",
+            "sequential_impulse_paper_wall_brick_03_19_visual",
+            "sequential_impulse_paper_wall_brick_03_20_visual",
+            "sequential_impulse_paper_wall_brick_04_00_visual",
+            "sequential_impulse_paper_wall_brick_04_01_visual",
+            "sequential_impulse_paper_wall_brick_04_02_visual",
+            "sequential_impulse_paper_wall_brick_04_03_visual",
+            "sequential_impulse_paper_wall_brick_04_04_visual",
+            "sequential_impulse_paper_wall_brick_04_05_visual",
+            "sequential_impulse_paper_wall_brick_04_06_visual",
+            "sequential_impulse_paper_wall_brick_04_07_visual",
+            "sequential_impulse_paper_wall_brick_04_08_visual",
+            "sequential_impulse_paper_wall_brick_04_09_visual",
+            "sequential_impulse_paper_wall_brick_04_10_visual",
+            "sequential_impulse_paper_wall_brick_04_11_visual",
+            "sequential_impulse_paper_wall_brick_04_12_visual",
+            "sequential_impulse_paper_wall_brick_04_13_visual",
+            "sequential_impulse_paper_wall_brick_04_14_visual",
+            "sequential_impulse_paper_wall_brick_04_15_visual",
+            "sequential_impulse_paper_wall_brick_04_16_visual",
+            "sequential_impulse_paper_wall_brick_04_17_visual",
+            "sequential_impulse_paper_wall_brick_04_18_visual",
+            "sequential_impulse_paper_wall_brick_04_19_visual",
+            "sequential_impulse_paper_wall_brick_04_20_visual",
+            "sequential_impulse_paper_wall_brick_05_00_visual",
+            "sequential_impulse_paper_wall_brick_05_01_visual",
+            "sequential_impulse_paper_wall_brick_05_02_visual",
+            "sequential_impulse_paper_wall_brick_05_03_visual",
+            "sequential_impulse_paper_wall_brick_05_04_visual",
+            "sequential_impulse_paper_wall_brick_05_05_visual",
+            "sequential_impulse_paper_wall_brick_05_06_visual",
+            "sequential_impulse_paper_wall_brick_05_07_visual",
+            "sequential_impulse_paper_wall_brick_05_08_visual",
+            "sequential_impulse_paper_wall_brick_05_09_visual",
+            "sequential_impulse_paper_wall_brick_05_10_visual",
+            "sequential_impulse_paper_wall_brick_05_11_visual",
+            "sequential_impulse_paper_wall_brick_05_12_visual",
+            "sequential_impulse_paper_wall_brick_05_13_visual",
+            "sequential_impulse_paper_wall_brick_05_14_visual",
+            "sequential_impulse_paper_wall_brick_05_15_visual",
+            "sequential_impulse_paper_wall_brick_05_16_visual",
+            "sequential_impulse_paper_wall_brick_05_17_visual",
+            "sequential_impulse_paper_wall_brick_05_18_visual",
+            "sequential_impulse_paper_wall_brick_05_19_visual",
+            "sequential_impulse_paper_wall_brick_05_20_visual",
+            "sequential_impulse_paper_wall_brick_06_00_visual",
+            "sequential_impulse_paper_wall_brick_06_01_visual",
+            "sequential_impulse_paper_wall_brick_06_02_visual",
+            "sequential_impulse_paper_wall_brick_06_03_visual",
+            "sequential_impulse_paper_wall_brick_06_04_visual",
+            "sequential_impulse_paper_wall_brick_06_05_visual",
+            "sequential_impulse_paper_wall_brick_06_06_visual",
+            "sequential_impulse_paper_wall_brick_06_07_visual",
+            "sequential_impulse_paper_wall_brick_06_08_visual",
+            "sequential_impulse_paper_wall_brick_06_09_visual",
+            "sequential_impulse_paper_wall_brick_06_10_visual",
+            "sequential_impulse_paper_wall_brick_06_11_visual",
+            "sequential_impulse_paper_wall_brick_06_12_visual",
+            "sequential_impulse_paper_wall_brick_06_13_visual",
+            "sequential_impulse_paper_wall_brick_06_14_visual",
+            "sequential_impulse_paper_wall_brick_06_15_visual",
+            "sequential_impulse_paper_wall_brick_06_16_visual",
+            "sequential_impulse_paper_wall_brick_06_17_visual",
+            "sequential_impulse_paper_wall_brick_06_18_visual",
+            "sequential_impulse_paper_wall_brick_06_19_visual",
+            "sequential_impulse_paper_wall_brick_06_20_visual",
+            "sequential_impulse_paper_wall_brick_07_00_visual",
+            "sequential_impulse_paper_wall_brick_07_01_visual",
+            "sequential_impulse_paper_wall_brick_07_02_visual",
+            "sequential_impulse_paper_wall_brick_07_03_visual",
+            "sequential_impulse_paper_wall_brick_07_04_visual",
+            "sequential_impulse_paper_wall_brick_07_05_visual",
+            "sequential_impulse_paper_wall_brick_07_06_visual",
+            "sequential_impulse_paper_wall_brick_07_07_visual",
+            "sequential_impulse_paper_wall_brick_07_08_visual",
+            "sequential_impulse_paper_wall_brick_07_09_visual",
+            "sequential_impulse_paper_wall_brick_07_10_visual",
+            "sequential_impulse_paper_wall_brick_07_11_visual",
+            "sequential_impulse_paper_wall_brick_07_12_visual",
+            "sequential_impulse_paper_wall_brick_07_13_visual",
+            "sequential_impulse_paper_wall_brick_07_14_visual",
+            "sequential_impulse_paper_wall_brick_07_15_visual",
+            "sequential_impulse_paper_wall_brick_07_16_visual",
+            "sequential_impulse_paper_wall_brick_07_17_visual",
+            "sequential_impulse_paper_wall_brick_07_18_visual",
+            "sequential_impulse_paper_wall_brick_07_19_visual",
+            "sequential_impulse_paper_wall_brick_07_20_visual",
+            "sequential_impulse_paper_wall_brick_08_00_visual",
+            "sequential_impulse_paper_wall_brick_08_01_visual",
+            "sequential_impulse_paper_wall_brick_08_02_visual",
+            "sequential_impulse_paper_wall_brick_08_03_visual",
+            "sequential_impulse_paper_wall_brick_08_04_visual",
+            "sequential_impulse_paper_wall_brick_08_05_visual",
+            "sequential_impulse_paper_wall_brick_08_06_visual",
+            "sequential_impulse_paper_wall_brick_08_07_visual",
+            "sequential_impulse_paper_wall_brick_08_08_visual",
+            "sequential_impulse_paper_wall_brick_08_09_visual",
+            "sequential_impulse_paper_wall_brick_08_10_visual",
+            "sequential_impulse_paper_wall_brick_08_11_visual",
+            "sequential_impulse_paper_wall_brick_08_12_visual",
+            "sequential_impulse_paper_wall_brick_08_13_visual",
+            "sequential_impulse_paper_wall_brick_08_14_visual",
+            "sequential_impulse_paper_wall_brick_08_15_visual",
+            "sequential_impulse_paper_wall_brick_08_16_visual",
+            "sequential_impulse_paper_wall_brick_08_17_visual",
+            "sequential_impulse_paper_wall_brick_08_18_visual",
+            "sequential_impulse_paper_wall_brick_08_19_visual",
+            "sequential_impulse_paper_wall_brick_08_20_visual",
+            "sequential_impulse_paper_wall_brick_09_00_visual",
+            "sequential_impulse_paper_wall_brick_09_01_visual",
+            "sequential_impulse_paper_wall_brick_09_02_visual",
+            "sequential_impulse_paper_wall_brick_09_03_visual",
+            "sequential_impulse_paper_wall_brick_09_04_visual",
+            "sequential_impulse_paper_wall_brick_09_05_visual",
+            "sequential_impulse_paper_wall_brick_09_06_visual",
+            "sequential_impulse_paper_wall_brick_09_07_visual",
+            "sequential_impulse_paper_wall_brick_09_08_visual",
+            "sequential_impulse_paper_wall_brick_09_09_visual",
+            "sequential_impulse_paper_wall_brick_09_10_visual",
+            "sequential_impulse_paper_wall_brick_09_11_visual",
+            "sequential_impulse_paper_wall_brick_09_12_visual",
+            "sequential_impulse_paper_wall_brick_09_13_visual",
+            "sequential_impulse_paper_wall_brick_09_14_visual",
+            "sequential_impulse_paper_wall_brick_09_15_visual",
+            "sequential_impulse_paper_wall_brick_09_16_visual",
+            "sequential_impulse_paper_wall_brick_09_17_visual",
+            "sequential_impulse_paper_wall_brick_09_18_visual",
+            "sequential_impulse_paper_wall_brick_09_19_visual",
+            "sequential_impulse_paper_wall_brick_09_20_visual",
+            "sequential_impulse_paper_wall_brick_10_00_visual",
+            "sequential_impulse_paper_wall_brick_10_01_visual",
+            "sequential_impulse_paper_wall_brick_10_02_visual",
+            "sequential_impulse_paper_wall_brick_10_03_visual",
+            "sequential_impulse_paper_wall_brick_10_04_visual",
+            "sequential_impulse_paper_wall_brick_10_05_visual",
+            "sequential_impulse_paper_wall_brick_10_06_visual",
+            "sequential_impulse_paper_wall_brick_10_07_visual",
+            "sequential_impulse_paper_wall_brick_10_08_visual",
+            "sequential_impulse_paper_wall_brick_10_09_visual",
+            "sequential_impulse_paper_wall_brick_10_10_visual",
+            "sequential_impulse_paper_wall_brick_10_11_visual",
+            "sequential_impulse_paper_wall_brick_10_12_visual",
+            "sequential_impulse_paper_wall_brick_10_13_visual",
+            "sequential_impulse_paper_wall_brick_10_14_visual",
+            "sequential_impulse_paper_wall_brick_10_15_visual",
+            "sequential_impulse_paper_wall_brick_10_16_visual",
+            "sequential_impulse_paper_wall_brick_10_17_visual",
+            "sequential_impulse_paper_wall_brick_10_18_visual",
+            "sequential_impulse_paper_wall_brick_10_19_visual",
+            "sequential_impulse_paper_wall_brick_10_20_visual",
+            "sequential_impulse_paper_wall_brick_11_00_visual",
+            "sequential_impulse_paper_wall_brick_11_01_visual",
+            "sequential_impulse_paper_wall_brick_11_02_visual",
+            "sequential_impulse_paper_wall_brick_11_03_visual",
+            "sequential_impulse_paper_wall_brick_11_04_visual",
+            "sequential_impulse_paper_wall_brick_11_05_visual",
+            "sequential_impulse_paper_wall_brick_11_06_visual",
+            "sequential_impulse_paper_wall_brick_11_07_visual",
+            "sequential_impulse_paper_wall_brick_11_08_visual",
+            "sequential_impulse_paper_wall_brick_11_09_visual",
+            "sequential_impulse_paper_wall_brick_11_10_visual",
+            "sequential_impulse_paper_wall_brick_11_11_visual",
+            "sequential_impulse_paper_wall_brick_11_12_visual",
+            "sequential_impulse_paper_wall_brick_11_13_visual",
+            "sequential_impulse_paper_wall_brick_11_14_visual",
+            "sequential_impulse_paper_wall_brick_11_15_visual",
+            "sequential_impulse_paper_wall_brick_11_16_visual",
+            "sequential_impulse_paper_wall_brick_11_17_visual",
+            "sequential_impulse_paper_wall_brick_11_18_visual",
+            "sequential_impulse_paper_wall_brick_11_19_visual",
+            "sequential_impulse_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.3631713252270891,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.002478929102627665,
+            "subject_fraction": 0.09977762464977616
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.9378458674227612,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 120,
+        "file": "scene_metrics.jsonl",
+        "sha256": "9fa7d418275d6d4e4a3a6a32101ae6c61828eb131a11eaf06e420cdcee56c8c9"
+      },
+      "screenshot": {
+        "file": "sequential_impulse_paper_breakable_wall_collapse.png",
+        "sha256": "e1f9ecfc683fb60974a6ca76905a4f40b6b0a981e53463af230b7241cc40c97f"
+      },
+      "source_provenance": {
+        "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
+        "digest": "556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12",
+        "file_count": 1546,
+        "git_head": "d9af744a9cb0763033d76e01381dbf7c1e6ecaa9",
+        "roots": [
+          "CMakeLists.txt",
+          "cmake",
+          "dart",
+          "pixi.lock",
+          "pixi.toml",
+          "pyproject.toml",
+          "python/CMakeLists.txt",
+          "python/dartpy",
+          "python/examples/demos",
+          "scripts/capture_py_demo.py",
+          "scripts/capture_source_provenance.py"
+        ]
+      }
+    },
+    "fracture": {
+      "camera": {
+        "azimuth": -1.9634954084936207,
+        "distance": 22.0,
+        "elevation": 0.62,
+        "preset": "front",
+        "target": [
+          0.0,
+          0.45,
+          1.6
+        ],
+        "view": "front-oblique"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 14,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 1354,
+            "dark_pixels": 11703,
+            "mid_pixels": 209744,
+            "p05": 55.585,
+            "p95": 151.795,
+            "pass": true,
+            "reasons": [],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 96.21,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "14",
+          "scene": "sequential_impulse_paper_breakable_wall",
+          "view": "front-oblique"
+        },
+        "pass": true,
+        "sha256": "3c774ee16efc44b1875ffd2945d3b3851f23fa7714c4b3a6c38353404450f54b"
+      },
+      "label": "fracture",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "795afc2ef2aa7b2bd1163c9fd383e06d6dfb7fbb28887cb15c6571274a0d4262"
+      },
+      "scene_metrics": {
+        "event_count": 14,
+        "frame": 14,
+        "outcome": {
+          "ball_positions": [
+            [
+              -3.098073202241845,
+              -0.3946344148621828,
+              1.3412557393001772
+            ],
+            [
+              -0.3086359994805316,
+              -0.39824512953783375,
+              1.534804675378108
+            ],
+            [
+              3.10224859745802,
+              -0.406645026821888,
+              2.147290409119712
+            ]
+          ],
+          "ball_velocities": [
+            [
+              0.030836577109298536,
+              3.1484833175766425,
+              -0.6835865124940816
+            ],
+            [
+              0.034479351944689325,
+              3.141941145300331,
+              -0.4509172813565596
+            ],
+            [
+              0.036651272283550064,
+              2.8244248296310204,
+              -0.6478121173212148
+            ]
+          ],
+          "bent_brick_count": 106,
+          "broken_joint_identity_count": 5,
+          "broken_joint_ids_sha256": "c85184879b1b9036ff582731031fc49c56b4149e93ded45780b06352bd94d61d",
+          "broken_joint_impact_region_counts": [
+            2,
+            1,
+            2
+          ],
+          "broken_joint_records": [
+            {
+              "angular_residual_radians": 0.0754340704026891,
+              "child": {
+                "body": "brick",
+                "column": 16,
+                "row": 8
+              },
+              "id": "sequential_impulse_paper_wall_horizontal_08_15",
+              "initial_anchor": [
+                3.7199999999999998,
+                0.0,
+                2.305
+              ],
+              "kind": "horizontal",
+              "linear_residual": 0.031481230621811435,
+              "nearest_impact_distance": 0.6216309194369273,
+              "nearest_impact_index": 2,
+              "parent": {
+                "body": "brick",
+                "column": 15,
+                "row": 8
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.11010883219954927,
+              "child": {
+                "body": "brick",
+                "column": 5,
+                "row": 5
+              },
+              "id": "sequential_impulse_paper_wall_vertical_04_05_05_05",
+              "initial_anchor": [
+                -2.79,
+                0.0,
+                1.495
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.01980640585113358,
+              "nearest_impact_distance": 0.31484122982862334,
+              "nearest_impact_index": 0,
+              "parent": {
+                "body": "brick",
+                "column": 5,
+                "row": 4
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.09398507568890756,
+              "child": {
+                "body": "brick",
+                "column": 5,
+                "row": 6
+              },
+              "id": "sequential_impulse_paper_wall_vertical_05_04_06_05",
+              "initial_anchor": [
+                -3.1,
+                0.0,
+                1.7650000000000001
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.01836765941609077,
+              "nearest_impact_distance": 0.21500000000000008,
+              "nearest_impact_index": 0,
+              "parent": {
+                "body": "brick",
+                "column": 4,
+                "row": 5
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.09015324708896295,
+              "child": {
+                "body": "brick",
+                "column": 10,
+                "row": 6
+              },
+              "id": "sequential_impulse_paper_wall_vertical_05_09_06_10",
+              "initial_anchor": [
+                0.0,
+                0.0,
+                1.7650000000000001
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.017099728436564012,
+              "nearest_impact_distance": 0.3103626910567699,
+              "nearest_impact_index": 1,
+              "parent": {
+                "body": "brick",
+                "column": 9,
+                "row": 5
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            },
+            {
+              "angular_residual_radians": 0.08771045680720489,
+              "child": {
+                "body": "brick",
+                "column": 15,
+                "row": 9
+              },
+              "id": "sequential_impulse_paper_wall_vertical_08_15_09_15",
+              "initial_anchor": [
+                3.41,
+                0.0,
+                2.575
+              ],
+              "kind": "vertical",
+              "linear_residual": 0.015224522322355988,
+              "nearest_impact_distance": 0.3830469945058962,
+              "nearest_impact_index": 2,
+              "parent": {
+                "body": "brick",
+                "column": 15,
+                "row": 8
+              },
+              "within_impact_band": true,
+              "within_impact_region": true
+            }
+          ],
+          "broken_joints": 5,
+          "broken_joints_outside_impact_regions": 0,
+          "checkpoint": "fracture",
+          "contact_count": 19,
+          "evaluated": true,
+          "frame": 14,
+          "impact_band_displaced_counts": [
+            13,
+            14,
+            13
+          ],
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_residuals_finite": true,
+          "last_step_iterations": 20,
+          "max_brick_displacement": 0.22102721837884676,
+          "maximum_outside_impact_unbroken_joint_angular_residual_radians": 0.09605372662014049,
+          "maximum_outside_impact_unbroken_joint_linear_residual": 0.02066703337305443,
+          "maximum_unbroken_joint_angular_residual_radians": 0.10666325747892752,
+          "maximum_unbroken_joint_linear_residual": 0.025157513585462494,
+          "maximum_wall_normal_displacement": 0.20004560951685946,
+          "outside_brick_count": 176,
+          "outside_impact_unbroken_joint_residual_count": 484,
+          "outside_retained_fraction": 1.0,
+          "retained_displacement_threshold": 0.5,
+          "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.024846694726072444,
+          "rms_outside_impact_unbroken_joint_linear_residual": 0.010877496165289583,
+          "rms_unbroken_joint_angular_residual_radians": 0.03155688687435937,
+          "rms_unbroken_joint_linear_residual": 0.011631942282383598,
+          "rms_wall_normal_displacement": 0.08081101502561881,
+          "status": "pass",
+          "threshold_checks": {
+            "finite_state": true,
+            "fracture_activated": true,
+            "initial_fracture_confined_to_impact_regions": true,
+            "initial_fracture_covers_three_impacts": true,
+            "initial_fracture_identity_matches": true,
+            "initial_retained_joint_rows_bounded": true,
+            "wall_initially_retained": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 1.0,
+          "unbroken_joint_residual_count": 707,
+          "unbroken_joints": 707,
+          "world_time": 0.2333333333333333
+        },
+        "outcome_oracle": {
+          "collapse_evaluation_frame": 120,
+          "evaluation_frame": 14,
+          "expected_broken_joint_ids_sha256": "c85184879b1b9036ff582731031fc49c56b4149e93ded45780b06352bd94d61d",
+          "expected_broken_joints": 5,
+          "expected_outside_impact_unbroken_joint_count": 484,
+          "impact_band_radius": 0.85,
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_evidence_frames": [
+            14,
+            120
+          ],
+          "maximum_collapse_outside_retained_fraction": 0.35,
+          "maximum_collapse_total_retained_fraction": 0.25,
+          "maximum_final_broken_joints": 30,
+          "maximum_initial_broken_joints": 20,
+          "maximum_initial_outside_joint_angular_residual_radians": 0.13,
+          "maximum_initial_outside_joint_linear_residual": 0.04,
+          "minimum_collapse_outside_joint_maximum_angular_residual_radians": 0.6,
+          "minimum_collapse_outside_joint_maximum_linear_residual": 0.05,
+          "minimum_collapse_outside_joint_rms_angular_residual_radians": 0.18,
+          "minimum_collapse_outside_joint_rms_linear_residual": 0.015,
+          "minimum_collapse_wall_normal_displacement": 2.0,
+          "minimum_displaced_bricks_per_impact_band": 10,
+          "minimum_final_broken_joints": 3,
+          "minimum_final_unbroken_joints": 680,
+          "minimum_initial_broken_joints": 3,
+          "minimum_initial_broken_joints_per_impact_region": 1,
+          "minimum_initial_total_retained_fraction": 0.95,
+          "minimum_initial_unbroken_joints": 690,
+          "outside_radius": 1.15,
+          "retained_displacement_threshold": 0.5
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "hard public rigid pair constraints use solver-owned sequential-impulse rows",
+            "requested": "sequential-impulse",
+            "resolved": "sequential-impulse"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 5000.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_sequential-impulse",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.9634954084936207,
+            "distance": 22.0,
+            "elevation": 0.62,
+            "target": [
+              0.0,
+              0.45,
+              1.6
+            ]
+          },
+          "focus": [
+            "sequential_impulse_paper_wall_brick_00_00_visual",
+            "sequential_impulse_paper_wall_brick_00_01_visual",
+            "sequential_impulse_paper_wall_brick_00_02_visual",
+            "sequential_impulse_paper_wall_brick_00_03_visual",
+            "sequential_impulse_paper_wall_brick_00_04_visual",
+            "sequential_impulse_paper_wall_brick_00_05_visual",
+            "sequential_impulse_paper_wall_brick_00_06_visual",
+            "sequential_impulse_paper_wall_brick_00_07_visual",
+            "sequential_impulse_paper_wall_brick_00_08_visual",
+            "sequential_impulse_paper_wall_brick_00_09_visual",
+            "sequential_impulse_paper_wall_brick_00_10_visual",
+            "sequential_impulse_paper_wall_brick_00_11_visual",
+            "sequential_impulse_paper_wall_brick_00_12_visual",
+            "sequential_impulse_paper_wall_brick_00_13_visual",
+            "sequential_impulse_paper_wall_brick_00_14_visual",
+            "sequential_impulse_paper_wall_brick_00_15_visual",
+            "sequential_impulse_paper_wall_brick_00_16_visual",
+            "sequential_impulse_paper_wall_brick_00_17_visual",
+            "sequential_impulse_paper_wall_brick_00_18_visual",
+            "sequential_impulse_paper_wall_brick_00_19_visual",
+            "sequential_impulse_paper_wall_brick_00_20_visual",
+            "sequential_impulse_paper_wall_brick_01_00_visual",
+            "sequential_impulse_paper_wall_brick_01_01_visual",
+            "sequential_impulse_paper_wall_brick_01_02_visual",
+            "sequential_impulse_paper_wall_brick_01_03_visual",
+            "sequential_impulse_paper_wall_brick_01_04_visual",
+            "sequential_impulse_paper_wall_brick_01_05_visual",
+            "sequential_impulse_paper_wall_brick_01_06_visual",
+            "sequential_impulse_paper_wall_brick_01_07_visual",
+            "sequential_impulse_paper_wall_brick_01_08_visual",
+            "sequential_impulse_paper_wall_brick_01_09_visual",
+            "sequential_impulse_paper_wall_brick_01_10_visual",
+            "sequential_impulse_paper_wall_brick_01_11_visual",
+            "sequential_impulse_paper_wall_brick_01_12_visual",
+            "sequential_impulse_paper_wall_brick_01_13_visual",
+            "sequential_impulse_paper_wall_brick_01_14_visual",
+            "sequential_impulse_paper_wall_brick_01_15_visual",
+            "sequential_impulse_paper_wall_brick_01_16_visual",
+            "sequential_impulse_paper_wall_brick_01_17_visual",
+            "sequential_impulse_paper_wall_brick_01_18_visual",
+            "sequential_impulse_paper_wall_brick_01_19_visual",
+            "sequential_impulse_paper_wall_brick_01_20_visual",
+            "sequential_impulse_paper_wall_brick_02_00_visual",
+            "sequential_impulse_paper_wall_brick_02_01_visual",
+            "sequential_impulse_paper_wall_brick_02_02_visual",
+            "sequential_impulse_paper_wall_brick_02_03_visual",
+            "sequential_impulse_paper_wall_brick_02_04_visual",
+            "sequential_impulse_paper_wall_brick_02_05_visual",
+            "sequential_impulse_paper_wall_brick_02_06_visual",
+            "sequential_impulse_paper_wall_brick_02_07_visual",
+            "sequential_impulse_paper_wall_brick_02_08_visual",
+            "sequential_impulse_paper_wall_brick_02_09_visual",
+            "sequential_impulse_paper_wall_brick_02_10_visual",
+            "sequential_impulse_paper_wall_brick_02_11_visual",
+            "sequential_impulse_paper_wall_brick_02_12_visual",
+            "sequential_impulse_paper_wall_brick_02_13_visual",
+            "sequential_impulse_paper_wall_brick_02_14_visual",
+            "sequential_impulse_paper_wall_brick_02_15_visual",
+            "sequential_impulse_paper_wall_brick_02_16_visual",
+            "sequential_impulse_paper_wall_brick_02_17_visual",
+            "sequential_impulse_paper_wall_brick_02_18_visual",
+            "sequential_impulse_paper_wall_brick_02_19_visual",
+            "sequential_impulse_paper_wall_brick_02_20_visual",
+            "sequential_impulse_paper_wall_brick_03_00_visual",
+            "sequential_impulse_paper_wall_brick_03_01_visual",
+            "sequential_impulse_paper_wall_brick_03_02_visual",
+            "sequential_impulse_paper_wall_brick_03_03_visual",
+            "sequential_impulse_paper_wall_brick_03_04_visual",
+            "sequential_impulse_paper_wall_brick_03_05_visual",
+            "sequential_impulse_paper_wall_brick_03_06_visual",
+            "sequential_impulse_paper_wall_brick_03_07_visual",
+            "sequential_impulse_paper_wall_brick_03_08_visual",
+            "sequential_impulse_paper_wall_brick_03_09_visual",
+            "sequential_impulse_paper_wall_brick_03_10_visual",
+            "sequential_impulse_paper_wall_brick_03_11_visual",
+            "sequential_impulse_paper_wall_brick_03_12_visual",
+            "sequential_impulse_paper_wall_brick_03_13_visual",
+            "sequential_impulse_paper_wall_brick_03_14_visual",
+            "sequential_impulse_paper_wall_brick_03_15_visual",
+            "sequential_impulse_paper_wall_brick_03_16_visual",
+            "sequential_impulse_paper_wall_brick_03_17_visual",
+            "sequential_impulse_paper_wall_brick_03_18_visual",
+            "sequential_impulse_paper_wall_brick_03_19_visual",
+            "sequential_impulse_paper_wall_brick_03_20_visual",
+            "sequential_impulse_paper_wall_brick_04_00_visual",
+            "sequential_impulse_paper_wall_brick_04_01_visual",
+            "sequential_impulse_paper_wall_brick_04_02_visual",
+            "sequential_impulse_paper_wall_brick_04_03_visual",
+            "sequential_impulse_paper_wall_brick_04_04_visual",
+            "sequential_impulse_paper_wall_brick_04_05_visual",
+            "sequential_impulse_paper_wall_brick_04_06_visual",
+            "sequential_impulse_paper_wall_brick_04_07_visual",
+            "sequential_impulse_paper_wall_brick_04_08_visual",
+            "sequential_impulse_paper_wall_brick_04_09_visual",
+            "sequential_impulse_paper_wall_brick_04_10_visual",
+            "sequential_impulse_paper_wall_brick_04_11_visual",
+            "sequential_impulse_paper_wall_brick_04_12_visual",
+            "sequential_impulse_paper_wall_brick_04_13_visual",
+            "sequential_impulse_paper_wall_brick_04_14_visual",
+            "sequential_impulse_paper_wall_brick_04_15_visual",
+            "sequential_impulse_paper_wall_brick_04_16_visual",
+            "sequential_impulse_paper_wall_brick_04_17_visual",
+            "sequential_impulse_paper_wall_brick_04_18_visual",
+            "sequential_impulse_paper_wall_brick_04_19_visual",
+            "sequential_impulse_paper_wall_brick_04_20_visual",
+            "sequential_impulse_paper_wall_brick_05_00_visual",
+            "sequential_impulse_paper_wall_brick_05_01_visual",
+            "sequential_impulse_paper_wall_brick_05_02_visual",
+            "sequential_impulse_paper_wall_brick_05_03_visual",
+            "sequential_impulse_paper_wall_brick_05_04_visual",
+            "sequential_impulse_paper_wall_brick_05_05_visual",
+            "sequential_impulse_paper_wall_brick_05_06_visual",
+            "sequential_impulse_paper_wall_brick_05_07_visual",
+            "sequential_impulse_paper_wall_brick_05_08_visual",
+            "sequential_impulse_paper_wall_brick_05_09_visual",
+            "sequential_impulse_paper_wall_brick_05_10_visual",
+            "sequential_impulse_paper_wall_brick_05_11_visual",
+            "sequential_impulse_paper_wall_brick_05_12_visual",
+            "sequential_impulse_paper_wall_brick_05_13_visual",
+            "sequential_impulse_paper_wall_brick_05_14_visual",
+            "sequential_impulse_paper_wall_brick_05_15_visual",
+            "sequential_impulse_paper_wall_brick_05_16_visual",
+            "sequential_impulse_paper_wall_brick_05_17_visual",
+            "sequential_impulse_paper_wall_brick_05_18_visual",
+            "sequential_impulse_paper_wall_brick_05_19_visual",
+            "sequential_impulse_paper_wall_brick_05_20_visual",
+            "sequential_impulse_paper_wall_brick_06_00_visual",
+            "sequential_impulse_paper_wall_brick_06_01_visual",
+            "sequential_impulse_paper_wall_brick_06_02_visual",
+            "sequential_impulse_paper_wall_brick_06_03_visual",
+            "sequential_impulse_paper_wall_brick_06_04_visual",
+            "sequential_impulse_paper_wall_brick_06_05_visual",
+            "sequential_impulse_paper_wall_brick_06_06_visual",
+            "sequential_impulse_paper_wall_brick_06_07_visual",
+            "sequential_impulse_paper_wall_brick_06_08_visual",
+            "sequential_impulse_paper_wall_brick_06_09_visual",
+            "sequential_impulse_paper_wall_brick_06_10_visual",
+            "sequential_impulse_paper_wall_brick_06_11_visual",
+            "sequential_impulse_paper_wall_brick_06_12_visual",
+            "sequential_impulse_paper_wall_brick_06_13_visual",
+            "sequential_impulse_paper_wall_brick_06_14_visual",
+            "sequential_impulse_paper_wall_brick_06_15_visual",
+            "sequential_impulse_paper_wall_brick_06_16_visual",
+            "sequential_impulse_paper_wall_brick_06_17_visual",
+            "sequential_impulse_paper_wall_brick_06_18_visual",
+            "sequential_impulse_paper_wall_brick_06_19_visual",
+            "sequential_impulse_paper_wall_brick_06_20_visual",
+            "sequential_impulse_paper_wall_brick_07_00_visual",
+            "sequential_impulse_paper_wall_brick_07_01_visual",
+            "sequential_impulse_paper_wall_brick_07_02_visual",
+            "sequential_impulse_paper_wall_brick_07_03_visual",
+            "sequential_impulse_paper_wall_brick_07_04_visual",
+            "sequential_impulse_paper_wall_brick_07_05_visual",
+            "sequential_impulse_paper_wall_brick_07_06_visual",
+            "sequential_impulse_paper_wall_brick_07_07_visual",
+            "sequential_impulse_paper_wall_brick_07_08_visual",
+            "sequential_impulse_paper_wall_brick_07_09_visual",
+            "sequential_impulse_paper_wall_brick_07_10_visual",
+            "sequential_impulse_paper_wall_brick_07_11_visual",
+            "sequential_impulse_paper_wall_brick_07_12_visual",
+            "sequential_impulse_paper_wall_brick_07_13_visual",
+            "sequential_impulse_paper_wall_brick_07_14_visual",
+            "sequential_impulse_paper_wall_brick_07_15_visual",
+            "sequential_impulse_paper_wall_brick_07_16_visual",
+            "sequential_impulse_paper_wall_brick_07_17_visual",
+            "sequential_impulse_paper_wall_brick_07_18_visual",
+            "sequential_impulse_paper_wall_brick_07_19_visual",
+            "sequential_impulse_paper_wall_brick_07_20_visual",
+            "sequential_impulse_paper_wall_brick_08_00_visual",
+            "sequential_impulse_paper_wall_brick_08_01_visual",
+            "sequential_impulse_paper_wall_brick_08_02_visual",
+            "sequential_impulse_paper_wall_brick_08_03_visual",
+            "sequential_impulse_paper_wall_brick_08_04_visual",
+            "sequential_impulse_paper_wall_brick_08_05_visual",
+            "sequential_impulse_paper_wall_brick_08_06_visual",
+            "sequential_impulse_paper_wall_brick_08_07_visual",
+            "sequential_impulse_paper_wall_brick_08_08_visual",
+            "sequential_impulse_paper_wall_brick_08_09_visual",
+            "sequential_impulse_paper_wall_brick_08_10_visual",
+            "sequential_impulse_paper_wall_brick_08_11_visual",
+            "sequential_impulse_paper_wall_brick_08_12_visual",
+            "sequential_impulse_paper_wall_brick_08_13_visual",
+            "sequential_impulse_paper_wall_brick_08_14_visual",
+            "sequential_impulse_paper_wall_brick_08_15_visual",
+            "sequential_impulse_paper_wall_brick_08_16_visual",
+            "sequential_impulse_paper_wall_brick_08_17_visual",
+            "sequential_impulse_paper_wall_brick_08_18_visual",
+            "sequential_impulse_paper_wall_brick_08_19_visual",
+            "sequential_impulse_paper_wall_brick_08_20_visual",
+            "sequential_impulse_paper_wall_brick_09_00_visual",
+            "sequential_impulse_paper_wall_brick_09_01_visual",
+            "sequential_impulse_paper_wall_brick_09_02_visual",
+            "sequential_impulse_paper_wall_brick_09_03_visual",
+            "sequential_impulse_paper_wall_brick_09_04_visual",
+            "sequential_impulse_paper_wall_brick_09_05_visual",
+            "sequential_impulse_paper_wall_brick_09_06_visual",
+            "sequential_impulse_paper_wall_brick_09_07_visual",
+            "sequential_impulse_paper_wall_brick_09_08_visual",
+            "sequential_impulse_paper_wall_brick_09_09_visual",
+            "sequential_impulse_paper_wall_brick_09_10_visual",
+            "sequential_impulse_paper_wall_brick_09_11_visual",
+            "sequential_impulse_paper_wall_brick_09_12_visual",
+            "sequential_impulse_paper_wall_brick_09_13_visual",
+            "sequential_impulse_paper_wall_brick_09_14_visual",
+            "sequential_impulse_paper_wall_brick_09_15_visual",
+            "sequential_impulse_paper_wall_brick_09_16_visual",
+            "sequential_impulse_paper_wall_brick_09_17_visual",
+            "sequential_impulse_paper_wall_brick_09_18_visual",
+            "sequential_impulse_paper_wall_brick_09_19_visual",
+            "sequential_impulse_paper_wall_brick_09_20_visual",
+            "sequential_impulse_paper_wall_brick_10_00_visual",
+            "sequential_impulse_paper_wall_brick_10_01_visual",
+            "sequential_impulse_paper_wall_brick_10_02_visual",
+            "sequential_impulse_paper_wall_brick_10_03_visual",
+            "sequential_impulse_paper_wall_brick_10_04_visual",
+            "sequential_impulse_paper_wall_brick_10_05_visual",
+            "sequential_impulse_paper_wall_brick_10_06_visual",
+            "sequential_impulse_paper_wall_brick_10_07_visual",
+            "sequential_impulse_paper_wall_brick_10_08_visual",
+            "sequential_impulse_paper_wall_brick_10_09_visual",
+            "sequential_impulse_paper_wall_brick_10_10_visual",
+            "sequential_impulse_paper_wall_brick_10_11_visual",
+            "sequential_impulse_paper_wall_brick_10_12_visual",
+            "sequential_impulse_paper_wall_brick_10_13_visual",
+            "sequential_impulse_paper_wall_brick_10_14_visual",
+            "sequential_impulse_paper_wall_brick_10_15_visual",
+            "sequential_impulse_paper_wall_brick_10_16_visual",
+            "sequential_impulse_paper_wall_brick_10_17_visual",
+            "sequential_impulse_paper_wall_brick_10_18_visual",
+            "sequential_impulse_paper_wall_brick_10_19_visual",
+            "sequential_impulse_paper_wall_brick_10_20_visual",
+            "sequential_impulse_paper_wall_brick_11_00_visual",
+            "sequential_impulse_paper_wall_brick_11_01_visual",
+            "sequential_impulse_paper_wall_brick_11_02_visual",
+            "sequential_impulse_paper_wall_brick_11_03_visual",
+            "sequential_impulse_paper_wall_brick_11_04_visual",
+            "sequential_impulse_paper_wall_brick_11_05_visual",
+            "sequential_impulse_paper_wall_brick_11_06_visual",
+            "sequential_impulse_paper_wall_brick_11_07_visual",
+            "sequential_impulse_paper_wall_brick_11_08_visual",
+            "sequential_impulse_paper_wall_brick_11_09_visual",
+            "sequential_impulse_paper_wall_brick_11_10_visual",
+            "sequential_impulse_paper_wall_brick_11_11_visual",
+            "sequential_impulse_paper_wall_brick_11_12_visual",
+            "sequential_impulse_paper_wall_brick_11_13_visual",
+            "sequential_impulse_paper_wall_brick_11_14_visual",
+            "sequential_impulse_paper_wall_brick_11_15_visual",
+            "sequential_impulse_paper_wall_brick_11_16_visual",
+            "sequential_impulse_paper_wall_brick_11_17_visual",
+            "sequential_impulse_paper_wall_brick_11_18_visual",
+            "sequential_impulse_paper_wall_brick_11_19_visual",
+            "sequential_impulse_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.17348599324478636,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.07535944471988101,
+            "subject_fraction": 0.1269169976036998
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.8860583889711418,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 14,
+        "file": "scene_metrics.jsonl",
+        "sha256": "9b17ad2d2cda342ac68b1059bfc965549c9b342b39849d493ece66a95d81ccc1"
+      },
+      "screenshot": {
+        "file": "sequential_impulse_paper_breakable_wall_fracture.png",
+        "sha256": "24cff2be00f71a3ed24216e577d7a6f3d9519e69d076c724a59f4a1ac108ddee"
+      },
+      "source_provenance": {
+        "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
+        "digest": "556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12",
+        "file_count": 1546,
+        "git_head": "d9af744a9cb0763033d76e01381dbf7c1e6ecaa9",
+        "roots": [
+          "CMakeLists.txt",
+          "cmake",
+          "dart",
+          "pixi.lock",
+          "pixi.toml",
+          "pyproject.toml",
+          "python/CMakeLists.txt",
+          "python/dartpy",
+          "python/examples/demos",
+          "scripts/capture_py_demo.py",
+          "scripts/capture_source_provenance.py"
+        ]
+      }
+    },
+    "semantic_review": {
+      "claim_and_expected_observation": "The matched Sequential Impulse Figure 13 row should break a small impact-local set of joints while the wall is initially standing, then accumulate large residuals on retained rows outside the impacts and collapse without further fracture.",
+      "file": "si-visual-review.json",
+      "inspected_images": [
+        {
+          "file": "sequential_impulse_paper_breakable_wall_fracture.png",
+          "role": "fracture_frame_14",
+          "sha256": "24cff2be00f71a3ed24216e577d7a6f3d9519e69d076c724a59f4a1ac108ddee"
+        },
+        {
+          "file": "sequential_impulse_paper_breakable_wall_collapse.png",
+          "role": "collapse_frame_120",
+          "sha256": "e1f9ecfc683fb60974a6ca76905a4f40b6b0a981e53463af230b7241cc40c97f"
+        },
+        {
+          "file": "paper-10.png",
+          "role": "paper_figure_13_reference",
+          "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b"
+        }
+      ],
+      "not_proven_and_limitations": "The images cannot reveal joint identity or residual magnitude, so those claims rely on the checked text oracle and digest. This three-method packet does not reproduce XPBD, establish CUDA parity, prove exact unpublished source constants, or establish parity with published/source timing.",
+      "reconciliation_and_verdict": "PASS: both engine ViewReports pass with all 252 bricks in focus. At frame 14 exactly five broken identities cover the three impact regions in counts 2, 1, and 2, with none outside; all 484 outside-impact retained rows remain present. At frame 120 the same identity digest remains with no additional joint breaks, but those outside-impact rows reach 0.063460 m maximum and 0.020763 m RMS linear residual plus 0.727048 rad maximum and 0.216362 rad RMS angular residual. The images independently progress from a standing wall around the three impacts to a slab collapsed across the ground.",
+      "reviewer_capability": "Codex native image input with original-resolution inspection of the six regenerated captures and pinned paper figure",
+      "sha256": "1c4b2eecbe1faa12767f1b401c227f3b79d7f216f00823bc5e4162d387736d70",
+      "text_oracle": "Figure 13 states that Sequential Impulse fractures first but cannot maintain retained constraints, causing slow bending and final collapse; the DART row directly measures retained rows outside the impacts.",
+      "verdict": "pass",
+      "visible_observation": "At frame 14 the wall is still globally upright and continuous around the three balls. At frame 120 almost the entire wall lies flat across the ground in a coherent collapsed slab while the same five joints, and no additional joints, are recorded as broken."
+    }
+  }
+}

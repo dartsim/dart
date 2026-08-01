@@ -54,19 +54,21 @@ paper-inspired row update. For this paper, "implemented" means:
 
 ## Solver-Identity Relabel (PLAN-091 WP-091.1)
 
-The historical `avbd-demo2d`/`avbd-demo3d` benchmark and py-demo packets cited
-by this audit neither selected the new public AVBD rigid-body family nor
-emplaced the compatibility-only internal AVBD rigid-contact opt-in
-(`comps::RigidAvbdContactConfig`). Every rigid contact in those scenes
-therefore ran DART's default sequential-impulse path. Their native-runner
-timing ratios remain whole-pipeline `World::step` comparisons, not
-AVBD-contact-solver comparisons: pure-contact rows timed no AVBD rows;
-joint-plus-contact rows timed AVBD point-joint/motor/spring rows while
-ordinary contacts ran sequential impulse; and incidental chain contacts also
-ran sequential impulse. Faster-than-native rows below retain this historical
-classification. New packets must machine-record `resolved_solver_identity`
-and `rigid_contact_selection` at AVBD packet schema version 3, enforced by
-`pixi run check-avbd-packets`.
+The checked-in historical `avbd-demo2d`/`avbd-demo3d` benchmark and py-demo
+packets cited by this audit were captured before their scenes selected the
+public AVBD rigid-body family or emplaced the compatibility-only internal AVBD
+rigid-contact opt-in (`comps::RigidAvbdContactConfig`). Every rigid contact in
+those scenes therefore ran DART's default sequential-impulse path at capture
+time. Their recorded native-runner timing ratios remain historical
+whole-pipeline `World::step` comparisons, not AVBD-contact-solver comparisons:
+pure-contact rows timed no AVBD rows; joint-plus-contact rows timed AVBD
+point-joint/motor/spring rows while ordinary contacts ran sequential impulse;
+and incidental chain contacts also ran sequential impulse. Seven current
+source-row scenes now explicitly select public AVBD so they cannot silently
+exercise SI. Faster-than-native rows below retain their historical
+classification until refreshed. New packets must machine-record
+`resolved_solver_identity` and `rigid_contact_selection` at AVBD packet schema
+version 3, enforced by `pixi run check-avbd-packets`.
 
 The public `RigidBodySolver::Avbd` family now provides an explicit, reported
 world-level AVBD contact/joint selection without the private body opt-in. Its
@@ -486,14 +488,26 @@ the source-matched video edit, CUDA path, broad fracture corpus, and comparable
 performance remain open.
 [`avbd-paper-vbd-comparison-packet.json`](avbd-paper-vbd-comparison-packet.json)
 adds a matched public fixed-penalty VBD row over that exact reconstructed scene
-fingerprint. Its independent frame-14 bend and frame-120 retention oracles,
+fingerprint. Its independent frame-18 bend and frame-120 retention oracles,
 assessed renders, solver identity, allocation gates, and same-host
 five-repetition benchmark are bound to the current AVBD packet and pinned
 paper/video sources. The timing ratio is descriptive cost only because the
 methods intentionally produce different outcomes and no achieved-accuracy
-reference denominator exists. Sequential Impulse, XPBD, exact unpublished
-constants, a source-matched four-method edit, CUDA, and achieved-accuracy
-reference performance remain open.
+reference denominator exists.
+[`avbd-paper-sequential-impulse-comparison-packet.json`](avbd-paper-sequential-impulse-comparison-packet.json)
+adds the honest public Sequential Impulse row on that same fingerprint. Its
+frame-14 oracle records exactly five broken identities across all three impact
+regions and none outside, with the wall still retained. The frame-120 identity
+digest is unchanged, while the 484 retained rows outside all impacts have
+large measured linear and angular residuals and the wall globally collapses.
+Both captures pass engine ViewReports, pixel integrity, and separate semantic
+review, while benchmark runtime counters prove that public SI contact and pair
+rows both ran 20 sweeps. The AVBD row separately discloses that 79 of its 154
+broken identities lie outside the selected impact regions; it therefore
+claims localized displacement damage and tightly satisfied retained rows, not
+localized broken topology. XPBD, exact unpublished constants, a source-matched
+four-method edit, CUDA, and achieved-accuracy reference performance remain
+open.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,
@@ -683,8 +697,12 @@ gates, and absolute CPU timing. The linked
 [`avbd-paper-vbd-comparison-packet.json`](avbd-paper-vbd-comparison-packet.json)
 adds the matched fixed-penalty VBD bend-without-fracture row on the same scene
 fingerprint, with independent numeric and assessed visual evidence. Exact
-unpublished source constants, Sequential Impulse and XPBD rows, a source edit,
-broad joint/fracture corpus, unified rows, CUDA, and comparable paper/reference
+unpublished source constants and XPBD remain open. The adjacent
+[`avbd-paper-sequential-impulse-comparison-packet.json`](avbd-paper-sequential-impulse-comparison-packet.json)
+adds solver-owned hard SI pair rows and the matched
+initial-fracture-to-collapse outcome, linked to the same current AVBD/VBD
+evidence and benchmark JSON. A source-matched four-method edit, broad
+joint/fracture corpus, unified rows, CUDA, and comparable paper/reference
 performance remain open. Non-topology
 multibody-link fixed/revolute/prismatic point-joint
 entities can also generate hard private configs from simulation-entry current
@@ -816,10 +834,9 @@ renders the timing/stability sweep. No same-hardware paper-number comparison or
 GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes. The next fracture slice should
-extend the matched publication-shaped AVBD/VBD wall into honest Sequential
-Impulse and XPBD rows, a source-matched four-method edit, CUDA, and the
-remaining joint/attachment corpus before treating the A5 joint-family surface
-as broad.
+extend the matched publication-shaped SI/VBD/AVBD wall with honest XPBD, then
+a source-matched four-method edit, CUDA, and the remaining joint/attachment
+corpus before treating the A5 joint-family surface as broad.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
 `avbd_demo2d_hanging_rope`, `avbd_demo2d_rod`,

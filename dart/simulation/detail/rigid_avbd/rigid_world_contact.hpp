@@ -43,6 +43,7 @@
 #include <dart/simulation/comps/rigid_body.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
+#include <dart/simulation/detail/rigid_pair_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 
 #include <dart/common/memory_allocator.hpp>
@@ -65,6 +66,12 @@
 
 namespace dart::simulation::detail::deformable_vbd {
 
+static_assert(
+    kAvbdRigidJointAllAxesMask
+        == ::dart::simulation::detail::kRigidPairConstraintAllAxesMask,
+    "The AVBD kernel and solver-neutral rigid pair-constraint axis masks must "
+    "stay identical; consolidate before changing either");
+
 struct AvbdRigidWorldContactOptions
 {
   double startStiffness = 1.0;
@@ -85,43 +92,16 @@ struct AvbdRigidWorldEndpoint
   bool canProjectAsRigidBody = false;
 };
 
-struct AvbdRigidWorldProjectableBodyView
-{
-  const comps::Transform* transform = nullptr;
-  const comps::MassProperties* mass = nullptr;
-  bool isStatic = false;
-
-  explicit operator bool() const noexcept
-  {
-    return transform != nullptr && mass != nullptr;
-  }
-};
+using AvbdRigidWorldProjectableBodyView
+    = ::dart::simulation::detail::RigidPairConstraintBodyView;
 
 struct AvbdRigidWorldPointJointInput
+  : ::dart::simulation::detail::RigidPairConstraintInput
 {
-  entt::entity joint = entt::null;
-  entt::entity bodyA = entt::null;
-  entt::entity bodyB = entt::null;
-  AvbdRigidWorldProjectableBodyView bodyAView;
-  AvbdRigidWorldProjectableBodyView bodyBView;
-  Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
-  Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
-  bool anchorsAreLocal = false;
-  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
-  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
-  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
-  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
-  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
-  bool useLinearMotor = false;
-  bool useAngularMotor = false;
-  double motorTargetSpeed = 0.0;
-  double motorMaxForce = std::numeric_limits<double>::infinity();
-  double motorMaxTorque = std::numeric_limits<double>::infinity();
   double startStiffness = 1.0;
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
   double maxStiffness = std::numeric_limits<double>::infinity();
-  double fractureThreshold = 0.0;
 };
 
 struct AvbdRigidWorldDistanceSpringInput
@@ -148,8 +128,10 @@ struct AvbdRigidWorldPointJointConfig
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
   Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
   Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
-  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
-  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t linearAxisMask
+      = ::dart::simulation::detail::kRigidPairConstraintAllAxesMask;
+  std::uint8_t angularAxisMask
+      = ::dart::simulation::detail::kRigidPairConstraintAllAxesMask;
   double startStiffness = 1.0;
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
@@ -647,22 +629,7 @@ inline AvbdRigidWorldProjectableBodyView avbdRigidWorldProjectableBody(
     const ::dart::simulation::detail::WorldRegistry& registry,
     entt::entity entity)
 {
-  if (entity == entt::null || !registry.valid(entity)
-      || !registry.all_of<comps::RigidBodyTag>(entity)) {
-    return {};
-  }
-
-  const auto* transform = registry.try_get<comps::Transform>(entity);
-  const auto* mass = registry.try_get<comps::MassProperties>(entity);
-  if (transform == nullptr || mass == nullptr) {
-    return {};
-  }
-
-  return AvbdRigidWorldProjectableBodyView{
-      transform,
-      mass,
-      registry.all_of<comps::StaticBodyTag>(entity)
-          || registry.all_of<comps::KinematicBodyTag>(entity)};
+  return ::dart::simulation::detail::rigidPairConstraintBody(registry, entity);
 }
 
 //==============================================================================
@@ -738,9 +705,7 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 //==============================================================================
 inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
 {
-  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
-         || type == comps::JointType::Prismatic
-         || type == comps::JointType::Spherical;
+  return ::dart::simulation::detail::isRigidPairConstraintType(type);
 }
 
 //==============================================================================
@@ -857,25 +822,8 @@ inline bool computeAvbdRigidWorldPointJointDefaultStiffness(
 //==============================================================================
 inline double avbdRigidWorldSymmetricEffortLimit(const comps::JointModel& joint)
 {
-  if (joint.limits.effortLower.size() < 1 || joint.limits.effortUpper.size() < 1
-      || std::isnan(joint.limits.effortLower[0])
-      || std::isnan(joint.limits.effortUpper[0])) {
-    return std::numeric_limits<double>::infinity();
-  }
-
-  const double lower = joint.limits.effortLower[0];
-  const double upper = joint.limits.effortUpper[0];
-  if (lower > 0.0 || upper < 0.0 || lower > upper) {
-    return 0.0;
-  }
-
-  const double lowerMagnitude = std::isfinite(lower)
-                                    ? std::max(0.0, -lower)
-                                    : std::numeric_limits<double>::infinity();
-  const double upperMagnitude = std::isfinite(upper)
-                                    ? std::max(0.0, upper)
-                                    : std::numeric_limits<double>::infinity();
-  return std::min(lowerMagnitude, upperMagnitude);
+  return ::dart::simulation::detail::rigidPairConstraintSymmetricEffortLimit(
+      joint);
 }
 
 //==============================================================================
@@ -984,18 +932,19 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
   Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
-  if (joint->hasRigidBodyFixedJointAnchors) {
-    if (!joint->rigidBodyFixedJointLocalAnchorParent.allFinite()
-        || !joint->rigidBodyFixedJointLocalAnchorChild.allFinite()
-        || !joint->rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+  if (joint->hasRigidBodyPairConstraintGeometry) {
+    if (!joint->rigidBodyPairConstraintLocalAnchorParent.allFinite()
+        || !joint->rigidBodyPairConstraintLocalAnchorChild.allFinite()
+        || !joint->rigidBodyPairConstraintTargetRelativeOrientation.coeffs()
                 .allFinite()
-        || joint->rigidBodyFixedJointTargetRelativeOrientation.norm() == 0.0) {
+        || joint->rigidBodyPairConstraintTargetRelativeOrientation.norm()
+               == 0.0) {
       return false;
     }
-    localAnchorA = joint->rigidBodyFixedJointLocalAnchorParent;
-    localAnchorB = joint->rigidBodyFixedJointLocalAnchorChild;
+    localAnchorA = joint->rigidBodyPairConstraintLocalAnchorParent;
+    localAnchorB = joint->rigidBodyPairConstraintLocalAnchorChild;
     targetRelativeOrientation = normalizeAvbdRigidOrientation(
-        joint->rigidBodyFixedJointTargetRelativeOrientation);
+        joint->rigidBodyPairConstraintTargetRelativeOrientation);
   } else {
     const Eigen::Quaterniond orientationA = normalizeAvbdRigidOrientation(
         Eigen::Quaterniond(worldAFromEndpoint.linear()));
@@ -1009,10 +958,10 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     targetRelativeOrientation = normalizeAvbdRigidOrientation(
         orientationA.conjugate() * orientationB);
 
-    joint->hasRigidBodyFixedJointAnchors = true;
-    joint->rigidBodyFixedJointLocalAnchorParent = localAnchorA;
-    joint->rigidBodyFixedJointLocalAnchorChild = localAnchorB;
-    joint->rigidBodyFixedJointTargetRelativeOrientation
+    joint->hasRigidBodyPairConstraintGeometry = true;
+    joint->rigidBodyPairConstraintLocalAnchorParent = localAnchorA;
+    joint->rigidBodyPairConstraintLocalAnchorChild = localAnchorB;
+    joint->rigidBodyPairConstraintTargetRelativeOrientation
         = targetRelativeOrientation;
   }
 
@@ -1030,14 +979,19 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     }
 
     const Eigen::Matrix3d jointAxes
-        = avbdRigidJointAxesFromFreeAxis(joint->axis);
+        = ::dart::simulation::detail::rigidPairConstraintAxesFromFreeAxis(
+            joint->axis);
     if (joint->type == comps::JointType::Revolute) {
       angularAxes = jointAxes;
-      angularAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+      angularAxisMask
+          = ::dart::simulation::detail::rigidPairConstraintAllButAxisMask(
+              /*freeAxis=*/2u);
     } else {
       linearAxes = jointAxes;
       angularAxes = jointAxes;
-      linearAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+      linearAxisMask
+          = ::dart::simulation::detail::rigidPairConstraintAllButAxisMask(
+              /*freeAxis=*/2u);
     }
   }
 
@@ -2586,9 +2540,92 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
 
   std::size_t linearCursor = 0;
   std::size_t angularCursor = 0;
+  std::size_t linearMotorInputCursor = 0;
+  std::size_t angularMotorInputCursor = 0;
+  std::size_t linearMotorBuiltCursor = 0;
+  std::size_t angularMotorBuiltCursor = 0;
   for (std::size_t jointIndex = 0; jointIndex < snapshot.joints.size();
        ++jointIndex) {
     const AvbdRigidPointJoint& joint = snapshot.joints[jointIndex];
+
+    // Bounded one-DOF motor rows are stored as a separate row family but load
+    // the same physical joint, so their accepted force joins the masked
+    // linear/angular rows in the fracture norm. Motors were appended in joint
+    // order and identified by the owning joint's row id and endpoints; the
+    // cursors advance for every joint, valid or not, to stay aligned with
+    // that append order.
+    double motorForceSquared = 0.0;
+    while (linearMotorInputCursor < snapshot.linearMotors.size()) {
+      const AvbdRigidLinearMotor& motor
+          = snapshot.linearMotors[linearMotorInputCursor];
+      if (motor.row != joint.row
+          || motor.endpointA.object != joint.endpointA.object
+          || motor.endpointA.feature != joint.endpointA.feature
+          || motor.endpointB.object != joint.endpointB.object
+          || motor.endpointB.feature != joint.endpointB.feature) {
+        break;
+      }
+      ++linearMotorInputCursor;
+      if (!detail::isValidAvbdRigidLinearMotor(
+              motor, snapshot.states.size(), timeStep)) {
+        continue;
+      }
+      if (linearMotorBuiltCursor >= linearMotorRowCount) {
+        break;
+      }
+      const AvbdRigidBodyPointPairRow& indexedMotorRow
+          = (*solvePointPairRows)[linearMotorOffset + linearMotorBuiltCursor];
+      ++linearMotorBuiltCursor;
+      const AvbdRigidPointPairRow& motorRow = indexedMotorRow.row;
+      const double force
+          = avbdRigidRowUsesFiniteMaterial(motorRow.materialStiffness)
+                ? avbdRigidScalarRowForce(
+                      motorRow.state,
+                      avbdRigidPointPairConstraintValue(
+                          snapshot.states[indexedMotorRow.bodyA],
+                          snapshot.states[indexedMotorRow.bodyB],
+                          motorRow),
+                      motorRow.bounds,
+                      motorRow.materialStiffness)
+                : motorRow.state.lambda;
+      motorForceSquared += avbdRigidWorldJointRowLambdaSquared(force);
+    }
+    while (angularMotorInputCursor < snapshot.motors.size()) {
+      const AvbdRigidAngularMotor& motor
+          = snapshot.motors[angularMotorInputCursor];
+      if (motor.row != joint.row
+          || motor.endpointA.object != joint.endpointA.object
+          || motor.endpointA.feature != joint.endpointA.feature
+          || motor.endpointB.object != joint.endpointB.object
+          || motor.endpointB.feature != joint.endpointB.feature) {
+        break;
+      }
+      ++angularMotorInputCursor;
+      if (!detail::isValidAvbdRigidAngularMotor(
+              motor, snapshot.states.size(), timeStep)) {
+        continue;
+      }
+      if (angularMotorBuiltCursor >= angularMotorRowCount) {
+        break;
+      }
+      const AvbdRigidBodyAngularPairRow& indexedMotorRow
+          = (*solveAngularRows)[angularMotorOffset + angularMotorBuiltCursor];
+      ++angularMotorBuiltCursor;
+      const AvbdRigidAngularPairRow& motorRow = indexedMotorRow.row;
+      const double force
+          = avbdRigidRowUsesFiniteMaterial(motorRow.materialStiffness)
+                ? avbdRigidScalarRowForce(
+                      motorRow.state,
+                      avbdRigidAngularPairConstraintValue(
+                          snapshot.states[indexedMotorRow.bodyA],
+                          snapshot.states[indexedMotorRow.bodyB],
+                          motorRow),
+                      motorRow.bounds,
+                      motorRow.materialStiffness)
+                : motorRow.state.lambda;
+      motorForceSquared += avbdRigidWorldJointRowLambdaSquared(force);
+    }
+
     if (!detail::isValidAvbdRigidPointJoint(joint, snapshot.states.size())) {
       continue;
     }
@@ -2597,7 +2634,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
         = avbdRigidWorldActiveJointAxisCount(joint.linearAxisMask);
     const std::size_t angularRowsForJoint
         = avbdRigidWorldActiveJointAxisCount(joint.angularAxisMask);
-    double forceSquared = 0.0;
+    double forceSquared = motorForceSquared;
     for (std::size_t i = 0;
          i < linearRows && linearCursor + i < jointLinearRowCount;
          ++i) {
@@ -3085,129 +3122,52 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     InputVector& inputs,
     bool includeWorldAnchors = true)
 {
-  const auto view
-      = registry.view<comps::JointModel, AvbdRigidWorldPointJointConfig>();
-  inputs.clear();
-  inputs.reserve(view.size_hint());
+  using Input = typename InputVector::value_type;
+  static_assert(std::is_same_v<Input, AvbdRigidWorldPointJointInput>);
 
-  for (const entt::entity entity : view) {
-    const auto& jointModel = view.get<comps::JointModel>(entity);
-    const auto& jointState = registry.get<comps::JointState>(entity);
-    const auto& jointActuation = registry.get<comps::JointActuation>(entity);
-    const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || jointState.broken
-        || !isAvbdRigidWorldPointJointType(jointModel.type)) {
-      continue;
+  const auto geometryProvider
+      = [&registry](entt::entity entity, const comps::JointModel&)
+      -> std::optional<
+          ::dart::simulation::detail::RigidPairConstraintGeometry> {
+    const auto* config
+        = registry.try_get<AvbdRigidWorldPointJointConfig>(entity);
+    if (config == nullptr) {
+      return std::nullopt;
     }
 
-    if (jointModel.parentLink == entt::null
-        || jointModel.childLink == entt::null
-        || jointModel.parentLink == jointModel.childLink) {
-      continue;
-    }
+    ::dart::simulation::detail::RigidPairConstraintGeometry geometry;
+    geometry.enabled = config->enabled;
+    geometry.localAnchorA = config->localAnchorA;
+    geometry.localAnchorB = config->localAnchorB;
+    geometry.targetRelativeOrientation = config->targetRelativeOrientation;
+    geometry.linearAxes = config->linearAxes;
+    geometry.angularAxes = config->angularAxes;
+    geometry.linearAxisMask = config->linearAxisMask;
+    geometry.angularAxisMask = config->angularAxisMask;
+    return geometry;
+  };
+  const auto enrichInput
+      = [&registry](entt::entity entity, AvbdRigidWorldPointJointInput& input) {
+          const auto& config
+              = registry.get<AvbdRigidWorldPointJointConfig>(entity);
+          if (std::isnan(config.startStiffness) || config.startStiffness < 0.0
+              || std::isnan(config.linearMaterialStiffness)
+              || config.linearMaterialStiffness < 0.0
+              || std::isnan(config.angularMaterialStiffness)
+              || config.angularMaterialStiffness < 0.0
+              || std::isnan(config.maxStiffness)
+              || config.maxStiffness < config.startStiffness) {
+            return false;
+          }
 
-    const AvbdRigidWorldProjectableBodyView bodyA
-        = avbdRigidWorldProjectableBody(registry, jointModel.parentLink);
-    const AvbdRigidWorldProjectableBodyView bodyB
-        = avbdRigidWorldProjectableBody(registry, jointModel.childLink);
-    if (!bodyA || !bodyB || (bodyA.isStatic && bodyB.isStatic)) {
-      continue;
-    }
-    const auto* transformA = bodyA.transform;
-    const auto* transformB = bodyB.transform;
-
-    if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
-        || !config.targetRelativeOrientation.coeffs().allFinite()
-        || !config.linearAxes.allFinite() || !config.angularAxes.allFinite()
-        || std::isnan(config.startStiffness) || config.startStiffness < 0.0
-        || std::isnan(config.linearMaterialStiffness)
-        || config.linearMaterialStiffness < 0.0
-        || std::isnan(config.angularMaterialStiffness)
-        || config.angularMaterialStiffness < 0.0
-        || std::isnan(config.maxStiffness)
-        || config.maxStiffness < config.startStiffness) {
-      continue;
-    }
-
-    if (!transformA->position.allFinite()
-        || !transformA->orientation.coeffs().allFinite()
-        || !transformB->position.allFinite()
-        || !transformB->orientation.coeffs().allFinite()) {
-      continue;
-    }
-
-    const bool hasAngularVelocityMotor
-        = jointModel.type == comps::JointType::Revolute
-          && jointActuation.actuatorType == comps::ActuatorType::Velocity
-          && jointActuation.commandVelocity.size() == 1
-          && jointActuation.commandVelocity.allFinite();
-    const bool hasLinearVelocityMotor
-        = jointModel.type == comps::JointType::Prismatic
-          && jointActuation.actuatorType == comps::ActuatorType::Velocity
-          && jointActuation.commandVelocity.size() == 1
-          && jointActuation.commandVelocity.allFinite();
-    const bool useStableFullLinearBasis
-        = !includeWorldAnchors
-          && config.linearAxisMask == kAvbdRigidJointAllAxesMask
-          && config.angularAxisMask == 0u && !hasAngularVelocityMotor
-          && !hasLinearVelocityMotor
-          && config.linearAxes.isApprox(Eigen::Matrix3d::Identity(), 0.0);
-    Eigen::Quaterniond orientationA = Eigen::Quaterniond::Identity();
-    Eigen::Matrix3d parentRotation = Eigen::Matrix3d::Identity();
-    if (!useStableFullLinearBasis || includeWorldAnchors) {
-      orientationA = normalizeAvbdRigidOrientation(transformA->orientation);
-      parentRotation = orientationA.toRotationMatrix();
-    }
-
-    AvbdRigidWorldPointJointInput input;
-    input.joint = entity;
-    input.bodyA = jointModel.parentLink;
-    input.bodyB = jointModel.childLink;
-    input.bodyAView = bodyA;
-    input.bodyBView = bodyB;
-    if (includeWorldAnchors) {
-      const Eigen::Quaterniond orientationB
-          = normalizeAvbdRigidOrientation(transformB->orientation);
-      input.anchorA = transformA->position + orientationA * config.localAnchorA;
-      input.anchorB = transformB->position + orientationB * config.localAnchorB;
-    } else {
-      input.anchorA = config.localAnchorA;
-      input.anchorB = config.localAnchorB;
-      input.anchorsAreLocal = true;
-    }
-    input.targetRelativeOrientation
-        = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
-    input.linearAxes = useStableFullLinearBasis
-                           ? config.linearAxes
-                           : parentRotation * config.linearAxes;
-    input.angularAxes = useStableFullLinearBasis
-                            ? config.angularAxes
-                            : parentRotation * config.angularAxes;
-    input.linearAxisMask = config.linearAxisMask;
-    input.angularAxisMask = config.angularAxisMask;
-    if (hasAngularVelocityMotor) {
-      const double maxTorque = avbdRigidWorldSymmetricEffortLimit(jointModel);
-      if (maxTorque > 0.0 && !std::isnan(maxTorque)) {
-        input.useAngularMotor = true;
-        input.motorTargetSpeed = jointActuation.commandVelocity[0];
-        input.motorMaxTorque = maxTorque;
-      }
-    }
-    if (hasLinearVelocityMotor) {
-      const double maxForce = avbdRigidWorldSymmetricEffortLimit(jointModel);
-      if (maxForce > 0.0 && !std::isnan(maxForce)) {
-        input.useLinearMotor = true;
-        input.motorTargetSpeed = jointActuation.commandVelocity[0];
-        input.motorMaxForce = maxForce;
-      }
-    }
-    input.startStiffness = config.startStiffness;
-    input.linearMaterialStiffness = config.linearMaterialStiffness;
-    input.angularMaterialStiffness = config.angularMaterialStiffness;
-    input.maxStiffness = config.maxStiffness;
-    input.fractureThreshold = jointModel.breakForce;
-    inputs.push_back(input);
-  }
+          input.startStiffness = config.startStiffness;
+          input.linearMaterialStiffness = config.linearMaterialStiffness;
+          input.angularMaterialStiffness = config.angularMaterialStiffness;
+          input.maxStiffness = config.maxStiffness;
+          return true;
+        };
+  ::dart::simulation::detail::extractRigidPairConstraintInputsInto(
+      registry, inputs, includeWorldAnchors, geometryProvider, enrichInput);
 }
 
 //==============================================================================

@@ -19,6 +19,15 @@ import tempfile
 import time
 import zlib
 
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from capture_source_provenance import (  # noqa: E402
+    capture_artifact_provenance,
+    compute_capture_source_provenance,
+)
+
 
 def read_ppm(path: pathlib.Path) -> tuple[int, int, bytes]:
     data = path.read_bytes()
@@ -4287,6 +4296,7 @@ def main(argv: list[str] | None = None) -> int:
         "width": args.width,
         "height": args.height,
     }
+    capture_source_provenance = compute_capture_source_provenance(_repo_root())
     workflow_guidance = _rigid_workflow_guidance_by_scene().get(args.scene)
     visual_evidence: dict[str, object] = {
         "first_frame": None,
@@ -4325,6 +4335,8 @@ def main(argv: list[str] | None = None) -> int:
         },
         "camera": camera_options,
         "capture": capture_metadata,
+        "capture_artifact_provenance": None,
+        "capture_source_provenance": capture_source_provenance,
         "resolved_solver_identity": None,
         "scene_metrics": None,
         "scene_metadata": None,
@@ -4381,6 +4393,18 @@ def main(argv: list[str] | None = None) -> int:
         "dropped_warmup_frames": dropped_warmup_frames,
         "required": require_docked_ui,
     }
+    final_capture_source_provenance = compute_capture_source_provenance(_repo_root())
+    if final_capture_source_provenance["digest"] != capture_source_provenance["digest"]:
+        raise SystemExit(
+            "capture source state changed while the demo was running; "
+            "discarding the evidence"
+        )
+    manifest_payload["capture_artifact_provenance"] = capture_artifact_provenance(
+        scene_metrics_events=(
+            scene_metrics_events if scene_metrics_events.is_file() else None
+        ),
+        screenshot=screenshot_png,
+    )
     _write_json(manifest, manifest_payload)
 
     print(f"screenshot: {screenshot_png}")

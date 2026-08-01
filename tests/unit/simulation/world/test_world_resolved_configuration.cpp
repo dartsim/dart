@@ -321,7 +321,9 @@ TEST(ResolvedConfiguration, UncoveredAvbdContactPairDoesNotClaimAvbd)
   EXPECT_NE(contact->reason.find("does not cover"), std::string::npos);
 }
 
-TEST(ResolvedConfiguration, RecordsAvbdPairConstraintSubstitution)
+TEST(
+    ResolvedConfiguration,
+    RecordsSequentialImpulsePairConstraintsWithoutSubstitution)
 {
   sx::World world;
   auto parent = world.addRigidBody("parent");
@@ -335,13 +337,16 @@ TEST(ResolvedConfiguration, RecordsAvbdPairConstraintSubstitution)
   world.enterSimulationMode();
 
   const auto& config = world.getResolvedConfiguration();
-  EXPECT_TRUE(config.hasSubstitution());
+  EXPECT_FALSE(config.hasSubstitution());
 
   const auto* pairConstraint = findNote(config, "rigid-pair-constraint");
   ASSERT_NE(pairConstraint, nullptr);
-  EXPECT_TRUE(pairConstraint->isSubstitution());
+  EXPECT_FALSE(pairConstraint->isSubstitution());
   EXPECT_EQ(pairConstraint->requested, "sequential-impulse");
-  EXPECT_EQ(pairConstraint->resolved, "avbd");
+  EXPECT_EQ(pairConstraint->resolved, "sequential-impulse");
+  EXPECT_NE(
+      pairConstraint->reason.find("solver-owned sequential-impulse rows"),
+      std::string::npos);
 }
 
 TEST(ResolvedConfiguration, RecordsIpcPairConstraintsWithoutAvbdSubstitution)
