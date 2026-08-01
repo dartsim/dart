@@ -404,14 +404,19 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
     stats.windowVisible = windowVisible;
     const ImDrawData* drawData = ImGui::GetDrawData();
     if (drawData != nullptr) {
-      stats.drawListCount = drawData->CmdListsCount;
-      for (int index = 0; index < drawData->CmdListsCount; ++index) {
+      // Read the draw-list count from CmdLists.Size rather than the obsolete
+      // CmdListsCount mirror: ImGui 1.92.9 regressed that field to always
+      // report 0 (fixed upstream in 1.92.9b), which silently emptied every
+      // measurement below. CmdLists is the canonical member on every ImGui
+      // version this branch supports (>= 1.91.9).
+      stats.drawListCount = drawData->CmdLists.Size;
+      for (int index = 0; index < drawData->CmdLists.Size; ++index) {
         stats.maximumVertices = std::max(
             stats.maximumVertices, drawData->CmdLists[index]->VtxBuffer.Size);
       }
-      if (drawData->CmdListsCount > 0) {
+      if (drawData->CmdLists.Size > 0) {
         stats.lastDrawListVertices
-            = drawData->CmdLists[drawData->CmdListsCount - 1]->VtxBuffer.Size;
+            = drawData->CmdLists[drawData->CmdLists.Size - 1]->VtxBuffer.Size;
       }
     }
     return stats;
