@@ -34,17 +34,15 @@
 
 #include <algorithm>
 
-#include <cmath>
-
 namespace dart_demos {
 
 namespace {
 
-// Arrow length per unit force magnitude and the cool -> hot color ramp used
-// to encode magnitude, both ported as-is from RigidCubesScene's original
-// per-scene contact-force visualization (kLiveContactForceScale there).
-constexpr double kForceLengthScale = 0.1;
-
+// The cool -> hot color ramp used to encode magnitude, ported as-is from
+// RigidCubesScene's original per-scene contact-force visualization. The arrow
+// *length* mapping that came with it was a fixed 0.1 m/N, which is only right
+// for scenes the size of that one's blocks; ContactArrowLayout derives it from
+// the scene instead.
 Eigen::Vector4d magnitudeColor(double normalized)
 {
   normalized = std::clamp(normalized, 0.0, 1.0);
@@ -70,6 +68,8 @@ void ContactVisualizer::onSceneInstalled(
   mFrames.clear();
   mArrows.clear();
   mLastVisualizedCount = 0;
+  if (world)
+    mLayout.resetForWorld(*world);
 }
 
 //==============================================================================
@@ -87,13 +87,31 @@ void ContactVisualizer::ensurePool(std::size_t count)
   if (!mWorld)
     return;
 
+  // The shaft is sized from the same scene-derived length as the arrows, so a
+  // tabletop scene does not get a shaft built for a humanoid and vice versa.
+  const double shaftRadius
+      = std::clamp(0.02 * mLayout.getReferenceLength(), 0.0015, 0.05);
+
+  // Arrows already in the pool are resized too. The reference length moves when
+  // a scene spawns, removes, or reactivates bodies, and leaving the pool alone
+  // would keep drawing at the old thickness -- or mix two thicknesses once the
+  // pool grew.
+  if (shaftRadius != mShaftRadius) {
+    for (auto& arrow : mArrows) {
+      auto properties = arrow->getProperties();
+      properties.mRadius = shaftRadius;
+      arrow->setProperties(properties);
+    }
+    mShaftRadius = shaftRadius;
+  }
+
   while (mFrames.size() < count) {
     auto frame = std::make_shared<dart::dynamics::SimpleFrame>(
         dart::dynamics::Frame::World());
     auto arrow = std::make_shared<dart::dynamics::ArrowShape>(
         Eigen::Vector3d::Zero(),
         Eigen::Vector3d::UnitZ() * 0.01,
-        dart::dynamics::ArrowShape::Properties(0.004, 2.0, 0.15),
+        dart::dynamics::ArrowShape::Properties(shaftRadius, 2.0, 0.15),
         Eigen::Vector4d(0.2, 0.2, 0.8, 1.0));
 
     frame->setShape(arrow);
@@ -123,45 +141,16 @@ void ContactVisualizer::applyPostStep()
   }
 
   const auto& result = mWorld->getLastCollisionResult();
-  const auto& contacts = result.getContacts();
-  const std::size_t count = std::min(contacts.size(), kMaxArrows);
+  const auto& arrows
+      = mLayout.update(*mWorld, result.getContacts(), kMaxArrows);
+  const std::size_t count = arrows.size();
   ensurePool(count);
 
-  // Cap the drawn arrow length so a huge (but finite) contact force on a
-  // diverging scene cannot fling the arrow head far enough to blow out OSG's
-  // automatic near/far and render the whole scene undrawable.
-  constexpr double kMaxArrowLength = 5.0; // meters
-
-  double maxMag = 0.0;
   for (std::size_t i = 0; i < count; ++i) {
-    if (contacts[i].force.allFinite())
-      maxMag = std::max(maxMag, contacts[i].force.norm());
-  }
-
-  for (std::size_t i = 0; i < count; ++i) {
-    const Eigen::Vector3d& point = contacts[i].point;
-    const Eigen::Vector3d& force = contacts[i].force;
-    const double mag = force.norm();
-    auto* visual = mFrames[i]->getVisualAspect(true);
-
-    // NaN/Inf force or point (a diverging LCP solve is the common case for an
-    // interactive debugging tool) would poison the arrow mesh vertices and
-    // OSG's bounding-sphere math -- skip such contacts entirely. `mag < 1e-8`
-    // also filters resting near-zero contacts (NaN < 1e-8 is false, so the
-    // allFinite guard must come first).
-    if (!point.allFinite() || !force.allFinite() || mag < 1e-8) {
-      visual->setHidden(true);
-      continue;
-    }
-
-    Eigen::Vector3d disp = kForceLengthScale * force;
-    const double dispLen = disp.norm();
-    if (dispLen > kMaxArrowLength)
-      disp *= kMaxArrowLength / dispLen;
-
-    visual->setHidden(false);
-    mArrows[i]->setPositions(point, point + disp);
-    visual->setColor(magnitudeColor(maxMag > 1e-8 ? mag / maxMag : 0.0));
+    mFrames[i]->getVisualAspect(true)->setHidden(false);
+    mArrows[i]->setPositions(arrows[i].tail, arrows[i].head);
+    mFrames[i]->getVisualAspect(true)->setColor(
+        magnitudeColor(arrows[i].normalizedMagnitude));
   }
 
   hideFrom(count);
@@ -179,6 +168,10 @@ void ContactVisualizer::renderToggle()
     mLastVisualizedCount = 0;
   }
   ImGui::TextDisabled("Capped at %zu arrows", kMaxArrows);
+  ImGui::TextDisabled(
+      "Full-length arrow = %.0f N over %.2f m",
+      mLayout.getReferenceForce(),
+      mLayout.getReferenceLength());
 }
 
 } // namespace dart_demos
