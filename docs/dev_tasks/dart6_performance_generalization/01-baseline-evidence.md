@@ -280,6 +280,209 @@ finite-state evidence.
    it needs D3 (solve-side) and/or D7 (sleep the pile) — flagged for the
    maintainer alongside those decisions.
 
+## 2026-07-31 current-base guard refresh (post-#3381 consolidation)
+
+Session branch `wp-pg-wsg-rebaseline-20260731` on `origin/release-6.20` @
+`718651d0d6e`; GCC (pixi default), Release; i9-13950HX, governor
+**powersave** with large observed clock swings (~2.3x between runs of the
+same binary), so **timing cells this cycle are host-state-relative and
+cross-session step-time comparisons are invalid**; hashes, contact/pair
+counts, resting counts, and finite flags remain the guards. Artifacts:
+`/tmp/wsg_rebaseline_guards_20260731` (S1–S6 matrix, probes, series,
+controls), `/tmp/wsg_ab_20260731` (interleaved A/Bs), scratch worktrees
+`/tmp/wsg_audit_head` (audit head `db255a08e8e`) and `/tmp/wsg_pre3381`
+(#3381 parent `f7c835bcbec`).
+
+Classification against the last recorded guards:
+
+- **Held bit-identical** (proves #3384's non-finite LCP guard and the
+  #3382 deformable-body/soft-contact work — which rewrote
+  `ConstraintSolver.cpp` — are behavior-neutral on identical rigid
+  contact streams): `S2_fcl 0x266da31836a314a6`, `S2_bullet 0x2375f1927218cd43`,
+  `S2_ode 0x10f80b0408cede90`, `S3_fcl 0x6088ea0177efa6a`,
+  `S3_bullet 0x22e27960cbabe83e`, `S3_ode 0x4904c09a93a36442`,
+  `S4_fcl 0xea9b68f8b062600d` (drift value), `S4_ode
+  0x429b65bc5c4a14b6`, `S5_fcl 0x8277be4f0c14212` (drift value),
+  `S5_ode 0x5f2afc7230ee8d10`.
+- **Re-established** (references lost with the July /tmp artifacts;
+  #3355-era bullet re-baseline): `S4_bullet 0x6a2e46e1a9ba76a6`
+  (2569 contacts, 0/900 resting), `S5_bullet 0xc9ab9e07e0a8501e`
+  (210 contacts, 55/90 resting), and the post-#3353 S1 ODE rows below.
+- **Re-baselined by #3381** (its PR body's breaking-changes section
+  states explicit `"dart"` selection now uses the consolidated engine
+  and "its contact profile can differ"; note the tension with
+  `docs/design/dart6_collision_backends.md`'s preserved-contact-semantics
+  correctness clause, which feeds decision D9): every `dart` row. `S2_dart` and `S3_dart`
+  now land exactly on FCL's fixed points (`0x266da31836a314a6`,
+  `0x6088ea0177efa6a`; S3 contacts 5005 → 3003), `S4_dart`/`S5_dart`
+  settle fully (0 contacts, 900/900 and 90/90 resting,
+  `0x55bf77ebc1c491b2`, `0x4f265a803b596035`), and the S1 container rows
+  become `60: 80/72 0x1e227311a3f7188e`, `120: 251/177
+  0xd6736cd716faf01d` (1- and 16-thread CLI captures identical per cell).
+  S1 ODE rows: `60: 205/72 0x2b6f0f30483be5e7`, `120: 443/172
+  0x639185fc8921ba9c`.
+
+### Criterion 1 — re-verified MET via same-host chained A/B
+
+Interleaved (ABAB) same-host A/B against the audit-head binary
+(`db255a08e8e`, its S1 run reproducing the audit hash
+`0x123ee9779bccacfb` bit-exactly): S1 120/dart/1 median avg-step
+**19.0 ms (current) vs 24.5 ms (audit stack)** over 5 pairs — the
+current default-on stack measures ~1.29x faster than the stack the
+2026-07-10 audit recorded at 3.51x the round-2 baseline, so criterion 1
+is chained-MET at ≈4.5x (point estimate). FCL/ODE control rows
+(identical detectors across arms; 7/5/3 pairs) were parity or better
+with bit-identical hashes per scene: S5fcl 1.171 vs 1.013 ms (1.16x),
+S3fcl 39.27 vs 41.57 ms (0.94x), S4ode 0.321 vs 0.393 ms (0.82x).
+Noise accounting: those identical-code controls themselves spread
+0.82–1.16x, so the 1.29x "faster" margin is only slightly outside the
+recorded control band — treat **MET** as robust (3.51x ≥ 3x stands even
+at parity) and "improved" as a point estimate. Chained ratios multiply
+A/Bs taken in different clock states (the same pre-fix binary measured
+19.0 ms in one block and 6.49 ms in a later, faster-clock block — a
+2.9x same-binary swing), so carry ~±20% on the ≈4.5x and ≈2.3x point
+estimates; the below-3x conclusion for the post-fix stack survives that
+band, as does pre-fix MET. An earlier apparent 1.6–6x "regression"
+against the July step-time cells was a **host clock-state artifact**;
+no code regression exists.
+
+### Criterion 2 — REGRESSED on the current base (the selected gap)
+
+`S6_dart` under defaults now ends **0/71 resting** (161 contacts, 129
+pairs, max penetration 0.00433 m bounded, finite, hash
+`0x3fecba33246bc342`, `max_pair_contacts` pinned at **3** all run).
+Attribution chain, all on this host:
+
+- FCL control on the current base sleeps: 71/71, penetration 0, smoothed
+  speeds 0 (`0xa2733f54d194cc97`) — solver, deactivation gates, and D7
+  policy are healthy.
+- Audit-head binary reproduces the accepted S6 bit-exactly
+  (`0xec80f734df6d5e74`, 71/71, `max_pair_contacts` 4, penetration
+  declining 0.0045 → 0.0038 → 0).
+- **Pre-#3381 binary (`f7c835bcbec`: old `dart` detector plus #3382,
+  #3384, and the FEM churn) also reproduces `0xec80f734df6d5e74`
+  bit-exactly** — the solver-era merges up to #3381's parent did not
+  perturb the S6 trajectory at all. Combined with the FCL control above
+  (which exercises the *current* head's solver/sleep machinery,
+  covering the post-#3381 commits incl. #3407) and the directly
+  demonstrated 3-contact clamp mechanism, the detector swap is isolated
+  as the cause.
+- Policy-knob probes on the new detector do not rescue it: explicit
+  `--sleep-contact-penetration-tolerance 0.005` ends 1/71 with zero
+  over-tolerance contacts (rest-veto not the blocker); the previously
+  accepted explicit evaluator row (`--contact-max-erv 0.1` + tol
+  `0.005`, formerly 71/71) ends 0/71.
+- Mechanism (checkpoint series): the consolidated box-box stream yields
+  ≤3-point manifolds (old engine sustained 4-point face manifolds), the
+  contact-pair set churns ~±10% between checkpoints, penetration
+  plateaus at ~0.0044 m instead of converging, and worst-body smoothed
+  linear speed (~0.0235 m/s) stays above the 0.02 m/s wake band, so
+  rest dwell (max 0.43 s < 0.5 s) and dense-island candidacy never
+  engage. The narrowphase clip path drops non-penetrating corners of a
+  slightly tilted face contact, leaving tripod support that keeps the
+  pile micro-rocking. `tests/unit/collision/dart/test_box_box.cpp` only
+  asserts 2–4 contacts for face patches, so the 3-point profile passes
+  the existing suite.
+
+### 2026-07-31 manifold fix (WP-PG.50 candidate) — mechanism, evidence, and trade-off
+
+Root cause of the criterion-2 regression: the consolidated detector clamps
+every ordinary solver-facing query to
+`kSolverFacingManifoldContactTarget = 3` contacts per pair
+(`DARTCollisionDetector.cpp`), so face-face box stacks ride on 3-point
+tripod manifolds (a dartpy probe — flat/tilted 0.2-cube on a floor box via
+`DARTCollisionDetector` + `CollisionGroup::collide`, per-pair budget 100 —
+shows a perfectly flat stack emitting exactly 3 corners with the 4th
+dropped deterministically in every configuration tried; the old engine
+sustained `max_pair_contacts 4` through the whole S6 settling).
+Only the legacy `DARTCollide` adapter (explicit unlimited request)
+received full manifolds — which is how #3381's four-contact compatibility
+test passed while the solver stream lost its fourth support point.
+
+The candidate fix on this branch raises the constant to
+`native::ContactManifold::kMaxContacts` (4) with pinned regression tests
+(`SolverFacingQueriesCarryFullBoxManifold`,
+`RestingBoxStackKeepsFourCornerContacts` — flat and micro-tilted stacks
+must emit 4 distinct corner contacts; `Collision.Options` dart row updated
+3 → 4). Gates on the fixed tree: 154/154 C++ tests, `pixi run lint` +
+`check-lint` clean, and the downstream Gazebo gate passed end-to-end
+(`DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`, exit 0, after purging
+the stale pre-#3381 installed headers/libs from the gazebo env; captured
+tail shows gz-sim `INTEGRATION_entity_system` 1/1 and the gz-physics
+performance stage 4/4 — the script aborts on any earlier-stage failure,
+so exit 0 covers the functional suite as well). Post-fix artifacts:
+`/tmp/wsg_postfix_20260731`, `/tmp/mj_cmp_postfix_20260731`.
+
+Post-fix measured effects (same session, interleaved where timing matters):
+
+- **Untouched detectors bit-identical**: S3_fcl `0x6088ea0177efa6a`,
+  S4_ode `0x429b65bc5c4a14b6`, S5_bullet `0xc9ab9e07e0a8501e`.
+- **S2/S3 dart hashes unchanged** (plane-contact scenes keep their
+  FCL-coincident fixed points).
+- **Resting scenes get faster**: S4_dart 0.331 → 0.083 ms/step
+  (900/900 resting, hash `0x70bf5dd9e4f15051`), S5_dart 0.024 → 0.0058
+  (90/90, `0xd8de4ae15996321f`) — both already reached full rest
+  pre-fix on this base; the fix delta is settling speed, from stable
+  manifolds sleeping sooner. These are single paired runs, not
+  interleaved medians (only the S1-120 row below was interleaved);
+  hashes and resting counts are the guards.
+- **Always-active dense container pays ~2x**: interleaved S1 120/dart/1
+  medians 6.49 (pre) → 12.67 ms/step (post), hashes stable per arm
+  (`0xd6736cd716faf01d` → `0xd28c5eae0f984dae`). Profile attribution:
+  100% of the delta is Dantzig `primarySolve` (2.75 → 6.40 ms/call);
+  island rows grew 809 → 902 mean (+11%), so ~1.4x is intrinsic
+  cubic row scaling and the rest is pivot inflation on the redundant
+  coplanar 4th rows (potential future solver-side recovery packet).
+  Criterion 1 chained estimate falls to ≈2.3x over the round-2 baseline
+  (below the 3x bar).
+- **S6 improves but does not fully sleep**: 20000 steps end 5/71 resting
+  (was 0/71; post-fix hash `0xf05b48c2fd1b2109`, 161 contacts / 115
+  pairs — the pre-fix run also ended at 161 contacts but over 129 pairs
+  and a different hash, a verified coincidence of counts, not states),
+  dwell finally accumulates (max 0.539 s), 69/71 below the wake band; a
+  60000-step run stays 0/71 (`0x2547cb01a038c374`) with penetration in a
+  limit cycle at 0.0046–0.0052 m — straddling the 0.005 dense-island
+  rest tolerance, so candidacy keeps clearing. Post-fix S1-60 dart CLI
+  row for the new guard set: 84 contacts / 73 pairs, hash
+  `0x5fea4fbf119db25a`. The old stack slept *with*
+  ~3.8 mm frozen penetration; its equilibrium simply sat lower with a
+  gentler velocity tail.
+- **Tolerance is not a fix**: a diagnostic run with explicit
+  `--sleep-contact-penetration-tolerance 0.01` still never rests and
+  exposes a freeze-under-load hazard — when 8 candidates briefly formed,
+  premature island freezing turned marginal boxes into immovable
+  obstacles and max penetration exploded to 0.256 m before the wake veto
+  recovered. The remaining criterion-2 gap is contact-stream quality
+  (measured pair-set churn ~±10% per checkpoint breaking support
+  persistence and warm-starts), not sleep-policy thresholds.
+- **Visual evidence (claim-tied)**: post-fix S6 GUI capture
+  `/tmp/wsg_postfix_20260731/S6_postfix_gui.png` via
+  `contact_benchmark --generate-container 71 --steps 20000 --collision
+  dart --gui-capture <path>` on DISPLAY :0; `image-verdict` non-blank
+  passes (1.04M nonzero pixels; the contrast sub-check is reported but
+  not gating). Text oracle: capture log ends `20000/20000` frames,
+  161 contacts / 115 pairs, 5/71 resting — count-consistent with the
+  headless post-fix S6 endpoint (the GUI path prints no final-state
+  hash, so counts are the comparison). Visible observation (native semantic
+  inspection): a compacted mixed-shape pile — red boxes, green
+  cylinders/capsules, blue spheres — settled inside the translucent
+  gray static container; no interpenetration, wall tunneling, or
+  scattered bodies at visible scale. Reconciliation: image and text
+  oracle agree (plausible near-settled pile, not fully asleep). Not
+  proven by this image: sleep-state per body and sub-visible
+  penetration (covered by the headless telemetry). The capture also
+  corrects the S6 scene model: the pile is mixed-shape, not box-only,
+  which feeds the D10 rolling-body hypothesis.
+- **WS-G box rows move both ways** (see 08-mujoco-comparison-lane.md):
+  ARM-PUSHER flips to a DART win (0.72x → 1.27x; MuJoCo moved only +4%
+  on that scene across runs while DART gained ~80% from the stabilized
+  sliding-box stream), PILE-900 remains a ≥~40x win (MuJoCo's
+  denominator is unstable at its collapse point, so do not read the 70x
+  point value as a widening), PILE-120 ratio unchanged (0.42–0.43x),
+  and DYN-STIR-120 flips to a loss (1.14x → 0.85x; MuJoCo +1% — the
+  stirred pile is perpetually active, so it pays the fourth-row cost
+  with no stability dividend).
+
 ## Prior art — round-1 experiment branches (read before claiming packets)
 
 Six unpushed round-1 experiment branches were published to origin on

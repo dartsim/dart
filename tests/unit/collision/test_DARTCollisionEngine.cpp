@@ -588,7 +588,7 @@ TEST(DARTCollisionDetector, RespectsGlobalContactLimit)
 }
 
 //==============================================================================
-TEST(DARTCollisionDetector, CapsSolverFacingManifoldContacts)
+TEST(DARTCollisionDetector, SolverFacingQueriesCarryFullBoxManifold)
 {
   auto detector = collision::DARTCollisionDetector::create();
   auto frame1 = makeFrame(
@@ -598,12 +598,15 @@ TEST(DARTCollisionDetector, CapsSolverFacingManifoldContacts)
       Eigen::Vector3d(0.8, 0.0, 0.0));
   auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
 
+  // A face-face box overlap must expose all four manifold corners to the
+  // solver: a three-contact tripod cannot hold a resting stack against
+  // micro-tilts toward the missing corner (issue #3056 S6 pile fixture).
   collision::CollisionOption wideOption(true, 10u);
   wideOption.maxNumContactsPerPair = 10u;
 
   collision::CollisionResult wideResult;
   ASSERT_TRUE(group->collide(wideOption, &wideResult));
-  EXPECT_EQ(3u, wideResult.getNumContacts());
+  EXPECT_EQ(4u, wideResult.getNumContacts());
 
   collision::CollisionOption strictOption(true, 10u);
   strictOption.maxNumContactsPerPair = 2u;
@@ -611,6 +614,58 @@ TEST(DARTCollisionDetector, CapsSolverFacingManifoldContacts)
   collision::CollisionResult strictResult;
   ASSERT_TRUE(group->collide(strictOption, &strictResult));
   EXPECT_EQ(2u, strictResult.getNumContacts());
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, RestingBoxStackKeepsFourCornerContacts)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+
+  // A 0.2 cube resting on a large thin floor box with 1 mm overlap: the
+  // solver needs one contact per bottom corner to keep the stack from
+  // rocking, so exactly four distinct corner contacts must be emitted.
+  auto floor = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 0.002)));
+  auto cube = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)),
+      Eigen::Vector3d(0.0, 0.0, 0.1));
+  auto group = detector->createCollisionGroup(floor.get(), cube.get());
+
+  // Per-pair budget wider than the manifold capacity, so an exact count of
+  // four proves the emission itself, not budget truncation.
+  collision::CollisionOption option(true, 100u);
+  option.maxNumContactsPerPair = 10u;
+
+  const auto distinctCorners = [](const collision::CollisionResult& result) {
+    std::set<std::pair<int, int>> corners;
+    for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      corners.emplace(
+          contact.point.x() > 0.0 ? 1 : -1, contact.point.y() > 0.0 ? 1 : -1);
+    }
+    return corners.size();
+  };
+
+  collision::CollisionResult flatResult;
+  ASSERT_TRUE(group->collide(option, &flatResult));
+  ASSERT_EQ(4u, flatResult.getNumContacts());
+  for (std::size_t i = 0; i < flatResult.getNumContacts(); ++i)
+    EXPECT_NEAR(0.001, flatResult.getContact(i).penetrationDepth, 1e-9);
+  EXPECT_EQ(4u, distinctCorners(flatResult));
+
+  // A micro-tilt about x makes the corner depths asymmetric (the regime the
+  // pile fixture lives in); all four distinct corner supports must still be
+  // emitted so the support polygon keeps spanning the full face.
+  Eigen::Isometry3d tilted = Eigen::Isometry3d::Identity();
+  tilted.linear()
+      = Eigen::AngleAxisd(1e-4, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  tilted.translation() = Eigen::Vector3d(0.0, 0.0, 0.1);
+  cube->setTransform(tilted);
+
+  collision::CollisionResult tiltedResult;
+  ASSERT_TRUE(group->collide(option, &tiltedResult));
+  ASSERT_EQ(4u, tiltedResult.getNumContacts());
+  EXPECT_EQ(4u, distinctCorners(tiltedResult));
 }
 
 //==============================================================================

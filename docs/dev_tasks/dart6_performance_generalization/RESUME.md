@@ -9,6 +9,63 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
+**2026-07-31: current-base re-baseline RAN on `718651d0d6e`** (session
+branch `wp-pg-wsg-rebaseline-20260731`; guard artifacts
+`/tmp/wsg_rebaseline_guards_20260731`, A/Bs `/tmp/wsg_ab_20260731`,
+WS-G rerun `/tmp/mj_cmp_20260731`). Read the new
+"2026-07-31 current-base guard refresh" section of
+[01-baseline-evidence.md](01-baseline-evidence.md) first. Summary:
+
+- Criterion 1 (S1 primary fixture): **MET, improved** — same-host
+  interleaved A/B shows the current stack 1.29x faster than the
+  audit-head stack on S1 120/dart/1 (chained ≈4.5x over the round-2
+  baseline). July step-time cells are not comparable to today's host
+  clock state; an apparent 1.6–6x slowdown was a host artifact, refuted
+  by ABAB A/Bs with bit-identical per-arm hashes.
+- Criterion 2 (S6 pile-sleep): **REGRESSED — the selected gap.** The
+  #3381 consolidated `dart` detector's box-box stream (≤3-point
+  manifolds, pair churn, penetration plateau ~4.4 mm) keeps the pile
+  above the wake band forever; 0/71 resting under defaults. FCL control,
+  audit-head binary, and pre-#3381 binary all still sleep 71/71 (the
+  latter two bit-exact `0xec80f734df6d5e74`), isolating the #3381
+  detector swap as the sole cause. Policy knobs do not rescue it.
+- Criterion 3 (no regressions elsewhere): fcl/bullet/ode guard rows held
+  bit-identical (or were re-established where July references were
+  lost); all `dart` rows re-baselined per the #3381 PR body's
+  breaking-changes note ("its contact profile can differ"); S2/S3 dart
+  now coincide with FCL fixed points.
+- WS-G: the full 8-scene matrix (both HUM rows included) ran on the
+  merged base with provenance, plus a post-fix box-row rerun; standings
+  live in [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
+
+Implementation packet executed by this session (WP-PG.50 candidate,
+uncommitted on `wp-pg-wsg-rebaseline-20260731`): the solver-facing
+3-contact clamp in `DARTCollisionDetector.cpp` was raised to the full
+4-contact manifold capacity, with pinned regression tests and a
+CHANGELOG entry (`#PENDING` link — fill at PR time). Full evidence and
+the measured trade-off live in the "2026-07-31 manifold fix" section of
+[01-baseline-evidence.md](01-baseline-evidence.md): resting scenes
+improve up to 4x and FCL/Bullet/ODE stay bit-identical, but the
+always-active dense fixture pays ~2x (criterion 1 falls to ≈2.3x,
+below the 3x bar), and S6 improves (5/71 at 20k, dwell accumulating)
+without fully sleeping — the residual blocker is contact-stream
+persistence (pair churn), not sleep policy (a tolerance raise was
+measured and rejected: it triggers freeze-under-load penetration
+explosions). 154/154 C++ tests pass; lint/check-lint clean.
+
+**Two maintainer decisions now gate completion (README D9/D10)**:
+D9 — ship the manifold fix accepting the active-scene cost (and
+re-baseline criterion 1), hold it until solver-side degeneracy cost is
+recovered, or direct another route; D10 — scope of the remaining S6
+stream-persistence work. The session state is preserved as a LOCAL
+checkpoint commit on `wp-pg-wsg-rebaseline-20260731` (never pushed;
+pushes/PRs/further behavior changes stay gated on D9/D10), and the key
+raw artifacts are archived off /tmp at
+`~/dart-wsg-evidence-20260731/` (guard matrix + summary, A/B TSVs,
+pre/post profiles, S6 probe/series/long logs, WS-G results.json +
+provenance for both runs, S6 GUI capture PNG) because the July /tmp
+references were already lost once.
+
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
 
@@ -145,6 +202,29 @@ reopen it as a default-on behavior without new maintainer direction and
 option-off/option-on evidence.
 
 ## Session log (round-2 execution)
+
+- 2026-07-31: Full re-baseline on `718651d0d6e` (branch
+  `wp-pg-wsg-rebaseline-20260731`). S1–S6 guard matrix re-established with
+  drift classification (fcl/bullet/ode held bit-identical; all `dart` rows
+  re-baselined per #3381's declared contact-profile change; S2/S3 dart land
+  on FCL fixed points). Criterion-2 regression found and root-caused: the
+  consolidated detector's solver-facing 3-contact clamp breaks resting
+  face-face support; attribution chain closed by bit-exact S6 reproduction
+  (`0xec80f734df6d5e74`) on both the audit-head and pre-#3381 binaries and
+  an FCL control that sleeps 71/71 on the current base. An apparent broad
+  wall-time regression was refuted as host clock-state artifact via
+  interleaved A/Bs (hashes bit-identical per arm). First complete 8-scene
+  WS-G matrix ran (HUM rows first-ever; 3 wins / 4 losses pre-fix).
+  WP-PG.50 candidate implemented: solver-facing manifold clamp 3 → 4 with
+  pinned tests (154/154), changelog draft, S6 GUI capture, and a measured
+  trade-off (resting scenes 4x faster, ARM-PUSHER flips to a win; dense
+  always-active fixtures ~2x slower, DYN-STIR flips to a loss; S6 partial
+  recovery only). Tolerance-raise alternative measured and rejected
+  (freeze-under-load penetration explosion). Ship/hold gated on D9; S6
+  stream-persistence follow-up scoped as D10. Review pass 1 (fresh-context
+  correctness lane) returned no blockers; findings applied. Codex was
+  unavailable this session (weekly limit), so review lanes are
+  role-separated local subagents — recorded as a limitation.
 
 - 2026-07-04/05: WP-PG.01 executed on `wp-pg-01-baseline-evidence`:
   original matrix/profile/dashboard capture on `origin/release-6.20`

@@ -247,6 +247,38 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   the remaining decision is whether to pursue a behavior-changing packet on
   the ODE/FCL wrappers. Deciding *not* to do it now must be recorded as a
   decision, not an omission.
+- **D9 — Ship/hold the `dart` detector 4-contact manifold fix** (2026-07-31,
+  blocks the WP-PG.50 candidate on `wp-pg-wsg-rebaseline-20260731`): the
+  consolidated detector's solver-facing 3-contact clamp broke resting box
+  stacks and criterion 2 (S6 0/71). The measured fix (full 4-contact
+  manifolds) restores four-corner resting support: S4/S5 settle 4x faster
+  (they already reached full rest pre-fix; the delta is speed),
+  ARM-PUSHER flips to a cross-engine win, and S6 recovers only PARTIALLY
+  (5/71 at 20k steps, 0/71 at 60k — full criterion-2 closure additionally
+  needs D10). Cost: up to ~2x on the always-active dense fixture
+  (criterion 1 falls to ≈2.3x ±~20% vs the 3x bar; DYN-STIR-120 flips to
+  a 0.85x loss). Relevant standing policy: the
+  `docs/design/dart6_collision_backends.md` correctness clause says
+  performance gains may not come from lost contacts — the 3-clamp is
+  precisely such a gain, which weighs for (a); the criterion-1 bar weighs
+  for (b). Options: (a) ship and re-baseline criterion 1 with the
+  correctness rationale, (b) hold until a solver-side degenerate-pivot
+  recovery packet offsets the cost, (c) direct another route. Evidence:
+  01-baseline-evidence.md "2026-07-31 manifold fix".
+- **D10 — Remaining S6 stream-persistence work** (blocks criterion 2
+  closure): with 4-point manifolds the pile still limit-cycles at ~5 mm
+  penetration with ~±10% contact-pair churn per checkpoint, and the
+  island as a whole never passes the velocity/dwell gates (individual
+  bodies do — 5/71 resting at 20k steps — but the 60k run ends 0/71); a
+  rest-tolerance raise is measured and rejected (premature island
+  freezing under load explodes penetration to 0.256 m). The S6 pile is mixed-shape (boxes, spheres, cylinders/capsules —
+  see the 2026-07-31 GUI capture), so with box supports fixed the residual
+  velocity tail plausibly includes round-body micro-rolling (curved-surface
+  contact-point migration has no 4-point analog) alongside the measured
+  pair churn. The candidate follow-up is detector-side contact/support
+  persistence (pair-level hysteresis, manifold point identity across
+  frames, and curved-shape contact stability), a separate evidence-gated
+  packet.
 
 ## Closeout plan (promotion targets, decided up front)
 

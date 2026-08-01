@@ -1448,7 +1448,7 @@ TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
 // DartPerPairContactCapSelectsDeepSpreadContacts was removed with the legacy
 // detector: the deep+spread per-pair cap backfill it probed belonged to the
 // deleted legacy pipeline; the consolidated engine reduces each pair manifold
-// upstream (ContactReduction, solver-facing target 3), covered by
+// upstream (ContactReduction, full solver-facing manifold target), covered by
 // UNIT_collision_dart_box_box and DartPerPairContactCapCoalescesNear-
 // DuplicatePairContacts.
 
@@ -3008,9 +3008,10 @@ TEST_F(Collision, Options)
 #endif
 
   auto dart = DARTCollisionDetector::create();
-  // The dart detector reduces the face-face manifold to its solver-facing
-  // target of 3 contacts.
-  testOptions(dart, 3u);
+  // Solver-facing queries carry the full four-contact face manifold: a
+  // three-contact tripod cannot hold a resting face-face box stack
+  // (issue #3056 S6 pile fixture).
+  testOptions(dart, 4u);
 }
 
 //==============================================================================
