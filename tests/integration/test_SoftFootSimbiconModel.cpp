@@ -33,20 +33,23 @@
 // atlas_simbicon SIMBICON controller stay GUI-free so the paper's soft-vs-rigid
 // contact claim can be exercised directly here.
 //
-// The three gates below reproduce the paper's row:
+// The gates below cover the paper's row honestly:
 //  1. The soft-foot biped stays finite and standing under the controller and is
 //     bit-for-bit deterministic across runs.
 //  2. Soft feet maintain at least as many ground contact points as rigid feet
 //     over a settled window (the paper's headline: "maintaining more ground
-//     contact points") -- here a large, robust margin.
-//  3. Soft feet withstand at least as large a recoverable pelvis push as the
-//     matched rigid control (the paper's "withstands larger perturbations"):
-//     measured 18000 N soft vs 8000 N rigid once the control carries the soft
-//     rest-pose inertia and the asset's feet are properly damped. See gate 3
-//     for the decision evidence.
+//     contact points") -- here a large, robust margin. This claim REPRODUCES.
+//  3. Push recovery is measured by a prefix replica ensemble
+//     (robustRecoverablePush), clean and under held motor noise and the
+//     paper's 2 cm noisy floor. The paper's soft-advantage ordering does NOT
+//     reproduce robustly at the shipped parameters (soft 4000 N vs rigid
+//     8000 N clean; the perturbations widen the gap) -- the single-trajectory
+//     18000 N previously reported was an isolated resonance pocket, not a
+//     threshold. Gates 3, 7, and 8 publish the response curves and protect
+//     the measured values; the parity matrix owns the open-gap status.
 //
-// A fourth gate covers the scene's Reset action, which has to restore the soft
-// feet's independent point-mass state and the gait phase, not just the
+// A further gate covers the scene's Reset action, which has to restore the
+// soft feet's independent point-mass state and the gait phase, not just the
 // skeleton's generalized coordinates.
 
 #include "examples/demos/scenes/atlas_simbicon/Controller.hpp"
@@ -560,65 +563,68 @@ TEST(SoftFootSimbiconModelTest, SoftMaintainsAtLeastRigidFootContacts)
 }
 
 //==============================================================================
-// Gate 3 (paper: soft withstands larger perturbations): the largest
-// recoverable lateral pelvis push for the soft feet must be at least the
-// matched rigid control's.
+// Gate 3 (paper: soft withstands larger perturbations): robust push-recovery
+// thresholds for both arms, measured by the prefix replica ensemble
+// (robustRecoverablePush).
 //
-// The claim reproduces once two confounds were removed, both found by
-// measurement rather than tuning toward the desired answer:
+// History matters here. Two comparability confounds were removed by
+// measurement (the control's compact SDF inertia, worth 4000 N of its
+// threshold; the asset's under-damped feet) and a third in review (SIMBICON's
+// COM sensor was blind to point masses). With those fixed, the original
+// single-trajectory sweep reported soft 18000 N vs rigid 8000 N and the
+// paper's ordering was declared reproduced.
 //
-//  - The control used to keep the SDF link's compact inertia tensor while the
-//    soft foot carries its mass out at the surface (1.8-2.0x the principal
-//    moments, 5.9 mm COM shift). Matching the control to the soft rest-pose
-//    inertia moved its measured threshold from 12000 N to 8000 N.
-//  - The asset shipped under-damped feet (kv 5e4, damp 1e3): the surface
-//    returned push energy instead of absorbing it, capping the soft biped at
-//    4000 N. A (kv, damp) grid measured a wide plateau at 18000 N whose
-//    interior is kv 5e4 / damp 4e3 -- every adjacent cell also reads
-//    18000 N -- so the asset keeps its shipped stiffness and raises <damp> to
-//    4000. Damping is what the recovery mechanism needed: absorbing the
-//    perturbation is the paper's own story.
-//
-// A third confound surfaced in review and is fixed in the controller itself:
-// SIMBICON's balance feedback read Skeleton::getCOM(), which is blind to soft
-// point masses, so it observed the soft biped as a kilogram lighter with a
-// shifted center. State::getCOM()/getCOMVelocity() now accumulate point
-// masses; re-measuring moved the settled contacts 51.4 -> 51.2 and left both
-// thresholds unchanged, so the conclusions survive the corrected sensor.
-//
-// Measured with all fixes: soft 18000 N vs control 8000 N, alongside the
-// contact gate's 51.2-vs-15.6 spread, so the two Jain/Liu claims hold
-// together at the shipped asset values.
+// Ensemble re-measurement (2026-08-01) showed that number was not a
+// threshold: with 10-um initial-offset, phase-strided replicas, the soft
+// arm robustly recovers only 2000-4000 N (graded partial recovery above;
+// the old 18000 N pocket shrivels to 1/5 once the push arrival phase is
+// sampled), and single-trial soft outcomes flip with gait phase and with
+// the binary hosting the same objects. The rigid arm holds a majority
+// through 8000 N (5/5 to 6000, 4/5 at 8000) and degrades above. Under the
+// prefix ensemble the comparison currently INVERTS: soft 4000 N vs rigid
+// 8000 N.
+// The paper's push-recovery ordering therefore does NOT reproduce robustly
+// at the shipped parameters with the reused rigid-tuned controller; the
+// parity matrix records this as an open gap with the response curves, and
+// no soft >= rigid assertion is made here until the mechanism work closes
+// it. What this gate protects instead is the measurement itself: real,
+// interior, curve-published thresholds at their measured regression floors.
 TEST(SoftFootSimbiconModelTest, MeasuresRecoverablePushForBothFeet)
 {
-  const double rigidPush = sfs::maxRecoverablePush(sfs::Feet::Rigid);
-  const double softPush = sfs::maxRecoverablePush(sfs::Feet::Soft);
+  std::string rigidCurve;
+  std::string softCurve;
+  const double rigidPush
+      = sfs::robustRecoverablePush(sfs::Feet::Rigid, 0.0, 0.0, &rigidCurve);
+  const double softPush
+      = sfs::robustRecoverablePush(sfs::Feet::Soft, 0.0, 0.0, &softCurve);
 
-  std::cout << "max_recoverable_push  rigid=" << rigidPush
-            << " N  soft=" << softPush << " N"
-            << (softPush >= rigidPush ? "  (soft >= rigid)"
-                                      : "  (soft < rigid)")
-            << "\n";
+  std::cout << "robust_recoverable_push (clean)  rigid=" << rigidPush
+            << " N  soft=" << softPush << " N\n"
+            << "rigid curve:\n"
+            << rigidCurve << "soft curve:\n"
+            << softCurve;
 
-  // Both thresholds must be real measurements -- nonzero and inside the sweep
-  // -- or the comparison below would be vacuous or a floor rather than a
-  // number.
+  // Both thresholds must be real measurements -- nonzero and inside the
+  // sweep -- or the floors below would be vacuous.
   ASSERT_GT(rigidPush, 0.0)
-      << "rigid biped recovered no push in the sweep -- sweep range too high";
+      << "rigid biped robustly recovered no push -- sweep range too high";
   ASSERT_GT(softPush, 0.0)
-      << "soft biped recovered no push in the sweep -- sweep range too high";
+      << "soft biped robustly recovered no push -- sweep range too high";
   ASSERT_LT(rigidPush, sfs::kPushSweepEnd)
-      << "rigid threshold saturated the sweep ceiling, so it is a floor on the "
-         "real threshold rather than a measurement";
+      << "rigid threshold saturated the sweep ceiling";
   ASSERT_LT(softPush, sfs::kPushSweepEnd)
-      << "soft threshold saturated the sweep ceiling, so it is a floor on the "
-         "real threshold rather than a measurement";
+      << "soft threshold saturated the sweep ceiling";
 
-  // The paper's claim, asserted on same-run measurements so cross-platform
-  // floating-point drift moves both arms together.
-  EXPECT_GE(softPush, rigidPush)
-      << "the soft feet no longer withstand at least the rigid control's "
-         "push; the Jain/Liu push-recovery claim regressed";
+  // Regression floors at the measured values (rigid 5/5 through 6000 and
+  // 4/5 at 8000; soft 5/5 through 4000 with a graded tail above). A platform
+  // that moves a majority verdict has genuinely changed the physics, not
+  // the last bits.
+  EXPECT_GE(rigidPush, 8000.0)
+      << "the rigid control's robust threshold regressed below its measured "
+         "8000 N";
+  EXPECT_GE(softPush, 4000.0)
+      << "the soft feet's robust threshold regressed below their measured "
+         "4000 N";
 }
 
 //==============================================================================
@@ -719,4 +725,217 @@ TEST(SoftFootSimbiconModelTest, ControlMatchesUndeformedSoftManifold)
             << rigidPoints.size() << "  soft_points=" << softPoints.size()
             << "  worst_pair_distance=" << worstPairDistance
             << " m  (undeformed, identical pose)\n";
+}
+
+//==============================================================================
+// Gate 5: motor noise is scoped, deterministic, and effective. Level 0 must be
+// bit-identical to never enabling it (the rigid-overhead contract of an
+// opt-in perturbation); a nonzero level must actually change the trajectory
+// (or the sweep below would measure nothing); the injection must not invent
+// root forces (the biped is underactuated -- corrupting the free joint would
+// perturb physics, not motors); and a reset must rewind the noise stream so a
+// noisy run repeats draw-for-draw.
+TEST(SoftFootSimbiconModelTest, MotorNoiseIsScopedDeterministicAndEffective)
+{
+  constexpr int kSteps = 200;
+
+  sfs::Model clean = sfs::createModel(sfs::Feet::Soft);
+  for (int i = 0; i < kSteps; ++i)
+    sfs::step(clean);
+
+  sfs::Model zeroLevel = sfs::createModel(sfs::Feet::Soft);
+  sfs::setMotorNoise(zeroLevel, 0.0);
+  for (int i = 0; i < kSteps; ++i)
+    sfs::step(zeroLevel);
+  EXPECT_EQ(sfs::stateVector(clean), sfs::stateVector(zeroLevel))
+      << "motor noise at level 0 must be exactly the never-enabled model";
+
+  sfs::Model noisy = sfs::createModel(sfs::Feet::Soft);
+  sfs::setMotorNoise(noisy, sfs::kMotorNoiseGateLevel);
+  for (int i = 0; i < kSteps; ++i) {
+    // Split the step so the injected forces are observable before the solve
+    // consumes them: the root's six generalized forces must stay exactly
+    // zero, noise or no noise.
+    sfs::prepareStep(noisy);
+    ASSERT_TRUE(noisy.atlas->getForces().head<6>().isZero(0.0))
+        << "motor noise leaked onto the unactuated root at step " << i;
+    noisy.world->step();
+  }
+  EXPECT_NE(sfs::stateVector(clean), sfs::stateVector(noisy))
+      << "the first sweep level left the trajectory bit-identical, so the "
+         "noise sweep would measure nothing";
+
+  Eigen::VectorXd firstRun = sfs::stateVector(noisy);
+  sfs::resetModel(noisy);
+  for (int i = 0; i < kSteps; ++i)
+    sfs::step(noisy);
+  EXPECT_EQ(firstRun, sfs::stateVector(noisy))
+      << "resetModel must rewind the noise stream so a noisy run repeats "
+         "draw-for-draw";
+}
+
+//==============================================================================
+// Gate 6: the noisy tile floor is what the Jain/Liu row specifies and is
+// reproducible: paper-sized tiles, heights seeded deterministically (two
+// builds agree exactly), spread bounded by the amplitude, and dug down from
+// the flat plane so the spawned biped can never start inside a raised tile.
+TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
+{
+  const double amplitude = sfs::kFloorPaperAmplitude;
+
+  sfs::Model first = sfs::createModel(sfs::Feet::Soft, amplitude);
+  sfs::Model second = sfs::createModel(sfs::Feet::Soft, amplitude);
+  EXPECT_EQ(first.floorAmplitude, amplitude);
+
+  auto* firstFloor = first.world->getSkeleton("noisy_tile_floor").get();
+  auto* secondFloor = second.world->getSkeleton("noisy_tile_floor").get();
+  ASSERT_NE(firstFloor, nullptr);
+  ASSERT_NE(secondFloor, nullptr);
+  const std::size_t expectedTiles
+      = static_cast<std::size_t>(sfs::kFloorTilesX)
+        * static_cast<std::size_t>(sfs::kFloorTilesZ);
+  ASSERT_EQ(firstFloor->getNumBodyNodes(), expectedTiles);
+  ASSERT_EQ(secondFloor->getNumBodyNodes(), expectedTiles);
+
+  // The flat ground's top, measured from a flat build rather than duplicated
+  // as a constant here: box collision shape, center + half height.
+  sfs::Model flat = sfs::createModel(sfs::Feet::Soft);
+  auto* ground = flat.world->getSkeleton("ground_skeleton").get();
+  ASSERT_NE(ground, nullptr);
+  double flatTop = -std::numeric_limits<double>::infinity();
+  ground->getBodyNode(0)->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+      [&](dart::dynamics::ShapeNode* shapeNode) {
+        const auto box = std::dynamic_pointer_cast<dart::dynamics::BoxShape>(
+            shapeNode->getShape());
+        ASSERT_NE(box, nullptr);
+        flatTop = std::max(
+            flatTop,
+            shapeNode->getWorldTransform().translation().y()
+                + 0.5 * box->getSize().y());
+      });
+  ASSERT_TRUE(std::isfinite(flatTop));
+
+  double highestTop = -std::numeric_limits<double>::infinity();
+  double lowestTop = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < firstFloor->getNumBodyNodes(); ++i) {
+    auto* firstTile = firstFloor->getBodyNode(i);
+    auto* secondTile = secondFloor->getBodyNode(i);
+    ASSERT_EQ(firstTile->getName(), secondTile->getName());
+    ASSERT_TRUE(
+        firstTile->getWorldTransform().matrix()
+        == secondTile->getWorldTransform().matrix())
+        << "tile " << firstTile->getName()
+        << " differs between two builds at the same amplitude";
+
+    const auto box = std::dynamic_pointer_cast<dart::dynamics::BoxShape>(
+        firstTile->getShapeNode(0)->getShape());
+    ASSERT_NE(box, nullptr);
+    EXPECT_EQ(box->getSize().x(), sfs::kFloorTileSize);
+    EXPECT_EQ(box->getSize().z(), sfs::kFloorTileSize);
+
+    const double top = firstTile->getWorldTransform().translation().y()
+                       + 0.5 * box->getSize().y();
+    highestTop = std::max(highestTop, top);
+    lowestTop = std::min(lowestTop, top);
+  }
+
+  EXPECT_LE(highestTop, flatTop + 1e-12)
+      << "a tile rises above the flat plane, so a spawned biped could start "
+         "intersecting it";
+  EXPECT_GE(lowestTop, flatTop - amplitude - 1e-12)
+      << "a tile drops below the declared amplitude";
+  EXPECT_GT(highestTop - lowestTop, 0.25 * amplitude)
+      << "the seeded heights are nearly uniform, so the floor is not "
+         "meaningfully noisy";
+}
+
+//==============================================================================
+// Gate 7 (own CTest entry, long-measurement): the motor-noise clause of the
+// Jain/Liu push-recovery row, measured as each arm's robust push-recovery
+// threshold with 20% held actuation noise active from the first step
+// (kMotorNoiseGateLevel; sustained noise alone does not discriminate --
+// both arms idle in place through 100%). Measured 2026-08-01 with
+// phase-strided replicas: both arms robustly recover 4000 N, with graded
+// phase-dependent partial recovery above (rigid 3/5-1/5 out to 12000, soft
+// 3/5-2/5 to 8000). An earlier fixed-phase ensemble read rigid at 12000 N
+// -- a dither mirage that dissolves once the push arrival phase is
+// sampled, which is exactly why the replicas stride phase. The paper's
+// soft-advantage ordering does not reproduce here (soft equals rigid);
+// the parity matrix owns the gap. This gate protects the measurement:
+// interior, curve-published thresholds at their measured floors.
+TEST(SoftFootSimbiconModelTest, MeasuresMotorNoiseToleranceForBothFeet)
+{
+  std::string rigidCurve;
+  std::string softCurve;
+  const double rigidPush = sfs::robustRecoverablePush(
+      sfs::Feet::Rigid, sfs::kMotorNoiseGateLevel, 0.0, &rigidCurve);
+  const double softPush = sfs::robustRecoverablePush(
+      sfs::Feet::Soft, sfs::kMotorNoiseGateLevel, 0.0, &softCurve);
+
+  std::cout << "robust_recoverable_push (motor noise "
+            << sfs::kMotorNoiseGateLevel << ")  rigid=" << rigidPush
+            << " N  soft=" << softPush << " N\n"
+            << "rigid curve:\n"
+            << rigidCurve << "soft curve:\n"
+            << softCurve;
+
+  ASSERT_GT(rigidPush, 0.0)
+      << "rigid biped robustly recovered no push under motor noise";
+  ASSERT_GT(softPush, 0.0)
+      << "soft biped robustly recovered no push under motor noise";
+  ASSERT_LT(rigidPush, sfs::kPushSweepEnd)
+      << "rigid threshold saturated the sweep ceiling";
+  ASSERT_LT(softPush, sfs::kPushSweepEnd)
+      << "soft threshold saturated the sweep ceiling";
+
+  EXPECT_GE(rigidPush, 4000.0)
+      << "the rigid control's robust threshold under held motor noise "
+         "regressed below its measured 4000 N";
+  EXPECT_GE(softPush, 4000.0)
+      << "the soft feet's robust threshold under held motor noise regressed "
+         "below their measured 4000 N";
+}
+
+//==============================================================================
+// Gate 8 (own CTest entry, long-measurement): the Jain/Liu noisy-floor row,
+// measured as each arm's robust push-recovery threshold standing on the
+// paper's own 2 cm seeded tile floor (kFloorGateAmplitude; the floor alone
+// does not discriminate -- both arms idle in place through 3.2 cm).
+// Measured 2026-08-01 with phase-strided replicas on the extended patch:
+// the rough floor RAISES the rigid control's robust threshold to 14000 N
+// (the dug-down tiles key the foot against lateral sliding; 5/5 through
+// 14000, 2/5 at 16000) and COLLAPSES the soft arm to 2000 N (1/5 already
+// at 4000). This is the sharpest form of the open gap gates 3 and 7
+// record; the parity matrix owns the claim status. The gate protects the
+// measurement at its measured floors.
+TEST(SoftFootSimbiconModelTest, MeasuresNoisyFloorToleranceForBothFeet)
+{
+  std::string rigidCurve;
+  std::string softCurve;
+  const double rigidPush = sfs::robustRecoverablePush(
+      sfs::Feet::Rigid, 0.0, sfs::kFloorGateAmplitude, &rigidCurve);
+  const double softPush = sfs::robustRecoverablePush(
+      sfs::Feet::Soft, 0.0, sfs::kFloorGateAmplitude, &softCurve);
+
+  std::cout << "robust_recoverable_push (floor " << sfs::kFloorGateAmplitude
+            << " m)  rigid=" << rigidPush << " N  soft=" << softPush << " N\n"
+            << "rigid curve:\n"
+            << rigidCurve << "soft curve:\n"
+            << softCurve;
+
+  ASSERT_GT(rigidPush, 0.0)
+      << "rigid biped robustly recovered no push on the noisy floor";
+  ASSERT_GT(softPush, 0.0)
+      << "soft biped robustly recovered no push on the noisy floor";
+  ASSERT_LT(rigidPush, sfs::kPushSweepEnd)
+      << "rigid threshold saturated the sweep ceiling";
+  ASSERT_LT(softPush, sfs::kPushSweepEnd)
+      << "soft threshold saturated the sweep ceiling";
+
+  EXPECT_GE(rigidPush, 14000.0)
+      << "the rigid control's robust threshold on the 2 cm floor regressed "
+         "below its measured 14000 N";
+  EXPECT_GE(softPush, 2000.0)
+      << "the soft feet's robust threshold on the 2 cm floor regressed "
+         "below their measured 2000 N";
 }
