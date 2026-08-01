@@ -43,6 +43,7 @@
 #include "dart/collision/dart/detail/DARTCollisionDetectorAccessor.hpp"
 #include "dart/collision/dart/detail/DARTCollisionGroupEngineData.hpp"
 #include "dart/collision/dart/detail/DARTCollisionObjectEngineData.hpp"
+#include "dart/collision/dart/detail/FourPointPlanarCollision.hpp"
 #include "dart/collision/dart/narrow_phase/NarrowPhase.hpp"
 #include "dart/collision/dart/shapes/Shape.hpp"
 #include "dart/common/Console.hpp"
@@ -329,11 +330,6 @@ native::CollisionOption makeNativeOption(
     nativeOption.maxNumContacts = 1u;
   }
   nativeOption.collisionFilter = nullptr;
-  // Narrow-phase pairs whose released result is a single point only widen into
-  // a planar patch under the opt-in mode. The contact cap alone cannot carry
-  // that decision, because Compact also requests more than one contact.
-  nativeOption.enableFourPointPlanarPatches
-      = mode == DARTCollisionDetector::ContactManifoldMode::FourPointPlanar;
 
   return nativeOption;
 }
@@ -1861,6 +1857,9 @@ bool processRigidNativePairUnchecked(
       = manifoldMode
             == DARTCollisionDetector::ContactManifoldMode::FourPointPlanar
         && isConvexConvexPair(shape1, shape2);
+  const bool useFourPointNativePatches
+      = manifoldMode
+        == DARTCollisionDetector::ContactManifoldMode::FourPointPlanar;
   bool hit
       = useFourPointPlaneBox ? collideFourPointPlanarPlaneBox(
             shape1, transform1, shape2, transform2, nativeOption, nativeResult)
@@ -1871,13 +1870,21 @@ bool processRigidNativePairUnchecked(
               transform2,
               nativeOption,
               nativeResult)
-                                  : native::NarrowPhase::collide(
-                                      shape1,
-                                      transform1,
-                                      shape2,
-                                      transform2,
-                                      nativeOption,
-                                      nativeResult);
+        : useFourPointNativePatches
+            ? native::detail::collideWithFourPointPlanarPatches(
+                shape1,
+                transform1,
+                shape2,
+                transform2,
+                nativeOption,
+                nativeResult)
+            : native::NarrowPhase::collide(
+                shape1,
+                transform1,
+                shape2,
+                transform2,
+                nativeOption,
+                nativeResult);
 
   if (!hit && option.allowNegativePenetrationDepthContacts) {
     hit = collideWithContactGap(

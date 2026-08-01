@@ -37,6 +37,26 @@
 
 namespace dart::collision::native {
 
+namespace {
+
+// Keep CollisionOption layout-compatible with the released DART 6.20 native
+// collision API. Detector-only policies must not add fields to this struct.
+struct ReleasedCollisionOptionLayout
+{
+  bool enableContact;
+  std::size_t maxNumContacts;
+  const CollisionFilter* collisionFilter;
+};
+
+static_assert(
+    sizeof(CollisionOption) == sizeof(ReleasedCollisionOptionLayout),
+    "CollisionOption must preserve its released DART 6.20 size");
+static_assert(
+    alignof(CollisionOption) == alignof(ReleasedCollisionOptionLayout),
+    "CollisionOption must preserve its released DART 6.20 alignment");
+
+} // namespace
+
 CollisionResult::CollisionResult(CollisionResult&& other) noexcept
   : firstContact_(std::move(other.firstContact_)),
     firstManifold_(std::move(other.firstManifold_)),

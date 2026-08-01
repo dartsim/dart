@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/dart/detail/FourPointPlanarCollision.hpp>
 #include <dart/collision/dart/narrow_phase/BoxBox.hpp>
 #include <dart/collision/dart/narrow_phase/CapsuleBox.hpp>
 #include <dart/collision/dart/narrow_phase/CapsuleCapsule.hpp>
@@ -109,7 +110,8 @@ bool collideShapes(
     const Shape* shape2,
     const Eigen::Isometry3d& tf2,
     const CollisionOption& option,
-    CollisionResult& result)
+    CollisionResult& result,
+    bool enableFourPointPlanarPatches)
 {
   if (!shape1 || !shape2) {
     return false;
@@ -147,7 +149,8 @@ bool collideShapes(
               childShape2,
               childTf2,
               childOption,
-              childResult)) {
+              childResult,
+              enableFourPointPlanarPatches)) {
         return false;
       }
 
@@ -367,6 +370,10 @@ bool collideShapes(
   if (type1 == ShapeType::Cylinder && type2 == ShapeType::Box) {
     const auto* c = static_cast<const CylinderShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
+    if (enableFourPointPlanarPatches) {
+      return detail::collideCylinderBoxWithFourPointPlanarPatches(
+          *c, tf1, *b, tf2, result, option);
+    }
     return collideCylinderBox(*c, tf1, *b, tf2, result, option);
   }
 
@@ -377,6 +384,10 @@ bool collideShapes(
         result,
         option,
         [&](CollisionResult& local, const CollisionOption& opt) {
+          if (enableFourPointPlanarPatches) {
+            return detail::collideCylinderBoxWithFourPointPlanarPatches(
+                *c, tf2, *b, tf1, local, opt);
+          }
           return collideCylinderBox(*c, tf2, *b, tf1, local, opt);
         });
   }
@@ -1017,7 +1028,13 @@ bool collideBatchShapes(
     }
 
     const bool hit = collideShapes(
-        pair.shapeA, pair.tfA, pair.shapeB, pair.tfB, option, results[i]);
+        pair.shapeA,
+        pair.tfA,
+        pair.shapeB,
+        pair.tfB,
+        option,
+        results[i],
+        false);
     if (recordHits) {
       hits[i] = hit;
     }
@@ -1029,6 +1046,17 @@ bool collideBatchShapes(
 
 } // namespace
 
+bool detail::collideWithFourPointPlanarPatches(
+    const Shape* shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape* shape2,
+    const Eigen::Isometry3d& tf2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  return collideShapes(shape1, tf1, shape2, tf2, option, result, true);
+}
+
 bool NarrowPhase::collide(
     const Shape* shape1,
     const Eigen::Isometry3d& tf1,
@@ -1037,7 +1065,7 @@ bool NarrowPhase::collide(
     const CollisionOption& option,
     CollisionResult& result)
 {
-  return collideShapes(shape1, tf1, shape2, tf2, option, result);
+  return collideShapes(shape1, tf1, shape2, tf2, option, result, false);
 }
 
 bool NarrowPhase::collideBatch(

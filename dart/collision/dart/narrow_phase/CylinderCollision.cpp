@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/dart/detail/FourPointPlanarCollision.hpp>
 #include <dart/collision/dart/narrow_phase/ConvexConvex.hpp>
 #include <dart/collision/dart/narrow_phase/CylinderCollision.hpp>
 #include <dart/collision/dart/shapes/Shape.hpp>
@@ -186,9 +187,9 @@ bool addAxialCylinderBoxPatchContacts(
   return true;
 }
 
-// Opt-in helper for CollisionOption::enableFourPointPlanarPatches. Callers
-// must gate it on that flag; the released cylinder-box result for this
-// configuration is a single contact.
+// Opt-in helper for the detector's FourPointPlanar policy. Callers must gate
+// it on that policy; the released cylinder-box result for this configuration
+// is a single contact.
 bool addNearlyAxialCylinderBoxFaceContacts(
     double cylinderRadius,
     double cylinderHalfHeight,
@@ -734,13 +735,16 @@ bool collideCylinderSphere(
   return true;
 }
 
-bool collideCylinderBox(
+namespace {
+
+bool collideCylinderBoxImpl(
     const CylinderShape& cylinder,
     const Eigen::Isometry3d& cylinderTransform,
     const BoxShape& box,
     const Eigen::Isometry3d& boxTransform,
     CollisionResult& result,
-    const CollisionOption& option)
+    const CollisionOption& option,
+    bool enableFourPointPlanarPatches)
 {
   if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
@@ -852,7 +856,7 @@ bool collideCylinderBox(
   // Opt-in only. The released result for a rotated box over a cylinder cap is
   // the single deepest-corner contact below, so widening it into a patch would
   // silently change default Native contact counts and solver forces.
-  if (option.enableFourPointPlanarPatches
+  if (enableFourPointPlanarPatches
       && addNearlyAxialCylinderBoxFaceContacts(
           cylRadius,
           cylHalfHeight,
@@ -944,6 +948,32 @@ bool collideCylinderBox(
 
   result.addContact(contact);
   return true;
+}
+
+} // namespace
+
+bool collideCylinderBox(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  return collideCylinderBoxImpl(
+      cylinder, cylinderTransform, box, boxTransform, result, option, false);
+}
+
+bool detail::collideCylinderBoxWithFourPointPlanarPatches(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  return collideCylinderBoxImpl(
+      cylinder, cylinderTransform, box, boxTransform, result, option, true);
 }
 
 namespace {
