@@ -1802,8 +1802,13 @@ TEST_F(Collision, DartCylinderFinitePrimitivePairs)
 
   CollisionResult cylinderBox;
   ASSERT_TRUE(cylinderGroup->collide(boxGroup.get(), option, &cylinderBox));
-  // Side-on-face is a contact line; both clipped endpoints are emitted.
+  // Side-on-face is a contact line; both clipped endpoints are emitted as
+  // DISTINCT supports.
   ASSERT_EQ(cylinderBox.getNumContacts(), 2u);
+  EXPECT_GT(
+      (cylinderBox.getContact(0).point - cylinderBox.getContact(1).point)
+          .norm(),
+      0.1);
   for (std::size_t i = 0; i < cylinderBox.getNumContacts(); ++i) {
     EXPECT_EQ(
         cylinderBox.getContact(i).collisionObject1->getShapeFrame(),
