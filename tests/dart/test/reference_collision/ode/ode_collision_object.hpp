@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
-
 #include <dart/collision/collision_object.hpp>
+#include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 
 #include <ode/ode.h>
 

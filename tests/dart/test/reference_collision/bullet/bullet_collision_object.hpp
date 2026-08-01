@@ -34,7 +34,6 @@
 
 #include <dart/test/reference_collision/bullet/bullet_collision_shape.hpp>
 #include <dart/test/reference_collision/bullet/bullet_include.hpp>
-
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/fwd.hpp>
 

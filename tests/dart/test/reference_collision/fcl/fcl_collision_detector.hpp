@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include <dart/test/reference_collision/fcl/fcl_types.hpp>
-
 #include <dart/collision/collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_types.hpp>
 
 #include <dart/export.hpp>
 

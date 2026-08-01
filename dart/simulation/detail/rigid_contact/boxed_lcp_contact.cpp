@@ -101,6 +101,7 @@ void BoxedLcpContactScratch::reserve(
   dantzig.hiData.reserve(vectorSize);
   dantzig.findexData.reserve(vectorSize);
   dantzig.w.resize(rows);
+  pgsFallback.reserve(static_cast<int>(rows));
   dantzig.loEff.resize(rows);
   dantzig.hiEff.resize(rows);
   dantzig.lcp.L.reserve(matrixSize);
@@ -379,23 +380,21 @@ BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
   f.setZero();
   // Degenerate flat contact stacks can hit a non-positive pivot; allow the
   // pivoting solve to terminate early and fall back to the bounded iterative
-  // solver when it fails or returns a non-finite contact force. The pivoting
-  // solve stays on the allocator-backed scratch; the rare degenerate fallback
-  // uses a temporary that does not touch the world allocator.
+  // solver when it fails or returns a non-finite contact force. Both solves
+  // run on allocator-backed scratch and operate on the assembled system in
+  // place, so even fallback steps never touch the global heap.
   options.earlyTermination = true;
   const math::LcpResult result
       = solver.solve(A, b, lo, hi, findex, f, scratch.dantzig, options);
   if (!result.succeeded() || !f.allFinite()) {
-    Eigen::VectorXd fallbackForce = f;
     math::PgsSolver fallback;
     math::LcpOptions fallbackOptions = math::LcpOptions::realTime();
     fallbackOptions.maxIterations = 120;
     fallbackOptions.relativeTolerance = 1e-6;
     fallbackOptions.validateSolution = false;
-    fallbackOptions.warmStart = fallbackForce.allFinite();
-    const math::LcpProblem problem(A, b, lo, hi, findex);
-    fallback.solve(problem, fallbackForce, fallbackOptions);
-    f = fallbackForce;
+    fallbackOptions.warmStart = f.allFinite();
+    [[maybe_unused]] const math::LcpResult fallbackResult = fallback.solve(
+        A, b, lo, hi, findex, f, scratch.pgsFallback, fallbackOptions);
   }
   for (Eigen::Index i = 0; i < n; ++i) {
     // Normal impulses are push-only; sanitize non-finite/negative values.

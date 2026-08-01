@@ -33,7 +33,6 @@
 #pragma once
 
 #include <dart/test/reference_collision/bullet/bullet_include.hpp>
-
 #include <dart/collision/collision_group.hpp>
 
 namespace dart {

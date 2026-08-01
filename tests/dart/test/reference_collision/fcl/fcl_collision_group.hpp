@@ -32,10 +32,9 @@
 
 #pragma once
 
-#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
-
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/fwd.hpp>
+#include <dart/test/reference_collision/fcl/backward_compatibility.hpp>
 
 namespace dart {
 namespace collision {

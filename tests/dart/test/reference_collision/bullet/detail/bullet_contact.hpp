@@ -32,9 +32,9 @@
 
 #pragma once
 
+#include "dart/test/reference_collision/bullet/bullet_include.hpp"
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/contact.hpp"
-#include "dart/test/reference_collision/bullet/bullet_include.hpp"
 
 namespace dart::collision::bullet::detail {
 

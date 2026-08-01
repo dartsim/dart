@@ -53,6 +53,7 @@
 #include <dart/simulation/fwd.hpp>
 
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -146,7 +147,8 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
       JMinv(DoubleAllocator{allocator}),
       jtImpulse(DoubleAllocator{allocator}),
       deltaV(DoubleAllocator{allocator}),
-      dantzig(allocator)
+      dantzig(allocator),
+      pgsFallback(allocator)
   {
   }
 
@@ -168,6 +170,9 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
   DoubleVector jtImpulse;
   DoubleVector deltaV;
   math::DantzigSolver::Scratch dantzig;
+  /// Work storage for the degenerate-pivot PGS fallback solve so that path
+  /// stays off the global heap like the primary Dantzig solve.
+  math::PgsSolver::Scratch pgsFallback;
 };
 
 DART_SIMULATION_API void reserveBoxedLcpContactScratch(

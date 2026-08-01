@@ -35,7 +35,6 @@
 #include <dart/test/reference_collision/bullet/bullet_collision_group.hpp>
 #include <dart/test/reference_collision/bullet/bullet_collision_shape.hpp>
 #include <dart/test/reference_collision/bullet/bullet_include.hpp>
-
 #include <dart/collision/collision_detector.hpp>
 
 #include <unordered_map>
