@@ -414,7 +414,11 @@ else()
 
   include(FetchContent)
 
-  set(IMGUI_TARGET_VERSION "v1.92.8")
+  # The docking-branch release of the same version: identical to v1.92.8 plus
+  # the dockspace/DockBuilder API (IMGUI_HAS_DOCK). The demos app uses it to
+  # offer a rearrangeable docked workspace; system-ImGui builds keep working
+  # through the fixed-layout fallback.
+  set(IMGUI_TARGET_VERSION "v1.92.8-docking")
 
   # DART applies its compatibility patch directly inside the FetchContent
   # checkout, which leaves that working tree dirty. If the requested tag changed

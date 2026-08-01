@@ -43,12 +43,14 @@ void applyModernDarkColors();
 
 //==============================================================================
 /// Companion spacing/rounding metrics to applyModernDarkColors, ported from
-/// applyModernDarkMetrics (docking-only bits skipped; this app targets
-/// vanilla ImGui 1.92 with no docking). Sets base (unscaled) style metrics;
-/// per-frame GUI scaling is applied on top of these by
-/// dart::gui::osg::ImGuiHandler::setGuiScale() via ImGuiStyle::ScaleAllSizes,
-/// so callers should not pre-multiply these values by the GUI scale. Call
-/// once before the first frame, after applyModernDarkColors().
+/// applyModernDarkMetrics. Docking-only bits (docking separators, dock
+/// preview colors) apply when the build uses the bundled docking-branch ImGui
+/// (IMGUI_HAS_DOCK) and are skipped on vanilla system ImGui. Sets base
+/// (unscaled) style metrics; per-frame GUI scaling is applied on top of these
+/// by dart::gui::osg::ImGuiHandler::setGuiScale() via
+/// ImGuiStyle::ScaleAllSizes, so callers should not pre-multiply these values
+/// by the GUI scale. Call once before the first frame, after
+/// applyModernDarkColors().
 void applyModernDarkMetrics();
 
 } // namespace dart_demos

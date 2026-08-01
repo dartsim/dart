@@ -608,6 +608,18 @@
 
 * Examples
 
+  * Give `dart-demos` a real dockable workspace on docking-ImGui builds
+    (adopting the DART 7 demos host design): a DockSpace over the viewport
+    with a transparent central 3D node, a deterministic default layout
+    (toolbar top, navigator left, scene panel right, diagnostics bottom),
+    user-rearrangeable panels with View > "Reset layout", and a stable scene
+    panel dock identity across scene switches. `pixi run demos` builds against
+    the bundled docking ImGui; system-ImGui builds keep the fixed layout,
+    which now sizes the toolbar and diagnostics regions from measured content
+    so `--gui-scale` values above 1 no longer clip or overlap the chrome. The
+    demos CLI also accepts `--gui-scale=N`, seeds the scale from
+    `DART_GUI_SCALE`, and the View menu GUI-scale slider covers the full
+    supported `[0.5, 4]` range.
   * Add two deformable-body flagship scenes to `dart-demos`:
     `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
     demonstrating the adaptive contact activation API with live
@@ -680,6 +692,14 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
+
+  * Bundle the Dear ImGui docking branch (`v1.92.8-docking`) for
+    `DART_USE_SYSTEM_IMGUI=OFF` builds and enable
+    `ImGuiConfigFlags_DockingEnable` in `ImGuiHandler` when the docking API is
+    available (`IMGUI_HAS_DOCK`); system-ImGui builds are unchanged.
+    `parseGuiScale` now warns and clamps out-of-range values into the
+    supported `[0.5, 4]` range (matching the DART 7 viewer) instead of
+    discarding them for the fallback value.
 
   * Fix `dart::gui::osg` interaction teardown so registered handlers and
     drag-and-drop tools are released correctly. `DefaultEventHandler::

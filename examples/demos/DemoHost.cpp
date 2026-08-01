@@ -38,7 +38,15 @@
   #include "memory_diagnostics.hpp"
 #endif
 
+#include <dart/gui/osg/IncludeImGui.hpp>
+
 #include <dart/collision/CollisionDetector.hpp>
+#ifdef IMGUI_HAS_DOCK
+  // DockBuilder lives in the internal header on the docking branch. The
+  // compatibility copy exists for system ImGui builds too, so the include is
+  // valid either way; only the DockBuilder calls are docking-gated.
+  #include <dart/external/imgui/imgui_internal.h>
+#endif
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/SoftBodyNode.hpp>
@@ -1299,8 +1307,107 @@ void DemoHost::renderPanels()
   const float screenW = std::max(1.0f, io.DisplaySize.x);
   const float screenH = std::max(1.0f, io.DisplaySize.y);
 
-  const float toolbarH = std::min(58.0f * scale, screenH * 0.18f);
-  const float bottomH = std::min(156.0f * scale, screenH * 0.26f);
+  // The visible title tracks the scene, but the "###" suffix keeps the ImGui
+  // window identity stable so the panel keeps its dock slot (or fixed slot)
+  // across scene switches instead of spawning a fresh window per scene.
+  const std::string panelTitle
+      = (mCurrentSceneTitle.empty() ? std::string("Scene") : mCurrentSceneTitle)
+        + "###DemoScenePanel";
+
+#ifdef IMGUI_HAS_DOCK
+  // Real docking workspace (bundled docking-branch ImGui): a dockspace over
+  // the viewport with a transparent central node for the 3D view. The default
+  // layout reproduces the fixed fallback below; every panel can be dragged,
+  // split, and re-tabbed, and View > "Reset layout" restores this
+  // arrangement. The layout is rebuilt deterministically on startup so a
+  // stale imgui.ini can never hide the chrome.
+  const ImGuiID dockspaceId = ImGui::GetID("DartDemosDockSpace");
+  if (!mDockLayoutInitialized || mDockLayoutResetRequested) {
+    mDockLayoutInitialized = true;
+    mDockLayoutResetRequested = false;
+
+    // Estimate content-sized regions in scaled pixels. The toolbar lays out
+    // as one wide row (~1400 px of controls at scale 1) that wraps on narrow
+    // windows, so budget one extra row per wrap.
+    const float toolbarRowH = 40.0f * scale;
+    const float tabBarH = 26.0f * scale;
+    const float toolbarRows
+        = std::ceil((1400.0f * scale) / std::max(320.0f, screenW));
+    const float topFraction = std::clamp(
+        (tabBarH + toolbarRows * toolbarRowH) / screenH, 0.05f, 0.35f);
+    const float bottomFraction
+        = std::clamp((200.0f * scale) / screenH, 0.10f, 0.40f);
+    const float leftFraction
+        = std::clamp((260.0f * scale) / screenW, 0.12f, 0.40f);
+    const float rightFraction
+        = std::clamp((360.0f * scale) / screenW, 0.15f, 0.45f);
+
+    ImGui::DockBuilderRemoveNode(dockspaceId);
+    // ImGuiDockNodeFlags_DockSpace is a private flag while
+    // PassthruCentralNode is public; OR them as ints to avoid C++20's
+    // deprecated-enum-enum-conversion warning.
+    ImGui::DockBuilderAddNode(
+        dockspaceId,
+        static_cast<int>(ImGuiDockNodeFlags_DockSpace)
+            | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
+    ImGui::DockBuilderSetNodeSize(dockspaceId, io.DisplaySize);
+
+    ImGuiID center = dockspaceId;
+    ImGuiID top = 0;
+    ImGuiID bottom = 0;
+    ImGuiID left = 0;
+    ImGuiID right = 0;
+    top = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Up, topFraction, nullptr, &center);
+    bottom = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Down, bottomFraction, nullptr, &center);
+    left = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Left, leftFraction, nullptr, &center);
+    right = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Right, rightFraction, nullptr, &center);
+
+    ImGui::DockBuilderDockWindow("Simulation", top);
+    ImGui::DockBuilderDockWindow("Demos", left);
+    ImGui::DockBuilderDockWindow(panelTitle.c_str(), right);
+    ImGui::DockBuilderDockWindow("Diagnostics", bottom);
+    ImGui::DockBuilderFinish(dockspaceId);
+  }
+  ImGui::DockSpaceOverViewport(
+      dockspaceId,
+      ImGui::GetMainViewport(),
+      ImGuiDockNodeFlags_PassthruCentralNode);
+
+  constexpr ImGuiWindowFlags kDockedFlags = ImGuiWindowFlags_NoCollapse;
+
+  if (ImGui::Begin("Simulation", nullptr, kDockedFlags))
+    renderToolbar();
+  ImGui::End();
+
+  if (ImGui::Begin("Demos", nullptr, kDockedFlags))
+    renderNavigator();
+  ImGui::End();
+
+  if (ImGui::Begin(panelTitle.c_str(), nullptr, kDockedFlags))
+    renderScenePanel();
+  ImGui::End();
+
+  if (ImGui::Begin("Diagnostics", nullptr, kDockedFlags))
+    renderDiagnostics();
+  ImGui::End();
+#else
+  // Fixed-layout fallback for system (non-docking) ImGui builds. Region
+  // heights follow the measured content from the previous frame so scaled-up
+  // toolbars and diagnostics stay fully visible instead of clipping at
+  // --gui-scale > 1 (the old fixed 58/156 px budgets assumed scale 1 row
+  // wrapping).
+  const float toolbarH = std::clamp(
+      mMeasuredToolbarHeight > 0.0f ? mMeasuredToolbarHeight : 58.0f * scale,
+      30.0f,
+      screenH * 0.35f);
+  const float bottomH = std::clamp(
+      mMeasuredBottomHeight > 0.0f ? mMeasuredBottomHeight : 156.0f * scale,
+      40.0f,
+      screenH * 0.40f);
   const float leftW = std::min(260.0f * scale, screenW * 0.30f);
   const float rightW = std::min(360.0f * scale, screenW * 0.34f);
   const float middleH = std::max(1.0f, screenH - toolbarH - bottomH);
@@ -1311,8 +1418,11 @@ void DemoHost::renderPanels()
 
   ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
   ImGui::SetNextWindowSize(ImVec2(screenW, toolbarH), ImGuiCond_Always);
-  if (ImGui::Begin("Simulation", nullptr, kChromeFlags))
+  if (ImGui::Begin("Simulation", nullptr, kChromeFlags)) {
     renderToolbar();
+    mMeasuredToolbarHeight
+        = ImGui::GetCursorPosY() + ImGui::GetStyle().WindowPadding.y;
+  }
   ImGui::End();
 
   ImGui::SetNextWindowPos(ImVec2(0.0f, toolbarH), ImGuiCond_Always);
@@ -1323,17 +1433,19 @@ void DemoHost::renderPanels()
 
   ImGui::SetNextWindowPos(ImVec2(screenW - rightW, toolbarH), ImGuiCond_Always);
   ImGui::SetNextWindowSize(ImVec2(rightW, middleH), ImGuiCond_Always);
-  const std::string panelTitle
-      = mCurrentSceneTitle.empty() ? "Scene" : mCurrentSceneTitle;
   if (ImGui::Begin(panelTitle.c_str(), nullptr, kChromeFlags))
     renderScenePanel();
   ImGui::End();
 
   ImGui::SetNextWindowPos(ImVec2(0.0f, screenH - bottomH), ImGuiCond_Always);
   ImGui::SetNextWindowSize(ImVec2(screenW, bottomH), ImGuiCond_Always);
-  if (ImGui::Begin("Diagnostics", nullptr, kChromeFlags))
+  if (ImGui::Begin("Diagnostics", nullptr, kChromeFlags)) {
     renderDiagnostics();
+    mMeasuredBottomHeight
+        = ImGui::GetCursorPosY() + ImGui::GetStyle().WindowPadding.y;
+  }
   ImGui::End();
+#endif
 }
 
 //==============================================================================
@@ -1545,19 +1657,29 @@ void DemoHost::renderViewMenu()
 
   ImGui::Separator();
   float guiScale = static_cast<float>(mGuiScale);
+  const float minGuiScale
+      = static_cast<float>(dart::gui::osg::getMinGuiScale());
+  const float maxGuiScale
+      = static_cast<float>(dart::gui::osg::getMaxGuiScale());
   ImGui::SetNextItemWidth(160.0f * static_cast<float>(mGuiScale));
   if (ImGui::SliderFloat(
           "GUI scale",
           &guiScale,
-          0.75f,
-          2.0f,
+          minGuiScale,
+          maxGuiScale,
           "%.2fx",
           ImGuiSliderFlags_AlwaysClamp)
       && std::isfinite(guiScale)) {
-    mGuiScale
-        = dart::gui::osg::sanitizeGuiScale(std::clamp(guiScale, 0.75f, 2.0f));
+    mGuiScale = dart::gui::osg::sanitizeGuiScale(guiScale);
     mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
   }
+
+#ifdef IMGUI_HAS_DOCK
+  ImGui::Separator();
+  if (ImGui::Button("Reset layout"))
+    mDockLayoutResetRequested = true;
+  ImGui::SetItemTooltip("Restore the default docked workspace layout.");
+#endif
 }
 
 //==============================================================================

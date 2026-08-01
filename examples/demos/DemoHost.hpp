@@ -382,6 +382,16 @@ private:
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;
+
+  /// Docked-workspace state (docking-branch ImGui builds): the default layout
+  /// is rebuilt on the first frame and whenever View > "Reset layout" sets the
+  /// reset flag.
+  bool mDockLayoutInitialized = false;
+  bool mDockLayoutResetRequested = false;
+  /// Fixed-layout fallback (non-docking builds): chrome heights measured from
+  /// the previous frame's content so scaled toolbars/diagnostics never clip.
+  float mMeasuredToolbarHeight = 0.0f;
+  float mMeasuredBottomHeight = 0.0f;
 };
 
 } // namespace dart_demos

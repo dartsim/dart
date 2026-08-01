@@ -66,11 +66,13 @@ config = { cmd = """
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_IMGUI="${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}" \
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
+  { arg = "use_system_imgui", default = "ON" },
+] }
 
 lint-cpp = { cmd = """
     cmake \
@@ -422,14 +424,22 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-# demos: the consolidated dart-demos scene catalog (examples/demos).
+# demos: the consolidated dart-demos scene catalog (examples/demos). Builds
+# against the bundled ImGui docking branch (DART_USE_SYSTEM_IMGUI=OFF) so the
+# workspace panels can be docked and rearranged; system-ImGui builds keep the
+# fixed panel layout. Alternating with plain `pixi run build` reconfigures the
+# shared tree between the two ImGui variants.
 demos = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target dart-demos \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = [
+  { task = "config", args = [
+    "OFF",
+  ] },
+], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
