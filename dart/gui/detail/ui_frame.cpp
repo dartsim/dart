@@ -537,27 +537,30 @@ void buildDefaultDockLayout(
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
   // Convert content pixel extents into split fractions against the axis each
-  // split actually divides (top splits the full height; bottom the remainder;
-  // left the full width; right the remainder). Caps keep the central viewport
-  // usable even at --gui-scale 4 in a small window.
+  // split actually divides: top splits the full height, bottom the remainder
+  // only when a top split actually happens, left the full width, and right
+  // the remainder only when a left split actually happens. Caps keep the
+  // central viewport usable even at --gui-scale 4 in a small window.
   const float viewportWidth = std::max(1.0f, ImGui::GetMainViewport()->Size.x);
   const float viewportHeight = std::max(1.0f, ImGui::GetMainViewport()->Size.y);
   const float topFraction = std::clamp(
       defaultDockRegionExtentPx(panels, DockSide::Top, scale) / viewportHeight,
       0.03f,
       0.35f);
+  const float bottomAxis
+      = std::max(1.0f, viewportHeight * (useTop ? (1.0f - topFraction) : 1.0f));
   const float bottomFraction = std::clamp(
-      defaultDockRegionExtentPx(panels, DockSide::Bottom, scale)
-          / std::max(1.0f, viewportHeight * (1.0f - topFraction)),
+      defaultDockRegionExtentPx(panels, DockSide::Bottom, scale) / bottomAxis,
       0.05f,
       0.45f);
   const float leftFraction = std::clamp(
       defaultDockRegionExtentPx(panels, DockSide::Left, scale) / viewportWidth,
       0.06f,
       0.42f);
+  const float rightAxis = std::max(
+      1.0f, viewportWidth * (useLeft ? (1.0f - leftFraction) : 1.0f));
   const float rightFraction = std::clamp(
-      defaultDockRegionExtentPx(panels, DockSide::Right, scale)
-          / std::max(1.0f, viewportWidth * (1.0f - leftFraction)),
+      defaultDockRegionExtentPx(panels, DockSide::Right, scale) / rightAxis,
       0.06f,
       0.48f);
 
