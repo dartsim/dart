@@ -29,19 +29,17 @@ pixi run ai-doctor
 pixi run ai-doctor --json
 ```
 
-The project does not pin a model or reasoning effort. For GPT-5.6, use Sol for
-difficult ambiguous work, Terra for everyday or read-heavy work, and Luna for
-clear repeatable work. Max gives one hard task more reasoning time; Ultra is
-for independently parallelizable work when the user explicitly authorized
-delegation. Most tasks need neither. The three read-only project agents inherit
+The project does not pin a model or reasoning effort. Model and reasoning
+routing lives in `docs/ai/README.md` § "Updating Models And Coding Agents";
+do not duplicate or pin it here. The three read-only project agents inherit
 the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
 audits the current diff, and `dart_release_auditor` compares `main` with the
 DART 6.20 compatibility surface.
 
-Treat that routing as versioned guidance. Use `dart-model-upgrade` for future
-model or Codex changes; its audit includes configuration, prompts, generated
-adapters, runtime tooling, durable `docs/` context, session handoffs, and a
-representative DART 6 OSG visual-debug investigation.
+Use `dart-model-upgrade` for future model or coding-agent changes; its audit
+includes configuration, prompts, generated adapters, runtime tooling, durable
+`docs/` context, session handoffs, and a representative DART 6 OSG
+visual-debug investigation.
 
 Inspect project hooks with `/hooks`. Project hooks are advisory and may be
 skipped in an untrusted repository. `pixi run install-hooks` installs the

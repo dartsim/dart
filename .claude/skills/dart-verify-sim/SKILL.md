@@ -32,7 +32,9 @@ state why and name the replacement evidence. Never use an image as the
 
 ## Image-capable Review Loop
 
-GPT-5.6 Sol Max supports native image input and original-detail inspection.
+Current image-capable targets (GPT-5.6 Sol Max in Codex; Claude Fable 5 and
+Opus 5 in Claude Code) support native image input and original-detail
+inspection.
 Keep this loop capability-based so a future `dart-model-upgrade` audit can
 replace the target-specific note without cloning the skill.
 

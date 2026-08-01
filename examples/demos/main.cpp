@@ -83,6 +83,9 @@ struct Options
   // actively recording).
   std::string debugSelectBody;
   bool debugRecordProfile = false;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  int debugScrollMemoryPanelTicks = 0;
+#endif
 };
 
 //==============================================================================
@@ -198,6 +201,12 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       opt.debugSelectBody = argv[++i];
     } else if (std::strcmp(a, "--debug-record-profile") == 0) {
       opt.debugRecordProfile = true;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+    } else if (std::strcmp(a, "--debug-scroll-memory-panel") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.debugScrollMemoryPanelTicks = std::stoi(argv[++i]);
+#endif
     } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
       printUsage(argv[0]);
       return ParseResult::Help;
@@ -233,6 +242,10 @@ int main(int argc, char** argv)
     host.setDebugSelectBodyName(opt.debugSelectBody);
   if (opt.debugRecordProfile)
     host.setDebugRecordProfile(true);
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  if (opt.debugScrollMemoryPanelTicks > 0)
+    host.setDebugScrollMemoryPanelTicks(opt.debugScrollMemoryPanelTicks);
+#endif
 
   if (opt.listScenes)
     return host.listScenes();

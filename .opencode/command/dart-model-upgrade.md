@@ -95,14 +95,19 @@ simulation state with text-first and OSG visual/debug evidence.
    sole correctness oracle. If rendering or native image review is unavailable,
    exercise the text path, record the exact limitation, and do not infer visual
    quality from tool availability.
-6. **Route by task shape.** For GPT-5.6, use Sol for difficult ambiguous work,
-   Terra for everyday or read-heavy work, and Luna for clear repeatable work.
-   Max gives one hard task more reasoning time. Ultra is for independently
-   parallelizable work only when the user authorized delegation. Most tasks
-   need neither. An explicitly requested Sol Max evaluation exercises that
-   lane without making it a project default. For another family, derive
-   routing from refreshed guidance and replace this bounded example when stale;
-   do not clone the workflow or append an ever-growing model taxonomy.
+6. **Route by task shape.** Derive routing for the target family from its
+   refreshed official guidance, then record the result in the model-routing
+   owner, `docs/ai/README.md` § "Updating Models And Coding Agents", which
+   keeps one bounded entry per validated tool lane. Match capability tiers to
+   task shape: the top tier for the hardest ambiguous work, the middle tier
+   for everyday or read-heavy work, and the light tier for clear repeatable
+   work. Deeper reasoning modes give one difficult task more time; parallel
+   lanes need explicit user authorization for delegation; most tasks need
+   neither. An explicitly requested top-tier evaluation exercises that lane
+   without becoming a project default. Do not carry one family's tier or
+   reasoning-mode names into another family's guidance. Replace a stale
+   per-family entry in the owner doc; do not clone the workflow or append an
+   ever-growing model taxonomy.
 7. **Implement only in apply mode.** Apply the smallest supported delta.
    Preserve C++17, pybind11, `dart::utils`, OSG, public/ABI/package behavior,
    and Gazebo/gz-physics compatibility. Do not import DART 7-only C++23,
