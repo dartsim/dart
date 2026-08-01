@@ -87,7 +87,12 @@ shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
 resolved decisions), completing the push/contact portion of the **biped push
 recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
 18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
-against the §1 Done rule until its motor-noise clause (§5) has evidence.
+against the §1 Done rule until three more things have evidence: its
+motor-noise clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
+and 1-thread/host-capped multi-thread rows — PR-3a supplies neither, since
+its comparison deliberately pins FCL and one thread for validity (the two
+foot representations only share a narrow phase under FCL, and single-thread
+keeps runs bit-identical), so that evidence needs its own configuration.
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
