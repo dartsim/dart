@@ -35,6 +35,7 @@
 
 #include "DemoHost.hpp"
 #include "Registry.hpp"
+#include "RuntimeOptions.hpp"
 #include "scenes/Scenes.hpp"
 
 #include <dart/gui/osg/osg.hpp>
@@ -162,22 +163,8 @@ void printUsage(const char* prog)
       << "  --collision-detector <name>  Initial collision backend "
          "(e.g. fcl, dart, bullet, ode when available).\n"
       << "  --threads <n>   Initial simulation worker threads (0 selects "
-         "hardware concurrency).\n"
+         "hardware concurrency; maximum 256).\n"
       << "  -h, --help      Show this help.\n";
-}
-
-//==============================================================================
-std::size_t parseThreadCount(const char* value, std::size_t fallback)
-{
-  if (value == nullptr || value[0] == '\0')
-    return fallback;
-
-  char* end = nullptr;
-  const auto parsed = std::strtoull(value, &end, 10);
-  if (end == value)
-    return fallback;
-
-  return static_cast<std::size_t>(parsed);
 }
 
 //==============================================================================
@@ -265,8 +252,15 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
 {
   if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR"))
     opt.collisionDetectorName = detectorEnv;
-  if (const char* threadsEnv = std::getenv("THREADS"))
-    opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
+  if (const char* threadsEnv = std::getenv("THREADS")) {
+    if (!dart_demos::detail::parseSimulationThreadCount(
+            threadsEnv, opt.simulationThreads)) {
+      std::cerr << "THREADS expects an integer from 0 through "
+                << dart_demos::kMaxSimulationThreads
+                << " (0 selects hardware concurrency).\n";
+      return ParseResult::Error;
+    }
+  }
 
   auto needsValue = [&](int i) {
     if (i + 1 >= argc) {
@@ -382,8 +376,13 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     } else if (std::strcmp(a, "--threads") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.simulationThreads
-          = parseThreadCount(argv[++i], opt.simulationThreads);
+      if (!dart_demos::detail::parseSimulationThreadCount(
+              argv[++i], opt.simulationThreads)) {
+        std::cerr << "--threads expects an integer from 0 through "
+                  << dart_demos::kMaxSimulationThreads
+                  << " (0 selects hardware concurrency).\n";
+        return ParseResult::Error;
+      }
     } else if (std::strcmp(a, "--debug-select-body") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
