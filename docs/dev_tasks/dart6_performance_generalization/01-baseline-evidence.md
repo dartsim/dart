@@ -483,7 +483,9 @@ Post-fix measured effects (same session, interleaved where timing matters):
   stirred pile is perpetually active, so it pays the fourth-row cost
   with no stability dividend).
 
-### 2026-08-01 cylinder contact stability (completes the WP-PG.50 bundle)
+### 2026-08-01 cylinder contact stability (intermediate state — the
+criterion-2 claims below were superseded the same day by the
+spin-canonicalization section that follows)
 
 Stream-quality probes (identical constructed states swept in 50 µm steps
 against both engines' dartpy builds; probe scripts + JSON in
@@ -555,9 +557,11 @@ Neither is a detector-stream defect; both are recorded under D10.
 ### 2026-08-01 spin-canonicalization — the criterion-2 closer
 
 The evidence audit flagged that "bounded penetration" was over-asserted:
-the cylinder-stability build's own S6 runs showed monotonically GROWING
-penetration on some seeds (seed 101: 0.100 → 0.137 m across a 60k run,
-~2.6 µm/step — the original #3056 creep signature). Scene-dump
+60k S6 runs on the intermediate effective-radius build
+(`aug01/S6_60k_corrected_seed*.log`) showed penetration growing without
+bound on seed 101 — 0.016 m at early checkpoints rising steadily to
+0.137 m at 60k (~2.4–2.6 µm/step over the back half; the original #3056
+creep signature). Scene-dump
 reconstruction identified the creeping body exactly: an **upright
 cylinder standing on its flat end-cap with an arbitrary spin about its
 own axis** (dump quaternion pure-z). The aligned analytic cap-patch path
@@ -574,8 +578,11 @@ hoisted ahead of the aligned block (its lateral branch would otherwise
 answer side-lying cylinders with one rocking point) and gated to
 genuinely shallow poses (declines once an axis endpoint reaches the face
 plane, keeping deep overlaps on the legacy minimal-translation paths).
-Two stale single-support pins were modernized to the line-manifold
-behavior (`Collision.DartCylinderFinitePrimitivePairs`,
+The tilted-support effective-radius correction from the review lane
+(`r*sqrt(1-dot^2)` support distance, pinned by
+`TiltedSeparationIsNotFabricated`) rides in the same commit. Four stale
+single-support assertions across three test bodies were modernized to
+the line-manifold behavior (`Collision.DartCylinderFinitePrimitivePairs`,
 `DARTCollisionDetector.CollidesCylinderBox`,
 `CylinderCollision.CollidesCylinderBox`), and
 `SpunUprightCapOnFaceUsesStablePatch` pins spin-invariance (spun and
@@ -585,9 +592,11 @@ full suite 154/154.
 **Outcome — the S6 pile now genuinely deactivates under defaults:**
 
 - 60k trend runs, seeds 3056 and 101 (the never-slept canonical and the
-  worst creeper): both end **71/71 resting, max penetration 0** (fully
-  frozen by ~50k steps; penetration monotonically declining before
-  freeze — the growth mechanism is gone).
+  worst creeper): both end **71/71 resting, max penetration 0**.
+  Penetration stays in a bounded ~1–3.6 mm band with no growth trend
+  until the islands freeze (canonical 3056 freezes between 36k–38k
+  steps; both fully frozen well before 50k) — the growth mechanism is
+  gone.
 - 5-seed 20k matrix on the final build: seeds 101/202/303/404 all end
   **71/71 resting, penetration 0, zero contacts**; canonical 3056 ends
   1/71 with penetration 8.0e-4 still declining (sleep latency beyond
@@ -601,8 +610,9 @@ full suite 154/154.
   cylinder-stability rows (`0x266da31836a314a6`, `0x6088ea0177efa6a`,
   `0x70bf5dd9e4f15051`, `0xd8de4ae15996321f`); S1 re-baselines to
   `120: 290 contacts / 178 pairs / 0xfc20c4880fdbca05` and
-  `60: 88 / 74 / 0x6dab35ce2618d422`. The whole bundle is a single-file
-  dart-detector narrowphase change set, so FCL/Bullet/ODE remain
+  `60: 88 / 74 / 0x6dab35ce2618d422`. The whole bundle is a two-file
+  dart-detector change set (`DARTCollisionDetector.cpp` clamp +
+  `CylinderCollision.cpp` narrowphase), so FCL/Bullet/ODE remain
   structurally untouched (verified bit-identical on the earlier bundle
   states).
 
@@ -614,7 +624,8 @@ axis projects exactly onto a box edge can receive a one-face line
 manifold (a pre-existing ambiguity class of the aligned path).
 
 Artifacts: `~/dart-wsg-evidence-20260731/aug01/` (60k trend logs
-`S6_60k_canon_seed*.log`, reval guard/seed/parity logs under
+`S6_60k_canon_seed*.log` and the intermediate-build creep evidence
+`S6_60k_corrected_seed*.log`, reval guard/seed/parity logs under
 `effrad_reval/`, probe JSONs, seed matrices, scripts, and the seed-101
 final-scene dump + reconstruction diagnostic that identified the
 creeping body).

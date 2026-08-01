@@ -268,13 +268,13 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   never resting was a chain of detector stream defects, the last being
   the aligned cap-patch path demanding exact rotational identity so
   spun-but-upright cylinders fell to degenerate convex rim points and
-  crept without bound (measured: seed 101 growing 0.100 → 0.137 m over
-  60k steps at ~2.6 µm/step). With the full bundle, S6 ends **71/71
+  crept without bound (measured on the intermediate build: seed 101 rising from ~0.016 m to
+  0.137 m across a 60k run). With the full bundle, S6 ends **71/71
   resting with max penetration 0** on 60k runs of both the canonical
   seed and the worst creeper, and 4/5 seeds fully deactivate within the
   original 20k window (the audit-era stack managed 3/5); canonical 3056
-  needs ~50k steps (sleep latency, penetration monotonically declining
-  throughout). An intermediate re-anchoring of criterion 2 (recorded in
+  freezes between 36k–38k steps (sleep latency; penetration stays in a
+  bounded ~1–3.6 mm band with no growth trend until the freeze). An intermediate re-anchoring of criterion 2 (recorded in
   this entry's history via git) proved unnecessary once the final defect
   fell. Measured-and-rejected alternative: raising the dense-island rest
   tolerance (premature island freezing under load explodes penetration

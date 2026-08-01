@@ -39,8 +39,9 @@ WS-G rerun `/tmp/mj_cmp_20260731`). Read the new
   live in [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
 
 Implementation packet executed by this session (WP-PG.50 candidate,
-local checkpoint commit `03046383e77` on `wp-pg-wsg-rebaseline-20260731`,
-never pushed): the solver-facing
+checkpoint commit `03046383e77` on `wp-pg-wsg-rebaseline-20260731`;
+note: the first two commits were pushed to origin on 2026-08-01 outside
+the session — the later commits remain local): the solver-facing
 3-contact clamp in `DARTCollisionDetector.cpp` was raised to the full
 4-contact manifold capacity, with pinned regression tests and a
 CHANGELOG entry (`#PENDING` link — fill at PR time). Full evidence and
