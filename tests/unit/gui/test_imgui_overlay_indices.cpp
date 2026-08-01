@@ -74,7 +74,9 @@ TEST(ImGuiOverlayIndices, PreservesLargeDrawListVertexOffsets)
       static_cast<int>(std::numeric_limits<ImDrawIdx>::max()));
 
   bool hasNonzeroVertexOffset = false;
-  for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
+  // CmdLists.Size, not the obsolete CmdListsCount mirror, which ImGui 1.92.9
+  // regressed to always report 0 (fixed upstream in 1.92.9b).
+  for (int listIndex = 0; listIndex < drawData->CmdLists.Size; ++listIndex) {
     for (const ImDrawCmd& command : drawData->CmdLists[listIndex]->CmdBuffer) {
       hasNonzeroVertexOffset |= command.VtxOffset != 0u;
     }
