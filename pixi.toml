@@ -373,6 +373,7 @@ build-coverage = { cmd = """
         --output-on-failure \
         --parallel 4 \
         --timeout 3000 \
+        --label-exclude no-coverage-value \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
 """, depends-on = [
   "config-coverage",

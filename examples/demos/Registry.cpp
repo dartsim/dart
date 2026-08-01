@@ -79,6 +79,7 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeMixedChainScene());
   scenes.push_back(makeAdaptiveSoftContactScene());
   scenes.push_back(makeSoftWormScene());
+  scenes.push_back(makeSoftFootSimbiconScene());
   scenes.push_back(makeSoftBodiesScene());
   scenes.push_back(makeSoftCubesScene());
   scenes.push_back(makeSoftOpenChainScene());

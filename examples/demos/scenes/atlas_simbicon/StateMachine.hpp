@@ -62,6 +62,10 @@ public:
   void addState(State* state);
   void setInitialState(State* state);
 
+  /// The state this machine was configured to start in. Not always mStates[0]:
+  /// the walking machines start mid-cycle.
+  State* getInitialState() const;
+
   /// Called when the controller switches to this state machine.
   void begin(double currentTime);
 
@@ -84,6 +88,7 @@ protected:
   std::string mName;
   std::vector<State*> mStates;
   State* mCurrentState;
+  State* mInitialState;
   double mBeginTime;
   double mEndTime;
   int mFrame;
