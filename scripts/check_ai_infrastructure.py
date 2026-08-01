@@ -145,7 +145,9 @@ APPROVED_CTEST_SELECTIONS = {
     "test_SoftFootSimbiconModel": {
         "arguments": (
             "--gtest_filter=SoftFootSimbiconModelTest.*"
-            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+            ":-SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet"
+            ":SoftFootSimbiconModelTest.MeasuresMotorNoiseToleranceForBothFeet"
+            ":SoftFootSimbiconModelTest.MeasuresNoisyFloorToleranceForBothFeet",
         ),
         "environment": (),
     },
@@ -153,6 +155,20 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": (
             "--gtest_filter="
             "SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_SoftFootSimbiconMotorNoiseSweep": {
+        "arguments": (
+            "--gtest_filter="
+            "SoftFootSimbiconModelTest.MeasuresMotorNoiseToleranceForBothFeet",
+        ),
+        "environment": (),
+    },
+    "test_SoftFootSimbiconNoisyFloorSweep": {
+        "arguments": (
+            "--gtest_filter="
+            "SoftFootSimbiconModelTest.MeasuresNoisyFloorToleranceForBothFeet",
         ),
         "environment": (),
     },

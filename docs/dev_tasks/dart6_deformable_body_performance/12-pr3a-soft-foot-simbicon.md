@@ -188,8 +188,58 @@ signal is point-mass-aware.**
   8000 N); settled contacts 51.4 -> 51.2. The confound was real and the
   conclusions survive it.
 
-`MeasuresRecoverablePushForBothFeet` asserts the paper's comparison
-(soft ≥ rigid) on same-run measurements.
+`MeasuresRecoverablePushForBothFeet` asserted the paper's comparison
+(soft ≥ rigid) on same-run measurements — superseded by the robustness
+re-measurement below.
+
+## Robustness re-measurement (2026-08-01) — the push ordering inverts
+
+While building the motor-noise and noisy-floor gates, both kept saturating
+(standing in place survives 100% held torque noise and 3.2 cm tiles) and
+then inverting suspiciously once coupled to a reference push. Probing the
+measurement itself exposed that the single-trajectory sweep the merged gate
+used samples a chaotic outcome map, not a threshold:
+
+- With 5 deterministic replicas per magnitude (root-X offsets of k*10 um
+  AND k*60 extra settle steps, so the ensemble samples five distinct push
+  arrival phases), the soft arm robustly recovers only 2000-4000 N; the
+  18000 N pocket the old sweep reported shrivels to 1/5 under phase
+  sampling. Soft single-trial outcomes flip with gait phase and with the
+  binary hosting identical objects. The rigid arm holds a majority through
+  8000 N.
+- The metric is now `robustRecoverablePush`: per-magnitude replica-ensemble
+  majority with prefix-threshold semantics (an isolated pocket above a
+  toppling interval is not a threshold), response curves published by every
+  gate. Three measurement-validity fixes came out of inspecting the
+  evidence captures: replicas stride the push phase (a fixed-phase ensemble
+  briefly read rigid at 12000 N under noise — a dither mirage), the tile
+  patch extends 3 m along the push axis (a pushed biped used to skate off
+  the 1.2 m patch and free-fall), and isUpright() bounds absolute pelvis
+  height (free fall preserves the pelvis-above-feet gap, so a biped
+  falling off the world read as standing).
+- Robust thresholds at shipped parameters: clean **soft 4000 N vs rigid
+  8000 N**; 20% held motor noise **4000 vs 4000** (the noise pulls the
+  rigid arm down to the soft arm's level); paper's 2 cm floor **2000 vs
+  14000** (dug-down tiles key the rigid foot against lateral sliding; the
+  soft arm collapses). No configuration shows a soft advantage. The
+  paper's soft-advantage ordering does not reproduce robustly; the parity
+  matrix carries the open gap.
+- Parameter scans (ensemble): kv 5e3-1e4 at damp 1e3-4e3 monotonizes the
+  soft response and lifts its ceiling to 6000 N — still below the rigid
+  8000 N; kv 1e3 collapses. Asset tuning alone does not restore the paper's
+  ordering.
+- Honest caveat on the damping decision above: its grid and basin numbers
+  were single-trajectory, so their robust-metric meaning is unverified. The
+  asset value stands on the contact-spreading result and the demo A/B; the
+  mechanism follow-up should re-evaluate it under the ensemble metric.
+- Mechanism follow-up (open): adapt the SIMBICON gains/strategy to soft
+  contact (the paper co-designed them) and audit SoftContactConstraint
+  solve quality under impulsive load; both are candidates for restoring the
+  paper's ordering at a grounded parameter regime.
+
+Gates now protect the measured floors (rigid/soft: clean 8000/4000, noise
+4000/4000, floor 14000/2000) and print the full curves; no soft ≥ rigid
+assertion is made anywhere until the gap closes.
 
 ## Constraints
 
