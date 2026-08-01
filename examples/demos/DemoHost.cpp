@@ -1333,8 +1333,13 @@ void DemoHost::renderPanels()
     const float tabBarH = 26.0f * scale;
     const float toolbarRows
         = std::ceil((1400.0f * scale) / std::max(320.0f, screenW));
+    // The cap trades toolbar space for viewport space when an extreme scale
+    // meets a small window (e.g. scale 4 in the default 1600x1000 wants ~74%
+    // of the height); past the cap the docked toolbar window scrolls
+    // vertically instead of losing controls, and the user can still drag the
+    // splitter or enlarge the window.
     const float topFraction = std::clamp(
-        (tabBarH + toolbarRows * toolbarRowH) / screenH, 0.05f, 0.35f);
+        (tabBarH + toolbarRows * toolbarRowH) / screenH, 0.05f, 0.45f);
     const float bottomFraction
         = std::clamp((200.0f * scale) / screenH, 0.10f, 0.40f);
     const float leftFraction
