@@ -30,30 +30,16 @@
  *   DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
-#define DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_
+#pragma once
+
+#include <dart/gui/detail/backend_fwd.hpp>
 
 #include <utils/Entity.h>
 
+#include <vector>
+
 #include <cstddef>
 #include <cstdint>
-
-namespace filament {
-
-class Camera;
-class Engine;
-class IndexBuffer;
-class Material;
-class MaterialInstance;
-class Scene;
-class Texture;
-class VertexBuffer;
-class View;
-
-} // namespace filament
-
-struct ImDrawData;
-struct ImGuiIO;
 
 namespace dart::gui::detail {
 
@@ -62,8 +48,13 @@ struct OverlayMesh
   utils::Entity entity;
   ::filament::VertexBuffer* vertexBuffer = nullptr;
   ::filament::IndexBuffer* indexBuffer = nullptr;
-  std::size_t vertexCount = 0;
-  std::size_t indexCount = 0;
+  /// One material instance per visible draw command beyond the first, so each
+  /// command can carry its own scissor rectangle.
+  std::vector<::filament::MaterialInstance*> clipMaterialInstances;
+  /// Vertex and index buffers grow monotonically and are replaced only when a
+  /// frame needs more room than the current allocation.
+  std::size_t vertexCapacity = 0;
+  std::size_t indexCapacity = 0;
 };
 
 struct ImGuiOverlay
@@ -98,5 +89,3 @@ void destroyConfiguredImGuiOverlay(
     ::filament::Engine& engine, ImGuiOverlay& overlay);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_IMGUI_OVERLAY_HPP_

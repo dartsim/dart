@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MEMORYMANAGER_HPP_
-#define DART_COMMON_MEMORYMANAGER_HPP_
+#pragma once
 
 #include <dart/common/frame_allocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
@@ -299,5 +298,3 @@ private:
 } // namespace dart::common
 
 #include <dart/common/detail/memory_manager-impl.hpp>
-
-#endif // DART_COMMON_MEMORYMANAGER_HPP_

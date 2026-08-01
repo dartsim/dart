@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SELECTION_HPP_
-#define DART_GUI_DETAIL_SELECTION_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/fwd.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/renderable.hpp>
@@ -51,13 +52,7 @@
 
 #include <cstddef>
 
-struct GLFWwindow;
-
 namespace dart::gui::detail {
-
-struct DartScene;
-struct FrameViewport;
-struct IkHandle;
 
 IkHandle* findIkHandle(
     DartScene& scene, dart::gui::RenderableId targetRenderableId);
@@ -255,5 +250,3 @@ private:
 };
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SELECTION_HPP_

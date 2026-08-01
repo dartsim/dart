@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SINGLETON_HPP_
-#define DART_COMMON_SINGLETON_HPP_
+#pragma once
 
 namespace dart {
 namespace common {
@@ -82,5 +81,3 @@ private:
 } // namespace dart
 
 #include <dart/common/detail/singleton-impl.hpp>
-
-#endif // DART_COMMON_SINGLETON_HPP_

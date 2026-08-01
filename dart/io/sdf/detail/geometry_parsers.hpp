@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_SDF_DETAIL_GEOMETRYPARSERS_HPP_
-#define DART_IO_SDF_DETAIL_GEOMETRYPARSERS_HPP_
+#pragma once
 
 #include "dart/io/export.hpp"
 
@@ -49,5 +48,3 @@ DART_IO_API dynamics::ShapePtr readGeometryShape(
     const common::ResourceRetrieverPtr& retriever);
 
 } // namespace dart::io::SdfParser::detail
-
-#endif // DART_IO_SDF_DETAIL_GEOMETRYPARSERS_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JOINT_HPP_
-#define DART_DYNAMICS_JOINT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/joint_aspect.hpp>
 #include <dart/dynamics/frame.hpp>
@@ -55,11 +54,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Joint;
-class BodyNode;
-class Skeleton;
-class DegreeOfFreedom;
 
 /// class Joint
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -1088,5 +1082,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_JOINT_HPP_

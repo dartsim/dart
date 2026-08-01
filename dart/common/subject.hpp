@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBJECT_HPP_
-#define DART_COMMON_SUBJECT_HPP_
+#pragma once
+
+#include <dart/common/fwd.hpp>
 
 #include <dart/export.hpp>
 
@@ -39,8 +40,6 @@
 
 namespace dart {
 namespace common {
-
-class Observer;
 
 /// The Subject class is a base class for any object that wants to report when
 /// it gets destroyed. This is useful for complex frameworks in which it is
@@ -82,5 +81,3 @@ protected:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_SUBJECT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_RESOURCE_HPP_
-#define DART_COMMON_RESOURCE_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -94,5 +93,3 @@ using ResourcePtr = std::shared_ptr<Resource>;
 
 } // namespace common
 } // namespace dart
-
-#endif // ifndef DART_COMMON_RESOURCE_HPP_

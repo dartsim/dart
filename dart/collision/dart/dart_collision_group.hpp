@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
+#pragma once
 
 #include <dart/collision/collision_group.hpp>
+#include <dart/collision/fwd.hpp>
+#include <dart/collision/native/fwd.hpp>
 
 #include <memory>
 
@@ -41,12 +42,6 @@
 
 namespace dart {
 namespace collision {
-
-namespace native {
-class PersistentManifoldCache;
-} // namespace native
-
-class DartCollisionScene;
 
 class DART_API DartCollisionGroup : public CollisionGroup
 {
@@ -129,5 +124,3 @@ protected:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_

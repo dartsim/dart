@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
-#define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -2746,5 +2745,3 @@ Eigen::VectorXd GenericJoint<ConfigSpaceT>::getSpatialToGeneralized(
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_GenericJoint_HPP_

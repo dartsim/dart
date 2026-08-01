@@ -36,22 +36,13 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/fwd.hpp>
+
 #include <memory>
 
 #include <cstddef>
 
-namespace dart::common {
-class MemoryAllocator;
-class MemoryManager;
-} // namespace dart::common
-
 namespace dart::simulation::compute {
-
-class WorldKinematicsGraph;
-
-namespace avbd_replay {
-struct RigidAvbdWarmStartReplayState;
-} // namespace avbd_replay
 
 /// Summary of the most recent deformable solver execution.
 struct DeformableSolverStats

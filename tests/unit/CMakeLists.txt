@@ -432,6 +432,23 @@ if(TARGET dart-gui AND TARGET dart-imgui-lib)
   )
 endif()
 
+set(dart_gui_imgui_test_target "")
+if(TARGET dart-imgui-lib)
+  set(dart_gui_imgui_test_target dart-imgui-lib)
+elseif(TARGET imgui::imgui)
+  set(dart_gui_imgui_test_target imgui::imgui)
+endif()
+if(TARGET dart-gui-core AND dart_gui_imgui_test_target)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiOverlayIndices gui/test_imgui_overlay_indices.cpp
+  )
+  target_link_libraries(
+    UNIT_gui_ImGuiOverlayIndices
+    dart-gui-core
+    ${dart_gui_imgui_test_target}
+  )
+endif()
+
 if(TARGET dart-io)
   dart_add_test("unit" test_io_readNone io/test_read.cpp)
   target_link_libraries(test_io_readNone dart-io)

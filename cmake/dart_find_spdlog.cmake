@@ -27,7 +27,7 @@ if(NOT spdlog_FOUND AND NOT TARGET spdlog::spdlog)
   FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.15.1
+    GIT_TAG v1.17.0
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
   )
@@ -43,6 +43,6 @@ if(NOT spdlog_FOUND AND NOT TARGET spdlog::spdlog)
 
   FetchContent_MakeAvailable(spdlog)
 
-  set(spdlog_VERSION 1.15.1 CACHE STRING "spdlog version" FORCE)
+  set(spdlog_VERSION 1.17.0 CACHE STRING "spdlog version" FORCE)
   set(spdlog_FOUND TRUE CACHE BOOL "spdlog found via FetchContent" FORCE)
 endif()

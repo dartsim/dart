@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAPEFRAME_HPP_
-#define DART_DYNAMICS_SHAPEFRAME_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/shape_frame_aspect.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
@@ -317,5 +316,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SHAPEFRAME_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_NODE_HPP_
-#define DART_DYNAMICS_DETAIL_NODE_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -540,5 +539,3 @@ public:                                                                        \
 #define DART_SKEL_SPECIALIZED_NODE_TEMPLATE(SkelType, NodeName)                \
   DART_SKEL_SPECIALIZED_NODE_TEMPLATE_IRREGULAR(                               \
       SkelType, NodeName, NodeName##s);
-
-#endif // DART_DYNAMICS_DETAIL_NODE_HPP_

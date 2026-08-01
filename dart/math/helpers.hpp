@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_HELPERS_HPP_
-#define DART_MATH_HELPERS_HPP_
+#pragma once
 
 // Standard Libraries
 #include <array>
@@ -606,5 +605,3 @@ inline Eigen::Vector3d Random()
 } // namespace Color
 
 } // namespace dart
-
-#endif // DART_MATH_HELPERS_HPP_

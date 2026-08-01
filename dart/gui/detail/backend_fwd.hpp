@@ -30,42 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISION_FWD_HPP_
-#define DART_COLLISION_COLLISION_FWD_HPP_
+#pragma once
 
-#include <memory>
+// Forward declarations for the third-party rendering and UI backends used by
+// dart::gui. Neither Filament, GLFW, nor Dear ImGui ships a forward-declaration
+// header, so this file is the single place where DART declares their types;
+// gui headers include it instead of repeating the declarations.
 
-namespace dart {
-namespace dynamics {
+namespace filament {
 
-class BodyNode;
-class MetaSkeleton;
-class Shape;
-class ShapeFrame;
-class ShapeNode;
-class Skeleton;
+class Camera;
+class ColorGrading;
+class Engine;
+class IndexBuffer;
+class IndirectLight;
+class Material;
+class MaterialInstance;
+class Renderer;
+class Scene;
+class Skybox;
+class SwapChain;
+class Texture;
+class VertexBuffer;
+class View;
 
-using ShapePtr = std::shared_ptr<Shape>;
-using ConstShapePtr = std::shared_ptr<const Shape>;
-using WeakShapePtr = std::weak_ptr<Shape>;
-using WeakConstShapePtr = std::weak_ptr<const Shape>;
+} // namespace filament
 
-using MetaSkeletonPtr = std::shared_ptr<MetaSkeleton>;
-using ConstMetaSkeletonPtr = std::shared_ptr<const MetaSkeleton>;
-using WeakMetaSkeletonPtr = std::weak_ptr<MetaSkeleton>;
-using WeakConstMetaSkeletonPtr = std::weak_ptr<const MetaSkeleton>;
+struct GLFWwindow;
 
-template <class BodyNodeT>
-class TemplateBodyNodePtr;
-template <class BodyNodeT>
-class TemplateWeakBodyNodePtr;
-
-using BodyNodePtr = TemplateBodyNodePtr<BodyNode>;
-using ConstBodyNodePtr = TemplateBodyNodePtr<const BodyNode>;
-using WeakBodyNodePtr = TemplateWeakBodyNodePtr<BodyNode>;
-using WeakConstBodyNodePtr = TemplateWeakBodyNodePtr<const BodyNode>;
-
-} // namespace dynamics
-} // namespace dart
-
-#endif // DART_COLLISION_COLLISION_FWD_HPP_
+struct ImDrawData;
+struct ImGuiIO;

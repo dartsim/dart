@@ -76,6 +76,9 @@ compatibility remains on the active DART 6 LTS branch._
   compatibility-only. ([#2047](https://github.com/dartsim/dart/pull/2047),
   [#2070](https://github.com/dartsim/dart/pull/2070),
   [#2475](https://github.com/dartsim/dart/pull/2475))
+- Removed the installed `dart/collision/collision_fwd.hpp`, which duplicated a
+  subset of `dart::dynamics` declarations; include `<dart/dynamics/fwd.hpp>`
+  instead ([#3419](https://github.com/dartsim/dart/pull/3419))
 - Replaced pybind11 dartpy bindings with nanobind and flattened the dartpy
   namespace; legacy modules/camelCase aliases are transition aids, not the DART
   7 public contract. ([#2249](https://github.com/dartsim/dart/pull/2249),
@@ -319,6 +322,26 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### GUI, Examples, and Tutorials
 
+- Added opt-in memory-layout diagnostics to `dart-demos` with exact
+  address-ordered World allocator regions, typed ECS page overlays, separate
+  logical capacity/history/process RSS, and explicit evidence limits. The demo
+  panel/session/model are excluded from the `dart-demos` executable by the
+  default-OFF `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS` build option, while enabled
+  builds retain a separate runtime collection toggle. World-side instrumentation
+  is gated by the new default-OFF `DART_BUILD_MEMORY_DIAGNOSTICS` option; when
+  it is off `World` stores no diagnostics state and the step path contains no
+  diagnostics instruction, while `getMemoryDiagnostics()` still reports every
+  value it can read live. Extended the C++ and dartpy snapshots with opt-in
+  region details.
+  ([#3378](https://github.com/dartsim/dart/pull/3378))
+- Fixed Dear ImGui overlay corruption in dense panels. The Filament adapter now
+  advertises `ImGuiBackendFlags_RendererHasVtxOffset`, flattens draw-list
+  indices into a 32-bit buffer as `vertexBase + VtxOffset + rawIndex`, and
+  submits one scissored primitive per visible command. Previously a draw list
+  exceeding 65,535 vertices wrapped its 16-bit indices into stray geometry and
+  discarded `ImDrawCmd::ClipRect`, letting scrolled-off geometry escape the
+  panel viewport. This applies to every GUI build, not only diagnostics builds.
+  ([#3378](https://github.com/dartsim/dart/pull/3378))
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.
   ([#2466](https://github.com/dartsim/dart/pull/2466))
@@ -404,6 +427,13 @@ compatibility remains on the active DART 6 LTS branch._
   backend-neutral lie-group batch helpers, allocator improvements, logging and
   profiling cleanup, and C++23-friendly constants/utilities.
   ([#2490](https://github.com/dartsim/dart/pull/2490))
+- Consolidated forward declarations so each namespace declares its types once in
+  its own `fwd.hpp`, adding `dart/common/fwd.hpp` and
+  `dart/math/optimization/fwd.hpp`; `pixi run check-fwd-headers` keeps consumers
+  from hand-rolling their own declarations ([#3419](https://github.com/dartsim/dart/pull/3419))
+- Standardized first-party headers on `#pragma once`, replacing 396 macro
+  include guards; vendored code and generated files keep their upstream form,
+  and `pixi run check-header-guards` enforces the convention ([#3420](https://github.com/dartsim/dart/pull/3420))
 
 #### Build, Packaging, and Developer Tooling
 
@@ -419,10 +449,42 @@ compatibility remains on the active DART 6 LTS branch._
   image-capable agents inspect and reconcile captures instead of treating pixel
   checks as scene understanding, keeps bounds and viewport-aware camera fitting
   in the shared GUI core, points reviewers at representative temporal frames,
-  and gates evidence publication on a recorded text/image semantic verdict.
+  and gates evidence publication on a recorded text/image semantic verdict
+  while revalidating selected artifact hashes, sizes, and claim coverage before
+  upload. GitHub release evidence uses content-addressed asset names and records
+  each path/size/digest/URL binding so later publications cannot replace bytes
+  behind an earlier PR's URL; reuse requires an exact remote digest, size, and
+  completed-upload state. The publisher now freezes every selected file before
+  remote action, validates conservative release tags, records repository/tag
+  provenance, and re-queries the completed release to verify the full remote
+  asset set before reporting success. Mutating publication now atomically
+  invalidates stale local success before remote changes, persists explicit
+  partial/unverified attempt state and recovery guidance after failures, and
+  accepts success URLs only from validated final GitHub asset metadata.
+  Retries reuse absent or exact completed assets but fail closed on same-name
+  incomplete/unverifiable state pending an explicitly approved exact deletion
+  or a new tag.
   Corrected the shared box-stack evidence fixture so it starts with shallow
   contacts instead of deep interpenetration.
-  ([#3403](https://github.com/dartsim/dart/pull/3403))
+  ([#3403](https://github.com/dartsim/dart/pull/3403),
+  [#3411](https://github.com/dartsim/dart/pull/3411))
+- Extended the task-shaped AI model-routing guidance to the Claude Code lane
+  (Claude Fable 5 and Opus 5): `docs/ai/README.md` now keeps one bounded
+  routing entry per validated tool lane, the reusable model-upgrade workflow
+  routes through that single owner instead of duplicating per-family tiers,
+  and the simulation image-review guidance names image-capable targets
+  capability-neutrally across both lanes.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
+- Fixed the trajectory recorder so its `--factory module:callable` path works
+  instead of tripping its own scene/factory exclusivity guard.
+  ([#3416](https://github.com/dartsim/dart/pull/3416))
+- Made canonical Python, C++, AI-infrastructure, and visual-verification test
+  gates fail closed against ambient pytest/GoogleTest selectors, plugin
+  injection, collection-only success, and empty test inventories, with
+  model-independent semantic probes and an explicitly scoped Linux Debug smoke
+  preserving intentional test selection across Linux, macOS, and Windows task
+  paths.
+  ([#3412](https://github.com/dartsim/dart/pull/3412))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs the bounded staged agent-structure gate, with tracked Claude Code
   and Codex pre-tool guards enforcing the same policy during agent sessions;
@@ -438,8 +500,15 @@ compatibility remains on the active DART 6 LTS branch._
   [#2163](https://github.com/dartsim/dart/pull/2163),
   [#2216](https://github.com/dartsim/dart/pull/2216))
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
-  fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
-  gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+  EnTT 4, urdfdom 6, fmt/spdlog updates, Assimp 6 support, and C++23
+  standard-library feature gates.
+  ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Raised the URDF stack to urdfdom 6 / urdfdom_headers 3, which adds URDF
+  specification 1.2 support. Existing URDFs are unaffected: the relaxed
+  `limit` defaults (missing `effort`/`velocity` resolving to infinity instead
+  of being rejected) apply only to documents that opt in with
+  `<robot version="1.2">`, and documents without a `version` attribute keep
+  the previous parse behavior.
 - Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
   metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
   interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))

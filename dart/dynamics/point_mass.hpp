@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_POINTMASS_HPP_
-#define DART_DYNAMICS_POINTMASS_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/helpers.hpp>
 
@@ -44,11 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class EllipsoidShape;
-class SoftBodyNode;
-
-class PointMassNotifier;
 
 ///
 class DART_API PointMass : public common::Subject
@@ -705,5 +700,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_POINTMASS_HPP_

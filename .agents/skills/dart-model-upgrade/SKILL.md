@@ -133,16 +133,20 @@ well it investigates simulation state with text-first and visual/debug evidence.
    where possible, record the exact limitation, and do not turn structural tool
    availability into a model-quality claim.
 
-6. **Route model and reasoning by task shape.** For the GPT-5.6 family, use Sol
-   for the hardest ambiguous work, Terra for everyday or read-heavy work, and
-   Luna for clear repeatable work. Max gives one difficult task more reasoning
-   time. Ultra is for independently parallelizable work when the user
-   authorized delegation. Most tasks need neither. An explicitly requested Sol
-   Max evaluation must exercise that lane, not turn it into a global default.
-   For another target family, derive routing from its refreshed guidance rather
-   than carrying these names forward. Update or replace this bounded
-   target-specific example when it becomes stale; do not clone the workflow or
-   append an ever-growing section for every model family.
+6. **Route model and reasoning by task shape.** Derive routing for the target
+   family from its refreshed official guidance, then record the result in the
+   model-routing owner, `docs/ai/README.md` § "Model Routing", which keeps one
+   bounded entry per validated tool lane. Match capability tiers to task
+   shape: the top tier for the hardest ambiguous work, the middle tier for
+   everyday or read-heavy work, and the light tier for clear repeatable work.
+   Do not carry one family's tier or reasoning-mode names into another
+   family's guidance.
+   Deeper reasoning modes give one difficult task more time; parallel lanes
+   need explicit user authorization for delegation; most tasks need neither.
+   An explicitly requested top-tier evaluation must exercise that lane, not
+   turn it into a global default. Replace a stale per-family entry in the
+   owner doc; do not clone the workflow or append a section per model family
+   here.
 7. **Implement only in `apply` mode.** In `audit-only`, skip implementation and
    continue only with non-mutating verification and the evidence report. In
    `apply`, implement the smallest supported delta. Keep outcome, success

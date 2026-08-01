@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_HTTPRESOURCERETRIEVER_HPP_
-#define DART_IO_HTTPRESOURCERETRIEVER_HPP_
+#pragma once
 
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
@@ -122,5 +121,3 @@ using HttpResourceRetrieverPtr = std::shared_ptr<HttpResourceRetriever>;
 
 } // namespace io
 } // namespace dart
-
-#endif // ifndef DART_IO_HTTPRESOURCERETRIEVER_HPP_

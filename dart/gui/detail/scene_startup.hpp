@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SCENE_STARTUP_HPP_
-#define DART_GUI_DETAIL_SCENE_STARTUP_HPP_
+#pragma once
 
+#include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/debug_overlay.hpp>
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/detail/renderable_resources.hpp>
 #include <dart/gui/renderable.hpp>
 
@@ -41,15 +42,7 @@
 #include <optional>
 #include <vector>
 
-namespace filament {
-class Engine;
-class Scene;
-} // namespace filament
-
 namespace dart::gui::detail {
-
-struct DartScene;
-enum class ExampleScene;
 
 struct InitialSceneState
 {
@@ -70,5 +63,3 @@ std::optional<InitialSceneState> createInitialSceneState(
     std::ostream& errors);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SCENE_STARTUP_HPP_

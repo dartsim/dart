@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#pragma once
 
 #include <Eigen/Eigen>
 #include <ode/ode.h>
@@ -47,5 +46,3 @@ public:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_ODE_ODETYPES_HPP_

@@ -30,9 +30,9 @@
  *   DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SCREENSHOT_HPP_
-#define DART_GUI_DETAIL_SCREENSHOT_HPP_
+#pragma once
 
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/profile.hpp>
 
 #include <condition_variable>
@@ -43,8 +43,6 @@
 #include <cstdint>
 
 namespace dart::gui::detail {
-
-struct FilamentRenderContext;
 
 struct ScreenshotCapture
 {
@@ -81,5 +79,3 @@ bool finalizeScreenshotCapture(
     dart::gui::ProfileAccumulator& profile);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SCREENSHOT_HPP_

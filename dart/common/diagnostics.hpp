@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DIAGNOSTICS_HPP_
-#define DART_COMMON_DIAGNOSTICS_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -86,5 +85,3 @@
   #define DART_SUPPRESS_CPP_WARNING_BEGIN
   #define DART_SUPPRESS_CPP_WARNING_END
 #endif
-
-#endif // DART_COMMON_DIAGNOSTICS_HPP_

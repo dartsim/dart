@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_LCP_LCPTYPES_HPP_
-#define DART_MATH_LCP_LCPTYPES_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -568,5 +567,3 @@ public:
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_LCP_LCPTYPES_HPP_

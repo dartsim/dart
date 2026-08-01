@@ -30,9 +30,10 @@
  *   DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_INPUT_HPP_
-#define DART_GUI_DETAIL_INPUT_HPP_
+#pragma once
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
@@ -40,13 +41,7 @@
 #include <optional>
 #include <vector>
 
-struct GLFWwindow;
-struct ImGuiIO;
-
 namespace dart::gui::detail {
-
-struct DartScene;
-class SelectionController;
 
 struct ApplicationInputState
 {
@@ -112,5 +107,3 @@ void updateCameraController(
     = dart::gui::OrbitCameraControlOptions{});
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_INPUT_HPP_

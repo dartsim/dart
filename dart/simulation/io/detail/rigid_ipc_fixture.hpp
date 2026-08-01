@@ -34,6 +34,9 @@
 
 #include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
+
+#include <dart/collision/native/fwd.hpp>
 
 #include <Eigen/Core>
 
@@ -42,15 +45,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-namespace dart::collision::native {
-struct CcdOption;
-struct CcdPrimitiveResult;
-} // namespace dart::collision::native
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::io::detail {
 

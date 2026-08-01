@@ -30,16 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
-#define EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_
+#pragma once
+
+#include "fwd.hpp"
 
 #include <dart/all.hpp>
 
 #include <Eigen/Dense>
 
 #include <vector>
-
-class StateMachine;
 
 /// @brief Implementation of Simbicon (Simple biped locomotion control) for
 /// Atlas robot
@@ -199,5 +198,3 @@ private:
   /// @brief Whether to print messages about the internal state
   bool mVerbosity;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_

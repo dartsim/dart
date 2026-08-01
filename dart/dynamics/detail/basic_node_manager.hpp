@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
-#define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -545,5 +544,3 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_

@@ -38,6 +38,7 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/stl_allocator.hpp>
 
 #include <Eigen/Core>
@@ -50,15 +51,6 @@
 #include <span>
 #include <string_view>
 #include <vector>
-
-namespace dart::common {
-class MemoryAllocator;
-class MemoryManager;
-} // namespace dart::common
-
-namespace dart::simulation::comps {
-struct MultibodyStructure;
-} // namespace dart::simulation::comps
 
 namespace dart::simulation::compute {
 
@@ -124,8 +116,6 @@ private:
       const Eigen::Vector3d& gravity,
       MultibodyDynamicsTerms& result);
 };
-
-struct InverseDynamicsDerivatives;
 
 /// Compute the joint-space mass matrix and bias (Coriolis/centrifugal and
 /// gravity) generalized forces for a single multibody.

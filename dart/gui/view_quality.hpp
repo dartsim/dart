@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_VIEW_QUALITY_HPP_
-#define DART_GUI_VIEW_QUALITY_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
@@ -88,5 +87,3 @@ DART_GUI_API ViewQualityReport assessView(
     const ProjectionOptions& options = {});
 
 } // namespace dart::gui
-
-#endif // DART_GUI_VIEW_QUALITY_HPP_

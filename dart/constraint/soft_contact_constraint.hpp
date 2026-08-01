@@ -30,27 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
-#define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
+#pragma once
 
 #include <dart/constraint/constraint_base.hpp>
 
 #include <dart/collision/collision_detector.hpp>
+#include <dart/collision/fwd.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/math_types.hpp>
 
 namespace dart {
-
-namespace collision {
-class SoftCollisionInfo;
-} // namespace collision
-
-namespace dynamics {
-class BodyNode;
-class SoftBodyNode;
-class PointMass;
-class Skeleton;
-} // namespace dynamics
 
 namespace constraint {
 
@@ -258,5 +249,3 @@ private:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_

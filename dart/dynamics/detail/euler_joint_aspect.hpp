@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_EULERJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_EULERJOINTASPECT_HPP_
+#pragma once
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
 #include <dart/export.hpp>
@@ -41,8 +41,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class EulerJoint;
 
 namespace detail {
 
@@ -91,5 +89,3 @@ using EulerJointBase = common::EmbedPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_EULERJOINTASPECT_HPP_

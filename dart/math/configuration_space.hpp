@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_CONFIGURATIONSPACE_HPP_
-#define DART_MATH_CONFIGURATIONSPACE_HPP_
+#pragma once
 
 #include <dart/math/geometry.hpp>
 #include <dart/math/math_types.hpp>
@@ -140,5 +139,3 @@ typename SpaceT::Vector integrateVelocity(
 } // namespace dart
 
 #include <dart/math/detail/configuration_space.hpp>
-
-#endif // DART_MATH_CONFIGURATIONSPACE_HPP_

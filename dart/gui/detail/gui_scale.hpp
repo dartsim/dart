@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_GUI_SCALE_HPP_
-#define DART_GUI_DETAIL_GUI_SCALE_HPP_
+#pragma once
 
 #include <optional>
 #include <string_view>
@@ -71,5 +70,3 @@ GuiWindowSize resolveAutomaticGuiWindowSize(
     bool automaticHeight);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_GUI_SCALE_HPP_

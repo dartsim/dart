@@ -9,16 +9,18 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Stop Point
 
-At the branch-tip closeout commit containing this handoff, the public
-Sequential Impulse (SI) pair-row slice, its warm-start fix, the subsequent
-review fixes, and a source-bound six-capture evidence reseal are closed. One
-strict quiet-host current-source benchmark is accepted, the AVBD -> VBD -> SI
-packets are regenerated from it, all 192 focused tests pass, and the uncached
-default and CUDA `test-all` gates pass for the unchanged runtime/capture source
-tree. Independent code and architecture/docs/claims reviews approve the final
-closeout tree with no actionable finding. If that commit is not yet the local
-branch tip, preserve the dirty scope and finish only its final lint and local
-commit before continuing.
+At the branch-tip merge commit containing this handoff, the public Sequential
+Impulse (SI) pair-row closeout at `37178193ccf` is integrated with local `main`
+snapshot `b15e7a652b7`. The two merge conflicts were reconciled without
+changing solver-family ownership: the shared forward declarations follow
+`main`, while SI keeps its bounds-safe span indexing and the boxed-LCP scratch
+path keeps `main`'s allocator-backed implementation. The merge passes an
+uncached Release build and all 81 enabled simulation executables. Six captures,
+three semantic reviews, one strict quiet-host benchmark, and the AVBD -> VBD ->
+SI packet chain are regenerated against the merged source digest. All 192
+focused tests, the 58-packet corpus checker, the 176-row parity checker, and the
+18-row allocation matrix pass. The final default/CUDA aggregate gate results
+are recorded below.
 
 The 88-row VBD and 88-row AVBD contracts remain fail-closed with no complete
 rows. The local three-method Figure 13 packet is useful partial evidence, not
@@ -31,31 +33,25 @@ numbers. Do not reduce this to an MVP, a CPU-only lane, or one wall demo.
 
 - Worktree: `/home/js/dev/dartsim/dart/task_5`
 - Branch: `feature/vbd-avbd-paper-parity-contract`
-- Pre-closeout local `HEAD`: `d9af744a9cb0763033d76e01381dbf7c1e6ecaa9`
-- Resume tip: the local commit containing this handoff; verify its live SHA
-- Last-fetched upstream ref:
-  `origin/feature/vbd-avbd-paper-parity-contract` at the same SHA (`+0/-0`)
-- Current remote-tracking `origin/main` snapshot:
-  `b15e7a652b766897a8a69a121742ef5973c77f3c` (nine commits beyond local
-  `main`)
+- Pre-merge local `HEAD`: `37178193ccf090843c5df6afeb1221d090f2b673`
+- Resume tip: the branch-tip merge commit containing this handoff; verify its
+  live SHA
+- Last-fetched feature upstream ref:
+  `origin/feature/vbd-avbd-paper-parity-contract` at
+  `d9af744a9cb0763033d76e01381dbf7c1e6ecaa9`
+- Merged local and remote-tracking `main` snapshot:
+  `b15e7a652b766897a8a69a121742ef5973c77f3c`
 
 No fetch, push, PR edit, review trigger, or other GitHub mutation was performed
-while preparing this handoff. Treat the upstream SHA as a local snapshot, not a
-fresh remote assertion. Verify live state before any external action, and do
-not push or mutate GitHub without explicit maintainer/user approval.
+while closing SI or integrating `main`. Treat the recorded remote-tracking SHAs
+as local snapshots, not fresh remote assertions. Verify live state before any
+external action, and do not push or mutate GitHub without explicit
+maintainer/user approval.
 
-Immediately before the closeout commit, the working tree intentionally had 57
-tracked modifications and six untracked files. The commit containing this
-handoff should leave that scope clean. If resuming before it exists, preserve
-the dirty tree exactly; do not reset, stash, rebase, switch worktrees, or
-discard files. The six pre-closeout untracked files are:
-
-- `dart/simulation/detail/rigid_pair_constraint.hpp`
-- `docs/plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json`
-- `python/examples/demos/scenes/sequential_impulse_paper_breakable_wall.py`
-- `python/tests/unit/test_write_avbd_paper_sequential_impulse_comparison_packet.py`
-- `scripts/capture_source_provenance.py`
-- `scripts/write_avbd_paper_sequential_impulse_comparison_packet.py`
+The merge commit containing this handoff should leave the tracked scope clean
+and no task-created untracked files. If resuming before that commit exists,
+preserve the in-progress merge exactly; do not reset, stash, rebase, switch
+worktrees, abort the merge, or discard files.
 
 The local commit ladder above `main` is:
 
@@ -69,7 +65,8 @@ The local commit ladder above `main` is:
 | `131981788fa` | Articulated finite load and fracture accounting   |
 | `646b447d6cc` | Public AVBD solver and Figure 13 evidence         |
 | `d9af744a9cb` | Public fixed-penalty VBD comparison               |
-| branch tip    | Public SI pair rows and Figure 13 comparison      |
+| `37178193ccf` | Public SI pair rows and Figure 13 comparison      |
+| branch tip    | Merge local `main` snapshot `b15e7a652b7`         |
 
 ## Current SI Slice
 
@@ -123,10 +120,10 @@ in AVBD -> VBD -> SI order.
 
 ### Correctness and aggregate gates
 
-- The exact current tree passes an uncached Release build and all 79 enabled
-  simulation executables in 906.85 seconds (the two aggregate wrappers remain
-  intentionally disabled). The complete exact-current-tree Python suite also
-  passes with 1,711 tests passed and 20 expected skips in 238.72 seconds.
+- The merged tree passes an uncached Release build and all 81 enabled
+  simulation executables in 123.64 seconds (the two aggregate wrappers remain
+  intentionally disabled). The final aggregate default/CUDA results are
+  recorded below.
 - The exact current checker/capture/writer surface passes all 192 focused tests,
   including required top-level paper-capture provenance, exact ordered
   writer-owned source lists, required self-method medians, exact timing-ratio
@@ -137,25 +134,33 @@ in AVBD -> VBD -> SI order.
   chain bind the same digest.
 - The complete post-fix, post-reseal tree passes uncached default `test-all`
   with all six phases and uncached CUDA `test-all` with all seven phases. The
-  CUDA run passed all 79 enabled simulation executables (the two aggregate
-  wrappers remain intentionally disabled) and its CUDA C++ test/benchmark
-  smoke path. Rerun affected gates if a review fix changes covered source. A
-  green CUDA environment gate still does **not** close the missing VBD/AVBD
-  solver GPU-parity rows.
+  CUDA run passed 213 core C++ tests, 80 runnable simulation tests with two
+  aggregate wrappers intentionally disabled, all eight CUDA device tests, and
+  all nine benchmark-smoke commands. Its complete Python and documentation
+  phases also passed; no exact pytest count is claimed from the aggregate
+  runner's captured output. Rerun affected gates if a review fix changes
+  covered source. A green CUDA environment gate still does **not** close the
+  missing VBD/AVBD solver GPU-parity rows.
 
 ### Source and benchmark provenance
 
 - Current capture-source digest:
-  `556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12`
+  `b3f102b53c820809c0a8b34c0bf3002853b3b1e79ce17f56fb6380d10cccfd51`
 - Benchmark translation-unit digest:
   `f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370`
 - Accepted current-source benchmark:
-  `/tmp/plan104-figure13-reseal.FTkRfX/figure13-three-method-accepted.json`
+  `/tmp/plan104-figure13-fwd-merge.VfZPUI/figure13-three-method.json`
   (SHA-256
-  `c2c81c26ca0fa96d1cf11da4c5a166a3a2eb7ead9b80aafac207c20f03cf7c67`).
-  Median CPU costs/CVs are 8.612602 ms/2.04% AVBD,
-  8.302657 ms/1.94% VBD, and 14.296125 ms/2.12% SI.
-- Rejected current-source attempts in
+  `b377ef3e307a3f5ebbe935ff3c4abcace477cfbb92062296947b4b3537d0427d`).
+  Median CPU costs/CVs are 9.053841 ms/0.57% AVBD,
+  8.953167 ms/1.79% VBD, and 14.783755 ms/0.48% SI. The initial 1-minute load
+  average was 0.76; an armed concurrent watchdog observed no competing build/test
+  workload during the 18-second run.
+- The earlier merged-source packet root
+  `/tmp/plan104-figure13-main-merge.aVseEf` is preserved but rejected because
+  the subsequent forward-declaration owner fix changed the capture-source
+  digest. Its captures, benchmark, and packets are historical non-evidence.
+- Historical rejected pre-merge attempts remain in
   `/tmp/plan104-figure13-reseal.FTkRfX`:
   - `figure13-three-method.json`: CPU CVs 4.46% AVBD, 7.47% VBD, and 2.51% SI;
   - `figure13-three-method-clean.json`: a fresh external-load spike produced
@@ -168,10 +173,10 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 The regenerated AVBD/VBD/SI packet SHA-256 values are, in dependency order,
-`3e15adb9093c10567c0f8c22c5f8e8ad4e5d47a7acd5aca7a107fb97de7fc54c`,
-`9f8e6dbc9cb2f37af5d268fa83c13e67f3185cb39e14cebf413a288b6ee298d8`,
-and `07151151acec718e2e851e92af2dd127f2833ee65f049445624ccffd29233ce9`.
-VBD/AVBD is 0.9640x, SI/AVBD is 1.6599x, and SI/VBD is 1.7219x. Outcomes
+`494f07ff9b26e61e0e5aa9a8e487d1e94975dca0ea17b0216d1d80f411480391`,
+`96652e9c625a4c6307a10ba6a763db26ff03e5f4f2c3749fb4911bb7b40a144b`,
+and `6ee2b5242dbdbe39fa2f17b84259bcd54f4a6a492e61a279962d28d96be425ae`.
+VBD/AVBD is 0.9889x, SI/AVBD is 1.6329x, and SI/VBD is 1.6512x. Outcomes
 intentionally differ, and there is no source achieved-accuracy or
 same-hardware denominator for this reconstructed scene; no raw cost ratio is a
 speedup, parity, or quality claim.
@@ -179,7 +184,7 @@ speedup, parity, or quality claim.
 ### Visual evidence
 
 The temporary evidence root is
-`/tmp/plan104-figure13-reseal.FTkRfX`.
+`/tmp/plan104-figure13-fwd-merge.VfZPUI`.
 All six
 1280x720 captures passed engine ViewReports, pixel-integrity checks, and
 separate original-resolution semantic review. The review records are
@@ -188,12 +193,12 @@ separate original-resolution semantic review. The review records are
 
 | Method/checkpoint | Image SHA-256                                                      | Assessed observation                                    |
 | ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
-| AVBD frame 60     | `1d72ad775b690494372585ba9f91eb751aaefb2ba6c94a2466c9009ace94c3d5` | Globally standing wall with visible displacement damage |
-| AVBD frame 120    | `199c4f6d676a65c59403da39adce607ace101ac55674f1766c0be6deaf4954d7` | Standing retained structure after fracture              |
-| VBD frame 18      | `a94339bf5f07c337133ceb5790b96db33e90471cf24abca7a15f6efccb4d0676` | Bend without fracture                                   |
-| VBD frame 120     | `039ee1fe05fc7fc0c350da8818be4acc7d812d7d13fcab481b18562adc84751e` | Recovery with all attachments retained                  |
-| SI frame 14       | `24cff2be00f71a3ed24216e577d7a6f3d9519e69d076c724a59f4a1ac108ddee` | Initial fracture while placement remains                |
-| SI frame 120      | `e1f9ecfc683fb60974a6ca76905a4f40b6b0a981e53463af230b7241cc40c97f` | Retained-row failure and collapse                       |
+| AVBD frame 60     | `e0a998b1710f36e1e3b82bfeb3f20c18d99e42ad8f429f42321e364abcdc246e` | Globally standing wall with visible displacement damage |
+| AVBD frame 120    | `a75dfc58f790864c9bad224d8c658eead3134a14362cf4bffd0e6a2744e77af9` | Standing retained structure after fracture              |
+| VBD frame 18      | `f42b029583607aea696edfa983bde6aaa9815952ff5fae798bfd858831770c92` | Bend without fracture                                   |
+| VBD frame 120     | `bd51bb4a2f35168b52fec76aa366567905239b31cc7c47a7c349072f1b11774e` | Recovery with all attachments retained                  |
+| SI frame 14       | `41c4e781d0a2d864883bea0af2bf9c46380a3dfbc46c30422293b7ca6fd92019` | Initial fracture while placement remains                |
+| SI frame 120      | `665ec2b3b9c3c5a857666ab4304bb59322709cca9ebbaf9e1e4d3c3d26bc6e36` | Retained-row failure and collapse                       |
 
 The pinned paper inputs used for adjudication were
 `/tmp/dart-vbd-avbd-parity.teIxO8/avbd.pdf` (SHA-256
@@ -206,29 +211,32 @@ paper input; never weaken a packet because a temporary artifact disappeared.
 
 ### Review state
 
-The first role-separated review pair found the stale CV claim and the
+The first pre-merge role-separated review pair found the stale CV claim and the
 distance-spring warm-start defect described above. A subsequent architecture
 review found four more current-tree gaps: the wall claim lacked exact broken
 identities and retained-row residuals, packet checking did not fail closed on
 source or transitive-link drift, shared SI/AVBD pair geometry still had AVBD
 ownership, and one rejection diagnostic was not solver-neutral. The current
 tree addresses those findings and reseals all six captures, the accepted
-benchmark, and the tracked packet chain to the new source digest. Final
-independent code review approved the complete code/evidence tree. Final
-architecture/docs/claims review then found two remaining fail-closed gaps: the
-canonical Figure 13/video rows omitted the SI packet, and legacy packet names
-were not pinned to their exact historical schema versions. The closeout tree
-adds the SI evidence links, preserves the honest XPBD/CUDA/performance
-blockers, pins each legacy name to version 1 or 3 with downgrade mutation
-coverage, corrects active schema-version prose to version 4, and passes both
-fresh reviews with no actionable finding.
+benchmark, and the tracked packet chain to the new source digest. The final
+pre-merge independent code review approved the complete SI code/evidence tree.
+The final pre-merge architecture/docs/claims review then found two remaining
+fail-closed gaps: the canonical Figure 13/video rows omitted the SI packet, and
+legacy packet names were not pinned to their exact historical schema versions.
+The SI closeout added the evidence links, preserved the honest
+XPBD/CUDA/performance blockers, pinned each legacy name to version 1 or 3 with
+downgrade mutation coverage, corrected active schema-version prose to version
+4, and passed both fresh pre-merge reviews with no actionable finding. The
+subsequent `main` merge, conflict resolutions, provenance reseal, and handoff
+corrections received the final local review recorded above.
 
 ## Immediate Resume Sequence
 
 1. Stay in the exact worktree and verify the branch, upstream snapshot, status,
-   and commit ladder. Expect the SI closeout commit containing this handoff at
-   the clean local tip. If it is absent, preserve the recorded dirty scope and
-   complete only the already-reviewed closeout procedure below.
+   and commit ladder. Expect the SI closeout at `37178193ccf` followed by the
+   clean branch-tip merge of local `main` snapshot `b15e7a652b7`. If the merge
+   commit is absent, preserve the recorded in-progress merge and complete only
+   its final lint/check/commit sequence.
 2. Recompute the capture-source digest and run the parity, packet, and
    allocation checkers. The expected digest, accepted benchmark hash, and
    packet hashes are the values above. If any differs after a source change,
@@ -241,19 +249,16 @@ fresh reviews with no actionable finding.
      docs/plans/104-vertex-block-descent-solver.md
    ```
 
-3. If the SI closeout commit is absent, run `pixi run lint` immediately before
-   it, re-run packet/provenance checks, inspect `git diff --check` and the exact
+3. If the merge commit is absent, run `pixi run lint` immediately before it,
+   re-run packet/provenance checks, inspect `git diff --check` and the exact
    staged scope, and commit locally with a plain descriptive message and no AI
-   attribution. The two required independent reviews are already clean; repeat
-   them only if the tree changes materially.
-4. Merge the latest local `main` into this branch, never rebase it. Reconcile
-   conflicts against PLAN-104's solver-family ownership, then rerun every gate
-   and regenerate every source-bound artifact invalidated by the merge. Do not
-   fetch, push, update a PR, resolve threads, or trigger a review without
-   explicit approval.
-5. Move directly to the honest public XPBD substep family and its matched
-   Figure 13 row. Do not spend the next implementation slice on the two smaller
-   maintenance items unless they become blocking.
+   attribution. Repeat review if conflict resolution or a post-merge fix
+   changes materially.
+4. Do not extend this shared-foundation branch into the remaining parity
+   program. After maintainer approval and landing, create one VBD-completion PR
+   from updated `main`; only after that lands, create one AVBD-completion PR
+   from updated `main`. Never rebase a published PR branch, and do not push or
+   mutate GitHub without explicit approval.
 
 ## Resume Commands
 
@@ -285,42 +290,38 @@ git diff --check
 `pixi run lint` is mandatory immediately before every commit. It may regenerate
 or validate source-bound artifacts, so recheck provenance and packets after it.
 
-## Continue The Full Plan After SI Closeout
+## Continue The Full Plan After The Shared Foundation
 
-1. **Honest public XPBD row.** Define a real XPBD substep solver identity and
-   semantics; do not relabel SI or fixed-penalty VBD. Wire C++, dartpy,
-   serialization/replay, resolved configuration, fail-closed compatibility,
-   allocation evidence, focused correctness tests, and the matched Figure 13
-   demo/benchmark/packet. Give XPBD an independent quantitative and assessed
-   visual oracle on the shared scene fingerprint.
-2. **Source-matched four-method Figure 13/video edit.** Compare SI, XPBD, VBD,
-   and AVBD with audited method identities and matched inputs. Preserve the
-   explicit limitation that exact Figure 13 constants are unpublished. Add
-   private CUDA evidence and achieved-accuracy comparison before advancing the
-   canonical figure/video rows beyond partial.
-3. **Remaining CPU mechanism gaps.** Follow PLAN-104's current-next-gap owner:
-   broaden articulated/joint/fracture coverage, rigid contact persistence and
-   realistic stacks/piles, then unified rigid/soft rows and coupled scenes.
-   Keep allocation, replay, serialization, invalidation, and fail-closed
-   behavior first-class for every new world stage or row family.
-4. **Complete the paper/source-demo corpus.** Use `avbd-demo-corpus.md` and the
-   gap audit for every 2D/3D source scene, paper figure, parameter sweep,
-   website/video scene, and comparison. Each row needs solver identity, text
-   correctness, benchmark JSON, visual evidence where applicable, and explicit
-   CPU/GPU status.
-5. **GPU parity.** Route every landed CPU row family, candidate path, color
-   update, dual/stiffness pass, and benchmark scene through the private CUDA
-   boundary with deterministic warm-state behavior. A green CUDA environment
-   gate alone is not solver parity.
-6. **Performance leadership.** Optimize CPU and GPU until matched,
-   achieved-accuracy packets beat the reference demos and the paper's
-   published numbers on comparable hardware. Record hardware, commands,
-   source/guard hashes, rejected experiments, and honest negative results.
-7. **Completion audit.** Close all 176 canonical predicates, obtain two clean
-   current-tree reviews, run default and CUDA full gates, promote durable
-   lessons/evidence to their plan/design/onboarding owners, and delete this
-   dev-task folder in the completing PR. Do not retire it while any doable or
-   unparked parity work remains.
+The maintainer directed the remaining work into two ordered completion PRs.
+Use multiple reviewable commits and durable work packets inside each PR if
+needed, but do not mix the two completion claims.
+
+1. **VBD completion PR first.** Start from updated `main` only after the shared
+   SI/VBD/AVBD foundation lands. Close every one of the 88 VBD predicates,
+   including the remaining CPU mechanisms, private CUDA parity, complete
+   paper/site/video/source-demo corpus, allocation/replay/serialization
+   contracts, and achieved-accuracy performance leadership. Implement the
+   honest public XPBD substep comparison and source-matched Figure 13/video
+   evidence in this PR because they are required comparators for the VBD
+   contract; do not relabel SI or fixed-penalty VBD as XPBD. Keep AVBD changes
+   limited to unavoidable shared-interface compatibility, with no AVBD
+   completion claim.
+2. **Land and rebase the plan, not the published branch.** Manage the VBD PR
+   through review and CI only with explicit approval. After it lands, refresh
+   local `main` and the fail-closed matrices. Never rebase a published PR
+   branch.
+3. **AVBD completion PR second.** Start from updated `main` containing the VBD
+   completion. Close every one of the 88 AVBD predicates: augmented-Lagrangian
+   dual/stiffness evolution, quasi-Newton terms, articulated/joint/fracture and
+   rigid-contact breadth, unified soft/rigid coupling, all CPU/CUDA paths, the
+   remaining corpus, four-method evidence, and matched performance leadership.
+   Reuse the landed VBD/XPBD evidence by hash rather than duplicating or
+   weakening its acceptance boundary.
+4. **Final 176-row audit.** After the AVBD PR is current, obtain clean code and
+   architecture/claims reviews, run uncached default and CUDA full gates,
+   promote durable artifacts to their owners, and delete this dev-task folder
+   in the completing PR. Do not retire it while any doable or unparked parity
+   work remains.
 
 Two valid but lower-priority maintenance items remain: hoist duplicated
 `makeCollisionPairKey` logic into one shared `detail` owner, and upgrade the
@@ -362,14 +363,17 @@ feature/vbd-avbd-paper-parity-contract; verify live state before acting and do
 not reset, stash, rebase, switch trees, push, or mutate GitHub without explicit
 approval. First read AGENTS.md,
 docs/ai/principles.md, docs/ai/verification.md, the PLAN-104 owner, paper gap
-audit, demo corpus, parity matrix, and both dev-task files. Verify that the
-reviewed SI closeout is the clean branch-tip commit; if it is not, preserve the
-recorded dirty scope and finish only its final lint/check/commit sequence.
-Merge the latest local main into the branch, refresh invalidated gates and
-source-bound evidence, then implement an honest public XPBD substep family and
-matched Figure 13 row. Continue with the source-matched four-method/CUDA
-evidence and every remaining CPU/GPU, paper/site/video/demo, unified-row, and
-performance gap. Keep all claims fail-closed until every one of the 176
-canonical predicates passes. Do not stop at an MVP, CPU-only implementation,
-or documentation checkpoint.
+audit, demo corpus, parity matrix, and both dev-task files. Verify that the SI
+closeout at `37178193ccf` is followed by the clean branch-tip merge of local
+main snapshot `b15e7a652b7`; if it is not, preserve the in-progress merge and
+finish only its final lint/check/commit sequence. Do not extend the shared
+foundation branch into the remaining parity program. After maintainer approval
+and landing, complete VBD first in one PR from updated main, including honest
+XPBD comparison, all CPU/CUDA and corpus rows, and performance leadership.
+After that PR lands, complete AVBD in a second PR from updated main, including
+all AVBD-specific CPU/CUDA, unified-row, corpus, four-method, and performance
+gaps. Keep all claims fail-closed until every one of the 176 canonical
+predicates passes. Do not stop at an MVP, CPU-only implementation, or
+documentation checkpoint, and do not push or mutate GitHub without explicit
+approval.
 ```

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UNITTESTS_GTESTUTILS_HPP_
-#define DART_UNITTESTS_GTESTUTILS_HPP_
+#pragma once
 
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
@@ -250,5 +249,3 @@ inline bool equals(
 
 } // namespace test
 } // namespace dart
-
-#endif // DART_UNITTESTS_GTESTUTILS_HPP_

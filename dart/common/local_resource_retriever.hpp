@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
-#define DART_COMMON_LOCALRESOURCERETRIEVER_HPP_
+#pragma once
 
 #include <dart/common/resource_retriever.hpp>
 
@@ -62,5 +61,3 @@ using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;
 
 } // namespace common
 } // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCERETRIEVER_HPP_

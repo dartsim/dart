@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
+#pragma once
 
 #include <dart/test/reference_collision/ode/detail/ode_geom.hpp>
 
@@ -66,5 +65,3 @@ using OdeHeightmapd = OdeHeightmap<double>;
 } // namespace dart
 
 #include <dart/test/reference_collision/ode/detail/ode_heightmap-impl.hpp>
-
-#endif // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_

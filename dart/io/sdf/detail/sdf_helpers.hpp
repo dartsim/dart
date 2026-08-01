@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_SDF_DETAIL_SDFHELPERS_HPP_
-#define DART_IO_SDF_DETAIL_SDFHELPERS_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -53,5 +52,3 @@ DART_IO_API bool hasAuthoredElement(
     const ElementPtr& parent, std::string_view name);
 
 } // namespace dart::io::SdfParser::detail
-
-#endif // DART_IO_SDF_DETAIL_SDFHELPERS_HPP_

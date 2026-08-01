@@ -33,6 +33,7 @@
 
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <filesystem>
 #include <iosfwd>
@@ -40,10 +41,6 @@
 #include <vector>
 
 #include <cstddef>
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::simulation::io {
 

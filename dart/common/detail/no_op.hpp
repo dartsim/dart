@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_NOOP_HPP_
-#define DART_COMMON_DETAIL_NOOP_HPP_
+#pragma once
 
 namespace dart {
 namespace common {
@@ -53,5 +52,3 @@ void NoOp(Args... /*args*/)
 // The DART_BLANK macro can be passed into macro arguments where you want the
 // argument to expand into blank space.
 #define DART_BLANK // leave blank
-
-#endif // DART_COMMON_DETAIL_NOOP_HPP_

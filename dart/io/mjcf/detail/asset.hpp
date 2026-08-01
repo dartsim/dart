@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_ASSET_HPP_
-#define DART_IO_MJCF_DETAIL_ASSET_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/material.hpp>
 #include <dart/io/mjcf/detail/mesh.hpp>
 #include <dart/io/mjcf/detail/texture.hpp>
@@ -50,8 +50,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Body;
 
 class DART_IO_API Asset final
 {
@@ -117,5 +115,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_ASSET_HPP_

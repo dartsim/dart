@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
-#define DART_COLLISION_COLLISIONOPTION_HPP_
+#pragma once
+
+#include <dart/collision/fwd.hpp>
 
 #include <dart/export.hpp>
 
@@ -41,8 +42,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionFilter;
 
 struct DART_API CollisionOption
 {
@@ -75,5 +74,3 @@ struct DART_API CollisionOption
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_COLLISIONOPTION_HPP_

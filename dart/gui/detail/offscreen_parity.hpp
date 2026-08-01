@@ -30,16 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_OFFSCREEN_PARITY_HPP_
-#define DART_GUI_DETAIL_OFFSCREEN_PARITY_HPP_
+#pragma once
+
+#include <dart/gui/detail/fwd.hpp>
 
 #include <iosfwd>
 
 #include <cstdint>
 
 namespace dart::gui::detail {
-
-struct FilamentRenderContext;
 
 /// Diagnostic self-check for the Filament offscreen render-to-texture path.
 ///
@@ -63,5 +62,3 @@ bool runOffscreenParitySelfCheck(
     std::ostream& log);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_OFFSCREEN_PARITY_HPP_

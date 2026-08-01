@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_FREELISTALLOCATOR_HPP_
-#define DART_COMMON_FREELISTALLOCATOR_HPP_
+#pragma once
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/memory_allocator_debugger.hpp>
 
@@ -44,6 +44,9 @@
 #include <cstdint>
 
 namespace dart::common {
+
+namespace detail {
+}
 
 /// Most general heap memory allocator for allocating memory of various sizes.
 ///
@@ -129,6 +132,8 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
+  friend class detail::AllocatorMemoryLayoutInspector;
+
   struct alignas(std::max_align_t) MemoryBlockHeader
   {
     /// Memory block size in bytes
@@ -242,5 +247,3 @@ private:
 };
 
 } // namespace dart::common
-
-#endif // DART_COMMON_FREELISTALLOCATOR_HPP_

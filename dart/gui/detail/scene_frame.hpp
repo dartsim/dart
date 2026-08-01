@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_SCENE_FRAME_HPP_
-#define DART_GUI_DETAIL_SCENE_FRAME_HPP_
+#pragma once
 
+#include <dart/gui/detail/backend_fwd.hpp>
+#include <dart/gui/detail/fwd.hpp>
 #include <dart/gui/detail/renderable_resources.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/profile.hpp>
 #include <dart/gui/renderable.hpp>
 
@@ -43,29 +45,7 @@
 #include <string>
 #include <string_view>
 
-struct GLFWwindow;
-
-namespace filament {
-class Engine;
-class Scene;
-} // namespace filament
-
-namespace dart::gui {
-
-struct OrbitCameraController;
-struct RunOptions;
-struct ViewerLifecycleState;
-
-} // namespace dart::gui
-
 namespace dart::gui::detail {
-
-struct DartScene;
-struct FrameViewport;
-struct InitialSceneState;
-struct SceneLights;
-class SelectionController;
-class SimulationStepper;
 
 struct ScriptedForceDrag
 {
@@ -134,5 +114,3 @@ private:
 };
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_SCENE_FRAME_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ASPECT_HPP_
-#define DART_COMMON_DETAIL_ASPECT_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 
@@ -100,5 +99,3 @@ void CompositeTrackingAspect<CompositeType>::loseComposite(
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_DETAIL_ASPECT_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCFPARSER_HPP_
-#define DART_IO_MJCFPARSER_HPP_
+#pragma once
 
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/uri.hpp>
@@ -66,5 +65,3 @@ struct DART_IO_API Options
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCFPARSER_HPP_

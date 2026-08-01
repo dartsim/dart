@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_
-#define DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_
+#pragma once
 
+#include <dart/gui/detail/backend_fwd.hpp>
 #include <dart/gui/detail/debug_overlay.hpp>
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/render_context.hpp>
@@ -41,11 +41,6 @@
 
 #include <optional>
 #include <vector>
-
-namespace filament {
-class Engine;
-class Scene;
-} // namespace filament
 
 namespace dart::gui::detail {
 
@@ -85,5 +80,3 @@ void destroyApplicationResources(
     MaterialResources& materialResources);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_APPLICATION_TEARDOWN_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_RANDOM_HPP_
-#define DART_MATH_RANDOM_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -223,5 +222,3 @@ private:
 } // namespace dart
 
 #include <dart/math/detail/random-impl.hpp>
-
-#endif // DART_MATH_RANDOM_HPP_

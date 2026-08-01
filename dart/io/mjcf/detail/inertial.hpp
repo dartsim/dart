@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_INERTIAL_HPP_
-#define DART_IO_MJCF_DETAIL_INERTIAL_HPP_
+#pragma once
 
 #include <dart/math/math_types.hpp>
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 
 #include <tinyxml2.h>
 
@@ -47,8 +47,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Body;
 
 class DART_IO_API Inertial final
 {
@@ -136,5 +134,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_INERTIAL_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHSHAPE_HPP_
-#define DART_DYNAMICS_MESHSHAPE_HPP_
+#pragma once
 
 #include <dart/dynamics/mesh_material.hpp>
 #include <dart/dynamics/shape.hpp>
@@ -431,5 +430,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_MESHSHAPE_HPP_

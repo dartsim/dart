@@ -93,6 +93,8 @@
 #if defined(_WIN32)
   #include <malloc.h>
 #endif
+#include <dart/config.hpp>
+
 #include <limits>
 #include <map>
 #include <new>
@@ -827,6 +829,45 @@ public:
   std::size_t deallocationCount{0};
   std::size_t alignedDeallocationCount{0};
 };
+
+// The frame-scratch reset tally and running peak are step-path instrumentation
+// gated by DART_BUILD_MEMORY_DIAGNOSTICS. When that option is off they are
+// documented to report zero and the live usage respectively, so assert
+// whichever contract this build actually implements rather than dropping the
+// coverage.
+constexpr bool kMemoryDiagnosticsInstrumented
+    = DART_BUILD_MEMORY_DIAGNOSTICS != 0;
+
+void expectResetCount(
+    const dart::simulation::WorldMemoryDiagnostics& diagnostics,
+    std::size_t instrumentedExpectation)
+{
+  EXPECT_EQ(
+      diagnostics.frameScratchResetCount,
+      kMemoryDiagnosticsInstrumented ? instrumentedExpectation : 0u);
+}
+
+void expectPeakAtLeast(
+    const dart::simulation::WorldMemoryDiagnostics& diagnostics,
+    std::size_t instrumentedFloor)
+{
+  if (kMemoryDiagnosticsInstrumented) {
+    EXPECT_GE(diagnostics.frameScratchPeakUsedBytes, instrumentedFloor);
+  } else {
+    // Uninstrumented builds have no high-water mark. They must report zero
+    // rather than the current usage, which would be a "peak" that decreases
+    // after the next reset.
+    EXPECT_EQ(diagnostics.frameScratchPeakUsedBytes, 0u);
+  }
+}
+
+void expectPeakEqualsUsed(
+    const dart::simulation::WorldMemoryDiagnostics& diagnostics)
+{
+  EXPECT_EQ(
+      diagnostics.frameScratchPeakUsedBytes,
+      kMemoryDiagnosticsInstrumented ? diagnostics.frameScratchUsedBytes : 0u);
+}
 
 class FrameScratchStage final : public dart::simulation::compute::WorldStepStage
 {
@@ -6375,6 +6416,7 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   sx::World world;
 
   const auto empty = world.getMemoryDiagnostics();
+  EXPECT_FALSE(empty.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(empty.ecsDiagnostics.entityCount, 0u);
   EXPECT_EQ(empty.ecsDiagnostics.componentCount, 0u);
   EXPECT_EQ(
@@ -6383,7 +6425,9 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   auto frame = world.addFreeFrame("diagnostic_frame");
   (void)frame;
 
-  const auto diagnostics = world.getMemoryDiagnostics();
+  const auto diagnostics = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeStorageLayoutDetails = true});
+  EXPECT_TRUE(diagnostics.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(diagnostics.ecsDiagnostics.entityCount, 1u);
   EXPECT_GE(
       diagnostics.ecsDiagnostics.entityCapacity,
@@ -6397,7 +6441,15 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   std::size_t componentCapacity = 0;
   bool hasLiveStorage = false;
   for (const auto& storage : diagnostics.ecsDiagnostics.storages) {
+    EXPECT_FALSE(storage.diagnosticLabel.empty());
     EXPECT_GE(storage.capacity, storage.size);
+    EXPECT_GE(storage.capacity, storage.packedSlotCount);
+    EXPECT_EQ(
+        storage.capacity, storage.packedSlotCount + storage.unusedCapacity);
+    EXPECT_EQ(storage.packedSlotCount, storage.size + storage.holeCount);
+    EXPECT_EQ(storage.packedContiguous, storage.holeCount == 0u);
+    EXPECT_LE(storage.livePackedRegionCount, storage.size);
+    EXPECT_EQ(storage.livePackedRegionCount == 0u, storage.size == 0u);
     componentCount += storage.size;
     componentCapacity += storage.capacity;
     hasLiveStorage = hasLiveStorage || storage.size > 0u;
@@ -6408,7 +6460,9 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
   EXPECT_EQ(diagnostics.ecsDiagnostics.componentCapacity, componentCapacity);
 
   world.clear();
-  const auto cleared = world.getMemoryDiagnostics();
+  const auto cleared = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeStorageLayoutDetails = true});
+  EXPECT_TRUE(cleared.ecsDiagnostics.storageLayoutDetailsIncluded);
   EXPECT_EQ(cleared.ecsDiagnostics.entityCount, 0u);
   EXPECT_EQ(cleared.ecsDiagnostics.componentCount, 0u);
   EXPECT_EQ(
@@ -6416,6 +6470,8 @@ TEST(World, MemoryDiagnosticsReportEcsStorageLayout)
       cleared.ecsDiagnostics.storages.size());
   for (const auto& storage : cleared.ecsDiagnostics.storages) {
     EXPECT_EQ(storage.size, 0u);
+    EXPECT_EQ(storage.packedSlotCount, storage.holeCount);
+    EXPECT_EQ(storage.livePackedRegionCount, 0u);
   }
 }
 
@@ -11417,7 +11473,7 @@ TEST(World, BakedBoxedLcpContactStepUsesFrameScratchWithoutBaseGrowth)
   world.step();
 
   const auto afterStep = world.getMemoryDiagnostics();
-  EXPECT_EQ(afterStep.frameScratchResetCount, 1u);
+  expectResetCount(afterStep, 1u);
   EXPECT_GT(afterStep.frameScratchUsedBytes, 0u)
       << "boxed-LCP dense per-step temporaries should borrow frame scratch";
   EXPECT_EQ(afterStep.frameScratchOverflowCount, 0u);
@@ -11780,7 +11836,7 @@ TEST(World, FrameScratchCapacityReportsUsableArenaBytes)
   ASSERT_NE(scratch.lastAllocation, nullptr);
 
   const auto diagnostics = world.getMemoryDiagnostics();
-  EXPECT_EQ(diagnostics.frameScratchResetCount, 1u);
+  expectResetCount(diagnostics, 1u);
   EXPECT_EQ(
       diagnostics.frameScratchUsedBytes, initial.frameScratchCapacityBytes);
   EXPECT_EQ(diagnostics.frameScratchOverflowCount, 0u);
@@ -11802,21 +11858,21 @@ TEST(World, FrameScratchResetsAtStepBoundary)
   ASSERT_NE(scratch.lastAllocation, nullptr);
 
   const auto first = world.getMemoryDiagnostics();
-  EXPECT_EQ(first.frameScratchResetCount, 1u);
+  expectResetCount(first, 1u);
   EXPECT_EQ(first.frameScratchOverflowCount, 0u);
   EXPECT_EQ(first.frameScratchOverflowBytes, 0u);
   EXPECT_GE(first.frameScratchUsedBytes, scratch.bytesToAllocate);
-  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakEqualsUsed(first);
 
   scratch.bytesToAllocate = 0;
   world.step(executor, scratch);
 
   const auto second = world.getMemoryDiagnostics();
-  EXPECT_EQ(second.frameScratchResetCount, 2u);
+  expectResetCount(second, 2u);
   EXPECT_EQ(second.frameScratchUsedBytes, 0u);
   EXPECT_EQ(second.frameScratchOverflowCount, 0u);
   EXPECT_EQ(second.frameScratchOverflowBytes, 0u);
-  EXPECT_GE(second.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakAtLeast(second, first.frameScratchUsedBytes);
 
   world.clear();
   const auto cleared = world.getMemoryDiagnostics();
@@ -11842,21 +11898,21 @@ TEST(World, FrameScratchDiagnosticsIncludeOverflowBytes)
   ASSERT_NE(scratch.lastAllocation, nullptr);
 
   const auto first = world.getMemoryDiagnostics();
-  EXPECT_EQ(first.frameScratchResetCount, 1u);
+  expectResetCount(first, 1u);
   EXPECT_EQ(first.frameScratchOverflowCount, 1u);
   EXPECT_GE(first.frameScratchOverflowBytes, scratch.bytesToAllocate);
   EXPECT_GE(first.frameScratchUsedBytes, first.frameScratchOverflowBytes);
-  EXPECT_EQ(first.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakEqualsUsed(first);
 
   scratch.bytesToAllocate = 0;
   world.step(executor, scratch);
 
   const auto second = world.getMemoryDiagnostics();
-  EXPECT_EQ(second.frameScratchResetCount, 2u);
+  expectResetCount(second, 2u);
   EXPECT_EQ(second.frameScratchUsedBytes, 0u);
   EXPECT_EQ(second.frameScratchOverflowCount, 0u);
   EXPECT_EQ(second.frameScratchOverflowBytes, 0u);
-  EXPECT_GE(second.frameScratchPeakUsedBytes, first.frameScratchUsedBytes);
+  expectPeakAtLeast(second, first.frameScratchUsedBytes);
 }
 
 // Test version information
@@ -24069,7 +24125,7 @@ TEST(World, StepSkipsCleanKinematicsGraph)
   EXPECT_DOUBLE_EQ(world.getTime(), 3.0 * world.getTimeStep());
   EXPECT_EQ(world.getFrame(), 3u);
   const auto cleanStepDiagnostics = world.getMemoryDiagnostics();
-  EXPECT_EQ(cleanStepDiagnostics.frameScratchResetCount, 3u);
+  expectResetCount(cleanStepDiagnostics, 3u);
   EXPECT_EQ(cleanStepDiagnostics.frameScratchUsedBytes, 0u);
   EXPECT_EQ(cleanStepDiagnostics.frameScratchOverflowCount, 0u);
   EXPECT_EQ(cleanStepDiagnostics.frameScratchOverflowBytes, 0u);

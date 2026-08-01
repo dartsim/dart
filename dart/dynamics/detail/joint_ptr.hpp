@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
-#define DART_DYNAMICS_DETAIL_JOINTPTR_HPP_
+#pragma once
 #include <dart/dynamics/detail/body_node_ptr.hpp>
 #include <dart/dynamics/invalid_index.hpp>
 
@@ -261,5 +260,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_JOINTPTR_HPP_

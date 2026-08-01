@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_INVALIDINDEX_HPP_
-#define DART_DYNAMICS_INVALIDINDEX_HPP_
+#pragma once
 
 #include <cstddef>
 
@@ -42,5 +41,3 @@ constexpr std::size_t INVALID_INDEX = static_cast<std::size_t>(-1);
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_INVALIDINDEX_HPP_

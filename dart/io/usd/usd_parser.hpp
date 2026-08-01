@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_USD_USD_PARSER_HPP_
-#define DART_IO_USD_USD_PARSER_HPP_
+#pragma once
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -73,5 +72,3 @@ public:
 };
 
 } // namespace dart::io::usd
-
-#endif // DART_IO_USD_USD_PARSER_HPP_

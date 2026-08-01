@@ -34,6 +34,7 @@
 
 #include <dart/collision/native/broad_phase/broad_phase.hpp>
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Geometry>
@@ -46,8 +47,6 @@
 #include <cstdint>
 
 namespace dart::collision::native {
-
-class Shape;
 
 using ObjectId = std::size_t;
 

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_HPP_
-#define DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_HPP_
+#pragma once
 
 #include <dart/constraint/dynamic_joint_constraint.hpp>
 
@@ -160,5 +159,3 @@ public:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_REVOLUTEJOINTCONSTRAINT_HPP_

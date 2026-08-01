@@ -34,18 +34,13 @@
 
 #include <dart/simulation/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <vector>
 
 #include <cstddef>
 
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
-
 namespace dart::simulation::compute {
-
-class ComputeExecutor;
 
 /// Advance a homogeneous batch of independent worlds in parallel.
 ///

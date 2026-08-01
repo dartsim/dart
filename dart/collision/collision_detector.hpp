@@ -30,10 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
-#define DART_COLLISION_COLLISIONDETECTOR_HPP_
+#pragma once
 
-#include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/contact.hpp>
@@ -44,6 +42,8 @@
 #include <dart/collision/fwd.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/diagnostics.hpp>
 #include <dart/common/factory.hpp>
@@ -60,8 +60,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 class DART_API CollisionDetector
   : public std::enable_shared_from_this<CollisionDetector>
@@ -353,5 +351,3 @@ private:
 } // namespace dart
 
 #include <dart/collision/detail/collision_detector.hpp>
-
-#endif // DART_COLLISION_COLLISIONDETECTOR_HPP_

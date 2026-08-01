@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_VERSIONCOUNTER_HPP_
-#define DART_COMMON_VERSIONCOUNTER_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -66,5 +65,3 @@ private:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_VERSIONCOUNTER_HPP_

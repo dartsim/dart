@@ -30,18 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_PERF_HUD_HPP_
-#define DART_GUI_DETAIL_PERF_HUD_HPP_
+#pragma once
+
+#include <dart/gui/fwd.hpp>
 
 #include <array>
 
 #include <cstddef>
-
-namespace dart::gui {
-
-struct ProfileAccumulator;
-
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 
@@ -90,5 +85,3 @@ void drawPerfHud(
     const char* backendName);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_PERF_HUD_HPP_

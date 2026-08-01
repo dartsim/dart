@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RAYCASTOPTION_HPP_
-#define DART_COLLISION_RAYCASTOPTION_HPP_
+#pragma once
+
+#include <dart/collision/fwd.hpp>
 
 #include <dart/export.hpp>
 
@@ -42,8 +43,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 struct DART_API RaycastOption
 {
@@ -68,5 +67,3 @@ struct DART_API RaycastOption
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_RAYCASTOPTION_HPP_

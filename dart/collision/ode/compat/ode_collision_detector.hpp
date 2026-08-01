@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_COMPAT_ODECOLLISIONDETECTOR_HPP_
-#define DART_COLLISION_ODE_COMPAT_ODECOLLISIONDETECTOR_HPP_
+#pragma once
 
 #include <dart/collision/contact.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
@@ -105,5 +104,3 @@ using OdeCollisionGroup = DartCollisionGroup;
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_ODE_COMPAT_ODECOLLISIONDETECTOR_HPP_

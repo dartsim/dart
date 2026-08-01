@@ -30,19 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
-#define DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_
+#pragma once
 
 #include <dart/constraint/constraint_base.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Dense>
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
 
 namespace constraint {
 
@@ -181,5 +177,3 @@ private:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_JOINTLIMITCONSTRAINT_HPP_

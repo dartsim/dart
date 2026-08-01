@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_JOINT_HPP_
-#define DART_IO_MJCF_DETAIL_JOINT_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/default.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/joint_attributes.hpp>
 #include <dart/io/mjcf/detail/types.hpp>
 
@@ -46,8 +46,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Body;
 
 class DART_IO_API Joint final
 {
@@ -132,5 +130,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_JOINT_HPP_

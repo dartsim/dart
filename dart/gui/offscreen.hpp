@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OFFSCREEN_HPP_
-#define DART_GUI_OFFSCREEN_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -45,8 +45,6 @@
 #include <cstdint>
 
 namespace dart::gui {
-
-struct OrbitCamera;
 
 struct DART_GUI_API RenderedImage
 {
@@ -140,5 +138,3 @@ DART_GUI_API void compositeDebugLabels(
     bool backdrop = true);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_OFFSCREEN_HPP_

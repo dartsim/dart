@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODE_HPP_
-#define DART_DYNAMICS_DETAIL_BODYNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -375,5 +374,3 @@ std::optional<Inertia> BodyNode::computeInertiaFromShapeNodes(
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_BODYNODE_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STRING_HPP_
-#define DART_COMMON_STRING_HPP_
+#pragma once
 
 #include <dart/export.hpp>
 
@@ -70,5 +69,3 @@ DART_API std::vector<std::string> split(
     std::string_view str, std::string_view delimiters = " \n\r\t");
 
 } // namespace dart::common
-
-#endif // DART_COMMON_STRING_HPP_

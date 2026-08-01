@@ -283,9 +283,10 @@ void captureRigidContactForces(
 }
 
 //==============================================================================
-// The boxed-LCP solver returns its impulses in a stacked buffer (normal rows
-// [0, n) then two friction rows per contact) rather than on the constraints, so
-// copy them back onto the constraints to share the capture path above.
+// The boxed-LCP solver leaves its impulses in allocator-backed stacked scratch
+// (normal rows [0, n), then two friction rows per contact). Copy them back onto
+// the constraints to share the capture path above without materializing the
+// public Eigen snapshot during an allocation-free baked step.
 void writeBoxedLcpImpulsesIntoConstraints(
     std::span<RigidBodyContactConstraint> constraints,
     std::span<const double> impulses)
@@ -1268,8 +1269,9 @@ void RigidBodyContactStage::prepare(World& world)
     // allocator. BoxedLcp additionally warms the frame arena for its per-step
     // Delassus/Dantzig dense temporaries; persistent solver state must stay out
     // of the resettable frame scratch.
-    [[maybe_unused]] const auto contacts
-        = world.queryContacts(CollisionQueryOptions{});
+    const auto contacts = world.queryContacts(CollisionQueryOptions{});
+    detail::storageOf(world).lastContactForces.reserve(
+        std::max(contactCapacity, contacts.size()));
     if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
       auto& frameAllocator = world.getMemoryManager().getFrameAllocator();
       {

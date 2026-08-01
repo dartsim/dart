@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/node.hpp>
 
@@ -44,8 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
 
 namespace detail {
 
@@ -144,5 +142,3 @@ using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_

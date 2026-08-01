@@ -11,6 +11,7 @@
 #pragma once
 
 // clang-format off
+#include <dart/simulation/memory_diagnostics.hpp>
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
 #include <dart/simulation/world_sync_stage.hpp>

@@ -23,6 +23,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
 try:
     from parallel_jobs import compute_load_limit, compute_parallel_jobs
 except ImportError:  # pragma: no cover - defensive fallback
@@ -33,6 +37,8 @@ except ImportError:  # pragma: no cover - defensive fallback
     def compute_load_limit() -> int | None:
         return os.cpu_count() or 1
 
+
+from test_runner_environment import sanitized_gtest_environment
 
 # Experimental tests are fast on average but have a long tail; the Tier-1 quick
 # subset skips these so it stays inside its budget. They run at the full tier.
@@ -87,9 +93,29 @@ def resolve_build_dir(build_type: str) -> tuple[Path, str | None]:
     return single_config, None
 
 
+def explicit_build_config(test_dir: Path, build_type: str) -> str | None:
+    """Return the requested config when an explicit tree is multi-config."""
+    cache_path = test_dir / "CMakeCache.txt"
+    try:
+        cache_lines = cache_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for line in cache_lines:
+        key_and_type, separator, value = line.partition("=")
+        key = key_and_type.partition(":")[0]
+        if separator and key == "CMAKE_CONFIGURATION_TYPES" and value.strip():
+            return build_type
+    return None
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-type", default="Release")
+    parser.add_argument(
+        "--test-dir",
+        type=Path,
+        help="Use an explicitly configured CTest tree instead of the Pixi layout",
+    )
     parser.add_argument("-L", "--label", action="append", default=[])
     parser.add_argument("-LE", "--label-exclude", action="append", default=[])
     parser.add_argument("-R", "--tests-regex")
@@ -116,13 +142,23 @@ def resolve_jobs(explicit: int | None) -> int | None:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
 
-    build_dir, build_config = resolve_build_dir(args.build_type)
+    if args.test_dir is None:
+        build_dir, build_config = resolve_build_dir(args.build_type)
+    else:
+        build_dir = args.test_dir
+        build_config = explicit_build_config(build_dir, args.build_type)
     if not build_dir.exists():
         raise SystemExit(
             f"Build directory {build_dir} does not exist. Build the tests first."
         )
 
-    cmd = ["ctest", "--test-dir", str(build_dir), "--output-on-failure"]
+    cmd = [
+        "ctest",
+        "--test-dir",
+        str(build_dir),
+        "--output-on-failure",
+        "--no-tests=error",
+    ]
     if build_config:
         cmd += ["--build-config", build_config]
 
@@ -164,7 +200,7 @@ def main(argv: list[str]) -> int:
         if excludes:
             cmd += ["-E", "|".join(f"({e})" for e in excludes)]
 
-    return subprocess.run(cmd).returncode
+    return subprocess.run(cmd, env=sanitized_gtest_environment()).returncode
 
 
 if __name__ == "__main__":

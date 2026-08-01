@@ -30,19 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
-#define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/basic_node_manager.hpp>
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/node_manager_joiner.hpp>
 
 #include <dart/common/virtual.hpp>
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
-class Skeleton;
 
 //==============================================================================
 /// Declaration of the variadic template
@@ -241,5 +238,3 @@ class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...>
 } // namespace dart
 
 #include <dart/dynamics/detail/specialized_node_manager.hpp>
-
-#endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_

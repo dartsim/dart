@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_COMPOSITENODE_HPP_
-#define DART_DYNAMICS_COMPOSITENODE_HPP_
+#pragma once
 
 #include <dart/dynamics/node.hpp>
 
@@ -110,5 +109,3 @@ public:
 } // namespace dart
 
 #include <dart/dynamics/detail/composite_node.hpp>
-
-#endif // DART_DYNAMICS_COMPOSITENODE_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
-#define DART_CONSTRAINT_CONSTRAINTSOVER_HPP_
+#pragma once
 
 #include <dart/constraint/constrained_group.hpp>
 #include <dart/constraint/constraint_base.hpp>
@@ -372,5 +371,3 @@ protected:
 } // namespace dart
 
 #include <dart/constraint/detail/constraint_solver-impl.hpp>
-
-#endif // DART_CONSTRAINT_CONSTRAINTSOVER_HPP_

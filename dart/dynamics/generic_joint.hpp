@@ -30,18 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_GENERICJOINT_HPP_
-#define DART_DYNAMICS_GENERICJOINT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/generic_joint_aspect.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <array>
 #include <string>
 
 namespace dart {
 namespace dynamics {
-
-class DegreeOfFreedom;
 
 template <class ConfigSpaceT>
 class GenericJoint
@@ -833,5 +831,3 @@ private:
 } // namespace dart
 
 #include <dart/dynamics/detail/generic_joint.hpp>
-
-#endif // DART_DYNAMICS_GENERICJOINT_HPP_

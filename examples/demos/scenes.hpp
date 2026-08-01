@@ -8,8 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_SCENES_HPP_
-#define DART_EXAMPLES_DEMOS_SCENES_HPP_
+#pragma once
 
 #include <dart/gui/application.hpp>
 
@@ -31,5 +30,3 @@ dart::gui::ApplicationOptions makeVbdDeformableScene();
 std::vector<dart::gui::DemoSceneEntry> makeDemoScenes();
 
 } // namespace dart::examples::demos
-
-#endif // DART_EXAMPLES_DEMOS_SCENES_HPP_

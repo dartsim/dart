@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
-#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
+#pragma once
 
 #include <dart/common/resource.hpp>
 #include <dart/common/resource_retriever.hpp>
@@ -127,5 +126,3 @@ DART_API aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_

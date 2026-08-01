@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
-#define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
+#pragma once
 
 #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 #include <dart/test/reference_collision/ode/ode_collision_object.hpp>
@@ -79,5 +78,3 @@ protected:
 } // namespace detail
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_

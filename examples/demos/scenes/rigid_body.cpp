@@ -10,6 +10,10 @@
 
 #include "scenes.hpp"
 
+#ifdef DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include "memory_diagnostics.hpp"
+#endif
+
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -266,6 +270,10 @@ dart::gui::ApplicationOptions makeRigidBodyScene()
     state->syncRenderFrames();
     return state->renderables();
   };
+#ifdef DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  options.panels.push_back(createMemoryDiagnosticsPanel(
+      "Rigid Body", [state]() { return &state->physicsWorld; }));
+#endif
   options.keyboardActions = createKeyboardActions(state);
   return options;
 }

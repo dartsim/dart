@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONTACTSURFACE_HPP_
-#define DART_CONSTRAINT_CONTACTSURFACE_HPP_
+#pragma once
 
 #include <dart/constraint/fwd.hpp>
 
@@ -189,5 +188,3 @@ protected:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_CONTACTSURFACE_HPP_

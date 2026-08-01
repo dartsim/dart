@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTBODYNODE_HPP_
-#define DART_DYNAMICS_SOFTBODYNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/soft_body_node_aspect.hpp>
 
@@ -472,5 +471,3 @@ public:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SOFTBODYNODE_HPP_

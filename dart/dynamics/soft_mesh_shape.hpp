@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
-#define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+#pragma once
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/shape.hpp>
 
 #include <dart/math/tri_mesh.hpp>
@@ -44,8 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class SoftBodyNode;
 
 // TODO(JS): Implement
 class DART_API SoftMeshShape : public Shape
@@ -113,5 +111,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_SOFTMESHSHAPE_HPP_

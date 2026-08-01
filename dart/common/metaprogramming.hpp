@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_METAPROGRAMMING_HPP_
-#define DART_COMMON_METAPROGRAMMING_HPP_
+#pragma once
 
 // Check for any member with given name, whether var, func, class, union, enum.
 #define DART_CREATE_MEMBER_CHECK(member)                                       \
@@ -64,5 +63,3 @@
   }
 
 #include <dart/common/detail/metaprogramming-impl.hpp>
-
-#endif // DART_COMMON_METAPROGRAMMING_HPP_

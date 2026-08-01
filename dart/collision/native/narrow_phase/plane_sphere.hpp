@@ -33,18 +33,13 @@
 #pragma once
 
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart::collision::native {
-
-class PlaneShape;
-class SphereShape;
-class BoxShape;
-class CapsuleShape;
-class ConvexShape;
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collidePlaneSphere(
     const PlaneShape& plane,

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_APPLICATION_HPP_
-#define DART_GUI_APPLICATION_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
@@ -329,5 +328,3 @@ DART_GUI_API int runDemos(
     int argc, char* argv[], std::vector<DemoSceneEntry> scenes);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_APPLICATION_HPP_

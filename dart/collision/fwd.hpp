@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#pragma once
 
 #include <dart/common/smart_pointer.hpp>
 
@@ -42,6 +41,11 @@ class CollisionDetector;
 class CollisionFilter;
 class CollisionGroup;
 class CollisionObject;
+class DartCollisionScene;
+
+/// Opaque per-contact payload carried through `Contact::userData` by the soft
+/// collision path. Never defined; only ever handled as a pointer.
+class SoftCollisionInfo;
 
 struct CollisionOption;
 class CollisionResult;
@@ -69,5 +73,3 @@ DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FWD_HPP_

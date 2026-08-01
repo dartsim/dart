@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/composite_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/math/geometry.hpp>
 
@@ -45,9 +45,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class FixedJacobianNode;
-class Support;
 
 namespace detail {
 
@@ -97,5 +94,3 @@ using EndEffectorCompositeBase = CompositeNode<common::CompositeJoiner<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_

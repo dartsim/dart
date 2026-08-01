@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODE_HPP_
-#define DART_DYNAMICS_BODYNODE_HPP_
+#pragma once
 
 #include <dart/config.hpp>
 
@@ -62,20 +61,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class GenCoord;
-class Skeleton;
-class Joint;
-class DegreeOfFreedom;
-class Shape;
-class ShapeNode;
-class CollisionAspect;
-class EndEffector;
-class Marker;
-
-namespace detail {
-class ArticulatedDynamicsAccess;
-} // namespace detail
 
 /// BodyNode class represents a single node of the skeleton.
 ///
@@ -1314,5 +1299,3 @@ DART_API const BodyNode::Properties& getDefaultBodyNodeProperties();
 } // namespace dart
 
 #include <dart/dynamics/detail/body_node.hpp>
-
-#endif // DART_DYNAMICS_BODYNODE_HPP_

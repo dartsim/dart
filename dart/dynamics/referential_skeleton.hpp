@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_REFERENTIALSKELETON_HPP_
-#define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/meta_skeleton.hpp>
@@ -547,5 +546,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_REFERENTIALSKELETON_HPP_

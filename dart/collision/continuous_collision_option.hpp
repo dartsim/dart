@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
-#define DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
+#pragma once
+
+#include <dart/collision/fwd.hpp>
 
 #include <dart/export.hpp>
 
@@ -39,8 +40,6 @@
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 /// Advancement strategy for iterative continuous collision queries.
 enum class ContinuousCollisionAdvancement
@@ -90,5 +89,3 @@ struct DART_API ContinuousCollisionOption
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_

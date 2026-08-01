@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SCREWJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_SCREWJOINTASPECT_HPP_
+#pragma once
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/generic_joint.hpp>
 
 #include <dart/export.hpp>
@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class ScrewJoint;
 
 namespace detail {
 
@@ -88,5 +86,3 @@ using ScrewJointBase = common::EmbedPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_SCREWJOINTASPECT_HPP_

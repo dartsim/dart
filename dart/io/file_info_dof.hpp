@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_FILEINFODOF_HPP_
-#define DART_IO_FILEINFODOF_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -105,4 +104,3 @@ protected:
 
 } // namespace io
 } // namespace dart
-#endif // DART_IO_FILEINFODOF_HPP_

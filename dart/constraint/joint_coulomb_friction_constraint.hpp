@@ -30,17 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_HPP_
-#define DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_HPP_
+#pragma once
 
 #include <dart/constraint/constraint_base.hpp>
 
-namespace dart {
+#include <dart/dynamics/fwd.hpp>
 
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
+namespace dart {
 
 namespace constraint {
 
@@ -145,5 +141,3 @@ private:
 
 } // namespace constraint
 } // namespace dart
-
-#endif // DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_HPP_

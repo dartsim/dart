@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EMPTY_HPP_
-#define DART_COMMON_EMPTY_HPP_
+#pragma once
 
 namespace dart {
 namespace common {
@@ -51,5 +50,3 @@ enum NoArgTag
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_EMPTY_HPP_

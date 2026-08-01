@@ -534,8 +534,10 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
   switch (_jt->type) {
     case urdf::Joint::CONTINUOUS: {
       // We overwrite joint position limits to negative/positive infinities
-      // for "continuous" joint. The URDF parser, by default, either reads
-      // the limits, if specified for this joint, or sets them to 0.
+      // for "continuous" joint. A continuous joint has no meaningful
+      // lower/upper bound, so urdfdom leaves them at its own defaults (0 in
+      // urdfdom 5 and earlier, +/-infinity since urdfdom 6). Pin them here so
+      // the joint is unbounded regardless of which default applied.
       singleDof.mPositionLowerLimits[0] = -math::inf;
       singleDof.mPositionUpperLimits[0] = math::inf;
 

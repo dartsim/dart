@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
-#define DART_DYNAMICS_DEGREEOFFREEDOM_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -47,10 +46,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
-class Joint;
-class BodyNode;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -413,5 +408,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DEGREEOFFREEDOM_HPP_

@@ -35,6 +35,7 @@
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/rigid_ipc/rigid_ipc_ccd.hpp>
 #include <dart/simulation/export.hpp>
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -639,8 +640,6 @@ struct RigidIpcProjectedNewtonSolveResult
     return stats.acceptedSteps > 0;
   }
 };
-
-struct RigidIpcProjectedNewtonSolveScratchWorkspace;
 
 struct DART_SIMULATION_API RigidIpcProjectedNewtonSolveScratch
 {

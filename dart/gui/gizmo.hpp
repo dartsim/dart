@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GIZMO_HPP_
-#define DART_GUI_GIZMO_HPP_
+#pragma once
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
@@ -155,5 +154,3 @@ DART_GUI_API bool rotateGizmoTarget(
     Gizmo& gizmo, const Eigen::Vector3d& worldAxis, double angle);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_GIZMO_HPP_

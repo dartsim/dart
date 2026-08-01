@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BALLJOINT_HPP_
-#define DART_DYNAMICS_BALLJOINT_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/ball_joint_aspect.hpp>
 
@@ -206,5 +205,3 @@ public:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_BALLJOINT_HPP_

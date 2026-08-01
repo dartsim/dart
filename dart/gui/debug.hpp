@@ -30,11 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DEBUG_HPP_
-#define DART_GUI_DEBUG_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
+
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/collision/fwd.hpp>
 
@@ -45,12 +46,6 @@
 
 #include <string>
 #include <vector>
-
-namespace dart::simulation {
-class World;
-struct Contact;
-struct ContactForce;
-} // namespace dart::simulation
 
 namespace dart::gui {
 
@@ -236,5 +231,3 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     simulation::World& world, const DebugDrawOptions& options = {});
 
 } // namespace dart::gui
-
-#endif // DART_GUI_DEBUG_HPP_

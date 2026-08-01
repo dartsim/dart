@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/collision/native/export.hpp>
+#include <dart/collision/native/fwd.hpp>
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
@@ -41,12 +42,6 @@
 #include <span>
 
 namespace dart::collision::native {
-
-class BoxShape;
-class CapsuleShape;
-class CylinderShape;
-class PlaneShape;
-class SphereShape;
 
 struct DART_COLLISION_NATIVE_API CylinderPair
 {

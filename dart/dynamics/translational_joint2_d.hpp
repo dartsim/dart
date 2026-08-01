@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
-#define DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/planar_joint_aspect.hpp>
 #include <dart/dynamics/detail/translational_joint2_d_aspect.hpp>
@@ -154,5 +153,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_

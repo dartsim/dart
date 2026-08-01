@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETON_HPP_
-#define DART_DYNAMICS_SKELETON_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/body_node_aspect.hpp>
 #include <dart/dynamics/detail/skeleton_aspect.hpp>
@@ -56,12 +55,6 @@
 
 namespace dart {
 namespace dynamics {
-
-namespace detail {
-template <typename T>
-class BodyNodePool;
-class SkeletonDynamicsView;
-} // namespace detail
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -1380,5 +1373,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 } // namespace dart
 
 #include <dart/dynamics/detail/skeleton.hpp>
-
-#endif // DART_DYNAMICS_SKELETON_HPP_

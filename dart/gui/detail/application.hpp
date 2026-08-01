@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_APPLICATION_HPP_
-#define DART_GUI_DETAIL_APPLICATION_HPP_
+#pragma once
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/fwd.hpp>
 
 #include <algorithm>
 #include <string>
@@ -42,10 +42,6 @@
 
 #include <cctype>
 #include <cstddef>
-
-namespace dart::gui {
-struct ApplicationOptions;
-} // namespace dart::gui
 
 namespace dart::gui::detail {
 
@@ -114,5 +110,3 @@ int runGuiBackendApplication(
     int argc, char* argv[], const dart::gui::ApplicationOptions& options);
 
 } // namespace dart::gui::detail
-
-#endif // DART_GUI_DETAIL_APPLICATION_HPP_

@@ -30,10 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_RENDERABLE_HPP_
-#define DART_GUI_RENDERABLE_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
+
+#include <dart/simulation/fwd.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -48,10 +49,6 @@
 
 #include <cstddef>
 #include <cstdint>
-
-namespace dart::simulation {
-class World;
-} // namespace dart::simulation
 
 namespace dart::gui {
 
@@ -295,5 +292,3 @@ DART_GUI_API RenderableSetUpdatePlan planRenderableSetUpdate(
     const std::vector<ActiveRenderableState>& activeRenderableStates);
 
 } // namespace dart::gui
-
-#endif // DART_GUI_RENDERABLE_HPP_

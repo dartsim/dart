@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_WELDJOINT_HPP_
-#define DART_DYNAMICS_WELDJOINT_HPP_
+#pragma once
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/zero_dof_joint.hpp>
 
 #include <dart/export.hpp>
@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
 
 /// class WeldJoint
 class DART_API WeldJoint : public ZeroDofJoint
@@ -120,5 +118,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_WELDJOINT_HPP_

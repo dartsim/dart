@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_READ_HPP_
-#define DART_IO_READ_HPP_
+#pragma once
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -125,5 +124,3 @@ tryReadSkeleton(
 
 } // namespace io
 } // namespace dart
-
-#endif // DART_IO_READ_HPP_

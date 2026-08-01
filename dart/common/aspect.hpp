@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ASPECT_HPP_
-#define DART_COMMON_ASPECT_HPP_
+#pragma once
 
 #include <dart/common/class_with_virtual_base.hpp>
 #include <dart/common/cloneable.hpp>
 #include <dart/common/detail/no_op.hpp>
+#include <dart/common/fwd.hpp>
 
 #include <dart/export.hpp>
 
@@ -43,8 +43,6 @@
 
 namespace dart {
 namespace common {
-
-class Composite;
 
 class DART_API Aspect
 {
@@ -213,5 +211,3 @@ protected:
   DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)
 
 #include <dart/common/detail/aspect.hpp>
-
-#endif // DART_COMMON_ASPECT_HPP_

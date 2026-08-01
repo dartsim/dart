@@ -54,14 +54,6 @@ enum class WorldSyncStage;
 enum class PhysicalParameter;
 struct PhysicalParameterSelector;
 
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldKinematicsGraph;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
-
 // Value objects
 struct Contact;
 struct ContactForce;
@@ -93,3 +85,65 @@ struct DeactivationOptions;
 struct WorldOptions;
 
 } // namespace dart::simulation
+
+namespace dart::simulation::comps {
+
+struct MultibodyStructure;
+
+} // namespace dart::simulation::comps
+
+namespace dart::simulation::compute {
+
+namespace avbd_replay {
+struct RigidAvbdWarmStartReplayState;
+} // namespace avbd_replay
+
+class ComputeExecutor;
+class ComputeGraph;
+class ComputeNode;
+class ParallelExecutor;
+class SequentialExecutor;
+class WorldKinematicsGraph;
+class WorldStepPipeline;
+class WorldStepStage;
+
+// Built-in world-step stages
+class MultibodyContactStage;
+class MultibodyForwardDynamicsStage;
+class MultibodyPositionStage;
+class MultibodyVelocityStage;
+class RigidBodyContactStage;
+class RigidBodyPositionStage;
+class RigidBodyVelocityStage;
+class RigidIpcContactStage;
+class UnifiedConstraintStage;
+
+struct InverseDynamicsDerivatives;
+struct MultibodyVariationalTreeScratchAccess;
+
+} // namespace dart::simulation::compute
+
+namespace dart::simulation::detail {
+
+struct EntityAccess;
+struct RigidIpcProjectedNewtonSolveScratchWorkspace;
+struct WorldStorage;
+
+/// Internal storage seam: reaches the privately-held `WorldStorage` of a
+/// `World`. Declared here so `World` can befriend it and internal translation
+/// units can reach it without a public accessor.
+[[nodiscard]] DART_SIMULATION_API WorldStorage& storageOf(World& world);
+[[nodiscard]] DART_SIMULATION_API const WorldStorage& storageOf(
+    const World& world);
+
+} // namespace dart::simulation::detail
+
+namespace dart::simulation::io {
+
+class SerializerRegistry;
+
+namespace detail {
+class SkeletonLoaderWorldAccess;
+} // namespace detail
+
+} // namespace dart::simulation::io

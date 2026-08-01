@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_HPP_
-#define DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_HPP_
+#pragma once
 
 #include <dart/dynamics/jacobian_node.hpp>
 
@@ -124,5 +123,3 @@ protected:
 } // namespace dart
 
 #include <dart/dynamics/detail/templated_jacobian_node.hpp>
-
-#endif // DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_HPP_

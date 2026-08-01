@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_
-#define EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_
+#pragma once
+
+#include "fwd.hpp"
 
 #include <dart/all.hpp>
 
@@ -39,8 +40,6 @@
 
 #include <string>
 #include <vector>
-
-class State;
 
 //==============================================================================
 /// @brief class TerminalCondition
@@ -104,5 +103,3 @@ protected:
   /// @brief Constraint solver that carries the last collision result
   dart::constraint::ConstraintSolver* mConstraintSolver;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_TERMINALCONDITION_HPP_

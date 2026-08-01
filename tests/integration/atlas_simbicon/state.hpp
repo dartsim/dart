@@ -30,8 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_STATE_HPP_
-#define EXAMPLES_ATLASSIMBICON_STATE_HPP_
+#pragma once
+
+#include "fwd.hpp"
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/all.hpp>
 
@@ -49,16 +52,6 @@
 
 #define ATLAS_DEFAULT_CORONAL_CD 0.1
 #define ATLAS_DEFAULT_CORONAL_CV 0.1
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Joint;
-class Skeleton;
-} // namespace dynamics
-} // namespace dart
-
-class TerminalCondition;
 
 //==============================================================================
 /// @brief class State
@@ -331,5 +324,3 @@ private:
   /// @brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_STATE_HPP_

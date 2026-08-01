@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
-#define DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/entity.hpp>
 #include <dart/dynamics/entity_node.hpp>
@@ -78,5 +77,3 @@ const std::string& EntityNode<Base>::getName() const
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_ENTITYNODE_HPP_

@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_PANEL_HPP_
-#define DART_GUI_PANEL_HPP_
+#pragma once
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
@@ -49,7 +49,37 @@
 
 namespace dart::gui {
 
-struct ViewerLifecycleState;
+/// Renderer-neutral non-color encoding for a panel block or ordered segment.
+enum class PanelBlockPattern
+{
+  Solid,
+  ForwardHatch,
+  BackwardHatch,
+  CrossHatch,
+  Dots,
+};
+
+/// One ordered proportional segment inside a panel block.
+struct PanelBlockSegment
+{
+  Eigen::Vector4d rgba = Eigen::Vector4d(0.4, 0.4, 0.4, 1.0);
+  /// Relative width. The renderer normalizes all positive segment weights.
+  double weight{1.0};
+  PanelBlockPattern pattern{PanelBlockPattern::Solid};
+};
+
+/// One renderer-neutral cell in a panel block grid.
+///
+/// The tooltip and ordered segments are non-owning views that only need to
+/// remain valid for the duration of PanelBuilder::blockGrid(). An empty
+/// `segments` span uses the single-color/pattern fallback.
+struct PanelBlock
+{
+  Eigen::Vector4d rgba = Eigen::Vector4d(0.4, 0.4, 0.4, 1.0);
+  std::string_view tooltip;
+  PanelBlockPattern pattern{PanelBlockPattern::Solid};
+  std::span<const PanelBlockSegment> segments;
+};
 
 class DART_GUI_API PanelBuilder
 {
@@ -156,6 +186,20 @@ public:
   virtual void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba)
   {
     (void)rgba;
+    text(label);
+  }
+
+  /// Draw a responsive two-dimensional grid of colored diagnostic blocks.
+  ///
+  /// Renderers may reduce the requested column count when the panel is narrow.
+  /// Builders without a block-grid implementation fall back to the label.
+  virtual void blockGrid(
+      std::string_view label,
+      std::span<const PanelBlock> blocks,
+      std::size_t preferredColumns = 32)
+  {
+    (void)blocks;
+    (void)preferredColumns;
     text(label);
   }
 
@@ -309,5 +353,3 @@ struct Panel
 };
 
 } // namespace dart::gui
-
-#endif // DART_GUI_PANEL_HPP_

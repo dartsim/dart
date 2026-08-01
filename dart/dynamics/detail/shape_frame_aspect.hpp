@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
+#pragma once
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -43,11 +42,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class VisualAspect;
-class CollisionAspect;
-class DynamicsAspect;
-class ShapeFrame;
 
 namespace detail {
 
@@ -183,5 +177,3 @@ using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_

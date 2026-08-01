@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_BODY_HPP_
-#define DART_IO_MJCF_DETAIL_BODY_HPP_
+#pragma once
 
 #include <dart/io/export.hpp>
 #include <dart/io/mjcf/detail/body_attributes.hpp>
 #include <dart/io/mjcf/detail/camera.hpp>
 #include <dart/io/mjcf/detail/compiler.hpp>
 #include <dart/io/mjcf/detail/error.hpp>
+#include <dart/io/mjcf/detail/fwd.hpp>
 #include <dart/io/mjcf/detail/geom.hpp>
 #include <dart/io/mjcf/detail/inertial.hpp>
 #include <dart/io/mjcf/detail/joint.hpp>
@@ -52,8 +52,6 @@ namespace dart {
 namespace io {
 namespace MjcfParser {
 namespace detail {
-
-class Size;
 
 class DART_IO_API Body final
 {
@@ -180,5 +178,3 @@ private:
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_BODY_HPP_

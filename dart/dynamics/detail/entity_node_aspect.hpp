@@ -30,18 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_
+#pragma once
 
+#include <dart/dynamics/fwd.hpp>
 #include <dart/dynamics/node.hpp>
 
 #include <dart/export.hpp>
 
 namespace dart {
 namespace dynamics {
-
-template <class Base>
-class EntityNode;
 
 namespace detail {
 
@@ -99,5 +96,3 @@ public:
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_HPP_

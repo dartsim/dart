@@ -729,7 +729,6 @@ cpp-class|dart/constraint/boxed_lcp_constraint_solver.hpp|BoxedLcpConstraintSolv
 cpp-class|dart/constraint/boxed_lcp_solver.hpp|BoxedLcpSolver|class DART_DEPRECATED("8.0") BoxedLcpSolver
 cpp-class|dart/constraint/constrained_group.hpp|ConstrainedGroup|class DART_API ConstrainedGroup
 cpp-class|dart/constraint/constraint_base.hpp|ConstraintBase|class DART_API ConstraintBase
-cpp-class|dart/constraint/constraint_base.hpp|Skeleton|class Skeleton;
 cpp-class|dart/constraint/constraint_solver.hpp|ConstraintSolver|class DART_API ConstraintSolver
 cpp-class|dart/constraint/contact_constraint.hpp|ContactConstraint|class DART_API ContactConstraint : public ConstraintBase
 cpp-class|dart/constraint/contact_surface.hpp|ContactSurfaceHandler|class DART_API ContactSurfaceHandler
@@ -737,7 +736,6 @@ cpp-class|dart/constraint/contact_surface.hpp|DefaultContactSurfaceHandler|class
 cpp-class|dart/constraint/coupler_constraint.hpp|CouplerConstraint|class DART_API CouplerConstraint : public ConstraintBase
 cpp-class|dart/constraint/cylindrical_joint_constraint.hpp|CylindricalJointConstraint|class DART_API CylindricalJointConstraint : public DynamicJointConstraint
 cpp-class|dart/constraint/dantzig_boxed_lcp_solver.hpp|DantzigBoxedLcpSolver|class DART_API DART_DEPRECATED("8.0") DantzigBoxedLcpSolver
-cpp-class|dart/constraint/dynamic_joint_constraint.hpp|BodyNode|class BodyNode;
 cpp-class|dart/constraint/dynamic_joint_constraint.hpp|DynamicJointConstraint|class DART_API DynamicJointConstraint : public ConstraintBase
 cpp-class|dart/constraint/fwd.hpp|BalanceConstraint|class BalanceConstraint;
 cpp-class|dart/constraint/fwd.hpp|BallJointConstraint|class BallJointConstraint;
@@ -762,41 +760,18 @@ cpp-class|dart/constraint/fwd.hpp|RevoluteJointConstraint|class RevoluteJointCon
 cpp-class|dart/constraint/fwd.hpp|ServoMotorConstraint|class ServoMotorConstraint;
 cpp-class|dart/constraint/fwd.hpp|SoftContactConstraint|class SoftContactConstraint;
 cpp-class|dart/constraint/fwd.hpp|WeldJointConstraint|class WeldJointConstraint;
-cpp-class|dart/constraint/joint_constraint.hpp|BodyNode|class BodyNode;
 cpp-class|dart/constraint/joint_constraint.hpp|JointConstraint|class DART_API JointConstraint : public ConstraintBase
-cpp-class|dart/constraint/joint_constraint.hpp|Joint|class Joint;
-cpp-class|dart/constraint/joint_coulomb_friction_constraint.hpp|BodyNode|class BodyNode;
 cpp-class|dart/constraint/joint_coulomb_friction_constraint.hpp|JointCoulombFrictionConstraint|class DART_API JointCoulombFrictionConstraint : public ConstraintBase
-cpp-class|dart/constraint/joint_coulomb_friction_constraint.hpp|Joint|class Joint;
-cpp-class|dart/constraint/joint_limit_constraint.hpp|BodyNode|class BodyNode;
 cpp-class|dart/constraint/joint_limit_constraint.hpp|JointLimitConstraint|class DART_API JointLimitConstraint : public ConstraintBase
-cpp-class|dart/constraint/joint_limit_constraint.hpp|Joint|class Joint;
 cpp-class|dart/constraint/mimic_motor_constraint.hpp|MimicMotorConstraint|class DART_API MimicMotorConstraint : public ConstraintBase
 cpp-class|dart/constraint/pgs_boxed_lcp_solver.hpp|PgsBoxedLcpSolver|class DART_API DART_DEPRECATED("8.0") PgsBoxedLcpSolver : public BoxedLcpSolver
 cpp-class|dart/constraint/revolute_joint_constraint.hpp|RevoluteJointConstraint|class DART_API RevoluteJointConstraint : public DynamicJointConstraint
-cpp-class|dart/constraint/servo_motor_constraint.hpp|BodyNode|class BodyNode;
-cpp-class|dart/constraint/servo_motor_constraint.hpp|Joint|class Joint;
 cpp-class|dart/constraint/servo_motor_constraint.hpp|ServoMotorConstraint|class DART_API ServoMotorConstraint : public ConstraintBase
-cpp-class|dart/constraint/soft_contact_constraint.hpp|BodyNode|class BodyNode;
-cpp-class|dart/constraint/soft_contact_constraint.hpp|PointMass|class PointMass;
-cpp-class|dart/constraint/soft_contact_constraint.hpp|Skeleton|class Skeleton;
-cpp-class|dart/constraint/soft_contact_constraint.hpp|SoftBodyNode|class SoftBodyNode;
-cpp-class|dart/constraint/soft_contact_constraint.hpp|SoftCollisionInfo|class SoftCollisionInfo;
 cpp-class|dart/constraint/soft_contact_constraint.hpp|SoftContactConstraint|class DART_API SoftContactConstraint : public ConstraintBase
 cpp-class|dart/constraint/weld_joint_constraint.hpp|WeldJointConstraint|class DART_API WeldJointConstraint : public DynamicJointConstraint
 cpp-class|dart/dynamics/arrow_shape.hpp|ArrowShape|class DART_API ArrowShape : public MeshShape
 cpp-class|dart/dynamics/ball_joint.hpp|BallJoint|class DART_API BallJoint : public detail::BallJointBase
-cpp-class|dart/dynamics/body_node.hpp|ArticulatedDynamicsAccess|class ArticulatedDynamicsAccess;
 cpp-class|dart/dynamics/body_node.hpp|BodyNode|class DART_API BodyNode
-cpp-class|dart/dynamics/body_node.hpp|CollisionAspect|class CollisionAspect;
-cpp-class|dart/dynamics/body_node.hpp|DegreeOfFreedom|class DegreeOfFreedom;
-cpp-class|dart/dynamics/body_node.hpp|EndEffector|class EndEffector;
-cpp-class|dart/dynamics/body_node.hpp|GenCoord|class GenCoord;
-cpp-class|dart/dynamics/body_node.hpp|Joint|class Joint;
-cpp-class|dart/dynamics/body_node.hpp|Marker|class Marker;
-cpp-class|dart/dynamics/body_node.hpp|ShapeNode|class ShapeNode;
-cpp-class|dart/dynamics/body_node.hpp|Shape|class Shape;
-cpp-class|dart/dynamics/body_node.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/box_shape.hpp|BoxShape|class DART_API BoxShape : public Shape
 cpp-class|dart/dynamics/branch.hpp|Branch|class DART_API Branch : public Linkage
 cpp-class|dart/dynamics/capsule_shape.hpp|CapsuleShape|class DART_API CapsuleShape : public Shape
@@ -807,67 +782,34 @@ cpp-class|dart/dynamics/composite_node.hpp|CompositeStateNode|class CompositeSta
 cpp-class|dart/dynamics/cone_shape.hpp|ConeShape|class DART_API ConeShape : public Shape
 cpp-class|dart/dynamics/convex_mesh_shape.hpp|ConvexMeshShape|class DART_API ConvexMeshShape : public Shape
 cpp-class|dart/dynamics/cylinder_shape.hpp|CylinderShape|class DART_API CylinderShape : public Shape
-cpp-class|dart/dynamics/degree_of_freedom.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/degree_of_freedom.hpp|DegreeOfFreedom|class DART_API DegreeOfFreedom : public virtual common::Subject
-cpp-class|dart/dynamics/degree_of_freedom.hpp|Joint|class Joint;
-cpp-class|dart/dynamics/degree_of_freedom.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/detail/articulated_dynamics_algorithms.hpp|ArticulatedDynamicsAccess|class ArticulatedDynamicsAccess
 cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceAdaptor|class DART_API AssimpInputResourceAdaptor : public Assimp::IOStream
 cpp-class|dart/dynamics/detail/assimp_input_resource_adaptor.hpp|AssimpInputResourceRetrieverAdaptor|class DART_API AssimpInputResourceRetrieverAdaptor : public Assimp::IOSystem
-cpp-class|dart/dynamics/detail/ball_joint_aspect.hpp|BallJoint|class BallJoint;
 cpp-class|dart/dynamics/detail/basic_node_manager.hpp|BasicNodeManagerForBodyNode|class BasicNodeManagerForBodyNode
 cpp-class|dart/dynamics/detail/basic_node_manager.hpp|BasicNodeManagerForSkeleton|class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
-cpp-class|dart/dynamics/detail/body_node_aspect.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/detail/body_node_pool.hpp|BodyNodePool|class BodyNodePool
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|SkeletonRefCountingBase|class DART_API SkeletonRefCountingBase
-cpp-class|dart/dynamics/detail/body_node_ptr.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|TemplateBodyNodePtr|class TemplateBodyNodePtr
 cpp-class|dart/dynamics/detail/body_node_ptr.hpp|TemplateWeakBodyNodePtr|class TemplateWeakBodyNodePtr
 cpp-class|dart/dynamics/detail/degree_of_freedom_ptr.hpp|TemplateDegreeOfFreedomPtr|class TemplateDegreeOfFreedomPtr
 cpp-class|dart/dynamics/detail/degree_of_freedom_ptr.hpp|TemplateWeakDegreeOfFreedomPtr|class TemplateWeakDegreeOfFreedomPtr
-cpp-class|dart/dynamics/detail/end_effector_aspect.hpp|FixedJacobianNode|class FixedJacobianNode;
-cpp-class|dart/dynamics/detail/end_effector_aspect.hpp|Support|class Support;
 cpp-class|dart/dynamics/detail/entity_node_aspect.hpp|EntityNodeBase|class EntityNodeBase : public Base, public EntityNodeAspectBase<Base>
 cpp-class|dart/dynamics/detail/entity_node_aspect.hpp|EntityNodeBase|class EntityNodeBase<Base, true>
-cpp-class|dart/dynamics/detail/entity_node_aspect.hpp|EntityNode|class EntityNode;
-cpp-class|dart/dynamics/detail/euler_joint_aspect.hpp|EulerJoint|class EulerJoint;
-cpp-class|dart/dynamics/detail/fixed_jacobian_node.hpp|FixedJacobianNode|class FixedJacobianNode;
-cpp-class|dart/dynamics/detail/free_joint_aspect.hpp|FreeJoint|class FreeJoint;
-cpp-class|dart/dynamics/detail/generic_joint_aspect.hpp|GenericJoint|class GenericJoint;
-cpp-class|dart/dynamics/detail/inverse_kinematics_ptr.hpp|BodyNode|class BodyNode;
-cpp-class|dart/dynamics/detail/inverse_kinematics_ptr.hpp|JacobianNode|class JacobianNode;
 cpp-class|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateInverseKinematicsPtr|class TemplateInverseKinematicsPtr
 cpp-class|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateWeakInverseKinematicsPtr|class TemplateWeakInverseKinematicsPtr
 cpp-class|dart/dynamics/detail/joint_ptr.hpp|TemplateJointPtr|class TemplateJointPtr
 cpp-class|dart/dynamics/detail/joint_ptr.hpp|TemplateWeakJointPtr|class TemplateWeakJointPtr
-cpp-class|dart/dynamics/detail/node_ptr.hpp|NodeDestructor|class NodeDestructor;
 cpp-class|dart/dynamics/detail/node_ptr.hpp|TemplateNodePtr|class TemplateNodePtr
 cpp-class|dart/dynamics/detail/node_ptr.hpp|TemplateWeakNodePtr|class TemplateWeakNodePtr
-cpp-class|dart/dynamics/detail/planar_joint_aspect.hpp|PlanarJoint|class PlanarJoint;
-cpp-class|dart/dynamics/detail/prismatic_joint_aspect.hpp|PrismaticJoint|class PrismaticJoint;
-cpp-class|dart/dynamics/detail/revolute_joint_aspect.hpp|RevoluteJoint|class RevoluteJoint;
-cpp-class|dart/dynamics/detail/screw_joint_aspect.hpp|ScrewJoint|class ScrewJoint;
-cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|CollisionAspect|class CollisionAspect;
-cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|DynamicsAspect|class DynamicsAspect;
-cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|ShapeFrame|class ShapeFrame;
-cpp-class|dart/dynamics/detail/shape_frame_aspect.hpp|VisualAspect|class VisualAspect;
-cpp-class|dart/dynamics/detail/skeleton_aspect.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/detail/skeleton_dynamics_view.hpp|SkeletonDynamicsView|class SkeletonDynamicsView
 cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyAspect|class SoftBodyAspect;
-cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftBodyNode|class SoftBodyNode;
-cpp-class|dart/dynamics/detail/soft_body_node_aspect.hpp|SoftMeshShape|class SoftMeshShape;
 cpp-class|dart/dynamics/detail/translational_joint2_d_aspect.hpp|TranslationalJoint2DUniqueProperties|class DART_API TranslationalJoint2DUniqueProperties
-cpp-class|dart/dynamics/detail/translational_joint2_d_aspect.hpp|TranslationalJoint2D|class TranslationalJoint2D;
-cpp-class|dart/dynamics/detail/universal_joint_aspect.hpp|UniversalJoint|class UniversalJoint;
 cpp-class|dart/dynamics/ellipsoid_shape.hpp|EllipsoidShape|class DART_API EllipsoidShape : public Shape
-cpp-class|dart/dynamics/end_effector.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/end_effector.hpp|EndEffector|class EndEffector final : public common::EmbedPropertiesOnTopOf<
-cpp-class|dart/dynamics/end_effector.hpp|EndEffector|class EndEffector;
-cpp-class|dart/dynamics/end_effector.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/end_effector.hpp|Support|class DART_API Support final
 cpp-class|dart/dynamics/entity.hpp|Detachable|class DART_API Detachable : public virtual Entity
 cpp-class|dart/dynamics/entity.hpp|Entity|class DART_API Entity : public virtual common::Subject
-cpp-class|dart/dynamics/entity.hpp|Frame|class Frame;
 cpp-class|dart/dynamics/entity_node.hpp|EntityNode|class EntityNode
 cpp-class|dart/dynamics/euler_joint.hpp|EulerJoint|class DART_API EulerJoint : public detail::EulerJointBase
 cpp-class|dart/dynamics/fixed_frame.hpp|FixedFrame|class DART_API FixedFrame
@@ -876,18 +818,22 @@ cpp-class|dart/dynamics/frame.hpp|Frame|class DART_API Frame : public virtual En
 cpp-class|dart/dynamics/frame.hpp|WorldFrame|class WorldFrame : public Frame
 cpp-class|dart/dynamics/free_joint.hpp|FreeJoint|class DART_API FreeJoint : public detail::FreeJointBase
 cpp-class|dart/dynamics/fwd.hpp|ArrowShape|class ArrowShape;
+cpp-class|dart/dynamics/fwd.hpp|ArticulatedDynamicsAccess|class ArticulatedDynamicsAccess;
 cpp-class|dart/dynamics/fwd.hpp|AssimpInputResourceAdaptor|class AssimpInputResourceAdaptor;
 cpp-class|dart/dynamics/fwd.hpp|BallJoint|class BallJoint;
+cpp-class|dart/dynamics/fwd.hpp|BodyNodePool|class BodyNodePool;
 cpp-class|dart/dynamics/fwd.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/fwd.hpp|BoxShape|class BoxShape;
 cpp-class|dart/dynamics/fwd.hpp|Branch|class Branch;
 cpp-class|dart/dynamics/fwd.hpp|CapsuleShape|class CapsuleShape;
 cpp-class|dart/dynamics/fwd.hpp|Chain|class Chain;
+cpp-class|dart/dynamics/fwd.hpp|CollisionAspect|class CollisionAspect;
 cpp-class|dart/dynamics/fwd.hpp|CompositeNode|class CompositeNode;
 cpp-class|dart/dynamics/fwd.hpp|ConeShape|class ConeShape;
 cpp-class|dart/dynamics/fwd.hpp|ConvexMeshShape|class ConvexMeshShape;
 cpp-class|dart/dynamics/fwd.hpp|CylinderShape|class CylinderShape;
 cpp-class|dart/dynamics/fwd.hpp|DegreeOfFreedom|class DegreeOfFreedom;
+cpp-class|dart/dynamics/fwd.hpp|DynamicsAspect|class DynamicsAspect;
 cpp-class|dart/dynamics/fwd.hpp|EllipsoidShape|class EllipsoidShape;
 cpp-class|dart/dynamics/fwd.hpp|EndEffector|class EndEffector;
 cpp-class|dart/dynamics/fwd.hpp|EntityNode|class EntityNode;
@@ -912,10 +858,12 @@ cpp-class|dart/dynamics/fwd.hpp|Marker|class Marker;
 cpp-class|dart/dynamics/fwd.hpp|MeshShape|class MeshShape;
 cpp-class|dart/dynamics/fwd.hpp|MetaSkeleton|class MetaSkeleton;
 cpp-class|dart/dynamics/fwd.hpp|MultiSphereConvexHullShape|class MultiSphereConvexHullShape;
+cpp-class|dart/dynamics/fwd.hpp|NodeDestructor|class NodeDestructor;
 cpp-class|dart/dynamics/fwd.hpp|Node|class Node;
 cpp-class|dart/dynamics/fwd.hpp|PlanarJoint|class PlanarJoint;
 cpp-class|dart/dynamics/fwd.hpp|PlaneShape|class PlaneShape;
 cpp-class|dart/dynamics/fwd.hpp|PointCloudShape|class PointCloudShape;
+cpp-class|dart/dynamics/fwd.hpp|PointMassNotifier|class PointMassNotifier;
 cpp-class|dart/dynamics/fwd.hpp|PointMass|class PointMass;
 cpp-class|dart/dynamics/fwd.hpp|PrismaticJoint|class PrismaticJoint;
 cpp-class|dart/dynamics/fwd.hpp|PyramidShape|class PyramidShape;
@@ -927,11 +875,23 @@ cpp-class|dart/dynamics/fwd.hpp|ShapeNode|class ShapeNode;
 cpp-class|dart/dynamics/fwd.hpp|Shape|class Shape;
 cpp-class|dart/dynamics/fwd.hpp|SharedLibraryIkFast|class SharedLibraryIkFast;
 cpp-class|dart/dynamics/fwd.hpp|SimpleFrame|class SimpleFrame;
+cpp-class|dart/dynamics/fwd.hpp|SkeletonDynamicsView|class SkeletonDynamicsView;
 cpp-class|dart/dynamics/fwd.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/fwd.hpp|SoftBodyNode|class SoftBodyNode;
 cpp-class|dart/dynamics/fwd.hpp|SoftMeshShape|class SoftMeshShape;
 cpp-class|dart/dynamics/fwd.hpp|SparseOccupancyGrid|class SparseOccupancyGrid;
 cpp-class|dart/dynamics/fwd.hpp|SphereShape|class SphereShape;
+cpp-class|dart/dynamics/fwd.hpp|Support|class Support;
+cpp-class|dart/dynamics/fwd.hpp|TemplateBodyNodePtr|class TemplateBodyNodePtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateDegreeOfFreedomPtr|class TemplateDegreeOfFreedomPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateInverseKinematicsPtr|class TemplateInverseKinematicsPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateJointPtr|class TemplateJointPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateNodePtr|class TemplateNodePtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateWeakBodyNodePtr|class TemplateWeakBodyNodePtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateWeakDegreeOfFreedomPtr|class TemplateWeakDegreeOfFreedomPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateWeakInverseKinematicsPtr|class TemplateWeakInverseKinematicsPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateWeakJointPtr|class TemplateWeakJointPtr;
+cpp-class|dart/dynamics/fwd.hpp|TemplateWeakNodePtr|class TemplateWeakNodePtr;
 cpp-class|dart/dynamics/fwd.hpp|TemplatedJacobianNode|class TemplatedJacobianNode;
 cpp-class|dart/dynamics/fwd.hpp|TranslationalJoint2D|class TranslationalJoint2D;
 cpp-class|dart/dynamics/fwd.hpp|TranslationalJoint|class TranslationalJoint;
@@ -944,7 +904,6 @@ cpp-class|dart/dynamics/fwd.hpp|X|class X; \
 cpp-class|dart/dynamics/fwd.hpp|X|class X; \
 cpp-class|dart/dynamics/fwd.hpp|X|class X; \
 cpp-class|dart/dynamics/fwd.hpp|ZeroDofJoint|class ZeroDofJoint;
-cpp-class|dart/dynamics/generic_joint.hpp|DegreeOfFreedom|class DegreeOfFreedom;
 cpp-class|dart/dynamics/generic_joint.hpp|GenericJoint|class GenericJoint
 cpp-class|dart/dynamics/group.hpp|Group|class DART_API Group : public ReferentialSkeleton
 cpp-class|dart/dynamics/heightmap_shape.hpp|HeightmapShape|class HeightmapShape : public Shape
@@ -981,34 +940,18 @@ cpp-class|dart/dynamics/inverse_kinematics.hpp|JacobianDLS|class JacobianDLS;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|JacobianTranspose|class JacobianTranspose;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|Objective|class Objective;
 cpp-class|dart/dynamics/inverse_kinematics.hpp|TaskSpaceRegion|class TaskSpaceRegion;
-cpp-class|dart/dynamics/jacobian_node.hpp|DegreeOfFreedom|class DegreeOfFreedom;
-cpp-class|dart/dynamics/jacobian_node.hpp|InverseKinematics|class InverseKinematics;
 cpp-class|dart/dynamics/jacobian_node.hpp|JacobianNode|class DART_API JacobianNode : public virtual Frame, public Node
-cpp-class|dart/dynamics/jacobian_node.hpp|Skeleton|class Skeleton;
-cpp-class|dart/dynamics/joint.hpp|BodyNode|class BodyNode;
-cpp-class|dart/dynamics/joint.hpp|DegreeOfFreedom|class DegreeOfFreedom;
 cpp-class|dart/dynamics/joint.hpp|Joint|class DART_API Joint
-cpp-class|dart/dynamics/joint.hpp|Joint|class Joint;
-cpp-class|dart/dynamics/joint.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/line_segment_shape.hpp|LineSegmentShape|class DART_API LineSegmentShape : public Shape
 cpp-class|dart/dynamics/linkage.hpp|Linkage|class DART_API Linkage : public ReferentialSkeleton
-cpp-class|dart/dynamics/marker.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/marker.hpp|Marker|class DART_API Marker final : public common::EmbedPropertiesOnTopOf<
 cpp-class|dart/dynamics/mesh_shape.hpp|MeshHandle|class DART_API MeshHandle
 cpp-class|dart/dynamics/mesh_shape.hpp|MeshShape|class DART_API MeshShape : public Shape
-cpp-class|dart/dynamics/meta_skeleton.hpp|BodyNode|class BodyNode;
-cpp-class|dart/dynamics/meta_skeleton.hpp|DegreeOfFreedom|class DegreeOfFreedom;
-cpp-class|dart/dynamics/meta_skeleton.hpp|Joint|class Joint;
 cpp-class|dart/dynamics/meta_skeleton.hpp|MetaSkeleton|class DART_API MetaSkeleton : public common::Subject
-cpp-class|dart/dynamics/meta_skeleton.hpp|PointMass|class PointMass;
-cpp-class|dart/dynamics/meta_skeleton.hpp|SoftBodyNode|class SoftBodyNode;
-cpp-class|dart/dynamics/mimic_dof_properties.hpp|Joint|class Joint;
 cpp-class|dart/dynamics/multi_sphere_convex_hull_shape.hpp|MultiSphereConvexHullShape|class DART_API MultiSphereConvexHullShape : public Shape
 cpp-class|dart/dynamics/node.hpp|AccessoryNode|class AccessoryNode
-cpp-class|dart/dynamics/node.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/node.hpp|NodeDestructor|class DART_API NodeDestructor final
 cpp-class|dart/dynamics/node.hpp|Node|class DART_API Node : public virtual common::Subject,
-cpp-class|dart/dynamics/node.hpp|Node|class Node;
 cpp-class|dart/dynamics/node.hpp|Properties|class Properties : public common::Cloneable<Properties>
 cpp-class|dart/dynamics/node.hpp|State|class State : public common::Cloneable<State>
 cpp-class|dart/dynamics/node_manager_joiner.hpp|NodeManagerJoinerForBodyNode|class NodeManagerJoinerForBodyNode
@@ -1022,11 +965,8 @@ cpp-class|dart/dynamics/node_manager_joiner.hpp|NodeManagerJoinerForSkeleton|cla
 cpp-class|dart/dynamics/planar_joint.hpp|PlanarJoint|class DART_API PlanarJoint : public detail::PlanarJointBase
 cpp-class|dart/dynamics/plane_shape.hpp|PlaneShape|class DART_API PlaneShape : public Shape
 cpp-class|dart/dynamics/point_cloud_shape.hpp|PointCloudShape|class DART_API PointCloudShape : public Shape
-cpp-class|dart/dynamics/point_mass.hpp|EllipsoidShape|class EllipsoidShape;
 cpp-class|dart/dynamics/point_mass.hpp|PointMassNotifier|class DART_API PointMassNotifier : public Entity
-cpp-class|dart/dynamics/point_mass.hpp|PointMassNotifier|class PointMassNotifier;
 cpp-class|dart/dynamics/point_mass.hpp|PointMass|class DART_API PointMass : public common::Subject
-cpp-class|dart/dynamics/point_mass.hpp|SoftBodyNode|class SoftBodyNode;
 cpp-class|dart/dynamics/prismatic_joint.hpp|PrismaticJoint|class DART_API PrismaticJoint : public detail::PrismaticJointBase
 cpp-class|dart/dynamics/pyramid_shape.hpp|PyramidShape|class DART_API PyramidShape : public Shape
 cpp-class|dart/dynamics/referential_skeleton.hpp|ReferentialSkeleton|class DART_API ReferentialSkeleton : public MetaSkeleton
@@ -1037,37 +977,26 @@ cpp-class|dart/dynamics/shape_frame.hpp|CollisionAspect|class DART_API Collision
 cpp-class|dart/dynamics/shape_frame.hpp|DynamicsAspect|class DART_API DynamicsAspect final
 cpp-class|dart/dynamics/shape_frame.hpp|ShapeFrame|class DART_API ShapeFrame : public virtual common::VersionCounter,
 cpp-class|dart/dynamics/shape_frame.hpp|VisualAspect|class DART_API VisualAspect final
-cpp-class|dart/dynamics/shape_node.hpp|CollisionAspect|class CollisionAspect;
-cpp-class|dart/dynamics/shape_node.hpp|DynamicsAspect|class DynamicsAspect;
 cpp-class|dart/dynamics/shape_node.hpp|ShapeNode|class DART_API ShapeNode : public detail::ShapeNodeCompositeBase
-cpp-class|dart/dynamics/shape_node.hpp|VisualAspect|class VisualAspect;
 cpp-class|dart/dynamics/shared_library_ik_fast.hpp|SharedLibraryIkFast|class DART_API SharedLibraryIkFast : public IkFast
 cpp-class|dart/dynamics/simple_frame.hpp|SimpleFrame|class DART_API SimpleFrame : public Detachable, public ShapeFrame
-cpp-class|dart/dynamics/skeleton.hpp|BodyNodePool|class BodyNodePool;
-cpp-class|dart/dynamics/skeleton.hpp|SkeletonDynamicsView|class SkeletonDynamicsView;
 cpp-class|dart/dynamics/skeleton.hpp|Skeleton|class DART_API Skeleton
 cpp-class|dart/dynamics/soft_body_node.hpp|SoftBodyNodeHelper|class DART_API SoftBodyNodeHelper
 cpp-class|dart/dynamics/soft_body_node.hpp|SoftBodyNode|class DART_API SoftBodyNode : public detail::SoftBodyNodeBase
-cpp-class|dart/dynamics/soft_mesh_shape.hpp|SoftBodyNode|class SoftBodyNode;
 cpp-class|dart/dynamics/soft_mesh_shape.hpp|SoftMeshShape|class DART_API SoftMeshShape : public Shape
 cpp-class|dart/dynamics/sparse_occupancy_grid.hpp|SparseOccupancyGrid|class DART_API SparseOccupancyGrid
 cpp-class|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|class BodyNodeSpecializedFor
 cpp-class|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|class BodyNodeSpecializedFor<SpecNode1, OtherSpecNodes...>
 cpp-class|dart/dynamics/specialized_node_manager.hpp|BodyNodeSpecializedFor|class BodyNodeSpecializedFor<SpecNode>
-cpp-class|dart/dynamics/specialized_node_manager.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor|class SkeletonSpecializedFor
 cpp-class|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor|class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...>
 cpp-class|dart/dynamics/specialized_node_manager.hpp|SkeletonSpecializedFor|class SkeletonSpecializedFor<SpecNode>
-cpp-class|dart/dynamics/specialized_node_manager.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/sphere_shape.hpp|SphereShape|class DART_API SphereShape : public Shape
 cpp-class|dart/dynamics/templated_jacobian_node.hpp|TemplatedJacobianNode|class TemplatedJacobianNode : public JacobianNode
 cpp-class|dart/dynamics/translational_joint.hpp|TranslationalJoint|class DART_API TranslationalJoint : public GenericJoint<math::R3Space>
 cpp-class|dart/dynamics/translational_joint2_d.hpp|TranslationalJoint2D|class DART_API TranslationalJoint2D : public detail::TranslationalJoint2DBase
 cpp-class|dart/dynamics/universal_joint.hpp|UniversalJoint|class DART_API UniversalJoint : public detail::UniversalJointBase
-cpp-class|dart/dynamics/weld_joint.hpp|BodyNode|class BodyNode;
 cpp-class|dart/dynamics/weld_joint.hpp|WeldJoint|class DART_API WeldJoint : public ZeroDofJoint
-cpp-class|dart/dynamics/zero_dof_joint.hpp|BodyNode|class BodyNode;
-cpp-class|dart/dynamics/zero_dof_joint.hpp|Skeleton|class Skeleton;
 cpp-class|dart/dynamics/zero_dof_joint.hpp|ZeroDofJoint|class DART_API ZeroDofJoint : public Joint
 cpp-enum-class|dart/constraint/constraint_base.hpp|ConstraintPhase|enum class ConstraintPhase
 cpp-enum-class|dart/dynamics/detail/euler_joint_aspect.hpp|AxisOrder|enum class AxisOrder : int
@@ -1625,7 +1554,6 @@ cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mCollisio
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mCollisionResult|collision::CollisionResult mCollisionResult;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mConstrainedGroups|std::vector<ConstrainedGroup> mConstrainedGroups;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mContactConstraints|std::vector<ContactConstraintPtr> mContactConstraints;
-cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mContactPtrs|std::vector<collision::Contact*> mContactPtrs;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mContactSurfaceHandler|ContactSurfaceHandlerPtr mContactSurfaceHandler;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mCouplerConstraints|std::vector<CouplerConstraintPtr> mCouplerConstraints;
 cpp-member-data|dart/constraint/constraint_solver.hpp|ConstraintSolver.mFIndexBackup|Eigen::VectorXi mFIndexBackup;
@@ -1802,7 +1730,6 @@ cpp-member-data|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateInverseK
 cpp-member-data|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateInverseKinematicsPtr.mJacNodePtr|JacobianNodePtrT mJacNodePtr;
 cpp-member-data|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateWeakInverseKinematicsPtr.mWeakIK|std::weak_ptr<InverseKinematicsT> mWeakIK;
 cpp-member-data|dart/dynamics/detail/inverse_kinematics_ptr.hpp|TemplateWeakInverseKinematicsPtr.mWeakJacNode|WeakJacobianNodePtrT mWeakJacNode;
-cpp-member-data|dart/dynamics/detail/joint_aspect.hpp|JointProperties.mActuatorTypes|std::map<std::size_t, ActuatorType> mActuatorTypes;
 cpp-member-data|dart/dynamics/detail/joint_aspect.hpp|JointProperties.mActuatorType|ActuatorType mActuatorType;
 cpp-member-data|dart/dynamics/detail/joint_aspect.hpp|JointProperties.mIsPositionLimitEnforced|bool mIsPositionLimitEnforced;
 cpp-member-data|dart/dynamics/detail/joint_aspect.hpp|JointProperties.mMimicDofProps|std::vector<MimicDofProperties> mMimicDofProps;
@@ -5815,9 +5742,9 @@ cpp-smart-pointer-macro|dart/dynamics/fwd.hpp|Shape|DART_COMMON_DECLARE_SHARED_W
 cpp-smart-pointer-macro|dart/dynamics/fwd.hpp|SimpleFrame|DART_COMMON_DECLARE_SHARED_WEAK(SimpleFrame)
 cpp-smart-pointer-macro|dart/dynamics/fwd.hpp|Skeleton|DART_COMMON_DECLARE_SHARED_WEAK(Skeleton)
 cpp-smart-pointer-macro|dart/dynamics/fwd.hpp|SoftMeshShape|DART_COMMON_DECLARE_SHARED_WEAK(SoftMeshShape)
-cpp-struct|dart/constraint/constrained_group.hpp|ConstraintInfo|struct ConstraintInfo;
 cpp-struct|dart/constraint/constraint_base.hpp|ConstraintInfo|struct ConstraintInfo
 cpp-struct|dart/constraint/contact_surface.hpp|ContactSurfaceParams|struct DART_API ContactSurfaceParams
+cpp-struct|dart/constraint/fwd.hpp|ConstraintInfo|struct ConstraintInfo;
 cpp-struct|dart/constraint/fwd.hpp|ContactSurfaceParams|struct ContactSurfaceParams;
 cpp-struct|dart/constraint/pgs_boxed_lcp_solver.hpp|Option|struct DART_API Option
 cpp-struct|dart/dynamics/arrow_shape.hpp|Properties|struct DART_API Properties

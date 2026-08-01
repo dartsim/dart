@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
-#define DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
+#pragma once
 
 #include <dart/collision/collision_detector.hpp>
 
@@ -166,5 +165,3 @@ private:
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_

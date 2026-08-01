@@ -30,15 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_NODEPTR_HPP_
-#define DART_DYNAMICS_DETAIL_NODEPTR_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/body_node_ptr.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 namespace dart {
 namespace dynamics {
-
-class NodeDestructor;
 
 /// TemplateNodePtr is a templated class that enables users to create a strong
 /// reference-counting NodePtr. Holding onto a NodePtr will ensure that the
@@ -263,5 +261,3 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_DETAIL_NODEPTR_HPP_

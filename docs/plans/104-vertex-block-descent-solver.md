@@ -387,12 +387,12 @@ surviving rows stay below 0.772 mm linear and 0.000317 rad angular residual at
 frame 120. The frame-60 capture remains an explicit pre-evaluation state. Both
 engine ViewReports pass, the runtime scene and benchmark share fingerprint
 `8ca3fbfa00c3dce9`, and the six current captures bind source digest
-`556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12`.
+`b3f102b53c820809c0a8b34c0bf3002853b3b1e79ce17f56fb6380d10cccfd51`.
 Capture manifests bind the capture-time source tree and artifacts; an accepted
 benchmark binds that same source tree plus its translation unit. The accepted
-quiet-host five-repeat Release run records 8.612602 ms median CPU cost per step
-with 2.04% CPU CV; its raw JSON SHA-256 is
-`c2c81c26ca0fa96d1cf11da4c5a166a3a2eb7ead9b80aafac207c20f03cf7c67`.
+quiet-host five-repeat Release run records 9.053841 ms median CPU cost per step
+with 0.57% CPU CV; its raw JSON SHA-256 is
+`b377ef3e307a3f5ebbe935ff3c4abcace477cfbb92062296947b4b3537d0427d`.
 The current evidence is sealed in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 The matched `vbd_paper_breakable_wall` row reuses that exact scene fingerprint
@@ -402,8 +402,8 @@ attachments, 0.132 m peak wall-normal and 0.062 m RMS displacement, and 120
 bricks beyond 0.05 m; its frame-120 oracle retains the full connected wall.
 All 712 retained VBD rows stay below 16.39 mm and 0.01328 rad at frame 18,
 then 11.10 mm and 0.001310 rad at frame 120. Both assessed VBD renders pass.
-The same five-repeat benchmark records 8.302657 ms VBD and 8.612602 ms AVBD
-median CPU cost per step with 1.94% and 2.04% CPU CV. Its 0.9640x VBD/AVBD
+The same five-repeat benchmark records 8.953167 ms VBD and 9.053841 ms AVBD
+median CPU cost per step with 1.79% and 0.57% CPU CV. Its 0.9889x VBD/AVBD
 ratio is descriptive only because the methods produce different physical
 outcomes and there is no achieved-accuracy reference denominator. The current
 cross-linked evidence is sealed in
@@ -416,8 +416,8 @@ impact regions reach 0.06346 m maximum / 0.02076 m RMS linear residual and
 0.7270 rad maximum / 0.2164 rad RMS angular residual. Only 27.27% of bricks
 outside impact bands and 19.05% overall remain placed, with 2.878 m maximum
 wall-normal displacement. Both assessed SI renders pass. The same benchmark
-records 14.296125 ms SI median CPU cost per step with 2.12% CPU CV. Its
-1.6599x SI/AVBD and 1.7219x SI/VBD ratios are descriptive only. Frame 120 is
+records 14.783755 ms SI median CPU cost per step with 0.48% CPU CV. Its
+1.6329x SI/AVBD and 1.6512x SI/VBD ratios are descriptive only. Frame 120 is
 the only shared quantitative
 checkpoint across the three method rows; the earlier frame-14, frame-18, and
 frame-60 checkpoints are per-family diagnostic oracles, not cross-method
@@ -1090,6 +1090,25 @@ internal/explicit-opt-in decision, not a leaked solver registry.
 
 ## AVBD Current Next Gaps
 
+### Ordered completion PRs
+
+The maintainer directed the remaining parity program into two ordered
+completion PRs after the current shared SI/VBD/AVBD foundation lands:
+
+1. Complete all 88 VBD predicates in one VBD PR from updated `main`. That PR
+   owns the honest XPBD comparator needed by the VBD paper comparisons, the
+   remaining VBD CPU/CUDA mechanisms, its complete paper/site/video/source-demo
+   corpus, and achieved-accuracy performance leadership. It must not claim AVBD
+   completion or absorb AVBD-only mechanisms.
+2. After the VBD PR lands, complete all 88 AVBD predicates in one AVBD PR from
+   updated `main`. That PR owns the remaining augmented-Lagrangian,
+   quasi-Newton, articulated/contact/unified, CPU/CUDA, corpus, four-method,
+   and performance predicates and reuses the landed VBD/XPBD evidence by hash.
+
+Each PR may contain multiple bounded work-packet commits, but the completion
+claims and review/CI boundaries stay separate. Published PR branches are merged
+with current `main`, never rebased.
+
 The free-rigid fixed-joint/contact, free-rigid/articulated one-DOF motor,
 breakable fixed point-joint, prismatic/revolute/spherical facade,
 articulated breakable-joint, high-ratio articulated-chain, and public AVBD
@@ -1410,21 +1429,26 @@ AVBD parity additionally requires:
 Relocated from the dashboard on 2026-07-03; newest first.
 
 On 2026-08-01, one strict quiet-host five-repeat Figure 13 run was accepted
-after four fail-closed candidate rejections. It binds capture-source digest
-`556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12` and
+after rejecting noisy, contaminated, or source-stale candidates. It binds
+capture-source digest
+`b3f102b53c820809c0a8b34c0bf3002853b3b1e79ce17f56fb6380d10cccfd51` and
 benchmark translation-unit digest
 `f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370`.
-Median CPU costs/CVs are 8.612602 ms/2.04% AVBD, 8.302657 ms/1.94% VBD, and
-14.296125 ms/2.12% Sequential Impulse. The AVBD -> VBD -> SI packet chain was
+Median CPU costs/CVs are 9.053841 ms/0.57% AVBD, 8.953167 ms/1.79% VBD, and
+14.783755 ms/0.48% Sequential Impulse. The AVBD -> VBD -> SI packet chain was
 regenerated from the one raw JSON and passes all 192 focused tests plus the
 58-packet corpus checker. The exact post-reseal tree also passes uncached
-default and CUDA `test-all`; CUDA environment success does not close the open
-solver-specific GPU-parity rows. Final independent code and
-architecture/docs/claims reviews approved the closeout after the canonical
-Figure 13/video rows linked the SI packet and the checker pinned every legacy
-filename to its exact version-1 or version-3 schema. Ratios remain descriptive
-because the three outcomes differ and no achieved-accuracy reference
-denominator exists.
+default `test-all` with all six phases and CUDA `test-all` with all seven
+phases. The CUDA run passed 213 core C++ tests, 80 runnable simulation tests
+with two disabled aggregate wrappers, eight CUDA device tests, and all nine
+benchmark-smoke commands; CUDA environment success does not close the open
+solver-specific GPU-parity rows. Independent code and architecture/claims
+reviews approved the pre-merge SI tree, and the `main`-merged tree received a
+final local review after conflict resolution and handoff correction. The
+canonical Figure 13/video rows link the SI packet, and the checker pins every
+legacy filename to its exact version-1 or version-3 schema. Ratios remain
+descriptive because the three outcomes differ and no achieved-accuracy
+reference denominator exists.
 
 On 2026-07-30, the default public Sequential Impulse family gained
 solver-owned hard rigid pair rows. Fixed/spherical/revolute/prismatic masks and

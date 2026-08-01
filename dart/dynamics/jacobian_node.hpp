@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JACOBIANNODE_HPP_
-#define DART_DYNAMICS_JACOBIANNODE_HPP_
+#pragma once
 
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/fwd.hpp>
@@ -45,10 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class Skeleton;
-class DegreeOfFreedom;
-class InverseKinematics;
 
 /// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
@@ -299,5 +294,3 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_JACOBIANNODE_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_GEOMETRY_HPP_
-#define DART_MATH_GEOMETRY_HPP_
+#pragma once
 
 #include <dart/math/constants.hpp>
 #include <dart/math/math_types.hpp>
@@ -716,5 +715,3 @@ DART_API void dAdInvT_batch(
 } // namespace dart
 
 #include <dart/math/detail/geometry-impl.hpp>
-
-#endif // DART_MATH_GEOMETRY_HPP_

@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHMATERIAL_HPP_
-#define DART_DYNAMICS_MESHMATERIAL_HPP_
+#pragma once
 
 #include <Eigen/Core>
 
@@ -78,5 +77,3 @@ struct MeshMaterial
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_MESHMATERIAL_HPP_

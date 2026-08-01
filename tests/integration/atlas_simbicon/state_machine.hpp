@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
-#define EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
+#pragma once
+
+#include "fwd.hpp"
 
 #include <dart/all.hpp>
 
@@ -39,8 +40,6 @@
 
 #include <string>
 #include <vector>
-
-class State;
 
 /// @brief StateMachine for Atlas robot
 class StateMachine
@@ -130,5 +129,3 @@ private:
   /// @brief Whether to print messages about the internal state
   bool mVerbosity;
 };
-
-#endif // EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_

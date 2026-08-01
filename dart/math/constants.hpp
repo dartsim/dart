@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_CONSTANTS_HPP_
-#define DART_MATH_CONSTANTS_HPP_
+#pragma once
 
 #include "dart/common/deprecated.hpp"
 #include "dart/common/diagnostics.hpp"
@@ -155,5 +154,3 @@ DART_SUPPRESS_DEPRECATED_END
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_CONSTANTS_HPP_

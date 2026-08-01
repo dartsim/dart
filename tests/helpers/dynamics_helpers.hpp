@@ -36,8 +36,7 @@
  * @note Heavy dependencies: dynamics, collision, math
  */
 
-#ifndef DART_UNITTESTS_DYNAMICS_HELPERS_HPP_
-#define DART_UNITTESTS_DYNAMICS_HELPERS_HPP_
+#pragma once
 
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/All.hpp"
@@ -461,5 +460,3 @@ inline SkeletonPtr createBox(
 
   return box;
 }
-
-#endif // DART_UNITTESTS_DYNAMICS_HELPERS_HPP_

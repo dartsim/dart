@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SIGNAL_HPP_
-#define DART_COMMON_DETAIL_SIGNAL_HPP_
+#pragma once
 
 #include <vector>
 
@@ -255,5 +254,3 @@ Connection SlotRegister<T>::connect(const SlotType& slot)
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_DETAIL_SIGNAL_HPP_

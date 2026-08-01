@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MARKER_HPP_
-#define DART_DYNAMICS_MARKER_HPP_
+#pragma once
 
 #include <dart/dynamics/detail/marker_aspect.hpp>
 #include <dart/dynamics/fixed_jacobian_node.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/deprecated.hpp>
 
@@ -44,8 +44,6 @@
 
 namespace dart {
 namespace dynamics {
-
-class BodyNode;
 
 class DART_API Marker final : public common::EmbedPropertiesOnTopOf<
                                   Marker,
@@ -112,5 +110,3 @@ private:
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_DYNAMICS_MARKER_HPP_

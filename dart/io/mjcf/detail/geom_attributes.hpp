@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_IO_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
-#define DART_IO_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
+#pragma once
 
 #include <dart/math/math_types.hpp>
 
@@ -138,5 +137,3 @@ appendGeomAttributes(GeomAttributes& attributes, tinyxml2::XMLElement* element);
 } // namespace MjcfParser
 } // namespace io
 } // namespace dart
-
-#endif // #ifndef DART_IO_MJCF_DETAIL_GEOMATTRIBUTES_HPP_

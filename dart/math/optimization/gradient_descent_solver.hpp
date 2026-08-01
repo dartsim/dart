@@ -30,8 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_
-#define DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_
+#pragma once
 
 #include <dart/math/optimization/solver.hpp>
 
@@ -238,5 +237,3 @@ protected:
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_OPTIMIZATION_GRADIENTDESCENTSOLVER_HPP_

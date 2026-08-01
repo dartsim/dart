@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SHAREDLIBRARY_HPP_
-#define DART_COMMON_SHAREDLIBRARY_HPP_
+#pragma once
 
+#include <dart/common/fwd.hpp>
 #include <dart/common/platform.hpp>
 
 #include <filesystem>
@@ -78,10 +78,6 @@ static constexpr const char* DART_SHARED_LIB_PREFIX = "";
 
 namespace dart {
 namespace common {
-
-namespace detail {
-class SharedLibraryManager;
-} // namespace detail
 
 /// SharedLibrary is a RAII object wrapping a shared library.
 class SharedLibrary
@@ -158,5 +154,3 @@ private:
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_SHAREDLIBRARY_HPP_

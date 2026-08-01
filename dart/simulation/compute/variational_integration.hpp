@@ -37,13 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace dart::simulation::comps {
-struct MultibodyStructure;
-} // namespace dart::simulation::comps
-
 namespace dart::simulation::compute {
-
-struct MultibodyVariationalTreeScratchAccess;
 
 struct VariationalProjectionRowBounds
 {

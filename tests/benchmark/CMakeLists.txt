@@ -35,7 +35,7 @@ else()
   FetchContent_Declare(
     benchmark
     GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.9.1
+    GIT_TAG v1.9.5
   )
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(benchmark)
@@ -301,7 +301,7 @@ if(foonathan_memory_FOUND)
   if(NOT TARGET EnTT::EnTT)
     # Use CONFIG mode so this benchmark can discover an installed supported
     # EnTT package without invoking DART's FetchContent-backed dependency helper.
-    find_package(EnTT 3.14 CONFIG QUIET)
+    find_package(EnTT 4.0 CONFIG QUIET)
   endif()
   if(TARGET EnTT::EnTT)
     target_link_libraries(bm_allocators_comparative EnTT::EnTT)

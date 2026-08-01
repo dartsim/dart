@@ -21,19 +21,21 @@ This folder is the temporary working surface; the durable owner is the plan.
   headline gates remain **open**: a source-demo/paper CPU win, GPU parity, and a
   same-hardware paper-number match.
 - **Branch state:** active local branch
-  `feature/vbd-avbd-paper-parity-contract`, based on `main` at `83110ef54ab`;
-  the fail-closed contract is committed at `710cbfc1152`. The Section 3.5
+  `feature/vbd-avbd-paper-parity-contract`. The public SI closeout is committed
+  at `37178193ccf`; the branch-tip merge commit containing this handoff merges
+  local `main` snapshot `b15e7a652b7` into that closeout. The fail-closed
+  contract is committed at `710cbfc1152`. The Section 3.5
   packet is committed at
   `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
   finite-row packet at `761263bbd41`; the articulated finite-motor packet at
   `9ebd9b895b1`; the articulated finite-fracture packet at `131981788fa`; and
   the public AVBD/Figure 13 slice at `646b447d6cc`. The matched public
   fixed-penalty VBD/Figure 13 comparison is committed at `d9af744a9cb`. The
-  branch-tip closeout commit containing this handoff adds the public Sequential
-  Impulse pair-row/Figure 13 slice. Its pre-closeout `HEAD` and last-fetched
-  upstream ref both pointed to `d9af744a9cb`; no fetch, push, PR update, or
-  other GitHub mutation was performed while closing it. Verify the live local
-  tip and remote state before any external action.
+  SI closeout commit adds the public Sequential Impulse pair-row/Figure 13
+  slice. The last-fetched feature upstream still points to `d9af744a9cb`, so
+  the SI commit and main merge remain local. No fetch, push, PR update, or
+  other GitHub mutation was performed while closing or integrating them.
+  Verify live local and remote state before any external action.
 - **Current packet:** C++ and dartpy callers can explicitly select public
   Sequential Impulse, VBD, and AVBD rigid-body families with one positive
   contact/joint solve budget. Sequential Impulse now owns hard fixed,
@@ -65,16 +67,16 @@ This folder is the temporary working surface; the durable owner is the plan.
   joint identities and retained-row residuals are recorded at both
   checkpoints. Six fresh current-source captures and semantic reviews are
   sealed to capture-source digest
-  `556f97640ab079316a2e8833307405eb677c836b86fe95d9eaa90eae9508de12`.
+  `b3f102b53c820809c0a8b34c0bf3002853b3b1e79ce17f56fb6380d10cccfd51`.
   One uncontaminated quiet-host five-repeat Release run records median CPU
-  costs of 8.612602 ms AVBD, 8.302657 ms VBD, and 14.296125 ms Sequential
-  Impulse, with CPU CVs of 2.04%, 1.94%, and 2.12%, respectively. Its raw JSON
+  costs of 9.053841 ms AVBD, 8.953167 ms VBD, and 14.783755 ms Sequential
+  Impulse, with CPU CVs of 0.57%, 1.79%, and 0.48%, respectively. Its raw JSON
   SHA-256 is
-  `c2c81c26ca0fa96d1cf11da4c5a166a3a2eb7ead9b80aafac207c20f03cf7c67`.
+  `b377ef3e307a3f5ebbe935ff3c4abcace477cfbb92062296947b4b3537d0427d`.
   The regenerated AVBD, VBD, and SI packet SHA-256 values are
-  `3e15adb9093c10567c0f8c22c5f8e8ad4e5d47a7acd5aca7a107fb97de7fc54c`,
-  `9f8e6dbc9cb2f37af5d268fa83c13e67f3185cb39e14cebf413a288b6ee298d8`,
-  and `07151151acec718e2e851e92af2dd127f2833ee65f049445624ccffd29233ce9`.
+  `494f07ff9b26e61e0e5aa9a8e487d1e94975dca0ea17b0216d1d80f411480391`,
+  `96652e9c625a4c6307a10ba6a763db26ff03e5f4f2c3749fb4911bb7b40a144b`,
+  and `6ee2b5242dbdbe39fa2f17b84259bcd54f4a6a492e61a279962d28d96be425ae`.
   The same-host ratios are descriptive costs, not speedup or
   achieved-accuracy equivalence claims.
   Figure 13 and video row 12 remain partial: exact source constants, XPBD, a
@@ -89,24 +91,27 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the runtime/capture source tree passes an uncached Release
-  build and all 79 enabled simulation executables in 906.85 seconds (the two
-  aggregate wrappers remain intentionally disabled), plus the complete Python
-  suite with 1,711 passed and 20 expected skips in 238.72 seconds. The exact
-  current checker/capture/writer surface passes all 192 focused tests,
+- **Current local gates:** the merged runtime/capture source tree passes an
+  uncached Release build and all 81 enabled simulation executables in 123.64
+  seconds (the two aggregate wrappers remain intentionally disabled). The
+  complete Python phase also passes; no exact pytest count is claimed from the
+  aggregate runner's captured output. The exact current
+  checker/capture/writer surface passes all 192 focused tests,
   including both live-corpus checks. Six fresh
   1280x720 captures bind the current source digest and pass engine ViewReports,
   pixel-integrity checks, and separate original-resolution semantic review
   against the pinned paper page. Rejected benchmark attempts remain recorded;
   the strict quiet-host run and all three dependent packets are now sealed. The
   post-reseal runtime/capture source tree passes uncached default `test-all`
-  with all six phases and uncached CUDA `test-all` with all seven phases,
-  including CUDA C++ tests and benchmark smoke. The later checker/docs-only
-  review fixes are covered by the 192 focused tests and leave the bound source
-  digest unchanged. This environment pass does not close the missing
-  solver-specific VBD/AVBD GPU-parity predicates. Independent code and
-  architecture/docs/claims reviews approve the complete closeout tree with no
-  actionable finding.
+  with all six phases and uncached CUDA `test-all` with all seven phases. The
+  CUDA run passed 213 core C++ tests, 80 runnable simulation tests with two
+  aggregate wrappers intentionally disabled, all eight CUDA device tests, and
+  all nine benchmark-smoke commands. The later checker/docs-only review fixes
+  are covered by the 192 focused tests and leave the bound source digest
+  unchanged. This environment pass does not close the missing solver-specific
+  VBD/AVBD GPU-parity predicates. Independent code and architecture/claims
+  reviews approved the pre-merge SI tree; the merged tree received a final
+  local review after the `main` conflict resolutions and handoff corrections.
 
 ## Goal
 
@@ -138,16 +143,17 @@ numbers.
 
 ## Immediate Next Steps
 
-Verify that the SI closeout commit containing this handoff is the clean local
-branch tip; if not, preserve the exact dirty scope, run the mandatory final
-lint and packet/provenance checks, and make that local commit. Then merge the
-latest local `main` into the branch (never rebase the published branch) and
-refresh every gate or evidence artifact invalidated by the merge. Add an honest
-public XPBD substep family and its matched Figure 13 row next. Only after that
-should the four-method source-matched edit, CUDA evidence, unified rigid/soft
-rows, and remaining fracture/joint corpus proceed. Keep every dependent
-figure/demo/performance row partial until its own source-matched CPU and CUDA
-evidence closes it.
+Verify that the SI closeout at `37178193ccf` is followed by the clean branch-tip
+merge of local `main` snapshot `b15e7a652b7`; if not, preserve the in-progress
+merge and finish only its mandatory lint, gate, provenance, and local-commit
+sequence. Do not extend this shared-foundation branch into the remaining parity
+program. After maintainer approval and landing, complete all 88 VBD predicates
+in one VBD PR from updated `main`, including an honest public XPBD comparator,
+the VBD CPU/CUDA and corpus gaps, and achieved-accuracy performance. After that
+lands, complete all 88 AVBD predicates in a second AVBD PR from updated `main`,
+including AVBD-specific CPU/CUDA, unified-row, corpus, four-method, and
+performance gaps. Keep every dependent figure/demo/performance row partial
+until its own source-matched CPU and CUDA evidence closes it.
 
 Deferred maintenance items remain valid but do not outrank the missing paper
 mechanism:
@@ -357,7 +363,7 @@ All linked canonical method rows remain partial.
   screenshot, and scene-metrics log; the benchmark JSON binds the same source
   tree plus its benchmark translation unit.
 - **Performance boundary:** the current-source five-repeat Release benchmark
-  records an 8.612602 ms median CPU cost per step with 2.04% CPU CV. This is an
+  records a 9.053841 ms median CPU cost per step with 0.57% CPU CV. This is an
   absolute DART timing only; the paper and source publish no directly
   comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the XPBD
@@ -389,8 +395,8 @@ Figure 13 and official-video row 12 remain partial.
   current-build VBD captures pass their engine ViewReports, pixel-integrity
   checks, and paper-grounded semantic review.
 - **Performance boundary:** the current-source five-repeat medians are
-  8.302657 ms VBD and 8.612602 ms AVBD, with 1.94% and 2.04% CPU CV. The
-  VBD/AVBD median CPU-cost ratio is 0.9640x and is descriptive only: the
+  8.953167 ms VBD and 9.053841 ms AVBD, with 1.79% and 0.57% CPU CV. The
+  VBD/AVBD median CPU-cost ratio is 0.9889x and is descriptive only: the
   outcomes intentionally differ, and no source achieved-accuracy or
   same-hardware denominator exists.
 - **Remaining boundary:** exact unpublished constants, honest XPBD, a
@@ -423,8 +429,8 @@ Figure 13 and official-video row 12 remain partial.
   wall-normal displacement. Both assessed images match the paper's initial
   fracture followed by retained-row failure and collapse.
 - **Performance boundary:** the current-source five-repeat median CPU costs
-  are 14.296125 ms SI, 8.302657 ms VBD, and 8.612602 ms AVBD, with 2.12%,
-  1.94%, and 2.04% CPU CV. SI/AVBD is 1.6599x and SI/VBD is 1.7219x. These are
+  are 14.783755 ms SI, 8.953167 ms VBD, and 9.053841 ms AVBD, with 0.48%,
+  1.79%, and 0.57% CPU CV. SI/AVBD is 1.6329x and SI/VBD is 1.6512x. These are
   descriptive costs for intentionally different outcomes, not paper speedups
   or achieved-accuracy comparisons. Frame 120 is the only shared quantitative
   checkpoint across the three rows; the earlier frame-14/18/60 checkpoints

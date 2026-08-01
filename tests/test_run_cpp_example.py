@@ -53,3 +53,24 @@ def test_headless_filament_run_args_keep_stable_capture_dimensions(monkeypatch):
 
     assert args[args.index("--width") + 1] == "640"
     assert args[args.index("--height") + 1] == "480"
+
+
+def test_filament_config_forwards_memory_diagnostics_build_override(
+    monkeypatch, tmp_path
+):
+    module = _load_run_cpp_example()
+    configured = {}
+
+    def capture_configure(build_dir, definitions, env):
+        configured.update(definitions)
+
+    monkeypatch.setattr(module, "_configure", capture_configure)
+    env = {
+        "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE": "ON",
+        "DART_FETCH_FILAMENT_OVERRIDE": "ON",
+        "DART_USE_SYSTEM_FILAMENT_OVERRIDE": "OFF",
+    }
+
+    module._ensure_filament(tmp_path, env, smoke=False)
+
+    assert configured["DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS"] == "ON"
