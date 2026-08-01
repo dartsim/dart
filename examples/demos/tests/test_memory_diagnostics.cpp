@@ -416,9 +416,13 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
     stats.windowVisible = windowVisible;
     const ImDrawData* drawData = ImGui::GetDrawData();
     if (drawData != nullptr) {
-      // CmdLists.Size, not the legacy CmdListsCount mirror: builds with
+      // Read the draw-list count from CmdLists.Size rather than the obsolete
+      // CmdListsCount mirror: ImGui 1.92.9 regressed that field to always
+      // report 0 (fixed upstream in 1.92.9b), and builds with
       // IMGUI_DISABLE_OBSOLETE_FUNCTIONS (the bundled docking-branch target)
-      // leave that obsolete field at zero.
+      // leave it at zero as well, which silently emptied every measurement
+      // below. CmdLists is the canonical member on every ImGui version this
+      // branch supports (>= 1.91.9).
       stats.drawListCount = drawData->CmdLists.Size;
       for (int index = 0; index < drawData->CmdLists.Size; ++index) {
         stats.maximumVertices = std::max(
