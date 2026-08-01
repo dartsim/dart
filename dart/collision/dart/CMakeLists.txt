@@ -28,6 +28,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionDetectorAccessor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionGroupEngineData.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/DARTCollisionObjectEngineData.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/FourPointPlanarCollision.hpp
 )
 
 set(
