@@ -84,7 +84,14 @@ approval); raw artifacts and scripts are archived at
 action: shepherd PR #3428 through CI and review per `dart-manage-pr`
 (no thread replies to AI reviewers; local fixes + re-review requests
 only with approval), then retire this folder in the completing PR per
-the closeout plan.
+the closeout plan. CI classification (2026-08-02): the `gcc (newest)`
+and `clang (newest)` toolchain lanes fail
+`MemoryDiagnostics.DenseMapStaysBelowTheOpenGL2DrawIndexLimit`
+identically on the release-6.20 tip itself (introduced by the #3379
+demos merge, ImGui draw-list synthetic test, `drawListCount == 0`; the
+tip's own CI Toolchain run 30706341273 shows both jobs failing while
+the run reports success — non-required lanes). Pre-existing and
+unrelated to this PR; do not chase it here.
 
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
