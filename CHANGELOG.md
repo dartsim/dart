@@ -200,14 +200,17 @@
     two-point contact-line manifold instead of one point that wanders
     ~90 mm under micro-motion, and keep shallow crossed-cylinder contacts
     that the convex fallback intermittently missed
-    ([#3056](https://github.com/dartsim/dart/issues/3056)). Generated
-    resting scenes settle and deactivate up to 4x faster, and the complete
-    bundle measures speed-parity with the pre-consolidation detector on
-    the dense active-container fixture while reporting ~20% more real
-    contacts; the dense mixed-shape pile fixture improves but its
-    all-bodies-resting outcome remains seed-chaotic on every engine
-    generation (deactivation-latch and rolling-friction follow-ups are
-    tracked in the issue). FCL, Bullet, and ODE results are bit-identical;
+    ([#3056](https://github.com/dartsim/dart/issues/3056)), and make the
+    aligned cylinder-box path invariant to spin about the cylinder axis so
+    upright cylinders take the stable analytic cap patch instead of
+    creeping through degenerate convex-fallback rim points. Generated
+    resting scenes settle and deactivate up to 4x faster, the dense
+    mixed-shape pile fixture now reaches full deactivation with zero
+    penetration under default settings (4 of 5 tested seeds within the
+    original 20-second window, all tested seeds by 60 seconds), and the
+    complete bundle measures slightly faster than the pre-consolidation
+    detector on the dense active-container fixture while reporting fuller
+    manifolds. FCL, Bullet, and ODE results are bit-identical;
     the built-in default (`fcl`) is unchanged:
     [#PENDING](https://github.com/dartsim/dart/pulls)
 
