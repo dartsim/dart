@@ -91,6 +91,73 @@ double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
 
+struct SplitImpulseSnapshotScratch
+{
+  std::vector<bool> impulseAppliedStates;
+  std::vector<Eigen::Vector6d> bodyConstraintImpulses;
+  std::vector<double> jointConstraintImpulses;
+  std::vector<Eigen::Vector3d> pointMassConstraintImpulses;
+};
+
+std::mutex& splitImpulseSnapshotScratchMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<
+    const ConstraintSolver*,
+    std::unique_ptr<SplitImpulseSnapshotScratch>>&
+splitImpulseSnapshotScratchBySolver()
+{
+  static auto* scratch = new std::unordered_map<
+      const ConstraintSolver*,
+      std::unique_ptr<SplitImpulseSnapshotScratch>>;
+  return *scratch;
+}
+
+SplitImpulseSnapshotScratch& getSplitImpulseSnapshotScratch(
+    const ConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(splitImpulseSnapshotScratchMutex());
+  auto& scratch = splitImpulseSnapshotScratchBySolver()[solver];
+  if (!scratch)
+    scratch = std::make_unique<SplitImpulseSnapshotScratch>();
+  return *scratch;
+}
+
+void eraseSplitImpulseSnapshotScratch(const ConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(splitImpulseSnapshotScratchMutex());
+  splitImpulseSnapshotScratchBySolver().erase(solver);
+}
+
+void reserveSplitImpulseSnapshotScratch(
+    const ConstraintSolver* solver,
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  std::size_t bodyCount = 0u;
+  std::size_t jointDofCount = 0u;
+  std::size_t pointMassCount = 0u;
+  for (const auto& skeleton : skeletons) {
+    bodyCount += skeleton->getNumBodyNodes();
+    for (std::size_t i = 0u; i < skeleton->getNumBodyNodes(); ++i) {
+      if (const auto* softBodyNode
+          = skeleton->getBodyNode(i)->asSoftBodyNode()) {
+        pointMassCount += softBodyNode->getPointMasses().size();
+      }
+    }
+    for (std::size_t i = 0u; i < skeleton->getNumJoints(); ++i)
+      jointDofCount += skeleton->getJoint(i)->getNumDofs();
+  }
+
+  auto& scratch = getSplitImpulseSnapshotScratch(solver);
+  scratch.impulseAppliedStates.reserve(skeletons.size());
+  scratch.bodyConstraintImpulses.reserve(bodyCount);
+  scratch.jointConstraintImpulses.reserve(jointDofCount);
+  scratch.pointMassConstraintImpulses.reserve(pointMassCount);
+}
+
 //==============================================================================
 static bool isConfiguredNativeProximityContact(
     const collision::Contact& contact)
@@ -485,7 +552,10 @@ ConstraintSolver::ConstraintSolver()
 }
 
 //==============================================================================
-ConstraintSolver::~ConstraintSolver() = default;
+ConstraintSolver::~ConstraintSolver()
+{
+  eraseSplitImpulseSnapshotScratch(this);
+}
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -2730,9 +2800,11 @@ void ConstraintSolver::solvePositionConstrainedGroup(
 //==============================================================================
 void ConstraintSolver::solvePositionConstrainedGroups()
 {
+  auto& scratch = getSplitImpulseSnapshotScratch(this);
+
   // Preserve velocity-impulse flags across the position pass.
-  std::vector<bool> impulseAppliedStates;
-  impulseAppliedStates.reserve(mSkeletons.size());
+  auto& impulseAppliedStates = scratch.impulseAppliedStates;
+  impulseAppliedStates.clear();
   for (const auto& skeleton : mSkeletons) {
     impulseAppliedStates.push_back(skeleton->isImpulseApplied());
   }
@@ -2745,9 +2817,12 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // this snapshot every velocity-phase contact response would be silently
   // discarded (resting bodies free-fall and tunnel while their contacts
   // persist).
-  std::vector<Eigen::Vector6d> savedBodyConstraintImpulses;
-  std::vector<double> savedJointConstraintImpulses;
-  std::vector<Eigen::Vector3d> savedPointMassConstraintImpulses;
+  auto& savedBodyConstraintImpulses = scratch.bodyConstraintImpulses;
+  auto& savedJointConstraintImpulses = scratch.jointConstraintImpulses;
+  auto& savedPointMassConstraintImpulses = scratch.pointMassConstraintImpulses;
+  savedBodyConstraintImpulses.clear();
+  savedJointConstraintImpulses.clear();
+  savedPointMassConstraintImpulses.clear();
   for (const auto& skeleton : mSkeletons) {
     for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
       auto* bodyNode = skeleton->getBodyNode(i);
@@ -3091,6 +3166,9 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::reserveConstrainedGroupsScratch()
 {
+  if (mSplitImpulseEnabled)
+    reserveSplitImpulseSnapshotScratch(this, mSkeletons);
+
   const auto groupCount = mConstrainedGroups.size();
   mGroupResting.reserve(groupCount);
   mGroupAllSleepCandidates.reserve(groupCount);

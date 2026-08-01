@@ -632,13 +632,27 @@ public:
 
   void runPositionPassForTest()
   {
-    constraint::ConstrainedGroup group;
-    group.addConstraint(std::make_shared<FakeConstraint>(1u));
-    mConstrainedGroups.push_back(group);
+    ensurePositionGroup();
     solvePositionConstrainedGroups();
   }
 
+  void preparePositionPassForTest()
+  {
+    ensurePositionGroup();
+    reserveConstrainedGroupsScratch();
+  }
+
 private:
+  void ensurePositionGroup()
+  {
+    if (!mConstrainedGroups.empty())
+      return;
+
+    constraint::ConstrainedGroup group;
+    group.addConstraint(std::make_shared<FakeConstraint>(1u));
+    mConstrainedGroups.push_back(group);
+  }
+
   void solveConstrainedGroup(constraint::ConstrainedGroup&) override {}
 
   void solvePositionConstrainedGroup(constraint::ConstrainedGroup&) override
@@ -1711,6 +1725,29 @@ TEST(
 
   EXPECT_TRUE(
       pointMass->getConstraintImpulses().isApprox(velocityPhaseImpulse));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SplitImpulseSnapshotsReusePreparedCapacity)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* softBody
+      = createSoftBody("soft_split_impulse_scratch", true, skeletons);
+  for (std::size_t i = 0u; i < 16u; ++i)
+    softBody->addPointMass(dynamics::PointMass::Properties{});
+
+  ClearingPositionPassConstraintSolver solver;
+  solver.setSplitImpulseEnabled(true);
+  solver.addSkeletonForTest(skeletons.front());
+  solver.preparePositionPassForTest();
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  solver.runPositionPassForTest();
+  solver.runPositionPassForTest();
+  counter.stop();
+
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(counter.allocationBytes(), 0u);
 }
 
 //==============================================================================
