@@ -64,8 +64,12 @@ set(
   soft_demo_model_test_sources
   test_AdaptiveSoftContactModel.cpp
   test_SoftWormModel.cpp
+  test_ContactArrowLayout.cpp
   "${PROJECT_SOURCE_DIR}/examples/demos/scenes/AdaptiveSoftContactModel.cpp"
   "${PROJECT_SOURCE_DIR}/examples/demos/scenes/SoftWormModel.cpp"
+  # ContactArrowLayout is the GUI-free half of the host contact visualizer;
+  # ContactVisualizer.cpp itself is excluded because it pulls in ImGui.
+  "${PROJECT_SOURCE_DIR}/examples/demos/ContactArrowLayout.cpp"
 )
 target_sources(test_ConstraintSolver PRIVATE ${soft_demo_model_test_sources})
 target_include_directories(
@@ -89,9 +93,15 @@ add_test(
   COMMAND
     $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=SoftWormModelTest.*
 )
+add_test(
+  NAME test_ContactArrowLayout
+  COMMAND
+    $<TARGET_FILE:test_ConstraintSolver> --gtest_filter=ContactArrowLayoutTest.*
+)
 set_tests_properties(
   test_AdaptiveSoftContactModel
   test_SoftWormModel
+  test_ContactArrowLayout
   PROPERTIES FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 dart_format_add(${soft_demo_model_test_sources})
