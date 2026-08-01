@@ -12,8 +12,8 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Obtain approval to push `wp-pg-wsg-rebaseline-20260731`
-  and open the WP-PG.50 PR: the detector stream-quality bundle restores
+- Next step: Land [WP-PG.50 PR #3428](https://github.com/dartsim/dart/pull/3428)
+  through CI and review: the detector stream-quality bundle restores
   full manifolds and stable cylinder contacts, **meets criterion 2 on
   its original terms** (S6 fully deactivates with zero penetration; 4/5
   seeds within the 20-second window, all tested seeds by 60 s), and

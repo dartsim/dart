@@ -81,8 +81,10 @@ applied. Work is preserved as LOCAL commits on
 `wp-pg-wsg-rebaseline-20260731` (never pushed; push/PR needs explicit
 approval); raw artifacts and scripts are archived at
 `~/dart-wsg-evidence-20260731/` including the `aug01/` tree. Next
-action: maintainer approval to push the branch and open the WP-PG.50 PR
-(fill the CHANGELOG `#PENDING` link then).
+action: shepherd PR #3428 through CI and review per `dart-manage-pr`
+(no thread replies to AI reviewers; local fixes + re-review requests
+only with approval), then retire this folder in the completing PR per
+the closeout plan.
 
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
