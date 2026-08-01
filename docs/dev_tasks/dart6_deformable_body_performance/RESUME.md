@@ -39,23 +39,38 @@ commit above is a snapshot rather than a permanent branch tip.
 
 ## Immediate packet
 
-PR-3a is complete (#3408 + #3423 above). No next packet is preselected:
-reassess `docs/plans/dashboard.md` (PLAN-622) and pick from the open
-items with fresh evidence rather than assuming an order. Known open items:
+PR-3a is complete (#3408 + #3423 above). The maintainer-set goal
+(2026-08-01) is to **fully complete this task for the DART 6.20 release**:
+every remaining item below lands with evidence or an explicitly approved
+disposition, bundled into as few PRs as review quality allows.
 
-- Motor-noise variant of the push-recovery comparison (the remaining
-  unreproduced clause of the Jain/Liu biped row; see
-  `02-paper-parity-matrix.md`).
-- Competitive-envelope definition.
-- Four-link flexible-foot comparison.
-- WP-DB.07 scaling; WP-DB.08 DART-owned/pre-default collision coverage.
-- A valid `bm-soft-body-paired` artifact or an approved disposition.
-- The separate `main` PR for the zero-DoF soft point-mass assertion.
+Remaining items (parity rows from `02-paper-parity-matrix.md` and
+`10-full-parity-execution-plan.md` section 5, plus acceptance work):
 
-For whichever packet is chosen: fetch `origin/release-6.20`, create a fresh
-non-tracking topic branch, implement the smallest complete slice with
-text-first then visual evidence, and run the focused and downstream gates
-before publishing.
+1. Motor-noise variant of the push-recovery comparison (last unreproduced
+   clause of the Jain/Liu biped row).
+2. Noisy-floor biped row (seeded 5x5 cm tiles, 0-2 cm offsets).
+3. Biped soft-contact walk row (SIMBICON walk; LCP cadence per the paper).
+4. Four-link flexible-foot comparison row (same controller and seed).
+5. Hand/arm models and manipulation rows (finger flick, arm fold, pinch
+   grasp).
+6. Competitive-envelope definition (10-plan section 8).
+7. WP-DB.07 multicore scaling: representative evidence or an approved
+   negative disposition.
+8. WP-DB.08 pre-default `dart` detector gates (coverage, allocation,
+   determinism, same-host performance).
+9. A complete `bm-soft-body-paired` artifact or an approved disposition.
+10. The separate `main` PR for the zero-DoF soft point-mass assertion.
+
+Suggested bundles to keep the PR count low: the biped rows (1-4) in at most
+two scene/gate PRs; the hand/manipulation rows (5) as one PR; performance
+and closure evidence (6-9) as one PR; item 10 stays a separate `main` PR by
+policy.
+
+For each packet: fetch `origin/release-6.20`, create a fresh non-tracking
+topic branch, implement the smallest complete slice with text-first then
+visual evidence, and run the focused and downstream gates before
+publishing.
 
 ## Required evidence
 

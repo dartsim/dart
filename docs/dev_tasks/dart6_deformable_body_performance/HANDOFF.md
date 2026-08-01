@@ -1,6 +1,6 @@
 # Handoff - DART 6 deformable body feature and performance
 
-Updated: 2026-07-30
+Updated: 2026-08-01
 
 ## Status
 
@@ -9,7 +9,12 @@ is merged:
 
 - #3382 merged as `6c88ac1d774a702b494643fb598be6b8af9385e1`;
 - #3381 established the single built-in `dart` collision detector;
-- #3407 removed the out-of-scope volumetric-FEM subsystem from DART 6.
+- #3407 removed the out-of-scope volumetric-FEM subsystem from DART 6;
+- #3408 + #3423 shipped PR-3a soft-foot SIMBICON (merged as
+  `fe9cb9ebd73b176794df2de7179f5d23f146cbe6` and
+  `73cd91e69dba635cb17e93e60f33a2c245e629d0`). Both Jain/Liu biped claims
+  reproduce and are gate-asserted: contacts 51.2 soft vs 15.64 rigid,
+  recoverable push 18000 N soft vs 8000 N rigid.
 
 PLAN-622 remains active for the Jain/Liu point-mass surface model. Do not
 resume any branch used by the merged work.
@@ -22,20 +27,27 @@ resume any branch used by the merged work.
   `docs/background/deformable_body_paper_targets.md`
 - Current priority and gates:
   `docs/plans/dashboard.md`
-- Active packet:
-  `docs/dev_tasks/dart6_deformable_body_performance/12-pr3a-soft-foot-simbicon.md`
+- Live claim status:
+  `docs/dev_tasks/dart6_deformable_body_performance/02-paper-parity-matrix.md`
 - Accepted merged-slice verification:
   `docs/dev_tasks/dart6_deformable_body_performance/verification.md`
 
 ## Exact next action
 
-Implement PR-3a soft-foot SIMBICON from a fresh non-tracking topic branch
-based on the explicitly authorized release tip. Reuse the existing
-`atlas_simbicon` controller and soft-feet Atlas asset. Keep the scene in
-`dart-demos`; do not add a standalone GUI executable.
+Work the task to full completion for the DART 6.20 release (maintainer
+direction, 2026-08-01): drive every open acceptance item below to evidence
+or an approved disposition, bundling related items into as few PRs as
+review quality allows. `RESUME.md` holds the ordered item list and takeover
+detail. Completed packet specs such as `12-pr3a-soft-foot-simbicon.md` are
+records, not resumable work.
 
 ## Open acceptance work
 
+- Build the motor-noise variant of the push-recovery comparison (the
+  remaining unreproduced clause of the Jain/Liu biped row).
+- Build the remaining Jain/Liu scene rows: noisy-floor biped, soft-contact
+  walk, hand/arm manipulation (finger flick, arm fold, pinch grasp), and the
+  four-link flexible-foot comparison.
 - Define and approve the competitive implementation envelope.
 - Complete the four-link flexible rigid-foot versus deformable-foot
   comparison.

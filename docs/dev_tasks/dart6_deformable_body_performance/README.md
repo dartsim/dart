@@ -30,16 +30,23 @@ default. The Kim/Pollard volumetric-FEM subsystem was removed through
 [#3407](https://github.com/dartsim/dart/pull/3407), leaving this task focused
 on the Jain/Liu point-mass surface model.
 
-The next implementation packet is
-[PR-3a soft-foot SIMBICON](12-pr3a-soft-foot-simbicon.md). Start it from a
-fresh non-tracking topic branch based on the explicitly authorized release
-tip; do not resume any pre-merge implementation branch.
+[PR-3a soft-foot SIMBICON](12-pr3a-soft-foot-simbicon.md) is complete:
+[#3408](https://github.com/dartsim/dart/pull/3408) added the scene and gates,
+and [#3423](https://github.com/dartsim/dart/pull/3423) resolved the maintainer
+decisions. Both Jain/Liu biped claims reproduce and are gate-asserted —
+contacts 51.2 soft vs 15.64 rigid, recoverable push 18000 N soft vs 8000 N
+rigid. The maintainer-set goal (2026-08-01) is to fully complete this task
+for the DART 6.20 release, bundling the remaining work into as few PRs as
+review quality allows.
 
-Still open under PLAN-622: the competitive-envelope definition, the
-four-link flexible-foot comparison, WP-DB.07 multicore scaling, the
-pre-default `dart` detector coverage gates, a valid `bm-soft-body-paired`
-artifact or approved disposition, and the separate `main` fix for the
-zero-DoF soft point-mass assertion. Exact takeover state is in `RESUME.md`.
+Still open under PLAN-622: the motor-noise variant of the push-recovery
+comparison, the noisy-floor biped and soft-contact walk rows, the hand/arm
+manipulation rows (finger flick, arm fold, pinch grasp), the four-link
+flexible-foot comparison, the competitive-envelope definition, WP-DB.07
+multicore scaling, the pre-default `dart` detector coverage gates, a valid
+`bm-soft-body-paired` artifact or approved disposition, and the separate
+`main` fix for the zero-DoF soft point-mass assertion. The ordered list and
+suggested PR bundles are in `RESUME.md`.
 
 ## Reference scope
 

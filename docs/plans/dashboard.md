@@ -41,14 +41,17 @@ Priority order is document order. Active implementation handoff remains in
 - Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): both Jain/Liu
   biped claims reproduce and are gate-asserted — contacts 51.2 soft vs 15.64
   rigid, recoverable push 18000 N soft vs 8000 N rigid
-  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Reassess this list
-  with fresh evidence rather than assuming an order. **Do not restart the
-  volumetric FEM subsystem on `release-6.20`.** Still open: the motor-noise
-  variant of the push-recovery comparison, the competitive-envelope
-  definition, the four-link flexible-foot comparison, WP-DB.07 scaling,
-  WP-DB.08 DART-owned/pre-default coverage, a valid `bm-soft-body-paired`
-  artifact or an
-  approved disposition, and the separate `main` PR for the zero-DoF soft
+  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Goal (maintainer
+  direction, 2026-08-01): fully complete this task for the DART 6.20
+  release — every open item lands with evidence or an approved disposition,
+  bundled into as few PRs as review quality allows (ordered list in the
+  task `RESUME.md`). **Do not restart the volumetric FEM subsystem on
+  `release-6.20`.** Still open: the motor-noise variant of the push-recovery
+  comparison, the noisy-floor biped and soft-contact walk rows, the hand/arm
+  manipulation rows, the four-link flexible-foot comparison, the
+  competitive-envelope definition, WP-DB.07 scaling, WP-DB.08
+  DART-owned/pre-default coverage, a valid `bm-soft-body-paired` artifact or
+  an approved disposition, and the separate `main` PR for the zero-DoF soft
   point-mass assertion. New GUI examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped

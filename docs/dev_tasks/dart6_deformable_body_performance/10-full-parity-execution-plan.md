@@ -14,8 +14,11 @@ Part B is retired: the Kim/Pollard volumetric-FEM lane was removed from DART 6 o
 2026-07-29 and retargeted to DART 7, and its sections are kept as DART 7
 reference material, **not** as instructions. Nothing in Part B is DART 6 work.
 
-Next DART 6 build step: **PR-3a soft-foot SIMBICON**
-(`12-pr3a-soft-foot-simbicon.md`). Still-open decision the plan does not close on
+PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
+push-recovery row reproduces and is gate-asserted; its motor-noise clause
+stays open in §5. Goal (maintainer direction, 2026-08-01): fully complete
+Part A for the DART 6.20 release, bundling the remaining rows into as few
+PRs as review quality allows. Still-open decision the plan does not close on
 its own: the competitive-envelope definition (§8).
 
 # Part A — active DART 6 plan (Jain/Liu lane)
@@ -69,7 +72,7 @@ We record raw rows + revision SHA + host state (the existing
 `bm-soft-body-paired` discipline), never a manual disposition over a
 machine-readable FAIL.
 
-## 4. Current state (next milestone = PR-3a)
+## 4. Current state (PR-3a shipped; remaining rows in §5)
 
 The release branch contains adaptive contact activation (WP-DB.05), soft
 face-interior contacts (WP-DB.08), coupled-equation correctness (WP-DB.04),
@@ -79,16 +82,18 @@ representative `soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
 Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 **LCP-robustness** rows.
 
-No prerequisite integration or removal remains. The next implementation
-milestone is PR-3a soft-foot SIMBICON
-(`12-pr3a-soft-foot-simbicon.md`).
+No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
+shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
+resolved decisions), satisfying the **biped push recovery** row — contacts
+51.2 soft vs 15.64 rigid and recoverable push 18000 N soft vs 8000 N rigid,
+both gate-asserted; only its motor-noise clause remains open in §5.
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
 | --- | --- |
-| Biped push recovery (soft vs rigid) | SIMBICON controller + soft-foot; push-threshold gate |
+| Biped push recovery (soft vs rigid) | **Shipped** (#3408/#3423); only the motor-noise variant of the comparison is still open |
 | Noisy-floor biped | seeded 5×5cm tile floor with 0–2cm offsets; rigid-vs-soft outcome |
 | Biped walk | SIMBICON walk, LCP every 8 controller steps |
 | Finger flick / arm fold / pinch grasp | hand/arm models + manipulation + adaptive-DOF/contact/LCP-time rows |
@@ -101,9 +106,9 @@ milestone is PR-3a soft-foot SIMBICON
 - **Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend was
   removed on 2026-07-29 and retargeted to DART 7 (`decisions.md`). Do not start
   it here.
-- **Active Jain/Liu series**: begin with PR-3a soft-foot SIMBICON, then continue
-  with locomotion (3b), hand scenes (3c), and the flexible-foot comparison
-  (3d).
+- **Active Jain/Liu series**: PR-3a shipped; continue with locomotion (3b),
+  hand scenes (3c), and the flexible-foot comparison (3d), bundled into as
+  few PRs as review quality allows.
 
 PR-3 reuses the point-mass `SoftBodyNode` and the adaptive activation already
 shipped, so the remaining work is controllers, models, and scenes rather than new
@@ -187,12 +192,9 @@ What must be **built/authored** for PR-3:
 
 ## 10. Sequencing (DART 6)
 
-1. **PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`): aim the
-   existing GUI-free `atlas_simbicon` controller at
-   `atlas_v3_no_head_soft_feet.sdf` plus a ground plane, and add the
-   rigid-vs-soft push-recovery threshold, contact-count, and finite-state gates.
-   The controller, the asset, and the scene/model-test pattern all already
-   exist, so this is assembly and gating rather than new dynamics.
+1. **PR-3a soft-foot SIMBICON** — shipped 2026-08-01 via #3408/#3423
+   (`12-pr3a-soft-foot-simbicon.md` records the resolved decisions); the
+   motor-noise clause of its row moves to the remaining rows below.
 2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
    hand/arm models that must be authored and their manipulation scenes, then the
    four-link flexible-foot comparison.
