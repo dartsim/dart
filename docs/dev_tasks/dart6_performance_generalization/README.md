@@ -271,8 +271,9 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   island as a whole never passes the velocity/dwell gates (individual
   bodies do — 5/71 resting at 20k steps — but the 60k run ends 0/71); a
   rest-tolerance raise is measured and rejected (premature island
-  freezing under load explodes penetration to 0.256 m). The S6 pile is mixed-shape (boxes, spheres, cylinders/capsules —
-  see the 2026-07-31 GUI capture), so with box supports fixed the residual
+  freezing under load explodes penetration to 0.256 m). The S6 pile is
+  mixed-shape (boxes, spheres, cylinders/capsules — see the 2026-07-31 GUI
+  capture), so with box supports fixed the residual
   velocity tail plausibly includes round-body micro-rolling (curved-surface
   contact-point migration has no 4-point analog) alongside the measured
   pair churn. The candidate follow-up is detector-side contact/support

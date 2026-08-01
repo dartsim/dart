@@ -284,7 +284,7 @@ finite-state evidence.
 
 Session branch `wp-pg-wsg-rebaseline-20260731` on `origin/release-6.20` @
 `718651d0d6e`; GCC (pixi default), Release; i9-13950HX, governor
-**powersave** with large observed clock swings (~2.3x between runs of the
+**powersave** with large observed clock swings (up to ~3x between runs of the
 same binary), so **timing cells this cycle are host-state-relative and
 cross-session step-time comparisons are invalid**; hashes, contact/pair
 counts, resting counts, and finite flags remain the guards. Artifacts:

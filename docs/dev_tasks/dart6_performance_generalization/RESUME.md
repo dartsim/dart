@@ -39,7 +39,8 @@ WS-G rerun `/tmp/mj_cmp_20260731`). Read the new
   live in [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
 
 Implementation packet executed by this session (WP-PG.50 candidate,
-uncommitted on `wp-pg-wsg-rebaseline-20260731`): the solver-facing
+local checkpoint commit `03046383e77` on `wp-pg-wsg-rebaseline-20260731`,
+never pushed): the solver-facing
 3-contact clamp in `DARTCollisionDetector.cpp` was raised to the full
 4-contact manifold capacity, with pinned regression tests and a
 CHANGELOG entry (`#PENDING` link — fill at PR time). Full evidence and
@@ -206,7 +207,7 @@ option-off/option-on evidence.
 - 2026-07-31: Full re-baseline on `718651d0d6e` (branch
   `wp-pg-wsg-rebaseline-20260731`). S1–S6 guard matrix re-established with
   drift classification (fcl/bullet/ode held bit-identical; all `dart` rows
-  re-baselined per #3381's declared contact-profile change; S2/S3 dart land
+  re-baselined per the #3381 PR body's contact-profile note; S2/S3 dart land
   on FCL fixed points). Criterion-2 regression found and root-caused: the
   consolidated detector's solver-facing 3-contact clamp breaks resting
   face-face support; attribution chain closed by bit-exact S6 reproduction
