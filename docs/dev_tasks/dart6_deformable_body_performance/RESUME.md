@@ -29,10 +29,11 @@ merged PR branches as evidence only, not as resumable work.
   sweep) as `fe9cb9ebd73b176794df2de7179f5d23f146cbe6`.
 - #3423 resolved the PR-3a maintainer decisions (matched control rest inertia,
   asset `<damp>` 1000 -> 4000, point-mass-aware SIMBICON COM sensor) as
-  `73cd91e69dba635cb17e93e60f33a2c245e629d0`. Both Jain/Liu biped claims now
-  reproduce and are gate-asserted: contacts 51.2 soft vs 15.64 rigid,
-  recoverable push 18000 N soft vs 8000 N rigid
-  (`12-pr3a-soft-foot-simbicon.md` "Resolved decisions").
+  `73cd91e69dba635cb17e93e60f33a2c245e629d0`. The contact-spreading claim
+  and the push/contact portion of the push-recovery row are gate-asserted:
+  contacts 51.2 soft vs 15.64 rigid, recoverable push 18000 N soft vs
+  8000 N rigid (`12-pr3a-soft-foot-simbicon.md` "Resolved decisions"); the
+  row's motor-noise clause is item 1 below.
 
 Re-fetch before starting: the release branch advances frequently, and the
 commit above is a snapshot rather than a permanent branch tip.

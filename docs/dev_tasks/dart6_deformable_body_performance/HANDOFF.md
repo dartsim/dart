@@ -12,9 +12,10 @@ is merged:
 - #3407 removed the out-of-scope volumetric-FEM subsystem from DART 6;
 - #3408 + #3423 shipped PR-3a soft-foot SIMBICON (merged as
   `fe9cb9ebd73b176794df2de7179f5d23f146cbe6` and
-  `73cd91e69dba635cb17e93e60f33a2c245e629d0`). Both Jain/Liu biped claims
-  reproduce and are gate-asserted: contacts 51.2 soft vs 15.64 rigid,
-  recoverable push 18000 N soft vs 8000 N rigid.
+  `73cd91e69dba635cb17e93e60f33a2c245e629d0`). The contact-spreading claim
+  and the push/contact portion of the push-recovery row are gate-asserted
+  (contacts 51.2 soft vs 15.64 rigid, recoverable push 18000 N soft vs
+  8000 N rigid); the row's motor-noise clause is still open.
 
 PLAN-622 remains active for the Jain/Liu point-mass surface model. Do not
 resume any branch used by the merged work.

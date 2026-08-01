@@ -79,7 +79,8 @@ PLAN-622 still requires:
 - gate evidence for the remaining Jain/Liu rows: the motor-noise push
   variant, noisy-floor biped, soft-contact walk, hand/arm manipulation, and
   the four-link flexible-foot comparison;
-- a complete competitive-envelope decision;
+- the performance-acceptance evidence defined by the approved competitive
+  envelope (`decisions.md` item 2, confirmed 2026-07-23);
 - representative multicore scaling evidence or an approved negative
   disposition;
 - the `dart` detector coverage, determinism, allocation, and same-host
