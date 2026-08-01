@@ -288,6 +288,23 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### GUI, Examples, and Tutorials
 
+- Made the docked ImGui workspace the default for the C++ demos host:
+  `pixi run demos` now builds against the fetched Dear ImGui docking branch
+  (matching `pixi run dartsim` and `pixi run py-demos`), scene control panels
+  dock into the right column instead of floating over the viewport, the
+  default dock layout scales with the effective `--gui-scale`, the Simulation
+  toolbar region hugs its content, and the built-in status panel names the
+  running demo instead of the internal fixture. System-ImGui builds keep the
+  floating-panel fallback.
+- Fixed the Dear ImGui overlay disappearing entirely when built against system
+  ImGui 1.92.9: the Filament adapter iterated the obsolete
+  `ImDrawData::CmdListsCount` mirror, which 1.92.9 shipped stuck at zero
+  (fixed upstream in 1.92.9b); it now iterates `CmdLists` directly, with a
+  regression test that simulates the zeroed legacy field.
+- Unified `--gui-scale` handling with the DART 6 viewers: GUI scene apps now
+  also accept `--gui-scale=N`, seed the scale from the `DART_GUI_SCALE`
+  environment variable (command line wins), and warn while clamping
+  out-of-range values instead of clamping silently.
 - Added opt-in memory-layout diagnostics to `dart-demos` with exact
   address-ordered World allocator regions, typed ECS page overlays, separate
   logical capacity/history/process RSS, and explicit evidence limits. The demo

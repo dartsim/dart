@@ -695,7 +695,9 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 132.0};
+  // One toolbar row (~46 px) plus the dock tab bar; a taller region just adds
+  // dead space between the toolbar and the viewport at every UI scale.
+  panel.initialSize = std::array<double, 2>{760.0, 78.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
@@ -1127,6 +1129,7 @@ int runGuiBackendApplicationImpl(
   bool keepRunning = true;
   std::size_t finalContacts = 0;
   std::optional<int> pendingDemoFallbackIndex;
+  std::string demoStatusLabel;
 
   // Outer scene loop. For the single-scene path this runs exactly once; for the
   // demos host it rebuilds the scene-bound state when a switch is requested,
@@ -1217,6 +1220,7 @@ int runGuiBackendApplicationImpl(
         panels.push_back(std::move(scenePanel));
       }
       appOptions.panels = std::move(panels);
+      demoStatusLabel = demoSceneDisplayName(demoEntry);
       lifecycle.sceneSwitchRequested = false;
       lifecycle.requestedScene.clear();
       // Per-scene transient controllers are reset; renderable ids from the
@@ -1234,6 +1238,10 @@ int runGuiBackendApplicationImpl(
 
     const bool validateFixtureRequirements = false;
     DartScene dartScene = createDartScene(appOptions);
+    // The built-in status panel should name the running demo, not the internal
+    // fixture default (previously it always read "scene: mvp" in the demos
+    // host).
+    dartScene.statusSceneLabel = demoStatusLabel;
     std::optional<InitialSceneState> maybeInitialSceneState
         = createInitialSceneState(
             *engine,

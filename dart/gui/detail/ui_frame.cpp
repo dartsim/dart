@@ -440,11 +440,17 @@ std::vector<std::string> mergeDockLayoutSideHistory(
 // left/right columns fill the remaining middle, leaving a transparent central
 // node for the 3D viewport. Each panel docks into the region named by its
 // DockSide; panels sharing a side become tabs. Only sides actually used are
-// split, so unused regions take no space.
+// split, so unused regions take no space. Panel sizes are authored at scale
+// 1.0, so every derived region fraction multiplies by `uiScale`; otherwise a
+// --gui-scale 2 run doubles the content but keeps scale-1 regions, truncating
+// the toolbar and sidebar.
 void buildDefaultDockLayout(
-    ImGuiID dockId, const std::vector<dart::gui::Panel>& panels)
+    ImGuiID dockId, const std::vector<dart::gui::Panel>& panels, float uiScale)
 {
   using dart::gui::DockSide;
+
+  const float scale
+      = (std::isfinite(uiScale) && uiScale > 0.0f) ? uiScale : 1.0f;
 
   bool useTop = false;
   // Reserve a bottom region for either application-owned bottom panels or the
@@ -455,8 +461,8 @@ void buildDefaultDockLayout(
   bool useBottom = true;
   bool useLeft = false;
   bool useRight = false;
-  float topFraction = 0.07f;
-  float bottomFraction = 0.12f;
+  float topFraction = 0.07f * scale;
+  float bottomFraction = 0.12f * scale;
   for (const auto& panel : panels) {
     switch (panel.dockSide) {
       case DockSide::Top:
@@ -466,7 +472,8 @@ void buildDefaultDockLayout(
           if (viewportHeight > 0.0f) {
             topFraction = std::max(
                 topFraction,
-                static_cast<float>((*panel.initialSize)[1]) / viewportHeight);
+                static_cast<float>((*panel.initialSize)[1]) * scale
+                    / viewportHeight);
           }
         }
         break;
@@ -478,7 +485,8 @@ void buildDefaultDockLayout(
           if (viewportHeight > 0.0f) {
             bottomFraction = std::max(
                 bottomFraction,
-                static_cast<float>((*panel.initialSize)[1]) / viewportHeight);
+                static_cast<float>((*panel.initialSize)[1]) * scale
+                    / viewportHeight);
           }
         }
         break;
@@ -504,8 +512,12 @@ void buildDefaultDockLayout(
       static_cast<int>(ImGuiDockNodeFlags_DockSpace)
           | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
   ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
-  topFraction = std::clamp(topFraction, 0.07f, 0.18f);
+  // Scaled content needs proportionally larger regions, but cap every region
+  // so the central viewport survives even at --gui-scale 4 in a small window.
+  topFraction = std::clamp(topFraction, 0.07f, std::min(0.18f * scale, 0.35f));
   bottomFraction = std::clamp(bottomFraction, 0.10f, 0.45f);
+  const float leftFraction = std::clamp(0.24f * scale, 0.24f, 0.42f);
+  const float rightFraction = std::clamp(0.34f * scale, 0.34f, 0.48f);
 
   ImGuiID center = dockId;
   ImGuiID top = 0;
@@ -522,11 +534,11 @@ void buildDefaultDockLayout(
   }
   if (useLeft) {
     left = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Left, 0.24f, nullptr, &center);
+        center, ImGuiDir_Left, leftFraction, nullptr, &center);
   }
   if (useRight) {
     right = ImGui::DockBuilderSplitNode(
-        center, ImGuiDir_Right, 0.34f, nullptr, &center);
+        center, ImGuiDir_Right, rightFraction, nullptr, &center);
   }
 
   for (const auto& panel : panels) {
@@ -600,7 +612,8 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
     ImGuiID dockId,
     const std::vector<dart::gui::Panel>& panels,
     const std::vector<std::string>& previousSignature,
-    const std::vector<std::string>& sideHistory)
+    const std::vector<std::string>& sideHistory,
+    float uiScale)
 {
   std::vector<std::string_view> focusedTitles;
   for (const auto& panel : panels) {
@@ -623,7 +636,7 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
       // A new side appeared and there is no existing dock node to join. Fall
       // back to the default builder so the new panel is still docked instead of
       // floating over the viewport.
-      buildDefaultDockLayout(dockId, panels);
+      buildDefaultDockLayout(dockId, panels, uiScale);
       return initialFocusPanelsForDefaultDockLayout(panels);
     }
 
@@ -737,13 +750,15 @@ void updateFrameUi(
       // Apply the default layout deterministically on startup. The py-demos
       // workspace is an examples browser first; a stale imgui.ini layout should
       // not make its first frame look broken or obscure the viewport.
-      buildDefaultDockLayout(dockId, panels);
+      buildDefaultDockLayout(
+          dockId, panels, static_cast<float>(guiScale.effectiveScale));
     } else if (dockSignature != lifecycle.dockedPanelLayoutSignature) {
       initialFocusPanelTitles = dockPanelsIntroducedBySceneSwitch(
           dockId,
           panels,
           lifecycle.dockedPanelLayoutSignature,
-          lifecycle.dockedPanelLayoutSideHistory);
+          lifecycle.dockedPanelLayoutSideHistory,
+          static_cast<float>(guiScale.effectiveScale));
       lifecycle.dockedPanelLayoutSignature = dockSignature;
       lifecycle.dockedPanelLayoutSideHistory = mergeDockLayoutSideHistory(
           dockSignature, lifecycle.dockedPanelLayoutSideHistory);
@@ -813,7 +828,8 @@ void updateFrameUi(
     }
   }
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
-      sceneName(exampleScene),
+      dartScene.statusSceneLabel.empty() ? sceneName(exampleScene)
+                                         : dartScene.statusSceneLabel.c_str(),
       panelContext.simulationTime,
       panelContext.contactCount,
       panelContext.selectedLabel,

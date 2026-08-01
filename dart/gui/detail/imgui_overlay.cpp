@@ -536,7 +536,9 @@ void updateImGuiOverlay(
   std::vector<ImGuiVertex> vertices;
   vertices.reserve(static_cast<std::size_t>(drawData->TotalVtxCount));
 
-  for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
+  // CmdLists.Size, not the legacy CmdListsCount mirror (stuck at zero in
+  // Dear ImGui 1.92.9), so the overlay survives system ImGui updates.
+  for (int listIndex = 0; listIndex < drawData->CmdLists.Size; ++listIndex) {
     const ImDrawList* commandList = drawData->CmdLists[listIndex];
 
     for (const ImDrawVert& vertex : commandList->VtxBuffer) {
