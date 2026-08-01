@@ -38,11 +38,13 @@ Priority order is document order. Active implementation handoff remains in
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: continue the Jain/Liu lane on DART 6 with PR-3a soft-foot
-  SIMBICON, which reuses the existing
-  `atlas_simbicon` controller and the soft-feet Atlas asset
-  (`12-pr3a-soft-foot-simbicon.md`). **Do not restart the volumetric FEM
-  subsystem on `release-6.20`.** Still open: the competitive-envelope
+- Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): both Jain/Liu
+  biped claims reproduce and are gate-asserted — contacts 51.2 soft vs 15.64
+  rigid, recoverable push 18000 N soft vs 8000 N rigid
+  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Reassess this list
+  with fresh evidence rather than assuming an order. **Do not restart the
+  volumetric FEM subsystem on `release-6.20`.** Still open: the motor-noise
+  variant of the push-recovery comparison, the competitive-envelope
   definition, the four-link flexible-foot comparison, WP-DB.07 scaling,
   WP-DB.08 DART-owned/pre-default coverage, a valid `bm-soft-body-paired`
   artifact or an
