@@ -360,8 +360,8 @@ std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
   // fixed kFloorSeed stream in row-major vertex order, three per vertex, so
   // every build at a given amplitude is identical on every platform.
   const double horizontalClamp = std::min(amplitude, 0.4 * kFloorTileSize);
-  const int verticesX = kFloorTilesX + 1;
-  const int verticesZ = kFloorTilesZ + 1;
+  constexpr int verticesX = kFloorTilesX + 1;
+  constexpr int verticesZ = kFloorTilesZ + 1;
 
   std::uint64_t state = kFloorSeed;
   auto mesh = std::make_shared<dart::math::TriMesh<double>>();
@@ -379,7 +379,7 @@ std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
           kFloorPatchMinZ + j * kFloorTileSize + jitterZ));
     }
   }
-  const auto vertex = [verticesZ](int i, int j) {
+  const auto vertex = [](int i, int j) {
     return static_cast<std::size_t>(i) * static_cast<std::size_t>(verticesZ)
            + static_cast<std::size_t>(j);
   };
