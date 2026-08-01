@@ -619,7 +619,8 @@
     so `--gui-scale` values above 1 no longer clip or overlap the chrome. The
     demos CLI also accepts `--gui-scale=N`, seeds the scale from
     `DART_GUI_SCALE`, and the View menu GUI-scale slider covers the full
-    supported `[0.5, 4]` range.
+    supported `[0.5, 4]` range:
+    [#3426](https://github.com/dartsim/dart/pull/3426)
   * Add two deformable-body flagship scenes to `dart-demos`:
     `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
     demonstrating the adaptive contact activation API with live
@@ -699,7 +700,8 @@
     available (`IMGUI_HAS_DOCK`); system-ImGui builds are unchanged.
     `parseGuiScale` now warns and clamps out-of-range values into the
     supported `[0.5, 4]` range (matching the DART 7 viewer) instead of
-    discarding them for the fallback value.
+    discarding them for the fallback value:
+    [#3426](https://github.com/dartsim/dart/pull/3426)
 
   * Fix `dart::gui::osg` interaction teardown so registered handlers and
     drag-and-drop tools are released correctly. `DefaultEventHandler::
