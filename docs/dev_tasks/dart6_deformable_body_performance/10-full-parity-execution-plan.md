@@ -126,11 +126,12 @@ deformable substrate. What exists to reuse:
   machines, harness helpers, push perturbation via `addExtForce`. Crucially its
   `BodyContactCondition` already uses `BodyNode::isColliding()`, which works for
   **rigid or SoftBodyNode** — so soft feet plug into the terminal logic with no
-  controller rewrite. It is currently **rigid-only and hardcodes**
-  `atlas_v3_no_head.sdf`.
-- **A soft-feet Atlas asset** `atlas_v3_no_head_soft_feet.sdf` (SoftBodyNode feet,
-  kv=50000/ke=100) — today only parsed+stepped in `test_SdfParser` with no
-  ground/controller/perturbation.
+  controller rewrite. Since #3408/#3423 it drives either foot geometry through
+  `soft_foot_simbicon`, and `State`'s COM feedback is point-mass aware.
+- **A soft-feet Atlas asset** `atlas_v3_no_head_soft_feet.sdf` (SoftBodyNode
+  feet, kv=50000, `<damp>` re-tuned 1000 -> 4000 by #3423) — exercised on ground
+  under the SIMBICON controller with scheduled pushes by `soft_foot_simbicon`
+  and its gates since #3408/#3423.
 - **Actuation**: joint `ActuatorType` (FORCE/PASSIVE/SERVO/…); the `SoftWorm`
   traveling-wave SERVO gait is the actuated-soft-character reference;
   `setForces`/`addExtForce`/`setCommand` all available. No muscle model (not
