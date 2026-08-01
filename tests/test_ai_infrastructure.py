@@ -3071,6 +3071,11 @@ def test_model_upgrade_workflow_is_bounded_and_future_model_scalable():
     assert "configured CMake File API result" in workflow
     assert "source-marker matches" in workflow
 
+    readme = (ROOT / "docs" / "ai" / "README.md").read_text()
+    assert "## Updating Models And Coding Agents" in readme
+    assert "**Codex — " in readme
+    assert "**Claude Code — " in readme
+
 
 def test_ultrawork_uses_explicit_delegation_and_lean_prompt_shape():
     workflow = (ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text()
