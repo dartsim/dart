@@ -699,10 +699,13 @@
 
 * GUI
 
-  * Bundle the Dear ImGui docking branch (`v1.92.8-docking`) for
-    `DART_USE_SYSTEM_IMGUI=OFF` builds and enable
-    `ImGuiConfigFlags_DockingEnable` in `ImGuiHandler` when the docking API is
-    available (`IMGUI_HAS_DOCK`); system-ImGui builds are unchanged.
+  * Add the `DART_IMGUI_DOCKING` build option: bundled
+    (`DART_USE_SYSTEM_IMGUI=OFF`) builds can opt into the Dear ImGui docking
+    branch (`v1.92.8-docking`), and `ImGuiHandler` enables
+    `ImGuiConfigFlags_DockingEnable` when the docking API is available
+    (`IMGUI_HAS_DOCK`). The bundled default stays on the vanilla `v1.92.8`
+    tag so the installed `dart-external-imgui` component keeps its public
+    ImGui ABI across DART 6.20.x; system-ImGui builds are unchanged.
     `parseGuiScale` now warns and clamps out-of-range values into the
     supported `[0.5, 4]` range (matching the DART 7 viewer) instead of
     discarding them for the fallback value:

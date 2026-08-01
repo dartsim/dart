@@ -74,8 +74,10 @@ config = { cmd = """
 
 # config-demos: the `config` variant for the dockable demos workspace. It only
 # differs by selecting the bundled ImGui docking branch
-# (DART_USE_SYSTEM_IMGUI=OFF); `config` itself stays literal because the
-# test-all semantic gate requires a deterministic, configuration-only command.
+# (DART_USE_SYSTEM_IMGUI=OFF plus DART_IMGUI_DOCKING=ON; the bundled default
+# stays on the ABI-stable vanilla tag for installs); `config` itself stays
+# literal because the test-all semantic gate requires a deterministic,
+# configuration-only command.
 config-demos = { cmd = """
     cmake \
         -G Ninja \
@@ -91,6 +93,7 @@ config-demos = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
+        -DDART_IMGUI_DOCKING=ON \
         -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"

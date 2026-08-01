@@ -205,6 +205,11 @@ dart_option(
 dart_option(DART_USE_SYSTEM_ODE "Use system ODE" ON)
 dart_option(DART_USE_SYSTEM_BULLET "Use system Bullet" ON)
 dart_option(DART_USE_SYSTEM_IMGUI "Use system ImGui" OFF)
+dart_option(
+  DART_IMGUI_DOCKING
+  "Fetch the Dear ImGui docking branch for the bundled build (enables the dockable demos workspace). Changes the bundled dart-external-imgui component's public ImGui ABI, so leave OFF for installs that must stay compatible with existing vanilla-bundled DART 6.20 clients"
+  OFF
+)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
