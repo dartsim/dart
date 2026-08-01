@@ -40,6 +40,10 @@
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include "memory_diagnostics.hpp"
+#endif
+
 #include <dart/collision/CollisionDetector.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
@@ -63,7 +67,13 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+// std::strerror is used on the unconditional headless error path, so this stays
+// outside the diagnostics guard even though std::strcmp below is guarded.
 #include <cstring>
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include <cstdlib>
+#endif
 
 namespace dart_demos {
 
@@ -1421,12 +1431,26 @@ DemoHost::DemoHost(
     std::size_t simulationThreads)
   : mScenes(std::move(scenes)),
     mPerformanceStatsPanel(240u),
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+    mMemoryDiagnosticsSession([this] {
+      return dart::examples::demos::collectMemoryDiagnostics(
+          mCurrentWorld, mMemoryDiagnosticsGeneration);
+    }),
+#endif
     mRequestedCollisionDetectorName(toLower(collisionDetectorName)),
     mSimulationThreads(static_cast<int>(std::min<std::size_t>(
         simulationThreads,
         static_cast<std::size_t>(std::numeric_limits<int>::max())))),
     mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  const char* memoryDiagnosticsEnv
+      = std::getenv("DART_DEMOS_MEMORY_DIAGNOSTICS");
+  mDebugMemoryDiagnostics
+      = memoryDiagnosticsEnv && std::strcmp(memoryDiagnosticsEnv, "1") == 0;
+  mMemoryDiagnosticsSession.setEnabled(mDebugMemoryDiagnostics);
+#endif
+
   buildCategories();
   mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
   mViewer = new dart::gui::osg::ImGuiViewer();
@@ -1504,6 +1528,14 @@ void DemoHost::setDebugRecordProfile(bool on)
 {
   mDebugRecordProfile = on;
 }
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+//==============================================================================
+void DemoHost::setDebugScrollMemoryPanelTicks(int ticks)
+{
+  mDebugScrollMemoryPanelTicks = std::max(0, ticks);
+}
+#endif
 
 //==============================================================================
 void DemoHost::addHeadlessActionKey(int key)
@@ -1737,6 +1769,13 @@ void DemoHost::processPendingSwitch()
 //==============================================================================
 void DemoHost::teardownCurrentScene()
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  // A snapshot must never retain comparison/history state from the World that
+  // is about to be released. DiagnosticSession::reset() preserves the user's
+  // enable preference and its already-reserved bounded ring storage.
+  mMemoryDiagnosticsSession.reset();
+#endif
+
   // Host-level facilities first: they hold raw BodyNode/DegreeOfFreedom
   // pointers and SimpleFrame/InteractiveFrame objects that belong to the
   // world about to be destroyed below.
@@ -1777,6 +1816,10 @@ void DemoHost::teardownCurrentScene()
 //==============================================================================
 void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  ++mMemoryDiagnosticsGeneration;
+  mMemoryDiagnosticsSession.reset();
+#endif
   mCurrentWorld = setup.world;
   applyRuntimeOptionsToWorld();
   mPerformanceStatsPanel.reset();
@@ -2180,6 +2223,12 @@ bool DemoHost::prepareHeadlessRun(
     mProfiler.setRecordingForTest(true);
     requestScenePanelTab(ScenePanelTab::Tools);
   }
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  if (mDebugMemoryDiagnostics) {
+    mMemoryDiagnosticsSession.setEnabled(true);
+    requestScenePanelTab(ScenePanelTab::Memory);
+  }
+#endif
 
   for (const int key : mHeadlessActionKeys) {
     if (!handleKey(key)) {
@@ -2208,6 +2257,36 @@ bool DemoHost::captureHeadlessShot(
               << "': " << std::strerror(errno) << "\n";
     return false;
   }
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  if (mDebugScrollMemoryPanelTicks > 0) {
+    if (auto* queue = mViewer->getEventQueue()) {
+      // Hover inside the right-side scene panel so ImGui routes the wheel to
+      // the Memory tab content. osgGA Y grows upward and the ImGui handler
+      // flips it, so mid-height works in either convention; the fixed inset
+      // stays inside the panel for every supported width.
+      const float hoverX = static_cast<float>(width) - 60.0f;
+      const float hoverY = static_cast<float>(height) / 2.0f;
+      mViewer->getCamera()->setViewMatrixAsLookAt(
+          home.eye, home.center, home.up);
+      queue->mouseMotion(hoverX, hoverY);
+      mViewer->frame();
+      for (int tick = 0; tick < mDebugScrollMemoryPanelTicks; ++tick) {
+        queue->mouseMotion(hoverX, hoverY);
+        queue->mouseScroll(::osgGA::GUIEventAdapter::SCROLL_DOWN);
+        mViewer->frame();
+        char scrollSuffix[24];
+        std::snprintf(
+            scrollSuffix, sizeof(scrollSuffix), ".scroll%04d.png", tick);
+        const std::string tickPath = shotPath + scrollSuffix;
+        std::remove(tickPath.c_str());
+        mViewer->captureScreen(tickPath);
+        mViewer
+            ->frame(); // SaveScreen writes this tick's PNG during this frame.
+      }
+    }
+  }
+#endif
 
   // Re-pin the view (realize() may have reset it) and draw, then capture.
   mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
@@ -2995,9 +3074,21 @@ void DemoHost::renderToolsSection()
   }
 }
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+//==============================================================================
+void DemoHost::renderMemorySection()
+{
+  dart::examples::demos::renderMemoryDiagnostics(
+      mMemoryDiagnosticsSession, ImGui::GetTime(), mGuiScale);
+}
+#endif
+
 //==============================================================================
 void DemoHost::renderScenePanel()
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  bool memoryTabVisible = false;
+#endif
   const auto tabSelectionFlags = [this](ScenePanelTab tab) {
     return mHasRequestedScenePanelTab && mRequestedScenePanelTab == tab
                ? ImGuiTabItemFlags_SetSelected
@@ -3030,8 +3121,26 @@ void DemoHost::renderScenePanel()
       renderToolsSection();
       ImGui::EndTabItem();
     }
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+    if (ImGui::BeginTabItem(
+            "Memory", nullptr, tabSelectionFlags(ScenePanelTab::Memory))) {
+      memoryTabVisible = true;
+      renderMemorySection();
+      ImGui::EndTabItem();
+    }
+#endif
     ImGui::EndTabBar();
   }
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  // Sampling belongs to the session, not tab visibility. The visible Memory
+  // tab ticks after processing manual actions; hidden tabs tick here so
+  // history continues at the configured cadence.
+  if (!memoryTabVisible) {
+    mMemoryDiagnosticsSession.update(ImGui::GetTime());
+  }
+#endif
 
   mHasRequestedScenePanelTab = false;
 }

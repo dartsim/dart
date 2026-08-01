@@ -40,6 +40,14 @@
 
 namespace dart::common {
 
+class FreeListAllocator;
+
+namespace detail {
+struct AllocatorMemoryLayout;
+inline AllocatorMemoryLayout captureAllocatorMemoryLayout(
+    const FreeListAllocator& allocator);
+} // namespace detail
+
 /// Most general heap memory allocator for allocating memory of various sizes.
 ///
 /// This allocator preallocates a large chunk of contiguous memory on
@@ -113,6 +121,9 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
+  friend detail::AllocatorMemoryLayout detail::captureAllocatorMemoryLayout(
+      const FreeListAllocator& allocator);
+
   struct MemoryBlockHeader
   {
     /// Memory block size in bytes
