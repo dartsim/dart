@@ -830,8 +830,11 @@ TEST(DARTCollisionDetector, CollidesCylinderBox)
   collision::CollisionResult result;
   EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
   // The vertical cylinder side against the box face is a contact line
-  // clipped to the box face; both endpoints are emitted as stable supports.
+  // clipped to the box face; both endpoints are emitted as distinct stable
+  // supports.
   ASSERT_EQ(2u, result.getNumContacts());
+  EXPECT_GT(
+      (result.getContact(0).point - result.getContact(1).point).norm(), 0.1);
   for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
     const auto& contact = result.getContact(i);
     EXPECT_EQ(cylinderFrame.get(), contact.getShapeFrame1());

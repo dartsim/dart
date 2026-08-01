@@ -606,6 +606,13 @@ full suite 154/154.
   structurally untouched (verified bit-identical on the earlier bundle
   states).
 
+Known narrow boundaries (Codex re-review, recorded as accepted): the
+axis-parallel gate's 1e-9 matrix tolerance corresponds to ~4.5e-5 rad,
+so poses tilted just past it route to the legacy paths (both sides of
+the boundary are previously-existing behaviors); and a cylinder whose
+axis projects exactly onto a box edge can receive a one-face line
+manifold (a pre-existing ambiguity class of the aligned path).
+
 Artifacts: `~/dart-wsg-evidence-20260731/aug01/` (60k trend logs
 `S6_60k_canon_seed*.log`, reval guard/seed/parity logs under
 `effrad_reval/`, probe JSONs, seed matrices, scripts, and the seed-101
