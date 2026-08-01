@@ -109,6 +109,11 @@ bool survivesPush(Feet feet, double magnitude)
 const Eigen::Vector3d kSoftFootRestBoxSize(0.275, 0.15, 0.075);
 const Eigen::Vector3d kSoftFootRestBoxOffset(0.05, 0.0, -0.06);
 const Eigen::Vector3i kSoftFootRestBoxFrags(3, 3, 3);
+// <soft_shape><total_mass>: the generator distributes it over the point
+// masses, and the control's combined-inertia computation needs the same
+// distribution the parser produced. The comparability gate cross-checks the
+// result against the live soft foot, so a drift from the asset fails there.
+constexpr double kSoftFootPointMassTotal = 0.5;
 
 //==============================================================================
 /// Makes a loaded soft foot directly comparable with the rigid foot it
@@ -205,7 +210,7 @@ void normalizeRigidFoot(dart::dynamics::BodyNode* foot)
           Eigen::Translation3d(kSoftFootRestBoxOffset)
               * Eigen::Isometry3d::Identity(),
           kSoftFootRestBoxFrags,
-          1.0);
+          kSoftFootPointMassTotal);
 
   auto restMesh = std::make_shared<dart::math::TriMesh<double>>();
   restMesh->reserveVertices(softProperties.mPointProps.size());
@@ -224,6 +229,58 @@ void normalizeRigidFoot(dart::dynamics::BodyNode* foot)
       std::make_shared<dart::dynamics::MeshShape>(
           Eigen::Vector3d::Ones(), std::move(restMesh)));
   meshNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+
+  // The control is "the soft foot with deformation frozen", so its rigid-body
+  // inertia is the soft foot's combined rest-pose inertia: the down-scaled
+  // link (normalizeSoftFoot leaves the soft link at linkMass - pointMass with
+  // moments scaled by the same ratio) plus every point mass at its rest
+  // position, via the parallel-axis theorem. Without this the control keeps
+  // the SDF link's compact tensor while the soft foot carries its mass out at
+  // the surface -- measured at 1.8-2.0x the principal moments and a 5.9 mm
+  // center-of-mass shift, which changes gait and push response on its own.
+  //
+  // Matching in this direction is always realizable; the reverse (thinning
+  // the soft foot's link to cancel the point masses' spread) would need
+  // negative link inertia.
+  double pointMassTotal = 0.0;
+  for (const auto& pointProperties : softProperties.mPointProps)
+    pointMassTotal += pointProperties.mMass;
+
+  const dart::dynamics::Inertia sdfInertia = foot->getInertia();
+  const double sdfMass = sdfInertia.getMass();
+  const double linkMass = sdfMass - pointMassTotal;
+  if (!(linkMass > 0.0))
+    throw std::runtime_error(
+        std::string(foot->getName())
+        + ": soft point masses exceed the link mass");
+  const Eigen::Vector3d linkCom = sdfInertia.getLocalCOM();
+  const Eigen::Matrix3d linkMomentAboutCom
+      = sdfInertia.getMoment() * (linkMass / sdfMass);
+
+  const auto shiftToOrigin
+      = [](double mass, const Eigen::Vector3d& com) -> Eigen::Matrix3d {
+    return mass
+           * (com.squaredNorm() * Eigen::Matrix3d::Identity()
+              - com * com.transpose());
+  };
+
+  Eigen::Matrix3d momentAboutOrigin
+      = linkMomentAboutCom + shiftToOrigin(linkMass, linkCom);
+  Eigen::Vector3d weightedCom = linkMass * linkCom;
+  for (const auto& pointProperties : softProperties.mPointProps) {
+    momentAboutOrigin
+        += shiftToOrigin(pointProperties.mMass, pointProperties.mX0);
+    weightedCom += pointProperties.mMass * pointProperties.mX0;
+  }
+  const Eigen::Vector3d combinedCom = weightedCom / sdfMass;
+  const Eigen::Matrix3d combinedMomentAboutCom
+      = momentAboutOrigin - shiftToOrigin(sdfMass, combinedCom);
+
+  dart::dynamics::Inertia combinedInertia;
+  combinedInertia.setMass(sdfMass);
+  combinedInertia.setLocalCOM(combinedCom);
+  combinedInertia.setMoment(combinedMomentAboutCom);
+  foot->setInertia(combinedInertia);
 }
 
 } // namespace
