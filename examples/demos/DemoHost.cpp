@@ -33,6 +33,7 @@
 #include "DemoHost.hpp"
 
 #include "HeadlessExactFbfFailFast.hpp"
+#include "RuntimeOptions.hpp"
 #include "Theme.hpp"
 
 #include <dart/config.hpp>
@@ -1438,9 +1439,8 @@ DemoHost::DemoHost(
     }),
 #endif
     mRequestedCollisionDetectorName(toLower(collisionDetectorName)),
-    mSimulationThreads(static_cast<int>(std::min<std::size_t>(
-        simulationThreads,
-        static_cast<std::size_t>(std::numeric_limits<int>::max())))),
+    mSimulationThreads(static_cast<int>(
+        std::min<std::size_t>(simulationThreads, kMaxSimulationThreads))),
     mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
@@ -2841,7 +2841,8 @@ void DemoHost::renderRuntimeControls()
   ImGui::BeginDisabled(!mCurrentWorld);
   int requestedThreads = mSimulationThreads;
   if (ImGui::InputInt("Threads", &requestedThreads, 1, 4)) {
-    requestedThreads = std::clamp(requestedThreads, 0, 256);
+    requestedThreads = std::clamp(
+        requestedThreads, 0, static_cast<int>(kMaxSimulationThreads));
     if (mCurrentWorld) {
       mCurrentWorld->setNumSimulationThreads(
           static_cast<std::size_t>(requestedThreads));
