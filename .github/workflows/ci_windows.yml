@@ -43,8 +43,11 @@ jobs:
     # Keep the job bounded, but allow large native-collision PRs enough time
     # for MSVC Release test linking on hosted runners. Release-branch Windows
     # builds can exceed three hours on cold hosted runners after the DART 6.20
-    # native-collision test expansion.
-    timeout-minutes: 300
+    # native-collision test expansion, and passed five hours (still linking)
+    # after the July 2026 pixi.lock refresh; this branch builds cold every run
+    # (no compiler cache under the Visual Studio generator), so use the full
+    # six-hour hosted-runner budget.
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
