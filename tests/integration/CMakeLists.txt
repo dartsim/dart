@@ -156,6 +156,18 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
   # the projection.
   set_tests_properties(test_SoftFootSimbiconModel PROPERTIES TIMEOUT 3600)
   set_tests_properties(test_SoftFootSimbiconPushSweep PROPERTIES TIMEOUT 7200)
+  # The gcov-instrumented coverage job excludes this pair (`--label-exclude
+  # no-coverage-value` in pixi's build-coverage): measured there, the gates
+  # took 3337 s and the sweep overran even 7200 s at a ~490x slowdown, while
+  # contributing no coverage the report can see -- coverage-report strips
+  # */examples/* and */tests/* from coverage.info, and the dart-core paths
+  # these drive are already executed by test_SoftWormModel and
+  # test_AdaptiveSoftContactModel. Every functional CI job still runs both.
+  set_tests_properties(
+    test_SoftFootSimbiconModel
+    test_SoftFootSimbiconPushSweep
+    PROPERTIES LABELS "no-coverage-value"
+  )
   dart_format_add(${soft_foot_simbicon_test_sources})
 endif()
 

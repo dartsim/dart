@@ -96,6 +96,18 @@ as a GUI-free model + `dart-demos` scene + model test, ABI-safe additive.
 - Finite-state throughout; GUI-free numerical oracle (no visual claim required
   for the model test).
 
+### CI cost envelope
+
+The Atlas world is expensive on instrumented or emulated runners: measured
+slowdowns are ~190x on the FreeBSD VM and ~490x under the gcov coverage build.
+Both CTest entries carry explicit TIMEOUT budgets (3600 s gates / 7200 s
+sweep), and both are labeled `no-coverage-value` and excluded from the
+coverage job's ctest run: coverage-report strips `*/examples/*` and
+`*/tests/*` from coverage.info, and the dart-core paths these tests drive are
+already executed by the other soft-body suites, so the pair spent ~3 h of the
+coverage job for lines the report cannot attribute to them. Every functional
+CI job (Linux/macOS/arm64/FreeBSD, Debug and Release) still runs both entries.
+
 ## Open maintainer decisions
 
 Both block the Jain/Liu push-recovery claim. The contact-count claim is
