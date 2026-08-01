@@ -193,6 +193,20 @@
 
 * Collision
 
+  * Emit the full four-contact face manifold from the `dart` detector's
+    solver-facing queries instead of the previous three-contact target. A
+    three-point box manifold cannot hold a resting face-face stack — the
+    tripod support rocks under micro-tilts — which destabilized dense
+    container piles
+    ([#3056](https://github.com/dartsim/dart/issues/3056)). Generated
+    resting scenes now settle and deactivate up to 4x faster; the dense
+    mixed-shape pile fixture improves but does not yet fully sleep
+    (residual contact-stream persistence work is tracked in the issue);
+    always-active dense containers pay up to ~2x per step for the fourth
+    solver row per contact pair. FCL, Bullet, and ODE results are
+    bit-identical; the built-in default (`fcl`) is unchanged:
+    [#PENDING](https://github.com/dartsim/dart/pulls)
+
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
     released `DARTCollide` entry points and detector ABI remain compatible, as

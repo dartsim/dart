@@ -254,9 +254,16 @@ private:
 namespace {
 
 //==============================================================================
-// Three non-collinear contacts define a stable planar patch while avoiding a
-// fourth redundant solver row on contact-rich native scenes.
-constexpr std::size_t kSolverFacingManifoldContactTarget = 3u;
+// Solver-facing queries carry the full manifold capacity. Three contacts are
+// not enough for a resting face-face box stack: the tripod support polygon
+// stops containing the weight vector under micro-tilts toward the missing
+// corner, so stacked boxes rock indefinitely, penetration never converges,
+// and the deactivation gates (correctly) never let the island sleep
+// (issue #3056 S6 pile fixture). Callers still bound the stream through
+// CollisionOption's per-pair cap; DARTCollide keeps its explicit unlimited
+// adapter request.
+constexpr std::size_t kSolverFacingManifoldContactTarget
+    = native::ContactManifold::kMaxContacts;
 
 // Bound retained parallel scratch independently of scene pair count. Batches
 // are merged before the broadphase or Cartesian traversal continues, keeping
@@ -294,8 +301,8 @@ native::CollisionOption makeNativeOption(
     const std::size_t maxPairContacts
         = option.getEffectiveMaxNumContactsPerPair();
     // DARTCollide uses an explicit unlimited per-pair request to preserve its
-    // released full-manifold behavior. Ordinary detector queries retain the
-    // solver-facing three-contact target, including wider finite requests.
+    // released full-manifold behavior. Ordinary detector queries clamp wider
+    // finite requests to the solver-facing manifold target above.
     const bool preserveCompleteManifold
         = option.maxNumContactsPerPair
           == std::numeric_limits<std::size_t>::max();
