@@ -1130,6 +1130,7 @@ int runGuiBackendApplicationImpl(
   std::size_t finalContacts = 0;
   std::optional<int> pendingDemoFallbackIndex;
   std::string demoStatusLabel;
+  std::string lastActivatedDemoId;
 
   // Outer scene loop. For the single-scene path this runs exactly once; for the
   // demos host it rebuilds the scene-bound state when a switch is requested,
@@ -1229,12 +1230,25 @@ int runGuiBackendApplicationImpl(
       simulationStepper = SimulationStepper{};
     }
 
-    cameraController.camera
+    // Rebuild/Restart (or re-selecting the active demo) must reset only the
+    // physics, never the user's camera pose: keep the current orbit camera
+    // when the same demo re-activates, and apply the scene's default framing
+    // only when a different demo (or the first one) starts.
+    const bool sameDemoReactivation
+        = demoCatalog != nullptr && candidateDemoEntry != nullptr
+          && !lastActivatedDemoId.empty()
+          && lastActivatedDemoId == candidateDemoEntry->id;
+    lastActivatedDemoId = candidateDemoEntry != nullptr ? candidateDemoEntry->id
+                                                        : std::string();
+    auto homeCamera
         = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
-    if (appOptions.cameraUpdater) {
-      appOptions.cameraUpdater(cameraController.camera);
+    if (!sameDemoReactivation) {
+      cameraController.camera = homeCamera;
+      if (appOptions.cameraUpdater) {
+        appOptions.cameraUpdater(cameraController.camera);
+      }
+      homeCamera = cameraController.camera;
     }
-    auto homeCamera = cameraController.camera;
 
     const bool validateFixtureRequirements = false;
     DartScene dartScene = createDartScene(appOptions);

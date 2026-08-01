@@ -296,8 +296,11 @@ compatibility remains on the active DART 6 LTS branch._
   window/DPI combination, the Simulation toolbar region hugs its content and
   grows once when the capture/playback controls appear, demo switches preserve
   the user's dock tree (a newly introduced side splits the live central node),
-  and the built-in status panel names the running demo instead of the internal
-  fixture. System-ImGui builds keep the floating-panel fallback.
+  the built-in status panel names the running demo instead of the internal
+  fixture, and Rebuild/Restart of the active demo resets only the physics
+  while preserving the user's camera pose (selecting a different demo still
+  opens with that scene's own framing). System-ImGui builds keep the
+  floating-panel fallback.
   ([#3425](https://github.com/dartsim/dart/pull/3425))
 - Added a regression test for the Dear ImGui 1.92.9 overlay fix below: the
   draw-plan builder is exercised against an `ImDrawData` whose obsolete
