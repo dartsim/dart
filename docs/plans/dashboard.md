@@ -43,8 +43,9 @@ Priority order is document order. Active implementation handoff remains in
   rigid, recoverable push 18000 N soft vs 8000 N rigid
   (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Goal (maintainer
   direction, 2026-08-01): fully complete this task for the DART 6.20
-  release — every open item lands with evidence or an approved disposition,
-  bundled into as few PRs as review quality allows. The ordered inventory of
+  release, bundled into as few PRs as review quality allows — parity rows
+  close only with gate evidence, and dispositions apply only to the
+  acceptance items whose own text offers one. The ordered inventory of
   remaining items and the suggested PR bundles live in the task `RESUME.md`
   (single owner); this dashboard deliberately does not duplicate that list.
   **Do not restart the volumetric FEM subsystem on `release-6.20`.** New GUI

@@ -40,9 +40,13 @@ commit above is a snapshot rather than a permanent branch tip.
 ## Immediate packet
 
 PR-3a is complete (#3408 + #3423 above). The maintainer-set goal
-(2026-08-01) is to **fully complete this task for the DART 6.20 release**:
-every remaining item below lands with evidence or an explicitly approved
-disposition, bundled into as few PRs as review quality allows.
+(2026-08-01) is to **fully complete this task for the DART 6.20 release**,
+bundled into as few PRs as review quality allows. The parity rows (items
+1-5) close only with gate evidence — the matrix's acceptance rule allows
+them no deferral. An explicitly approved disposition is an alternative only
+where an item's own acceptance text offers one (item 7's negative
+disposition and item 9's disposition); item 6 closes with an approved
+definition.
 
 Remaining items (parity rows from `02-paper-parity-matrix.md` and
 `10-full-parity-execution-plan.md` section 5, plus acceptance work):

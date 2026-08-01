@@ -35,11 +35,13 @@ resume any branch used by the merged work.
 ## Exact next action
 
 Work the task to full completion for the DART 6.20 release (maintainer
-direction, 2026-08-01): drive every open acceptance item below to evidence
-or an approved disposition, bundling related items into as few PRs as
-review quality allows. `RESUME.md` holds the ordered item list and takeover
-detail. Completed packet specs such as `12-pr3a-soft-foot-simbicon.md` are
-records, not resumable work.
+direction, 2026-08-01), bundling related items into as few PRs as review
+quality allows. Parity rows close only with gate evidence (the matrix
+allows them no deferral); an approved disposition is an alternative only
+where an item's own acceptance text offers one (WP-DB.07's negative
+disposition, the paired-benchmark disposition). `RESUME.md` holds the
+ordered item list and takeover detail. Completed packet specs such as
+`12-pr3a-soft-foot-simbicon.md` are records, not resumable work.
 
 ## Open acceptance work
 
