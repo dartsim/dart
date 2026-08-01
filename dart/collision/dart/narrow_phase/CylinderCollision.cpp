@@ -377,6 +377,252 @@ bool canUseParallelCylinderShortcut(
   return angularSweep <= eps * lengthScale;
 }
 
+// A cylinder side resting on a near-parallel box face needs a stable
+// two-point line manifold: the convex fallback returns one arbitrary point
+// along the under-constrained contact line, so the support teleports under
+// micro-motion and resting piles never stop rocking (issue #3056 S6
+// fixture). Emits the clipped contact-line endpoints with per-endpoint
+// depths; cap, edge, and steeper-tilt cases fall through to the existing
+// paths.
+bool tryAddCylinderBoxSideLineContacts(
+    double cylinderRadius,
+    double cylinderHalfHeight,
+    const Eigen::Isometry3d& cylinderTransform,
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Isometry3d& boxTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  // Side-surface depth formulas stay exact while the contact is on the side
+  // wall; ~3 degrees comfortably covers settling-pile tilts.
+  constexpr double kMaxAxisNormalDot = 0.05;
+  constexpr double kContactEpsilon = 1e-10;
+  constexpr double kMinSpan = 1e-6;
+  constexpr double kSlabTolerance = 1e-9;
+
+  if (contactBudgetExhausted(result.numContacts(), option)) {
+    return false;
+  }
+
+  const Eigen::Isometry3d boxInverse = boxTransform.inverse();
+  const Eigen::Vector3d center = boxInverse * cylinderTransform.translation();
+  const Eigen::Vector3d axis
+      = boxInverse.linear() * cylinderTransform.rotation().col(2);
+
+  double closestFaceDistance = -std::numeric_limits<double>::infinity();
+  int faceAxis = 0;
+  double faceSign = 1.0;
+  for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+    for (const double sign : {-1.0, 1.0}) {
+      const double distance
+          = sign * center[axisIndex] - boxHalfExtents[axisIndex];
+      if (distance > closestFaceDistance) {
+        closestFaceDistance = distance;
+        faceAxis = axisIndex;
+        faceSign = sign;
+      }
+    }
+  }
+
+  if (std::abs(axis[faceAxis]) > kMaxAxisNormalDot) {
+    return false;
+  }
+
+  const Eigen::Vector3d segmentStart = center - axis * cylinderHalfHeight;
+  const Eigen::Vector3d segmentEnd = center + axis * cylinderHalfHeight;
+  const Eigen::Vector3d segmentDelta = segmentEnd - segmentStart;
+
+  // Side-surface penetration is linear along the axis; keep the interval
+  // where it is non-negative.
+  const auto sidePenetrationAt = [&](const Eigen::Vector3d& axisPoint) {
+    const double clearance
+        = faceSign * axisPoint[faceAxis] - boxHalfExtents[faceAxis];
+    return cylinderRadius - clearance;
+  };
+  const double penStart = sidePenetrationAt(segmentStart);
+  const double penEnd = sidePenetrationAt(segmentEnd);
+  if (penStart < -kContactEpsilon && penEnd < -kContactEpsilon) {
+    return false;
+  }
+
+  double tMin = 0.0;
+  double tMax = 1.0;
+  const double penDelta = penEnd - penStart;
+  if (std::abs(penDelta) > kContactEpsilon) {
+    const double tZero = -penStart / penDelta;
+    if (penDelta > 0.0) {
+      tMin = std::max(tMin, tZero);
+    } else {
+      tMax = std::min(tMax, tZero);
+    }
+  }
+
+  // Clip the axis segment to the face rectangle along both tangent axes.
+  for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+    if (axisIndex == faceAxis) {
+      continue;
+    }
+    const double start = segmentStart[axisIndex];
+    const double delta = segmentDelta[axisIndex];
+    const double bound = boxHalfExtents[axisIndex] + kSlabTolerance;
+    if (std::abs(delta) <= kContactEpsilon) {
+      if (std::abs(start) > bound) {
+        return false;
+      }
+      continue;
+    }
+    double tEnter = (-bound - start) / delta;
+    double tExit = (bound - start) / delta;
+    if (tEnter > tExit) {
+      std::swap(tEnter, tExit);
+    }
+    tMin = std::max(tMin, tEnter);
+    tMax = std::min(tMax, tExit);
+  }
+
+  if (tMax - tMin <= 0.0 || (tMax - tMin) * segmentDelta.norm() < kMinSpan) {
+    return false;
+  }
+
+  if (!option.enableContact) {
+    return true;
+  }
+
+  ContactManifold manifold;
+  manifold.setType(ContactType::Patch);
+  const Eigen::Vector3d normalLocal
+      = Eigen::Vector3d::Unit(faceAxis) * faceSign;
+  const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
+
+  for (const double t : {tMin, tMax}) {
+    if (result.numContacts() + manifold.numContacts()
+        >= option.maxNumContacts) {
+      break;
+    }
+    const Eigen::Vector3d axisPoint = segmentStart + t * segmentDelta;
+    const double depth = std::max(0.0, sidePenetrationAt(axisPoint));
+    ContactPoint contact;
+    contact.position
+        = boxTransform
+          * (axisPoint - normalLocal * (cylinderRadius - 0.5 * depth));
+    contact.normal = normalWorld;
+    contact.depth = depth;
+    manifold.addContact(contact);
+  }
+
+  if (!manifold.hasContacts()) {
+    return false;
+  }
+  if (manifold.numContacts() == 1) {
+    manifold.setType(ContactType::Point);
+  }
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
+// Clamped closest parameters between two segments (mirrors the capsule
+// narrowphase). Returns false when the segments are near-parallel, where
+// the closest pair is non-unique and callers should keep their existing
+// paths.
+bool closestParamsBetweenSegments(
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& q1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& q2,
+    double& s,
+    double& t)
+{
+  const Eigen::Vector3d d1 = q1 - p1;
+  const Eigen::Vector3d d2 = q2 - p2;
+  const Eigen::Vector3d r = p1 - p2;
+
+  const double a = d1.squaredNorm();
+  const double e = d2.squaredNorm();
+  constexpr double kDegenerate = 1e-10;
+  if (a <= kDegenerate || e <= kDegenerate) {
+    return false;
+  }
+
+  const double b = d1.dot(d2);
+  const double c = d1.dot(r);
+  const double f = d2.dot(r);
+  const double denom = a * e - b * b;
+  constexpr double kParallelRatio = 1e-6;
+  if (denom <= kParallelRatio * a * e) {
+    return false;
+  }
+
+  s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
+  t = (b * s + f) / e;
+  if (t < 0.0) {
+    t = 0.0;
+    s = std::clamp(-c / a, 0.0, 1.0);
+  } else if (t > 1.0) {
+    t = 1.0;
+    s = std::clamp((b - c) / a, 0.0, 1.0);
+  }
+  return true;
+}
+
+// Crossed side-side cylinder contact: while both closest points stay
+// interior to the axes, the swept-circle side surfaces match capsules
+// exactly, so the sphere-like closest-point contact is exact — and the
+// convex fallback intermittently misses shallow crossed contacts
+// (measured: pairs dropped at ~1 mm penetration under 50 µm slides).
+bool tryAddCrossedCylinderSideContact(
+    double r1,
+    double h1,
+    const Eigen::Vector3d& axis1,
+    const Eigen::Vector3d& center1,
+    double r2,
+    double h2,
+    const Eigen::Vector3d& axis2,
+    const Eigen::Vector3d& center2,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  constexpr double kInteriorMargin = 0.02;
+  constexpr double kContactEpsilon = 1e-10;
+
+  double s = 0.0;
+  double t = 0.0;
+  if (!closestParamsBetweenSegments(
+          center1 - axis1 * h1,
+          center1 + axis1 * h1,
+          center2 - axis2 * h2,
+          center2 + axis2 * h2,
+          s,
+          t)) {
+    return false;
+  }
+  if (s < kInteriorMargin || s > 1.0 - kInteriorMargin || t < kInteriorMargin
+      || t > 1.0 - kInteriorMargin) {
+    return false;
+  }
+
+  const Eigen::Vector3d point1 = center1 + axis1 * ((2.0 * s - 1.0) * h1);
+  const Eigen::Vector3d point2 = center2 + axis2 * ((2.0 * t - 1.0) * h2);
+  const Eigen::Vector3d delta = point2 - point1;
+  const double dist = delta.norm();
+  const double depth = r1 + r2 - dist;
+  if (depth < -kContactEpsilon) {
+    return false;
+  }
+  if (!option.enableContact) {
+    return true;
+  }
+
+  const Eigen::Vector3d lateralDir = dist > kContactEpsilon
+                                         ? (delta / dist).eval()
+                                         : chooseRadialDirection(axis1);
+  ContactPoint contact;
+  contact.normal = -lateralDir;
+  contact.depth = std::max(0.0, depth);
+  contact.position = point1 + lateralDir * (r1 - 0.5 * contact.depth);
+  result.addContact(contact);
+  return true;
+}
+
 } // namespace
 
 bool collideCylinders(
@@ -404,6 +650,11 @@ bool collideCylinders(
   if (canUseParallelCylinderShortcut(axis1, axis2, r1, h1, r2, h2)) {
     return collideParallelCylinders(
         r1, h1, axis1, center1, r2, h2, center2, result, option);
+  }
+
+  if (tryAddCrossedCylinderSideContact(
+          r1, h1, axis1, center1, r2, h2, axis2, center2, result, option)) {
+    return true;
   }
 
   return collideConvexConvex(
@@ -732,6 +983,17 @@ bool collideCylinderBox(
   }
 
   if (!foundCollision) {
+    if (tryAddCylinderBoxSideLineContacts(
+            cylRadius,
+            cylHalfHeight,
+            cylinderTransform,
+            boxHalf,
+            boxTransform,
+            result,
+            option)) {
+      return true;
+    }
+
     if (collideCylinderPlaneLikeBox(
             cylRadius,
             cylHalfHeight,

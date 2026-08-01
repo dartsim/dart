@@ -36,8 +36,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
+#include <limits>
 #include <stdexcept>
+#include <utility>
 
 using namespace dart::collision::native;
 
@@ -47,6 +50,14 @@ Eigen::Isometry3d translated(double x, double y, double z)
 {
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+Eigen::Isometry3d rotatedAroundX(double radians)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear()
+      = Eigen::AngleAxisd(radians, Eigen::Vector3d::UnitX()).toRotationMatrix();
   return tf;
 }
 
@@ -339,6 +350,99 @@ TEST(CylinderCollision, DeepFloorBoxUsesAxialNormal)
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
   EXPECT_NEAR(0.75, result.getContact(0).depth, 1e-12);
+}
+
+TEST(CylinderCollision, SideOnFaceEmitsStableEndpointContacts)
+{
+  // Cylinder lying on its side on a box face: the solver needs both line
+  // endpoints as stable supports; a single point along the contact line
+  // teleports under micro-motion and keeps resting piles rocking
+  // (issue #3056 S6 fixture).
+  CylinderShape cylinder(0.05, 0.2);
+  BoxShape floorBox(Eigen::Vector3d(1.0, 1.0, 0.1));
+
+  const auto collideAt = [&](double x) {
+    Eigen::Isometry3d tf = rotatedAroundX(1.5707963267948966);
+    tf.translation() = Eigen::Vector3d(x, 0.0, 0.049);
+    CollisionResult result;
+    EXPECT_TRUE(collideCylinderBox(
+        cylinder, tf, floorBox, translated(0.0, 0.0, -0.1), result));
+    return result;
+  };
+
+  const CollisionResult first = collideAt(0.0);
+  ASSERT_EQ(2u, first.numContacts());
+  double minY = first.getContact(0).position.y();
+  double maxY = first.getContact(1).position.y();
+  if (minY > maxY) {
+    std::swap(minY, maxY);
+  }
+  EXPECT_NEAR(-0.1, minY, 1e-9);
+  EXPECT_NEAR(0.1, maxY, 1e-9);
+  for (std::size_t i = 0; i < first.numContacts(); ++i) {
+    EXPECT_NEAR(0.001, first.getContact(i).depth, 1e-9);
+    EXPECT_TRUE(
+        first.getContact(i).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  }
+
+  const CollisionResult second = collideAt(50e-6);
+  ASSERT_EQ(2u, second.numContacts());
+  for (std::size_t i = 0; i < second.numContacts(); ++i) {
+    double best = std::numeric_limits<double>::infinity();
+    for (std::size_t j = 0; j < first.numContacts(); ++j) {
+      best = std::min(
+          best,
+          (second.getContact(i).position - first.getContact(j).position)
+              .norm());
+    }
+    EXPECT_LT(best, 1e-3);
+  }
+}
+
+TEST(CylinderCollision, TiltedSideOnFaceKeepsBothEndpointDepths)
+{
+  // A micro-tilt within the pile's settling regime makes the endpoint
+  // depths asymmetric; both supports must survive with per-endpoint depths.
+  CylinderShape cylinder(0.05, 0.2);
+  BoxShape floorBox(Eigen::Vector3d(1.0, 1.0, 0.1));
+
+  Eigen::Isometry3d tf = rotatedAroundX(1.5707963267948966 + 1e-3);
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.049);
+  CollisionResult result;
+  ASSERT_TRUE(collideCylinderBox(
+      cylinder, tf, floorBox, translated(0.0, 0.0, -0.1), result));
+  ASSERT_EQ(2u, result.numContacts());
+
+  double minDepth = result.getContact(0).depth;
+  double maxDepth = result.getContact(1).depth;
+  if (minDepth > maxDepth) {
+    std::swap(minDepth, maxDepth);
+  }
+  EXPECT_NEAR(0.0009, minDepth, 1e-6);
+  EXPECT_NEAR(0.0011, maxDepth, 1e-6);
+}
+
+TEST(CylinderCollision, CrossedCylindersKeepShallowContact)
+{
+  // Perpendicular crossed cylinders at ~1 mm penetration: the convex
+  // fallback intermittently reported no contact under 50 um slides, so the
+  // upper body free-fell for a step and re-impacted (measured jitter
+  // source). The closest-point side contact must persist across the sweep.
+  CylinderShape cylinder1(0.05, 0.2);
+  CylinderShape cylinder2(0.05, 0.2);
+
+  for (int k = 0; k <= 4; ++k) {
+    Eigen::Isometry3d tf2 = rotatedAroundY(1.5707963267948966);
+    tf2.translation() = Eigen::Vector3d(k * 50e-6, 0.0, 0.099);
+    CollisionResult result;
+    ASSERT_TRUE(collideCylinders(
+        cylinder1, rotatedAroundX(1.5707963267948966), cylinder2, tf2, result))
+        << "missed contact at slide step " << k;
+    ASSERT_EQ(1u, result.numContacts());
+    EXPECT_NEAR(0.001, result.getContact(0).depth, 1e-9);
+    EXPECT_TRUE(
+        result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-9));
+  }
 }
 
 TEST(CylinderCollision, TouchingCylinderBoxCapReportsContact)

@@ -54,18 +54,30 @@ persistence (pair churn), not sleep policy (a tolerance raise was
 measured and rejected: it triggers freeze-under-load penetration
 explosions). 154/154 C++ tests pass; lint/check-lint clean.
 
-**Two maintainer decisions now gate completion (README D9/D10)**:
-D9 — ship the manifold fix accepting the active-scene cost (and
-re-baseline criterion 1), hold it until solver-side degeneracy cost is
-recovered, or direct another route; D10 — scope of the remaining S6
-stream-persistence work. The session state is preserved as a LOCAL
-checkpoint commit on `wp-pg-wsg-rebaseline-20260731` (never pushed;
-pushes/PRs/further behavior changes stay gated on D9/D10), and the key
-raw artifacts are archived off /tmp at
-`~/dart-wsg-evidence-20260731/` (guard matrix + summary, A/B TSVs,
-pre/post profiles, S6 probe/series/long logs, WS-G results.json +
-provenance for both runs, S6 GUI capture PNG) because the July /tmp
-references were already lost once.
+**2026-08-01 update — D9 and D10 are DECIDED (maintainer delegated the
+calls; see README "Open decisions" for the full records).** The
+maintainer authorized evidence-based self-decision preferring root-cause
+fixes; the session then measured old-vs-new contact streams directly
+(probe suite over constructed micro-pose sweeps, both engines' dartpy
+builds), found and fixed two cylinder stream defects (wandering
+side-line point; intermittently missed crossed contacts — Codex
+independently confirmed the GJK-fallback root cause), and re-measured:
+the complete WP-PG.50 bundle is **speed-parity with the audited old
+stack on the primary fixture (direct interleave 1.009x)**, so criterion
+1 holds at ≈3.5x with no chaining caveats, and D9 = SHIP. The 5-seed x
+3-stack S6 matrix proved the mixed-pile all-resting outcome chaotic on
+every stack (audit stack itself 3/5), so D10 re-anchors criterion 2 on
+the universally-held bounded-penetration property plus pinned
+stream-quality tests, with bounded follow-ups recorded
+(deactivation latch at true stillness; rolling friction; parallel-line
+1-point contacts). Work is preserved as LOCAL commits on
+`wp-pg-wsg-rebaseline-20260731` (never pushed; push/PR still needs
+explicit approval), and the raw artifacts live at
+`~/dart-wsg-evidence-20260731/` (probe JSONs, seed matrices, A/B TSVs,
+guard logs, WS-G results, S6 GUI capture) because the July /tmp
+references were already lost once. Next action: maintainer approval to
+push the branch and open the WP-PG.50 PR (fill the CHANGELOG `#PENDING`
+link at that moment).
 
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
@@ -204,6 +216,29 @@ option-off/option-on evidence.
 
 ## Session log (round-2 execution)
 
+- 2026-08-01: Maintainer delegated D9/D10 with a root-cause,
+  evidence-based mandate. Stream-quality probe suite (micro-pose sweeps
+  on constructed states, old vs new dartpy builds) showed parity or
+  new-better everywhere except two cylinder defects: a side-on-face line
+  contact wandering ~90 mm at every tilt (both engines; GJK fallback
+  root cause, independently confirmed by a Codex lane) and new-only
+  intermittent misses of shallow crossed-cylinder contacts. Implemented
+  `tryAddCylinderBoxSideLineContacts` (clipped two-point line manifold,
+  per-endpoint depths) and `tryAddCrossedCylinderSideContact`
+  (capsule-equivalent interior closest-point contact) with three pinned
+  tests; cylinder suite 30/30, full suite 154/154, untouched detectors
+  bit-identical, S2/S3 dart hashes unchanged, S1 re-baselined. Direct
+  quiet-host interleave vs the audit stack: **1.009x parity** (the
+  earlier ~2x was the manifold-only intermediate) → criterion 1 ≈3.5x
+  MET → D9 = SHIP the bundle. 5-seed S6 matrix on three stacks proved
+  the mixed-pile all-resting outcome seed-chaotic everywhere (audit
+  stack 3/5, bundle ~1.5/5, bounded penetration universal); a
+  dartpy-authored box-only pile converges ~100x quieter than the mixed
+  pile but its island freeze does not latch in 40k steps → D10 =
+  re-anchor criterion 2 (bounded penetration + pinned stream tests) with
+  bounded follow-ups (deactivation latch, rolling friction,
+  parallel-line 1-point contacts). Codex was available again and used
+  for the cylinder diagnosis lane.
 - 2026-07-31: Full re-baseline on `718651d0d6e` (branch
   `wp-pg-wsg-rebaseline-20260731`). S1–S6 guard matrix re-established with
   drift classification (fcl/bullet/ode held bit-identical; all `dart` rows

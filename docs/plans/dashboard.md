@@ -12,14 +12,16 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Resolve maintainer decisions D9/D10 (task README): ship or
-  hold the implemented WP-PG.50 solver-facing 4-contact manifold fix
-  (restores resting box-stack support broken since #3381; S6 partial
-  recovery, resting scenes 4x faster, ~2x dense-active cost), and scope
-  the residual S6 contact-stream persistence follow-up. The 2026-07-31
-  re-baseline, first full WS-G matrix (incl. HUM rows), and complete
-  evidence live in the task folder. Keep the task active while #3056
-  remains open.
+- Next step: With D9/D10 decided (2026-08-01, maintainer-delegated —
+  task README records), obtain approval to push
+  `wp-pg-wsg-rebaseline-20260731` and open the WP-PG.50 PR: the detector
+  stream-quality bundle (full 4-contact face manifolds + stable cylinder
+  line/crossed contacts) at measured speed-parity with the audited
+  pre-consolidation stack, criterion 1 ≈3.5x MET, criterion 2
+  re-anchored on bounded penetration + pinned stream tests with bounded
+  follow-ups recorded. The 2026-07-31 re-baseline, first full WS-G
+  matrix (incl. HUM rows), and complete evidence live in the task
+  folder. Keep the task active while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`

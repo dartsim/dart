@@ -483,6 +483,74 @@ Post-fix measured effects (same session, interleaved where timing matters):
   stirred pile is perpetually active, so it pays the fourth-row cost
   with no stability dividend).
 
+### 2026-08-01 cylinder contact stability (completes the WP-PG.50 bundle)
+
+Stream-quality probes (identical constructed states swept in 50 µm steps
+against both engines' dartpy builds; probe scripts + JSON in
+`~/dart-wsg-evidence-20260731/`) measured two cylinder defects shared with
+or worse than the old engine while every other pair was at parity or
+better (old box-tilt even showed 1 mm point jumps and 180° normal flips
+that the consolidated engine does not have):
+
+- **Cylinder side on a box face**: one contact point teleporting ~90 mm
+  along the contact line at every tilt (0 to 1e-2 rad) in BOTH engines —
+  the side-on case fell through to convex GJK/EPA, which returns one
+  arbitrary support point on the under-constrained line (root cause
+  independently confirmed by a Codex diagnosis lane).
+- **Crossed cylinders (~90°)**: the consolidated engine intermittently
+  reported NO contact at ~1 mm penetration (3 of 41 sweep poses) — a
+  support that vanishes for single steps injects free-fall/impact noise.
+
+Fix (dart-detector narrowphase only, `CylinderCollision.cpp`):
+`tryAddCylinderBoxSideLineContacts` emits a stable two-point line
+manifold (segment clipped to the face slabs and the positive-penetration
+interval, per-endpoint depths, ≤ ~3° face-parallel gate) before the
+convex fallback, and `tryAddCrossedCylinderSideContact` handles
+non-parallel cylinder pairs whose axis closest points are interior via
+the exact capsule-equivalent closest-point contact. Pinned tests:
+`SideOnFaceEmitsStableEndpointContacts`,
+`TiltedSideOnFaceKeepsBothEndpointDepths`,
+`CrossedCylindersKeepShallowContact` (30/30 cylinder suite; full suite
+154/154). Post-fix probes: every cylinder sweep now shows 2 stable
+contacts moving exactly with the commanded 50 µm steps (was 90 mm
+jumps), zero crossed-pair misses, and box-on-cylinder stabilized too.
+
+Guard state on the complete bundle: S2/S3 dart unchanged
+(`0x266da31836a314a6`, `0x6088ea0177efa6a` — cylinder-plane paths
+untouched), S4/S5 dart unchanged from the manifold-fix rows, S1 rows
+re-baseline with the added line contacts (`120: 290 contacts / hash
+0x2ea14001d9c64a87`, `60: 85 / 0x96ee9d85aebfc7fa`), and the untouched
+detectors stay bit-identical (S3_fcl, S4_ode, S5_bullet re-verified).
+
+**Criterion 1 resolved by direct measurement**: quiet-host interleaved
+A/B (7 ABAB pairs, hash-stable arms), audit-head stack vs the complete
+bundle on S1 120/dart/1: **8.404 vs 8.479 ms/step — 1.009x, parity** —
+while the bundle's stream carries 290 vs 242 contacts (+20% more real
+contact coverage). The earlier ~2x cost was the intermediate
+manifold-only state: stable cylinder supports reduce trajectory-average
+churn enough to recover it (intermediate interleaves: manifold-only
+1.95x vs the 3-contact era; full bundle 1.21x vs the same arm; direct
+vs audit 1.009x). Criterion 1 therefore holds at ≈3.5x of the round-2
+baseline (the audited 3.51x carries over at parity) — no chaining
+caveats required.
+
+**S6 / criterion 2 final evidence**: the fixture is chaotically marginal
+on every stack. Seed matrix (20000 steps, seeds 3056/101/202/303/404):
+audit-era stack sleeps 3/5 (fails 202 and 404 with the same ~3 mm
+limit cycle), manifold-only 1/5, full bundle ~1.5/5 (404 fully asleep,
+303 at 70/71; canonical 3056 stays awake). Bounded penetration — the
+original #3056 disease — holds on every run of every arm. A box-only
+71-cube container pile (dartpy-authored) converges to genuine stillness
+on the fixed stack (max velocity 5e-5–1.3e-3 m/s, penetration 1e-5 —
+~100x quieter than the mixed pile's 2 cm/s) across all seeds, so the
+contact stream is healthy; its island-atomic freeze did not latch within
+40k steps in that dartpy construction (0.1-scale cubes), while
+contact_benchmark-authored 71-body piles do freeze on sleeping seeds —
+the precise remaining question is deactivation-latch behavior for large
+single-island piles near true stillness, plus rolling friction as the
+physical feature a mixed roller pile needs to rest deterministically.
+Neither is a detector-stream defect; both are recorded under D10.
+
 ## Prior art — round-1 experiment branches (read before claiming packets)
 
 Six unpushed round-1 experiment branches were published to origin on
