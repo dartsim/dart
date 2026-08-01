@@ -184,16 +184,65 @@ void State::end(double currentTime)
   mEndTime = currentTime;
 }
 
+namespace {
+
+//==============================================================================
+/// Center-of-mass accumulation that includes soft point masses.
+///
+/// Skeleton::getCOM() and getCOMLinearVelocity() sum BodyNode::getMass(),
+/// which is not virtual and excludes the independent point masses a
+/// SoftBodyNode carries. For a rigid skeleton the loop below reduces to the
+/// same sum, but for a soft-footed biped the Skeleton-level signal reports a
+/// lighter body with a shifted center, and SIMBICON's balance feedback would
+/// then observe a different character than the one being simulated.
+template <typename BodyTerm, typename PointTerm>
+Eigen::Vector3d accumulateOverMasses(
+    const dart::dynamics::SkeletonPtr& skeleton,
+    BodyTerm bodyTerm,
+    PointTerm pointTerm)
+{
+  double totalMass = 0.0;
+  Eigen::Vector3d weighted = Eigen::Vector3d::Zero();
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    const auto* body = skeleton->getBodyNode(i);
+    weighted += body->getMass() * bodyTerm(body);
+    totalMass += body->getMass();
+    const auto* soft = dynamic_cast<const dart::dynamics::SoftBodyNode*>(body);
+    if (soft == nullptr)
+      continue;
+    for (std::size_t j = 0; j < soft->getNumPointMasses(); ++j) {
+      const auto* point = soft->getPointMass(j);
+      weighted += point->getMass() * pointTerm(point);
+      totalMass += point->getMass();
+    }
+  }
+  return weighted / totalMass;
+}
+
+} // namespace
+
 //==============================================================================
 Eigen::Vector3d State::getCOM() const
 {
-  return mSkeleton->getCOM();
+  return accumulateOverMasses(
+      mSkeleton,
+      [](const dart::dynamics::BodyNode* body) { return body->getCOM(); },
+      [](const dart::dynamics::PointMass* point) {
+        return point->getWorldPosition();
+      });
 }
 
 //==============================================================================
 Eigen::Vector3d State::getCOMVelocity() const
 {
-  return mSkeleton->getCOMLinearVelocity();
+  return accumulateOverMasses(
+      mSkeleton,
+      [](const dart::dynamics::BodyNode* body) {
+        return body->getCOMLinearVelocity();
+      },
+      [](const dart::dynamics::PointMass* point) {
+        return point->getWorldVelocity();
+      });
 }
 
 //==============================================================================
