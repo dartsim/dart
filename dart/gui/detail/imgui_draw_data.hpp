@@ -60,9 +60,9 @@ inline ImGuiOverlayDrawPlan buildImGuiOverlayDrawPlan(
   plan.indices.reserve(static_cast<std::size_t>(drawData.TotalIdxCount));
 
   std::uint32_t vertexBase = 0u;
-  // Iterate CmdLists directly instead of the legacy CmdListsCount mirror:
-  // Dear ImGui 1.92.9 shipped that obsolete field stuck at zero, which made
-  // every draw list invisible and blanked the whole overlay.
+  // CmdLists.Size, not the obsolete CmdListsCount mirror: ImGui 1.92.9
+  // regressed that field to always report 0 (fixed upstream in 1.92.9b), which
+  // makes this loop produce an empty plan and drops the whole overlay.
   for (int listIndex = 0; listIndex < drawData.CmdLists.Size; ++listIndex) {
     const ImDrawList& commandList = *drawData.CmdLists[listIndex];
     for (const ImDrawCmd& command : commandList.CmdBuffer) {

@@ -299,11 +299,9 @@ compatibility remains on the active DART 6 LTS branch._
   and the built-in status panel names the running demo instead of the internal
   fixture. System-ImGui builds keep the floating-panel fallback.
   ([#3425](https://github.com/dartsim/dart/pull/3425))
-- Fixed the Dear ImGui overlay disappearing entirely when built against system
-  ImGui 1.92.9: the Filament adapter iterated the obsolete
-  `ImDrawData::CmdListsCount` mirror, which 1.92.9 shipped stuck at zero
-  (fixed upstream in 1.92.9b); it now iterates `CmdLists` directly, with a
-  regression test that simulates the zeroed legacy field.
+- Added a regression test for the Dear ImGui 1.92.9 overlay fix below: the
+  draw-plan builder is exercised against an `ImDrawData` whose obsolete
+  `CmdListsCount` mirror is zeroed, locking in the `CmdLists.Size` iteration.
   ([#3425](https://github.com/dartsim/dart/pull/3425))
 - Unified `--gui-scale` handling with the DART 6 viewers: GUI scene apps now
   also accept `--gui-scale=N`, seed the scale from the `DART_GUI_SCALE`
@@ -330,6 +328,15 @@ compatibility remains on the active DART 6 LTS branch._
   discarded `ImDrawCmd::ClipRect`, letting scrolled-off geometry escape the
   panel viewport. This applies to every GUI build, not only diagnostics builds.
   ([#3378](https://github.com/dartsim/dart/pull/3378))
+- Fixed the Dear ImGui overlay rendering nothing when built against system
+  Dear ImGui 1.92.9. That release regressed the obsolete
+  `ImDrawData::CmdListsCount` mirror to always report 0 (fixed upstream in
+  1.92.9b), so the Filament overlay gathered no vertices, produced an empty
+  draw plan, and dropped its renderable entirely. The overlay paths now read
+  the canonical `ImDrawData::CmdLists.Size`, which is correct on every
+  supported Dear ImGui version. Affects builds using
+  `DART_USE_SYSTEM_IMGUI=ON` (the recommendation for package distributions);
+  the fetched default pin is 1.92.8 and was never affected.
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.
   ([#2466](https://github.com/dartsim/dart/pull/2466))
