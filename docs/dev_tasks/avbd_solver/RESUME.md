@@ -307,7 +307,12 @@ or validate source-bound artifacts, so recheck provenance and packets after it.
 
 The maintainer directed the remaining work into two ordered completion PRs.
 Use multiple reviewable commits and durable work packets inside each PR if
-needed, but do not mix the two completion claims.
+needed, but do not mix the two completion claims or create separate media-only
+PRs. Each method's completion PR owns its implementation, tests, CPU/GPU
+benchmarks, text oracles, and current-head PR-hosted images, GIFs, and videos
+for every paper, project-site, official-video, and source-demo row. Keep raw
+and generated transient media out of git and expose it through GitHub
+attachments, following the same repository-hygiene boundary as PR #3377.
 
 1. **VBD completion PR first.** Start from updated `main` only after the shared
    SI/VBD/AVBD foundation lands. Close every one of the 88 VBD predicates,
@@ -316,9 +321,10 @@ needed, but do not mix the two completion claims.
    contracts, and achieved-accuracy performance leadership. Implement the
    honest public XPBD substep comparison and source-matched Figure 13/video
    evidence in this PR because they are required comparators for the VBD
-   contract; do not relabel SI or fixed-penalty VBD as XPBD. Keep AVBD changes
-   limited to unavoidable shared-interface compatibility, with no AVBD
-   completion claim.
+   contract. Publish the complete VBD replication image/video set in this same
+   PR; do not defer it to a presentation follow-up. Do not relabel SI or
+   fixed-penalty VBD as XPBD. Keep AVBD changes limited to unavoidable
+   shared-interface compatibility, with no AVBD completion claim.
 2. **Land and rebase the plan, not the published branch.** Manage the VBD PR
    through review and CI only with explicit approval. After it lands, refresh
    local `main` and the fail-closed matrices. Never rebase a published PR
@@ -328,6 +334,7 @@ needed, but do not mix the two completion claims.
    dual/stiffness evolution, quasi-Newton terms, articulated/joint/fracture and
    rigid-contact breadth, unified soft/rigid coupling, all CPU/CUDA paths, the
    remaining corpus, four-method evidence, and matched performance leadership.
+   Publish the complete AVBD replication image/video set in this same PR.
    Reuse the landed VBD/XPBD evidence by hash rather than duplicating or
    weakening its acceptance boundary.
 4. **Final 176-row audit.** After the AVBD PR is current, obtain clean code and
@@ -383,11 +390,13 @@ open, manage only its current head through CI and review; do not merge without
 separate explicit approval. Do not extend the shared foundation branch into
 the remaining parity program. After maintainer approval and landing, complete
 VBD first in one PR from updated main, including honest XPBD comparison, all
-CPU/CUDA and corpus rows, and performance leadership.
+CPU/CUDA and corpus rows, performance leadership, and all current-head
+paper/site/video/source-demo image and video attachments; do not create a
+separate media PR.
 After that PR lands, complete AVBD in a second PR from updated main, including
-all AVBD-specific CPU/CUDA, unified-row, corpus, four-method, and performance
-gaps. Keep all claims fail-closed until every one of the 176 canonical
-predicates passes. Do not stop at an MVP, CPU-only implementation, or
-documentation checkpoint, and do not push or mutate GitHub without explicit
-approval.
+all AVBD-specific CPU/CUDA, unified-row, corpus, four-method, performance, and
+current-head image/video evidence; do not create a separate media PR. Keep all
+claims fail-closed until every one of the 176 canonical predicates passes. Do
+not stop at an MVP, CPU-only implementation, or documentation checkpoint, and
+do not push or mutate GitHub without explicit approval.
 ```

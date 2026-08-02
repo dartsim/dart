@@ -272,11 +272,15 @@ def _write_exact_parent_mutation(
                 "schema_version": "dart.exact_parent_mutation/v1",
                 "parent_commit": parent_commit,
                 "tests": [
-                    "VariationalIntegration."
-                    "AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotor"
-                    "BreakLoads",
-                    "VariationalIntegration."
-                    "AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows",
+                    (
+                        "VariationalIntegration."
+                        + "AvbdCompliantPublicArticulatedJointAggregatesFiniteAndMotor"
+                        + "BreakLoads"
+                    ),
+                    (
+                        "VariationalIntegration."
+                        + "AvbdCompliantPublicArticulatedJointBreakResetRearmsFiniteRows"
+                    ),
                 ],
                 "mutation": (
                     "Apply the candidate finite-load tests to the exact parent "

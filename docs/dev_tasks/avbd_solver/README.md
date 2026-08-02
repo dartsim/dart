@@ -148,11 +148,14 @@ foundation PR is still open, manage only that PR through current-head CI and
 review; do not extend its branch into the remaining parity program. After
 maintainer approval and landing, complete all 88 VBD predicates in one VBD PR
 from updated `main`, including an honest public XPBD comparator, the VBD
-CPU/CUDA and corpus gaps, and achieved-accuracy performance. After that lands,
+CPU/CUDA and corpus gaps, achieved-accuracy performance, and PR-hosted images,
+GIFs, and videos for every paper/site/video/source-demo row. After that lands,
 complete all 88 AVBD predicates in a second AVBD PR from updated `main`,
-including AVBD-specific CPU/CUDA, unified-row, corpus, four-method, and
-performance gaps. Keep every dependent figure/demo/performance row partial
-until its own source-matched CPU and CUDA evidence closes it.
+including AVBD-specific CPU/CUDA, unified-row, corpus, four-method,
+performance, and PR-hosted visual evidence. These are the only two follow-up
+PRs: do not split implementation, performance, or replication media into
+separate PRs. Keep every dependent figure/demo/performance row partial until
+its own source-matched CPU and CUDA evidence closes it.
 
 Deferred maintenance items remain valid but do not outrank the missing paper
 mechanism:
