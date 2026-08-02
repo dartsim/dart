@@ -340,8 +340,10 @@ build-asan = { cmd = """
 
 # ASan multiplies runtime severalfold, and the long-measurement parameter
 # sweeps only re-run code paths the fast gates already exercise under the
-# sanitizer; the noisy-floor sweep overran its 7200 s ctest budget here.
-# Same trade as the FreeBSD, coverage, and unoptimized-aggregate exclusions.
+# sanitizer (the unlabelled floor gate settles both foot types on the mesh
+# floor, so the FCL mesh-floor narrow phase still runs here); the
+# noisy-floor sweep overran its 7200 s ctest budget in this context. Same
+# trade as the FreeBSD, coverage, and unoptimized-aggregate exclusions.
 test-asan = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
