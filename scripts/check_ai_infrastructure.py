@@ -1092,6 +1092,7 @@ def test_graph_scope_requirements() -> dict[str, tuple[tuple[Any, ...], ...]]:
                         "${CMAKE_COMMAND}",
                         "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}",
                         "-DDART_CTEST_CONFIGURATION=$<CONFIG>",
+                        "-DDART_CTEST_BUILD_TYPE=${CMAKE_BUILD_TYPE}",
                         "-P",
                         "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake",
                     ),
@@ -1305,6 +1306,41 @@ def check_ctest_runner_contract(root: Path, errors: list[str]) -> None:
                 "_dart_ctest_arguments",
                 "-C",
                 "${DART_CTEST_CONFIGURATION}",
+            ),
+        ),
+        ("endif", ()),
+        (
+            "set",
+            (
+                "_dart_effective_configuration",
+                "${DART_CTEST_CONFIGURATION}",
+            ),
+        ),
+        ("if", ("_dart_effective_configuration", "STREQUAL", "")),
+        (
+            "set",
+            (
+                "_dart_effective_configuration",
+                "${DART_CTEST_BUILD_TYPE}",
+            ),
+        ),
+        ("endif", ()),
+        (
+            "if",
+            (
+                "NOT",
+                "_dart_effective_configuration",
+                "MATCHES",
+                "^(Release|RelWithDebInfo|MinSizeRel)$",
+            ),
+        ),
+        (
+            "list",
+            (
+                "APPEND",
+                "_dart_ctest_arguments",
+                "--label-exclude",
+                "long-measurement",
             ),
         ),
         ("endif", ()),
