@@ -34,7 +34,10 @@
 #include "dart/collision/collision.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Random.hpp"
@@ -56,6 +59,7 @@
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
@@ -813,6 +817,130 @@ TEST(World, SimulationThreadCount)
 
   world->setNumSimulationThreads(1u);
   EXPECT_EQ(world->getNumSimulationThreads(), 1u);
+}
+
+//==============================================================================
+TEST(World, CloneRemapsDartContactGapsToClonedShapeFrames)
+{
+  auto world = World::create();
+  auto detector = collision::DARTCollisionDetector::create();
+  world->setCollisionDetector(detector);
+
+  auto skeleton = Skeleton::create("gap_skeleton");
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+  auto* shapeNode = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->addSkeleton(skeleton);
+
+  auto simpleFrame = SimpleFrame::createShared(Frame::World(), "gap_frame");
+  simpleFrame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  world->addSimpleFrame(simpleFrame);
+
+  detector->setContactGap(shapeNode, 0.0125);
+  detector->setContactGap(simpleFrame.get(), 0.025);
+
+  auto clone = world->clone();
+  ASSERT_NE(nullptr, clone);
+  auto cloneDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          clone->getCollisionDetector());
+  ASSERT_NE(nullptr, cloneDetector);
+
+  auto* cloneShapeNode = clone->getSkeleton(0)->getBodyNode(0)->getShapeNode(0);
+  const auto cloneSimpleFrame = clone->getSimpleFrame(0);
+  ASSERT_NE(nullptr, cloneShapeNode);
+  ASSERT_NE(nullptr, cloneSimpleFrame);
+  EXPECT_NE(shapeNode, cloneShapeNode);
+  EXPECT_NE(simpleFrame.get(), cloneSimpleFrame.get());
+  EXPECT_DOUBLE_EQ(0.0125, cloneDetector->getContactGap(cloneShapeNode));
+  EXPECT_DOUBLE_EQ(0.025, cloneDetector->getContactGap(cloneSimpleFrame.get()));
+
+  // The clone must not retain raw keys into the source world.
+  EXPECT_DOUBLE_EQ(0.0, cloneDetector->getContactGap(shapeNode));
+  EXPECT_DOUBLE_EQ(0.0, cloneDetector->getContactGap(simpleFrame.get()));
+  EXPECT_DOUBLE_EQ(0.0125, detector->getContactGap(shapeNode));
+  EXPECT_DOUBLE_EQ(0.025, detector->getContactGap(simpleFrame.get()));
+}
+
+//==============================================================================
+TEST(World, ClonePreservesExactCoulombSolverConfiguration)
+{
+  auto world = World::create();
+  auto skeleton = Skeleton::create("exact_clone_skeleton");
+  world->addSkeleton(skeleton);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  options.maxOuterIterations = 17;
+  world->setConstraintSolver(
+      std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options));
+
+  auto* sourceSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  ASSERT_NE(nullptr, sourceSolver);
+  sourceSolver->setSplitImpulseEnabled(true);
+
+  auto customFallback = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  sourceSolver->setBoxedLcpSolver(customFallback);
+  sourceSolver->setSecondaryBoxedLcpSolver(nullptr);
+
+  auto matrixFreeOptions = sourceSolver->getMatrixFreeContactSolverOptions();
+  matrixFreeOptions.mEnabled = true;
+  matrixFreeOptions.mMinRows = 321u;
+  sourceSolver->setMatrixFreeContactSolverOptions(matrixFreeOptions);
+
+  constraint::ExactCoulombFbfCrossStepPolicyOptions crossStepOptions;
+  crossStepOptions.warmStartMaxAge = 4;
+  sourceSolver->setExactCoulombCrossStepPolicyOptions(crossStepOptions);
+
+  constraint::ExactCoulombFbfSourceContinuationOptions continuationOptions;
+  continuationOptions.enabled = true;
+  continuationOptions.residualCheckInterval = 3;
+  sourceSolver->setExactCoulombSourceContinuationOptions(continuationOptions);
+  sourceSolver->setExactCoulombPostCorrectionProjectionEnabled(false);
+  sourceSolver->setExactCoulombSourceInnerInitializationEnabled(true);
+  sourceSolver->setExactCoulombColoredBlockGaussSeidelEnabled(true);
+  sourceSolver
+      ->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(true);
+  sourceSolver->getCollisionOption().maxNumContacts = 37u;
+  sourceSolver->getCollisionOption().maxNumContactsPerPair = 3u;
+
+  auto clone = world->clone();
+  ASSERT_NE(nullptr, clone);
+  auto* cloneSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          clone->getConstraintSolver());
+  ASSERT_NE(nullptr, cloneSolver);
+  EXPECT_NE(sourceSolver, cloneSolver);
+
+  EXPECT_FALSE(cloneSolver->getExactCoulombOptions().fallbackToBoxedLcp);
+  EXPECT_EQ(cloneSolver->getExactCoulombOptions().maxOuterIterations, 17);
+  EXPECT_TRUE(cloneSolver->isSplitImpulseEnabled());
+  EXPECT_EQ(cloneSolver->getBoxedLcpSolver(), customFallback);
+  EXPECT_EQ(nullptr, cloneSolver->getSecondaryBoxedLcpSolver());
+  EXPECT_TRUE(cloneSolver->getMatrixFreeContactSolverOptions().mEnabled);
+  EXPECT_EQ(cloneSolver->getMatrixFreeContactSolverOptions().mMinRows, 321u);
+  EXPECT_EQ(
+      cloneSolver->getExactCoulombCrossStepPolicyOptions().warmStartMaxAge, 4);
+  EXPECT_TRUE(cloneSolver->getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_EQ(
+      cloneSolver->getExactCoulombSourceContinuationOptions()
+          .residualCheckInterval,
+      3);
+  EXPECT_FALSE(cloneSolver->getExactCoulombPostCorrectionProjectionEnabled());
+  EXPECT_TRUE(cloneSolver->getExactCoulombSourceInnerInitializationEnabled());
+  EXPECT_TRUE(cloneSolver->getExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_TRUE(
+      cloneSolver
+          ->getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
+  EXPECT_EQ(cloneSolver->getCollisionOption().maxNumContacts, 37u);
+  EXPECT_EQ(cloneSolver->getCollisionOption().maxNumContactsPerPair, 3u);
+
+  ASSERT_EQ(cloneSolver->getSkeletons().size(), 1u);
+  EXPECT_EQ(cloneSolver->getSkeletons()[0], clone->getSkeleton(0));
+  EXPECT_NE(cloneSolver->getSkeletons()[0], world->getSkeleton(0));
+  EXPECT_EQ(sourceSolver->getSkeletons()[0], world->getSkeleton(0));
 }
 
 //==============================================================================

@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
@@ -51,10 +52,12 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -1171,15 +1174,42 @@ WorldPtr World::clone() const
 {
   WorldPtr worldClone = World::create(mName);
 
+  const auto* sourceConstraintSolver = getConstraintSolver();
+  const auto* sourceExactCoulombSolver
+      = dynamic_cast<const constraint::ExactCoulombFbfConstraintSolver*>(
+          sourceConstraintSolver);
+  auto cd = sourceConstraintSolver->getCollisionDetector();
+  if (sourceExactCoulombSolver != nullptr) {
+    auto exactCoulombClone
+        = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>();
+    if (cd)
+      exactCoulombClone->setCollisionDetector(
+          cd->cloneWithoutCollisionObjects());
+
+    // There is no ABI-neutral virtual solver-clone hook on DART 6. Copy the
+    // exact and inherited solver configuration, then discard source-world
+    // registrations before the World-owned Skeleton clones are added below.
+    // Manual constraints have never been cloned by World::clone().
+    exactCoulombClone->setFromOtherConstraintSolver(*sourceExactCoulombSolver);
+    exactCoulombClone->setBoxedLcpSolver(
+        std::const_pointer_cast<constraint::BoxedLcpSolver>(
+            sourceExactCoulombSolver->getBoxedLcpSolver()));
+    exactCoulombClone->setSecondaryBoxedLcpSolver(
+        std::const_pointer_cast<constraint::BoxedLcpSolver>(
+            sourceExactCoulombSolver->getSecondaryBoxedLcpSolver()));
+    exactCoulombClone->getCollisionOption()
+        = sourceExactCoulombSolver->getCollisionOption();
+    exactCoulombClone->removeAllSkeletons();
+    exactCoulombClone->removeAllConstraints();
+    worldClone->mConstraintSolver = std::move(exactCoulombClone);
+  } else if (cd) {
+    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+  }
+
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
   worldClone->setDeactivationOptions(mDeactivationOptions);
   worldClone->setNumSimulationThreads(mNumSimulationThreads);
-
-  auto cd = getConstraintSolver()->getCollisionDetector();
-  if (cd) {
-    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
-  }
 
   // Clone and add each Skeleton
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
@@ -1204,6 +1234,57 @@ WorldPtr World::clone() const
 
     if (parent_candidate)
       worldClone->getSimpleFrame(i)->setParentFrame(parent_candidate.get());
+  }
+
+  const auto dartDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(cd);
+  const auto dartDetectorClone
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          worldClone->getCollisionDetector());
+  if (dartDetector && dartDetectorClone) {
+    // cloneWithoutCollisionObjects() cannot remap ShapeFrame pointer keys on
+    // its own. Replace its same-frame copy with World-owned clone mappings so
+    // speculative contact gaps follow the cloned ShapeNodes and SimpleFrames.
+    dartDetectorClone->clearContactGaps();
+    const auto copyContactGap = [&](const dynamics::ShapeFrame* source,
+                                    const dynamics::ShapeFrame* target) {
+      const double gap = dartDetector->getContactGap(source);
+      if (gap > 0.0)
+        dartDetectorClone->setContactGap(target, gap);
+    };
+
+    DART_ASSERT(mSkeletons.size() == worldClone->mSkeletons.size());
+    const std::size_t skeletonCount
+        = std::min(mSkeletons.size(), worldClone->mSkeletons.size());
+    for (std::size_t i = 0; i < skeletonCount; ++i) {
+      const auto& sourceSkeleton = mSkeletons[i];
+      const auto& targetSkeleton = worldClone->mSkeletons[i];
+      DART_ASSERT(
+          sourceSkeleton->getNumBodyNodes()
+          == targetSkeleton->getNumBodyNodes());
+      const std::size_t bodyCount = std::min(
+          sourceSkeleton->getNumBodyNodes(), targetSkeleton->getNumBodyNodes());
+      for (std::size_t body = 0; body < bodyCount; ++body) {
+        const auto* sourceBody = sourceSkeleton->getBodyNode(body);
+        auto* targetBody = targetSkeleton->getBodyNode(body);
+        DART_ASSERT(
+            sourceBody->getNumShapeNodes() == targetBody->getNumShapeNodes());
+        const std::size_t shapeCount = std::min(
+            sourceBody->getNumShapeNodes(), targetBody->getNumShapeNodes());
+        for (std::size_t shape = 0; shape < shapeCount; ++shape) {
+          copyContactGap(
+              sourceBody->getShapeNode(shape), targetBody->getShapeNode(shape));
+        }
+      }
+    }
+
+    DART_ASSERT(mSimpleFrames.size() == worldClone->mSimpleFrames.size());
+    const std::size_t simpleFrameCount
+        = std::min(mSimpleFrames.size(), worldClone->mSimpleFrames.size());
+    for (std::size_t i = 0; i < simpleFrameCount; ++i) {
+      copyContactGap(
+          mSimpleFrames[i].get(), worldClone->mSimpleFrames[i].get());
+    }
   }
 
   return worldClone;

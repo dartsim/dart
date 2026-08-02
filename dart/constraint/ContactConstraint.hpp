@@ -49,6 +49,10 @@ class Skeleton;
 
 namespace constraint {
 
+namespace detail {
+struct ExactCoulombContactRowOperator;
+} // namespace detail
+
 /// ContactConstraint represents a contact constraint between two bodies
 class ContactConstraint : public ConstraintBase
 {
@@ -117,6 +121,7 @@ public:
   friend class BoxedLcpConstraintSolver;
   friend class ConstrainedGroup;
   friend class DefaultContactSurfaceHandler;
+  friend struct detail::ExactCoulombContactRowOperator;
 
 protected:
   //----------------------------------------------------------------------------

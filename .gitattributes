@@ -1,5 +1,16 @@
 # GitHub syntax highlighting
 pixi.lock linguist-language=YAML
 
+# Wavefront OBJ permits blank records, including a trailing blank record.
+*.obj whitespace=-blank-at-eof
+
 # This historical owner uses CRLF; treat its carriage returns as line endings.
 tests/CMakeLists.txt whitespace=cr-at-eol
+
+# The FBF evidence harness pins byte-level SHA-256 identities of these
+# sources (frozen runner/helper inheritance pins and capture provenance).
+# Keep their checkout representation LF on every platform so those pinned
+# identities cannot drift with autocrlf settings.
+scripts/*.py text eol=lf
+python/tests/unit/test_*.py text eol=lf
+tests/benchmark/integration/*.cpp text eol=lf

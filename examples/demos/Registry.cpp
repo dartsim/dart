@@ -52,6 +52,48 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeSimulationEventHandlerScene());
   scenes.push_back(makeRigidShapesScene());
   scenes.push_back(makeSleepingScene());
+
+  // Research (new category; first appearance here).
+  scenes.push_back(makeFbfPaperInclineScene());
+  scenes.push_back(makeFbfAuthorInclineSweepCurrentSourceScene());
+  scenes.push_back(makeFbfPaperBackspinScene());
+  scenes.push_back(makeFbfAuthorBackspinCurrentSourceScene());
+  scenes.push_back(makeFbfPaperTurntableScene());
+  scenes.push_back(makeFbfPaperTurntableMu02Omega2Scene());
+  scenes.push_back(makeFbfPaperTurntableMu02Omega5Scene());
+  scenes.push_back(makeFbfPaperTurntableMu05Omega5Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu02Omega2Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu02Omega5Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu05Omega2Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu05Omega5Scene());
+  scenes.push_back(makeFbfAuthorCardHouseScene());
+  scenes.push_back(makeFbfAuthorCardHouse4ImpactCurrentSourceScene());
+  scenes.push_back(makeFbfAuthorCardHouse5ImpactCurrentSourceScene());
+  scenes.push_back(makeFbfAuthorCardHouse10ImpactCurrentSourceScene());
+  scenes.push_back(
+      makeFbfAuthorCardHouse10ImpactColoredBgsDiagnosticCurrentSourceScene());
+  scenes.push_back(
+      makeFbfAuthorCardHouse4ImpactSourceContinuationCurrentSourceScene());
+  scenes.push_back(
+      makeFbfAuthorCardHouse5ImpactSourceContinuationCurrentSourceScene());
+  scenes.push_back(
+      makeFbfAuthorCardHouse10ImpactSourceContinuationCurrentSourceScene());
+  scenes.push_back(makeFbfAuthorMasonryArch25CrownImpactCurrentSourceScene());
+  scenes.push_back(
+      makeFbfAuthorMasonryArch25CrownImpactSourceContinuationCurrentSourceScene());
+  scenes.push_back(makeFbfAuthorMasonryArch101StandingCurrentSourceScene());
+  scenes.push_back(makeFbfPaperPainleveScene());
+  scenes.push_back(makeFbfPaperPainleveMu055Scene());
+  scenes.push_back(makeFbfAuthorPainleveMu05Scene());
+  scenes.push_back(makeFbfAuthorPainleveMu055Scene());
+  scenes.push_back(makeFbfPaperCardAFrameScene());
+  scenes.push_back(makeFbfPaperCardHouse26Scene());
+  scenes.push_back(makeFbfPaperCardHouse10Scene());
+  scenes.push_back(makeFbfPaperCardHouse10DynamicScene());
+  scenes.push_back(makeFbfPaperMasonryArch25LiteralStandingScene());
+  scenes.push_back(makeFbfPaperMasonryArch25Scene());
+  scenes.push_back(makeFbfPaperMasonryArch101Scene());
+
   scenes.push_back(makeHardcodedDesignScene());
   scenes.push_back(makeRigidLoopScene());
   scenes.push_back(makeBoxStackingScene());
