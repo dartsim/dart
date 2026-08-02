@@ -193,12 +193,14 @@ if(TARGET dart-utils AND TARGET dart-utils-urdf)
     test_SoftFootSimbiconNoisyFloorSweep
     PROPERTIES LABELS "no-coverage-value"
   )
-  # The sweeps additionally carry `long-measurement`, which the FreeBSD VM
-  # job excludes: the push sweep passed there in 3674 s but consumed half the
-  # job's 120-minute wall clock and starved the remaining suite, while
-  # re-running the same code paths the 19-minute correctness gates (which
-  # stay in that job) already exercise; the two newer sweeps are the same
-  # trade at the same scale.
+  # The sweeps additionally carry `long-measurement`, excluded wherever the
+  # runtime multiplier makes them re-run already-exercised code paths for
+  # hours: the FreeBSD VM job (the push sweep passed there in 3674 s but
+  # consumed half the job's wall clock), the ASan ctest (the noisy-floor
+  # sweep overran 7200 s), and every unoptimized aggregate run
+  # (DARTRunCTest.cmake self-excludes outside optimized configurations
+  # after the CMAKE_BUILD_TYPE=None lane hit CI's six-hour ceiling). The
+  # optimized Release lanes keep them.
   set_tests_properties(
     test_SoftFootSimbiconPushSweep
     test_SoftFootSimbiconMotorNoiseSweep
