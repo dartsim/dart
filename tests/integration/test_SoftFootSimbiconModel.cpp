@@ -42,9 +42,10 @@
 //  3. Push recovery is measured by a prefix replica ensemble
 //     (robustRecoverablePush), clean and under held motor noise and the
 //     paper's 2 cm noisy floor. The paper's soft-advantage ordering does NOT
-//     reproduce robustly at the shipped parameters (soft 4000 N vs rigid
-//     8000 N clean; the perturbations widen the gap) -- the single-trajectory
-//     18000 N previously reported was an isolated resonance pocket, not a
+//     reproduce robustly at the shipped parameters -- no measured
+//     configuration shows a soft advantage (rigid ahead clean and on the
+//     floor, tied under noise), and the single-trajectory 18000 N
+//     previously reported was an isolated resonance pocket, not a
 //     threshold. Gates 3, 7, and 8 publish the response curves and protect
 //     the measured values; the parity matrix owns the open-gap status.
 //
@@ -824,7 +825,7 @@ TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
       });
   ASSERT_TRUE(std::isfinite(flatTop));
 
-  const double horizontalClamp = std::min(amplitude, 0.4 * sfs::kFloorTileSize);
+  const double horizontalClamp = std::min(amplitude, 0.2 * sfs::kFloorTileSize);
   double highest = -std::numeric_limits<double>::infinity();
   double lowest = std::numeric_limits<double>::infinity();
   double maxHorizontalDeviation = 0.0;
@@ -857,6 +858,22 @@ TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
   EXPECT_GT(maxHorizontalDeviation, 0.25 * horizontalClamp)
       << "the seeded horizontal offsets are nearly zero, so the floor is a "
          "regular lattice rather than the row's jittered surface";
+
+  // Single-valued surface: every triangle must keep the lattice's projected
+  // XZ winding (strictly negative cross for this triangulation). Per-axis
+  // vertex order is not sufficient -- a wider clamp once preserved order
+  // while folding 10 triangles over in projection, so this asserts the
+  // property the horizontal clamp is derived from (jitter < pitch/4).
+  for (const auto& triangle : mesh->getTriangles()) {
+    const Eigen::Vector3d& a = mesh->getVertices()[triangle[0]];
+    const Eigen::Vector3d& b = mesh->getVertices()[triangle[1]];
+    const Eigen::Vector3d& c = mesh->getVertices()[triangle[2]];
+    const double cross
+        = (b.x() - a.x()) * (c.z() - a.z()) - (b.z() - a.z()) * (c.x() - a.x());
+    ASSERT_LT(cross, 0.0)
+        << "a floor triangle folded over in XZ projection, so the mesh is "
+           "not the intended single-valued noisy surface";
+  }
 
   // The world's floor is the same generated sheet: one immobile body whose
   // MeshShape spans the generator's exact bounding box.
@@ -951,15 +968,16 @@ TEST(SoftFootSimbiconModelTest, MeasuresMotorNoiseToleranceForBothFeet)
 // and stays unmeasured (the matrix says so). The floor alone does not
 // discriminate -- both arms idle in place through 3.2 cm.
 //
-// Measured 2026-08-01 on the spec's jittered shared-vertex mesh (review
-// hypothesized the earlier axis-aligned tile lattice gifted the rigid foot
-// a keying grid; re-testing on the faithful surface REFUTED that -- the
-// effect strengthened): the rough floor RAISES the rigid control's robust
-// threshold to 20000 N (5/5 through 18000, 4/5 at 20000) and COLLAPSES the
-// soft arm to 2000 N (0/5 already at 4000). This is the sharpest form of
-// the open gap gates 3 and 7 record. The rigid floor sits one magnitude
-// inside the measured threshold because the 20000 N edge replica is a 4/5
-// majority.
+// The floor's collision geometry dominated two earlier readings and both
+// were review-caught artifacts: the axis-aligned box lattice keyed the
+// rigid foot to 14000 N, and the first jittered mesh (whose clamp allowed
+// 10 folded triangles) anchored it to 20000 N. On the fold-free
+// single-valued surface the story is physically coherent: roughness
+// DEGRADES both arms -- rigid 8000 -> 6000 N (4/5 at the 6000 edge, graded
+// tail above), soft 4000 -> 2000 N (0/5 already at 4000) -- and no soft
+// advantage appears. The gate protects the measurement at its measured
+// floors; the rigid floor sits one magnitude inside the threshold because
+// the 6000 N edge replica is a 4/5 majority.
 TEST(SoftFootSimbiconModelTest, MeasuresNoisyFloorToleranceForBothFeet)
 {
   std::string rigidCurve;
@@ -984,9 +1002,9 @@ TEST(SoftFootSimbiconModelTest, MeasuresNoisyFloorToleranceForBothFeet)
   ASSERT_LT(softPush, sfs::kPushSweepEnd)
       << "soft threshold saturated the sweep ceiling";
 
-  EXPECT_GE(rigidPush, 18000.0)
+  EXPECT_GE(rigidPush, 4000.0)
       << "the rigid control's robust threshold on the 2 cm floor regressed "
-         "below 18000 N (measured 20000 N; the floor sits one magnitude "
+         "below 4000 N (measured 6000 N; the floor sits one magnitude "
          "inside because the edge replica is a 4/5 majority)";
   EXPECT_GE(softPush, 2000.0)
       << "the soft feet's robust threshold on the 2 cm floor regressed "
