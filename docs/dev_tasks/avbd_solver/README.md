@@ -22,9 +22,10 @@ This folder is the temporary working surface; the durable owner is the plan.
   same-hardware paper-number match.
 - **Branch state:** active local branch
   `feature/vbd-avbd-paper-parity-contract`. The public SI closeout is committed
-  at `37178193ccf`; the branch-tip merge commit containing this handoff merges
-  local `main` snapshot `b15e7a652b7` into that closeout. The fail-closed
-  contract is committed at `710cbfc1152`. The Section 3.5
+  at `37178193ccf`; merge `37a02b4d2c7` integrates local `main` snapshot
+  `b15e7a652b7`, and merge `52173fba3aa` integrates fetched `origin/main`
+  snapshot `ef10cb2633b`. The fail-closed contract is committed at
+  `710cbfc1152`. The Section 3.5
   packet is committed at
   `a78f688a178`, and the Section 4 packet at `0b0154573b8`; the articulated
   finite-row packet at `761263bbd41`; the articulated finite-motor packet at
@@ -32,10 +33,10 @@ This folder is the temporary working surface; the durable owner is the plan.
   the public AVBD/Figure 13 slice at `646b447d6cc`. The matched public
   fixed-penalty VBD/Figure 13 comparison is committed at `d9af744a9cb`. The
   SI closeout commit adds the public Sequential Impulse pair-row/Figure 13
-  slice. The last-fetched feature upstream still points to `d9af744a9cb`, so
-  the SI commit and main merge remain local. No fetch, push, PR update, or
-  other GitHub mutation was performed while closing or integrating them.
-  Verify live local and remote state before any external action.
+  slice. Before the final evidence-refresh commit and publication, the fetched
+  feature upstream pointed to `37a02b4d2c7`. Verify live local, remote, PR, CI,
+  and review state before any external action; do not infer that a prior
+  session's mutation approval remains active.
 - **Current packet:** C++ and dartpy callers can explicitly select public
   Sequential Impulse, VBD, and AVBD rigid-body families with one positive
   contact/joint solve budget. Sequential Impulse now owns hard fixed,
@@ -67,16 +68,16 @@ This folder is the temporary working surface; the durable owner is the plan.
   joint identities and retained-row residuals are recorded at both
   checkpoints. Six fresh current-source captures and semantic reviews are
   sealed to capture-source digest
-  `b3f102b53c820809c0a8b34c0bf3002853b3b1e79ce17f56fb6380d10cccfd51`.
+  `10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d`.
   One uncontaminated quiet-host five-repeat Release run records median CPU
-  costs of 9.053841 ms AVBD, 8.953167 ms VBD, and 14.783755 ms Sequential
-  Impulse, with CPU CVs of 0.57%, 1.79%, and 0.48%, respectively. Its raw JSON
+  costs of 9.515544 ms AVBD, 9.292560 ms VBD, and 15.651049 ms Sequential
+  Impulse, with CPU CVs of 0.49%, 0.18%, and 0.34%, respectively. Its raw JSON
   SHA-256 is
-  `b377ef3e307a3f5ebbe935ff3c4abcace477cfbb92062296947b4b3537d0427d`.
+  `abab909f3693333c0bb43bdd54b15df9fd6f0c3e9d4b7dd838208fb76d12565a`.
   The regenerated AVBD, VBD, and SI packet SHA-256 values are
-  `494f07ff9b26e61e0e5aa9a8e487d1e94975dca0ea17b0216d1d80f411480391`,
-  `96652e9c625a4c6307a10ba6a763db26ff03e5f4f2c3749fb4911bb7b40a144b`,
-  and `6ee2b5242dbdbe39fa2f17b84259bcd54f4a6a492e61a279962d28d96be425ae`.
+  `d0098a6fac2f53c9b9f6d1898e27d46cfecb4a208f32f2c08c5703583f3c31bf`,
+  `5db4c77cad4c35f9a10abc2dc892e8849f6a96e1acbaf8162902ab5091503be7`,
+  and `60612553068dc5eae674a2fdfac7d5359a7b8a027cf636fabd9ba205842489eb`.
   The same-host ratios are descriptive costs, not speedup or
   achieved-accuracy equivalence claims.
   Figure 13 and video row 12 remain partial: exact source constants, XPBD, a
@@ -91,27 +92,25 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the merged runtime/capture source tree passes an
-  uncached Release build and all 81 enabled simulation executables in 123.64
-  seconds (the two aggregate wrappers remain intentionally disabled). The
-  complete Python phase also passes; no exact pytest count is claimed from the
-  aggregate runner's captured output. The exact current
-  checker/capture/writer surface passes all 192 focused tests,
-  including both live-corpus checks. Six fresh
-  1280x720 captures bind the current source digest and pass engine ViewReports,
-  pixel-integrity checks, and separate original-resolution semantic review
-  against the pinned paper page. Rejected benchmark attempts remain recorded;
-  the strict quiet-host run and all three dependent packets are now sealed. The
-  post-reseal runtime/capture source tree passes uncached default `test-all`
-  with all six phases and uncached CUDA `test-all` with all seven phases. The
-  CUDA run passed 213 core C++ tests, 80 runnable simulation tests with two
-  aggregate wrappers intentionally disabled, all eight CUDA device tests, and
-  all nine benchmark-smoke commands. The later checker/docs-only review fixes
-  are covered by the 192 focused tests and leave the bound source digest
-  unchanged. This environment pass does not close the missing solver-specific
-  VBD/AVBD GPU-parity predicates. Independent code and architecture/claims
-  reviews approved the pre-merge SI tree; the merged tree received a final
-  local review after the `main` conflict resolutions and handoff corrections.
+- **Current local gates:** after merging `origin/main` at `ef10cb2633b` and
+  resealing the evidence, all 192 focused tests, the 58-packet corpus checker,
+  the 176-row parity checker, and the 18-row allocation matrix pass. The
+  uncached default `test-all` passes all six phases, including 229/229 core C++
+  tests and all 81 runnable simulation tests; its two aggregate wrappers remain
+  intentionally disabled. The uncached CUDA `test-all` passes all seven phases,
+  including 213/213 core C++ tests, all 80 runnable simulation tests plus two
+  disabled wrappers, all eight CUDA device tests, and all nine CUDA benchmark
+  smoke commands. Both aggregate runs also pass their complete Python and docs
+  phases; no exact pytest count is claimed from the aggregate runners' captured
+  output. Six fresh 1280x720 captures bind the current source digest and pass
+  engine ViewReports, pixel-integrity checks, and separate original-resolution
+  semantic review against the pinned paper page. Rejected benchmark attempts
+  remain recorded; the strict quiet-host run and all three dependent packets
+  are sealed. This green CUDA environment gate does not close the missing
+  solver-specific VBD/AVBD GPU-parity predicates. Independent code and
+  architecture/claims reviews approved the pre-merge SI tree; the merged tree
+  received a final local review after the `main` conflict resolutions and
+  handoff corrections.
 
 ## Goal
 
@@ -143,14 +142,14 @@ numbers.
 
 ## Immediate Next Steps
 
-Verify that the SI closeout at `37178193ccf` is followed by the clean branch-tip
-merge of local `main` snapshot `b15e7a652b7`; if not, preserve the in-progress
-merge and finish only its mandatory lint, gate, provenance, and local-commit
-sequence. Do not extend this shared-foundation branch into the remaining parity
-program. After maintainer approval and landing, complete all 88 VBD predicates
-in one VBD PR from updated `main`, including an honest public XPBD comparator,
-the VBD CPU/CUDA and corpus gaps, and achieved-accuracy performance. After that
-lands, complete all 88 AVBD predicates in a second AVBD PR from updated `main`,
+Verify that the SI closeout at `37178193ccf` is followed by merges
+`37a02b4d2c7` and `52173fba3aa`, then the final evidence-refresh commit. If the
+foundation PR is still open, manage only that PR through current-head CI and
+review; do not extend its branch into the remaining parity program. After
+maintainer approval and landing, complete all 88 VBD predicates in one VBD PR
+from updated `main`, including an honest public XPBD comparator, the VBD
+CPU/CUDA and corpus gaps, and achieved-accuracy performance. After that lands,
+complete all 88 AVBD predicates in a second AVBD PR from updated `main`,
 including AVBD-specific CPU/CUDA, unified-row, corpus, four-method, and
 performance gaps. Keep every dependent figure/demo/performance row partial
 until its own source-matched CPU and CUDA evidence closes it.
@@ -363,7 +362,7 @@ All linked canonical method rows remain partial.
   screenshot, and scene-metrics log; the benchmark JSON binds the same source
   tree plus its benchmark translation unit.
 - **Performance boundary:** the current-source five-repeat Release benchmark
-  records a 9.053841 ms median CPU cost per step with 0.57% CPU CV. This is an
+  records a 9.515544 ms median CPU cost per step with 0.49% CPU CV. This is an
   absolute DART timing only; the paper and source publish no directly
   comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the XPBD
@@ -395,8 +394,8 @@ Figure 13 and official-video row 12 remain partial.
   current-build VBD captures pass their engine ViewReports, pixel-integrity
   checks, and paper-grounded semantic review.
 - **Performance boundary:** the current-source five-repeat medians are
-  8.953167 ms VBD and 9.053841 ms AVBD, with 1.79% and 0.57% CPU CV. The
-  VBD/AVBD median CPU-cost ratio is 0.9889x and is descriptive only: the
+  9.292560 ms VBD and 9.515544 ms AVBD, with 0.18% and 0.49% CPU CV. The
+  VBD/AVBD median CPU-cost ratio is 0.9766x and is descriptive only: the
   outcomes intentionally differ, and no source achieved-accuracy or
   same-hardware denominator exists.
 - **Remaining boundary:** exact unpublished constants, honest XPBD, a
@@ -429,8 +428,8 @@ Figure 13 and official-video row 12 remain partial.
   wall-normal displacement. Both assessed images match the paper's initial
   fracture followed by retained-row failure and collapse.
 - **Performance boundary:** the current-source five-repeat median CPU costs
-  are 14.783755 ms SI, 8.953167 ms VBD, and 9.053841 ms AVBD, with 0.48%,
-  1.79%, and 0.57% CPU CV. SI/AVBD is 1.6329x and SI/VBD is 1.6512x. These are
+  are 15.651049 ms SI, 9.292560 ms VBD, and 9.515544 ms AVBD, with 0.34%,
+  0.18%, and 0.49% CPU CV. SI/AVBD is 1.6448x and SI/VBD is 1.6843x. These are
   descriptive costs for intentionally different outcomes, not paper speedups
   or achieved-accuracy comparisons. Frame 120 is the only shared quantitative
   checkpoint across the three rows; the earlier frame-14/18/60 checkpoints
