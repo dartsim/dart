@@ -3003,18 +3003,23 @@ def check_cmake_test_target_trace(
         configuration_definition = (
             tests_arguments[4].partition("=")[2] if len(tests_arguments) > 4 else ""
         )
-        suffix = tests_arguments[7:]
+        build_type_definition = (
+            tests_arguments[5].partition("=")[2] if len(tests_arguments) > 5 else ""
+        )
+        suffix = tests_arguments[8:]
         if (
             tests_arguments[:2] != ["tests_and_run", "COMMAND"]
-            or len(tests_arguments) < 8
+            or len(tests_arguments) < 9
             or not executable_paths_match(tests_arguments[2], cmake_executable)
             or not tests_arguments[3].startswith("-DDART_CTEST_COMMAND=")
             or not executable_paths_match(ctest_definition, trusted_ctest)
             or not tests_arguments[4].startswith("-DDART_CTEST_CONFIGURATION=")
             or configuration_definition not in {"$<CONFIG>", "Release"}
-            or tests_arguments[5] != "-P"
+            or not tests_arguments[5].startswith("-DDART_CTEST_BUILD_TYPE=")
+            or build_type_definition != (cache.get("CMAKE_BUILD_TYPE") or "")
+            or tests_arguments[6] != "-P"
             or not cmake_paths_match(
-                tests_arguments[6], root / "cmake" / "DARTRunCTest.cmake"
+                tests_arguments[7], root / "cmake" / "DARTRunCTest.cmake"
             )
             or tests_arguments.count("COMMAND") != 1
             or not suffix
