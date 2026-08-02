@@ -1370,8 +1370,13 @@ int runGuiBackendApplicationImpl(
       if (!runMultiCapture) {
         // Single view (or an unsupported multi-view request, e.g. windowed):
         // resolve the primary camera in place for the normal capture loop.
-        cameraController.camera = resolveView(primaryPreset);
-        homeCamera = cameraController.camera;
+        // Not on a same-demo rebuild, though: re-resolving (and re-fitting)
+        // the CLI view there would overwrite the preserved camera pose that
+        // Rebuild/Restart promise to keep.
+        if (!sameDemoReactivation) {
+          cameraController.camera = resolveView(primaryPreset);
+          homeCamera = cameraController.camera;
+        }
       } else {
         // Build the ordered (token, camera) capture list.
         std::vector<std::pair<std::string, dart::gui::OrbitCamera>> captures;

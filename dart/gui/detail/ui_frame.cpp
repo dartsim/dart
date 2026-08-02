@@ -661,6 +661,12 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
     float uiScale)
 {
   std::vector<std::string_view> focusedTitles;
+  // Nodes split off the central node during this pass, by dock side. A newly
+  // docked window does not exist until the panels render later this frame, so
+  // FindWindowByName cannot discover a sibling docked moments ago; without
+  // this cache two panels introducing the same side would each split the
+  // central node into stacked columns instead of sharing one as tabs.
+  std::array<ImGuiID, 6> newSideNodes{};
   for (const auto& panel : panels) {
     if (!hasDefaultDockSide(panel)
         || containsSignature(previousSignature, defaultDockSignature(panel))) {
@@ -682,6 +688,19 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
       // no right-column panel). Split the live central node for just that side
       // instead of rebuilding the default layout: a demo switch must never
       // discard the user's resized dock tree.
+      const std::size_t sideIndex
+          = static_cast<std::size_t>(panel.dockSide) < newSideNodes.size()
+                ? static_cast<std::size_t>(panel.dockSide)
+                : 0u;
+      if (newSideNodes[sideIndex] != 0) {
+        // A sibling panel already split this side during the current pass;
+        // join it as a tab.
+        ImGui::DockBuilderDockWindow(
+            panel.title.c_str(), newSideNodes[sideIndex]);
+        ImGui::DockBuilderFinish(dockId);
+        focusedTitles.push_back(panel.title);
+        continue;
+      }
       ImGuiDockNode* central = ImGui::DockBuilderGetCentralNode(dockId);
       if (central == nullptr) {
         buildDefaultDockLayout(dockId, panels, uiScale);
@@ -722,6 +741,7 @@ std::vector<std::string_view> dockPanelsIntroducedBySceneSwitch(
           0.60f);
       const ImGuiID sideNode = ImGui::DockBuilderSplitNode(
           central->ID, direction, fraction, nullptr, nullptr);
+      newSideNodes[sideIndex] = sideNode;
       ImGui::DockBuilderDockWindow(panel.title.c_str(), sideNode);
       ImGui::DockBuilderFinish(dockId);
       focusedTitles.push_back(panel.title);
