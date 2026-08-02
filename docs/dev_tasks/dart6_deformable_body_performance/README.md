@@ -30,16 +30,25 @@ default. The Kim/Pollard volumetric-FEM subsystem was removed through
 [#3407](https://github.com/dartsim/dart/pull/3407), leaving this task focused
 on the Jain/Liu point-mass surface model.
 
-The next implementation packet is
-[PR-3a soft-foot SIMBICON](12-pr3a-soft-foot-simbicon.md). Start it from a
-fresh non-tracking topic branch based on the explicitly authorized release
-tip; do not resume any pre-merge implementation branch.
+[PR-3a soft-foot SIMBICON](12-pr3a-soft-foot-simbicon.md) is complete:
+[#3408](https://github.com/dartsim/dart/pull/3408) added the scene and gates,
+and [#3423](https://github.com/dartsim/dart/pull/3423) resolved the maintainer
+decisions. The contact-spreading claim and the push/contact portion of the
+push-recovery row reproduce and are gate-asserted — contacts 51.2 soft vs
+15.64 rigid, recoverable push 18000 N soft vs 8000 N rigid; the row's
+motor-noise clause is still open below. The maintainer-set goal
+(2026-08-01) is to fully complete this task for the DART 6.20 release,
+bundling the remaining work into as few PRs as review quality allows.
 
-Still open under PLAN-622: the competitive-envelope definition, the
-four-link flexible-foot comparison, WP-DB.07 multicore scaling, the
-pre-default `dart` detector coverage gates, a valid `bm-soft-body-paired`
-artifact or approved disposition, and the separate `main` fix for the
-zero-DoF soft point-mass assertion. Exact takeover state is in `RESUME.md`.
+Still open under PLAN-622: the motor-noise variant of the push-recovery
+comparison, the noisy-floor biped and soft-contact walk rows, the hand/arm
+manipulation rows (finger flick, arm fold, pinch grasp), the four-link
+flexible-foot comparison, applying the approved competitive envelope
+(`decisions.md` item 2, confirmed 2026-07-23) to performance acceptance,
+WP-DB.07 multicore scaling, the pre-default `dart` detector coverage gates,
+a valid `bm-soft-body-paired` artifact or approved disposition, and the
+separate `main` fix for the zero-DoF soft point-mass assertion. The ordered
+list and suggested PR bundles are in `RESUME.md`.
 
 ## Reference scope
 
@@ -253,7 +262,8 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - Durable promotion has started in
   `docs/background/deformable_body_paper_targets.md`,
   `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this
-  temporary task folder, complete or explicitly disposition the remaining
-  competitive-envelope, flexible-foot, scaling, collision-coverage, paired
-  benchmark, and cross-branch bug-fix work, then verify that no required fact
-  remains owned only by this folder.
+  temporary task folder, complete the remaining work — parity rows (such as
+  the flexible-foot comparison) close only with gate evidence, and an
+  explicitly approved disposition substitutes only where an item's own
+  acceptance text offers one (WP-DB.07 scaling, the paired benchmark) —
+  then verify that no required fact remains owned only by this folder.
