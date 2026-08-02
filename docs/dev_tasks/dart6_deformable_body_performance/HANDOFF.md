@@ -15,10 +15,10 @@ is merged:
   `73cd91e69dba635cb17e93e60f33a2c245e629d0`). The contact-spreading claim
   is gate-asserted (51.2 soft vs 15.64 rigid contacts); #3431 then
   re-measured push recovery with replica ensembles — the single-trajectory
-  18000 N was a resonance pocket, robust thresholds favor the rigid
-  control in every configuration, and the soft-advantage ordering is an
-  open gap (see `12-pr3a-soft-foot-simbicon.md` "Robustness
-  re-measurement").
+  18000 N was a resonance pocket, and no measured configuration shows a
+  soft advantage (rigid ahead clean and on the noisy floor, tied under 20%
+  motor noise): the paper's soft-advantage ordering is an open gap (see
+  `12-pr3a-soft-foot-simbicon.md` "Robustness re-measurement").
 
 PLAN-622 remains active for the Jain/Liu point-mass surface model. Do not
 resume any branch used by the merged work.

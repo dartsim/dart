@@ -267,11 +267,11 @@ DemoScene makeSoftFootSimbiconScene()
           "mesh with the same rest inertia; only the soft one deforms. Soft "
           "feet spread far more contact points (about 51 vs 16 over a "
           "settled window, gate-enforced at 1.5x) -- that Jain/Liu 2011 "
-          "claim reproduces. Robust push recovery currently favors the "
-          "rigid control instead (ensemble-measured, rigid vs soft: 8000 "
-          "vs 4000 N clean, 4000 vs 4000 under 20%% motor noise, 20000 vs "
-          "2000 on the 2 cm floor); the paper's soft-advantage ordering is "
-          "an open gap tracked in the parity matrix, and the gates publish "
+          "claim reproduces. Robust push recovery never shows a soft "
+          "advantage (ensemble-measured, rigid vs soft: 8000 vs 4000 N "
+          "clean, tied 4000 vs 4000 under 20%% motor noise, 20000 vs 2000 "
+          "on the 2 cm floor); the paper's soft-advantage ordering is an "
+          "open gap tracked in the parity matrix, and the gates publish "
           "the measured curves.",
           sfs::kDefaultPushMagnitude,
           sfs::kPushSteps,
