@@ -52,6 +52,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -1173,15 +1174,36 @@ WorldPtr World::clone() const
 {
   WorldPtr worldClone = World::create(mName);
 
+  const auto* sourceConstraintSolver = getConstraintSolver();
+  const auto* sourceExactCoulombSolver
+      = dynamic_cast<const constraint::ExactCoulombFbfConstraintSolver*>(
+          sourceConstraintSolver);
+  auto cd = sourceConstraintSolver->getCollisionDetector();
+  if (sourceExactCoulombSolver != nullptr) {
+    auto exactCoulombClone
+        = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>();
+    if (cd)
+      exactCoulombClone->setCollisionDetector(
+          cd->cloneWithoutCollisionObjects());
+
+    // There is no ABI-neutral virtual solver-clone hook on DART 6. Copy the
+    // exact and inherited solver configuration, then discard source-world
+    // registrations before the World-owned Skeleton clones are added below.
+    // Manual constraints have never been cloned by World::clone().
+    exactCoulombClone->setFromOtherConstraintSolver(*sourceExactCoulombSolver);
+    exactCoulombClone->getCollisionOption()
+        = sourceExactCoulombSolver->getCollisionOption();
+    exactCoulombClone->removeAllSkeletons();
+    exactCoulombClone->removeAllConstraints();
+    worldClone->mConstraintSolver = std::move(exactCoulombClone);
+  } else if (cd) {
+    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+  }
+
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
   worldClone->setDeactivationOptions(mDeactivationOptions);
   worldClone->setNumSimulationThreads(mNumSimulationThreads);
-
-  auto cd = getConstraintSolver()->getCollisionDetector();
-  if (cd) {
-    worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
-  }
 
   // Clone and add each Skeleton
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
