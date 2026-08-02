@@ -772,7 +772,14 @@ double maxRecoverablePush(Feet feet)
 //==============================================================================
 void setMotorNoise(Model& model, double level)
 {
-  model.motorNoise = std::max(0.0, level);
+  const double clamped = std::max(0.0, level);
+  // A level change invalidates any held factors: they were drawn at the old
+  // amplitude, and prepareStep() would keep applying them for the rest of
+  // the 50-step hold while the panel already reports the new level. A
+  // same-level call stays a no-op so it cannot disturb a deterministic run.
+  if (clamped != model.motorNoise)
+    model.noiseHoldCounter = 0;
+  model.motorNoise = clamped;
 }
 
 } // namespace soft_foot_simbicon_model
