@@ -69,7 +69,8 @@ Results: equal-mass arms, a single collision surface per foot, identical
 rest tessellation, per-foot inertial equality to 1e-9, and an
 independent-path observed-COM check; settled contacts 51.2 soft vs 15.64
 rigid (gate at 1.5x); recoverable push 18000 N soft vs 8000 N rigid (gate:
-soft >= rigid).
+soft >= rigid) — the push figures were later superseded by the #3431
+ensemble re-measurement below, which found the 18000 N a resonance pocket.
 
 Review and visual evidence: Codex findings on #3423 (asset-vs-override
 policy, controller COM sensor) were resolved at root cause; matched
@@ -77,13 +78,44 @@ before/after APNG strips and an endstate composite at 6000 N under the
 corrected sensor are linked from the #3423 PR body (release tag
 `verification-media-dart6-agent-evidence`).
 
+## PR #3431 perturbation rows and robust ensembles
+
+Revision: PR #3431 (`wp-db-soft-foot-perturbation-rows`; record the merge
+SHA here when it lands). Behavior-bearing: every push verdict in the
+soft-foot family moved from a single trajectory to
+`robustRecoverablePush` — 5 deterministic replicas per magnitude (10 um
+root offsets plus 60-step push-phase strides), prefix-threshold semantics,
+response curves printed by every gate.
+
+Commands: the registered ctest targets `test_SoftFootSimbiconModel`
+(structure gates, including the jittered-floor and motor-noise scoping
+gates), `test_SoftFootSimbiconPushSweep`,
+`test_SoftFootSimbiconMotorNoiseSweep`, and
+`test_SoftFootSimbiconNoisyFloorSweep`. Headless reproduce adds
+`DART_DEMO_SOFT_FOOT_NOISE` / `DART_DEMO_SOFT_FOOT_FLOOR` to the PR-3a
+command above.
+
+Results (rigid vs soft robust thresholds): clean 8000/4000 N; 20% held
+motor noise 4000/4000; the paper's 2 cm jittered-mesh floor 20000/2000.
+The single-trajectory 18000 N soft figure was an isolated resonance
+pocket (1/5 under phase sampling). No configuration shows a soft
+advantage; the parity matrix records the open gap and the mechanism
+follow-up. Review round 1 hypothesized the rigid floor advantage was a
+box-lattice keying artifact; re-measuring on the spec's jittered
+shared-vertex mesh refuted that (14000 -> 20000 N).
+
+Visual evidence: matched 12000 N floor A/B (rigid recovers at 173
+contacts, soft falls at 0) under the release tag
+`verification-media-dart6-agent-evidence`, linked from the #3431 PR body.
+
 ## Open evidence
 
 PLAN-622 still requires:
 
-- gate evidence for the remaining Jain/Liu rows: the motor-noise push
-  variant, noisy-floor biped, soft-contact walk, hand/arm manipulation, and
-  the four-link flexible-foot comparison;
+- gate evidence for the remaining Jain/Liu rows: soft-contact walk (which
+  also unblocks the noisy-floor row's course-tracking outcome), hand/arm
+  manipulation, and the four-link flexible-foot comparison — plus closure
+  of the push-recovery mechanism gap #3431 measured;
 - the performance-acceptance evidence defined by the approved competitive
   envelope (`decisions.md` item 2, confirmed 2026-07-23);
 - representative multicore scaling evidence or an approved negative
