@@ -391,9 +391,11 @@ private:
 
   /// Docked-workspace state (docking-branch ImGui builds): the default layout
   /// is rebuilt on the first frame and whenever View > "Reset layout" sets the
-  /// reset flag.
-  bool mDockLayoutInitialized = false;
-  bool mDockLayoutResetRequested = false;
+  /// reset flag. maybe_unused: only IMGUI_HAS_DOCK code paths read them, and
+  /// non-docking builds (system ImGui) compile those out; keeping the members
+  /// unconditional avoids an ABI split between the two build flavors.
+  [[maybe_unused]] bool mDockLayoutInitialized = false;
+  [[maybe_unused]] bool mDockLayoutResetRequested = false;
   /// Fixed-layout fallback (non-docking builds): chrome heights measured from
   /// the previous frame's content so scaled toolbars/diagnostics never clip.
   float mMeasuredToolbarHeight = 0.0f;
