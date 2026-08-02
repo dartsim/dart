@@ -881,6 +881,10 @@ TEST(World, ClonePreservesExactCoulombSolverConfiguration)
   ASSERT_NE(nullptr, sourceSolver);
   sourceSolver->setSplitImpulseEnabled(true);
 
+  auto customFallback = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  sourceSolver->setBoxedLcpSolver(customFallback);
+  sourceSolver->setSecondaryBoxedLcpSolver(nullptr);
+
   auto matrixFreeOptions = sourceSolver->getMatrixFreeContactSolverOptions();
   matrixFreeOptions.mEnabled = true;
   matrixFreeOptions.mMinRows = 321u;
@@ -913,6 +917,8 @@ TEST(World, ClonePreservesExactCoulombSolverConfiguration)
   EXPECT_FALSE(cloneSolver->getExactCoulombOptions().fallbackToBoxedLcp);
   EXPECT_EQ(cloneSolver->getExactCoulombOptions().maxOuterIterations, 17);
   EXPECT_TRUE(cloneSolver->isSplitImpulseEnabled());
+  EXPECT_EQ(cloneSolver->getBoxedLcpSolver(), customFallback);
+  EXPECT_EQ(nullptr, cloneSolver->getSecondaryBoxedLcpSolver());
   EXPECT_TRUE(cloneSolver->getMatrixFreeContactSolverOptions().mEnabled);
   EXPECT_EQ(cloneSolver->getMatrixFreeContactSolverOptions().mMinRows, 321u);
   EXPECT_EQ(

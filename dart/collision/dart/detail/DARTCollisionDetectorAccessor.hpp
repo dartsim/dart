@@ -32,11 +32,14 @@
 
 #pragma once
 
+#include <dart/collision/dart/broad_phase/BroadPhase.hpp>
+
 #include <cstddef>
 
 namespace dart::collision {
 
 class DARTCollisionDetector;
+class DARTCollisionGroup;
 
 namespace detail {
 
@@ -49,6 +52,9 @@ struct DARTCollisionDetectorAccessor
 
   static std::size_t getNumCollisionObjectEngineData(
       const DARTCollisionDetector& detector);
+
+  static native::BroadPhaseDebugSnapshot getCollisionGroupBroadPhaseSnapshot(
+      const DARTCollisionDetector& detector, const DARTCollisionGroup& group);
 };
 
 } // namespace detail

@@ -2674,6 +2674,54 @@ TEST(DARTCollisionDetector, EngineSidecarsFollowReleasedInlineLifetimes)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, ClearingContactGapsShrinksBroadPhaseBounds)
+{
+  using collision::detail::DARTCollisionDetectorAccessor;
+
+  auto detector = collision::DARTCollisionDetector::create();
+  auto shape = std::make_shared<dynamics::SphereShape>(0.5);
+  auto frame1 = makeFrame(shape, Eigen::Vector3d::Zero());
+  auto frame2 = makeFrame(shape, Eigen::Vector3d(20.0, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+  auto* nativeGroup = dynamic_cast<collision::DARTCollisionGroup*>(group.get());
+  ASSERT_NE(nullptr, nativeGroup);
+
+  detector->setContactGap(frame1.get(), 100.0);
+  detector->setContactGap(frame2.get(), 100.0);
+  group->collide();
+  const auto expanded
+      = DARTCollisionDetectorAccessor::getCollisionGroupBroadPhaseSnapshot(
+          *detector, *nativeGroup);
+  const auto expandedRoot = std::find_if(
+      expanded.nodes.begin(),
+      expanded.nodes.end(),
+      [&](const native::BroadPhaseDebugNode& node) {
+        return node.nodeId == expanded.rootNode;
+      });
+  ASSERT_NE(expanded.nodes.end(), expandedRoot);
+  const double expandedWidth
+      = expandedRoot->aabb.max.x() - expandedRoot->aabb.min.x();
+  EXPECT_GT(expandedWidth, 200.0);
+
+  detector->clearContactGaps();
+  group->collide();
+  const auto cleared
+      = DARTCollisionDetectorAccessor::getCollisionGroupBroadPhaseSnapshot(
+          *detector, *nativeGroup);
+  const auto clearedRoot = std::find_if(
+      cleared.nodes.begin(),
+      cleared.nodes.end(),
+      [&](const native::BroadPhaseDebugNode& node) {
+        return node.nodeId == cleared.rootNode;
+      });
+  ASSERT_NE(cleared.nodes.end(), clearedRoot);
+  const double clearedWidth
+      = clearedRoot->aabb.max.x() - clearedRoot->aabb.min.x();
+  EXPECT_LT(clearedWidth, 25.0);
+  EXPECT_LT(clearedWidth, expandedWidth);
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ShapeIdentitySwapRebuildsNativeShape)
 {
   ExposedDARTCollisionDetector detector;
