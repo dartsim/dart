@@ -878,6 +878,22 @@ TEST(SoftFootSimbiconModelTest, NoisyFloorIsSeededDeterministicAndDugDown)
   }
   EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(meshMin, 1e-9));
   EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(meshMax, 1e-9));
+
+  // Collision smoke for both foot representations against the mesh floor.
+  // The long-measurement sweeps are excluded from the sanitizer and
+  // unoptimized lanes, so this unlabelled gate is what actually executes
+  // the FCL mesh-floor narrow phase there: a brief settle must produce
+  // finite state and real foot-floor contacts for the soft arm (already
+  // built above) and the rigid control alike.
+  sfs::Model rigidOnFloor = sfs::createModel(sfs::Feet::Rigid, amplitude);
+  for (sfs::Model* model : {&noisy, &rigidOnFloor}) {
+    for (int i = 0; i < 150; ++i)
+      sfs::step(*model);
+    ASSERT_TRUE(sfs::isFinite(*model));
+    EXPECT_TRUE(sfs::isUpright(*model));
+    EXPECT_GT(sfs::footContactCount(*model), 0u)
+        << "no foot-floor contacts after settling on the noisy mesh";
+  }
 }
 
 //==============================================================================
