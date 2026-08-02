@@ -6989,6 +6989,63 @@ TEST(AvbdRigidBlock, RigidWorldVbdToAvbdFiniteRowsMatchFreshAvbd)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldFixedPenaltyRejectsHardJointRows)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& jointModel = registry.emplace<sx::comps::JointModel>(jointEntity);
+  jointModel.type = sx::comps::JointType::Fixed;
+
+  vbd::AvbdRigidWorldPointJointInput joint;
+  joint.joint = jointEntity;
+  joint.bodyA = sx::detail::toRegistryEntity(base.getEntity());
+  joint.bodyB = sx::detail::toRegistryEntity(link.getEntity());
+  joint.anchorA = Vec3::Zero();
+  joint.anchorB = Vec3::UnitX();
+  joint.linearAxisMask = 1u;
+  joint.angularAxisMask = 0u;
+  joint.startStiffness = 4.0;
+  joint.linearMaterialStiffness = std::numeric_limits<double>::infinity();
+  joint.maxStiffness = 100.0;
+
+  auto snapshot = vbd::buildAvbdRigidWorldContactSnapshot(
+      registry, std::span<const sx::Contact>());
+  ASSERT_EQ(
+      vbd::appendAvbdRigidWorldPointJoints(
+          registry,
+          std::span<const vbd::AvbdRigidWorldPointJointInput>{&joint, 1u},
+          snapshot),
+      1u);
+  vbd::predictAvbdRigidWorldContactInertialTargets(
+      registry, snapshot, /*timeStep=*/1.0);
+
+  vbd::AvbdRigidWorldContactSolveOptions options;
+  options.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  EXPECT_THROW(
+      (void)vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          /*timeStep=*/1.0,
+          options),
+      sx::InvalidOperationException);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactSnapshotApplyWritesDynamicBodyState)
 {
   sx::World world;

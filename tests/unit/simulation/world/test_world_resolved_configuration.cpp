@@ -193,10 +193,14 @@ TEST(ResolvedConfiguration, RecordsPublicVbdFamilyAsRequested)
   sx::RigidBodyOptions childOptions;
   childOptions.position = Eigen::Vector3d::UnitX();
   auto child = world.addRigidBody("child", childOptions);
-  world.addJoint(
+  auto joint = world.addJoint(
       parent,
       child,
       sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  joint.setConstraintProjectionPolicy(
+      {.startStiffness = 1.0e5,
+       .linearStiffness = 1.0e5,
+       .angularStiffness = 1.0e5});
   world.enterSimulationMode();
 
   const auto& config = world.getResolvedConfiguration();

@@ -62,6 +62,8 @@ enum class RigidBodySolver
   /// rigid-body pair constraints. Unlike `Avbd`, this family does not use an
   /// augmented-Lagrangian dual update or progressive stiffness ramp: each
   /// supported constraint remains at its configured finite penalty stiffness.
+  /// Active hard pair-joint rows are rejected until their public projection
+  /// policy explicitly configures finite stiffness.
   Vbd,
 };
 

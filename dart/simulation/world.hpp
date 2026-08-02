@@ -378,10 +378,12 @@ public:
   /// The default remains SequentialImpulse. Vbd and Avbd are explicit opt-ins
   /// for free rigid-body contact and public rigid-body pair constraints. Vbd
   /// holds conservative rows at fixed finite penalty stiffness; Avbd adds the
-  /// augmented-Lagrangian dual and progressive stiffness update. Ipc is
+  /// augmented-Lagrangian dual and progressive stiffness update. Public hard
+  /// pair-joint rows require SequentialImpulse or Avbd; Vbd fails closed until
+  /// their projection policy explicitly configures finite stiffness. Ipc is
   /// experimental and currently handles free mesh-like rigid bodies through
-  /// the internal rigid IPC stage. Unsupported family/domain combinations throw
-  /// rather than falling through to another solver.
+  /// the internal rigid IPC stage. Unsupported family/domain combinations
+  /// throw rather than falling through to another solver.
   void setRigidBodySolver(RigidBodySolver solver);
 
   /// Get the solver family used by the default rigid-body step pipeline.

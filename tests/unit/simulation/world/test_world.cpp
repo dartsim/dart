@@ -3574,6 +3574,10 @@ void configurePublicRigidBlockDescentContactAndBreakableJointRowsScene(
       ground,
       brick,
       makeJointSpec(objectName("breakable_joint"), sx::JointType::Fixed));
+  if (solver == sx::RigidBodySolver::Vbd) {
+    joint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(1.0e5, 1.0e5, 1.0e5));
+  }
   joint.setBreakForce(1.0e6);
 
   sx::RigidBodyOptions ballOptions;
@@ -6140,6 +6144,46 @@ TEST(World, PublicVbdFamilyProjectsContactsWithoutPrivateBodyConfigs)
   EXPECT_EQ(world.computeStepMetrics().lastStepIterations, 20u);
   EXPECT_GT(sphere.getLinearVelocity().z(), 0.0);
   EXPECT_GT(sphere.getTranslation().z(), initialPosition.z());
+}
+
+TEST(World, PublicVbdFamilyRequiresFinitePointJointProjectionStiffness)
+{
+  namespace sx = dart::simulation;
+
+  const std::array jointTypes{
+      sx::JointType::Fixed,
+      sx::JointType::Revolute,
+      sx::JointType::Prismatic,
+      sx::JointType::Spherical};
+  for (const sx::JointType jointType : jointTypes) {
+    SCOPED_TRACE(static_cast<int>(jointType));
+
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+
+    sx::World hardWorld(options);
+    sx::RigidBodyOptions parentOptions;
+    parentOptions.isStatic = true;
+    auto hardParent = hardWorld.addRigidBody("hard_parent", parentOptions);
+    sx::RigidBodyOptions childOptions;
+    childOptions.position = Eigen::Vector3d::UnitX();
+    auto hardChild = hardWorld.addRigidBody("hard_child", childOptions);
+    (void)hardWorld.addJoint(
+        hardParent, hardChild, makeJointSpec("hard_joint", jointType));
+    EXPECT_THROW(
+        hardWorld.enterSimulationMode(), sx::InvalidOperationException);
+
+    sx::World finiteWorld(options);
+    auto finiteParent
+        = finiteWorld.addRigidBody("finite_parent", parentOptions);
+    auto finiteChild = finiteWorld.addRigidBody("finite_child", childOptions);
+    auto finiteJoint = finiteWorld.addJoint(
+        finiteParent, finiteChild, makeJointSpec("finite_joint", jointType));
+    finiteJoint.setConstraintProjectionPolicy(
+        makeConstraintProjectionPolicy(1.0e5, 1.0e5, 1.0e5));
+    EXPECT_NO_THROW(finiteWorld.step());
+  }
 }
 
 TEST(World, PublicAvbdFamilyRejectsConflictingContactPolicy)

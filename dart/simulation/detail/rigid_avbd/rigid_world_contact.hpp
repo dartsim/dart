@@ -2267,7 +2267,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   scratch.clear();
   const auto applyFixedPenaltyRows = [&](auto& rows,
                                          AvbdScalarRowInventory& inventory,
-                                         std::size_t inventoryOffset = 0u) {
+                                         std::size_t inventoryOffset = 0u,
+                                         bool requireFiniteMaterial = false) {
     if (!fixedPenalty) {
       return;
     }
@@ -2278,6 +2279,11 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
           "VBD fixed-penalty row inventory drifted from assembled rows");
       const AvbdScalarRowDescriptor& descriptor
           = inventory[inventoryOffset + i].descriptor;
+      DART_SIMULATION_THROW_T_IF(
+          requireFiniteMaterial && !std::isfinite(descriptor.materialStiffness),
+          InvalidOperationException,
+          "VBD fixed-penalty joint rows require an explicitly configured "
+          "finite material stiffness; hard joint rows are not supported");
       const double requestedStiffness
           = std::isfinite(descriptor.materialStiffness)
                 ? descriptor.materialStiffness
@@ -2362,8 +2368,16 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       scratch.jointLinearRowsScratch,
       scratch.jointAngularRowsScratch,
       options.warmStart);
-  applyFixedPenaltyRows(jointLinearRows, jointLinearInventory);
-  applyFixedPenaltyRows(jointAngularRows, jointAngularInventory);
+  applyFixedPenaltyRows(
+      jointLinearRows,
+      jointLinearInventory,
+      /*inventoryOffset=*/0u,
+      /*requireFiniteMaterial=*/true);
+  applyFixedPenaltyRows(
+      jointAngularRows,
+      jointAngularInventory,
+      /*inventoryOffset=*/0u,
+      /*requireFiniteMaterial=*/true);
   result.jointLinearRows = jointLinearRows.size();
   result.jointAngularRows = jointAngularRows.size();
 

@@ -1080,6 +1080,13 @@ def build_solver_variant(
         )
         topology_records.append((3, 0, 1 + column))
 
+    if rigid_body_solver == sx.RigidBodySolver.VBD:
+        for joint in joints:
+            policy = joint.constraint_projection_policy
+            policy.linear_stiffness = policy.start_stiffness
+            policy.angular_stiffness = policy.start_stiffness
+            joint.constraint_projection_policy = policy
+
     balls: list[sx.RigidBody] = []
     sphere_inertia = (
         2.0 / 5.0 * _BALL_MASS * _BALL_RADIUS * _BALL_RADIUS * np.eye(3)

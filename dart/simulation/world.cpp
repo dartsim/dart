@@ -2182,6 +2182,38 @@ bool hasFiniteStiffnessRigidBodyJointRows(const World& world)
 }
 
 //==============================================================================
+bool hasHardStiffnessRigidBodyJointRows(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::JointModel>();
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::JointModel>(entity);
+    if (!isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+
+    const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity);
+    if (config == nullptr || !config->enabled) {
+      continue;
+    }
+
+    const bool hasHardLinearRows
+        = config->linearAxisMask != 0u
+          && std::isinf(config->linearMaterialStiffness);
+    const bool hasHardAngularRows
+        = config->angularAxisMask != 0u
+          && std::isinf(config->angularMaterialStiffness);
+    if (hasHardLinearRows || hasHardAngularRows) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
 void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
@@ -2203,6 +2235,14 @@ void validateRigidBodyJointPipelineSupport(
       "The Sequential Impulse rigid-body solver supports hard rigid-body "
       "joint rows only; finite constraint projection stiffness requires the "
       "VBD or AVBD rigid-body solver");
+
+  DART_SIMULATION_THROW_T_IF(
+      solver == RigidBodySolver::Vbd
+          && hasHardStiffnessRigidBodyJointRows(world),
+      InvalidOperationException,
+      "The VBD rigid-body solver supports finite-penalty rigid-body joint "
+      "rows only; configure finite linear and angular constraint projection "
+      "stiffness or select Sequential Impulse or AVBD for hard rows");
 
   if (solver == RigidBodySolver::Ipc) {
     DART_SIMULATION_THROW_T_IF(

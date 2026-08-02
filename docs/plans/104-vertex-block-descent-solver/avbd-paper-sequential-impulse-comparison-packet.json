@@ -2,12 +2,12 @@
   "benchmark": {
     "comparison": {
       "basis": "same benchmark JSON, executable, host, reconstructed scene fingerprint, trajectory length, time step, and 20-sweep budget",
-      "sequential_impulse_to_avbd_median_cpu_cost_ratio": 1.6447876553305811,
-      "sequential_impulse_to_vbd_median_cpu_cost_ratio": 1.6842558689474314
+      "sequential_impulse_to_avbd_median_cpu_cost_ratio": 1.656038285910965,
+      "sequential_impulse_to_vbd_median_cpu_cost_ratio": 1.7178659882766967
     },
     "context": {
-      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
-      "capture_source_provenance_digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
       "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
       "host_name": "mark26",
       "json_schema_version": 1,
@@ -16,7 +16,7 @@
       "mhz_per_cpu": 5300,
       "num_cpus": 32
     },
-    "json_sha256": "abab909f3693333c0bb43bdd54b15df9fd6f0c3e9d4b7dd838208fb76d12565a",
+    "json_sha256": "1a69ca3c576e4b71f3cc3f2abe4a720ebf1dc15cb0b7fbda11f77d5e5ae1d0c0",
     "method": {
       "benchmark": "BM_SequentialImpulsePaperBreakableWallStep",
       "rows": [
@@ -25,14 +25,14 @@
           "aggregate_unit": "time",
           "breakable_joints": 712.0,
           "collision_shapes": 256.0,
-          "cpu_time": 15624216.650000006,
+          "cpu_time": 13694594.809999999,
           "family_index": 2,
           "impacting_balls": 3.0,
           "iterations": 5,
           "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_mean",
           "per_family_instance_index": 0,
           "public_sequential-impulse_family": 1.0,
-          "real_time": 15627557.041686183,
+          "real_time": 13696717.531711329,
           "repetitions": 5,
           "resolved_rigid_body_sequential-impulse": 1.0,
           "resolved_rigid_constraint_iterations": 1.0,
@@ -55,14 +55,14 @@
           "aggregate_unit": "time",
           "breakable_joints": 712.0,
           "collision_shapes": 256.0,
-          "cpu_time": 15651048.633333351,
+          "cpu_time": 13603462.383333325,
           "family_index": 2,
           "impacting_balls": 3.0,
           "iterations": 5,
           "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_median",
           "per_family_instance_index": 0,
           "public_sequential-impulse_family": 1.0,
-          "real_time": 15652796.116773969,
+          "real_time": 13604835.59158941,
           "repetitions": 5,
           "resolved_rigid_body_sequential-impulse": 1.0,
           "resolved_rigid_constraint_iterations": 1.0,
@@ -85,14 +85,14 @@
           "aggregate_unit": "time",
           "breakable_joints": 0.0,
           "collision_shapes": 0.0,
-          "cpu_time": 52565.232515432945,
+          "cpu_time": 201553.6772774021,
           "family_index": 2,
           "impacting_balls": 0.0,
           "iterations": 5,
           "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_stddev",
           "per_family_instance_index": 0,
           "public_sequential-impulse_family": 0.0,
-          "real_time": 51872.38501883386,
+          "real_time": 202687.9358083481,
           "repetitions": 5,
           "resolved_rigid_body_sequential-impulse": 0.0,
           "resolved_rigid_constraint_iterations": 0.0,
@@ -115,14 +115,14 @@
           "aggregate_unit": "percentage",
           "breakable_joints": 0.0,
           "collision_shapes": 0.0,
-          "cpu_time": 0.003364343550332997,
+          "cpu_time": 0.014717753980586896,
           "family_index": 2,
           "impacting_balls": 0.0,
           "iterations": 5,
           "name": "BM_SequentialImpulsePaperBreakableWallStep/iterations:120_cv",
           "per_family_instance_index": 0,
           "public_sequential-impulse_family": 0.0,
-          "real_time": 0.0033192894372719517,
+          "real_time": 0.014798285453363171,
           "repetitions": 5,
           "resolved_rigid_body_sequential-impulse": 0.0,
           "resolved_rigid_constraint_iterations": 0.0,
@@ -142,21 +142,21 @@
         }
       ],
       "stability": {
-        "cpu_time_cv_fraction": 0.003364343550332997,
-        "real_time_cv_fraction": 0.0033192894372719517,
+        "cpu_time_cv_fraction": 0.014717753980586896,
+        "real_time_cv_fraction": 0.014798285453363171,
         "repetitions": 5
       },
       "timing": {
-        "mean_cpu_time_per_step_ns": 15624216.650000006,
-        "mean_real_time_per_step_ns": 15627557.041686183,
-        "median_cpu_time_per_step_ns": 15651048.633333351,
-        "median_real_time_per_step_ns": 15652796.116773969
+        "mean_cpu_time_per_step_ns": 13694594.809999999,
+        "mean_real_time_per_step_ns": 13696717.531711329,
+        "median_cpu_time_per_step_ns": 13603462.383333325,
+        "median_real_time_per_step_ns": 13604835.59158941
       }
     },
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
     "source_provenance": {
-      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
-      "capture_source_provenance_digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d"
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0"
     }
   },
   "claim_boundary": "This packet covers the matched Sequential Impulse Figure 13 row and links the same-host AVBD/VBD comparison packet. Together they establish three of the four published comparison rows. It does not reproduce XPBD, claim exact unpublished source-scene constants, establish CUDA parity, or compare against a published/source timing.",
@@ -181,10 +181,10 @@
   "linked_avbd_vbd_evidence": {
     "benchmark_method_timings": {
       "avbd": {
-        "median_cpu_time_per_step_ns": 9515543.591666665
+        "median_cpu_time_per_step_ns": 8214461.283333337
       },
       "vbd": {
-        "median_cpu_time_per_step_ns": 9292559.950000001
+        "median_cpu_time_per_step_ns": 7918814.666666662
       }
     },
     "file": "avbd-paper-vbd-comparison-packet.json",
@@ -195,8 +195,8 @@
       "rigid_contact_solver": "avbd",
       "rigid_point_joint_solver": "avbd"
     },
-    "nested_avbd_sha256": "d7fe44e4708a0b24646ac01610d166e0167642bd1ee1c58f8e05591641b58f26",
-    "nested_avbd_source_provenance_digest": "f4e41fb154bc6d51eb16de658167e8307436daaf511e1c86ae4ce4004494c640",
+    "nested_avbd_sha256": "e8fec99ab6faee09e42860d33395f640d1988f88d743db24d1a585afb395b19d",
+    "nested_avbd_source_provenance_digest": "e8715822cf80680774dfb8b6fc8a3d78ecb0f424bfe55424fb709d8f30fddaa2",
     "resolved_solver_identity": {
       "avbd_rigid_contact_config_emplaced": false,
       "recorded_from": "engine World.resolved_configuration in both VBD captures plus benchmark runtime resolved-configuration counters",
@@ -205,19 +205,19 @@
       "rigid_point_joint_solver": "vbd"
     },
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
-    "sha256": "0302c036e390c6db2696d8a5e5ee3074eff05aacbce6d003c468aaef2e4560a3",
-    "source_provenance_digest": "73c70bd23e4ad8b419c32901b02a6e5928c4b36510e682c3413baaa5367b0b88",
+    "sha256": "d1bcabc809f74b282d4b031a4810150f500a84205549f482594e953341604c06",
+    "source_provenance_digest": "56ef2fc26eaa75e9850b66d2948a31a257fc681b02bec271c7fcb2f46419e54f",
     "visual_evidence": {
       "bend_screenshot": {
         "file": "vbd_paper_breakable_wall_bend.png",
-        "sha256": "dc05890e8f09f42dfc9dd5a1c06662a15bac88bded3197eeda8c333fc40eca06"
+        "sha256": "6da21444b1d674db5034e439806ee0e13fd59086896159965135845e38778d99"
       },
       "retention_screenshot": {
         "file": "vbd_paper_breakable_wall_retention.png",
-        "sha256": "69a2f2390ff4786f68f60866356291c67968aaf975e00853440c5794fdc6d590"
+        "sha256": "47c3cb1efecb530da0cc842797d3cbf97805a27a43a6c20157cd111d9649c83b"
       },
       "semantic_review": {
-        "sha256": "e651c5c2373880977d3e35b871213f4f29ad2a4e20972cbe4121519f05fa8dbe",
+        "sha256": "5aab06eedbf99546ee380cdc7ca2695e26003afaeb0cbcdc702069a9fb579129",
         "verdict": "pass"
       }
     }
@@ -275,19 +275,19 @@
   "schema_version": 4,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "5386c5304d3b900392596134fe421a7b33f3aca328044ea7f15b0d0491255c5e",
+    "digest": "c92ddd193ba0677705c5311f60be3e49c46a8a1593ef56c7861e4d801da2dce0",
     "files": [
       {
         "path": "dart/simulation/world.cpp",
-        "sha256": "57bf31a3abcfb089b9b82d206bc5dbeb673b55ab0ca97077d2212b694ea8c6af"
+        "sha256": "ecde99482d1e343195e1a18b37fc46f1dd9471f308f546bf9634eff05a7164eb"
       },
       {
         "path": "dart/simulation/world.hpp",
-        "sha256": "cbe18bc663ece8120078acc5f74dc0e627dd227cdb58ee83647386a3715f4445"
+        "sha256": "d3936db424028b9a6016ab8523a8ffdb749a502d1dd47dca57e26a7fc7c4363d"
       },
       {
         "path": "dart/simulation/world_options.hpp",
-        "sha256": "bcc8e950d73534a2d5dc953431939b2fa776235d188fb685bf65589b4d556b34"
+        "sha256": "ed421bdb599188c64a7ef03466a92cecef218a5cee2b2f32796239070fe8c53b"
       },
       {
         "path": "dart/simulation/comps/joint.hpp",
@@ -311,7 +311,7 @@
       },
       {
         "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
-        "sha256": "40675bcd66d2ae543dc1bd60a435926dd6969893eb0a92aa451fe66f9b8bda12"
+        "sha256": "4794bd7e3a2b549996c8774edaa3de37b10fef9b775083f8ab474e2b1b240a09"
       },
       {
         "path": "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
@@ -327,7 +327,7 @@
       },
       {
         "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
-        "sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370"
+        "sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834"
       },
       {
         "path": "tests/unit/simulation/contact/test_boxed_lcp_contact.cpp",
@@ -335,11 +335,11 @@
       },
       {
         "path": "tests/unit/simulation/world/test_world.cpp",
-        "sha256": "a6bbdadee4253abbac4fde9a4b9801e7246415044deff07875063a7c6153e194"
+        "sha256": "db7c701ddf83cad31e50ebe62758c1da49996cdf1e4bd9fd4df13886710ae269"
       },
       {
         "path": "tests/unit/simulation/world/test_world_resolved_configuration.cpp",
-        "sha256": "09f3935b94bb3489aa32edb5f8e9ed71b72c165a5c58e7e2a5e7a5e0d156958c"
+        "sha256": "2b1dc4bc4a9468ac710edf8c100036e537844ea6587c47f55ec412a8c84f393f"
       },
       {
         "path": "tests/test_avbd_packet_schema.py",
@@ -400,14 +400,14 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 2135,
-            "dark_pixels": 1826,
-            "mid_pixels": 222077,
-            "p05": 89.096,
-            "p95": 156.431,
+            "bright_pixels": 2182,
+            "dark_pixels": 1637,
+            "mid_pixels": 222292,
+            "p05": 93.409,
+            "p95": 156.511,
             "pass": false,
             "reasons": [
-              "luminance spread 67.3 < 90.0"
+              "luminance spread 63.1 < 90.0"
             ],
             "region": {
               "x0": 512,
@@ -416,7 +416,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 67.336,
+            "spread": 63.102,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -444,12 +444,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "9b56fc856e56bed7dd76394602f4835d050808aeef9c9b0c3b6e5ff66139d6e9"
+        "sha256": "adc3a2075d2bad84ba1055096120cdd878d4201bf8eb78c14c45e683794d4a1c"
       },
       "label": "collapse",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "77910887ddf3e9d5cdaffdb455a17478d8fd23429752faa2630d02b809c269c3"
+        "sha256": "2a91e2f39f21fc533d02214eaeb2920c1c888e727c97c42a4c1e5c889ae5671e"
       },
       "scene_metrics": {
         "event_count": 120,
@@ -1046,13 +1046,13 @@
       },
       "screenshot": {
         "file": "sequential_impulse_paper_breakable_wall_collapse.png",
-        "sha256": "83ca961c52b606a5a90c2232e3f3f4d60d970783cb22c1b0a40dcc97d22fce29"
+        "sha256": "dc7d20a599b8af9d856b99ade0e2926b9c73b311403adbe1e5b43222713857ba"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
         "file_count": 1556,
-        "git_head": "52173fba3aa415cdf830858693195a5fbc6397b8",
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -1089,10 +1089,10 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 1354,
-            "dark_pixels": 11712,
-            "mid_pixels": 209742,
-            "p05": 55.58,
+            "bright_pixels": 1361,
+            "dark_pixels": 11689,
+            "mid_pixels": 209739,
+            "p05": 55.657,
             "p95": 151.795,
             "pass": true,
             "reasons": [],
@@ -1103,7 +1103,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 96.216,
+            "spread": 96.138,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -1131,12 +1131,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "a5cf65cdf6fe31a3ab02c8bcdce69513bc1c48b9512f0d9339fb590741b4c9f5"
+        "sha256": "0568230c63f3c953e15edfe0dbf776b302e57bfd5205ae3e2a999cf8fd8ee27e"
       },
       "label": "fracture",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "43e160adb2a530eeb1e7102eefe682e1122bcdd21d1c3860b57972d2593f6605"
+        "sha256": "bef1b3dcfe1baf263500af52786e4e395c39e0cb9a81dd2a3fa743bfbe0a92e9"
       },
       "scene_metrics": {
         "event_count": 14,
@@ -1733,13 +1733,13 @@
       },
       "screenshot": {
         "file": "sequential_impulse_paper_breakable_wall_fracture.png",
-        "sha256": "678af175bd8cbbea575dd152884996dd36aacec63bf0b66d38a81ebd7d92fc43"
+        "sha256": "915c9679660a3cbe44132d2c81ae1d30708a9da476db84ab13b39707c9ec8744"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
         "file_count": 1556,
-        "git_head": "52173fba3aa415cdf830858693195a5fbc6397b8",
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -1762,12 +1762,12 @@
         {
           "file": "sequential_impulse_paper_breakable_wall_fracture.png",
           "role": "fracture_frame_14",
-          "sha256": "678af175bd8cbbea575dd152884996dd36aacec63bf0b66d38a81ebd7d92fc43"
+          "sha256": "915c9679660a3cbe44132d2c81ae1d30708a9da476db84ab13b39707c9ec8744"
         },
         {
           "file": "sequential_impulse_paper_breakable_wall_collapse.png",
           "role": "collapse_frame_120",
-          "sha256": "83ca961c52b606a5a90c2232e3f3f4d60d970783cb22c1b0a40dcc97d22fce29"
+          "sha256": "dc7d20a599b8af9d856b99ade0e2926b9c73b311403adbe1e5b43222713857ba"
         },
         {
           "file": "paper-10.png",
@@ -1778,7 +1778,7 @@
       "not_proven_and_limitations": "The images cannot reveal joint identity or residual magnitude, so those claims rely on the checked text oracle and digest. This three-method packet does not reproduce XPBD, establish CUDA parity, prove exact unpublished source constants, or establish parity with published/source timing.",
       "reconciliation_and_verdict": "PASS: both engine ViewReports pass with all 252 bricks in focus, and the current-source text records exactly match the accepted oracle. At frame 14 exactly five broken identities cover the three impact regions in counts 2, 1, and 2, with none outside; all 484 outside-impact retained rows remain present. At frame 120 the same identity digest remains with no additional joint breaks, but those outside-impact rows reach 0.063460 m maximum and 0.020763 m RMS linear residual plus 0.727048 rad maximum and 0.216362 rad RMS angular residual. The images progress from a standing wall around the three impacts to a slab collapsed across the ground.",
       "reviewer_capability": "Codex native image input with original-resolution inspection of the six current-source captures and pinned paper figure",
-      "sha256": "7ecf97930c4cf6798c363a19d440cbc45717017013b1142d8c1d475f99b8f198",
+      "sha256": "915ebb92f6ef3c4ea702ce1971e9f34820bff5d918470ac68515b31b98e69c22",
       "text_oracle": "Figure 13 states that Sequential Impulse fractures first but cannot maintain retained constraints, causing slow bending and final collapse; the DART row directly measures retained rows outside the impacts.",
       "verdict": "pass",
       "visible_observation": "At frame 14 the wall is still globally upright and continuous around the three balls. At frame 120 almost the entire wall lies flat across the ground in a coherent collapsed slab while the same five joints, and no additional joints, are recorded as broken."

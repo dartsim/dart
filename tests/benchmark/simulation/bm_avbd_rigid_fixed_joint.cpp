@@ -2236,6 +2236,12 @@ PaperBreakableWallFixture makePaperBreakableWallWorld(
                                 const std::uint64_t parentIndex,
                                 const std::uint64_t childIndex) {
     auto joint = addFixedJoint(*world, name, parent, child);
+    if (solver == sx::RigidBodySolver::Vbd) {
+      auto policy = joint.getConstraintProjectionPolicy();
+      policy.linearStiffness = policy.startStiffness;
+      policy.angularStiffness = policy.startStiffness;
+      joint.setConstraintProjectionPolicy(policy);
+    }
     joint.setBreakForce(kBreakForce);
     joints.push_back(joint);
     topologyRecords.push_back({kind, parentIndex, childIndex});

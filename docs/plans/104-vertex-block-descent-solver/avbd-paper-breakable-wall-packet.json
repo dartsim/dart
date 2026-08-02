@@ -2,8 +2,8 @@
   "benchmark": {
     "benchmark": "BM_AvbdPaperBreakableWallStep",
     "context": {
-      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
-      "capture_source_provenance_digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
       "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
       "host_name": "mark26",
       "json_schema_version": 1,
@@ -12,18 +12,18 @@
       "mhz_per_cpu": 5300,
       "num_cpus": 32
     },
-    "json_sha256": "abab909f3693333c0bb43bdd54b15df9fd6f0c3e9d4b7dd838208fb76d12565a",
+    "json_sha256": "1a69ca3c576e4b71f3cc3f2abe4a720ebf1dc15cb0b7fbda11f77d5e5ae1d0c0",
     "rows": [
       {
         "aggregate_name": "mean",
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 9523638.290000001,
+        "cpu_time": 8178949.550000002,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 9526517.41836841,
+        "real_time": 8183844.183319403,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -45,11 +45,11 @@
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 9515543.591666665,
+        "cpu_time": 8214461.283333337,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 9516189.9337351,
+        "real_time": 8218947.825662327,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -69,9 +69,9 @@
       {
         "aggregate_name": "stddev",
         "aggregate_unit": "time",
-        "cpu_time": 46344.68280297959,
+        "cpu_time": 94142.05129219542,
         "iterations": 5,
-        "real_time": 49349.39234928154,
+        "real_time": 94021.64259774199,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -80,9 +80,9 @@
       {
         "aggregate_name": "cv",
         "aggregate_unit": "percentage",
-        "cpu_time": 0.004866279187822828,
+        "cpu_time": 0.011510286341379301,
         "iterations": 5,
-        "real_time": 0.005180213312173162,
+        "real_time": 0.011488689238411964,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -91,19 +91,19 @@
     ],
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
     "source_provenance": {
-      "benchmark_source_sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370",
-      "capture_source_provenance_digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d"
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0"
     },
     "stability": {
-      "cpu_time_cv_fraction": 0.004866279187822828,
-      "real_time_cv_fraction": 0.005180213312173162,
+      "cpu_time_cv_fraction": 0.011510286341379301,
+      "real_time_cv_fraction": 0.011488689238411964,
       "repetitions": 5
     },
     "timing": {
-      "mean_cpu_time_per_step_ns": 9523638.290000001,
-      "mean_real_time_per_step_ns": 9526517.41836841,
-      "median_cpu_time_per_step_ns": 9515543.591666665,
-      "median_real_time_per_step_ns": 9516189.9337351
+      "mean_cpu_time_per_step_ns": 8178949.550000002,
+      "mean_real_time_per_step_ns": 8183844.183319403,
+      "median_cpu_time_per_step_ns": 8214461.283333337,
+      "median_real_time_per_step_ns": 8218947.825662327
     }
   },
   "claim_boundary": "This packet covers the AVBD row of the publication-shaped Figure 13 breakable-wall outcome on the public CPU solver family. It does not claim exact source-scene replay, reproduce the Sequential Impulse, XPBD, and VBD comparison rows, or establish public CUDA AVBD parity.",
@@ -201,7 +201,7 @@
   "schema_version": 4,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "f4e41fb154bc6d51eb16de658167e8307436daaf511e1c86ae4ce4004494c640",
+    "digest": "e8715822cf80680774dfb8b6fc8a3d78ecb0f424bfe55424fb709d8f30fddaa2",
     "files": [
       {
         "path": "dart/gui/view_quality.cpp",
@@ -213,15 +213,15 @@
       },
       {
         "path": "dart/simulation/world.cpp",
-        "sha256": "57bf31a3abcfb089b9b82d206bc5dbeb673b55ab0ca97077d2212b694ea8c6af"
+        "sha256": "ecde99482d1e343195e1a18b37fc46f1dd9471f308f546bf9634eff05a7164eb"
       },
       {
         "path": "dart/simulation/world.hpp",
-        "sha256": "cbe18bc663ece8120078acc5f74dc0e627dd227cdb58ee83647386a3715f4445"
+        "sha256": "d3936db424028b9a6016ab8523a8ffdb749a502d1dd47dca57e26a7fc7c4363d"
       },
       {
         "path": "dart/simulation/world_options.hpp",
-        "sha256": "bcc8e950d73534a2d5dc953431939b2fa776235d188fb685bf65589b4d556b34"
+        "sha256": "ed421bdb599188c64a7ef03466a92cecef218a5cee2b2f32796239070fe8c53b"
       },
       {
         "path": "dart/simulation/comps/joint.hpp",
@@ -245,7 +245,7 @@
       },
       {
         "path": "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
-        "sha256": "79b20d53e40bddce50ee3158f76fdd902aea5ea3d165dd75d4862b6e537b7c22"
+        "sha256": "a297c3db3999613364107c7e2528c917c97dbf59a3f2f435d9261cbaadd977c1"
       },
       {
         "path": "dart/simulation/detail/world_step_schedule.hpp",
@@ -257,7 +257,7 @@
       },
       {
         "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
-        "sha256": "40675bcd66d2ae543dc1bd60a435926dd6969893eb0a92aa451fe66f9b8bda12"
+        "sha256": "4794bd7e3a2b549996c8774edaa3de37b10fef9b775083f8ab474e2b1b240a09"
       },
       {
         "path": "python/tests/integration/test_demos_cycle.py",
@@ -265,11 +265,11 @@
       },
       {
         "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
-        "sha256": "f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370"
+        "sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834"
       },
       {
         "path": "tests/unit/simulation/world/test_world.cpp",
-        "sha256": "a6bbdadee4253abbac4fde9a4b9801e7246415044deff07875063a7c6153e194"
+        "sha256": "db7c701ddf83cad31e50ebe62758c1da49996cdf1e4bd9fd4df13886710ae269"
       },
       {
         "path": "scripts/avbd_packet_schema.py",
@@ -320,11 +320,11 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 1305,
-            "dark_pixels": 12088,
-            "mid_pixels": 208731,
-            "p05": 53.87,
-            "p95": 149.723,
+            "bright_pixels": 1376,
+            "dark_pixels": 11957,
+            "mid_pixels": 208965,
+            "p05": 54.312,
+            "p95": 149.737,
             "pass": true,
             "reasons": [],
             "region": {
@@ -334,7 +334,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 95.853,
+            "spread": 95.425,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -362,12 +362,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "088b5d36b8743dda709b997afd71aed1009adafd897e6e332ca5bd10d6956711"
+        "sha256": "74159d7594b8704381cee9912ed7abcda094620c9fd405726833c4e8dd303cf3"
       },
       "label": "impact",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "3989652b27ada91b262b2529771fd5e34f41b7c9c062e7b3abb23047056e348b"
+        "sha256": "9c574230629f4a521e697fd98c8bcf89639ff1b599c77233196bf2ab9acaf530"
       },
       "scene_metrics": {
         "event_count": 60,
@@ -4677,13 +4677,13 @@
       },
       "screenshot": {
         "file": "avbd_paper_breakable_wall_impact.png",
-        "sha256": "b44fc5d55df54955f53f67330689b8e9356201c417ce932793366368c15e2a3f"
+        "sha256": "9d1fa2bf21bc6cd0807e55ee4c9b866a0e2e44a77e02ccd18f50f28d03309724"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
         "file_count": 1556,
-        "git_head": "52173fba3aa415cdf830858693195a5fbc6397b8",
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -4720,10 +4720,10 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 1918,
-            "dark_pixels": 11899,
-            "mid_pixels": 208076,
-            "p05": 54.665,
+            "bright_pixels": 1903,
+            "dark_pixels": 11907,
+            "mid_pixels": 208063,
+            "p05": 54.657,
             "p95": 155.511,
             "pass": true,
             "reasons": [],
@@ -4734,7 +4734,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 100.845,
+            "spread": 100.853,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -4762,12 +4762,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "8769f651d1a5c0eb64d361fd03eabf7558de3c866ac21b783101d5525a61c39a"
+        "sha256": "d9b2e0d9a08a58f11a7516f48cf2ce3c6782d22c35fb9607a510773e26d2b2ff"
       },
       "label": "outcome",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "5f314c665a413bb8cbc65efd2c543a9c0c2e78d859fbdcc76526c5c09bf5bc74"
+        "sha256": "42d77abb52b479cff04fb7679696eccb312a132806d8f2488eb293823d672b71"
       },
       "scene_metrics": {
         "event_count": 120,
@@ -9077,13 +9077,13 @@
       },
       "screenshot": {
         "file": "avbd_paper_breakable_wall_outcome.png",
-        "sha256": "a0777940e033e4684ec7f2f747a1b5b2a2694f849aa88d04a08e82dbb7d0c087"
+        "sha256": "5199cc27d8cb7176476de756234f962c32ee78205eb0df53915d875e1d272a89"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
         "file_count": 1556,
-        "git_head": "52173fba3aa415cdf830858693195a5fbc6397b8",
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -9106,12 +9106,12 @@
         {
           "file": "avbd_paper_breakable_wall_impact.png",
           "role": "impact_frame_60",
-          "sha256": "b44fc5d55df54955f53f67330689b8e9356201c417ce932793366368c15e2a3f"
+          "sha256": "9d1fa2bf21bc6cd0807e55ee4c9b866a0e2e44a77e02ccd18f50f28d03309724"
         },
         {
           "file": "avbd_paper_breakable_wall_outcome.png",
           "role": "outcome_frame_120",
-          "sha256": "a0777940e033e4684ec7f2f747a1b5b2a2694f849aa88d04a08e82dbb7d0c087"
+          "sha256": "5199cc27d8cb7176476de756234f962c32ee78205eb0df53915d875e1d272a89"
         },
         {
           "file": "paper-10.png",
@@ -9122,7 +9122,7 @@
       "not_proven_and_limitations": "The checked identity evidence records 154 broken joints, including 79 whose initial anchors lie outside the selected 1.15 m impact regions, so this reconstruction does not claim that broken topology itself is spatially localized. The visible and numeric claim is narrower: the wall fractures, displacement damage reaches all three impact bands, and all 558 surviving joint rows remain tightly satisfied. This row does not prove exact unpublished source constants, XPBD, CUDA parity, or published/source timing parity.",
       "reconciliation_and_verdict": "PASS for the scoped AVBD observation: both engine ViewReports pass with all 252 bricks in focus. Frames 60 and 120 reproduce the accepted text-oracle records exactly, including the same checked 154-member broken-joint identity digest and 558 surviving rows. The maximum retained-row residuals are respectively 0.000406 m and 0.000178 rad, then 0.000772 m and 0.000317 rad. The current-source images show a broad fractured opening around the impacts while the left, right, and upper wall regions remain upright without global collapse. The broad broken-topology distribution is disclosed rather than described as localized.",
       "reviewer_capability": "Codex native image input with original-resolution inspection of the six current-source captures and pinned paper figure",
-      "sha256": "64a9f59dff9a0fe6045d33b7f0f4d11a6e058cc798eb7d66e907184f94c754cb",
+      "sha256": "b73b4b5db17d287aa258272ad12f2d2f4eed5ddb124736c5eadd9bb5ef0409af",
       "text_oracle": "Figure 13 states that AVBD forms plausible fractures and maintains the attachment constraints retained after the initial impacts; this reconstruction verifies every retained-row residual and separately records every broken identity.",
       "verdict": "pass",
       "visible_observation": "At frame 60 a broad central opening and loose bricks are visible around the impacts while substantial left, right, and upper wall regions remain upright. At frame 120 the same overall structure is still globally standing with no broad folding or collapse."
