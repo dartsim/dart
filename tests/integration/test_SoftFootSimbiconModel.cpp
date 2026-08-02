@@ -773,6 +773,19 @@ TEST(SoftFootSimbiconModelTest, MotorNoiseIsScopedDeterministicAndEffective)
   EXPECT_EQ(firstRun, sfs::stateVector(noisy))
       << "resetModel must rewind the noise stream so a noisy run repeats "
          "draw-for-draw";
+
+  // Changing the level mid-hold must invalidate the held factors (they were
+  // drawn at the old amplitude), while a same-level call must stay a no-op
+  // so it cannot disturb a deterministic run.
+  sfs::step(noisy);
+  ASSERT_GT(noisy.noiseHoldCounter, 0);
+  const int heldCounter = noisy.noiseHoldCounter;
+  sfs::setMotorNoise(noisy, noisy.motorNoise);
+  EXPECT_EQ(noisy.noiseHoldCounter, heldCounter)
+      << "a same-level setMotorNoise call must not force a redraw";
+  sfs::setMotorNoise(noisy, 2.0 * sfs::kMotorNoiseGateLevel);
+  EXPECT_EQ(noisy.noiseHoldCounter, 0)
+      << "a level change must invalidate factors held at the old amplitude";
 }
 
 //==============================================================================

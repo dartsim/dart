@@ -106,9 +106,19 @@ the fold-free surface is gate-asserted per triangle). No configuration
 shows a soft advantage; the parity matrix records the open gap and the
 mechanism follow-up.
 
-Visual evidence: matched 12000 N floor A/B (rigid recovers at 173
-contacts, soft falls at 0) under the release tag
-`verification-media-dart6-agent-evidence`, linked from the #3431 PR body.
+Visual evidence: matched 4000 N A/B on the fold-free floor (rigid
+recovers upright, soft falls with zero contacts) under the release tag
+`verification-media-dart6-agent-evidence`, linked from the #3431 PR body;
+earlier captures on the box-lattice and folded-mesh floors are superseded
+with those surfaces. Exact reproduce (swap `soft` for `rigid`):
+
+```bash
+DART_DEMO_SOFT_FOOT_FEET=soft DART_DEMO_SOFT_FOOT_FLOOR=0.02 \
+DART_DEMO_SOFT_FOOT_PUSH_STEP=500 DART_DEMO_SOFT_FOOT_PUSH_N=4000 \
+  xvfb-run -a -s '-screen 0 1280x1024x24' \
+  ./build/default/cpp/Release/bin/dart-demos --scene soft_foot_simbicon \
+  --headless --steps 1500 --shot end.png
+```
 
 ## Open evidence
 
