@@ -39,12 +39,53 @@ Temporary local captures and interrupted benchmark directories are not durable
 evidence. Do not infer a complete paired benchmark result without the runner's
 completion marker and all required raw rows.
 
+## PR-3a soft-foot SIMBICON (merged 2026-08-01)
+
+Revisions: #3408 as `fe9cb9ebd73b176794df2de7179f5d23f146cbe6`; #3423 as
+`73cd91e69dba635cb17e93e60f33a2c245e629d0` (matched control rest inertia,
+asset `<damp>` 1000 -> 4000 with recorded maintainer approval, and a
+point-mass-aware SIMBICON COM sensor).
+
+Commands: the registered ctest targets `test_SoftFootSimbiconModel`
+(comparability, contact-spreading, finite-state gates) and
+`test_SoftFootSimbiconPushSweep`
+(`SoftFootSimbiconModelTest.MeasuresRecoverablePushForBothFeet`). Headless
+reproduce (the #3423 evidence capture; swap `soft` for `rigid` for the
+control arm):
+
+```bash
+DART_DEMO_SOFT_FOOT_FEET=soft DART_DEMO_SOFT_FOOT_PUSH_STEP=650 \
+DART_DEMO_SOFT_FOOT_PUSH_N=6000 \
+  xvfb-run -a -s '-screen 0 1280x1024x24' \
+  ./build/default/cpp/Release/bin/dart-demos --scene soft_foot_simbicon \
+  --headless --steps 2250 --shot end.png
+```
+
+The `xvfb-run` wrapper is required on displayless hosts: the `--headless
+--shot` path renders through a GLX pbuffer, which still needs an X server
+(`docs/ai/verification.md`); with a real display the wrapper can be dropped.
+
+Results: equal-mass arms, a single collision surface per foot, identical
+rest tessellation, per-foot inertial equality to 1e-9, and an
+independent-path observed-COM check; settled contacts 51.2 soft vs 15.64
+rigid (gate at 1.5x); recoverable push 18000 N soft vs 8000 N rigid (gate:
+soft >= rigid).
+
+Review and visual evidence: Codex findings on #3423 (asset-vs-override
+policy, controller COM sensor) were resolved at root cause; matched
+before/after APNG strips and an endstate composite at 6000 N under the
+corrected sensor are linked from the #3423 PR body (release tag
+`verification-media-dart6-agent-evidence`).
+
 ## Open evidence
 
 PLAN-622 still requires:
 
-- a same-controller rigid-foot versus deformable-foot comparison;
-- a complete competitive-envelope decision;
+- gate evidence for the remaining Jain/Liu rows: the motor-noise push
+  variant, noisy-floor biped, soft-contact walk, hand/arm manipulation, and
+  the four-link flexible-foot comparison;
+- the performance-acceptance evidence defined by the approved competitive
+  envelope (`decisions.md` item 2, confirmed 2026-07-23);
 - representative multicore scaling evidence or an approved negative
   disposition;
 - the `dart` detector coverage, determinism, allocation, and same-host

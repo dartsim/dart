@@ -38,16 +38,18 @@ Priority order is document order. Active implementation handoff remains in
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: continue the Jain/Liu lane on DART 6 with PR-3a soft-foot
-  SIMBICON, which reuses the existing
-  `atlas_simbicon` controller and the soft-feet Atlas asset
-  (`12-pr3a-soft-foot-simbicon.md`). **Do not restart the volumetric FEM
-  subsystem on `release-6.20`.** Still open: the competitive-envelope
-  definition, the four-link flexible-foot comparison, WP-DB.07 scaling,
-  WP-DB.08 DART-owned/pre-default coverage, a valid `bm-soft-body-paired`
-  artifact or an
-  approved disposition, and the separate `main` PR for the zero-DoF soft
-  point-mass assertion. New GUI examples belong in `dart-demos`.
+- Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): both Jain/Liu
+  biped claims reproduce and are gate-asserted — contacts 51.2 soft vs 15.64
+  rigid, recoverable push 18000 N soft vs 8000 N rigid
+  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Goal (maintainer
+  direction, 2026-08-01): fully complete this task for the DART 6.20
+  release, bundled into as few PRs as review quality allows — parity rows
+  close only with gate evidence, and dispositions apply only to the
+  acceptance items whose own text offers one. The ordered inventory of
+  remaining items and the suggested PR bundles live in the task `RESUME.md`
+  (single owner); this dashboard deliberately does not duplicate that list.
+  **Do not restart the volumetric FEM subsystem on `release-6.20`.** New GUI
+  examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
   multi-thread determinism/scaling evidence; allocation gates and Gazebo
