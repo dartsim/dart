@@ -61,6 +61,59 @@ namespace dart {
 namespace constraint {
 namespace {
 
+/// Count constraints whose rows have the contact structure understood by the
+/// exact-Coulomb adapter.
+///
+/// Anisotropic friction still identifies a contact even though the exact
+/// solver rejects it. Other unsupported dimensions, bounds, and coupling
+/// patterns are not contact-style rows and therefore must not inflate failed
+/// island telemetry.
+std::size_t countExactCoulombContactStyleConstraints(
+    const std::vector<ConstraintBase*>& constraints,
+    const detail::ExactCoulombConstraintBuildOptions& options)
+{
+  if (!detail::isValidExactCoulombConstraintBuildOptions(options))
+    return 0u;
+
+  std::size_t contactCount = 0u;
+  for (ConstraintBase* constraint : constraints) {
+    if (constraint == nullptr || constraint->getDimension() != 3u)
+      continue;
+
+    double x[3] = {};
+    double lo[3] = {};
+    double hi[3] = {};
+    double b[3] = {};
+    double w[3] = {};
+    int findex[3] = {-1, -1, -1};
+
+    ConstraintInfo info;
+    info.invTimeStep = options.invTimeStep;
+    info.phase = options.phase;
+    info.useSplitImpulse = options.useSplitImpulse;
+    info.x = x;
+    info.lo = lo;
+    info.hi = hi;
+    info.b = b;
+    info.w = w;
+    info.findex = findex;
+    constraint->getInformation(&info);
+
+    double coefficient = 0.0;
+    detail::ExactCoulombConstraintBuildStatus status
+        = detail::ExactCoulombConstraintBuildStatus::Success;
+    if (detail::validateExactCoulombContactRows(
+            lo, hi, findex, options.frictionTolerance, coefficient, status)
+        || status
+               == detail::ExactCoulombConstraintBuildStatus::
+                   UnsupportedAnisotropicFriction) {
+      ++contactCount;
+    }
+  }
+
+  return contactCount;
+}
+
 constexpr std::size_t kMinParallelContactRowContacts = 128u;
 constexpr double kWarmStartMinNormalDot = 0.9;
 
@@ -2678,7 +2731,22 @@ void ExactCoulombFbfConstraintSolver::solveConstrainedGroup(
 bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
     ConstrainedGroup& group)
 {
-  const std::size_t attemptedContactCount = group.getNumConstraints();
+  std::vector<ConstraintBase*> constraints;
+  constraints.reserve(group.getNumConstraints());
+  for (std::size_t i = 0u; i < group.getNumConstraints(); ++i) {
+    constraints.push_back(group.getConstraint(i).get());
+  }
+
+  detail::ExactCoulombConstraintBuildOptions buildOptions;
+  buildOptions.invTimeStep
+      = std::isfinite(mTimeStep) && mTimeStep > 0.0 ? 1.0 / mTimeStep : 1.0;
+  buildOptions.useSplitImpulse = isSplitImpulseEnabled();
+  // A failed build can stop before visiting every constraint. Classify the
+  // whole island only when failure telemetry needs it so successful exact
+  // solves retain the adapter's single information pass.
+  const auto countAttemptedContacts = [&constraints, &buildOptions]() {
+    return countExactCoulombContactStyleConstraints(constraints, buildOptions);
+  };
   ExactCoulombContactRowParallelEvidence contactRowParallelEvidence;
   ExactCoulombCpuRecorder contactRowCpuRecorder;
   ExactCoulombCpuRecorder coloredBlockGaussSeidelCpuRecorder;
@@ -2734,7 +2802,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         this,
         mLastExactCoulombStatus,
         mLastExactCoulombBuildStatus,
-        attemptedContactCount);
+        countAttemptedContacts());
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2751,18 +2819,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         this,
         mLastExactCoulombStatus,
         mLastExactCoulombBuildStatus,
-        attemptedContactCount);
+        countAttemptedContacts());
     ++mNumExactCoulombFailures;
     return false;
   }
 
-  std::vector<ConstraintBase*> constraints;
-  constraints.reserve(group.getNumConstraints());
-  for (std::size_t i = 0u; i < group.getNumConstraints(); ++i) {
-    constraints.push_back(group.getConstraint(i).get());
-  }
-
-  detail::ExactCoulombConstraintBuildOptions buildOptions;
   buildOptions.invTimeStep = 1.0 / mTimeStep;
   // Honor the solver's split-impulse setting: with split impulse enabled the
   // velocity-phase right-hand side excludes DART's ERP position-correction
@@ -2807,7 +2868,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         this,
         mLastExactCoulombStatus,
         mLastExactCoulombBuildStatus,
-        attemptedContactCount);
+        countAttemptedContacts());
     ++mNumExactCoulombFailures;
     return false;
   }
@@ -2844,7 +2905,7 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
             this,
             mLastExactCoulombStatus,
             mLastExactCoulombBuildStatus,
-            attemptedContactCount);
+            static_cast<std::size_t>(problem.contactProblem.getContactCount()));
         ++mNumExactCoulombFailures;
         return false;
       }

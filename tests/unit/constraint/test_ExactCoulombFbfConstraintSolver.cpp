@@ -1208,6 +1208,7 @@ TEST(ExactCoulombFbfConstraintSolver, FallsBackForUnsupportedGroup)
   EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 0u);
   EXPECT_TRUE(std::isnan(solver.getWorstExactCoulombResidual()));
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 1u);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 0u);
   EXPECT_TRUE(scalar->wasApplied());
   EXPECT_TRUE(std::isfinite(scalar->getAppliedImpulse()));
 }
@@ -1230,7 +1231,38 @@ TEST(ExactCoulombFbfConstraintSolver, CanDisableFallback)
           UnsupportedProblem);
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 0u);
   EXPECT_FALSE(scalar->wasApplied());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    UnsupportedMixedGroupCountsOnlyContactStyleConstraints)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto scalar = std::make_shared<ScalarConstraint>();
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  dart::constraint::ConstrainedGroup group;
+  group.addConstraint(scalar);
+  group.addConstraint(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          UnsupportedProblem);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombBuildStatus(),
+      dart::constraint::detail::ExactCoulombConstraintBuildStatus::
+          UnsupportedDimension);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 1u);
 }
 
 TEST(
@@ -1287,6 +1319,7 @@ TEST(ExactCoulombFbfConstraintSolver, RejectsInvalidStepSizeScale)
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
   EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 1u);
   EXPECT_NEAR(contact->getAppliedImpulse().norm(), 0.0, 1e-12);
 }
 
