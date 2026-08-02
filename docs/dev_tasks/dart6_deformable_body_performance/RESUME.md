@@ -30,10 +30,16 @@ merged PR branches as evidence only, not as resumable work.
 - #3423 resolved the PR-3a maintainer decisions (matched control rest inertia,
   asset `<damp>` 1000 -> 4000, point-mass-aware SIMBICON COM sensor) as
   `73cd91e69dba635cb17e93e60f33a2c245e629d0`. The contact-spreading claim
-  and the push/contact portion of the push-recovery row are gate-asserted:
-  contacts 51.2 soft vs 15.64 rigid, recoverable push 18000 N soft vs
-  8000 N rigid (`12-pr3a-soft-foot-simbicon.md` "Resolved decisions"); the
-  row's motor-noise clause is item 1 below.
+  is gate-asserted: contacts 51.2 soft vs 15.64 rigid
+  (`12-pr3a-soft-foot-simbicon.md` "Resolved decisions").
+- #3431 re-measured push recovery with phase-strided replica ensembles and
+  corrected the record: the single-trajectory "18000 N soft" was an
+  isolated resonance pocket; robust thresholds (rigid vs soft) are
+  8000/4000 N clean, 4000/4000 under 20% held motor noise, 20000/2000 on
+  the paper's 2 cm jittered-mesh floor. The paper's soft-advantage push
+  ordering is an **open gap** (`12-pr3a-soft-foot-simbicon.md`
+  "Robustness re-measurement"); gates protect the measured floors and
+  print the response curves.
 
 Re-fetch before starting: the release branch advances frequently, and the
 commit above is a snapshot rather than a permanent branch tip.
@@ -51,9 +57,14 @@ disposition and item 9's disposition).
 Remaining items (parity rows from `02-paper-parity-matrix.md` and
 `10-full-parity-execution-plan.md` section 5, plus acceptance work):
 
-1. Motor-noise variant of the push-recovery comparison (last unreproduced
-   clause of the Jain/Liu biped row).
-2. Noisy-floor biped row (seeded 5x5 cm tiles, 0-2 cm offsets).
+1. Motor-noise variant of the push-recovery comparison — **built in
+   #3431** (robust thresholds at 20% held noise); what remains of the row
+   is the mechanism gap: no soft advantage in any measured configuration
+   (controller adaptation to soft contact and SoftContactConstraint solve
+   quality under impulsive load are the recorded suspects).
+2. Noisy-floor biped row — the seeded jittered-mesh floor and an adjacent
+   push-recovery gate are **built in #3431**; the row's own
+   course-tracking outcome is blocked on item 3's walking gait.
 3. Biped soft-contact walk row (SIMBICON walk; LCP cadence per the paper).
 4. Four-link flexible-foot comparison row (same controller and seed).
 5. Hand/arm models and manipulation rows (finger flick, arm fold, pinch

@@ -38,10 +38,12 @@ Priority order is document order. Active implementation handoff remains in
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in
   [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): both Jain/Liu
-  biped claims reproduce and are gate-asserted — contacts 51.2 soft vs 15.64
-  rigid, recoverable push 18000 N soft vs 8000 N rigid
-  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Goal (maintainer
+- Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): the
+  contact-spreading claim is gate-asserted (51.2 soft vs 15.64 rigid).
+  #3431 re-measured push recovery with replica ensembles: the earlier
+  18000 N figure was a resonance pocket, robust thresholds favor the rigid
+  control in every configuration, and the soft-advantage ordering is an
+  open gap (`12-pr3a-soft-foot-simbicon.md`, robustness re-measurement). Goal (maintainer
   direction, 2026-08-01): fully complete this task for the DART 6.20
   release, bundled into as few PRs as review quality allows — parity rows
   close only with gate evidence, and dispositions apply only to the

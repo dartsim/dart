@@ -13,9 +13,12 @@ is merged:
 - #3408 + #3423 shipped PR-3a soft-foot SIMBICON (merged as
   `fe9cb9ebd73b176794df2de7179f5d23f146cbe6` and
   `73cd91e69dba635cb17e93e60f33a2c245e629d0`). The contact-spreading claim
-  and the push/contact portion of the push-recovery row are gate-asserted
-  (contacts 51.2 soft vs 15.64 rigid, recoverable push 18000 N soft vs
-  8000 N rigid); the row's motor-noise clause is still open.
+  is gate-asserted (51.2 soft vs 15.64 rigid contacts); #3431 then
+  re-measured push recovery with replica ensembles — the single-trajectory
+  18000 N was a resonance pocket, robust thresholds favor the rigid
+  control in every configuration, and the soft-advantage ordering is an
+  open gap (see `12-pr3a-soft-foot-simbicon.md` "Robustness
+  re-measurement").
 
 PLAN-622 remains active for the Jain/Liu point-mass surface model. Do not
 resume any branch used by the merged work.
@@ -46,11 +49,15 @@ ordered item list and takeover detail. Completed packet specs such as
 
 ## Open acceptance work
 
-- Build the motor-noise variant of the push-recovery comparison (the
-  remaining unreproduced clause of the Jain/Liu biped row).
-- Build the remaining Jain/Liu scene rows: noisy-floor biped, soft-contact
-  walk, hand/arm manipulation (finger flick, arm fold, pinch grasp), and the
-  four-link flexible-foot comparison.
+- Close the push-recovery mechanism gap (#3431 built the motor-noise
+  variant and the noisy-floor surface with robust ensemble gates; no
+  measured configuration shows a soft advantage — suspects: controller
+  adaptation to soft contact, SoftContactConstraint solve quality under
+  impulsive load).
+- Build the remaining Jain/Liu scene rows: soft-contact walk (which also
+  unblocks the noisy-floor row's course-tracking outcome), hand/arm
+  manipulation (finger flick, arm fold, pinch grasp), and the four-link
+  flexible-foot comparison.
 - Apply the approved competitive envelope (`decisions.md` item 2, confirmed
   2026-07-23: in-tree backends plus normalized paper metrics) to the
   performance-acceptance evidence; the definition itself is closed.
