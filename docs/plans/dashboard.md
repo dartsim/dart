@@ -41,9 +41,10 @@ Priority order is document order. Active implementation handoff remains in
 - Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): the
   contact-spreading claim is gate-asserted (51.2 soft vs 15.64 rigid).
   #3431 re-measured push recovery with replica ensembles: the earlier
-  18000 N figure was a resonance pocket, robust thresholds favor the rigid
-  control in every configuration, and the soft-advantage ordering is an
-  open gap (`12-pr3a-soft-foot-simbicon.md`, robustness re-measurement). Goal (maintainer
+  18000 N figure was a resonance pocket, and no measured configuration
+  shows a soft advantage (rigid ahead clean and on the noisy floor, tied
+  under 20% motor noise) — the paper's soft-advantage ordering is an open
+  gap (`12-pr3a-soft-foot-simbicon.md`, robustness re-measurement). Goal (maintainer
   direction, 2026-08-01): fully complete this task for the DART 6.20
   release, bundled into as few PRs as review quality allows — parity rows
   close only with gate evidence, and dispositions apply only to the
