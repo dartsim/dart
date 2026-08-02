@@ -338,10 +338,15 @@ build-asan = { cmd = """
     cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target tests
 """, depends-on = ["config-asan"], env = { BUILD_TYPE = "asan" } }
 
+# ASan multiplies runtime severalfold, and the long-measurement parameter
+# sweeps only re-run code paths the fast gates already exercise under the
+# sanitizer; the noisy-floor sweep overran its 7200 s ctest budget here.
+# Same trade as the FreeBSD, coverage, and unoptimized-aggregate exclusions.
 test-asan = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --output-on-failure
+        --output-on-failure \
+        --label-exclude long-measurement
 """, depends-on = [
   "build-asan",
 ], env = { BUILD_TYPE = "asan", ASAN_OPTIONS = "detect_leaks=0" } }
