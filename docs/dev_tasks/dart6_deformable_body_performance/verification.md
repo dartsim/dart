@@ -96,13 +96,15 @@ gates), `test_SoftFootSimbiconPushSweep`,
 command above.
 
 Results (rigid vs soft robust thresholds): clean 8000/4000 N; 20% held
-motor noise 4000/4000; the paper's 2 cm jittered-mesh floor 20000/2000.
-The single-trajectory 18000 N soft figure was an isolated resonance
-pocket (1/5 under phase sampling). No configuration shows a soft
-advantage; the parity matrix records the open gap and the mechanism
-follow-up. Review round 1 hypothesized the rigid floor advantage was a
-box-lattice keying artifact; re-measuring on the spec's jittered
-shared-vertex mesh refuted that (14000 -> 20000 N).
+motor noise 4000/4000; the paper's 2 cm fold-free jittered-mesh floor
+6000/2000 (roughness degrades both arms, the soft one more). The
+single-trajectory 18000 N soft figure was an isolated resonance pocket
+(1/5 under phase sampling), and the floor's two earlier higher rigid
+readings were review-caught collision-geometry artifacts (14000 on the
+box lattice, 20000 on a mesh whose clamp let 10 triangles fold over;
+the fold-free surface is gate-asserted per triangle). No configuration
+shows a soft advantage; the parity matrix records the open gap and the
+mechanism follow-up.
 
 Visual evidence: matched 12000 N floor A/B (rigid recovers at 173
 contacts, soft falls at 0) under the release tag

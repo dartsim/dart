@@ -38,7 +38,8 @@ contacts 51.2 soft vs 15.64 rigid. #3431 then re-measured push recovery
 with phase-strided replica ensembles and corrected the record: the
 single-trajectory 18000 N was an isolated resonance pocket, robust
 thresholds (rigid vs soft) are 8000/4000 N clean, 4000/4000 under 20% held
-motor noise, and 20000/2000 on the paper's 2 cm jittered-mesh floor, so
+motor noise, and 6000/2000 on the paper's 2 cm fold-free jittered-mesh
+floor, so
 the paper's soft-advantage push ordering is an open gap with a defined
 mechanism follow-up. The maintainer-set goal (2026-08-01) is to fully
 complete this task for the DART 6.20 release, bundling the remaining work

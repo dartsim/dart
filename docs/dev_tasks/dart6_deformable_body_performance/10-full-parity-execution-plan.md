@@ -92,7 +92,7 @@ claim is gate-asserted at 51.2 soft vs 15.64 rigid. #3431 superseded the
 single-trajectory push figure (the 18000 N soft reading was a resonance
 pocket) with phase-strided replica ensembles — rigid vs soft robust
 thresholds 8000/4000 N clean, 4000/4000 under 20% held motor noise,
-20000/2000 on the paper's 2 cm jittered-mesh floor — and built the
+6000/2000 on the paper's 2 cm fold-free jittered-mesh floor — and built the
 motor-noise variant and the noisy-floor surface with gates on the measured
 floors. The row stays open against the §1 Done rule until three more
 things have evidence: the soft-advantage mechanism gap those measurements

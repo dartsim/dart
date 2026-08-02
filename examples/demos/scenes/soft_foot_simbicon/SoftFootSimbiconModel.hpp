@@ -73,13 +73,15 @@ enum class Feet
 
 /// Noisy floor, per the Jain/Liu noisy-floor experiment: a continuous 5 cm
 /// quad lattice whose shared vertices receive seeded random offsets in the
-/// horizontal axes (up to +-amplitude, clamped to 40% of the pitch so the
-/// sheet stays manifold) and vertically (0 to amplitude, dug *down* from the
-/// flat ground plane so a freshly spawned biped can never start intersecting
-/// a raised vertex; the paper constrains the offsets' spread, not their
-/// sign). An earlier revision used axis-aligned box tiles with vertical
-/// drops only; review correctly flagged that a regular lattice of vertical
-/// walls is not the paper's surface, and hands the rigid foot a keying grid.
+/// horizontal axes (up to +-amplitude, clamped to 20% of the pitch -- the
+/// winding-preservation bound is jitter < pitch/4, see makeNoisyFloorMesh)
+/// and vertically (0 to amplitude, dug *down* from the flat ground plane so
+/// a freshly spawned biped can never start intersecting a raised vertex;
+/// the paper constrains the offsets' spread, not their sign). Two earlier
+/// revisions fell to review: axis-aligned box tiles with vertical drops
+/// only are not the paper's surface (and hand the rigid foot a keying
+/// grid), and a 40%-of-pitch horizontal clamp preserved per-axis vertex
+/// order but let triangles fold over in projection.
 inline constexpr double kFloorTileSize = 0.05;
 /// The amplitude the paper's noisy-floor experiment uses (0-2 cm offsets).
 inline constexpr double kFloorPaperAmplitude = 0.02;

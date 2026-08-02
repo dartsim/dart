@@ -355,11 +355,18 @@ std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
   // Shared-vertex quad lattice with seeded 3-axis offsets (see the header):
   // horizontal jitter breaks the regular walls an axis-aligned tile grid
   // would present, vertical offsets dig 0..amplitude below the plane. The
-  // horizontal clamp keeps neighboring vertices ordered (no fold-over), so
-  // the sheet stays manifold at any requested amplitude. Draws come from the
-  // fixed kFloorSeed stream in row-major vertex order, three per vertex, so
-  // every build at a given amplitude is identical on every platform.
-  const double horizontalClamp = std::min(amplitude, 0.4 * kFloorTileSize);
+  // horizontal clamp keeps every triangle's projected XZ winding equal to
+  // the lattice's, so the sheet stays a single-valued surface: with
+  // independent per-corner jitter bounded by d, the projected edge cross
+  // product keeps its sign whenever (pitch - 2d)^2 > (2d)^2, i.e.
+  // d < pitch/4. Per-axis vertex ORDER alone is not enough -- a 0.4*pitch
+  // clamp preserved order yet folded 10 of 3456 triangles at the paper's
+  // 2 cm amplitude (found in review), handing FCL overlapping geometry.
+  // The structure gate asserts the winding property on the generated mesh.
+  // Draws come from the fixed kFloorSeed stream in row-major vertex order,
+  // three per vertex, so every build at a given amplitude is identical on
+  // every platform.
+  const double horizontalClamp = std::min(amplitude, 0.2 * kFloorTileSize);
   constexpr int verticesX = kFloorTilesX + 1;
   constexpr int verticesZ = kFloorTilesZ + 1;
 

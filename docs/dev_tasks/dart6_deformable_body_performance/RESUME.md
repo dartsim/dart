@@ -35,8 +35,9 @@ merged PR branches as evidence only, not as resumable work.
 - #3431 re-measured push recovery with phase-strided replica ensembles and
   corrected the record: the single-trajectory "18000 N soft" was an
   isolated resonance pocket; robust thresholds (rigid vs soft) are
-  8000/4000 N clean, 4000/4000 under 20% held motor noise, 20000/2000 on
-  the paper's 2 cm jittered-mesh floor. The paper's soft-advantage push
+  8000/4000 N clean, 4000/4000 under 20% held motor noise, 6000/2000 on
+  the paper's 2 cm fold-free jittered-mesh floor (two earlier higher rigid
+  readings were review-caught collision-geometry artifacts). The paper's soft-advantage push
   ordering is an **open gap** (`12-pr3a-soft-foot-simbicon.md`
   "Robustness re-measurement"); gates protect the measured floors and
   print the response curves.
