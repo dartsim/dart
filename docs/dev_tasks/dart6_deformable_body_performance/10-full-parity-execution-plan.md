@@ -14,9 +14,13 @@ Part B is retired: the Kim/Pollard volumetric-FEM lane was removed from DART 6 o
 2026-07-29 and retargeted to DART 7, and its sections are kept as DART 7
 reference material, **not** as instructions. Nothing in Part B is DART 6 work.
 
-Next DART 6 build step: **PR-3a soft-foot SIMBICON**
-(`12-pr3a-soft-foot-simbicon.md`). Still-open decision the plan does not close on
-its own: the competitive-envelope definition (§8).
+PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
+push-recovery row reproduces and is gate-asserted; its motor-noise clause
+stays open in §5. Goal (maintainer direction, 2026-08-01): fully complete
+Part A for the DART 6.20 release, bundling the remaining rows into as few
+PRs as review quality allows. The competitive-envelope definition is settled
+(`decisions.md` item 2, maintainer-confirmed 2026-07-23); what remains of it
+is the performance-acceptance evidence it defines (§8).
 
 # Part A — active DART 6 plan (Jain/Liu lane)
 
@@ -69,7 +73,7 @@ We record raw rows + revision SHA + host state (the existing
 `bm-soft-body-paired` discipline), never a manual disposition over a
 machine-readable FAIL.
 
-## 4. Current state (next milestone = PR-3a)
+## 4. Current state (PR-3a shipped; remaining rows in §5)
 
 The release branch contains adaptive contact activation (WP-DB.05), soft
 face-interior contacts (WP-DB.08), coupled-equation correctness (WP-DB.04),
@@ -79,16 +83,24 @@ representative `soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
 Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 **LCP-robustness** rows.
 
-No prerequisite integration or removal remains. The next implementation
-milestone is PR-3a soft-foot SIMBICON
-(`12-pr3a-soft-foot-simbicon.md`).
+No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
+shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
+resolved decisions), completing the push/contact portion of the **biped push
+recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
+18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
+against the §1 Done rule until three more things have evidence: its
+motor-noise clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
+and 1-thread/host-capped multi-thread rows — PR-3a supplies neither, since
+its comparison deliberately pins FCL and one thread for validity (the two
+foot representations only share a narrow phase under FCL, and single-thread
+keeps runs bit-identical), so that evidence needs its own configuration.
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
 | --- | --- |
-| Biped push recovery (soft vs rigid) | SIMBICON controller + soft-foot; push-threshold gate |
+| Biped push recovery (soft vs rigid) | **Push/contact portion shipped** (#3408/#3423); still open: the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
 | Noisy-floor biped | seeded 5×5cm tile floor with 0–2cm offsets; rigid-vs-soft outcome |
 | Biped walk | SIMBICON walk, LCP every 8 controller steps |
 | Finger flick / arm fold / pinch grasp | hand/arm models + manipulation + adaptive-DOF/contact/LCP-time rows |
@@ -101,9 +113,9 @@ milestone is PR-3a soft-foot SIMBICON
 - **Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend was
   removed on 2026-07-29 and retargeted to DART 7 (`decisions.md`). Do not start
   it here.
-- **Active Jain/Liu series**: begin with PR-3a soft-foot SIMBICON, then continue
-  with locomotion (3b), hand scenes (3c), and the flexible-foot comparison
-  (3d).
+- **Active Jain/Liu series**: PR-3a shipped; continue with locomotion (3b),
+  hand scenes (3c), and the flexible-foot comparison (3d), bundled into as
+  few PRs as review quality allows.
 
 PR-3 reuses the point-mass `SoftBodyNode` and the adaptive activation already
 shipped, so the remaining work is controllers, models, and scenes rather than new
@@ -121,11 +133,12 @@ deformable substrate. What exists to reuse:
   machines, harness helpers, push perturbation via `addExtForce`. Crucially its
   `BodyContactCondition` already uses `BodyNode::isColliding()`, which works for
   **rigid or SoftBodyNode** — so soft feet plug into the terminal logic with no
-  controller rewrite. It is currently **rigid-only and hardcodes**
-  `atlas_v3_no_head.sdf`.
-- **A soft-feet Atlas asset** `atlas_v3_no_head_soft_feet.sdf` (SoftBodyNode feet,
-  kv=50000/ke=100) — today only parsed+stepped in `test_SdfParser` with no
-  ground/controller/perturbation.
+  controller rewrite. Since #3408/#3423 it drives either foot geometry through
+  `soft_foot_simbicon`, and `State`'s COM feedback is point-mass aware.
+- **A soft-feet Atlas asset** `atlas_v3_no_head_soft_feet.sdf` (SoftBodyNode
+  feet, kv=50000, `<damp>` re-tuned 1000 -> 4000 by #3423) — exercised on ground
+  under the SIMBICON controller with scheduled pushes by `soft_foot_simbicon`
+  and its gates since #3408/#3423.
 - **Actuation**: joint `ActuatorType` (FORCE/PASSIVE/SERVO/…); the `SoftWorm`
   traveling-wave SERVO gait is the actuated-soft-character reference;
   `setForces`/`addExtForce`/`setCommand` all available. No muscle model (not
@@ -139,9 +152,11 @@ deformable substrate. What exists to reuse:
   `add_test --gtest_filter`). Headless PNG capture via `--headless --shot --steps`.
 
 What must be **built/authored** for PR-3:
-- soft-foot SIMBICON integration: point the existing controller at the soft-feet
-  Atlas + a ground plane; rigid-vs-soft **push-recovery threshold** regression;
-  contact-count time series; finite-state gate.
+- ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as
+  `soft_foot_simbicon` with the push-recovery threshold, contact-count, and
+  finite-state gates. What remains from that row is the **motor-noise
+  variant** of the same rigid-vs-soft comparison (deterministic seeded noise
+  on the controller torques; soft sustains at least the rigid level).
 - **noisy-floor** scene: seeded 5×5 cm tiles with 0–2 cm random offsets;
   deterministic rigid-vs-soft outcome.
 - **biped walk** with soft contact (LCP cadence per paper).
@@ -164,9 +179,10 @@ What must be **built/authored** for PR-3:
   Jain/Liu scenes — noisy-floor locomotion and the hand/manipulation rows, which
   carry many simultaneous soft contacts — are the DART 6 place to demonstrate a
   real threads>1 speedup.
-- **Competitive envelope**: `decisions.md` item 2 (in-tree backends + normalized
-  paper metrics; external engines out of scope) still needs formal sign-off —
-  needed to define "beat competing implementations". **Decision request.**
+- **Competitive envelope**: settled. `decisions.md` item 2 (in-tree backends +
+  normalized paper metrics; external engines out of scope) was confirmed by
+  the maintainer 2026-07-23 as the definition of "beat competing
+  implementations"; apply it, do not reopen it.
 - **SIMD**: apply the `dart/simd/` contract to the vectorizable point-mass and
   soft-contact kernels; report SIMD-off/on.
 
@@ -178,7 +194,8 @@ What must be **built/authored** for PR-3:
 2. **FEM integration seam — no longer a DART 6 question.** What was learned about
    DART 6's per-step seam is retained in `11-fem-integration-seam.md` because it
    constrains any future per-step extension, deformable or not.
-3. **Competitive-envelope definition**: needs sign-off (see §8).
+3. **Competitive-envelope definition — settled 2026-07-23** (`decisions.md`
+   item 2; see §8). No longer an open decision.
 4. **Model authoring**: the hand/arm assets and the four-link flexible foot must
    be created or sourced, with licensing and provenance confirmed. No tet meshes
    are needed; those belonged to the retired lane.
@@ -187,16 +204,13 @@ What must be **built/authored** for PR-3:
 
 ## 10. Sequencing (DART 6)
 
-1. **PR-3a soft-foot SIMBICON** (`12-pr3a-soft-foot-simbicon.md`): aim the
-   existing GUI-free `atlas_simbicon` controller at
-   `atlas_v3_no_head_soft_feet.sdf` plus a ground plane, and add the
-   rigid-vs-soft push-recovery threshold, contact-count, and finite-state gates.
-   The controller, the asset, and the scene/model-test pattern all already
-   exist, so this is assembly and gating rather than new dynamics.
+1. **PR-3a soft-foot SIMBICON** — shipped 2026-08-01 via #3408/#3423
+   (`12-pr3a-soft-foot-simbicon.md` records the resolved decisions); the
+   motor-noise clause of its row moves to the remaining rows below.
 2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
    hand/arm models that must be authored and their manipulation scenes, then the
    four-link flexible-foot comparison.
-3. Confirm the competitive-envelope definition (§8) before the
+3. Apply the approved competitive envelope (`decisions.md` item 2) at the
    performance-acceptance stage.
 4. Per-row acceptance plus at least two clean independent reviews and a durable
    demo artifact for each behavior-bearing row; promote durable facts to their
