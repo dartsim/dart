@@ -216,6 +216,21 @@ def test_public_vbd_family_records_matching_world_owned_rows():
     assert identity["rigid_point_joint_solver"] == "vbd"
 
 
+@pytest.mark.parametrize("solver", ["avbd", "vbd"])
+def test_public_world_family_accepts_body_config_refinement(solver):
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family=solver,
+        rigid_point_joint_solver=solver,
+        avbd_rigid_contact_config_emplaced=True,
+        recorded_from="World resolved-configuration report",
+        rigid_contact_selection="world_solver_family",
+    )
+
+    assert identity["rigid_contact_selection"] == "world_solver_family"
+    assert identity["rigid_contact_solver"] == solver
+    assert identity["avbd_rigid_contact_config_emplaced"] is True
+
+
 def test_public_sequential_impulse_family_records_matching_world_owned_rows():
     identity = schema.make_resolved_solver_identity(
         resolved_rigid_contact_family="sequential-impulse",

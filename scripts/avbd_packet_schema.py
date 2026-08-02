@@ -280,12 +280,11 @@ def resolved_solver_identity_errors(
                 "rigid_contact_selection 'world_solver_family'"
             )
     elif selection == "world_solver_family":
-        if rigid_contact_solver not in ("avbd", "vbd") or emplaced is not False:
+        if rigid_contact_solver not in ("avbd", "vbd"):
             errors.append(
                 f"{packet_name}: {RESOLVED_SOLVER_IDENTITY_KEY}."
                 "rigid_contact_selection 'world_solver_family' requires "
-                "rigid_contact_solver 'avbd' or 'vbd' "
-                "without a private body config"
+                "rigid_contact_solver 'avbd' or 'vbd'"
             )
         if rigid_point_joint_solver not in ("none", rigid_contact_solver):
             errors.append(

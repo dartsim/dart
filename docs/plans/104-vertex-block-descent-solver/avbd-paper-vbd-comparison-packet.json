@@ -325,7 +325,7 @@
       "rigid_point_joint_solver": "avbd"
     },
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
-    "sha256": "d0098a6fac2f53c9b9f6d1898e27d46cfecb4a208f32f2c08c5703583f3c31bf",
+    "sha256": "d7fe44e4708a0b24646ac01610d166e0167642bd1ee1c58f8e05591641b58f26",
     "visual_evidence": {
       "impact_screenshot": {
         "file": "avbd_paper_breakable_wall_impact.png",
@@ -395,7 +395,7 @@
   "schema_version": 4,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "640416abeb6333d8f8e1e9ddbc17c05be5e842841cd034fd709a0269a7ba6eaa",
+    "digest": "73c70bd23e4ad8b419c32901b02a6e5928c4b36510e682c3413baaa5367b0b88",
     "files": [
       {
         "path": "dart/simulation/world.cpp",
@@ -459,7 +459,7 @@
       },
       {
         "path": "scripts/avbd_packet_schema.py",
-        "sha256": "d2cf699fd9f19fe97fa992977f56c00a43745a0659bda4deb8e10e6fe91e021c"
+        "sha256": "95f3a7373d9ddf5bae975a7be9f822f8884cbe67e64f352954861ef8fc23aca4"
       },
       {
         "path": "scripts/capture_py_demo.py",

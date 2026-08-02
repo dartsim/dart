@@ -201,7 +201,7 @@
   "schema_version": 4,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "5f4742776b35ba6c0ff8e6a4b42b55a4bfecb4204121e24e1b4d5a41f8b39a26",
+    "digest": "f4e41fb154bc6d51eb16de658167e8307436daaf511e1c86ae4ce4004494c640",
     "files": [
       {
         "path": "dart/gui/view_quality.cpp",
@@ -273,7 +273,7 @@
       },
       {
         "path": "scripts/avbd_packet_schema.py",
-        "sha256": "d2cf699fd9f19fe97fa992977f56c00a43745a0659bda4deb8e10e6fe91e021c"
+        "sha256": "95f3a7373d9ddf5bae975a7be9f822f8884cbe67e64f352954861ef8fc23aca4"
       },
       {
         "path": "scripts/capture_py_demo.py",

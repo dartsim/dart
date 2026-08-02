@@ -195,8 +195,8 @@
       "rigid_contact_solver": "avbd",
       "rigid_point_joint_solver": "avbd"
     },
-    "nested_avbd_sha256": "d0098a6fac2f53c9b9f6d1898e27d46cfecb4a208f32f2c08c5703583f3c31bf",
-    "nested_avbd_source_provenance_digest": "5f4742776b35ba6c0ff8e6a4b42b55a4bfecb4204121e24e1b4d5a41f8b39a26",
+    "nested_avbd_sha256": "d7fe44e4708a0b24646ac01610d166e0167642bd1ee1c58f8e05591641b58f26",
+    "nested_avbd_source_provenance_digest": "f4e41fb154bc6d51eb16de658167e8307436daaf511e1c86ae4ce4004494c640",
     "resolved_solver_identity": {
       "avbd_rigid_contact_config_emplaced": false,
       "recorded_from": "engine World.resolved_configuration in both VBD captures plus benchmark runtime resolved-configuration counters",
@@ -205,8 +205,8 @@
       "rigid_point_joint_solver": "vbd"
     },
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
-    "sha256": "5db4c77cad4c35f9a10abc2dc892e8849f6a96e1acbaf8162902ab5091503be7",
-    "source_provenance_digest": "640416abeb6333d8f8e1e9ddbc17c05be5e842841cd034fd709a0269a7ba6eaa",
+    "sha256": "0302c036e390c6db2696d8a5e5ee3074eff05aacbce6d003c468aaef2e4560a3",
+    "source_provenance_digest": "73c70bd23e4ad8b419c32901b02a6e5928c4b36510e682c3413baaa5367b0b88",
     "visual_evidence": {
       "bend_screenshot": {
         "file": "vbd_paper_breakable_wall_bend.png",
@@ -275,7 +275,7 @@
   "schema_version": 4,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "7a7f1ee86befcbb2afee50de15151f5b74412d56cc86760b481cf82133298c82",
+    "digest": "5386c5304d3b900392596134fe421a7b33f3aca328044ea7f15b0d0491255c5e",
     "files": [
       {
         "path": "dart/simulation/world.cpp",
@@ -343,11 +343,11 @@
       },
       {
         "path": "tests/test_avbd_packet_schema.py",
-        "sha256": "1e0892f2721b458e945762653c59461333a7eccef782c6a9d2f984a869047579"
+        "sha256": "f3a6325e7d67a73604bc4284fce66e0e55721d7929a31ab90ee23849559a4f4e"
       },
       {
         "path": "scripts/avbd_packet_schema.py",
-        "sha256": "d2cf699fd9f19fe97fa992977f56c00a43745a0659bda4deb8e10e6fe91e021c"
+        "sha256": "95f3a7373d9ddf5bae975a7be9f822f8884cbe67e64f352954861ef8fc23aca4"
       },
       {
         "path": "scripts/capture_py_demo.py",
