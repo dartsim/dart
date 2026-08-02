@@ -91,7 +91,13 @@ identically on the release-6.20 tip itself (introduced by the #3379
 demos merge, ImGui draw-list synthetic test, `drawListCount == 0`; the
 tip's own CI Toolchain run 30706341273 shows both jobs failing while
 the run reports success — non-required lanes). Pre-existing and
-unrelated to this PR; do not chase it here.
+unrelated to this PR; do not chase it here. Resolution: the maintainer
+fixed it upstream the same day (#3429, "Read ImGui draw-list count from
+CmdLists.Size") and merged the current base into the PR branch; the full
+hosted matrix then concluded GREEN on the merge head `4be23b49b39`
+(22 pass + 1 skip of 23 checks, zero failures, PR mergeable,
+2026-08-02). Remaining: maintainer review and merge; then retire this
+folder in the completing PR per the closeout plan.
 
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
