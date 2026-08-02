@@ -54,6 +54,7 @@ struct DARTCollisionGroupEngineData
   std::unordered_map<CollisionObject*, std::size_t> objectToId;
   std::vector<std::size_t> freeIds;
   std::size_t nextId{0u};
+  std::size_t contactGapPolicyRevision{0u};
 };
 
 } // namespace detail

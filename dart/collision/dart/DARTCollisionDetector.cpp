@@ -467,6 +467,12 @@ struct ParallelObjectPair
 
 using ContactGapMap = std::unordered_map<const dynamics::ShapeFrame*, double>;
 
+struct ContactGapPolicySnapshot
+{
+  std::shared_ptr<const ContactGapMap> contactGaps;
+  std::size_t revision{0u};
+};
+
 //==============================================================================
 class ContactGapOverrides final : public common::Observer
 {
@@ -487,6 +493,9 @@ public:
       mFramesBySubject.erase(subject);
       removeSubject(subject);
     } else {
+      if (existing != updated->end() && existing->second == contactGap)
+        return;
+
       if (existing == updated->end()) {
         const auto* subject = static_cast<const common::Subject*>(shapeFrame);
         addSubject(subject);
@@ -512,12 +521,22 @@ public:
     return std::atomic_load(&mSnapshot);
   }
 
+  [[nodiscard]] ContactGapPolicySnapshot snapshotWithRevision() const
+  {
+    std::lock_guard<std::mutex> lock(mMutex);
+    return {std::atomic_load(&mSnapshot), mRevision};
+  }
+
   void clear()
   {
     std::lock_guard<std::mutex> lock(mMutex);
+    if (!std::atomic_load(&mSnapshot))
+      return;
+
     removeAllSubjects();
     mFramesBySubject.clear();
     std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+    ++mRevision;
   }
 
 protected:
@@ -542,17 +561,20 @@ private:
   {
     if (updated->empty()) {
       std::atomic_store(&mSnapshot, std::shared_ptr<const ContactGapMap>{});
+      ++mRevision;
       return;
     }
 
     std::shared_ptr<const ContactGapMap> immutable = std::move(updated);
     std::atomic_store(&mSnapshot, std::move(immutable));
+    ++mRevision;
   }
 
   mutable std::mutex mMutex;
   std::unordered_map<const common::Subject*, const dynamics::ShapeFrame*>
       mFramesBySubject;
   std::shared_ptr<const ContactGapMap> mSnapshot;
+  std::size_t mRevision{0u};
 };
 
 //==============================================================================
@@ -2190,6 +2212,17 @@ public:
     return overrides ? overrides->snapshot() : nullptr;
   }
 
+  ContactGapPolicySnapshot getContactGapPolicy() const
+  {
+    std::shared_ptr<ContactGapOverrides> overrides;
+    {
+      std::lock_guard<std::mutex> lock(mEngineState.contactPolicyMutex);
+      overrides = mEngineState.contactGapOverrides;
+    }
+    return overrides ? overrides->snapshotWithRevision()
+                     : ContactGapPolicySnapshot{};
+  }
+
   void clearContactGaps()
   {
     std::shared_ptr<ContactGapOverrides> overrides;
@@ -2224,6 +2257,12 @@ public:
 
   detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
       const DARTCollisionGroup* group)
+  {
+    return *mGroupEngineData.at(group);
+  }
+
+  const detail::DARTCollisionGroupEngineData& getCollisionGroupEngineData(
+      const DARTCollisionGroup* group) const
   {
     return *mGroupEngineData.at(group);
   }
@@ -2468,6 +2507,20 @@ detail::DARTCollisionDetectorAccessor::getNumCollisionObjectEngineData(
 }
 
 //==============================================================================
+native::BroadPhaseDebugSnapshot
+detail::DARTCollisionDetectorAccessor::getCollisionGroupBroadPhaseSnapshot(
+    const DARTCollisionDetector& detector, const DARTCollisionGroup& group)
+{
+  const auto* manager
+      = static_cast<const DARTCollisionDetector::DARTCollisionObjectManager*>(
+          detector.mCollisionObjectManager.get());
+  native::BroadPhaseDebugSnapshot snapshot;
+  manager->getCollisionGroupEngineData(&group).broadPhase.buildDebugSnapshot(
+      snapshot);
+  return snapshot;
+}
+
+//==============================================================================
 native::CachedContact* DARTCollisionDetector::getCachedContact(
     const DARTCollisionObject* object1,
     const DARTCollisionObject* object2,
@@ -2617,7 +2670,8 @@ bool DARTCollisionDetector::collide(
   const bool enableSoftFaceInteriorContacts
       = engineState.softFaceInteriorContactsEnabled.load();
   const auto manifoldMode = engineState.contactManifoldMode.load();
-  const auto contactGaps = manager->getContactGaps();
+  const auto contactGapPolicy = manager->getContactGapPolicy();
+  const auto& contactGaps = contactGapPolicy.contactGaps;
 
   const bool profileRecording
       = dart::common::profile::isProfileRecordingEnabled();
@@ -2626,7 +2680,20 @@ bool DARTCollisionDetector::collide(
   {
     DART_PROFILE_SCOPED_IF_N(profileRecording, "Native::updateEngineData");
     nativeGroup->updateEngineData();
-    if (contactGaps) {
+    if (groupEngineData.contactGapPolicyRevision != contactGapPolicy.revision) {
+      // A decreased or cleared gap must also shrink the tree's retained fat
+      // and internal bounds. Rebuild once per policy revision; unchanged
+      // policies retain the steady-state incremental update path below.
+      groupEngineData.broadPhase.clear();
+      for (const auto& entry : groupEngineData.idToObject) {
+        native::Aabb expanded
+            = detail::DARTCollisionObjectAccessor::getAabb(entry.second);
+        expanded.expand(
+            lookupContactGap(contactGaps.get(), entry.second->getShapeFrame()));
+        groupEngineData.broadPhase.add(entry.first, expanded);
+      }
+      groupEngineData.contactGapPolicyRevision = contactGapPolicy.revision;
+    } else if (contactGaps) {
       for (const auto& entry : groupEngineData.idToObject) {
         native::Aabb expanded
             = detail::DARTCollisionObjectAccessor::getAabb(entry.second);

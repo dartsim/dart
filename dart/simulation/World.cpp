@@ -1191,6 +1191,12 @@ WorldPtr World::clone() const
     // registrations before the World-owned Skeleton clones are added below.
     // Manual constraints have never been cloned by World::clone().
     exactCoulombClone->setFromOtherConstraintSolver(*sourceExactCoulombSolver);
+    exactCoulombClone->setBoxedLcpSolver(
+        std::const_pointer_cast<constraint::BoxedLcpSolver>(
+            sourceExactCoulombSolver->getBoxedLcpSolver()));
+    exactCoulombClone->setSecondaryBoxedLcpSolver(
+        std::const_pointer_cast<constraint::BoxedLcpSolver>(
+            sourceExactCoulombSolver->getSecondaryBoxedLcpSolver()));
     exactCoulombClone->getCollisionOption()
         = sourceExactCoulombSolver->getCollisionOption();
     exactCoulombClone->removeAllSkeletons();
