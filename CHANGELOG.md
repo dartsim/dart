@@ -608,6 +608,27 @@
 
 * Examples
 
+  * Give `dart-demos` a real dockable workspace on docking-ImGui builds
+    (adopting the DART 7 demos host design): a DockSpace over the viewport
+    with a transparent central 3D node, a deterministic default layout
+    (toolbar top, navigator left, scene panel right, diagnostics bottom),
+    user-rearrangeable panels with View > "Reset layout", a stable scene
+    panel dock identity across scene switches, and Rebuild/Reset of the
+    active demo now resets only the physics while preserving the user's
+    camera pose (switching to a different demo still applies that scene's
+    home framing). `pixi run demos` builds against
+    the bundled docking ImGui; system-ImGui builds keep the fixed layout,
+    which now sizes the toolbar and diagnostics regions from measured content
+    so `--gui-scale` values above 1 no longer clip or overlap the chrome. The
+    demos CLI also accepts `--gui-scale=N`, seeds the scale from
+    `DART_GUI_SCALE`, and the View menu GUI-scale slider covers the full
+    supported `[0.5, 4]` range. The demos chrome, theme, and
+    memory-diagnostics sources now use current ImGui 1.92 APIs (the bundled
+    docking build disables obsolete symbols), and the draw-list-bound
+    regression test reads `ImDrawData::CmdLists` directly, so it holds on
+    both the bundled docking branch and system ImGui 1.92.9, whose legacy
+    `CmdListsCount` mirror is stuck at zero:
+    [#3426](https://github.com/dartsim/dart/pull/3426)
   * Add two deformable-body flagship scenes to `dart-demos`:
     `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
     demonstrating the adaptive contact activation API with live
@@ -680,6 +701,18 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
+
+  * Add the `DART_IMGUI_DOCKING` build option: bundled
+    (`DART_USE_SYSTEM_IMGUI=OFF`) builds can opt into the Dear ImGui docking
+    branch (`v1.92.8-docking`), and `ImGuiHandler` enables
+    `ImGuiConfigFlags_DockingEnable` when the docking API is available
+    (`IMGUI_HAS_DOCK`). The bundled default stays on the vanilla `v1.92.8`
+    tag so the installed `dart-external-imgui` component keeps its public
+    ImGui ABI across DART 6.20.x; system-ImGui builds are unchanged.
+    `parseGuiScale` now warns and clamps out-of-range values into the
+    supported `[0.5, 4]` range (matching the DART 7 viewer) instead of
+    discarding them for the fallback value:
+    [#3426](https://github.com/dartsim/dart/pull/3426)
 
   * Fix `dart::gui::osg` interaction teardown so registered handlers and
     drag-and-drop tools are released correctly. `DefaultEventHandler::

@@ -16,7 +16,12 @@ The deformable-body flagship scenes are available as
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
   (`Theme.*`), the scene registry, and the persistent chrome (simulation
   toolbar, `Demos` navigator, `Diagnostics` panel, and the visual-debugging
-  panels). It swaps the active scene at runtime.
+  panels). It swaps the active scene at runtime. On docking-ImGui builds
+  (`pixi run demos`, which configures `DART_USE_SYSTEM_IMGUI=OFF`) the chrome
+  opens as a dockable workspace — panels can be dragged, split, and re-tabbed,
+  and View > "Reset layout" restores the default arrangement; system-ImGui
+  builds keep the fixed layout, sized from measured content so it stays intact
+  at any `--gui-scale`.
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked

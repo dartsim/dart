@@ -195,14 +195,26 @@ double parseGuiScale(
     return fallback;
   }
 
-  if (!std::isfinite(parsed) || parsed < kMinGuiScale
-      || parsed > kMaxGuiScale) {
+  if (!std::isfinite(parsed) || parsed <= 0.0) {
     if (errorStream) {
-      *errorStream << "--gui-scale must be in [" << kMinGuiScale << ", "
-                   << kMaxGuiScale << "]; got '" << value
-                   << "'. Falling back to " << fallback << ".\n";
+      *errorStream << "Invalid --gui-scale value '" << value
+                   << "'. Expected a positive number. Falling back to "
+                   << fallback << ".\n";
     }
     return fallback;
+  }
+
+  if (parsed < kMinGuiScale || parsed > kMaxGuiScale) {
+    // Clamp instead of discarding: a user asking for 5 wants "as large as
+    // possible", not the 1.0 default. Same semantics as the DART 7 viewer.
+    const double clamped = std::clamp(parsed, kMinGuiScale, kMaxGuiScale);
+    if (errorStream) {
+      *errorStream << "--gui-scale " << value
+                   << " is outside the supported range [" << kMinGuiScale
+                   << ", " << kMaxGuiScale << "]; clamped to " << clamped
+                   << ".\n";
+    }
+    return clamped;
   }
 
   return parsed;

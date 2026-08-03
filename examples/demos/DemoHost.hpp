@@ -281,7 +281,13 @@ private:
   void teardownCurrentScene();
 
   /// Builds and registers `setup` as the current scene.
-  void installScene(const DemoScene& scene, DemoSceneSetup setup);
+  /// Installs a freshly built scene. `applyCameraHomePose` places the camera
+  /// at the scene's home framing; Rebuild/Reset of the already-active demo
+  /// passes false so only the physics resets, never the user's camera pose.
+  void installScene(
+      const DemoScene& scene,
+      DemoSceneSetup setup,
+      bool applyCameraHomePose = true);
 
   /// Installs a minimal, guaranteed-safe empty world. Used only when the very
   /// first scene selection fails and there is no previous scene to fall back
@@ -382,6 +388,18 @@ private:
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;
+
+  /// Docked-workspace state (docking-branch ImGui builds): the default layout
+  /// is rebuilt on the first frame and whenever View > "Reset layout" sets the
+  /// reset flag. maybe_unused: only IMGUI_HAS_DOCK code paths read them, and
+  /// non-docking builds (system ImGui) compile those out; keeping the members
+  /// unconditional avoids an ABI split between the two build flavors.
+  [[maybe_unused]] bool mDockLayoutInitialized = false;
+  [[maybe_unused]] bool mDockLayoutResetRequested = false;
+  /// Fixed-layout fallback (non-docking builds): chrome heights measured from
+  /// the previous frame's content so scaled toolbars/diagnostics never clip.
+  float mMeasuredToolbarHeight = 0.0f;
+  float mMeasuredBottomHeight = 0.0f;
 };
 
 } // namespace dart_demos
