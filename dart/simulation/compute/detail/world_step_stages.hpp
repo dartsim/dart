@@ -374,17 +374,24 @@ public:
 /// Resolves contacts between free rigid bodies. Static bodies (non-positive
 /// mass) act as immovable.
 ///
-/// Two solver paths are available, selected per-World via
-/// `WorldOptions::contactSolverMethod`:
+/// The selected `WorldOptions::rigidBodySolver` family owns the top-level
+/// contact formulation. `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd`
+/// route every supported active free-rigid contact through fixed-penalty VBD
+/// and augmented VBD, respectively. Under the default
+/// `RigidBodySolver::SequentialImpulse` family, two contact-policy paths are
+/// available via `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +
-///     friction impulse solve with positional correction.
+///     friction impulse solve, interleaved with solver-owned hard rigid
+///     pair-constraint rows, with positional correction/post-stabilization.
 ///   - `BoxedLcp`: an opt-in boxed-LCP normal/friction solve via the pivoting
-///     Dantzig solver. Articulated-link contacts are handled by the unified
-///     constraint/contact path, not by this free-rigid stage.
+///     Dantzig solver; hard rigid pair constraints still use their
+///     sequential-impulse rows. Articulated-link contacts are handled by the
+///     unified constraint/contact path, not by this free-rigid stage.
 ///
-/// Internal PLAN-104 AVBD work can also opt specific rigid bodies into the
-/// private `RigidAvbdContactConfig` row projection without exposing AVBD row
-/// storage or solver registries through the facade.
+/// Internal PLAN-104 compatibility tests may still opt specific rigid
+/// contacts and experimental distance springs into private AVBD projection
+/// while the public family remains sequential impulse. Public hard pair
+/// constraints never use that compatibility path.
 class DART_SIMULATION_API RigidBodyContactStage final : public WorldStepStage
 {
 public:
@@ -398,9 +405,17 @@ public:
   void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
+  void setIterations(std::size_t iterations) noexcept;
   [[nodiscard]] std::size_t getIterations() const noexcept;
 
 private:
+  friend class ::dart::simulation::World;
+
+  [[nodiscard]] avbd_replay::RigidAvbdWarmStartReplayState
+  captureAvbdWarmStartReplayState(common::MemoryAllocator& allocator) const;
+  void restoreAvbdWarmStartReplayState(
+      const avbd_replay::RigidAvbdWarmStartReplayState& replayState);
+
   struct AvbdScratch;
   struct ContactScratch;
   struct AvbdScratchDeleter

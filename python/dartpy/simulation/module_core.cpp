@@ -71,7 +71,9 @@ void defSimPartCore(nb::module_& m)
 
   nb::enum_<sim::RigidBodySolver>(m, "RigidBodySolver")
       .value("SEQUENTIAL_IMPULSE", sim::RigidBodySolver::SequentialImpulse)
-      .value("IPC", sim::RigidBodySolver::Ipc);
+      .value("IPC", sim::RigidBodySolver::Ipc)
+      .value("AVBD", sim::RigidBodySolver::Avbd)
+      .value("VBD", sim::RigidBodySolver::Vbd);
   nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
       .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
       .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);

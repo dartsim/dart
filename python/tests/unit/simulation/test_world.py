@@ -1013,8 +1013,9 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     world.enter_simulation_mode()
     world.step()
 
+    assert world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
     assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
-    assert float(link.linear_velocity[0]) < 0.0
+    assert float(link.linear_velocity[0]) == pytest.approx(0.0, abs=1.0e-12)
     with pytest.raises(Exception, match="simulation mode"):
         world.add_joint(
             base,
@@ -6671,14 +6672,16 @@ def test_simulation_multibody_options_selector():
     sx = _simulation()
 
     configured = sx.World(
-        rigid_body_solver=sx.RigidBodySolver.IPC,
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
         multibody_options=sx.MultibodyOptions(
             integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
             variational_max_iterations=200,
             variational_tolerance=1.0e-9,
         ),
     )
-    assert configured.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert configured.rigid_body_solver == sx.RigidBodySolver.AVBD
+    assert configured.rigid_constraint_options.iterations == 20
     assert configured.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert configured.multibody_options.variational_max_iterations == 200
     assert configured.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
@@ -6716,6 +6719,18 @@ def test_simulation_multibody_options_selector():
         policy_configured.contact_gradient_mode = 99
     with pytest.raises(TypeError):
         policy_configured.compute_accelerator_policy = 99
+
+    configured.rigid_constraint_options = sx.RigidConstraintOptions(iterations=3)
+    assert configured.rigid_constraint_options.iterations == 3
+    with pytest.raises(Exception, match="positive"):
+        configured.rigid_constraint_options = sx.RigidConstraintOptions(iterations=0)
+    assert configured.rigid_constraint_options.iterations == 3
+
+    with pytest.raises(Exception, match="not applicable"):
+        sx.World(
+            rigid_body_solver=sx.RigidBodySolver.IPC,
+            rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+        )
 
     with pytest.raises(Exception):
         sx.World(multibody_options=sx.MultibodyOptions(integration_family="nonsense"))
@@ -8557,6 +8572,68 @@ def test_simulation_contact_stops_approaching_bodies():
     # Equal-mass head-on fully inelastic contact: both come to rest.
     assert body_a.linear_velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
     assert body_b.linear_velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_simulation_public_avbd_contact_family():
+    sx = _simulation()
+
+    world = sx.World(
+        time_step=0.05,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.25))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.25)))
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.4))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert world.rigid_body_solver == sx.RigidBodySolver.AVBD
+    assert len(world.collide()) == 1
+    world.step()
+
+    assert world.compute_step_metrics().last_step_iterations == 20
+    assert sphere.linear_velocity.tolist()[2] > 0.0
+    assert sphere.translation.tolist()[2] > 0.4
+
+    with pytest.raises(Exception, match="cannot be combined"):
+        world.contact_solver_method = sx.ContactSolverMethod.BOXED_LCP
+
+    avbd_only = sx.World(rigid_body_solver=sx.RigidBodySolver.AVBD)
+    with pytest.raises(Exception, match="Multibody"):
+        avbd_only.add_multibody("unsupported")
+
+
+def test_simulation_public_vbd_contact_family():
+    sx = _simulation()
+
+    world = sx.World(
+        time_step=0.05,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.VBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.25))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.25)))
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.4))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert world.rigid_body_solver == sx.RigidBodySolver.VBD
+    assert len(world.collide()) == 1
+    world.step()
+
+    assert world.compute_step_metrics().last_step_iterations == 20
+    assert sphere.linear_velocity.tolist()[2] > 0.0
+    assert sphere.translation.tolist()[2] > 0.4
+
+    with pytest.raises(Exception, match="cannot be combined"):
+        world.contact_solver_method = sx.ContactSolverMethod.BOXED_LCP
+
+    vbd_only = sx.World(rigid_body_solver=sx.RigidBodySolver.VBD)
+    with pytest.raises(Exception, match="Multibody"):
+        vbd_only.add_multibody("unsupported")
 
 
 def test_simulation_body_rests_on_static_ground():

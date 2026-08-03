@@ -1,0 +1,1613 @@
+{
+  "benchmark": {
+    "comparison": {
+      "basis": "same executable, host, reconstructed scene fingerprint, trajectory length, time step, and 20-sweep budget",
+      "vbd_to_avbd_median_cpu_cost_ratio": 0.9640090072289312
+    },
+    "context": {
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "host_name": "mark26",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "json_sha256": "1a69ca3c576e4b71f3cc3f2abe4a720ebf1dc15cb0b7fbda11f77d5e5ae1d0c0",
+    "methods": {
+      "avbd": {
+        "benchmark": "BM_AvbdPaperBreakableWallStep",
+        "rows": [
+          {
+            "aggregate_name": "mean",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 8178949.550000002,
+            "family_index": 0,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_mean",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 1.0,
+            "real_time": 8183844.183319403,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 2359557114.0,
+            "scene_spec_fingerprint_lo": 12836073.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "median",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 8214461.283333337,
+            "family_index": 0,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_median",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 1.0,
+            "real_time": 8218947.825662327,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 2359557114.0,
+            "scene_spec_fingerprint_lo": 12836073.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "stddev",
+            "aggregate_unit": "time",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 94142.05129219542,
+            "family_index": 0,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_stddev",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 0.0,
+            "real_time": 94021.64259774199,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_avbd": 0.0,
+            "resolved_rigid_pair_constraint_avbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 0.0,
+            "scene_spec_fingerprint_lo": 0.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          },
+          {
+            "aggregate_name": "cv",
+            "aggregate_unit": "percentage",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 0.011510286341379301,
+            "family_index": 0,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_AvbdPaperBreakableWallStep/iterations:120_cv",
+            "per_family_instance_index": 0,
+            "public_avbd_family": 0.0,
+            "real_time": 0.011488689238411964,
+            "repetitions": 5,
+            "resolved_rigid_body_avbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_avbd": 0.0,
+            "resolved_rigid_pair_constraint_avbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 0.0,
+            "scene_spec_fingerprint_lo": 0.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          }
+        ],
+        "stability": {
+          "cpu_time_cv_fraction": 0.011510286341379301,
+          "real_time_cv_fraction": 0.011488689238411964,
+          "repetitions": 5
+        },
+        "timing": {
+          "mean_cpu_time_per_step_ns": 8178949.550000002,
+          "mean_real_time_per_step_ns": 8183844.183319403,
+          "median_cpu_time_per_step_ns": 8214461.283333337,
+          "median_real_time_per_step_ns": 8218947.825662327
+        }
+      },
+      "vbd": {
+        "benchmark": "BM_VbdPaperBreakableWallStep",
+        "rows": [
+          {
+            "aggregate_name": "mean",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 7918487.791666667,
+            "family_index": 1,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_mean",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 1.0,
+            "real_time": 7919422.471701789,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_vbd": 1.0,
+            "resolved_rigid_pair_constraint_vbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 2359557114.0,
+            "scene_spec_fingerprint_lo": 12836073.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "median",
+            "aggregate_unit": "time",
+            "breakable_joints": 712.0,
+            "collision_shapes": 256.0,
+            "cpu_time": 7918814.666666662,
+            "family_index": 1,
+            "impacting_balls": 3.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_median",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 1.0,
+            "real_time": 7919288.741444083,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 1.0,
+            "resolved_rigid_constraint_iterations": 1.0,
+            "resolved_rigid_contact_vbd": 1.0,
+            "resolved_rigid_pair_constraint_vbd": 1.0,
+            "rigid_bodies": 256.0,
+            "rigid_body_joints": 712.0,
+            "rigid_constraint_iterations": 20.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 1.0,
+            "scene_spec_fingerprint_hi": 2359557114.0,
+            "scene_spec_fingerprint_lo": 12836073.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 120.0
+          },
+          {
+            "aggregate_name": "stddev",
+            "aggregate_unit": "time",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 23530.653186306117,
+            "family_index": 1,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_stddev",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 0.0,
+            "real_time": 22825.05641250831,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_vbd": 0.0,
+            "resolved_rigid_pair_constraint_vbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 0.0,
+            "scene_spec_fingerprint_lo": 0.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          },
+          {
+            "aggregate_name": "cv",
+            "aggregate_unit": "percentage",
+            "breakable_joints": 0.0,
+            "collision_shapes": 0.0,
+            "cpu_time": 0.0029716094544048584,
+            "family_index": 1,
+            "impacting_balls": 0.0,
+            "iterations": 5,
+            "name": "BM_VbdPaperBreakableWallStep/iterations:120_cv",
+            "per_family_instance_index": 0,
+            "public_vbd_family": 0.0,
+            "real_time": 0.002882161735160403,
+            "repetitions": 5,
+            "resolved_rigid_body_vbd": 0.0,
+            "resolved_rigid_constraint_iterations": 0.0,
+            "resolved_rigid_contact_vbd": 0.0,
+            "resolved_rigid_pair_constraint_vbd": 0.0,
+            "rigid_bodies": 0.0,
+            "rigid_body_joints": 0.0,
+            "rigid_constraint_iterations": 0.0,
+            "run_name": "BM_VbdPaperBreakableWallStep/iterations:120",
+            "run_type": "aggregate",
+            "runtime_contract_passed": 0.0,
+            "scene_spec_fingerprint_hi": 0.0,
+            "scene_spec_fingerprint_lo": 0.0,
+            "threads": 1,
+            "time_unit": "ns",
+            "trajectory_frames": 0.0
+          }
+        ],
+        "stability": {
+          "cpu_time_cv_fraction": 0.0029716094544048584,
+          "real_time_cv_fraction": 0.002882161735160403,
+          "repetitions": 5
+        },
+        "timing": {
+          "mean_cpu_time_per_step_ns": 7918487.791666667,
+          "mean_real_time_per_step_ns": 7919422.471701789,
+          "median_cpu_time_per_step_ns": 7918814.666666662,
+          "median_real_time_per_step_ns": 7919288.741444083
+        }
+      }
+    },
+    "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+    "source_provenance": {
+      "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
+      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0"
+    }
+  },
+  "claim_boundary": "This packet covers the matched fixed-penalty VBD row and its same-host CPU comparison with the linked public AVBD Figure 13 packet. It does not reproduce the Sequential Impulse or XPBD rows, claim exact unpublished source constants, establish CUDA parity, or compare against a published/source timing.",
+  "correctness": {
+    "allocation_scene": "configurePublicRigidVbdContactAndBreakableJointRowsScene",
+    "allocation_tests": [
+      "World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths",
+      "World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap",
+      "World.BakedAvbdVbdRowsDoNotMallocOnHeap"
+    ],
+    "determinism_test": "test_vbd_paper_breakable_wall_checkpoints_are_deterministic",
+    "outcome_test": "test_vbd_paper_breakable_wall_matches_figure13_contract",
+    "public_configuration": {
+      "rigid_body_solver": "VBD",
+      "rigid_constraint_options": {
+        "iterations": 20
+      },
+      "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+      "time_step": 0.016666666666666666
+    }
+  },
+  "linked_avbd_evidence": {
+    "file": "avbd-paper-breakable-wall-packet.json",
+    "resolved_solver_identity": {
+      "avbd_rigid_contact_config_emplaced": false,
+      "recorded_from": "engine World.resolved_configuration in both captures plus benchmark runtime resolved-configuration counters",
+      "rigid_contact_selection": "world_solver_family",
+      "rigid_contact_solver": "avbd",
+      "rigid_point_joint_solver": "avbd"
+    },
+    "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+    "sha256": "e8fec99ab6faee09e42860d33395f640d1988f88d743db24d1a585afb395b19d",
+    "visual_evidence": {
+      "impact_screenshot": {
+        "file": "avbd_paper_breakable_wall_impact.png",
+        "sha256": "9d1fa2bf21bc6cd0807e55ee4c9b866a0e2e44a77e02ccd18f50f28d03309724"
+      },
+      "outcome_screenshot": {
+        "file": "avbd_paper_breakable_wall_outcome.png",
+        "sha256": "5199cc27d8cb7176476de756234f962c32ee78205eb0df53915d875e1d272a89"
+      },
+      "semantic_review": {
+        "file": "avbd-visual-review.json",
+        "sha256": "b73b4b5db17d287aa258272ad12f2d2f4eed5ddb124736c5eadd9bb5ef0409af",
+        "verdict": "pass"
+      }
+    }
+  },
+  "packet": "avbd_paper_vbd_comparison",
+  "paper_reference": {
+    "figure": {
+      "file": "paper-10.png",
+      "height": 1760,
+      "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b",
+      "width": 1360
+    },
+    "locator": "Section 5.4 and Figure 13, PDF page 10",
+    "paper_pdf": {
+      "file": "avbd.pdf",
+      "sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6"
+    }
+  },
+  "performance_claim_boundary": "The ratio is a descriptive same-host cost comparison for two public DART families running an identical reconstructed scene and iteration budget. It is not a paper/reference speedup claim.",
+  "publication_observation": "The Figure 13 VBD row bends under the three impacts but does not break.",
+  "reconstruction": {
+    "matched_with_avbd": {
+      "break_force": 5000.0,
+      "breakable_joints": 712,
+      "bricks": 252,
+      "impacting_balls": 3,
+      "scene_spec_fingerprint": "8ca3fbfa00c3dce9"
+    },
+    "published": {
+      "constraint_iterations_or_substeps": 20,
+      "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+      "time_step": 0.016666666666666666
+    },
+    "unpublished": "wall dimensions, body materials, ball properties and launch conditions, break threshold, and exact source scene"
+  },
+  "reproduction": {
+    "benchmark_command": "capture_source_digest=$(pixi run python scripts/capture_source_provenance.py --digest-only) && benchmark_source_digest=$(sha256sum tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp | cut -d' ' -f1) && pixi run bm -- bm_avbd_rigid_fixed_joint -- --benchmark_filter='^BM_(Avbd|Vbd)PaperBreakableWallStep/iterations:120$' --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_context=capture_source_provenance_digest=$capture_source_digest --benchmark_context=benchmark_source_sha256=$benchmark_source_digest --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_commands": [
+      "pixi run py-demo-capture -- --scene vbd_paper_breakable_wall --frames 18 --width 1280 --height 720 --view front --camera-azimuth -112.5 --camera-elevation 35.52338329811104 --camera-distance 22 --camera-target 0,0.45,1.6 --capture-label bend --output-dir <bend-capture-dir>",
+      "pixi run py-demo-capture -- --scene vbd_paper_breakable_wall --frames 120 --width 1280 --height 720 --view front --camera-azimuth -112.5 --camera-elevation 35.52338329811104 --camera-distance 22 --camera-target 0,0.45,1.6 --capture-label retention --output-dir <retention-capture-dir>"
+    ],
+    "image_verdict_commands": [
+      "pixi run image-verdict -- <bend-capture-dir>/vbd_paper_breakable_wall_bend.png --meta scene=vbd_paper_breakable_wall --meta frame=18 --meta view=front-oblique --out <bend-capture-dir>/image_verdict.json",
+      "pixi run image-verdict -- <retention-capture-dir>/vbd_paper_breakable_wall_retention.png --meta scene=vbd_paper_breakable_wall --meta frame=120 --meta view=front-oblique --out <retention-capture-dir>/image_verdict.json"
+    ]
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "engine World.resolved_configuration in both VBD captures plus benchmark runtime resolved-configuration counters",
+    "rigid_contact_selection": "world_solver_family",
+    "rigid_contact_solver": "vbd",
+    "rigid_point_joint_solver": "vbd"
+  },
+  "scene": "vbd_paper_breakable_wall",
+  "schema_version": 4,
+  "source_provenance": {
+    "algorithm": "sha256-length-prefixed-path-and-content-v1",
+    "digest": "56ef2fc26eaa75e9850b66d2948a31a257fc681b02bec271c7fcb2f46419e54f",
+    "files": [
+      {
+        "path": "dart/simulation/world.cpp",
+        "sha256": "ecde99482d1e343195e1a18b37fc46f1dd9471f308f546bf9634eff05a7164eb"
+      },
+      {
+        "path": "dart/simulation/world.hpp",
+        "sha256": "d3936db424028b9a6016ab8523a8ffdb749a502d1dd47dca57e26a7fc7c4363d"
+      },
+      {
+        "path": "dart/simulation/world_options.hpp",
+        "sha256": "ed421bdb599188c64a7ef03466a92cecef218a5cee2b2f32796239070fe8c53b"
+      },
+      {
+        "path": "dart/simulation/comps/joint.hpp",
+        "sha256": "dbbab333dfeb086f280675a31badc7756bc74606100e72081a6c6140d4b61617"
+      },
+      {
+        "path": "dart/simulation/compute/detail/world_step_stages.hpp",
+        "sha256": "c5391effd2032a1488d583bea3a9cb4560ccbb2d86b4be54bfe484a50f520385"
+      },
+      {
+        "path": "dart/simulation/compute/rigid_body_contact_stage.cpp",
+        "sha256": "9167bd8724600a1328f41315932efc79d4af92d7c4a7ca10bfc04cc8ec60c0be"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_pair_constraint.hpp",
+        "sha256": "735a62ae1b673ea68d7d26002cc0b72412f239216718e49ffab38b42b40cfffe"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+        "sha256": "36b8f2ba77e45f0ad54d6ca0baf9ddf929264f5697b70040c3165f427d029a79"
+      },
+      {
+        "path": "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+        "sha256": "a297c3db3999613364107c7e2528c917c97dbf59a3f2f435d9261cbaadd977c1"
+      },
+      {
+        "path": "dart/simulation/detail/world_step_schedule.hpp",
+        "sha256": "547ba1920a79a2e860fafb1fe59bba644a01ddb1caff0d50ef8440f2774aa386"
+      },
+      {
+        "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
+        "sha256": "4794bd7e3a2b549996c8774edaa3de37b10fef9b775083f8ab474e2b1b240a09"
+      },
+      {
+        "path": "python/examples/demos/scenes/vbd_paper_breakable_wall.py",
+        "sha256": "5de40f443b26a7695593a97bd77eecd0d9c2a43bfe0083c95503008a66601acc"
+      },
+      {
+        "path": "python/tests/integration/test_demos_cycle.py",
+        "sha256": "7324a53df9df13c6afd363d023f76220d40bed85986e4ad65426ee9edf0d8e10"
+      },
+      {
+        "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+        "sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834"
+      },
+      {
+        "path": "tests/unit/simulation/world/test_world.cpp",
+        "sha256": "db7c701ddf83cad31e50ebe62758c1da49996cdf1e4bd9fd4df13886710ae269"
+      },
+      {
+        "path": "scripts/avbd_packet_schema.py",
+        "sha256": "95f3a7373d9ddf5bae975a7be9f822f8884cbe67e64f352954861ef8fc23aca4"
+      },
+      {
+        "path": "scripts/capture_py_demo.py",
+        "sha256": "669e72ccf230a0c89f5d1505e648b7e4c7f189b6f79738790be9c4fe101a95ee"
+      },
+      {
+        "path": "scripts/capture_source_provenance.py",
+        "sha256": "f81a59a95a97a3efb5901d1eb6507dd1272f75cd2a4320db6d863cb48186b612"
+      },
+      {
+        "path": "scripts/write_avbd_paper_vbd_comparison_packet.py",
+        "sha256": "b64a04d92d44256e065921f352867a0f73b94a7b3304055590f9d920a3c1515c"
+      }
+    ]
+  },
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.paper.fig.13"
+    ],
+    "covered_slice": "matched CPU VBD bend/no-break row with numeric, allocation, performance, and assessed visual evidence"
+  },
+  "visual_evidence": {
+    "bend": {
+      "camera": {
+        "azimuth": -1.9634954084936207,
+        "distance": 22.0,
+        "elevation": 0.62,
+        "preset": "front",
+        "target": [
+          0.0,
+          0.45,
+          1.6
+        ],
+        "view": "front-oblique"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 18,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 1502,
+            "dark_pixels": 10930,
+            "mid_pixels": 210192,
+            "p05": 57.583,
+            "p95": 151.795,
+            "pass": true,
+            "reasons": [],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 94.213,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "18",
+          "scene": "vbd_paper_breakable_wall",
+          "view": "front-oblique"
+        },
+        "pass": true,
+        "sha256": "48d964f36f42ff56871a9da197b3d918ee655e5d6859f4e6768f7fb4d17164fe"
+      },
+      "label": "bend",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "4e2be4902f6944342f8964a122c9a74860f48d3f464ab7c9f4e3cdc5d77c8726"
+      },
+      "scene_metrics": {
+        "event_count": 18,
+        "frame": 18,
+        "outcome": {
+          "ball_positions": [
+            [
+              -3.1014592569930888,
+              -0.7592547969945558,
+              1.1637751320531748
+            ],
+            [
+              -0.30467918316160736,
+              -0.7021908461343801,
+              1.1966110030946036
+            ],
+            [
+              3.1028599580996845,
+              -0.7536264280595334,
+              2.089741239350687
+            ]
+          ],
+          "ball_velocities": [
+            [
+              -0.01804950435968955,
+              -3.572823032438268,
+              -2.293639086634111
+            ],
+            [
+              0.05703043209988379,
+              -2.8109339691265744,
+              -3.674069111342015
+            ],
+            [
+              0.031175380466725855,
+              -3.4852412474697902,
+              -0.9705517803070292
+            ]
+          ],
+          "bent_brick_count": 120,
+          "broken_joint_identity_count": 0,
+          "broken_joint_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "broken_joint_impact_region_counts": [
+            0,
+            0,
+            0
+          ],
+          "broken_joint_records": [],
+          "broken_joints": 0,
+          "broken_joints_outside_impact_regions": 0,
+          "checkpoint": "bend",
+          "contact_count": 0,
+          "evaluated": true,
+          "frame": 18,
+          "impact_band_displaced_counts": [
+            0,
+            4,
+            5
+          ],
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_residuals_finite": true,
+          "last_step_iterations": 20,
+          "max_brick_displacement": 0.13854382726065478,
+          "maximum_outside_impact_unbroken_joint_angular_residual_radians": 0.013274727518221521,
+          "maximum_outside_impact_unbroken_joint_linear_residual": 0.016387334256405626,
+          "maximum_unbroken_joint_angular_residual_radians": 0.013274727518221521,
+          "maximum_unbroken_joint_linear_residual": 0.016387334256405626,
+          "maximum_wall_normal_displacement": 0.13170492944493803,
+          "outside_brick_count": 176,
+          "outside_impact_unbroken_joint_residual_count": 484,
+          "outside_retained_fraction": 1.0,
+          "retained_displacement_threshold": 0.5,
+          "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.003082940458206736,
+          "rms_outside_impact_unbroken_joint_linear_residual": 0.004537795682318528,
+          "rms_unbroken_joint_angular_residual_radians": 0.0027849527460258924,
+          "rms_unbroken_joint_linear_residual": 0.0043428509866939155,
+          "rms_wall_normal_displacement": 0.06240700588016252,
+          "status": "pass",
+          "threshold_checks": {
+            "bend_is_spatially_resolved": true,
+            "finite_state": true,
+            "no_fracture": true,
+            "retained_joint_rows_satisfied": true,
+            "topology_retained": true,
+            "wall_bend_is_distributed": true,
+            "wall_bends": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 1.0,
+          "unbroken_joint_residual_count": 712,
+          "unbroken_joints": 712,
+          "world_time": 0.3
+        },
+        "outcome_oracle": {
+          "bent_brick_displacement_threshold": 0.05,
+          "evaluation_frame": 18,
+          "impact_band_radius": 0.85,
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_evidence_frames": [
+            18,
+            120
+          ],
+          "maximum_broken_joints": 0,
+          "maximum_unbroken_joint_angular_residual_radians": 0.02,
+          "maximum_unbroken_joint_linear_residual": 0.025,
+          "minimum_bent_bricks": 100,
+          "minimum_maximum_wall_normal_displacement": 0.1,
+          "minimum_rms_wall_normal_displacement": 0.05,
+          "minimum_total_retained_fraction": 0.99,
+          "minimum_unbroken_joints": 712,
+          "outside_radius": 1.15,
+          "retained_displacement_threshold": 0.5,
+          "retention_evaluation_frame": 120
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 5000.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "VBD",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_vbd",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.9634954084936207,
+            "distance": 22.0,
+            "elevation": 0.62,
+            "target": [
+              0.0,
+              0.45,
+              1.6
+            ]
+          },
+          "focus": [
+            "vbd_paper_wall_brick_00_00_visual",
+            "vbd_paper_wall_brick_00_01_visual",
+            "vbd_paper_wall_brick_00_02_visual",
+            "vbd_paper_wall_brick_00_03_visual",
+            "vbd_paper_wall_brick_00_04_visual",
+            "vbd_paper_wall_brick_00_05_visual",
+            "vbd_paper_wall_brick_00_06_visual",
+            "vbd_paper_wall_brick_00_07_visual",
+            "vbd_paper_wall_brick_00_08_visual",
+            "vbd_paper_wall_brick_00_09_visual",
+            "vbd_paper_wall_brick_00_10_visual",
+            "vbd_paper_wall_brick_00_11_visual",
+            "vbd_paper_wall_brick_00_12_visual",
+            "vbd_paper_wall_brick_00_13_visual",
+            "vbd_paper_wall_brick_00_14_visual",
+            "vbd_paper_wall_brick_00_15_visual",
+            "vbd_paper_wall_brick_00_16_visual",
+            "vbd_paper_wall_brick_00_17_visual",
+            "vbd_paper_wall_brick_00_18_visual",
+            "vbd_paper_wall_brick_00_19_visual",
+            "vbd_paper_wall_brick_00_20_visual",
+            "vbd_paper_wall_brick_01_00_visual",
+            "vbd_paper_wall_brick_01_01_visual",
+            "vbd_paper_wall_brick_01_02_visual",
+            "vbd_paper_wall_brick_01_03_visual",
+            "vbd_paper_wall_brick_01_04_visual",
+            "vbd_paper_wall_brick_01_05_visual",
+            "vbd_paper_wall_brick_01_06_visual",
+            "vbd_paper_wall_brick_01_07_visual",
+            "vbd_paper_wall_brick_01_08_visual",
+            "vbd_paper_wall_brick_01_09_visual",
+            "vbd_paper_wall_brick_01_10_visual",
+            "vbd_paper_wall_brick_01_11_visual",
+            "vbd_paper_wall_brick_01_12_visual",
+            "vbd_paper_wall_brick_01_13_visual",
+            "vbd_paper_wall_brick_01_14_visual",
+            "vbd_paper_wall_brick_01_15_visual",
+            "vbd_paper_wall_brick_01_16_visual",
+            "vbd_paper_wall_brick_01_17_visual",
+            "vbd_paper_wall_brick_01_18_visual",
+            "vbd_paper_wall_brick_01_19_visual",
+            "vbd_paper_wall_brick_01_20_visual",
+            "vbd_paper_wall_brick_02_00_visual",
+            "vbd_paper_wall_brick_02_01_visual",
+            "vbd_paper_wall_brick_02_02_visual",
+            "vbd_paper_wall_brick_02_03_visual",
+            "vbd_paper_wall_brick_02_04_visual",
+            "vbd_paper_wall_brick_02_05_visual",
+            "vbd_paper_wall_brick_02_06_visual",
+            "vbd_paper_wall_brick_02_07_visual",
+            "vbd_paper_wall_brick_02_08_visual",
+            "vbd_paper_wall_brick_02_09_visual",
+            "vbd_paper_wall_brick_02_10_visual",
+            "vbd_paper_wall_brick_02_11_visual",
+            "vbd_paper_wall_brick_02_12_visual",
+            "vbd_paper_wall_brick_02_13_visual",
+            "vbd_paper_wall_brick_02_14_visual",
+            "vbd_paper_wall_brick_02_15_visual",
+            "vbd_paper_wall_brick_02_16_visual",
+            "vbd_paper_wall_brick_02_17_visual",
+            "vbd_paper_wall_brick_02_18_visual",
+            "vbd_paper_wall_brick_02_19_visual",
+            "vbd_paper_wall_brick_02_20_visual",
+            "vbd_paper_wall_brick_03_00_visual",
+            "vbd_paper_wall_brick_03_01_visual",
+            "vbd_paper_wall_brick_03_02_visual",
+            "vbd_paper_wall_brick_03_03_visual",
+            "vbd_paper_wall_brick_03_04_visual",
+            "vbd_paper_wall_brick_03_05_visual",
+            "vbd_paper_wall_brick_03_06_visual",
+            "vbd_paper_wall_brick_03_07_visual",
+            "vbd_paper_wall_brick_03_08_visual",
+            "vbd_paper_wall_brick_03_09_visual",
+            "vbd_paper_wall_brick_03_10_visual",
+            "vbd_paper_wall_brick_03_11_visual",
+            "vbd_paper_wall_brick_03_12_visual",
+            "vbd_paper_wall_brick_03_13_visual",
+            "vbd_paper_wall_brick_03_14_visual",
+            "vbd_paper_wall_brick_03_15_visual",
+            "vbd_paper_wall_brick_03_16_visual",
+            "vbd_paper_wall_brick_03_17_visual",
+            "vbd_paper_wall_brick_03_18_visual",
+            "vbd_paper_wall_brick_03_19_visual",
+            "vbd_paper_wall_brick_03_20_visual",
+            "vbd_paper_wall_brick_04_00_visual",
+            "vbd_paper_wall_brick_04_01_visual",
+            "vbd_paper_wall_brick_04_02_visual",
+            "vbd_paper_wall_brick_04_03_visual",
+            "vbd_paper_wall_brick_04_04_visual",
+            "vbd_paper_wall_brick_04_05_visual",
+            "vbd_paper_wall_brick_04_06_visual",
+            "vbd_paper_wall_brick_04_07_visual",
+            "vbd_paper_wall_brick_04_08_visual",
+            "vbd_paper_wall_brick_04_09_visual",
+            "vbd_paper_wall_brick_04_10_visual",
+            "vbd_paper_wall_brick_04_11_visual",
+            "vbd_paper_wall_brick_04_12_visual",
+            "vbd_paper_wall_brick_04_13_visual",
+            "vbd_paper_wall_brick_04_14_visual",
+            "vbd_paper_wall_brick_04_15_visual",
+            "vbd_paper_wall_brick_04_16_visual",
+            "vbd_paper_wall_brick_04_17_visual",
+            "vbd_paper_wall_brick_04_18_visual",
+            "vbd_paper_wall_brick_04_19_visual",
+            "vbd_paper_wall_brick_04_20_visual",
+            "vbd_paper_wall_brick_05_00_visual",
+            "vbd_paper_wall_brick_05_01_visual",
+            "vbd_paper_wall_brick_05_02_visual",
+            "vbd_paper_wall_brick_05_03_visual",
+            "vbd_paper_wall_brick_05_04_visual",
+            "vbd_paper_wall_brick_05_05_visual",
+            "vbd_paper_wall_brick_05_06_visual",
+            "vbd_paper_wall_brick_05_07_visual",
+            "vbd_paper_wall_brick_05_08_visual",
+            "vbd_paper_wall_brick_05_09_visual",
+            "vbd_paper_wall_brick_05_10_visual",
+            "vbd_paper_wall_brick_05_11_visual",
+            "vbd_paper_wall_brick_05_12_visual",
+            "vbd_paper_wall_brick_05_13_visual",
+            "vbd_paper_wall_brick_05_14_visual",
+            "vbd_paper_wall_brick_05_15_visual",
+            "vbd_paper_wall_brick_05_16_visual",
+            "vbd_paper_wall_brick_05_17_visual",
+            "vbd_paper_wall_brick_05_18_visual",
+            "vbd_paper_wall_brick_05_19_visual",
+            "vbd_paper_wall_brick_05_20_visual",
+            "vbd_paper_wall_brick_06_00_visual",
+            "vbd_paper_wall_brick_06_01_visual",
+            "vbd_paper_wall_brick_06_02_visual",
+            "vbd_paper_wall_brick_06_03_visual",
+            "vbd_paper_wall_brick_06_04_visual",
+            "vbd_paper_wall_brick_06_05_visual",
+            "vbd_paper_wall_brick_06_06_visual",
+            "vbd_paper_wall_brick_06_07_visual",
+            "vbd_paper_wall_brick_06_08_visual",
+            "vbd_paper_wall_brick_06_09_visual",
+            "vbd_paper_wall_brick_06_10_visual",
+            "vbd_paper_wall_brick_06_11_visual",
+            "vbd_paper_wall_brick_06_12_visual",
+            "vbd_paper_wall_brick_06_13_visual",
+            "vbd_paper_wall_brick_06_14_visual",
+            "vbd_paper_wall_brick_06_15_visual",
+            "vbd_paper_wall_brick_06_16_visual",
+            "vbd_paper_wall_brick_06_17_visual",
+            "vbd_paper_wall_brick_06_18_visual",
+            "vbd_paper_wall_brick_06_19_visual",
+            "vbd_paper_wall_brick_06_20_visual",
+            "vbd_paper_wall_brick_07_00_visual",
+            "vbd_paper_wall_brick_07_01_visual",
+            "vbd_paper_wall_brick_07_02_visual",
+            "vbd_paper_wall_brick_07_03_visual",
+            "vbd_paper_wall_brick_07_04_visual",
+            "vbd_paper_wall_brick_07_05_visual",
+            "vbd_paper_wall_brick_07_06_visual",
+            "vbd_paper_wall_brick_07_07_visual",
+            "vbd_paper_wall_brick_07_08_visual",
+            "vbd_paper_wall_brick_07_09_visual",
+            "vbd_paper_wall_brick_07_10_visual",
+            "vbd_paper_wall_brick_07_11_visual",
+            "vbd_paper_wall_brick_07_12_visual",
+            "vbd_paper_wall_brick_07_13_visual",
+            "vbd_paper_wall_brick_07_14_visual",
+            "vbd_paper_wall_brick_07_15_visual",
+            "vbd_paper_wall_brick_07_16_visual",
+            "vbd_paper_wall_brick_07_17_visual",
+            "vbd_paper_wall_brick_07_18_visual",
+            "vbd_paper_wall_brick_07_19_visual",
+            "vbd_paper_wall_brick_07_20_visual",
+            "vbd_paper_wall_brick_08_00_visual",
+            "vbd_paper_wall_brick_08_01_visual",
+            "vbd_paper_wall_brick_08_02_visual",
+            "vbd_paper_wall_brick_08_03_visual",
+            "vbd_paper_wall_brick_08_04_visual",
+            "vbd_paper_wall_brick_08_05_visual",
+            "vbd_paper_wall_brick_08_06_visual",
+            "vbd_paper_wall_brick_08_07_visual",
+            "vbd_paper_wall_brick_08_08_visual",
+            "vbd_paper_wall_brick_08_09_visual",
+            "vbd_paper_wall_brick_08_10_visual",
+            "vbd_paper_wall_brick_08_11_visual",
+            "vbd_paper_wall_brick_08_12_visual",
+            "vbd_paper_wall_brick_08_13_visual",
+            "vbd_paper_wall_brick_08_14_visual",
+            "vbd_paper_wall_brick_08_15_visual",
+            "vbd_paper_wall_brick_08_16_visual",
+            "vbd_paper_wall_brick_08_17_visual",
+            "vbd_paper_wall_brick_08_18_visual",
+            "vbd_paper_wall_brick_08_19_visual",
+            "vbd_paper_wall_brick_08_20_visual",
+            "vbd_paper_wall_brick_09_00_visual",
+            "vbd_paper_wall_brick_09_01_visual",
+            "vbd_paper_wall_brick_09_02_visual",
+            "vbd_paper_wall_brick_09_03_visual",
+            "vbd_paper_wall_brick_09_04_visual",
+            "vbd_paper_wall_brick_09_05_visual",
+            "vbd_paper_wall_brick_09_06_visual",
+            "vbd_paper_wall_brick_09_07_visual",
+            "vbd_paper_wall_brick_09_08_visual",
+            "vbd_paper_wall_brick_09_09_visual",
+            "vbd_paper_wall_brick_09_10_visual",
+            "vbd_paper_wall_brick_09_11_visual",
+            "vbd_paper_wall_brick_09_12_visual",
+            "vbd_paper_wall_brick_09_13_visual",
+            "vbd_paper_wall_brick_09_14_visual",
+            "vbd_paper_wall_brick_09_15_visual",
+            "vbd_paper_wall_brick_09_16_visual",
+            "vbd_paper_wall_brick_09_17_visual",
+            "vbd_paper_wall_brick_09_18_visual",
+            "vbd_paper_wall_brick_09_19_visual",
+            "vbd_paper_wall_brick_09_20_visual",
+            "vbd_paper_wall_brick_10_00_visual",
+            "vbd_paper_wall_brick_10_01_visual",
+            "vbd_paper_wall_brick_10_02_visual",
+            "vbd_paper_wall_brick_10_03_visual",
+            "vbd_paper_wall_brick_10_04_visual",
+            "vbd_paper_wall_brick_10_05_visual",
+            "vbd_paper_wall_brick_10_06_visual",
+            "vbd_paper_wall_brick_10_07_visual",
+            "vbd_paper_wall_brick_10_08_visual",
+            "vbd_paper_wall_brick_10_09_visual",
+            "vbd_paper_wall_brick_10_10_visual",
+            "vbd_paper_wall_brick_10_11_visual",
+            "vbd_paper_wall_brick_10_12_visual",
+            "vbd_paper_wall_brick_10_13_visual",
+            "vbd_paper_wall_brick_10_14_visual",
+            "vbd_paper_wall_brick_10_15_visual",
+            "vbd_paper_wall_brick_10_16_visual",
+            "vbd_paper_wall_brick_10_17_visual",
+            "vbd_paper_wall_brick_10_18_visual",
+            "vbd_paper_wall_brick_10_19_visual",
+            "vbd_paper_wall_brick_10_20_visual",
+            "vbd_paper_wall_brick_11_00_visual",
+            "vbd_paper_wall_brick_11_01_visual",
+            "vbd_paper_wall_brick_11_02_visual",
+            "vbd_paper_wall_brick_11_03_visual",
+            "vbd_paper_wall_brick_11_04_visual",
+            "vbd_paper_wall_brick_11_05_visual",
+            "vbd_paper_wall_brick_11_06_visual",
+            "vbd_paper_wall_brick_11_07_visual",
+            "vbd_paper_wall_brick_11_08_visual",
+            "vbd_paper_wall_brick_11_09_visual",
+            "vbd_paper_wall_brick_11_10_visual",
+            "vbd_paper_wall_brick_11_11_visual",
+            "vbd_paper_wall_brick_11_12_visual",
+            "vbd_paper_wall_brick_11_13_visual",
+            "vbd_paper_wall_brick_11_14_visual",
+            "vbd_paper_wall_brick_11_15_visual",
+            "vbd_paper_wall_brick_11_16_visual",
+            "vbd_paper_wall_brick_11_17_visual",
+            "vbd_paper_wall_brick_11_18_visual",
+            "vbd_paper_wall_brick_11_19_visual",
+            "vbd_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.07285040741785634,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.07238472979672782,
+            "subject_fraction": 0.12988832614544665
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.9010333145535903,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 18,
+        "file": "scene_metrics.jsonl",
+        "sha256": "5ea70b2b5c1f77932252c404c4707f13fa68f4ac78f3de2fcee191715adb18cc"
+      },
+      "screenshot": {
+        "file": "vbd_paper_breakable_wall_bend.png",
+        "sha256": "6da21444b1d674db5034e439806ee0e13fd59086896159965135845e38778d99"
+      },
+      "source_provenance": {
+        "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
+        "file_count": 1556,
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
+        "roots": [
+          "CMakeLists.txt",
+          "cmake",
+          "dart",
+          "pixi.lock",
+          "pixi.toml",
+          "pyproject.toml",
+          "python/CMakeLists.txt",
+          "python/dartpy",
+          "python/examples/demos",
+          "scripts/capture_py_demo.py",
+          "scripts/capture_source_provenance.py"
+        ]
+      }
+    },
+    "retention": {
+      "camera": {
+        "azimuth": -1.9634954084936207,
+        "distance": 22.0,
+        "elevation": 0.62,
+        "preset": "front",
+        "target": [
+          0.0,
+          0.45,
+          1.6
+        ],
+        "view": "front-oblique"
+      },
+      "capture": {
+        "height": 720,
+        "requested_frames": 120,
+        "width": 1280
+      },
+      "image_verdict": {
+        "checks": {
+          "contrast": {
+            "bright_pixels": 834,
+            "dark_pixels": 12615,
+            "mid_pixels": 208277,
+            "p05": 53.585,
+            "p95": 151.511,
+            "pass": false,
+            "reasons": [
+              "bright pixels 834 < 1180"
+            ],
+            "region": {
+              "x0": 512,
+              "x1": 1241,
+              "y0": 324,
+              "y1": 648
+            },
+            "sample_count": 236196,
+            "spread": 97.926,
+            "thresholds": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 1180,
+              "min_dark_pixels": 1180,
+              "min_mid_pixels": 590,
+              "min_spread": 90.0
+            }
+          },
+          "non_blank": {
+            "nonzero_pixels": 921600,
+            "pass": true,
+            "reasons": [],
+            "total_pixels": 921600,
+            "unique_colors_seen": 2
+          }
+        },
+        "file": "image_verdict.json",
+        "machine_scope": "pixel-integrity",
+        "metadata": {
+          "frame": "120",
+          "scene": "vbd_paper_breakable_wall",
+          "view": "front-oblique"
+        },
+        "pass": true,
+        "sha256": "40a235d67c35be828dd1481ef6f8c81a200c8a116d85fda382f0944b6fc22ef1"
+      },
+      "label": "retention",
+      "manifest": {
+        "file": "manifest.json",
+        "sha256": "26a46bc09a92781a08b058c7bdeec6018bb763e3cc41ca83e452312130d056d5"
+      },
+      "scene_metrics": {
+        "event_count": 120,
+        "frame": 120,
+        "outcome": {
+          "ball_positions": [
+            [
+              -3.125555460728934,
+              -7.671374895680189,
+              0.4686195633730729
+            ],
+            [
+              -0.19942612148175146,
+              -8.118870102980527,
+              0.46447257482942617
+            ],
+            [
+              3.151867589584558,
+              -6.806155197651065,
+              0.4708517705330658
+            ]
+          ],
+          "ball_velocities": [
+            [
+              -0.016267998128833838,
+              -4.967081942646114,
+              -0.003748731241216552
+            ],
+            [
+              0.07524817011433371,
+              -5.4520079780169795,
+              -0.15651438834559106
+            ],
+            [
+              0.03238103370306611,
+              -4.1726156681591675,
+              -0.0026075142400872053
+            ]
+          ],
+          "bent_brick_count": 0,
+          "broken_joint_identity_count": 0,
+          "broken_joint_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "broken_joint_impact_region_counts": [
+            0,
+            0,
+            0
+          ],
+          "broken_joint_records": [],
+          "broken_joints": 0,
+          "broken_joints_outside_impact_regions": 0,
+          "checkpoint": "retention",
+          "contact_count": 3,
+          "evaluated": true,
+          "frame": 120,
+          "impact_band_displaced_counts": [
+            0,
+            0,
+            0
+          ],
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_residuals_finite": true,
+          "last_step_iterations": 20,
+          "max_brick_displacement": 0.04258107111139716,
+          "maximum_outside_impact_unbroken_joint_angular_residual_radians": 0.0013102017627858748,
+          "maximum_outside_impact_unbroken_joint_linear_residual": 0.011095423045945942,
+          "maximum_unbroken_joint_angular_residual_radians": 0.0013102017627858748,
+          "maximum_unbroken_joint_linear_residual": 0.011095423045945942,
+          "maximum_wall_normal_displacement": 2.768451341265596e-07,
+          "outside_brick_count": 176,
+          "outside_impact_unbroken_joint_residual_count": 484,
+          "outside_retained_fraction": 1.0,
+          "retained_displacement_threshold": 0.5,
+          "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.00012405458809986383,
+          "rms_outside_impact_unbroken_joint_linear_residual": 0.0033561626121136412,
+          "rms_unbroken_joint_angular_residual_radians": 0.00010376313731970173,
+          "rms_unbroken_joint_linear_residual": 0.0030478012212411237,
+          "rms_wall_normal_displacement": 1.0811876990727442e-07,
+          "status": "pass",
+          "threshold_checks": {
+            "finite_state": true,
+            "no_fracture": true,
+            "retained_joint_rows_satisfied": true,
+            "topology_retained": true,
+            "wall_retained": true
+          },
+          "thresholds_pass": true,
+          "total_retained_fraction": 1.0,
+          "unbroken_joint_residual_count": 712,
+          "unbroken_joints": 712,
+          "world_time": 1.9999999999999978
+        },
+        "outcome_oracle": {
+          "bent_brick_displacement_threshold": 0.05,
+          "evaluation_frame": 18,
+          "impact_band_radius": 0.85,
+          "impact_damage_displacement_threshold": 0.1,
+          "joint_evidence_frames": [
+            18,
+            120
+          ],
+          "maximum_broken_joints": 0,
+          "maximum_unbroken_joint_angular_residual_radians": 0.02,
+          "maximum_unbroken_joint_linear_residual": 0.025,
+          "minimum_bent_bricks": 100,
+          "minimum_maximum_wall_normal_displacement": 0.1,
+          "minimum_rms_wall_normal_displacement": 0.05,
+          "minimum_total_retained_fraction": 0.99,
+          "minimum_unbroken_joints": 712,
+          "outside_radius": 1.15,
+          "retained_displacement_threshold": 0.5,
+          "retention_evaluation_frame": 120
+        },
+        "resolved_configuration": [
+          {
+            "domain": "rigid-body",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-contact",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-pair-constraint",
+            "reason": "as requested",
+            "requested": "vbd",
+            "resolved": "vbd"
+          },
+          {
+            "domain": "rigid-constraint-iterations",
+            "reason": "as requested",
+            "requested": "20",
+            "resolved": "20"
+          },
+          {
+            "domain": "multibody",
+            "reason": "as requested",
+            "requested": "semi-implicit",
+            "resolved": "semi-implicit"
+          },
+          {
+            "domain": "deformable-psd",
+            "reason": "as requested",
+            "requested": "cpu",
+            "resolved": "cpu"
+          }
+        ],
+        "scene_contract": {
+          "ball_count": 3,
+          "break_force": 5000.0,
+          "breakable_joints": 712,
+          "brick_count": 252,
+          "collision_shapes": 256,
+          "executor": "World.step default",
+          "paper_locator": "Section 5.4 and Figure 13, PDF page 10",
+          "rigid_bodies": 256,
+          "rigid_body_solver": "VBD",
+          "rigid_constraint_options": {
+            "iterations": 20
+          },
+          "solver": "public_vbd",
+          "time_step_ms": 16.666666666666668
+        },
+        "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
+        "view_report": {
+          "camera": {
+            "azimuth": -1.9634954084936207,
+            "distance": 22.0,
+            "elevation": 0.62,
+            "target": [
+              0.0,
+              0.45,
+              1.6
+            ]
+          },
+          "focus": [
+            "vbd_paper_wall_brick_00_00_visual",
+            "vbd_paper_wall_brick_00_01_visual",
+            "vbd_paper_wall_brick_00_02_visual",
+            "vbd_paper_wall_brick_00_03_visual",
+            "vbd_paper_wall_brick_00_04_visual",
+            "vbd_paper_wall_brick_00_05_visual",
+            "vbd_paper_wall_brick_00_06_visual",
+            "vbd_paper_wall_brick_00_07_visual",
+            "vbd_paper_wall_brick_00_08_visual",
+            "vbd_paper_wall_brick_00_09_visual",
+            "vbd_paper_wall_brick_00_10_visual",
+            "vbd_paper_wall_brick_00_11_visual",
+            "vbd_paper_wall_brick_00_12_visual",
+            "vbd_paper_wall_brick_00_13_visual",
+            "vbd_paper_wall_brick_00_14_visual",
+            "vbd_paper_wall_brick_00_15_visual",
+            "vbd_paper_wall_brick_00_16_visual",
+            "vbd_paper_wall_brick_00_17_visual",
+            "vbd_paper_wall_brick_00_18_visual",
+            "vbd_paper_wall_brick_00_19_visual",
+            "vbd_paper_wall_brick_00_20_visual",
+            "vbd_paper_wall_brick_01_00_visual",
+            "vbd_paper_wall_brick_01_01_visual",
+            "vbd_paper_wall_brick_01_02_visual",
+            "vbd_paper_wall_brick_01_03_visual",
+            "vbd_paper_wall_brick_01_04_visual",
+            "vbd_paper_wall_brick_01_05_visual",
+            "vbd_paper_wall_brick_01_06_visual",
+            "vbd_paper_wall_brick_01_07_visual",
+            "vbd_paper_wall_brick_01_08_visual",
+            "vbd_paper_wall_brick_01_09_visual",
+            "vbd_paper_wall_brick_01_10_visual",
+            "vbd_paper_wall_brick_01_11_visual",
+            "vbd_paper_wall_brick_01_12_visual",
+            "vbd_paper_wall_brick_01_13_visual",
+            "vbd_paper_wall_brick_01_14_visual",
+            "vbd_paper_wall_brick_01_15_visual",
+            "vbd_paper_wall_brick_01_16_visual",
+            "vbd_paper_wall_brick_01_17_visual",
+            "vbd_paper_wall_brick_01_18_visual",
+            "vbd_paper_wall_brick_01_19_visual",
+            "vbd_paper_wall_brick_01_20_visual",
+            "vbd_paper_wall_brick_02_00_visual",
+            "vbd_paper_wall_brick_02_01_visual",
+            "vbd_paper_wall_brick_02_02_visual",
+            "vbd_paper_wall_brick_02_03_visual",
+            "vbd_paper_wall_brick_02_04_visual",
+            "vbd_paper_wall_brick_02_05_visual",
+            "vbd_paper_wall_brick_02_06_visual",
+            "vbd_paper_wall_brick_02_07_visual",
+            "vbd_paper_wall_brick_02_08_visual",
+            "vbd_paper_wall_brick_02_09_visual",
+            "vbd_paper_wall_brick_02_10_visual",
+            "vbd_paper_wall_brick_02_11_visual",
+            "vbd_paper_wall_brick_02_12_visual",
+            "vbd_paper_wall_brick_02_13_visual",
+            "vbd_paper_wall_brick_02_14_visual",
+            "vbd_paper_wall_brick_02_15_visual",
+            "vbd_paper_wall_brick_02_16_visual",
+            "vbd_paper_wall_brick_02_17_visual",
+            "vbd_paper_wall_brick_02_18_visual",
+            "vbd_paper_wall_brick_02_19_visual",
+            "vbd_paper_wall_brick_02_20_visual",
+            "vbd_paper_wall_brick_03_00_visual",
+            "vbd_paper_wall_brick_03_01_visual",
+            "vbd_paper_wall_brick_03_02_visual",
+            "vbd_paper_wall_brick_03_03_visual",
+            "vbd_paper_wall_brick_03_04_visual",
+            "vbd_paper_wall_brick_03_05_visual",
+            "vbd_paper_wall_brick_03_06_visual",
+            "vbd_paper_wall_brick_03_07_visual",
+            "vbd_paper_wall_brick_03_08_visual",
+            "vbd_paper_wall_brick_03_09_visual",
+            "vbd_paper_wall_brick_03_10_visual",
+            "vbd_paper_wall_brick_03_11_visual",
+            "vbd_paper_wall_brick_03_12_visual",
+            "vbd_paper_wall_brick_03_13_visual",
+            "vbd_paper_wall_brick_03_14_visual",
+            "vbd_paper_wall_brick_03_15_visual",
+            "vbd_paper_wall_brick_03_16_visual",
+            "vbd_paper_wall_brick_03_17_visual",
+            "vbd_paper_wall_brick_03_18_visual",
+            "vbd_paper_wall_brick_03_19_visual",
+            "vbd_paper_wall_brick_03_20_visual",
+            "vbd_paper_wall_brick_04_00_visual",
+            "vbd_paper_wall_brick_04_01_visual",
+            "vbd_paper_wall_brick_04_02_visual",
+            "vbd_paper_wall_brick_04_03_visual",
+            "vbd_paper_wall_brick_04_04_visual",
+            "vbd_paper_wall_brick_04_05_visual",
+            "vbd_paper_wall_brick_04_06_visual",
+            "vbd_paper_wall_brick_04_07_visual",
+            "vbd_paper_wall_brick_04_08_visual",
+            "vbd_paper_wall_brick_04_09_visual",
+            "vbd_paper_wall_brick_04_10_visual",
+            "vbd_paper_wall_brick_04_11_visual",
+            "vbd_paper_wall_brick_04_12_visual",
+            "vbd_paper_wall_brick_04_13_visual",
+            "vbd_paper_wall_brick_04_14_visual",
+            "vbd_paper_wall_brick_04_15_visual",
+            "vbd_paper_wall_brick_04_16_visual",
+            "vbd_paper_wall_brick_04_17_visual",
+            "vbd_paper_wall_brick_04_18_visual",
+            "vbd_paper_wall_brick_04_19_visual",
+            "vbd_paper_wall_brick_04_20_visual",
+            "vbd_paper_wall_brick_05_00_visual",
+            "vbd_paper_wall_brick_05_01_visual",
+            "vbd_paper_wall_brick_05_02_visual",
+            "vbd_paper_wall_brick_05_03_visual",
+            "vbd_paper_wall_brick_05_04_visual",
+            "vbd_paper_wall_brick_05_05_visual",
+            "vbd_paper_wall_brick_05_06_visual",
+            "vbd_paper_wall_brick_05_07_visual",
+            "vbd_paper_wall_brick_05_08_visual",
+            "vbd_paper_wall_brick_05_09_visual",
+            "vbd_paper_wall_brick_05_10_visual",
+            "vbd_paper_wall_brick_05_11_visual",
+            "vbd_paper_wall_brick_05_12_visual",
+            "vbd_paper_wall_brick_05_13_visual",
+            "vbd_paper_wall_brick_05_14_visual",
+            "vbd_paper_wall_brick_05_15_visual",
+            "vbd_paper_wall_brick_05_16_visual",
+            "vbd_paper_wall_brick_05_17_visual",
+            "vbd_paper_wall_brick_05_18_visual",
+            "vbd_paper_wall_brick_05_19_visual",
+            "vbd_paper_wall_brick_05_20_visual",
+            "vbd_paper_wall_brick_06_00_visual",
+            "vbd_paper_wall_brick_06_01_visual",
+            "vbd_paper_wall_brick_06_02_visual",
+            "vbd_paper_wall_brick_06_03_visual",
+            "vbd_paper_wall_brick_06_04_visual",
+            "vbd_paper_wall_brick_06_05_visual",
+            "vbd_paper_wall_brick_06_06_visual",
+            "vbd_paper_wall_brick_06_07_visual",
+            "vbd_paper_wall_brick_06_08_visual",
+            "vbd_paper_wall_brick_06_09_visual",
+            "vbd_paper_wall_brick_06_10_visual",
+            "vbd_paper_wall_brick_06_11_visual",
+            "vbd_paper_wall_brick_06_12_visual",
+            "vbd_paper_wall_brick_06_13_visual",
+            "vbd_paper_wall_brick_06_14_visual",
+            "vbd_paper_wall_brick_06_15_visual",
+            "vbd_paper_wall_brick_06_16_visual",
+            "vbd_paper_wall_brick_06_17_visual",
+            "vbd_paper_wall_brick_06_18_visual",
+            "vbd_paper_wall_brick_06_19_visual",
+            "vbd_paper_wall_brick_06_20_visual",
+            "vbd_paper_wall_brick_07_00_visual",
+            "vbd_paper_wall_brick_07_01_visual",
+            "vbd_paper_wall_brick_07_02_visual",
+            "vbd_paper_wall_brick_07_03_visual",
+            "vbd_paper_wall_brick_07_04_visual",
+            "vbd_paper_wall_brick_07_05_visual",
+            "vbd_paper_wall_brick_07_06_visual",
+            "vbd_paper_wall_brick_07_07_visual",
+            "vbd_paper_wall_brick_07_08_visual",
+            "vbd_paper_wall_brick_07_09_visual",
+            "vbd_paper_wall_brick_07_10_visual",
+            "vbd_paper_wall_brick_07_11_visual",
+            "vbd_paper_wall_brick_07_12_visual",
+            "vbd_paper_wall_brick_07_13_visual",
+            "vbd_paper_wall_brick_07_14_visual",
+            "vbd_paper_wall_brick_07_15_visual",
+            "vbd_paper_wall_brick_07_16_visual",
+            "vbd_paper_wall_brick_07_17_visual",
+            "vbd_paper_wall_brick_07_18_visual",
+            "vbd_paper_wall_brick_07_19_visual",
+            "vbd_paper_wall_brick_07_20_visual",
+            "vbd_paper_wall_brick_08_00_visual",
+            "vbd_paper_wall_brick_08_01_visual",
+            "vbd_paper_wall_brick_08_02_visual",
+            "vbd_paper_wall_brick_08_03_visual",
+            "vbd_paper_wall_brick_08_04_visual",
+            "vbd_paper_wall_brick_08_05_visual",
+            "vbd_paper_wall_brick_08_06_visual",
+            "vbd_paper_wall_brick_08_07_visual",
+            "vbd_paper_wall_brick_08_08_visual",
+            "vbd_paper_wall_brick_08_09_visual",
+            "vbd_paper_wall_brick_08_10_visual",
+            "vbd_paper_wall_brick_08_11_visual",
+            "vbd_paper_wall_brick_08_12_visual",
+            "vbd_paper_wall_brick_08_13_visual",
+            "vbd_paper_wall_brick_08_14_visual",
+            "vbd_paper_wall_brick_08_15_visual",
+            "vbd_paper_wall_brick_08_16_visual",
+            "vbd_paper_wall_brick_08_17_visual",
+            "vbd_paper_wall_brick_08_18_visual",
+            "vbd_paper_wall_brick_08_19_visual",
+            "vbd_paper_wall_brick_08_20_visual",
+            "vbd_paper_wall_brick_09_00_visual",
+            "vbd_paper_wall_brick_09_01_visual",
+            "vbd_paper_wall_brick_09_02_visual",
+            "vbd_paper_wall_brick_09_03_visual",
+            "vbd_paper_wall_brick_09_04_visual",
+            "vbd_paper_wall_brick_09_05_visual",
+            "vbd_paper_wall_brick_09_06_visual",
+            "vbd_paper_wall_brick_09_07_visual",
+            "vbd_paper_wall_brick_09_08_visual",
+            "vbd_paper_wall_brick_09_09_visual",
+            "vbd_paper_wall_brick_09_10_visual",
+            "vbd_paper_wall_brick_09_11_visual",
+            "vbd_paper_wall_brick_09_12_visual",
+            "vbd_paper_wall_brick_09_13_visual",
+            "vbd_paper_wall_brick_09_14_visual",
+            "vbd_paper_wall_brick_09_15_visual",
+            "vbd_paper_wall_brick_09_16_visual",
+            "vbd_paper_wall_brick_09_17_visual",
+            "vbd_paper_wall_brick_09_18_visual",
+            "vbd_paper_wall_brick_09_19_visual",
+            "vbd_paper_wall_brick_09_20_visual",
+            "vbd_paper_wall_brick_10_00_visual",
+            "vbd_paper_wall_brick_10_01_visual",
+            "vbd_paper_wall_brick_10_02_visual",
+            "vbd_paper_wall_brick_10_03_visual",
+            "vbd_paper_wall_brick_10_04_visual",
+            "vbd_paper_wall_brick_10_05_visual",
+            "vbd_paper_wall_brick_10_06_visual",
+            "vbd_paper_wall_brick_10_07_visual",
+            "vbd_paper_wall_brick_10_08_visual",
+            "vbd_paper_wall_brick_10_09_visual",
+            "vbd_paper_wall_brick_10_10_visual",
+            "vbd_paper_wall_brick_10_11_visual",
+            "vbd_paper_wall_brick_10_12_visual",
+            "vbd_paper_wall_brick_10_13_visual",
+            "vbd_paper_wall_brick_10_14_visual",
+            "vbd_paper_wall_brick_10_15_visual",
+            "vbd_paper_wall_brick_10_16_visual",
+            "vbd_paper_wall_brick_10_17_visual",
+            "vbd_paper_wall_brick_10_18_visual",
+            "vbd_paper_wall_brick_10_19_visual",
+            "vbd_paper_wall_brick_10_20_visual",
+            "vbd_paper_wall_brick_11_00_visual",
+            "vbd_paper_wall_brick_11_01_visual",
+            "vbd_paper_wall_brick_11_02_visual",
+            "vbd_paper_wall_brick_11_03_visual",
+            "vbd_paper_wall_brick_11_04_visual",
+            "vbd_paper_wall_brick_11_05_visual",
+            "vbd_paper_wall_brick_11_06_visual",
+            "vbd_paper_wall_brick_11_07_visual",
+            "vbd_paper_wall_brick_11_08_visual",
+            "vbd_paper_wall_brick_11_09_visual",
+            "vbd_paper_wall_brick_11_10_visual",
+            "vbd_paper_wall_brick_11_11_visual",
+            "vbd_paper_wall_brick_11_12_visual",
+            "vbd_paper_wall_brick_11_13_visual",
+            "vbd_paper_wall_brick_11_14_visual",
+            "vbd_paper_wall_brick_11_15_visual",
+            "vbd_paper_wall_brick_11_16_visual",
+            "vbd_paper_wall_brick_11_17_visual",
+            "vbd_paper_wall_brick_11_18_visual",
+            "vbd_paper_wall_brick_11_19_visual",
+            "vbd_paper_wall_brick_11_20_visual"
+          ],
+          "issues": [],
+          "metrics": {
+            "ambiguity_iou": 0.07837771736585745,
+            "center_visible": true,
+            "corner_coverage": 1.0,
+            "occlusion_fraction": 0.0,
+            "subject_fraction": 0.12977805280679702
+          },
+          "pass": true,
+          "schema_version": "dart.view_report/v1",
+          "score": 0.9705889922670318,
+          "size": [
+            1280,
+            720
+          ]
+        }
+      },
+      "scene_metrics_events": {
+        "event_count": 120,
+        "file": "scene_metrics.jsonl",
+        "sha256": "67c1fc3952360c4b915d1fe935562c13e7b01cc1e94ee42e84ce5f0a117db3bb"
+      },
+      "screenshot": {
+        "file": "vbd_paper_breakable_wall_retention.png",
+        "sha256": "47c3cb1efecb530da0cc842797d3cbf97805a27a43a6c20157cd111d9649c83b"
+      },
+      "source_provenance": {
+        "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
+        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
+        "file_count": 1556,
+        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
+        "roots": [
+          "CMakeLists.txt",
+          "cmake",
+          "dart",
+          "pixi.lock",
+          "pixi.toml",
+          "pyproject.toml",
+          "python/CMakeLists.txt",
+          "python/dartpy",
+          "python/examples/demos",
+          "scripts/capture_py_demo.py",
+          "scripts/capture_source_provenance.py"
+        ]
+      }
+    },
+    "semantic_review": {
+      "claim_and_expected_observation": "The matched VBD Figure 13 row should bend in a spatially distributed way under impact without fracture, then retain every brick and all 712 attachment rows.",
+      "file": "vbd-visual-review.json",
+      "inspected_images": [
+        {
+          "file": "vbd_paper_breakable_wall_bend.png",
+          "role": "bend_frame_18",
+          "sha256": "6da21444b1d674db5034e439806ee0e13fd59086896159965135845e38778d99"
+        },
+        {
+          "file": "vbd_paper_breakable_wall_retention.png",
+          "role": "retention_frame_120",
+          "sha256": "47c3cb1efecb530da0cc842797d3cbf97805a27a43a6c20157cd111d9649c83b"
+        },
+        {
+          "file": "paper-10.png",
+          "role": "paper_figure_13_reference",
+          "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b"
+        }
+      ],
+      "not_proven_and_limitations": "The front-oblique image makes depth-wise bending intentionally subtle, so the measured magnitude comes from the numeric oracle rather than visual estimation. This linked VBD/AVBD packet does not prove exact unpublished constants, Sequential Impulse, XPBD, CUDA parity, or published/source timing parity.",
+      "reconciliation_and_verdict": "PASS: both engine ViewReports pass with all 252 bricks in focus. The current-source text records exactly match the accepted oracle. At frame 18 they record zero broken joints, 120 spatially bent bricks, 0.131705 m maximum wall-normal displacement, and maximum retained-row residuals of 0.016387 m and 0.013275 rad. At frame 120 all 712 identities remain unbroken and the maximum residuals fall to 0.011095 m and 0.001310 rad. The inspected images show the corresponding continuous wall during impact and the later intact standing wall.",
+      "reviewer_capability": "Codex native image input with original-resolution inspection of the six current-source captures and pinned paper figure",
+      "sha256": "5aab06eedbf99546ee380cdc7ca2695e26003afaeb0cbcdc702069a9fb579129",
+      "text_oracle": "Figure 13 states that VBD bends the wall but does not break it; the DART row additionally verifies every retained joint identity and residual.",
+      "verdict": "pass",
+      "visible_observation": "At frame 18 the full wall remains continuous with no missing bricks or tears while the three balls load its center courses. At frame 120 the wall is again nearly planar, continuous, and fully standing."
+    }
+  }
+}

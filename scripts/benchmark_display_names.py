@@ -183,6 +183,12 @@ SURFACES: dict[str, Surface] = {
     "BM_AvbdDemo3dSoftBodyStep": Surface("AVBD demo3d soft body step", FAMILY_AVBD),
     "BM_AvbdDemo3dBridgeStep": Surface("AVBD demo3d bridge step", FAMILY_AVBD),
     "BM_AvbdDemo3dBreakableStep": Surface("AVBD demo3d breakable step", FAMILY_AVBD),
+    "BM_AvbdPaperBreakableWallStep": Surface(
+        "AVBD paper breakable-wall step", FAMILY_AVBD
+    ),
+    "BM_VbdPaperBreakableWallStep": Surface(
+        "VBD paper breakable-wall step", FAMILY_RIGID
+    ),
     "BM_AvbdRigidBreakableJointStep": Surface(
         "AVBD breakable-joint step", FAMILY_AVBD, ("breakable joints",)
     ),

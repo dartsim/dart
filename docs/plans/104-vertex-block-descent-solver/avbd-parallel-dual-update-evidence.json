@@ -1,0 +1,258 @@
+{
+  "schema_version": "dart.avbd_parallel_dual_update_evidence/v1",
+  "plan_id": "PLAN-104",
+  "contract_row": "avbd.method.parallel_dual_stiffness_pass",
+  "status": "partial",
+  "recorded_at": "2026-07-30",
+  "source": {
+    "paper": "Augmented Vertex Block Descent",
+    "paper_sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6",
+    "locator": "Section 4 and Algorithm 1: parallel dual-variable and stiffness update after each primal iteration",
+    "claim_boundary": "This packet implements and measures the post-primal CPU mechanism over currently promoted deformable and private free-rigid AVBD row inventories. It is not a full articulated/unified-row, CUDA, source-reference, achieved-accuracy, or paper-performance comparison."
+  },
+  "build_identity": {
+    "baseline_commit": "a78f688a1785af775bd247ba5dac1e971eaf934e",
+    "candidate_parent_commit": "a78f688a1785af775bd247ba5dac1e971eaf934e",
+    "candidate_state": "local working tree; no push",
+    "build_type": "Release",
+    "compiler": "GNU 15.2.0",
+    "profile_enabled": true,
+    "solver_source_sha256": {
+      "dart/simulation/compute/parallel_executor.cpp": "67f9b89936437440668c48bdf09e4865673171a40b4ecdaced000cae77254697",
+      "dart/simulation/compute/parallel_executor.hpp": "82d55ec2dce07f791cdaa5fd5b1571f436e8de8c4c99292d635e2ff0ba90055c",
+      "dart/simulation/detail/deformable_vbd/parallel_row_update.hpp": "165add5e0dfa1d790f34be6a686e70a05d5adb6f79a4499d887aba26e72bac25",
+      "dart/simulation/detail/deformable_vbd/block_descent.hpp": "2a51fdfc8e339a50e560dc16e224e42cd45e1288e5ef283c7f1e4d5b16a8c7e0",
+      "dart/simulation/compute/deformable_dynamics_stage.cpp": "d4efffea03450598986a3c0c7845fde842c2579c9fc74911e83b6b5f33a8b738",
+      "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp": "1f1353f7488a124313cd57bf8c2766b249c810e1515bd8efcb581e6510fcdcb9",
+      "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp": "81622ebb2373fee670f5ccf4b86e4c790f9dedcde8bb285973cea16e842a7068",
+      "dart/simulation/compute/rigid_body_contact_stage.cpp": "8cd7cf6f1b46cdada289ef5448ff6e59b41ccc92d841e645971c600ef226568f",
+      "tests/benchmark/simulation/bm_avbd_parallel_row_update.cpp": "668d05eb9bc7dd24fddf9a4d8e48cf048e20406bd3ecd594eee9952a245f33a4"
+    }
+  },
+  "implementation_scope": {
+    "ordering_contract": "The AVBD primal vertex/body sweep remains serial and deterministic. Each post-primal family completes synchronously before the next family or primal iteration.",
+    "range_contract": {
+      "minimum_parallel_row_count_exclusive": 8192,
+      "minimum_grain_size": 2048,
+      "partition": "fixed deterministic contiguous ranges",
+      "small_inventory_policy": "inline",
+      "incomplete_friction_pair_policy": "exact serial fallback"
+    },
+    "executor_contract": "ParallelExecutor lazily retains N-1 sleeping range workers while the caller supplies the Nth lane. Concurrent or recursive calls run inline; worker and caller exceptions are collected, rethrown after the synchronous join, and do not poison the pool.",
+    "covered_deformable_cpu_rows": [
+      "half-space contact normal",
+      "point attachment",
+      "finite-stiffness distance spring",
+      "finite-stiffness tetrahedral material",
+      "self-contact normal",
+      "complete adjacent half-space friction tangent pairs",
+      "complete adjacent self-contact friction tangent pairs"
+    ],
+    "covered_private_free_rigid_cpu_rows": [
+      "point attachment",
+      "hard and finite-stiffness point pair",
+      "distance spring",
+      "hard and finite-stiffness angular pair",
+      "point-pair friction tangent pairs"
+    ]
+  },
+  "correctness": {
+    "focused_tests": [
+      "SimulationParallelExecutor.ParallelForSupportsCooperativeNestedRanges",
+      "SimulationParallelExecutor.ConcurrentParallelForFallsBackWithoutBlockingWorkers",
+      "SimulationParallelExecutor.WorkerParallelForRecoversAfterException",
+      "SimulationParallelExecutor.WarmedWorkerParallelForAddsNoHeapAllocationAboveGraphFloor",
+      "VbdCombinedDescent.AvbdDualUpdateRowsAreBitwiseDeterministicAcrossWorkerCounts",
+      "VbdCombinedDescent.ParallelDualUpdatePreservesNonfiniteRowFailureBehavior",
+      "VbdFiniteStiffness.TetAndSelfContactDualUpdatesAreBitwiseDeterministicAcrossWorkers",
+      "AvbdRigidBlock.RigidDualUpdateRowsAreBitwiseDeterministicAcrossWorkerCounts",
+      "World.DeformableAvbdRowsRemainActiveWithParallelExecutor",
+      "World.RigidAvbdRowsRemainActiveWithParallelExecutor",
+      "World.WarmedParallelAvbdDualUpdatePassIsAllocationStable"
+    ],
+    "focused_test_result": {
+      "compute": "57 passed",
+      "contact": "22 passed",
+      "combined_deformable": "23 passed",
+      "finite_stiffness": "10 passed",
+      "rigid_avbd": "116 passed",
+      "focused_total": "228 passed",
+      "new_world_integration": "3 passed",
+      "executor_stress": "the nested, concurrent, and worker-exception tests passed 200 consecutive repetitions"
+    },
+    "state_oracle": "Every promoted row family uses 8,193 scalar rows or logical friction pairs and compares serial against 2- and 4-worker state bit-for-bit. Invalid final rows explicitly remain unchanged. The production World activation tests compare sequential and parallel state bit-for-bit.",
+    "failure_oracle": "A NaN in a dispatched hard-contact row produces the same non-finite row state as serial execution without changing finite peers; a background-worker exception is rethrown and a subsequent range succeeds.",
+    "full_validation": {
+      "build": "pixi run build passed for the Release/profile C++ library, dartpy, GUI, examples, and tutorials; pixi run build-simulation-tests rebuilt the affected solver test",
+      "lint": "pixi run lint passed",
+      "aggregate_unit": "pixi run test-unit --jobs 8 passed 168 of 168 CTest entries",
+      "world_binary": "431 of 435 GoogleTests passed; the four failures reproduced identically on exact parent and are enumerated under known_baseline_failures",
+      "simulation_label": "77 of 79 active CTest entries passed; 2 additional listed entries were disabled, and the only failures were the global-heap and raw-malloc splits containing the four exact-parent assertions",
+      "contract_checkers": {
+        "plan104_paper_parity": "176 rows accepted: VBD 40 partial and 48 missing; AVBD 70 partial and 18 missing",
+        "avbd_packets": "52 packets accepted",
+        "plan122_allocation_matrix": "18 rows accepted, 14 closed"
+      },
+      "status": "closed for this packet's partial CPU-mechanism claim boundary"
+    }
+  },
+  "allocation": {
+    "test": "World.WarmedParallelAvbdDualUpdatePassIsAllocationStable",
+    "scene": "21 by 31 deformable AVBD self-contact/friction grid",
+    "dispatch_precondition": "captured self-contact-normal row count is greater than 8,192; the paired friction inventory has the same logical-pair count",
+    "warmup_steps": 2,
+    "measured_steps": 2,
+    "coverage": [
+      "World base allocator allocation/deallocation counters remain unchanged",
+      "global operator-new count and bytes equal the empty parallel-graph floor",
+      "raw malloc-family count and bytes equal the empty parallel-graph floor"
+    ],
+    "coverage_build_policy": "The dispatch-sized scene is skipped under DART_CODECOV because instrumentation makes it prohibitively slow.",
+    "result": "pass"
+  },
+  "known_baseline_failures": {
+    "classification": "Reproduced identically in the exact-parent temporary worktree and therefore outside this packet.",
+    "tests": {
+      "World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap": "1 allocation, 320 bytes",
+      "World.BakedDefaultRigidAndArticulatedContactsDoNotMallocOnHeap": "1 allocation, 320 bytes",
+      "World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap": "1 allocation, 80 bytes",
+      "World.BakedBoxedLcpFallbackContactStepsDoNotMallocOnHeap": "29 allocations, 1,376 bytes"
+    }
+  },
+  "performance": {
+    "claim_boundary": "Descriptive same-host exact-parent versus candidate mechanism throughput only; this is not a source-reference, achieved-accuracy, scene-level, or paper-number comparison.",
+    "host": "mark26",
+    "cpu_affinity": [0, 2, 4, 6],
+    "cpu_affinity_policy": "four distinct performance cores; simultaneous-multithreading siblings excluded",
+    "cpu_reported_mhz": 5300,
+    "cpu_scaling_enabled": true,
+    "library": "Google Benchmark 1.9.5",
+    "baseline_commit": "a78f688a1785af775bd247ba5dac1e971eaf934e",
+    "baseline_binary_sha256": "fe8e4b05de8fdfb4143de86a2eb2d48bc4d49e4f4ea27dd10d4c70d891ed8e4c",
+    "candidate_binary_sha256": "1a97ee53d30f9851b324055896148197291c60b67946fe251dea1ea788a6c54b",
+    "benchmark_source_sha256": "668d05eb9bc7dd24fddf9a4d8e48cf048e20406bd3ecd594eee9952a245f33a4",
+    "protocol": "Exact-parent baseline and working-tree candidate ran baseline-candidate-baseline-candidate with identical P-core affinity, row/worker filters, 0.05-second minimum time, five repetitions, real time, and aggregate-only JSON.",
+    "command": "taskset -c 0,2,4,6 <binary> --benchmark_filter='rows:(8192|16384|32768|65536)' --benchmark_min_time=0.05s --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<json> --benchmark_out_format=json",
+    "runs": [
+      {
+        "order": 1,
+        "kind": "baseline",
+        "json_sha256": "7738fc92c359c1b0f11a5ee3332d9ab28495869158cce4dce7b6859af8aa2693",
+        "median_real_time_ns": {
+          "rows_8192_workers_0": 11887.557873288626,
+          "rows_8192_workers_2": 11932.359385159529,
+          "rows_8192_workers_4": 12539.639449319013,
+          "rows_16384_workers_0": 25705.976595882141,
+          "rows_16384_workers_2": 17728.262784457678,
+          "rows_16384_workers_4": 18589.287471265994,
+          "rows_32768_workers_0": 73324.714847615949,
+          "rows_32768_workers_2": 33980.909426824626,
+          "rows_32768_workers_4": 32657.342325074562,
+          "rows_65536_workers_0": 149396.56298005636,
+          "rows_65536_workers_2": 87596.456897746262,
+          "rows_65536_workers_4": 56897.668041176847
+        }
+      },
+      {
+        "order": 2,
+        "kind": "candidate",
+        "json_sha256": "1147bb58997909d9e9135a2c6b152b756f035aa8e1fa0440eb268f6789087a24",
+        "median_real_time_ns": {
+          "rows_8192_workers_0": 12029.497925989757,
+          "rows_8192_workers_2": 12207.765887853542,
+          "rows_8192_workers_4": 13234.335333325569,
+          "rows_16384_workers_0": 26261.663654549029,
+          "rows_16384_workers_2": 16340.909506382555,
+          "rows_16384_workers_4": 11868.047250050975,
+          "rows_32768_workers_0": 73214.950729476433,
+          "rows_32768_workers_2": 31210.667629555846,
+          "rows_32768_workers_4": 19551.378009601773,
+          "rows_65536_workers_0": 148424.82153600192,
+          "rows_65536_workers_2": 84925.856298298051,
+          "rows_65536_workers_4": 38246.119299767503
+        }
+      },
+      {
+        "order": 3,
+        "kind": "baseline",
+        "json_sha256": "17af7635d9432b80823dd5201a43f6e824e0b48cc1009db811d3de841d94f830",
+        "median_real_time_ns": {
+          "rows_8192_workers_0": 12063.981261009907,
+          "rows_8192_workers_2": 12421.624225094092,
+          "rows_8192_workers_4": 12570.948968263805,
+          "rows_16384_workers_0": 25734.676365655931,
+          "rows_16384_workers_2": 18421.12049446152,
+          "rows_16384_workers_4": 18999.496246061994,
+          "rows_32768_workers_0": 76081.162869750071,
+          "rows_32768_workers_2": 34368.453667989088,
+          "rows_32768_workers_4": 32143.475444625965,
+          "rows_65536_workers_0": 149332.80121500712,
+          "rows_65536_workers_2": 85664.888211015466,
+          "rows_65536_workers_4": 55628.999030514526
+        }
+      },
+      {
+        "order": 4,
+        "kind": "candidate",
+        "json_sha256": "bbb8d9e60271423b753a56747c99a9d057653664eae63f67f115882d7db1479b",
+        "median_real_time_ns": {
+          "rows_8192_workers_0": 12228.983498368787,
+          "rows_8192_workers_2": 12382.614298362492,
+          "rows_8192_workers_4": 12597.814123893089,
+          "rows_16384_workers_0": 26984.276723470433,
+          "rows_16384_workers_2": 15723.842127834621,
+          "rows_16384_workers_4": 12363.319274438021,
+          "rows_32768_workers_0": 74341.269533702725,
+          "rows_32768_workers_2": 31895.938535971025,
+          "rows_32768_workers_4": 19585.75631886597,
+          "rows_65536_workers_0": 150995.72352702945,
+          "rows_65536_workers_2": 83463.872355938976,
+          "rows_65536_workers_4": 38611.650858916299
+        }
+      }
+    ],
+    "mean_of_paired_medians": {
+      "rows_8192_workers_0": {"baseline_ns": 11975.769567149266, "candidate_ns": 12129.240712179271, "delta_percent": 1.281513844847},
+      "rows_8192_workers_2": {"baseline_ns": 12176.99180512681, "candidate_ns": 12295.190093108016, "delta_percent": 0.970669027891},
+      "rows_8192_workers_4": {"baseline_ns": 12555.294208791409, "candidate_ns": 12916.074728609328, "delta_percent": 2.873532979938},
+      "rows_16384_workers_0": {"baseline_ns": 25720.326480769036, "candidate_ns": 26622.97018900973, "delta_percent": 3.509456650621},
+      "rows_16384_workers_2": {"baseline_ns": 18074.691639459597, "candidate_ns": 16032.375817108588, "delta_percent": -11.299312116022},
+      "rows_16384_workers_4": {"baseline_ns": 18794.391858663992, "candidate_ns": 12115.683262244498, "delta_percent": -35.535646200442},
+      "rows_32768_workers_0": {"baseline_ns": 74702.93885868302, "candidate_ns": 73778.11013158958, "delta_percent": -1.238008492334},
+      "rows_32768_workers_2": {"baseline_ns": 34174.68154740686, "candidate_ns": 31553.303082763436, "delta_percent": -7.670527846783},
+      "rows_32768_workers_4": {"baseline_ns": 32400.408884850265, "candidate_ns": 19568.56716423387, "delta_percent": -39.60394995699},
+      "rows_65536_workers_0": {"baseline_ns": 149364.68209753174, "candidate_ns": 149710.2725315157, "delta_percent": 0.231373594568},
+      "rows_65536_workers_2": {"baseline_ns": 86630.67255438087, "candidate_ns": 84194.86432711851, "delta_percent": -2.811715706967},
+      "rows_65536_workers_4": {"baseline_ns": 56263.33353584568, "candidate_ns": 38428.8850793419, "delta_percent": -31.698172389912}
+    },
+    "candidate_serial_to_parallel_speedup": {
+      "rows_16384_workers_2": 1.660575481308,
+      "rows_16384_workers_4": 2.197397341343,
+      "rows_32768_workers_2": 2.338205605228,
+      "rows_32768_workers_4": 3.770235680129,
+      "rows_65536_workers_2": 1.7781401957,
+      "rows_65536_workers_4": 3.895774551419
+    },
+    "cost_gate_verdict": "8,192 rows and below remain inline. The worker-count variants at 8,192 execute the same inline row loop; their 0.97-2.87 percent spread is measurement noise, not a parallel-speedup claim."
+  },
+  "visual": {
+    "required": false,
+    "reason": "This packet changes only the synchronous scheduling of independent post-primal row updates. Bitwise serial/parallel row state and production World state are stronger semantic oracles than a new render; no scene, geometry, material, camera, or solver equation changed."
+  },
+  "review": {
+    "passes": 2,
+    "scope": "worker-pool synchronization and lifetime, deterministic range coverage, exception recovery, row and friction-pair independence, mixed-layout fallback, overflow boundaries, and executor move/destruction behavior",
+    "resolved_findings": [
+      "made partial worker-thread construction exception-safe",
+      "strengthened the exception-recovery regression so the throw originates on a background worker"
+    ],
+    "result": "clean after the resolved findings"
+  },
+  "remaining_blockers": [
+    "AVBD-specific primal color sweeps remain serial.",
+    "Articulated variational and unified soft/rigid row inventories do not yet share this post-primal pass.",
+    "The CUDA AVBD backend and its dual/stiffness pass are missing.",
+    "No source-matched achieved-accuracy comparison or paper-number comparison is closed.",
+    "Dependent paper figures, videos, online demos, and project-page rows remain partial or missing."
+  ]
+}

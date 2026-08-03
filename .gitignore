@@ -130,6 +130,8 @@ docs/**/results/*.json
 # JSON dumps in the same folder.
 docs/plans/104-vertex-block-descent-solver/*.json
 !docs/plans/104-vertex-block-descent-solver/avbd-*-packet.json
+!docs/plans/104-vertex-block-descent-solver/avbd-paper-coverage-contract.json
+!docs/plans/104-vertex-block-descent-solver/vbd-paper-coverage-contract.json
 
 # AI tool local state
 .omc/

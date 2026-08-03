@@ -360,12 +360,12 @@ struct World::ReplayState
     double pitch = 0.0;
     entt::entity parentLink = entt::null;
     entt::entity childLink = entt::null;
-    bool hasRigidBodyFixedJointAnchors = false;
-    Eigen::Vector3d rigidBodyFixedJointLocalAnchorParent
+    bool hasRigidBodyPairConstraintGeometry = false;
+    Eigen::Vector3d rigidBodyPairConstraintLocalAnchorParent
         = Eigen::Vector3d::Zero();
-    Eigen::Vector3d rigidBodyFixedJointLocalAnchorChild
+    Eigen::Vector3d rigidBodyPairConstraintLocalAnchorChild
         = Eigen::Vector3d::Zero();
-    Eigen::Quaterniond rigidBodyFixedJointTargetRelativeOrientation
+    Eigen::Quaterniond rigidBodyPairConstraintTargetRelativeOrientation
         = Eigen::Quaterniond::Identity();
   };
 
@@ -474,6 +474,7 @@ struct World::ReplayState
             SnapshotAllocator<
                 compute::avbd_replay::DeformableAvbdWarmStartReplayState>{
                 allocator}),
+        rigidAvbdWarmStartState(allocator),
         multibodyVariationalStates(
             SnapshotAllocator<
                 std::pair<entt::entity, compute::MultibodyVariationalState>>{
@@ -497,6 +498,7 @@ struct World::ReplayState
     bool simulationMode = false;
     Eigen::Vector3d gravity{0.0, 0.0, -9.81};
     RigidBodySolver rigidBodySolver{RigidBodySolver::SequentialImpulse};
+    std::size_t rigidConstraintIterations = 8;
     double timeStep = 0.001;
     bool differentiable = false;
     ContactSolverMethod contactSolverMethod{
@@ -519,6 +521,7 @@ struct World::ReplayState
     SnapshotVector<DeformableNodeStateSnapshotEntry> deformableNodeStates;
     SnapshotVector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
         deformableAvbdWarmStartStates;
+    compute::avbd_replay::RigidAvbdWarmStartReplayState rigidAvbdWarmStartState;
     ComponentSnapshot<compute::MultibodyVariationalState>
         multibodyVariationalStates;
     ComponentSnapshot<comps::VariationalContactDualState>
@@ -659,15 +662,15 @@ bool sameReplayJointLayout(
          && jointModel.pitch == layout.pitch
          && jointModel.parentLink == layout.parentLink
          && jointModel.childLink == layout.childLink
-         && jointModel.hasRigidBodyFixedJointAnchors
-                == layout.hasRigidBodyFixedJointAnchors
-         && jointModel.rigidBodyFixedJointLocalAnchorParent.isApprox(
-             layout.rigidBodyFixedJointLocalAnchorParent, 0.0)
-         && jointModel.rigidBodyFixedJointLocalAnchorChild.isApprox(
-             layout.rigidBodyFixedJointLocalAnchorChild, 0.0)
-         && jointModel.rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+         && jointModel.hasRigidBodyPairConstraintGeometry
+                == layout.hasRigidBodyPairConstraintGeometry
+         && jointModel.rigidBodyPairConstraintLocalAnchorParent.isApprox(
+             layout.rigidBodyPairConstraintLocalAnchorParent, 0.0)
+         && jointModel.rigidBodyPairConstraintLocalAnchorChild.isApprox(
+             layout.rigidBodyPairConstraintLocalAnchorChild, 0.0)
+         && jointModel.rigidBodyPairConstraintTargetRelativeOrientation.coeffs()
                 .isApprox(
-                    layout.rigidBodyFixedJointTargetRelativeOrientation
+                    layout.rigidBodyPairConstraintTargetRelativeOrientation
                         .coeffs(),
                     0.0);
 }
@@ -1507,11 +1510,19 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
 {
   switch (solver) {
     case RigidBodySolver::SequentialImpulse:
+    case RigidBodySolver::Avbd:
+    case RigidBodySolver::Vbd:
     case RigidBodySolver::Ipc:
       return true;
   }
 
   return false;
+}
+
+//==============================================================================
+bool isRigidBlockDescentSolver(RigidBodySolver solver)
+{
+  return solver == RigidBodySolver::Vbd || solver == RigidBodySolver::Avbd;
 }
 
 //==============================================================================
@@ -1524,6 +1535,18 @@ bool isValidContactSolverMethod(ContactSolverMethod method)
   }
 
   return false;
+}
+
+//==============================================================================
+void validateRigidSolverContactMethodCompatibility(
+    RigidBodySolver solver, ContactSolverMethod contactMethod)
+{
+  DART_SIMULATION_THROW_T_IF(
+      isRigidBlockDescentSolver(solver)
+          && contactMethod != ContactSolverMethod::SequentialImpulse,
+      InvalidArgumentException,
+      "The VBD and AVBD rigid-body solvers own rigid contact resolution and "
+      "cannot be combined with a non-default contact solver method");
 }
 
 //==============================================================================
@@ -1607,6 +1630,10 @@ std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
   switch (solver) {
     case RigidBodySolver::SequentialImpulse:
       return 0u;
+    case RigidBodySolver::Avbd:
+      return 2u;
+    case RigidBodySolver::Vbd:
+      return 3u;
     case RigidBodySolver::Ipc:
       return 1u;
   }
@@ -1624,6 +1651,10 @@ RigidBodySolver decodeRigidBodySolver(std::uint8_t value)
       return RigidBodySolver::SequentialImpulse;
     case 1u:
       return RigidBodySolver::Ipc;
+    case 2u:
+      return RigidBodySolver::Avbd;
+    case 3u:
+      return RigidBodySolver::Vbd;
   }
 
   DART_SIMULATION_THROW_T(
@@ -1776,6 +1807,10 @@ detail::BuiltInRigidBodySolverFamily toBuiltInRigidBodySolverFamily(
   switch (solver) {
     case RigidBodySolver::SequentialImpulse:
       return detail::BuiltInRigidBodySolverFamily::SequentialImpulse;
+    case RigidBodySolver::Avbd:
+      return detail::BuiltInRigidBodySolverFamily::Avbd;
+    case RigidBodySolver::Vbd:
+      return detail::BuiltInRigidBodySolverFamily::Vbd;
     case RigidBodySolver::Ipc:
       return detail::BuiltInRigidBodySolverFamily::Ipc;
   }
@@ -2115,12 +2150,99 @@ bool hasRigidBodyJointsUnsupportedByIpc(const World& world)
 }
 
 //==============================================================================
+bool hasFiniteStiffnessRigidBodyJointRows(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::JointModel>();
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::JointModel>(entity);
+    if (!isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+
+    const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity);
+    if (config == nullptr || !config->enabled) {
+      continue;
+    }
+
+    const bool hasFiniteLinearRows
+        = config->linearAxisMask != 0u
+          && !std::isinf(config->linearMaterialStiffness);
+    const bool hasFiniteAngularRows
+        = config->angularAxisMask != 0u
+          && !std::isinf(config->angularMaterialStiffness);
+    if (hasFiniteLinearRows || hasFiniteAngularRows) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+bool hasHardStiffnessRigidBodyJointRows(const World& world)
+{
+  const auto& registry = detail::registryOf(world);
+  const auto view = registry.view<comps::JointModel>();
+  for (const entt::entity entity : view) {
+    const auto& joint = view.get<comps::JointModel>(entity);
+    if (!isRigidBodyJoint(registry, joint)) {
+      continue;
+    }
+
+    const auto* config
+        = registry
+              .try_get<detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                  entity);
+    if (config == nullptr || !config->enabled) {
+      continue;
+    }
+
+    const bool hasHardLinearRows
+        = config->linearAxisMask != 0u
+          && std::isinf(config->linearMaterialStiffness);
+    const bool hasHardAngularRows
+        = config->angularAxisMask != 0u
+          && std::isinf(config->angularMaterialStiffness);
+    if (hasHardLinearRows || hasHardAngularRows) {
+      return true;
+    }
+  }
+  return false;
+}
+
+//==============================================================================
 void validateRigidBodyJointPipelineSupport(
     const World& world, RigidBodySolver solver)
 {
+  DART_SIMULATION_THROW_T_IF(
+      isRigidBlockDescentSolver(solver) && hasMultibodyStructures(world),
+      InvalidOperationException,
+      "The VBD and AVBD rigid-body solvers currently support free rigid-body "
+      "worlds only; multibody structures require a different rigid-body "
+      "solver");
+
   if (!hasRigidBodyAvbdPairConstraints(world)) {
     return;
   }
+
+  DART_SIMULATION_THROW_T_IF(
+      solver == RigidBodySolver::SequentialImpulse
+          && hasFiniteStiffnessRigidBodyJointRows(world),
+      InvalidOperationException,
+      "The Sequential Impulse rigid-body solver supports hard rigid-body "
+      "joint rows only; finite constraint projection stiffness requires the "
+      "VBD or AVBD rigid-body solver");
+
+  DART_SIMULATION_THROW_T_IF(
+      solver == RigidBodySolver::Vbd
+          && hasHardStiffnessRigidBodyJointRows(world),
+      InvalidOperationException,
+      "The VBD rigid-body solver supports finite-penalty rigid-body joint "
+      "rows only; configure finite linear and angular constraint projection "
+      "stiffness or select Sequential Impulse or AVBD for hard rows");
 
   if (solver == RigidBodySolver::Ipc) {
     DART_SIMULATION_THROW_T_IF(
@@ -2144,9 +2266,8 @@ void validateRigidBodyJointPipelineSupport(
   DART_SIMULATION_THROW_T_IF(
       hasMultibodyStructures(world),
       InvalidOperationException,
-      "Rigid-body AVBD pair constraints are not supported in worlds with "
-      "multibody "
-      "structures");
+      "Public rigid-body pair constraints are not supported in worlds with "
+      "multibody structures under Sequential Impulse, VBD, or AVBD");
 }
 
 //==============================================================================
@@ -2228,9 +2349,11 @@ void validateLoopClosureDynamicsPolicySupport(
 //==============================================================================
 struct WorldStepPipelineStages
 {
-  explicit WorldStepPipelineStages(common::MemoryManager& memoryManager)
+  explicit WorldStepPipelineStages(
+      common::MemoryManager& memoryManager,
+      std::size_t rigidConstraintIterations)
     : rigidBodyVelocity(&memoryManager),
-      rigidBodyContact(8, &memoryManager),
+      rigidBodyContact(rigidConstraintIterations, &memoryManager),
       rigidIpcContact(compute::RigidIpcContactStageOptions{}, &memoryManager),
       multibodyVelocity(&memoryManager),
       unifiedConstraint(8, &memoryManager),
@@ -2734,6 +2857,61 @@ std::size_t validateFrameScratchInitialCapacity(std::size_t capacity)
       "WorldOptions.frameScratchInitialCapacity must be positive");
 
   return capacity;
+}
+
+//==============================================================================
+std::size_t validateRigidConstraintIterations(std::size_t iterations)
+{
+  DART_SIMULATION_THROW_T_IF(
+      iterations == 0,
+      InvalidArgumentException,
+      "World rigid constraint iteration budget must be positive");
+  DART_SIMULATION_THROW_T_IF(
+      iterations > static_cast<std::size_t>(std::numeric_limits<int>::max()),
+      InvalidArgumentException,
+      "World rigid constraint iteration budget is too large");
+  return iterations;
+}
+
+//==============================================================================
+RigidConstraintOptions validateRigidConstraintOptions(
+    const RigidConstraintOptions& options, RigidBodySolver solver)
+{
+  RigidConstraintOptions validated = options;
+  validated.iterations = validateRigidConstraintIterations(options.iterations);
+  DART_SIMULATION_THROW_T_IF(
+      solver == RigidBodySolver::Ipc
+          && validated.iterations != RigidConstraintOptions{}.iterations,
+      InvalidArgumentException,
+      "RigidConstraintOptions are not applicable to the IPC rigid-body "
+      "family; use the default options");
+  return validated;
+}
+
+//==============================================================================
+bool usesUnifiedConstraintStage(
+    const World& world, RigidBodySolver solver, bool variationalSelected)
+{
+  return !variationalSelected
+         && detail::builtInRigidSolverUsesSplitPipeline(
+             toBuiltInRigidBodySolverFamily(solver))
+         && hasMultibodyStructures(world);
+}
+
+//==============================================================================
+void validateRigidConstraintOptionsPipelineSupport(
+    const World& world,
+    const RigidConstraintOptions& options,
+    RigidBodySolver solver,
+    bool variationalSelected)
+{
+  DART_SIMULATION_THROW_T_IF(
+      usesUnifiedConstraintStage(world, solver, variationalSelected)
+          && options.iterations != RigidConstraintOptions{}.iterations,
+      InvalidOperationException,
+      "Non-default RigidConstraintOptions are not applicable when "
+      "semi-implicit multibody structures select the unified constraint "
+      "stage; use the default options");
 }
 
 //==============================================================================
@@ -3452,8 +3630,10 @@ void rebindLoadedWorldComponentAllocators(
 //==============================================================================
 struct World::StepPipelineCache
 {
-  explicit StepPipelineCache(common::MemoryManager& memoryManager)
-    : stages(memoryManager)
+  explicit StepPipelineCache(
+      common::MemoryManager& memoryManager,
+      std::size_t rigidConstraintIterations)
+    : stages(memoryManager, rigidConstraintIterations)
   {
   }
 
@@ -3510,10 +3690,10 @@ void World::CollisionQueryCacheDeleter::operator()(void* cache) const noexcept
 
 //==============================================================================
 World::StepPipelineCachePtr World::makeStepPipelineCache(
-    common::MemoryManager& memoryManager)
+    common::MemoryManager& memoryManager, std::size_t rigidConstraintIterations)
 {
-  auto* cache
-      = memoryManager.constructUsingFree<StepPipelineCache>(memoryManager);
+  auto* cache = memoryManager.constructUsingFree<StepPipelineCache>(
+      memoryManager, rigidConstraintIterations);
   if (cache == nullptr) {
     throw std::bad_alloc();
   }
@@ -3554,7 +3734,8 @@ World::World()
   : m_storage(makeWorldStorage(m_memoryManager)),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
-    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
+    m_stepPipelineCache(makeStepPipelineCache(
+        m_memoryManager, m_rigidConstraintOptions.iterations)),
     m_replay(nullptr, ReplayStateDeleter{&m_memoryManager})
 {
   // Empty.
@@ -3567,6 +3748,7 @@ World::World(const WorldOptions& options)
     m_storage(makeWorldStorage(m_memoryManager)),
     m_gravity(options.gravity),
     m_rigidBodySolver(options.rigidBodySolver),
+    m_rigidConstraintOptions(options.rigidConstraintOptions),
     m_timeStep(options.timeStep),
     m_differentiable(options.differentiable),
     m_contactSolverMethod(options.contactSolverMethod),
@@ -3576,7 +3758,8 @@ World::World(const WorldOptions& options)
     m_deactivationOptions(options.deactivationOptions),
     m_collisionQueryCache(
         nullptr, CollisionQueryCacheDeleter{&m_memoryManager}),
-    m_stepPipelineCache(makeStepPipelineCache(m_memoryManager)),
+    m_stepPipelineCache(makeStepPipelineCache(
+        m_memoryManager, m_rigidConstraintOptions.iterations)),
     m_replay(nullptr, ReplayStateDeleter{&m_memoryManager})
 {
   DART_SIMULATION_THROW_T_IF(
@@ -3591,10 +3774,14 @@ World::World(const WorldOptions& options)
       !isValidRigidBodySolver(options.rigidBodySolver),
       InvalidArgumentException,
       "WorldOptions.rigidBodySolver is invalid");
+  m_rigidConstraintOptions = validateRigidConstraintOptions(
+      options.rigidConstraintOptions, options.rigidBodySolver);
   DART_SIMULATION_THROW_T_IF(
       !isValidContactSolverMethod(options.contactSolverMethod),
       InvalidArgumentException,
       "WorldOptions.contactSolverMethod is invalid");
+  validateRigidSolverContactMethodCompatibility(
+      options.rigidBodySolver, options.contactSolverMethod);
   DART_SIMULATION_THROW_T_IF(
       !isValidContactGradientMode(options.contactGradientMode),
       InvalidArgumentException,
@@ -3842,6 +4029,7 @@ void World::clear()
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
+  m_rigidConstraintOptions = {};
   m_multibodyIntegrationMethod = MultibodyIntegrationMethod::SemiImplicit;
   m_variationalIntegratorMaxIterations = 100;
   m_variationalIntegratorTolerance = 1e-10;
@@ -3871,7 +4059,8 @@ void World::clear()
   m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
-  m_stepPipelineCache = makeStepPipelineCache(m_memoryManager);
+  m_stepPipelineCache = makeStepPipelineCache(
+      m_memoryManager, m_rigidConstraintOptions.iterations);
 }
 
 //==============================================================================
@@ -4019,6 +4208,11 @@ void World::reserveRegistryStorageForSimulation()
 //==============================================================================
 void World::prepareStepPipelineCacheForCurrentConfiguration()
 {
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   reserveRegistryStorageForSimulation();
   (void)detail::ensureBakedWorldModelCurrent(*this);
   auto& cache = *m_stepPipelineCache;
@@ -4092,6 +4286,12 @@ void World::recordResolvedConfiguration()
     case RigidBodySolver::SequentialImpulse:
       rigidSolver = "sequential-impulse";
       break;
+    case RigidBodySolver::Avbd:
+      rigidSolver = "avbd";
+      break;
+    case RigidBodySolver::Vbd:
+      rigidSolver = "vbd";
+      break;
     case RigidBodySolver::Ipc:
       rigidSolver = "ipc";
       break;
@@ -4108,26 +4308,143 @@ void World::recordResolvedConfiguration()
       contactMethod = "boxed-lcp";
       break;
   }
-  // The internal AVBD rigid-contact opt-in is not facade-selectable (it is
-  // emplaced per body), so when it is present the resolved contact path differs
-  // from the requested `ContactSolverMethod`: configured contacts run AVBD and
-  // the rest fall back to sequential impulse (PLAN-091 WP-091.1). Record that
-  // substitution explicitly instead of letting it happen silently.
+  // The compatibility-only internal AVBD rigid-contact opt-in is emplaced per
+  // body. When it is present under a non-VBD/AVBD public family, the resolved
+  // contact path differs from the requested `ContactSolverMethod`: configured
+  // contacts run AVBD only when every active contact has an enabled config on
+  // at least one endpoint (PLAN-091 WP-091.1). Record that substitution only
+  // when the baked collision topology guarantees this all-or-nothing stage
+  // gate. The public VBD and AVBD families resolve their owned formulations as
+  // requested and do not use this substitution path.
   const detail::WorldRegistry& registry = m_storage->registry;
   const auto* avbdStorage = registry.storage<comps::RigidAvbdContactConfig>();
   const bool hasAvbdContactConfigs
       = avbdStorage != nullptr && avbdStorage->size() != 0u;
-  if (hasAvbdContactConfigs) {
+  std::size_t collisionEntityCount = 0u;
+  std::size_t collisionEntitiesWithoutEnabledAvbdConfig = 0u;
+  const auto collisionGeometryView = registry.view<comps::CollisionGeometry>();
+  for (const entt::entity entity : collisionGeometryView) {
+    if (!collisionGeometryView.get<comps::CollisionGeometry>(entity)
+             .hasShapes()) {
+      continue;
+    }
+    ++collisionEntityCount;
+    const auto* config
+        = registry.try_get<comps::RigidAvbdContactConfig>(entity);
+    if (config == nullptr || !config->enabled) {
+      ++collisionEntitiesWithoutEnabledAvbdConfig;
+    }
+  }
+  // The compatibility contact stage is all-or-nothing for an active manifold:
+  // every contact must have an enabled opt-in on at least one endpoint. Before
+  // contacts exist, reporting AVBD is therefore safe only when every possible
+  // pair of collision entities is covered, which is equivalent to at most one
+  // collision entity lacking an enabled config.
+  const bool avbdContactOptInCoversEveryPotentialPair
+      = collisionEntityCount >= 2u
+        && collisionEntitiesWithoutEnabledAvbdConfig <= 1u;
+  if (m_rigidBodySolver == RigidBodySolver::Vbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact", "vbd", "vbd", "as requested"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Avbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-contact", "avbd", "avbd", "as requested"});
+  } else if (
+      hasAvbdContactConfigs && avbdContactOptInCoversEveryPotentialPair) {
     m_resolvedConfiguration.notes.push_back(
         {"rigid-contact",
          contactMethod,
          std::string(contactMethod) + " + avbd (opt-in)",
-         "internal AVBD rigid-contact opt-in active on some bodies; configured "
-         "contacts run AVBD, the rest run sequential impulse (not "
-         "facade-selectable -- PLAN-091 WP-091.1)"});
+         "internal AVBD rigid-contact opt-in covers every potential active "
+         "contact, so the compatibility stage resolves AVBD "
+         "(not facade-selectable -- PLAN-091 WP-091.1)"});
   } else {
     m_resolvedConfiguration.notes.push_back(
-        {"rigid-contact", contactMethod, contactMethod, "as requested"});
+        {"rigid-contact",
+         contactMethod,
+         contactMethod,
+         hasAvbdContactConfigs
+             ? "as requested; compatibility AVBD opt-in is disabled or does "
+               "not cover every potential active contact"
+             : "as requested"});
+  }
+
+  const bool hasRigidPointJoints
+      = detail::deformable_vbd::mayHaveAvbdRigidWorldPointJointConfigs(
+          registry);
+  const bool hasRigidDistanceSprings
+      = detail::deformable_vbd::mayHaveAvbdRigidWorldDistanceSpringConfigs(
+          registry);
+  if (!hasRigidPointJoints && !hasRigidDistanceSprings) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         "inactive",
+         "inactive",
+         "no rigid pair constraints configured"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Vbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint", "vbd", "vbd", "as requested"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Avbd) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint", "avbd", "avbd", "as requested"});
+  } else if (m_rigidBodySolver == RigidBodySolver::Ipc) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         "ipc",
+         "ipc",
+         "public fixed and revolute pair constraints enter the IPC "
+         "articulation equality solve"});
+  } else if (hasRigidPointJoints && !hasRigidDistanceSprings) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         rigidSolver,
+         rigidSolver,
+         "hard public rigid pair constraints use solver-owned "
+         "sequential-impulse rows"});
+  } else if (!hasRigidPointJoints && hasRigidDistanceSprings) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         rigidSolver,
+         "avbd-distance-spring",
+         "experimental finite-stiffness distance springs retain their "
+         "explicit AVBD compatibility projection"});
+  } else {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-pair-constraint",
+         rigidSolver,
+         std::string(rigidSolver) + " + avbd-distance-spring",
+         "hard public rigid pair constraints use solver-owned "
+         "sequential-impulse rows while experimental finite-stiffness "
+         "distance springs retain their explicit AVBD compatibility "
+         "projection"});
+  }
+
+  const std::string rigidConstraintIterations
+      = std::to_string(m_rigidConstraintOptions.iterations);
+  if (m_rigidBodySolver == RigidBodySolver::Ipc) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-constraint-iterations",
+         "not-applicable",
+         "not-applicable",
+         "the IPC family bypasses the split rigid contact stage"});
+  } else if (
+      usesUnifiedConstraintStage(
+          *this,
+          m_rigidBodySolver,
+          m_multibodyIntegrationMethod
+              == MultibodyIntegrationMethod::Variational)) {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-constraint-iterations",
+         "not-applicable",
+         "not-applicable",
+         "semi-implicit multibody structures select the unified constraint "
+         "stage"});
+  } else {
+    m_resolvedConfiguration.notes.push_back(
+        {"rigid-constraint-iterations",
+         rigidConstraintIterations,
+         rigidConstraintIterations,
+         "as requested"});
   }
 
   const char* multibody = "unknown";
@@ -4320,10 +4637,15 @@ Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
   DART_SIMULATION_THROW_T_IF(
+      isRigidBlockDescentSolver(m_rigidBodySolver),
+      InvalidOperationException,
+      "Multibody structures are not supported by the VBD or AVBD rigid-body "
+      "solver");
+  DART_SIMULATION_THROW_T_IF(
       hasRigidBodyAvbdPairConstraints(*this),
       InvalidOperationException,
       "Multibody structures are not supported in worlds with rigid-body "
-      "AVBD pair constraints");
+      "pair constraints under Sequential Impulse, VBD, or AVBD");
 
   std::string candidateName;
   if (name.empty()) {
@@ -4609,12 +4931,12 @@ Joint World::createArticulatedPointJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    jointModel.hasRigidBodyFixedJointAnchors = true;
-    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyPairConstraintGeometry = true;
+    jointModel.rigidBodyPairConstraintLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyPairConstraintLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation.normalize();
   }
 
   return Joint(detail::fromRegistryEntity(jointEntity), this);
@@ -5121,12 +5443,12 @@ Joint World::createRigidBodyPointJoint(
     parentOrientation.normalize();
     childOrientation.normalize();
 
-    jointModel.hasRigidBodyFixedJointAnchors = true;
-    jointModel.rigidBodyFixedJointLocalAnchorParent = *parentAnchor;
-    jointModel.rigidBodyFixedJointLocalAnchorChild = *childAnchor;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation
+    jointModel.hasRigidBodyPairConstraintGeometry = true;
+    jointModel.rigidBodyPairConstraintLocalAnchorParent = *parentAnchor;
+    jointModel.rigidBodyPairConstraintLocalAnchorChild = *childAnchor;
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation
         = parentOrientation.conjugate() * childOrientation;
-    jointModel.rigidBodyFixedJointTargetRelativeOrientation.normalize();
+    jointModel.rigidBodyPairConstraintTargetRelativeOrientation.normalize();
   }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(jointModel.getDOF());
@@ -5338,7 +5660,14 @@ void World::enterSimulationMode()
       "World is already in simulation mode");
 
   validateLoopClosureKinematicsPolicySupport(*this);
+  validateRigidSolverContactMethodCompatibility(
+      m_rigidBodySolver, m_contactSolverMethod);
   validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   validateArticulatedPointJointPipelineSupport(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
@@ -5375,12 +5704,19 @@ void World::setRigidBodySolver(RigidBodySolver solver)
       !isValidRigidBodySolver(solver),
       InvalidArgumentException,
       "Rigid-body solver is invalid");
+  validateRigidSolverContactMethodCompatibility(solver, m_contactSolverMethod);
+  (void)validateRigidConstraintOptions(m_rigidConstraintOptions, solver);
 
   if (m_rigidBodySolver == solver) {
     return;
   }
 
   validateRigidBodyJointPipelineSupport(*this, solver);
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      solver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   m_rigidBodySolver = solver;
   if (m_simulationMode) {
     prepareStepPipelineCacheForCurrentConfiguration();
@@ -5391,6 +5727,30 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 RigidBodySolver World::getRigidBodySolver() const noexcept
 {
   return m_rigidBodySolver;
+}
+
+//==============================================================================
+void World::setRigidConstraintOptions(const RigidConstraintOptions& options)
+{
+  const auto validated
+      = validateRigidConstraintOptions(options, m_rigidBodySolver);
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      validated,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
+  m_rigidConstraintOptions = validated;
+  m_stepPipelineCache->stages.rigidBodyContact.setIterations(
+      m_rigidConstraintOptions.iterations);
+  if (m_simulationMode) {
+    recordResolvedConfiguration();
+  }
+}
+
+//==============================================================================
+const RigidConstraintOptions& World::getRigidConstraintOptions() const noexcept
+{
+  return m_rigidConstraintOptions;
 }
 
 //==============================================================================
@@ -5429,6 +5789,7 @@ void World::setContactSolverMethod(ContactSolverMethod method)
       !isValidContactSolverMethod(method),
       InvalidArgumentException,
       "Contact solver method is invalid");
+  validateRigidSolverContactMethodCompatibility(m_rigidBodySolver, method);
 
   if (m_contactSolverMethod == method) {
     return;
@@ -6507,6 +6868,11 @@ void World::setMultibodyOptions(const MultibodyOptions& options)
           || options.variationalTolerance <= 0.0,
       InvalidArgumentException,
       "MultibodyOptions.variationalTolerance must be positive and finite");
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      m_rigidBodySolver,
+      method == MultibodyIntegrationMethod::Variational);
 
   m_multibodyIntegrationMethod = method;
   m_variationalIntegratorMaxIterations = options.variationalMaxIterations;
@@ -6706,10 +7072,19 @@ void World::stepPipelineOnce(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
   validateLoopClosureKinematicsPolicySupport(*this);
+  validateRigidSolverContactMethodCompatibility(
+      m_rigidBodySolver, m_contactSolverMethod);
+  m_rigidConstraintOptions = validateRigidConstraintOptions(
+      m_rigidConstraintOptions, m_rigidBodySolver);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
   validateLoopClosureDynamicsPolicySupport(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
-  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
   validateArticulatedPointJointPipelineSupport(
       *this,
       m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
@@ -7177,6 +7552,8 @@ void World::restoreReplayFrame(std::size_t index)
   const ReplayState::Frame& replayFrame = m_replay->frames[index];
   const bool wasSimulationMode = m_simulationMode;
   const auto previousRigidBodySolver = m_rigidBodySolver;
+  const auto previousRigidConstraintIterations
+      = m_rigidConstraintOptions.iterations;
   const auto previousMultibodyIntegrationMethod = m_multibodyIntegrationMethod;
   const auto previousContactSolverMethod = m_contactSolverMethod;
   const auto previousComputeAcceleratorPolicy = m_computeAcceleratorPolicy;
@@ -7484,6 +7861,13 @@ void World::restoreReplayFrame(std::size_t index)
   m_simulationMode = replayFrame.simulationMode;
   m_gravity = replayFrame.gravity;
   m_rigidBodySolver = replayFrame.rigidBodySolver;
+  m_rigidConstraintOptions = validateRigidConstraintOptions(
+      RigidConstraintOptions{
+          .iterations = replayFrame.rigidConstraintIterations,
+      },
+      m_rigidBodySolver);
+  m_stepPipelineCache->stages.rigidBodyContact.setIterations(
+      m_rigidConstraintOptions.iterations);
   m_timeStep = replayFrame.timeStep;
   m_differentiable = replayFrame.differentiable;
   m_contactSolverMethod = replayFrame.contactSolverMethod;
@@ -7513,6 +7897,8 @@ void World::restoreReplayFrame(std::size_t index)
     const bool stepPipelinePolicyChanged
         = !wasSimulationMode || frameTopologyChanged
           || previousRigidBodySolver != m_rigidBodySolver
+          || previousRigidConstraintIterations
+                 != m_rigidConstraintOptions.iterations
           || previousMultibodyIntegrationMethod != m_multibodyIntegrationMethod
           || previousContactSolverMethod != m_contactSolverMethod
           || previousComputeAcceleratorPolicy != m_computeAcceleratorPolicy;
@@ -7520,6 +7906,8 @@ void World::restoreReplayFrame(std::size_t index)
       prepareStepPipelineCacheForCurrentConfiguration();
     }
   }
+  m_stepPipelineCache->stages.rigidBodyContact.restoreAvbdWarmStartReplayState(
+      replayFrame.rigidAvbdWarmStartState);
 
   m_replay->cursor = index;
 }
@@ -7543,6 +7931,7 @@ void World::recordReplayFrame()
   replayFrame.simulationMode = m_simulationMode;
   replayFrame.gravity = m_gravity;
   replayFrame.rigidBodySolver = m_rigidBodySolver;
+  replayFrame.rigidConstraintIterations = m_rigidConstraintOptions.iterations;
   replayFrame.timeStep = m_timeStep;
   replayFrame.differentiable = m_differentiable;
   replayFrame.contactSolverMethod = m_contactSolverMethod;
@@ -7569,6 +7958,9 @@ void World::recordReplayFrame()
   replayFrame.deformableAvbdWarmStartStates
       = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
           m_storage->registry, replayAllocator);
+  replayFrame.rigidAvbdWarmStartState
+      = m_stepPipelineCache->stages.rigidBodyContact
+            .captureAvbdWarmStartReplayState(replayAllocator);
   replayFrame.multibodyVariationalStates
       = captureReplayComponents<compute::MultibodyVariationalState>(
           m_storage->registry, replayAllocator);
@@ -7612,14 +8004,14 @@ void World::recordReplayFrame()
     state.layout.pitch = joint.pitch;
     state.layout.parentLink = joint.parentLink;
     state.layout.childLink = joint.childLink;
-    state.layout.hasRigidBodyFixedJointAnchors
-        = joint.hasRigidBodyFixedJointAnchors;
-    state.layout.rigidBodyFixedJointLocalAnchorParent
-        = joint.rigidBodyFixedJointLocalAnchorParent;
-    state.layout.rigidBodyFixedJointLocalAnchorChild
-        = joint.rigidBodyFixedJointLocalAnchorChild;
-    state.layout.rigidBodyFixedJointTargetRelativeOrientation
-        = joint.rigidBodyFixedJointTargetRelativeOrientation;
+    state.layout.hasRigidBodyPairConstraintGeometry
+        = joint.hasRigidBodyPairConstraintGeometry;
+    state.layout.rigidBodyPairConstraintLocalAnchorParent
+        = joint.rigidBodyPairConstraintLocalAnchorParent;
+    state.layout.rigidBodyPairConstraintLocalAnchorChild
+        = joint.rigidBodyPairConstraintLocalAnchorChild;
+    state.layout.rigidBodyPairConstraintTargetRelativeOrientation
+        = joint.rigidBodyPairConstraintTargetRelativeOrientation;
     captureReplayVector(jointState.position, state.position);
     captureReplayVector(jointState.velocity, state.velocity);
     captureReplayVector(jointState.acceleration, state.acceleration);
@@ -8145,6 +8537,8 @@ void World::saveBinary(std::ostream& output) const
     io::writePOD(output, static_cast<std::uint32_t>(entityMap.at(entity)));
     io::writePOD(output, encodeDifferentiablePhysicalParameter(parameter));
   }
+
+  io::writePOD(output, m_rigidConstraintOptions.iterations);
 }
 
 //==============================================================================
@@ -8209,6 +8603,16 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, contactGradientMode);
       io::readPOD(input, multibodyIntegrationMethod);
 
+      DART_SIMULATION_THROW_T_IF(
+          formatVersion < 29 && rigidBodySolver == 2u,
+          InvalidArgumentException,
+          "Serialized World AVBD rigid-body solver requires binary format "
+          "version 29 or newer");
+      DART_SIMULATION_THROW_T_IF(
+          formatVersion < 30 && rigidBodySolver == 3u,
+          InvalidArgumentException,
+          "Serialized World VBD rigid-body solver requires binary format "
+          "version 30 or newer");
       m_rigidBodySolver = decodeRigidBodySolver(rigidBodySolver);
       m_contactSolverMethod = decodeContactSolverMethod(contactSolverMethod);
       m_contactGradientMode = decodeContactGradientMode(contactGradientMode);
@@ -8314,7 +8718,27 @@ void World::loadBinary(std::istream& input)
             entity, decodeDifferentiablePhysicalParameter(serializedParameter));
       }
     }
+
+    if (formatVersion >= 29) {
+      std::size_t rigidConstraintIterations = 0;
+      io::readPOD(input, rigidConstraintIterations);
+      m_rigidConstraintOptions.iterations
+          = validateRigidConstraintIterations(rigidConstraintIterations);
+      m_stepPipelineCache->stages.rigidBodyContact.setIterations(
+          m_rigidConstraintOptions.iterations);
+    }
   }
+
+  validateRigidSolverContactMethodCompatibility(
+      m_rigidBodySolver, m_contactSolverMethod);
+  m_rigidConstraintOptions = validateRigidConstraintOptions(
+      m_rigidConstraintOptions, m_rigidBodySolver);
+  validateRigidBodyJointPipelineSupport(*this, m_rigidBodySolver);
+  validateRigidConstraintOptionsPipelineSupport(
+      *this,
+      m_rigidConstraintOptions,
+      m_rigidBodySolver,
+      m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational);
 
   // Ensure all frame entities have cache components (not serialized)
   auto frameView = m_storage->registry.view<comps::FrameTag>();

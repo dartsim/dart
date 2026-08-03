@@ -1,0 +1,469 @@
+{
+  "schema_version": "dart.vbd_paper_coverage_contract/v1",
+  "plan_id": "PLAN-104",
+  "solver_family": "vbd",
+  "snapshot_date": "2026-07-30",
+  "overall_status": "incomplete",
+  "completion_rule": "paper-parity-matrix.md#completion-rule",
+  "sources": {
+    "paper": {
+      "url": "https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf",
+      "sha256": "4ba65c4e49e8e8740aca491c2bf466b6eeb6f8824a152c12d1f7800828959132",
+      "size_bytes": 20000116
+    },
+    "project_page": {
+      "url": "https://graphics.cs.utah.edu/research/projects/vbd/",
+      "sha256": "2c98c3158d94f2d3d6193381e7f266507f7a722c1ae3c6777786d98ccd84c16f",
+      "size_bytes": 7886
+    },
+    "project_assets": {
+      "teaser": {
+        "url": "https://graphics.cs.utah.edu/research/projects/vbd/teaser.mp4",
+        "sha256": "096533af2e9f116815b551f133da58b5f059c6724da6b80d9041859b715dda65",
+        "size_bytes": 34479245,
+        "duration_seconds": 23.366667,
+        "width": 1920,
+        "height": 1080,
+        "frame_rate": "60/1",
+        "frames": 1402
+      },
+      "random_teapot_stability": {
+        "url": "https://graphics.cs.utah.edu/research/projects/vbd/teapot-small.gif",
+        "sha256": "429101b99fdbab5d8b5b958d03b3f11a5ff34bdcc49a9054f4d4501496c5d94c",
+        "size_bytes": 3284707,
+        "duration_seconds": 2.72,
+        "width": 480,
+        "height": 270,
+        "frames": 68
+      },
+      "flattened_armadillo_stability": {
+        "url": "https://graphics.cs.utah.edu/research/projects/vbd/armadillo-small.gif",
+        "sha256": "451ac464a728e6d273ac17350f7b97eced3a3970df8b810309cd90e2f7479c6f",
+        "size_bytes": 3283913,
+        "duration_seconds": 3.28,
+        "width": 200,
+        "height": 270,
+        "frames": 164
+      }
+    },
+    "paper_video": {
+      "url": "https://www.youtube.com/watch?v=2HCgKfKy3W8",
+      "youtube_id": "2HCgKfKy3W8",
+      "duration_seconds": 331,
+      "audited_format": "YouTube format 18, 640x360",
+      "sha256": "fe5e669c2260a507735cd77e10926a3969fd78fee8c983b328274c25ac5682af"
+    },
+    "repositories": {
+      "gaia": {
+        "url": "https://github.com/AnkaChan/Gaia",
+        "revision": "c229692045465a76233f9fba9197fb22bbfb3694"
+      },
+      "tinyvbd": {
+        "url": "https://github.com/AnkaChan/TinyVBD",
+        "revision": "dcd011a5d945172e247ecced90a6c2c4b4313520"
+      }
+    }
+  },
+  "predicate_definitions": {
+    "artifact_valid": "The evidence schema, source/build identity, hashes, ordering, dimensions, frames, and replay inputs validate.",
+    "solver_contract_valid": "The intended VBD solver and backend ran every required step without fallback, invalid state, or an undisclosed cap.",
+    "physical_outcome_valid": "A scenario-specific quantitative oracle passes for the declared duration and accuracy target.",
+    "manual_inspected": "A current-build render or plot was actually inspected and records the expected qualitative behavior.",
+    "media_decoded": "Required image/video media decodes for its declared duration and is bound to the validated run.",
+    "performance_comparable": "Scene, precision, backend, hardware, compiler, timer boundary, warmup, aggregation, and achieved accuracy are matched.",
+    "claim_valid": "Every predicate required by the row passes and the resulting claim stays within the demonstrated boundary."
+  },
+  "coverage_groups": [
+    {
+      "id": "method",
+      "kind": "method",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {
+          "id": "vbd.method.variational_backward_euler",
+          "status": "partial",
+          "source_locator": "Sections 3.1-3.2, Equations 1-10",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_stepper.cpp"],
+          "blockers": ["The DART foundation lacks full CPU/CUDA source-equivalent accuracy and performance closure."]
+        },
+        {
+          "id": "vbd.method.local_vertex_block_newton",
+          "status": "partial",
+          "source_locator": "Section 3.2, Equations 5-10",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_block_kernel.cpp"],
+          "blockers": ["The local block update is tested narrowly, but full paper-scene CPU/CUDA convergence equivalence is unproven."]
+        },
+        {
+          "id": "vbd.method.local_spd_solve",
+          "status": "partial",
+          "source_locator": "Section 3.2, local 3x3 solve and stability discussion",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_block_kernel.cpp"],
+          "blockers": ["DART has a stabilized local solve, but reference-equivalent failure policy and all-scene evidence are incomplete."]
+        },
+        {
+          "id": "vbd.method.stable_neo_hookean",
+          "status": "partial",
+          "source_locator": "Section 3.3 and the paper experiment materials",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_neo_hookean.cpp"],
+          "blockers": ["The tetrahedral material kernel exists, but paper-scene CPU/CUDA correctness and performance are incomplete."]
+        },
+        {
+          "id": "vbd.method.rayleigh_damping",
+          "status": "partial",
+          "source_locator": "Section 3.4, Equations 11-13",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"],
+          "blockers": ["Focused damping coverage does not reproduce the paper coefficient sweep on both backends."]
+        },
+        {
+          "id": "vbd.method.soft_constraints",
+          "status": "partial",
+          "source_locator": "Section 3.5, constraint energy formulation",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_attachment.cpp"],
+          "blockers": ["Narrow attachments exist, but the full constraint family and paper scenes are not closed on CPU and CUDA."]
+        },
+        {
+          "id": "vbd.method.penalty_contact",
+          "status": "partial",
+          "source_locator": "Section 3.6, penetration-potential contact with DCD/CCD",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"],
+          "blockers": ["Static-obstacle and self-contact slices exist, but the paper collision corpus and CUDA candidate path are incomplete."]
+        },
+        {
+          "id": "vbd.method.lagged_friction",
+          "status": "partial",
+          "source_locator": "Section 3.6, Equations 14-16",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"],
+          "blockers": ["Lagged friction is only partially integrated and lacks the full paper sweeps, self-contact coverage, and CUDA parity."]
+        },
+        {
+          "id": "vbd.method.adaptive_initialization",
+          "status": "partial",
+          "source_locator": "Section 3.7, Equation 17",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"],
+          "blockers": ["The formula has focused tests, but Figures 5-6 and the full CPU/CUDA trajectory comparison are not reproduced."]
+        },
+        {
+          "id": "vbd.method.chebyshev_acceleration",
+          "status": "partial",
+          "source_locator": "Section 3.8, Equations 18-19",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"],
+          "blockers": ["The accelerator exists, but source-equivalent collision skip policy and Figure 7/17 performance closure are missing."]
+        },
+        {
+          "id": "vbd.method.vertex_coloring",
+          "status": "partial",
+          "source_locator": "Section 3.9 and Figure 8",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_coloring.cpp"],
+          "blockers": ["DART has deterministic coloring tests, but the paper mesh color counts and GPU scheduling evidence are incomplete."]
+        },
+        {
+          "id": "vbd.method.dynamic_collision_double_buffer",
+          "status": "partial",
+          "source_locator": "Section 3.9, collision handling without recoloring",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_parallel_block_descent.cpp"],
+          "blockers": ["The parallel foundation does not yet reproduce Figure 9 with matched recolored and non-recolored trajectories."]
+        },
+        {
+          "id": "vbd.method.topology_change",
+          "status": "missing",
+          "source_locator": "Section 3.9 and Figure 10 tearing",
+          "evidence": [],
+          "blockers": ["DART has no source-equivalent VBD tearing or fracture topology-change implementation and evidence packet."]
+        },
+        {
+          "id": "vbd.method.gpu_hierarchical_kernel",
+          "status": "partial",
+          "source_locator": "Section 4 and Algorithm 1",
+          "evidence": ["tests/unit/simulation/cuda/test_vbd_block_descent_cuda.cpp"],
+          "blockers": ["CUDA mass-spring and tetrahedral slices exist, but the full force/contact/friction kernel and paper workloads are incomplete."]
+        },
+        {
+          "id": "vbd.method.particle_blocks",
+          "status": "partial",
+          "source_locator": "Section 6.1 and Figure 21",
+          "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"],
+          "blockers": ["The TinyVBD-shaped strand is narrow CPU evidence, not full particle CPU/CUDA paper parity."]
+        },
+        {
+          "id": "vbd.method.rigid_six_dof_blocks",
+          "status": "partial",
+          "source_locator": "Section 6.2 and Figures 22-23",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp"],
+          "blockers": ["A private rigid block foundation exists under AVBD work, but VBD rigid-chain and rigid-contact paper reproductions are missing."]
+        },
+        {
+          "id": "vbd.method.unified_simulation",
+          "status": "missing",
+          "source_locator": "Section 6.3",
+          "evidence": [],
+          "blockers": ["DART lacks one VBD solve coupling the paper's heterogeneous rigid, particle, and deformable representations."]
+        }
+      ]
+    },
+    {
+      "id": "limitations",
+      "kind": "limitation",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {
+          "id": "vbd.limit.local_information_propagation",
+          "status": "partial",
+          "source_locator": "Section 7, graph-hop information propagation limitation",
+          "evidence": ["docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md"],
+          "blockers": ["The limitation is documented but has no controlled CPU/CUDA scaling reproduction against a global solver."]
+        },
+        {
+          "id": "vbd.limit.high_stiffness_ratio",
+          "status": "partial",
+          "source_locator": "Section 7 and Figure 24",
+          "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"],
+          "blockers": ["A related AVBD sweep exists, but the exact VBD 100-iteration versus converged limitation row is not reproduced on both backends."]
+        },
+        {
+          "id": "vbd.limit.penetration_contact",
+          "status": "partial",
+          "source_locator": "Section 7, penalty contact is not penetration-free",
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"],
+          "blockers": ["The limitation lacks a quantified paper-shaped penetration/error envelope on CPU and CUDA."]
+        },
+        {
+          "id": "vbd.limit.codimensional_self_collision",
+          "status": "partial",
+          "source_locator": "Section 7, codimensional self-collision limitation",
+          "evidence": ["docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md"],
+          "blockers": ["The limitation is documented, but source-equivalent cloth/self-collision boundary tests and visual evidence are incomplete."]
+        }
+      ]
+    },
+    {
+      "id": "paper_figures",
+      "kind": "paper_figure",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {"id": "vbd.paper.fig.01", "status": "missing", "source_locator": "Figure 1, PDF page 1: final 216-ball teapot and 10,368-object box piles", "evidence": [], "blockers": ["Neither headline large-scale scene has a current DART reproduction or matched RTX 4090 packet."]},
+        {"id": "vbd.paper.fig.02", "status": "missing", "source_locator": "Figure 2, PDF page 2: 97K-vertex twisting beams with frictional contact", "evidence": [], "blockers": ["No source-shaped twisting-beam scene, quantitative oracle, visual packet, or matched performance row exists."]},
+        {"id": "vbd.paper.fig.03", "status": "missing", "source_locator": "Figure 3, PDF page 2: flattened armadillo and randomized teapot recovery", "evidence": [], "blockers": ["The extreme-initialization meshes, trajectories, and recovery oracles are not reproduced."]},
+        {"id": "vbd.paper.fig.04", "status": "partial", "source_locator": "Figure 4, PDF page 5: collision coloring bounds", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_coloring.cpp"], "blockers": ["Focused coloring tests do not reproduce the paper edge-edge and vertex-triangle collision cases on both backends."]},
+        {"id": "vbd.paper.fig.05", "status": "partial", "source_locator": "Figure 5, PDF page 6: four initialization choices versus Newton reference", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"], "blockers": ["The five-way swinging-tet-pendulum trajectory and Newton comparison are missing."]},
+        {"id": "vbd.paper.fig.06", "status": "partial", "source_locator": "Figure 6, PDF page 6: adaptive gravity-factor visualization", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"], "blockers": ["No source mesh, per-vertex gravity-factor field, rendered comparison, or matched timing exists."]},
+        {"id": "vbd.paper.fig.07", "status": "partial", "source_locator": "Figure 7, PDF page 7: accelerated 230K-vertex collision-rich ball", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"], "blockers": ["The 120-iteration accelerated/non-accelerated/reference scene and performance packet are missing."]},
+        {"id": "vbd.paper.fig.08", "status": "partial", "source_locator": "Figure 8, PDF page 7: vertex versus element coloring counts", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_coloring.cpp"], "blockers": ["The exact triangle/tetrahedral meshes and reported 3/8/8/76 color comparison are not reproduced."]},
+        {"id": "vbd.paper.fig.09", "status": "partial", "source_locator": "Figure 9, PDF page 8: collision handling with and without recoloring", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_parallel_block_descent.cpp"], "blockers": ["No matched source scene, trajectory-difference oracle, visual pair, or performance comparison exists."]},
+        {"id": "vbd.paper.fig.10", "status": "missing", "source_locator": "Figure 10, PDF page 8: tearing cloth with 2,500 vertices and 4,800 triangles", "evidence": [], "blockers": ["DART has no VBD tearing topology implementation or source-equivalent CPU packet."]},
+        {"id": "vbd.paper.fig.11", "status": "missing", "source_locator": "Figure 11, PDF page 9: 216 squishy balls in a Utah teapot", "evidence": [], "blockers": ["The 48M-vertex/151M-tet scene and 3.6/3.9-second RTX 4090 row are missing."]},
+        {"id": "vbd.paper.fig.12", "status": "missing", "source_locator": "Figure 12, PDF page 9: 10,368 deformable objects and removable platform", "evidence": [], "blockers": ["The 36M-vertex/124M-tet scene, platform event, and 4.2/4.7-second RTX 4090 row are missing."]},
+        {"id": "vbd.paper.fig.13", "status": "partial", "source_locator": "Figure 13, PDF page 9: beam visual convergence across stiffness and iteration counts", "evidence": ["python/examples/demos/scenes/vbd_beam.py"], "blockers": ["The 463-vertex tet beam, three stiffness rows, Newton goldens, and reported timing sweep are not matched."]},
+        {"id": "vbd.paper.fig.14", "status": "partial", "source_locator": "Figure 14, PDF page 10: incline and octopus friction-coefficient sweeps", "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"], "blockers": ["No source-equivalent elastic cube/octopus sweep with quantitative and rendered CPU/CUDA evidence exists."]},
+        {"id": "vbd.paper.fig.15", "status": "missing", "source_locator": "Figure 15, PDF page 11: extreme Stanford bunny stretch and release", "evidence": [], "blockers": ["The source mesh, pull/release schedule, self-collision outcome, and timing packet are missing."]},
+        {"id": "vbd.paper.fig.16", "status": "missing", "source_locator": "Figure 16, PDF page 11: one-iteration armadillo stability test", "evidence": [], "blockers": ["The constrained armadillo scene and one-iteration stability trajectory are not reproduced."]},
+        {"id": "vbd.paper.fig.17", "status": "partial", "source_locator": "Figure 17, PDF page 12: GPU convergence versus GD, Block Jacobi, Newton, and quasi-Newton", "evidence": ["tests/benchmark/simulation/bm_vbd_world_solver.cpp"], "blockers": ["The exact soft/stiff armadillo workloads, every baseline, accuracy metric, and matched GPU timing are incomplete."]},
+        {"id": "vbd.paper.fig.18", "status": "partial", "source_locator": "Figure 18, PDF page 13: single-thread CPU VBD versus Newton convergence", "evidence": ["tests/benchmark/simulation/bm_vbd_block_descent.cpp"], "blockers": ["No matched armadillo workload or controlled single-thread Newton comparison packet exists."]},
+        {"id": "vbd.paper.fig.19", "status": "missing", "source_locator": "Figure 19, PDF page 13: XPBD timestep/collision-frequency comparison", "evidence": [], "blockers": ["The four-way 230K-vertex squishy-ball comparison and source performance claims are missing."]},
+        {"id": "vbd.paper.fig.20", "status": "partial", "source_locator": "Figure 20, PDF page 13: 1:2000 elastic-cube mass-ratio collision", "evidence": ["python/examples/demos/scenes/vbd_obstacle_drape.py"], "blockers": ["No source-equivalent two-cube VBD/XPBD outcome and timing comparison exists."]},
+        {"id": "vbd.paper.fig.21", "status": "partial", "source_locator": "Figure 21, PDF page 14: 20-particle 1:1000 tilted strand", "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"], "blockers": ["The narrow TinyVBD-shaped CPU scene lacks full paper visual, CUDA, Gaia, and matched-accuracy evidence."]},
+        {"id": "vbd.paper.fig.22", "status": "missing", "source_locator": "Figure 22, PDF page 14: five 6-DOF rigid bodies in a collision chain", "evidence": [], "blockers": ["No DART VBD rigid-chain paper scene or validated rigid VBD solver identity exists."]},
+        {"id": "vbd.paper.fig.23", "status": "missing", "source_locator": "Figure 23, PDF page 14: 60 rigid bodies dropped into a Utah teapot", "evidence": [], "blockers": ["No DART VBD rigid-contact teapot scene, friction outcome, or performance packet exists."]},
+        {"id": "vbd.paper.fig.24", "status": "partial", "source_locator": "Figure 24, PDF page 15: 1:10,000 stiffness-ratio VBD limitation", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["The exact VBD 100-iteration and converged comparison is not reproduced on CPU and CUDA."]}
+      ]
+    },
+    {
+      "id": "paper_tables",
+      "kind": "paper_table",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {
+          "id": "vbd.paper.table.01",
+          "status": "partial",
+          "source_locator": "Table 1, PDF page 12: 13 experiment configurations and average/maximum timings",
+          "evidence": ["docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md"],
+          "blockers": ["No complete matched-scene, matched-accuracy, same-hardware table exists; current smoke numbers are not paper-comparable."]
+        }
+      ]
+    },
+    {
+      "id": "paper_video",
+      "kind": "paper_video_segment",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {"id": "vbd.video.01_title", "status": "missing", "source_locator": "00:00.000-00:06.600 title card", "source_seconds": [0, 6.6], "evidence": [], "blockers": ["No approved DART replacement title/edit exists."]},
+        {"id": "vbd.video.02_216_squishy_balls", "status": "missing", "source_locator": "00:06.600-00:42.733 216 squishy balls in teapot", "source_seconds": [6.6, 42.733], "evidence": [], "blockers": ["No full DART scene, trajectory, source-matched edit, or comparable timing exists."]},
+        {"id": "vbd.video.03_10368_models", "status": "missing", "source_locator": "00:42.733-01:26.800 10,368 mixed models and removable platform", "source_seconds": [42.733, 86.8], "evidence": [], "blockers": ["No full DART scene, platform event, source-matched edit, or comparable timing exists."]},
+        {"id": "vbd.video.04_twisting_beams", "status": "missing", "source_locator": "01:26.800-01:48.300 twisting-beam stress test", "source_seconds": [86.8, 108.3], "evidence": [], "blockers": ["No source-shaped DART twisting-beam trajectory or current-build edit exists."]},
+        {"id": "vbd.video.05_random_initialization", "status": "missing", "source_locator": "01:48.300-02:02.800 randomized-teapot recovery", "source_seconds": [108.3, 122.8], "evidence": [], "blockers": ["No source mesh, randomized state, recovery oracle, or current-build edit exists."]},
+        {"id": "vbd.video.06_flattening_initialization", "status": "missing", "source_locator": "02:02.800-02:22.033 flattened-armadillo recovery", "source_seconds": [122.8, 142.033], "evidence": [], "blockers": ["No source mesh, flattened state, recovery oracle, or current-build edit exists."]},
+        {"id": "vbd.video.07_large_residual", "status": "missing", "source_locator": "02:22.033-02:34.933 one-iteration large-residual stability", "source_seconds": [142.033, 154.933], "evidence": [], "blockers": ["No one-iteration armadillo reproduction or validated DART edit exists."]},
+        {"id": "vbd.video.08_extreme_stretch", "status": "missing", "source_locator": "02:34.933-02:55.900 extreme bunny stretch/release", "source_seconds": [154.933, 175.9], "evidence": [], "blockers": ["No source-shaped bunny schedule, self-collision outcome, or validated DART edit exists."]},
+        {"id": "vbd.video.09_elasticity_convergence", "status": "partial", "source_locator": "02:55.900-03:16.033 elasticity convergence grid", "source_seconds": [175.9, 196.033], "evidence": ["python/examples/demos/scenes/vbd_beam.py"], "blockers": ["The exact three-stiffness/four-iteration visual grid and Newton references are missing."]},
+        {"id": "vbd.video.10_incline_friction", "status": "partial", "source_locator": "03:16.033-03:26.967 incline friction-coefficient sweep", "source_seconds": [196.033, 206.967], "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"], "blockers": ["No source-equivalent elastic-cube sweep or validated current-build edit exists."]},
+        {"id": "vbd.video.11_octopus_friction", "status": "partial", "source_locator": "03:26.967-03:42.533 octopus friction/stacking sweep", "source_seconds": [206.967, 222.533], "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"], "blockers": ["No octopus meshes, source trajectory, or validated current-build edit exists."]},
+        {"id": "vbd.video.12_damping", "status": "partial", "source_locator": "03:42.533-03:58.067 damping-coefficient comparison", "source_seconds": [222.533, 238.067], "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"], "blockers": ["No source-shaped damping sweep, energy-decay oracle, or validated current-build edit exists."]},
+        {"id": "vbd.video.13_topology_change", "status": "missing", "source_locator": "03:58.067-04:10.367 tearing/topology-change segment", "source_seconds": [238.067, 250.367], "evidence": [], "blockers": ["DART has no VBD tearing implementation or matching edit."]},
+        {"id": "vbd.video.14_collision_recoloring", "status": "partial", "source_locator": "04:10.367-04:18.933 collision handling with/without recoloring", "source_seconds": [250.367, 258.933], "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_parallel_block_descent.cpp"], "blockers": ["The source comparison, quantitative difference bound, and validated visual pair are missing."]},
+        {"id": "vbd.video.15_xpbd_mass_ratio_collision", "status": "missing", "source_locator": "04:18.933-04:38.167 VBD/XPBD 1:2000 collision", "source_seconds": [258.933, 278.167], "evidence": [], "blockers": ["No matched XPBD baseline, source scene, outcome oracle, or current-build edit exists."]},
+        {"id": "vbd.video.16_xpbd_timestep", "status": "missing", "source_locator": "04:38.167-04:51.733 XPBD timestep/collision-frequency comparison", "source_seconds": [278.167, 291.733], "evidence": [], "blockers": ["No four-way matched XPBD/VBD comparison or validated current-build edit exists."]},
+        {"id": "vbd.video.17_particle_mass_ratio", "status": "partial", "source_locator": "04:51.733-05:03.633 particle chain with 1:1000 mass ratio", "source_seconds": [291.733, 303.633], "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"], "blockers": ["The DART strand is narrow CPU evidence and lacks the exact edit, CUDA path, and source-equivalent outcome."]},
+        {"id": "vbd.video.18_rigid_chain", "status": "missing", "source_locator": "05:03.633-05:15.533 five-body rigid chain", "source_seconds": [303.633, 315.533], "evidence": [], "blockers": ["No VBD rigid-chain reproduction or validated current-build edit exists."]},
+        {"id": "vbd.video.19_rigid_teapot", "status": "missing", "source_locator": "05:15.533-05:31.000 60 rigid bodies in teapot", "source_seconds": [315.533, 331], "evidence": [], "blockers": ["No VBD rigid-contact teapot reproduction or validated current-build edit exists."]}
+      ]
+    },
+    {
+      "id": "gaia_dynamics",
+      "kind": "reference_scene",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {"id": "vbd.gaia.dynamics.hybrid_64_experiment", "status": "missing", "source_locator": "S01_Experiment_HybridModelsDrop_sequentiallyAppear/Test_64HybridModels_2steps_40Iters_stiff_Friction", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.hybrid_64", "status": "missing", "source_locator": "S01_HybridModels_32_Drop_sequentiallyAppear/Test_64HybridModels_2steps_40Iters_stiff_Friction", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.drop_two_squishy_balls", "status": "missing", "source_locator": "S02_Drop2SquishyBallLowRes/Test_2Ball_step10_iter10_0.0ColThickness_GPU_newImpl_run02", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.twist_two_beams", "status": "missing", "source_locator": "S03_Twist2Beams/TestThinBeam2Twisting_cpu_5e3_1e5_2e4_iter20_damping1e-06_24s", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.many_hybrid_models", "status": "missing", "source_locator": "S04_HybridModels_Many_Drop_sequential/Test_Many_HybridModels_2steps_80Iters_sequential", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.drop_216_squishy_balls", "status": "missing", "source_locator": "S05_SquishyBalls_Many_DropToTeapot_sequential/Test_216Ball_step5_iter40_largerVDis_squentialRelease", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.friction_cube_mu_0_1", "status": "missing", "source_locator": "S06_TestFriction_2Cube_GPU/TestFriction_2Cube_friction_0.1_Iter10", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.friction_cube_mu_0_5", "status": "missing", "source_locator": "S06_TestFriction_2Cube_GPU/TestFriction_2Cube_friction_0.5_Iter10", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.friction_cube_mu_0_6", "status": "missing", "source_locator": "S06_TestFriction_2Cube_GPU/TestFriction_2Cube_friction_0.6", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.friction_cube_mu_0_9", "status": "missing", "source_locator": "S06_TestFriction_2Cube_GPU/TestFriction_2Cube_friction_0.9", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.damping_beam_0", "status": "missing", "source_locator": "S07_TestDamping_Beam_GPU/Test_Beam_2e-5_0", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.damping_beam_2e_5", "status": "missing", "source_locator": "S07_TestDamping_Beam_GPU/Test_Beam_2e-5_2e-5", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.damping_beam_5e_5", "status": "missing", "source_locator": "S07_TestDamping_Beam_GPU/Test_Beam_5e-5_5e-5", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.dynamics.random_teapot", "status": "missing", "source_locator": "S08_TeapotRandomInitialize/Test_1_teapot_randomInitialization_damping_0", "evidence": [], "blockers": ["No exact DART port or matched Gaia packet exists."]}
+      ]
+    },
+    {
+      "id": "gaia_cloth",
+      "kind": "reference_scene",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {"id": "vbd.gaia.cloth.twist_c100", "status": "missing", "source_locator": "S01_Twisting/C100_Twist_ContactR0.2_CStif100000.0_bd20_damping3e-05_relaxiation0.42_thick0.01_CDPerIter", "evidence": [], "blockers": ["No exact DART cloth port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.cloth.twist_c50", "status": "missing", "source_locator": "S01_Twisting/C50_Twist_ContactR0.2_CStif100000.0_bd20_damping3e-05_relaxiation0.42", "evidence": [], "blockers": ["No exact DART cloth port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.cloth.twist_c50_thick", "status": "missing", "source_locator": "S01_Twisting/C50_Twist_ContactR0.2_CStif100000.0_bd20_damping3e-05_relaxiation0.42_thick0.01_CDPerIter", "evidence": [], "blockers": ["No exact DART cloth port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.cloth.knot_pulling", "status": "missing", "source_locator": "S02_KnotPulling/Knot_ContactR0.2_CStif1000000.0_bd50_damping1e-07_relaxiation0.42_pull10", "evidence": [], "blockers": ["No exact DART cloth port or matched Gaia packet exists."]},
+        {"id": "vbd.gaia.cloth.multilayer_collider", "status": "missing", "source_locator": "S03_MultiLayerClothOnCollider/C70_CR0.3_Cs100000.0_bd10.0_step20_iters15_init2_accel0.0_damp2e-06_l5_fix_VBD_run2", "evidence": [], "blockers": ["No exact DART cloth port or matched Gaia packet exists."]}
+      ]
+    },
+    {
+      "id": "tinyvbd",
+      "kind": "reference_scene",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {
+          "id": "vbd.tinyvbd.tilted_strand",
+          "status": "partial",
+          "source_locator": "TinyVBD main.cpp default tilted-strand scene",
+          "evidence": [
+            "python/examples/demos/scenes/vbd_tilted_strand.py",
+            "tests/benchmark/simulation/bm_vbd_world_solver.cpp"
+          ],
+          "blockers": ["DART has a narrow CPU reproduction and smoke comparison, but no current validated visual packet, CUDA comparison, or matched full claim."]
+        }
+      ]
+    },
+    {
+      "id": "project_page",
+      "kind": "project_surface",
+      "required_backends": ["cpu", "cuda"],
+      "required_predicates": [
+        "artifact_valid",
+        "solver_contract_valid",
+        "physical_outcome_valid",
+        "manual_inspected",
+        "media_decoded",
+        "performance_comparable",
+        "claim_valid"
+      ],
+      "requirements": [
+        {
+          "id": "vbd.project.teaser",
+          "status": "missing",
+          "source_locator": "Project-page teaser.mp4, 00:00.000-00:23.367: 216-ball teapot and 10,368-model headline scenes with embedded timing",
+          "source_seconds": [0, 23.366667],
+          "evidence": [],
+          "blockers": ["No source-matched DART teaser edit, full headline scenes, current-build media, or comparable embedded timing exists."]
+        },
+        {
+          "id": "vbd.project.random_teapot_stability",
+          "status": "missing",
+          "source_locator": "Project-page teapot-small.gif, 2.72 seconds: randomized deformable teapot recovery",
+          "source_seconds": [0, 2.72],
+          "evidence": [],
+          "blockers": ["No source mesh, randomized state, quantitative recovery oracle, or source-matched DART GIF exists."]
+        },
+        {
+          "id": "vbd.project.flattened_armadillo_stability",
+          "status": "missing",
+          "source_locator": "Project-page armadillo-small.gif, 3.28 seconds: flattened deformable armadillo recovery",
+          "source_seconds": [0, 3.28],
+          "evidence": [],
+          "blockers": ["No source mesh, flattened state, quantitative recovery oracle, or source-matched DART GIF exists."]
+        }
+      ]
+    }
+  ]
+}

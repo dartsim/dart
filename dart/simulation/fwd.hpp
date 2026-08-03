@@ -94,6 +94,10 @@ struct MultibodyStructure;
 
 namespace dart::simulation::compute {
 
+namespace avbd_replay {
+struct RigidAvbdWarmStartReplayState;
+} // namespace avbd_replay
+
 class ComputeExecutor;
 class ComputeGraph;
 class ComputeNode;

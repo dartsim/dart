@@ -282,8 +282,11 @@ ViewQualityReport assessView(
   report.occlusionFraction
       = occlusionFraction(descriptors, focusSet, assessAll, samples, basis.eye);
 
-  // Ambiguity: distinct bodies whose screen boxes pile up while separated in
-  // depth suggest a degenerate view axis (e.g. a stack seen from above).
+  // Ambiguity: distinct subject bodies whose screen boxes pile up while
+  // separated in depth suggest a degenerate view axis (e.g. a stack seen from
+  // above). An explicit focus scopes this check just like framing does;
+  // unrelated debris can occlude the subject, but it must not make an
+  // otherwise clear claim-tied view ambiguous.
   struct AmbiguityBox
   {
     ScreenBox box;
@@ -292,7 +295,7 @@ ViewQualityReport assessView(
   };
   std::vector<AmbiguityBox> boxes;
   for (const RenderableDescriptor& descriptor : descriptors) {
-    if (!descriptor.material.visible) {
+    if (!isFocus(descriptor)) {
       continue;
     }
     const std::vector<Eigen::Vector3d> corners

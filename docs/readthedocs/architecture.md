@@ -185,6 +185,8 @@ same shape is usable across domains and `World::add*` stays uniform.
 | ---------- | ----------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Rigid      | Sequential-impulse (default)                                                        | ✅ available    | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`; tested by [`test_world_default_step_golden.cpp`](https://github.com/dartsim/dart/blob/main/tests/unit/simulation/world/test_world_default_step_golden.cpp) |
 | Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`                                                                                                                                                             |
+| Rigid      | Fixed-penalty VBD contact and public pair constraints                               | 🧪 experimental | Selected by `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`; `RigidConstraintOptions` tunes the active split rigid stage but does not select the family                                                     |
+| Rigid      | AVBD contact and public pair constraints                                            | 🧪 experimental | Selected by `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`; `RigidConstraintOptions` tunes the active split rigid stage but does not select the family                                                     |
 | Rigid      | Contact normal/friction: sequential-impulse / boxed-LCP                             | 🧪 experimental | `WorldOptions::contactSolverMethod`                                                                                                                                                                                             |
 | Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable`, `WorldOptions::contactGradientMode`, setter                                                                                                                                                     |
 | Multibody  | Semi-implicit joint-space integration (default)                                     | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`; tested by [`test_world_contact_parity.cpp`](https://github.com/dartsim/dart/blob/main/tests/unit/simulation/world/test_world_contact_parity.cpp)         |
@@ -199,6 +201,9 @@ differentiable LCP under the differentiable rigid family) so they share a
 domain, state adapter, contact representation, benchmark schema, and capability
 vocabulary instead of forming isolated stacks. Solvers, presets, and examples
 use method/approach/paper or DART-owned names — never other engines' names.
+The rigid iteration tuning is not applicable when IPC or mixed semi-implicit
+multibody routing bypasses the split rigid constraint stage; those
+configurations accept only its default options.
 
 ### Cross-domain coupling
 

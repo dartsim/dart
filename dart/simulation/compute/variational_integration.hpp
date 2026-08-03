@@ -141,7 +141,7 @@ struct VariationalLoopConstraint
   double angularMotorMaxTorque
       = std::numeric_limits<double>::infinity(); ///< motor row torque bound.
   entt::entity sourceJoint = entt::null;         ///< private AVBD source joint.
-  double breakForce = 0.0; ///< >0 marks sourceJoint broken.
+  double breakForce = 0.0; ///< Physical row-load norm; >0 arms fracture.
 };
 
 /// **EXPERIMENTAL SPIKE (PLAN-084 contact-roadmap gate 2).** Kinematics of the

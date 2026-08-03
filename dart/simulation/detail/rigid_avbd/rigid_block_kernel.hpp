@@ -34,6 +34,8 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
+#include <dart/simulation/detail/deformable_vbd/parallel_row_update.hpp>
+#include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -142,6 +144,18 @@ struct AvbdRigidBodyState
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
 };
 
+/// Curvature model for a world-point scalar row.
+///
+/// General joints and motors recompute their nonlinear world points during the
+/// solve and use the AVBD Section 3.5 quasi-Newton geometric term. Contact rows
+/// use the paper's Taylor-linearized contact energy, whose second-order term is
+/// intentionally discarded.
+enum class AvbdRigidPointCurvatureModel : std::uint8_t
+{
+  QuasiNewton,
+  TaylorLinearized,
+};
+
 struct AvbdRigidPointAttachmentRow
 {
   Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
@@ -163,6 +177,8 @@ struct AvbdRigidPointPairRow
   AvbdScalarRowState state;
   double materialStiffness = std::numeric_limits<double>::infinity();
   double previousConstraintValue = 0.0;
+  AvbdRigidPointCurvatureModel curvatureModel
+      = AvbdRigidPointCurvatureModel::QuasiNewton;
   AvbdScalarRowBounds bounds{
       -std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::infinity()};
@@ -190,6 +206,13 @@ struct AvbdRigidAngularPairRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidPointAttachmentOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
 struct AvbdRigidBodyPointAttachmentRow
 {
   std::uint32_t body = 0;
@@ -201,6 +224,8 @@ struct AvbdRigidBodyPointPairRow
   std::uint32_t bodyA = 0;
   std::uint32_t bodyB = 0;
   AvbdRigidPointPairRow row;
+  bool hasSolveOptionsOverride = false;
+  AvbdRigidPointAttachmentOptions solveOptionsOverride;
 };
 
 struct AvbdRigidBodyPointPairDistanceSpringRow
@@ -297,19 +322,13 @@ struct AvbdRigidContactManifoldPoint
   std::uint32_t row = 0;
 };
 
-struct AvbdRigidPointAttachmentOptions
-{
-  double alpha = 0.0;
-  double beta = 1.0;
-  double maxStiffness = std::numeric_limits<double>::infinity();
-};
-
 struct AvbdRigidPointPairFrictionOptions
 {
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
   double staticFrictionTolerance = 1e-12;
+  bool fixedPenalty = false;
 };
 
 struct AvbdRigidPointPairDistanceSpringOptions
@@ -330,6 +349,14 @@ struct AvbdRigidBlockDescentStats
   std::size_t iterations = 0;
   std::size_t bodyUpdates = 0;
 };
+
+//==============================================================================
+inline const AvbdRigidPointAttachmentOptions& avbdRigidPointPairSolveOptions(
+    const AvbdRigidBodyPointPairRow& row,
+    const AvbdRigidPointAttachmentOptions& fallback) noexcept
+{
+  return row.hasSolveOptionsOverride ? row.solveOptionsOverride : fallback;
+}
 
 struct AvbdRigidBodyRowIndexScratch
 {
@@ -757,6 +784,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
   row.offset = targetDistance;
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdContactNormalBounds();
   return row;
 }
@@ -804,6 +832,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
   row.offset = -row.axis.dot(stepStartRelativePosition);
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdFrictionTangentBounds(forceLimit);
   return row;
 }
@@ -1565,6 +1594,53 @@ inline Matrix3x6d avbdRigidWorldPointJacobian(
 }
 
 //==============================================================================
+/// Return the force-scaled rotational curvature of a rigid world point.
+///
+/// With arm r and the actual world force w applied at the point, the negative
+/// Jacobian of the generalized torque r x w under DART's left exponential-map
+/// update is (r dot w) I - r w^T. This is the rigid-body form of the AVBD
+/// geometric-stiffness term before Section 3.5 diagonal lumping.
+inline Eigen::Matrix3d avbdRigidWorldPointGeometricStiffness(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  return arm.dot(worldForce) * Eigen::Matrix3d::Identity()
+         - arm * worldForce.transpose();
+}
+
+//==============================================================================
+inline void addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+    AvbdRigidBodyBlock& block,
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce,
+    AvbdRigidPointCurvatureModel curvatureModel)
+{
+  if (curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+    return;
+  }
+
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    return;
+  }
+
+  const double armForceDot = arm.dot(worldForce);
+  const double armSquaredNorm = arm.squaredNorm();
+  Eigen::Vector3d diagonal;
+  for (Eigen::Index column = 0; column < 3; ++column) {
+    const double squaredNorm
+        = armForceDot * armForceDot
+          - 2.0 * armForceDot * arm[column] * worldForce[column]
+          + armSquaredNorm * worldForce[column] * worldForce[column];
+    diagonal[column] = std::sqrt(std::max(squaredNorm, 0.0));
+  }
+  block.hessian.diagonal().tail<3>() += diagonal;
+}
+
+//==============================================================================
 inline Vector6d avbdRigidDistanceSpringDirectionAtWorldPoint(
     const AvbdRigidBodyState& state,
     const Eigen::Vector3d& worldPoint,
@@ -1581,30 +1657,36 @@ inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   if (!axis.allFinite() || length <= kAvbdRigidMinDistanceSpringLength
       || !std::isfinite(stiffness)) {
     return;
   }
 
-  double transverse = 1.0 - restLength / length;
-  if (clampToPsd) {
-    transverse = std::max(0.0, transverse);
-  }
+  const double forceMagnitude = stiffness * (length - restLength);
+  const Vector6d direction
+      = avbdRigidWorldPointDirection(state, worldPoint, axis);
+  block.hessian.noalias() += stiffness * (direction * direction.transpose());
 
-  const Eigen::Matrix3d nnT = axis * axis.transpose();
-  const Eigen::Matrix3d pointHessian
-      = stiffness * (nnT + transverse * (Eigen::Matrix3d::Identity() - nnT));
   if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
-    block.hessian.topLeftCorner<3, 3>().noalias() += pointHessian;
+    block.hessian.diagonal().head<3>()
+        += avbdQuasiNewtonProjectedDistanceDiagonal(
+            axis, forceMagnitude / length);
     return;
   }
 
+  const Eigen::Matrix3d constraintHessian
+      = (Eigen::Matrix3d::Identity() - axis * axis.transpose()) / length;
   const Matrix3x6d jacobian
       = avbdRigidWorldPointJacobianAtWorldPoint(state, worldPoint);
-  block.hessian.noalias() += jacobian.transpose() * pointHessian * jacobian;
+  Matrix6d geometricStiffness
+      = forceMagnitude * jacobian.transpose() * constraintHessian * jacobian;
+  geometricStiffness.bottomRightCorner<3, 3>()
+      += avbdRigidWorldPointGeometricStiffness(
+          state, worldPoint, forceMagnitude * axis);
+  block.hessian.diagonal()
+      += avbdQuasiNewtonGeometricDiagonal(geometricStiffness);
 }
 
 //==============================================================================
@@ -1615,8 +1697,7 @@ inline void addAvbdRigidDistanceSpringHessian(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       block,
@@ -1625,8 +1706,7 @@ inline void addAvbdRigidDistanceSpringHessian(
       axis,
       length,
       restLength,
-      stiffness,
-      clampToPsd);
+      stiffness);
 }
 
 //==============================================================================
@@ -1667,6 +1747,12 @@ inline double addAvbdRigidPointAttachment(
   block.force.noalias() += forceMagnitude * direction;
   block.hessian.noalias()
       += row.state.stiffness * (direction * direction.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      block,
+      state,
+      worldPoint,
+      forceMagnitude * row.axis,
+      AvbdRigidPointCurvatureModel::QuasiNewton);
   return forceMagnitude;
 }
 
@@ -1684,7 +1770,7 @@ inline double avbdRigidScalarRowForce(
     double materialStiffness)
 {
   if (avbdRigidRowUsesFiniteMaterial(materialStiffness)) {
-    return state.stiffness * constraintValue;
+    return clampAvbdRowForce(state.stiffness * constraintValue, bounds);
   }
 
   return computeAvbdHardConstraintForce(state, constraintValue, bounds);
@@ -1724,6 +1810,18 @@ inline double addAvbdRigidPointPair(
       += row.state.stiffness * (firstDirection * firstDirection.transpose());
   blockB.hessian.noalias()
       += row.state.stiffness * (secondDirection * secondDirection.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      worldPointA,
+      forceMagnitude * row.axis,
+      row.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      worldPointB,
+      -forceMagnitude * row.axis,
+      row.curvatureModel);
   return forceMagnitude;
 }
 
@@ -1733,8 +1831,7 @@ inline double addAvbdRigidPointPairDistanceSpring(
     AvbdRigidBodyBlock& blockB,
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
-    const AvbdRigidPointPairDistanceSpringRow& row,
-    bool clampToPsd = true)
+    const AvbdRigidPointPairDistanceSpringRow& row)
 {
   const Eigen::Vector3d worldPointA
       = avbdRigidBodyWorldPoint(stateA, row.localPointA);
@@ -1763,17 +1860,15 @@ inline double addAvbdRigidPointPairDistanceSpring(
       axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       blockB,
       stateB,
       worldPointB,
-      axis,
+      -axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   return forceMagnitude;
 }
 
@@ -1864,6 +1959,30 @@ inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
   blockB.hessian.noalias()
       += second.state.stiffness
          * (secondDirectionB * secondDirectionB.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      firstWorldPointA,
+      force.x() * first.axis,
+      first.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockA,
+      stateA,
+      secondWorldPointA,
+      force.y() * second.axis,
+      second.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      firstWorldPointB,
+      -force.x() * first.axis,
+      first.curvatureModel);
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      blockB,
+      stateB,
+      secondWorldPointB,
+      -force.y() * second.axis,
+      second.curvatureModel);
   return force;
 }
 
@@ -1977,6 +2096,14 @@ inline void updateAvbdRigidPointPairFrictionTangentPair(
     const AvbdRigidBodyState& stateB,
     const AvbdRigidPointPairFrictionOptions& options)
 {
+  if (options.fixedPenalty) {
+    // Fixed-penalty VBD recomputes k*C from the current configuration on the
+    // next block sweep. It has no friction dual and no stiffness evolution.
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    return;
+  }
+
   bool clamped = false;
   const Eigen::Vector3d firstWorldPointA
       = avbdRigidBodyWorldPoint(stateA, first.localPointA);
@@ -3427,6 +3554,12 @@ inline void avbdRigidRefreshRowIndexLayoutKeys(
 }
 
 //==============================================================================
+/// Run the rigid AVBD primal block sweep and persistent row-state update.
+///
+/// Body blocks retain deterministic serial order. When `rowUpdateExecutor` is
+/// provided, independent attachment, point-pair, distance, angular, and
+/// complete adjacent friction-pair updates use deterministic contiguous
+/// ranges; incomplete friction layouts preserve the serial fallback.
 template <
     typename AttachmentRowVector,
     typename PointPairRowVector,
@@ -3448,7 +3581,8 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     const AvbdRigidPointPairFrictionOptions& frictionOptions,
     AvbdRigidBodyRowIndexScratch* rowIndexScratch = nullptr,
     std::span<AvbdRigidBodyPointPairDistanceSpringRow> distanceSpringRows = {},
-    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {})
+    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {},
+    compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
   AvbdRigidBlockDescentStats stats;
   const std::size_t bodyCount = states.size();
@@ -3799,6 +3933,8 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           const AvbdRigidBodyPointPairRow& indexedRow,
           PointPairWorldPointCache& cache) {
         const AvbdRigidPointPairRow& row = indexedRow.row;
+        const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+            = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
         const AvbdRigidBodyState& stateA = states[indexedRow.bodyA];
         const AvbdRigidBodyState& stateB = states[indexedRow.bodyB];
         const PointPairWorldPointCache& points
@@ -3813,7 +3949,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        rowOptions.alpha);
+                        effectiveRowOptions.alpha);
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
@@ -3823,6 +3959,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+              block,
+              stateA,
+              worldPointA,
+              forceMagnitude * row.axis,
+              row.curvatureModel);
         }
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
           const Vector6d direction
@@ -3830,6 +3972,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+              block,
+              stateB,
+              worldPointB,
+              -forceMagnitude * row.axis,
+              row.curvatureModel);
         }
       };
 
@@ -3866,8 +4014,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
           if (indexedRow.bodyB == body) {
             const Vector6d direction
@@ -3878,11 +4025,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block,
                 stateB,
                 worldPointB,
-                axis,
+                -axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
         };
 
@@ -3995,6 +4141,18 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block, firstDirection, indexedRows.first.state.stiffness);
             addAvbdRigidBlockHessianRankOneLowerTriangle(
                 block, secondDirection, indexedRows.second.state.stiffness);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateA,
+                firstWorldPointA,
+                force.x() * indexedRows.first.axis,
+                indexedRows.first.curvatureModel);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateA,
+                secondWorldPointA,
+                force.y() * indexedRows.second.axis,
+                indexedRows.second.curvatureModel);
           }
           if (indexedRows.bodyB == body
               && indexedRows.bodyB != indexedRows.bodyA) {
@@ -4008,6 +4166,18 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block, firstDirection, indexedRows.first.state.stiffness);
             addAvbdRigidBlockHessianRankOneLowerTriangle(
                 block, secondDirection, indexedRows.second.state.stiffness);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateB,
+                firstWorldPointB,
+                -force.x() * indexedRows.first.axis,
+                indexedRows.first.curvatureModel);
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateB,
+                secondWorldPointB,
+                -force.y() * indexedRows.second.axis,
+                indexedRows.second.curvatureModel);
           }
         };
 
@@ -4090,118 +4260,160 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       ++stats.bodyUpdates;
     }
 
-    for (AvbdRigidBodyPointAttachmentRow& indexedRow : attachmentRows) {
-      if (validBody(indexedRow.body)) {
-        indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
-            indexedRow.row.state,
-            states[indexedRow.body],
-            indexedRow.row,
-            rowOptions);
-      }
-    }
-    PointPairWorldPointCache pointPairUpdateCache;
-    for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        attachmentRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointAttachmentRow& indexedRow = attachmentRows[i];
+            if (validBody(indexedRow.body)) {
+              indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
+                  indexedRow.row.state,
+                  states[indexedRow.body],
+                  indexedRow.row,
+                  rowOptions);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        pointPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          PointPairWorldPointCache pointPairUpdateCache;
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairRow& indexedRow = pointPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+                = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
+              if (effectiveRowOptions.beta >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const PointPairWorldPointCache& points
-            = pointPairWorldPoints(indexedRow, pointPairUpdateCache);
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(
-                  points.worldPointB - points.worldPointA);
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              maxStiffness);
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairDistanceSpringRow& indexedRow :
-         distanceSpringRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
-          && indexedRow.bodyB != indexedRow.bodyA) {
-        indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
-            indexedRow.row.state,
-            states[indexedRow.bodyA],
-            states[indexedRow.bodyB],
-            indexedRow.row,
-            distanceSpringOptions);
-      }
-    }
-    AngularPairConstraintCache angularPairUpdateCache;
-    for (AvbdRigidBodyAngularPairRow& indexedRow : angularPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+            const PointPairWorldPointCache& points
+                = pointPairWorldPoints(indexedRow, pointPairUpdateCache);
+            const double rawConstraintValue
+                = indexedRow.row.offset
+                  + indexedRow.row.axis.dot(
+                      points.worldPointB - points.worldPointA);
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  effectiveRowOptions.beta,
+                  maxStiffness);
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  effectiveRowOptions.alpha);
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  effectiveRowOptions.beta,
+                  indexedRow.row.bounds,
+                  effectiveRowOptions.maxStiffness);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        distanceSpringRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairDistanceSpringRow& indexedRow
+                = distanceSpringRows[i];
+            if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
+                && indexedRow.bodyB != indexedRow.bodyA) {
+              indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
+                  indexedRow.row.state,
+                  states[indexedRow.bodyA],
+                  states[indexedRow.bodyB],
+                  indexedRow.row,
+                  distanceSpringOptions);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        angularPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          AngularPairConstraintCache angularPairUpdateCache;
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyAngularPairRow& indexedRow = angularPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+              if (rowOptions.beta >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(angularPairOrientationError(
-                  indexedRow, angularPairUpdateCache));
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              std::min(
-                  indexedRow.row.materialStiffness, rowOptions.maxStiffness));
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
-      if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
-        updateAvbdRigidPointPairFrictionTangentPair(
-            indexedRows.first,
-            indexedRows.second,
-            states[indexedRows.bodyA],
-            states[indexedRows.bodyB],
-            frictionOptions);
-      }
-    }
+            const double rawConstraintValue
+                = indexedRow.row.offset
+                  + indexedRow.row.axis.dot(angularPairOrientationError(
+                      indexedRow, angularPairUpdateCache));
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  rowOptions.beta,
+                  std::min(
+                      indexedRow.row.materialStiffness,
+                      rowOptions.maxStiffness));
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  rowOptions.alpha);
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  rowOptions.beta,
+                  indexedRow.row.bounds,
+                  rowOptions.maxStiffness);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        frictionPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairFrictionRows& indexedRows
+                = frictionPairRows[i];
+            if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
+              updateAvbdRigidPointPairFrictionTangentPair(
+                  indexedRows.first,
+                  indexedRows.second,
+                  states[indexedRows.bodyA],
+                  states[indexedRows.bodyB],
+                  frictionOptions);
+            }
+          }
+        });
 
     if (convergenceSquared > 0.0 && maxStepSquared <= convergenceSquared) {
       break;

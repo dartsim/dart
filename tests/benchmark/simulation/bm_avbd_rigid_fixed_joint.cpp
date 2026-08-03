@@ -52,12 +52,18 @@
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
+#include <algorithm>
+#include <array>
+#include <bit>
 #include <memory>
 #include <numbers>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <cmath>
+#include <cstdint>
 
 namespace sx = dart::simulation;
 namespace vbd = dart::simulation::detail::deformable_vbd;
@@ -2050,6 +2056,264 @@ std::unique_ptr<sx::World> makeAvbdDemo3dBreakableWorld()
   return world;
 }
 
+class Fnv1a64
+{
+public:
+  void updateUint64(std::uint64_t value)
+  {
+    for (int byte = 0; byte < 8; ++byte) {
+      updateByte(static_cast<std::uint8_t>(value & 0xffu));
+      value >>= 8u;
+    }
+  }
+
+  void updateDouble(double value)
+  {
+    updateUint64(std::bit_cast<std::uint64_t>(value));
+  }
+
+  void updateString(std::string_view value)
+  {
+    updateUint64(static_cast<std::uint64_t>(value.size()));
+    for (const char character : value) {
+      updateByte(static_cast<std::uint8_t>(character));
+    }
+  }
+
+  [[nodiscard]] std::uint64_t value() const
+  {
+    return m_value;
+  }
+
+private:
+  void updateByte(std::uint8_t value)
+  {
+    m_value ^= value;
+    m_value *= 1099511628211ull;
+  }
+
+  std::uint64_t m_value{14695981039346656037ull};
+};
+
+struct PaperBreakableWallFixture
+{
+  std::unique_ptr<sx::World> world;
+  std::uint64_t sceneSpecFingerprint{0};
+};
+
+std::uint64_t paperBreakableWallFingerprint(
+    const std::vector<std::array<std::uint64_t, 3>>& topologyRecords)
+{
+  constexpr std::string_view kTag = "avbd-paper-breakable-wall/v3";
+  constexpr double kTimeStep = 1.0 / 60.0;
+  constexpr double kGravity = -9.81;
+  constexpr std::uint64_t kConstraintIterations = 20;
+  constexpr std::uint64_t kColumns = 21;
+  constexpr std::uint64_t kRows = 12;
+  constexpr std::array<double, 3> kBrickSize{0.60, 0.30, 0.25};
+  constexpr std::array<double, 10> kBodyParameters{
+      200.0, 0.50, 0.62, 0.27, 0.02, 0.48, 40.0, 0.30, -5.0, 24.0};
+  constexpr std::array<std::array<double, 2>, 3> kImpactTargets{{
+      {-3.10, 1.55},
+      {-0.31, 1.75},
+      {3.10, 2.35},
+  }};
+  constexpr std::array<double, 3> kGroundSize{16.0, 16.0, 0.50};
+  constexpr double kGroundFriction = 0.60;
+  constexpr double kBreakForce = 5000.0;
+
+  Fnv1a64 fingerprint;
+  fingerprint.updateString(kTag);
+  fingerprint.updateDouble(kTimeStep);
+  fingerprint.updateDouble(kGravity);
+  fingerprint.updateUint64(kConstraintIterations);
+  fingerprint.updateUint64(kColumns);
+  fingerprint.updateUint64(kRows);
+  for (const double value : kBrickSize) {
+    fingerprint.updateDouble(value);
+  }
+  for (const double value : kBodyParameters) {
+    fingerprint.updateDouble(value);
+  }
+  fingerprint.updateUint64(kImpactTargets.size());
+  for (const auto& target : kImpactTargets) {
+    fingerprint.updateDouble(target[0]);
+    fingerprint.updateDouble(target[1]);
+  }
+  for (const double value : kGroundSize) {
+    fingerprint.updateDouble(value);
+  }
+  fingerprint.updateDouble(kGroundFriction);
+  fingerprint.updateDouble(kBreakForce);
+  fingerprint.updateUint64(topologyRecords.size());
+  for (const auto& record : topologyRecords) {
+    for (const std::uint64_t value : record) {
+      fingerprint.updateUint64(value);
+    }
+  }
+  return fingerprint.value();
+}
+
+PaperBreakableWallFixture makePaperBreakableWallWorld(
+    sx::RigidBodySolver solver)
+{
+  constexpr int kColumns = 21;
+  constexpr int kRows = 12;
+  constexpr int kBrickCount = kColumns * kRows;
+  constexpr int kHorizontalJoints = kRows * (kColumns - 1);
+  constexpr int kVerticalJoints = (kRows - 1) * (2 * kColumns - 1);
+  constexpr int kBaseJoints = kColumns;
+  constexpr int kJointCount = kHorizontalJoints + kVerticalJoints + kBaseJoints;
+  constexpr double kBrickDensity = 200.0;
+  constexpr double kSpacingX = 0.62;
+  constexpr double kSpacingZ = 0.27;
+  constexpr double kBaseClearance = 0.02;
+  constexpr double kBreakForce = 5000.0;
+  constexpr double kBallRadius = 0.48;
+  constexpr double kBallMass = 40.0;
+  constexpr double kBallLaunchSpeed = 24.0;
+  const Eigen::Vector3d brickSize(0.60, 0.30, 0.25);
+  const std::array<Eigen::Vector2d, 3> impactTargets{
+      Eigen::Vector2d(-3.10, 1.55),
+      Eigen::Vector2d(-0.31, 1.75),
+      Eigen::Vector2d(3.10, 2.35)};
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.timeStep = 1.0 / 60.0;
+  options.rigidBodySolver = solver;
+  options.rigidConstraintOptions.iterations = 20;
+  auto world = std::make_unique<sx::World>(options);
+  const std::string solverPrefix
+      = solver == sx::RigidBodySolver::SequentialImpulse ? "sequential_impulse"
+        : solver == sx::RigidBodySolver::Vbd             ? "vbd"
+                                                         : "avbd";
+
+  auto ground = addAvbdDemo3dSourceBox(
+      *world,
+      solverPrefix + "_paper_breakable_wall_ground",
+      Eigen::Vector3d(16.0, 16.0, 0.50),
+      0.0,
+      Eigen::Vector3d(0.0, 0.0, -0.25),
+      true);
+  ground.setFriction(0.60);
+
+  const auto brickPosition = [&](const int row, const int column) {
+    const double courseOffset = row % 2 == 0 ? 0.0 : 0.5;
+    return Eigen::Vector3d(
+        (static_cast<double>(column) - 0.5 * (kColumns - 1) + courseOffset)
+            * kSpacingX,
+        0.0,
+        kBaseClearance + 0.5 * brickSize.z()
+            + static_cast<double>(row) * kSpacingZ);
+  };
+  const auto brickIndex = [=](const int row, const int column) {
+    return static_cast<std::size_t>(row * kColumns + column);
+  };
+
+  std::vector<sx::RigidBody> bricks;
+  bricks.reserve(kBrickCount);
+  for (int row = 0; row < kRows; ++row) {
+    for (int column = 0; column < kColumns; ++column) {
+      bricks.push_back(addAvbdDemo3dSourceBox(
+          *world,
+          solverPrefix + "_paper_wall_brick_" + std::to_string(row) + "_"
+              + std::to_string(column),
+          brickSize,
+          kBrickDensity,
+          brickPosition(row, column)));
+    }
+  }
+
+  std::vector<sx::Joint> joints;
+  joints.reserve(kJointCount);
+  std::vector<std::array<std::uint64_t, 3>> topologyRecords;
+  topologyRecords.reserve(kJointCount);
+  const auto addBreakable = [&](const std::string& name,
+                                const sx::RigidBody& parent,
+                                const sx::RigidBody& child,
+                                const std::uint64_t kind,
+                                const std::uint64_t parentIndex,
+                                const std::uint64_t childIndex) {
+    auto joint = addFixedJoint(*world, name, parent, child);
+    if (solver == sx::RigidBodySolver::Vbd) {
+      auto policy = joint.getConstraintProjectionPolicy();
+      policy.linearStiffness = policy.startStiffness;
+      policy.angularStiffness = policy.startStiffness;
+      joint.setConstraintProjectionPolicy(policy);
+    }
+    joint.setBreakForce(kBreakForce);
+    joints.push_back(joint);
+    topologyRecords.push_back({kind, parentIndex, childIndex});
+  };
+
+  for (int row = 0; row < kRows; ++row) {
+    for (int column = 0; column + 1 < kColumns; ++column) {
+      addBreakable(
+          solverPrefix + "_paper_wall_horizontal_" + std::to_string(row) + "_"
+              + std::to_string(column),
+          bricks[brickIndex(row, column)],
+          bricks[brickIndex(row, column + 1)],
+          1u,
+          1u + brickIndex(row, column),
+          1u + brickIndex(row, column + 1));
+    }
+  }
+  for (int row = 1; row < kRows; ++row) {
+    for (int upperColumn = 0; upperColumn < kColumns; ++upperColumn) {
+      const double upperX = brickPosition(row, upperColumn).x();
+      for (int lowerColumn = 0; lowerColumn < kColumns; ++lowerColumn) {
+        const double lowerX = brickPosition(row - 1, lowerColumn).x();
+        if (std::abs(upperX - lowerX) < brickSize.x()) {
+          addBreakable(
+              solverPrefix + "_paper_wall_vertical_" + std::to_string(row - 1)
+                  + "_" + std::to_string(lowerColumn) + "_"
+                  + std::to_string(row) + "_" + std::to_string(upperColumn),
+              bricks[brickIndex(row - 1, lowerColumn)],
+              bricks[brickIndex(row, upperColumn)],
+              2u,
+              1u + brickIndex(row - 1, lowerColumn),
+              1u + brickIndex(row, upperColumn));
+        }
+      }
+    }
+  }
+  for (int column = 0; column < kColumns; ++column) {
+    addBreakable(
+        solverPrefix + "_paper_wall_base_" + std::to_string(column),
+        ground,
+        bricks[brickIndex(0, column)],
+        3u,
+        0u,
+        1u + brickIndex(0, column));
+  }
+
+  std::vector<sx::RigidBody> balls;
+  balls.reserve(impactTargets.size());
+  for (std::size_t index = 0; index < impactTargets.size(); ++index) {
+    sx::RigidBodyOptions ballOptions;
+    ballOptions.mass = kBallMass;
+    ballOptions.inertia = Eigen::Matrix3d::Identity()
+                          * (2.0 / 5.0 * kBallMass * kBallRadius * kBallRadius);
+    ballOptions.position = Eigen::Vector3d(
+        impactTargets[index].x(), -5.0, impactTargets[index].y());
+    ballOptions.linearVelocity = Eigen::Vector3d(0.0, kBallLaunchSpeed, 0.0);
+    auto ball = world->addRigidBody(
+        solverPrefix + "_paper_wall_ball_" + std::to_string(index),
+        ballOptions);
+    ball.setFriction(0.30);
+    ball.setCollisionShape(sx::CollisionShape::makeSphere(kBallRadius));
+    balls.push_back(ball);
+  }
+
+  benchmark::DoNotOptimize(bricks.data());
+  benchmark::DoNotOptimize(joints.data());
+  benchmark::DoNotOptimize(balls.data());
+  return PaperBreakableWallFixture{
+      .world = std::move(world),
+      .sceneSpecFingerprint = paperBreakableWallFingerprint(topologyRecords)};
+}
+
 std::unique_ptr<sx::World> makeRigidBreakableJointWorld(std::size_t jointCount)
 {
   sx::WorldOptions options;
@@ -2680,6 +2944,171 @@ std::unique_ptr<sx::World> makeArticulatedSphericalPairBreakableJointWorld(
 
     links.push_back(link);
     joints.push_back(joint);
+  }
+
+  benchmark::DoNotOptimize(links.data());
+  benchmark::DoNotOptimize(joints.data());
+  return world;
+}
+
+std::unique_ptr<sx::World> makeArticulatedCompliantJointWorld(
+    std::size_t familyCount)
+{
+  constexpr double kStartStiffness = 10.0;
+  constexpr double kLinearStiffness = 1000.0;
+  constexpr double kAngularStiffness = 1000.0;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.timeStep = 0.002;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::MultibodyOptions multibodyOptions;
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
+  world->setMultibodyOptions(multibodyOptions);
+
+  auto robot = world->addMultibody("articulated_compliant_joint_robot");
+  auto base = robot.addLink("articulated_compliant_joint_base");
+
+  std::vector<sx::Link> links;
+  std::vector<sx::Joint> joints;
+  links.reserve(3u * familyCount);
+  joints.reserve(3u * familyCount);
+  const std::array jointTypes{
+      sx::JointType::Spherical,
+      sx::JointType::Revolute,
+      sx::JointType::Prismatic};
+  for (std::size_t family = 0; family < jointTypes.size(); ++family) {
+    for (std::size_t i = 0; i < familyCount; ++i) {
+      const std::size_t flatIndex = family * familyCount + i;
+      const Eigen::Vector3d anchor(
+          0.35 * static_cast<double>(i + 1),
+          0.2 * static_cast<double>(family),
+          0.04 * static_cast<double>(i % 2));
+
+      sx::JointSpec floatingSpec;
+      floatingSpec.name
+          = "articulated_compliant_float_" + std::to_string(flatIndex);
+      floatingSpec.type = sx::JointType::Floating;
+      auto link = robot.addLink(
+          "articulated_compliant_link_" + std::to_string(flatIndex),
+          base,
+          floatingSpec);
+      link.setMass(1.0 + 0.1 * static_cast<double>(i % 3));
+      link.setInertia(Eigen::Vector3d(0.15, 0.2, 0.25).asDiagonal());
+      Eigen::VectorXd pose = Eigen::VectorXd::Zero(6);
+      pose.head<3>() = anchor;
+      link.getParentJoint().setPosition(pose);
+      link.getParentJoint().setVelocity(
+          (Eigen::VectorXd(6) << 0.35, -0.25, 0.2, 0.4, -0.3, 0.5).finished());
+
+      sx::Joint joint = addPointJoint(
+          *world,
+          "articulated_compliant_joint_" + std::to_string(flatIndex),
+          link,
+          jointTypes[family],
+          family == 2u ? Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitZ(),
+          anchor,
+          Eigen::Vector3d::Zero());
+      auto policy = joint.getConstraintProjectionPolicy();
+      policy.startStiffness = kStartStiffness;
+      policy.linearStiffness = kLinearStiffness;
+      policy.angularStiffness = kAngularStiffness;
+      joint.setConstraintProjectionPolicy(policy);
+
+      links.push_back(link);
+      joints.push_back(joint);
+    }
+  }
+
+  benchmark::DoNotOptimize(links.data());
+  benchmark::DoNotOptimize(joints.data());
+  return world;
+}
+
+std::unique_ptr<sx::World> makeArticulatedCompliantMotorWorld(
+    std::size_t familyCount, bool breakable = false)
+{
+  constexpr double kStartStiffness = 20.0;
+  constexpr double kLinearStiffness = 2000.0;
+  constexpr double kAngularStiffness = 2000.0;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.timeStep = 0.005;
+  auto world = std::make_unique<sx::World>(options);
+
+  sx::MultibodyOptions multibodyOptions;
+  multibodyOptions.integrationFamily
+      = sx::MultibodyIntegrationFamily::Variational;
+  world->setMultibodyOptions(multibodyOptions);
+
+  auto robot = world->addMultibody("articulated_compliant_motor_robot");
+  auto base = robot.addLink("articulated_compliant_motor_base");
+
+  std::vector<sx::Link> links;
+  std::vector<sx::Joint> joints;
+  links.reserve(4u * familyCount);
+  joints.reserve(2u * familyCount);
+  const std::array jointTypes{
+      sx::JointType::Revolute, sx::JointType::Prismatic};
+  const std::array axes{
+      Eigen::Vector3d(1.0, 2.0, 3.0).normalized(),
+      Eigen::Vector3d(1.0, -2.0, 0.5).normalized()};
+  for (std::size_t family = 0; family < jointTypes.size(); ++family) {
+    for (std::size_t i = 0; i < familyCount; ++i) {
+      const std::size_t flatIndex = family * familyCount + i;
+      const Eigen::Vector3d anchor(
+          0.35 * static_cast<double>(i + 1),
+          0.25 * static_cast<double>(family),
+          0.04 * static_cast<double>(i % 2));
+
+      const auto addFloatingLink = [&](std::string_view role, double mass) {
+        sx::JointSpec floatingSpec;
+        floatingSpec.name = "articulated_compliant_motor_" + std::string(role)
+                            + "_float_" + std::to_string(flatIndex);
+        floatingSpec.type = sx::JointType::Floating;
+        auto link = robot.addLink(
+            "articulated_compliant_motor_" + std::string(role) + "_link_"
+                + std::to_string(flatIndex),
+            base,
+            floatingSpec);
+        link.setMass(mass);
+        link.setInertia(Eigen::Vector3d(0.15, 0.2, 0.25).asDiagonal());
+        Eigen::VectorXd pose = Eigen::VectorXd::Zero(6);
+        pose.head<3>() = anchor;
+        link.getParentJoint().setPosition(pose);
+        links.push_back(link);
+        return link;
+      };
+      auto parent = addFloatingLink("parent", 1.0);
+      auto child = addFloatingLink("child", 1.2);
+
+      sx::Joint joint = addPointJoint(
+          *world,
+          "articulated_compliant_motor_" + std::to_string(flatIndex),
+          parent,
+          child,
+          jointTypes[family],
+          axes[family]);
+      joint.setActuatorType(sx::ActuatorType::Velocity);
+      joint.setCommandVelocity(
+          Eigen::VectorXd::Constant(
+              1, 0.3 + 0.03 * static_cast<double>(i % 4)));
+      joint.setEffortLimits(
+          Eigen::VectorXd::Constant(1, -800.0),
+          Eigen::VectorXd::Constant(1, 800.0));
+      auto policy = joint.getConstraintProjectionPolicy();
+      policy.startStiffness = kStartStiffness;
+      policy.linearStiffness = kLinearStiffness;
+      policy.angularStiffness = kAngularStiffness;
+      joint.setConstraintProjectionPolicy(policy);
+      if (breakable) {
+        joint.setBreakForce(1.0e12);
+      }
+      joints.push_back(joint);
+    }
   }
 
   benchmark::DoNotOptimize(links.data());
@@ -3620,6 +4049,152 @@ static void BM_AvbdDemo3dBreakableStep(benchmark::State& state)
 BENCHMARK(BM_AvbdDemo3dBreakableStep);
 
 //==============================================================================
+void runPaperBreakableWallStepBenchmark(
+    benchmark::State& state,
+    sx::RigidBodySolver solver,
+    std::string_view solverKey)
+{
+  constexpr std::size_t kTrajectoryFrames = 120;
+  auto fixture = makePaperBreakableWallWorld(solver);
+  fixture.world->enterSimulationMode();
+  std::string objectKey(solverKey);
+  std::ranges::replace(objectKey, '-', '_');
+  const std::string bodyPrefix = objectKey + "_paper_wall_ball_";
+
+  const auto bodyNames = fixture.world->getRigidBodyNames();
+  std::size_t collisionShapeCount = 0;
+  std::size_t impactingBallCount = 0;
+  for (const auto& name : bodyNames) {
+    const auto body = fixture.world->getRigidBody(name);
+    if (body.has_value() && body->hasCollisionShape()) {
+      ++collisionShapeCount;
+    }
+    if (std::string_view(name).starts_with(bodyPrefix)) {
+      ++impactingBallCount;
+    }
+  }
+
+  const auto joints = fixture.world->getJoints();
+  const auto breakableJointCount = static_cast<std::size_t>(
+      std::ranges::count_if(joints, [](const sx::Joint& joint) {
+        return std::isfinite(joint.getBreakForce())
+               && joint.getBreakForce() > 0.0;
+      }));
+  const auto rigidConstraintIterations
+      = fixture.world->getRigidConstraintOptions().iterations;
+  const bool publicFamily = fixture.world->getRigidBodySolver() == solver;
+  const auto& resolved = fixture.world->getResolvedConfiguration();
+  const auto hasResolvedNote = [&](std::string_view domain,
+                                   std::string_view requested,
+                                   std::string_view actual) {
+    return std::ranges::count_if(
+               resolved.notes,
+               [&](const sx::compute::ResolvedConfigurationNote& note) {
+                 return note.domain == domain && note.requested == requested
+                        && note.resolved == actual;
+               })
+           == 1;
+  };
+  const bool resolvedRigidBody
+      = hasResolvedNote("rigid-body", solverKey, solverKey);
+  const bool resolvedRigidContact
+      = hasResolvedNote("rigid-contact", solverKey, solverKey);
+  const bool resolvedRigidPairConstraint
+      = hasResolvedNote("rigid-pair-constraint", solverKey, solverKey);
+  const std::string iterationText = std::to_string(rigidConstraintIterations);
+  const bool resolvedRigidConstraintIterations = hasResolvedNote(
+      "rigid-constraint-iterations", iterationText, iterationText);
+  const bool runtimeContractPassed
+      = fixture.world->getRigidBodyCount() == bodyNames.size()
+        && fixture.world->getRigidBodyCount() == 256u
+        && fixture.world->getJointCount() == joints.size()
+        && fixture.world->getJointCount() == 712u
+        && breakableJointCount == joints.size() && collisionShapeCount == 256u
+        && impactingBallCount == 3u && rigidConstraintIterations == 20u
+        && publicFamily && resolvedRigidBody && resolvedRigidContact
+        && resolvedRigidPairConstraint && resolvedRigidConstraintIterations;
+  if (!runtimeContractPassed) {
+    const std::string error = std::string(solverKey)
+                              + " paper breakable-wall runtime configuration "
+                                "drifted";
+    state.SkipWithError(error.c_str());
+    return;
+  }
+
+  const std::uint64_t sceneSpecFingerprint = fixture.sceneSpecFingerprint;
+  std::size_t frame = 0;
+
+  for (auto _ : state) {
+    fixture.world->step();
+    benchmark::ClobberMemory();
+    ++frame;
+    if (frame == kTrajectoryFrames) {
+      state.PauseTiming();
+      fixture = makePaperBreakableWallWorld(solver);
+      if (fixture.sceneSpecFingerprint != sceneSpecFingerprint) {
+        const std::string error = std::string(solverKey)
+                                  + " paper breakable-wall scene fingerprint "
+                                    "drifted";
+        state.SkipWithError(error.c_str());
+        return;
+      }
+      fixture.world->enterSimulationMode();
+      frame = 0;
+      state.ResumeTiming();
+    }
+  }
+  state.counters["rigid_bodies"]
+      = static_cast<double>(fixture.world->getRigidBodyCount());
+  state.counters["rigid_body_joints"]
+      = static_cast<double>(fixture.world->getJointCount());
+  state.counters["breakable_joints"] = static_cast<double>(breakableJointCount);
+  state.counters["collision_shapes"] = static_cast<double>(collisionShapeCount);
+  state.counters["impacting_balls"] = static_cast<double>(impactingBallCount);
+  state.counters["rigid_constraint_iterations"]
+      = static_cast<double>(rigidConstraintIterations);
+  state.counters["trajectory_frames"] = static_cast<double>(kTrajectoryFrames);
+  state.counters[std::string("public_") + std::string(solverKey) + "_family"]
+      = publicFamily ? 1.0 : 0.0;
+  state.counters[std::string("resolved_rigid_body_") + std::string(solverKey)]
+      = resolvedRigidBody ? 1.0 : 0.0;
+  state
+      .counters[std::string("resolved_rigid_contact_") + std::string(solverKey)]
+      = resolvedRigidContact ? 1.0 : 0.0;
+  state.counters
+      [std::string("resolved_rigid_pair_constraint_") + std::string(solverKey)]
+      = resolvedRigidPairConstraint ? 1.0 : 0.0;
+  state.counters["resolved_rigid_constraint_iterations"]
+      = resolvedRigidConstraintIterations ? 1.0 : 0.0;
+  state.counters["runtime_contract_passed"] = runtimeContractPassed ? 1.0 : 0.0;
+  state.counters["scene_spec_fingerprint_hi"] = static_cast<double>(
+      static_cast<std::uint32_t>(sceneSpecFingerprint >> 32u));
+  state.counters["scene_spec_fingerprint_lo"]
+      = static_cast<double>(static_cast<std::uint32_t>(sceneSpecFingerprint));
+}
+
+//==============================================================================
+static void BM_AvbdPaperBreakableWallStep(benchmark::State& state)
+{
+  runPaperBreakableWallStepBenchmark(state, sx::RigidBodySolver::Avbd, "avbd");
+}
+BENCHMARK(BM_AvbdPaperBreakableWallStep)->Iterations(120);
+
+//==============================================================================
+static void BM_VbdPaperBreakableWallStep(benchmark::State& state)
+{
+  runPaperBreakableWallStepBenchmark(state, sx::RigidBodySolver::Vbd, "vbd");
+}
+BENCHMARK(BM_VbdPaperBreakableWallStep)->Iterations(120);
+
+//==============================================================================
+static void BM_SequentialImpulsePaperBreakableWallStep(benchmark::State& state)
+{
+  runPaperBreakableWallStepBenchmark(
+      state, sx::RigidBodySolver::SequentialImpulse, "sequential-impulse");
+}
+BENCHMARK(BM_SequentialImpulsePaperBreakableWallStep)->Iterations(120);
+
+//==============================================================================
 static void BM_AvbdRigidBreakableJointStep(benchmark::State& state)
 {
   const auto jointCount = static_cast<std::size_t>(state.range(0));
@@ -3807,6 +4382,66 @@ BENCHMARK(BM_AvbdArticulatedSphericalPairBreakableJointStep)
     ->Arg(1)
     ->Arg(8)
     ->Arg(32);
+
+//==============================================================================
+static void BM_AvbdArticulatedCompliantJointStep(benchmark::State& state)
+{
+  const auto familyCount = static_cast<std::size_t>(state.range(0));
+  auto world = makeArticulatedCompliantJointWorld(familyCount);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["family_instances"] = static_cast<double>(familyCount);
+  state.counters["spherical_joints"] = static_cast<double>(familyCount);
+  state.counters["revolute_joints"] = static_cast<double>(familyCount);
+  state.counters["prismatic_joints"] = static_cast<double>(familyCount);
+  state.counters["compliant_joints"] = static_cast<double>(3u * familyCount);
+}
+BENCHMARK(BM_AvbdArticulatedCompliantJointStep)->Arg(1)->Arg(4)->Arg(16);
+
+//==============================================================================
+static void BM_AvbdArticulatedCompliantMotorStep(benchmark::State& state)
+{
+  const auto familyCount = static_cast<std::size_t>(state.range(0));
+  auto world = makeArticulatedCompliantMotorWorld(familyCount);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["family_instances"] = static_cast<double>(familyCount);
+  state.counters["revolute_motors"] = static_cast<double>(familyCount);
+  state.counters["prismatic_motors"] = static_cast<double>(familyCount);
+  state.counters["compliant_motors"] = static_cast<double>(2u * familyCount);
+}
+BENCHMARK(BM_AvbdArticulatedCompliantMotorStep)->Arg(1)->Arg(4)->Arg(16);
+
+//==============================================================================
+static void BM_AvbdArticulatedCompliantBreakableMotorStep(
+    benchmark::State& state)
+{
+  const auto familyCount = static_cast<std::size_t>(state.range(0));
+  auto world
+      = makeArticulatedCompliantMotorWorld(familyCount, /*breakable=*/true);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["family_instances"] = static_cast<double>(familyCount);
+  state.counters["revolute_motors"] = static_cast<double>(familyCount);
+  state.counters["prismatic_motors"] = static_cast<double>(familyCount);
+  state.counters["breakable_motors"] = static_cast<double>(2u * familyCount);
+}
+BENCHMARK(BM_AvbdArticulatedCompliantBreakableMotorStep)
+    ->Arg(1)
+    ->Arg(4)
+    ->Arg(16);
 
 //==============================================================================
 static void BM_AvbdArticulatedHighRatioChainStep(benchmark::State& state)

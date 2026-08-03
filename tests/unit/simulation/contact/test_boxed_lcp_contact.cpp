@@ -6667,6 +6667,7 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
 TEST(AvbdContact, FixedJointRowsParticipateInProjection)
 {
   auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  avbd->setRigidBodySolver(sx::RigidBodySolver::Avbd);
   avbd->setGravity(Eigen::Vector3d::Zero());
 
   auto ground = avbd->getRigidBody("ground");
@@ -6714,6 +6715,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -6757,6 +6759,7 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -6921,6 +6924,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -6989,6 +6993,7 @@ TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7041,6 +7046,7 @@ TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7083,6 +7089,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7193,6 +7200,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7248,11 +7256,12 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
 }
 
 //==============================================================================
-// Public fixed joints should remain active when ordinary, non-AVBD-opted
-// contacts involve the fixed body. The contact still falls through to the
-// selected default contact solver while the fixed-joint rows project
-// independently.
-TEST(AvbdContact, PublicFixedJointProjectsWithDefaultContactOnFixedBody)
+// Sequential Impulse owns hard public pair rows alongside ordinary contact
+// rows. Its iteration-budgeted post stabilization reduces pre-existing pose
+// drift without injecting correction velocity.
+TEST(
+    SequentialImpulseContact,
+    PublicFixedJointPostStabilizesWithoutVelocityInjection)
 {
   sx::WorldOptions options;
   options.timeStep = 0.005;
@@ -7295,9 +7304,333 @@ TEST(AvbdContact, PublicFixedJointProjectsWithDefaultContactOnFixedBody)
 
   world.step();
 
+  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
   EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), driftBeforeStep);
-  EXPECT_LT(link.getLinearVelocity().x(), 0.0);
+  EXPECT_NEAR(link.getLinearVelocity().x(), 0.0, 1e-12);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
+}
+
+//==============================================================================
+// Hard equality rows participate in the velocity solve itself. A fixed body
+// should therefore cancel both relative linear and angular velocity before
+// semi-implicit position integration.
+TEST(SequentialImpulseContact, HardFixedJointCancelsRelativeVelocity)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidConstraintOptions.iterations = 20u;
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  linkOptions.linearVelocity = Eigen::Vector3d(3.0, -2.0, 1.0);
+  linkOptions.angularVelocity = Eigen::Vector3d(-1.0, 2.0, 3.0);
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  const Eigen::Isometry3d initialPose = link.getTransform();
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_TRUE(
+      link.getTransform().matrix().isApprox(initialPose.matrix(), 1e-10));
+  EXPECT_LT(link.getLinearVelocity().norm(), 1e-10);
+  EXPECT_LT(link.getAngularVelocity().norm(), 1e-10);
+  EXPECT_EQ(world.computeStepMetrics().lastStepIterations, 20u);
+}
+
+// Position-level post stabilization is a split correction: it reduces angular
+// drift after the velocity solve but must not write the correction back into
+// angular velocity.
+TEST(
+    SequentialImpulseContact,
+    HardFixedJointPostStabilizesAngularDriftWithoutVelocity)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+  world.enterSimulationMode();
+
+  Eigen::Isometry3d driftedPose = link.getTransform();
+  driftedPose.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  link.setTransform(driftedPose);
+  world.step();
+
+  const Eigen::AngleAxisd residual(link.getTransform().linear());
+  EXPECT_LT(std::abs(residual.angle()), 0.1);
+  EXPECT_GT(std::abs(residual.angle()), 0.0);
+  EXPECT_LT(link.getAngularVelocity().norm(), 1e-12);
+}
+
+// Contact and hard pair rows share each outer PGS sweep. An overlapping
+// projectile can transfer an impulse into a fixed link while the joint rows
+// converge that link back to zero velocity.
+TEST(SequentialImpulseContact, ContactAndFixedJointRowsConvergeTogether)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidConstraintOptions.iterations = 20u;
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  auto link = world.addRigidBody("link");
+  link.setCollisionShape(sx::CollisionShape::makeBox(Eigen::Vector3d::Ones()));
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  sx::RigidBodyOptions projectileOptions;
+  projectileOptions.position = Eigen::Vector3d(-0.9, 0.0, 0.0);
+  projectileOptions.linearVelocity = Eigen::Vector3d(5.0, 0.0, 0.0);
+  auto projectile = world.addRigidBody("projectile", projectileOptions);
+  projectile.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Ones()));
+
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+  world.step();
+
+  EXPECT_LT(link.getLinearVelocity().norm(), 1e-3);
+  EXPECT_LT(link.getAngularVelocity().norm(), 1e-3);
+  EXPECT_LT(projectile.getLinearVelocity().x(), 1e-6);
+  EXPECT_EQ(world.computeStepMetrics().lastStepIterations, 20u);
+}
+
+// Contact-method selection is independent of hard pair-row ownership. The
+// boxed-LCP contact solve may therefore feed a public fixed joint that remains
+// owned by the Sequential Impulse rigid-body family.
+TEST(SequentialImpulseContact, BoxedLcpContactsKeepHardFixedJointRows)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidConstraintOptions.iterations = 20u;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  auto link = world.addRigidBody("link");
+  link.setCollisionShape(sx::CollisionShape::makeBox(Eigen::Vector3d::Ones()));
+  (void)world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  sx::RigidBodyOptions projectileOptions;
+  projectileOptions.position = Eigen::Vector3d(-0.9, 0.0, 0.0);
+  projectileOptions.linearVelocity = Eigen::Vector3d(5.0, 0.0, 0.0);
+  auto projectile = world.addRigidBody("projectile", projectileOptions);
+  projectile.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Ones()));
+
+  world.enterSimulationMode();
+  ASSERT_FALSE(world.collide().empty());
+  world.step();
+
+  EXPECT_LT(link.getLinearVelocity().norm(), 1e-3);
+  EXPECT_LT(link.getAngularVelocity().norm(), 1e-3);
+  EXPECT_GT(projectile.getLinearVelocity().x(), 0.0);
+  EXPECT_LT(projectile.getLinearVelocity().x(), 5.0);
+}
+
+// Break-force handling compares the converged equality-row impulse divided by
+// the step size against the public physical load threshold. Once marked
+// broken, the row is absent from the next step.
+TEST(SequentialImpulseContact, FixedJointBreaksFromImpulseLoadAndStaysExcluded)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidConstraintOptions.iterations = 20u;
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  auto joint = world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+  joint.setBreakForce(10.0);
+
+  world.enterSimulationMode();
+  world.step();
+  EXPECT_FALSE(joint.isBroken());
+
+  link.setLinearVelocity(Eigen::Vector3d(10.0, 0.0, 0.0));
+  world.step();
+  ASSERT_TRUE(joint.isBroken());
+
+  const double positionBeforeFreeStep = link.getTranslation().x();
+  link.setLinearVelocity(Eigen::Vector3d::UnitX());
+  world.step();
+  EXPECT_GT(link.getTranslation().x(), positionBeforeFreeStep + 0.009);
+}
+
+// Sequential Impulse deliberately owns hard rows only. A finite material
+// policy must fail before simulation starts and remain rejected on a live
+// runtime-family switch; AVBD is the explicit supported route.
+TEST(SequentialImpulseContact, FiniteJointRowsFailClosedBeforeStepping)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+  auto link = world.addRigidBody("link");
+  auto joint = world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  sx::JointConstraintProjectionPolicy policy;
+  policy.linearStiffness = 1000.0;
+  joint.setConstraintProjectionPolicy(policy);
+
+  EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  world.enterSimulationMode();
+  EXPECT_THROW(
+      world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse),
+      sx::InvalidOperationException);
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Avbd);
+}
+
+// The finite-stiffness rejection must also hold when the policy changes after
+// entering simulation mode: the per-step pipeline validation throws before
+// the next step instead of silently keeping the hard rows.
+TEST(SequentialImpulseContact, InSimulationFinitePolicyFailsClosedOnNextStep)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+  auto link = world.addRigidBody("link");
+  auto joint = world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  world.enterSimulationMode();
+  world.step();
+
+  sx::JointConstraintProjectionPolicy policy;
+  policy.linearStiffness = 1000.0;
+  joint.setConstraintProjectionPolicy(policy);
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+}
+
+// A joint whose endpoint state degenerates mid-run is skipped by the shared
+// eligibility rule in both the expected-row count and the extraction, so the
+// step must not throw a row-coverage exception; the degenerate state
+// propagates exactly as it does for jointless worlds.
+TEST(SequentialImpulseContact, DegenerateJointStateSkipsRowsWithoutThrowing)
+{
+  sx::WorldOptions options;
+  options.timeStep = 0.01;
+  options.gravity = Eigen::Vector3d::Zero();
+  sx::World world(options);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+  world.addJoint(
+      base, link, makeJointSpec("base_to_link", sx::JointType::Fixed));
+
+  world.enterSimulationMode();
+  world.step();
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  auto& transform = registry.get<sx::comps::Transform>(
+      dart::simulation::detail::toRegistryEntity(link.getEntity()));
+  transform.position
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+
+  EXPECT_NO_THROW(world.step());
+}
+
+// A bounded velocity motor loads the joint it drives, so its accepted force
+// counts toward the public break threshold identically under Sequential
+// Impulse and AVBD. The huge link inertia saturates the bounded motor, so
+// the accepted motor force reaches the effort limit while the passive rows
+// stay lightly loaded.
+TEST(SequentialImpulseContact, MotorLoadCountsTowardBreakForceAcrossFamilies)
+{
+  const auto motorBreaksJoint = [](sx::RigidBodySolver solver,
+                                   double breakForce) {
+    sx::WorldOptions options;
+    options.timeStep = 0.01;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidBodySolver = solver;
+    options.rigidConstraintOptions.iterations = 20u;
+    sx::World world(options);
+
+    sx::RigidBodyOptions baseOptions;
+    baseOptions.isStatic = true;
+    auto base = world.addRigidBody("base", baseOptions);
+
+    sx::RigidBodyOptions linkOptions;
+    linkOptions.mass = 1.0e6;
+    linkOptions.position = Eigen::Vector3d::UnitX();
+    auto link = world.addRigidBody("link", linkOptions);
+
+    auto joint = world.addJoint(
+        base,
+        link,
+        makeJointSpec(
+            "motor_break", sx::JointType::Revolute, Eigen::Vector3d::UnitZ()));
+    joint.setActuatorType(sx::ActuatorType::Velocity);
+    joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 50.0));
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -200.0),
+        Eigen::VectorXd::Constant(1, 200.0));
+    joint.setBreakForce(breakForce);
+
+    world.enterSimulationMode();
+    for (int i = 0; i < 5; ++i) {
+      world.step();
+    }
+    return joint.isBroken();
+  };
+
+  EXPECT_TRUE(motorBreaksJoint(sx::RigidBodySolver::SequentialImpulse, 150.0));
+  EXPECT_TRUE(motorBreaksJoint(sx::RigidBodySolver::Avbd, 150.0));
+  EXPECT_FALSE(motorBreaksJoint(sx::RigidBodySolver::SequentialImpulse, 1.0e5));
+  EXPECT_FALSE(motorBreaksJoint(sx::RigidBodySolver::Avbd, 1.0e5));
 }
 
 //==============================================================================
@@ -7308,6 +7641,7 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   sx::WorldOptions options;
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7350,6 +7684,7 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
 TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
 {
   auto world = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
+  world->setRigidBodySolver(sx::RigidBodySolver::Avbd);
   world->setGravity(Eigen::Vector3d::Zero());
 
   auto sphere = world->getRigidBody("sphere");

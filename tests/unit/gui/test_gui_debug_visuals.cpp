@@ -620,4 +620,44 @@ TEST(GuiDebugVisuals, AssessViewFlagsAnOccludedFocus)
       != report.issues.end());
 }
 
+TEST(GuiDebugVisuals, AssessViewScopesAmbiguityToExplicitFocus)
+{
+  // Camera at +X looking toward the origin along -X. The two decoys are
+  // depth-separated on the same ray and therefore ambiguous when the whole
+  // scene is assessed, while the offset focus remains individually clear.
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.distance = 4.0;
+  camera.yaw = 0.0;
+  camera.pitch = 0.0;
+
+  const dart::gui::RenderableDescriptor focus = makeBoundedBoxDescriptor(
+      1u, Eigen::Vector3d(0.0, 0.9, 0.0), Eigen::Vector3d::Constant(0.2));
+  const dart::gui::RenderableDescriptor nearDecoy = makeBoundedBoxDescriptor(
+      2u, Eigen::Vector3d(0.25, -0.8, 0.0), Eigen::Vector3d::Constant(0.2));
+  const dart::gui::RenderableDescriptor farDecoy = makeBoundedBoxDescriptor(
+      3u, Eigen::Vector3d(-0.25, -0.8, 0.0), Eigen::Vector3d::Constant(0.2));
+  const std::vector<dart::gui::RenderableDescriptor> descriptors{
+      focus, nearDecoy, farDecoy};
+
+  const dart::gui::ViewQualityReport wholeScene
+      = dart::gui::assessView(descriptors, camera, 320, 240);
+  EXPECT_GT(wholeScene.ambiguityIoU, 0.55);
+  EXPECT_NE(
+      std::find(
+          wholeScene.issues.begin(), wholeScene.issues.end(), "ambiguous"),
+      wholeScene.issues.end());
+
+  const dart::gui::ViewQualityReport focused = dart::gui::assessView(
+      descriptors,
+      camera,
+      320,
+      240,
+      std::vector<dart::gui::RenderableId>{focus.id});
+  EXPECT_DOUBLE_EQ(focused.ambiguityIoU, 0.0);
+  EXPECT_EQ(
+      std::find(focused.issues.begin(), focused.issues.end(), "ambiguous"),
+      focused.issues.end());
+}
+
 } // namespace

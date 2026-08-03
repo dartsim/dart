@@ -11,6 +11,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
+
 DEFAULT_PACKET = Path(
     "docs/plans/104-vertex-block-descent-solver/"
     "avbd-friction-coefficient-sweep-packet.json"
@@ -25,7 +31,7 @@ PLOT_LEFT = 76
 PLOT_RIGHT = 682
 PLOT_TOP = 84
 PLOT_BOTTOM = 292
-SUPPORTED_SCHEMA_VERSIONS = (1, 2)
+SUPPORTED_SCHEMA_VERSIONS = tuple(range(1, AVBD_PACKET_SCHEMA_VERSION + 1))
 
 
 class AvbdFrictionCoefficientSweepPlotError(RuntimeError):
@@ -68,8 +74,9 @@ def _finite(row: dict[str, Any], key: str) -> float:
 def _validate_packet(packet_path: Path) -> list[dict[str, float]]:
     packet = _load_json(packet_path)
     if packet.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
+        supported = ", ".join(str(value) for value in SUPPORTED_SCHEMA_VERSIONS)
         raise AvbdFrictionCoefficientSweepPlotError(
-            "packet schema_version must be 1 or 2"
+            f"packet schema_version must be one of {supported}"
         )
     if packet.get("packet") != "avbd_friction_coefficient_sweep":
         raise AvbdFrictionCoefficientSweepPlotError(

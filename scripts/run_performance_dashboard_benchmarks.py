@@ -141,6 +141,7 @@ BENCHMARK_SPECS = [
             "BM_AvbdDemo3dSoftBodyStep$|"
             "BM_AvbdDemo3dBridgeStep$|"
             "BM_AvbdDemo3dBreakableStep$|"
+            "BM_AvbdPaperBreakableWallStep/iterations:120$|"
             "BM_AvbdArticulatedHighRatioChainStep$|"
             "BM_AvbdPaperScaleHighRatioChainStep$|"
             "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*|"

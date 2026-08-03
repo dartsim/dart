@@ -47,6 +47,11 @@
   [`104-vertex-block-descent-solver/avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
   owns the row-by-row source-demo, paper-scene, website/video, and benchmark
   packet tracking needed before any parity claim.
+- VBD/AVBD paper-parity contract:
+  [`104-vertex-block-descent-solver/paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md)
+  owns the fail-closed completion rule and links the machine-checked 88-row VBD
+  and 88-row AVBD source inventories. Validate them with
+  `pixi run check-plan104-paper-parity`.
 
 ## Current Implementation Evidence
 
@@ -84,11 +89,13 @@ driver, a bounded half-space friction-tangent row primitive, and self-contact
 normal rows for point-triangle / edge-edge primitive directions and AVBD
 hard-row stamping. Self-contact friction tangent rows reuse lagged
 point-triangle / edge-edge tangent stencils in the combined mass-spring row
-driver, with supported World generation for serial self-contact scenes plus
+driver, with supported World generation for self-contact scenes plus
 pairwise static/dynamic switching and circular-cone projection.
 The supported mass-spring World envelope carries
 contact-normal, friction-tangent, self-contact-normal, attachment, and spring
-finite-stiffness families in one serial AVBD row solve. The supported
+finite-stiffness families in one AVBD row solve. Its primal sweep remains
+serial and deterministic, while sufficiently large independent post-primal
+dual/stiffness row inventories use deterministic CPU ranges. The supported
 frictionless pure-tetrahedral World envelope now carries finite-stiffness
 material rows with a dimensionless Lamé multiplier and separate tet-row
 diagnostics, while still using the existing lagged VBD self-contact penalty
@@ -329,24 +336,96 @@ end-to-end dashboard benchmark rows for the public motor paths, and tracked
 and
 [`avbd-rigid-prismatic-motor-packet.json`](104-vertex-block-descent-solver/avbd-rigid-prismatic-motor-packet.json)
 visual/benchmark evidence.
-Solver-identity relabel (PLAN-091 WP-091.1): no `avbd-demo2d`/`avbd-demo3d`
-benchmark or py-demo scene emplaces the internal AVBD rigid-contact opt-in
-config (`comps::RigidAvbdContactConfig`), because AVBD contact is not
-facade-selectable, so every rigid contact in the source-row scenes below ran
-DART's default sequential-impulse contact path. The native-runner timing
-ratios for contact scenes are whole-pipeline `World::step` comparisons, not
-AVBD-contact-solver comparisons: the pure-contact rows (2D Dynamic Friction,
-Static Friction, Pyramid, Cards, Stack, and Stack Ratio; 3D Ground, Dynamic
-Friction, Static Friction, Pyramid, Stack, and Stack Ratio) timed no AVBD rows
-at all; the joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and
-Net; 3D Soft Body, Bridge, and Breakable) timed AVBD
-point-joint/motor/spring rows while their ordinary contacts ran sequential
-impulse; and incidental link-link contacts in the chain rows (2D Rod, Rope,
-Heavy Rope, and Hanging Rope; 3D Rope and Heavy Rope) also ran sequential
-impulse. This relabel changes no committed packet bytes and neither closes nor
-reopens any PLAN-104 completion gate; new AVBD evidence packets must
-machine-record `resolved_solver_identity` at AVBD packet schema version 2,
-enforced by `pixi run check-avbd-packets`.
+Solver-identity relabel (PLAN-091 WP-091.1): the checked-in historical
+`avbd-demo2d`/`avbd-demo3d` benchmark and py-demo packets were captured before
+their scenes selected the public AVBD rigid-body family or emplaced the
+compatibility-only internal AVBD rigid-contact opt-in
+(`comps::RigidAvbdContactConfig`). At capture time, their rigid contacts ran
+DART's default sequential-impulse path. Their recorded native-runner timing
+ratios therefore remain historical whole-pipeline `World::step` comparisons,
+not AVBD-contact-solver comparisons: pure-contact rows timed no AVBD rows;
+joint-plus-contact rows timed AVBD point-joint/motor/spring rows while ordinary
+contacts ran sequential impulse; and incidental chain contacts also ran
+sequential impulse. The current `avbd_demo2d_fracture`,
+`avbd_demo2d_hanging_rope`, `avbd_demo2d_heavy_rope`, `avbd_demo2d_rod`,
+`avbd_demo2d_soft_body`, `avbd_demo3d_breakable`, and
+`avbd_demo3d_soft_body` scenes now explicitly select public AVBD so they fail
+closed instead of silently exercising SI. That source change does not
+retroactively reclassify their historical packets; refreshed claims need
+current schema-version-4 packets that machine-record both
+`resolved_solver_identity` and `rigid_contact_selection`, enforced by
+`pixi run check-avbd-packets`.
+
+Public C++ and dartpy callers can now select the default
+`RigidBodySolver::SequentialImpulse`, the fixed-penalty
+`RigidBodySolver::Vbd` / `RigidBodySolver.VBD` family, or the
+augmented-Lagrangian `RigidBodySolver::Avbd` / `RigidBodySolver.AVBD` family and
+set a positive `RigidConstraintOptions::iterations` /
+`RigidConstraintOptions(iterations=...)` budget. Sequential Impulse owns hard
+fixed/spherical/revolute/prismatic rigid pair rows, bounded velocity motors,
+impulse-derived fracture, and non-velocity post-stabilization in the same
+projected Gauss-Seidel sweeps as contacts; finite-stiffness pair rows fail
+closed to VBD/AVBD. Crossing through Sequential Impulse, including the
+private-AVBD compatibility fallback, invalidates AVBD contact and hard
+point-joint/motor continuation state while preserving independently active
+AVBD distance-spring continuation, guarded by the
+`World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart`
+regression. Each choice survives binary save/load and replay where
+supported, the resolved-configuration report names the selected family, and
+unsupported combinations fail before stepping instead of falling through to
+another contact family.
+The publication-shaped `avbd_paper_breakable_wall` scene exercises that public
+path at the paper's 1/60 s step and 20-iteration budget with 252 staggered
+bricks, 712 breakable attachments, and three impacts. Its deterministic
+frame-120 oracle records 154 broken and 558 retained attachments, displaced
+brick counts `[11, 14, 11]` around the three targets, 99.43% retention outside
+the impact bands, and 99.21% total retention. Frames 60 and 120 record one
+stable broken-joint identity digest; `[18, 44, 13]` identities start inside the
+three selected impact regions and 79 start outside, so this row claims
+localized displacement damage rather than localized broken topology. The 558
+surviving rows stay below 0.772 mm linear and 0.000317 rad angular residual at
+frame 120. The frame-60 capture remains an explicit pre-evaluation state. Both
+engine ViewReports pass, the runtime scene and benchmark share fingerprint
+`8ca3fbfa00c3dce9`, and the six current captures bind source digest
+`10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d`.
+Capture manifests bind the capture-time source tree and artifacts; an accepted
+benchmark binds that same source tree plus its translation unit. The accepted
+quiet-host five-repeat Release run records 9.515544 ms median CPU cost per step
+with 0.49% CPU CV; its raw JSON SHA-256 is
+`abab909f3693333c0bb43bdd54b15df9fd6f0c3e9d4b7dd838208fb76d12565a`.
+The current evidence is sealed in
+[`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
+The matched `vbd_paper_breakable_wall` row reuses that exact scene fingerprint
+and projection budget with fixed finite-penalty rows, no dual accumulation or
+progressive stiffness. Its frame-18 oracle records 0 broken and 712 retained
+attachments, 0.132 m peak wall-normal and 0.062 m RMS displacement, and 120
+bricks beyond 0.05 m; its frame-120 oracle retains the full connected wall.
+All 712 retained VBD rows stay below 16.39 mm and 0.01328 rad at frame 18,
+then 11.10 mm and 0.001310 rad at frame 120. Both assessed VBD renders pass.
+The same five-repeat benchmark records 9.292560 ms VBD and 9.515544 ms AVBD
+median CPU cost per step with 0.18% and 0.49% CPU CV. Its 0.9766x VBD/AVBD
+ratio is descriptive only because the methods produce different physical
+outcomes and there is no achieved-accuracy reference denominator. The current
+cross-linked evidence is sealed in
+[`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
+The matched `sequential_impulse_paper_breakable_wall` row records exactly five
+frame-14 broken identities, distributed `[2, 1, 2]` across the three impact
+regions with none outside, while 100% of brick placement remains. At frame 120
+the broken-identity digest is unchanged, but the 484 retained rows outside all
+impact regions reach 0.06346 m maximum / 0.02076 m RMS linear residual and
+0.7270 rad maximum / 0.2164 rad RMS angular residual. Only 27.27% of bricks
+outside impact bands and 19.05% overall remain placed, with 2.878 m maximum
+wall-normal displacement. Both assessed SI renders pass. The same benchmark
+records 15.651049 ms SI median CPU cost per step with 0.34% CPU CV. Its
+1.6448x SI/AVBD and 1.6843x SI/VBD ratios are descriptive only. Frame 120 is
+the only shared quantitative
+checkpoint across the three method rows; the earlier frame-14, frame-18, and
+frame-60 checkpoints are per-family diagnostic oracles, not cross-method
+comparisons. The current linked three-method evidence is sealed in
+[`avbd-paper-sequential-impulse-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json).
+Figure 13 and the matching video row stay partial because the exact source
+constants are unpublished and XPBD, the source-matched four-method edit, CUDA,
+and achieved-accuracy reference-performance evidence are still missing.
 The `avbd_empty_baseline` py-demo and `BM_AvbdEmptyWorldStep` row now provide a
 first runnable baseline for the 2D/3D source-demo empty rows, with source
 revision/default metadata and a `sceneEmpty` zero-count reference invariant.
@@ -392,9 +471,13 @@ reference-comparison gate remains open.
 The `avbd_demo2d_fracture` py-demo now ports the `avbd-demo2d` Fracture source
 row with source revision/scene metadata, 11 chain links, two dynamic supports,
 15 falling blocks, 10 public breakable fixed joints, focused Python source-row
-coverage, focused break/reset lifecycle coverage proving the source-row fixed
-joints fracture, reset at a high break force, stay unbroken, and reduce their
-anchor residuals again, and a `BM_AvbdDemo2dFractureStep` dashboard row. The
+coverage, and focused break/reset lifecycle coverage proving the
+source-configured fixed joints eventually fracture under DART's public
+combined-row load contract, reset at a high break force, stay unbroken, and
+reduce their anchor residuals again, plus a `BM_AvbdDemo2dFractureStep`
+dashboard row. This does not claim native fracture timing or predicate parity:
+the pinned 2D source breaks only its torque-arm-scaled angular dual row, while
+DART evaluates the combined physical fixed-joint row load. The
 tracked
 [`avbd-demo2d-fracture-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-fracture-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
@@ -739,10 +822,14 @@ the DART public World Bridge row at 0.746 ms median CPU time per step versus
 row while leaving broad coupled-constraint, GPU, and paper-number gates open.
 The `avbd_demo3d_breakable` py-demo now ports the `avbd-demo3d` Breakable
 source row with source revision/scene metadata, 19 rigid bodies, 10 breakable
-fixed joints, 19 collision shapes, focused Python source-row coverage, focused
-break/reset lifecycle coverage proving the source-row fixed joints fracture,
+fixed joints, 19 collision shapes, focused Python source-row coverage, and
+focused break/reset lifecycle coverage proving the source-configured fixed
+joints eventually fracture under DART's public combined-row load contract,
 reset at a high break force, stay unbroken, and reduce their anchor residuals
-again, and a `BM_AvbdDemo3dBreakableStep` dashboard row. The tracked
+again, plus a `BM_AvbdDemo3dBreakableStep` dashboard row. This does not claim
+native fracture timing or predicate parity: the pinned 3D source breaks only
+its torque-arm-scaled angular dual vector, while DART evaluates the combined
+physical fixed-joint row load. The tracked
 [`avbd-demo3d-breakable-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Breakable row at 79.5 us median CPU time per
@@ -880,6 +967,34 @@ Finite-stiffness private AVBD fixed
 point-joint configs on articulated endpoints now also contribute compliant
 variational forces through persistent per-axis finite-stiffness row state that
 warm-starts and ramps toward the configured cap across steps.
+Passive public world-link spherical, revolute, and prismatic point joints now
+use that same persistent finite-stiffness state for their masked linear and
+angular row families: spherical rotation, revolute hinge rotation, and
+prismatic axis translation remain free. The same masked finite rows now also
+support same-multibody movable-link endpoint pairs. Finite public revolute and
+prismatic `Velocity` joints additionally project a bounded motor-only row on
+their free coordinate while their constrained coordinates remain compliant.
+Accepted finite-row forces and position-level hard/motor projection loads now
+share one physical-unit break-force contract: projection loads are divided by
+`dt^2`, every active row is aggregated into the owning public joint's L2 load,
+and fracture clears finite lambda/stiffness state before later-step extraction
+skips the broken joint. Focused load, timestep-invariance, combined-load,
+break/reset/re-arm, and simulation-mode save/load regressions cover that
+lifecycle. The focused
+`avbd_articulated_compliant_joints` py-demo, allocation gates, exact-parent
+mutation oracle, and candidate-only 3/12/48-joint benchmark are recorded in
+[`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json).
+The `avbd_articulated_compliant_motors` py-demo, allocation gates,
+exact-parent mutation oracle, docked assessed capture, and candidate-only
+2/8/32-motor benchmark are recorded in
+[`avbd-articulated-compliant-motors-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json).
+The `avbd_articulated_compliant_breakable_motor` py-demo, exact-parent
+load/lifecycle mutation, serialization and allocation gates, assessed
+break/reset/re-arm capture, and candidate-only 2/8/32-motor benchmark are
+recorded in
+[`avbd-articulated-compliant-fracture-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
+The paper wall, broad fracture corpus, CUDA, and unified soft/rigid rows remain
+open.
 Free-rigid AVBD point-joint rows now also support finite linear and angular
 material stiffness through the public point-joint facade and dartpy properties;
 those rows use raw finite residuals and ramp row stiffness up to the configured
@@ -975,13 +1090,40 @@ internal/explicit-opt-in decision, not a leaked solver registry.
 
 ## AVBD Current Next Gaps
 
+### Ordered completion PRs
+
+The maintainer directed the remaining parity program into two ordered
+completion PRs after the current shared SI/VBD/AVBD foundation lands:
+
+1. Complete all 88 VBD predicates in one VBD PR from updated `main`. That PR
+   owns the honest XPBD comparator needed by the VBD paper comparisons, the
+   remaining VBD CPU/CUDA mechanisms, its complete paper/site/video/source-demo
+   corpus, and achieved-accuracy performance leadership. It must not claim AVBD
+   completion or absorb AVBD-only mechanisms.
+2. After the VBD PR lands, complete all 88 AVBD predicates in one AVBD PR from
+   updated `main`. That PR owns the remaining augmented-Lagrangian,
+   quasi-Newton, articulated/contact/unified, CPU/CUDA, corpus, four-method,
+   and performance predicates and reuses the landed VBD/XPBD evidence by hash.
+
+Each PR may contain multiple bounded work-packet commits, but the completion
+claims and review/CI boundaries stay separate. Published PR branches are merged
+with current `main`, never rebased.
+
 The free-rigid fixed-joint/contact, free-rigid/articulated one-DOF motor,
 breakable fixed point-joint, prismatic/revolute/spherical facade,
-articulated breakable-joint, and high-ratio articulated-chain slices are
-user-visible but intentionally small.
-They do not cover the AVBD source-demo or paper corpus, and the dashboard rows
-are narrow CPU public-World evidence only. The next bounded
-implementation work should prefer one of these gaps, in order:
+articulated breakable-joint, high-ratio articulated-chain, and public AVBD
+Figure 13 slices are user-visible but intentionally bounded. The wall now has
+matched public Sequential Impulse, fixed-penalty VBD, and AVBD rows on one
+reconstructed scene fingerprint, with distinct quantitative and assessed
+visual outcomes. It is not an exact source replay or a four-method/CUDA
+closure; XPBD, the source-matched edit, and achieved-accuracy reference
+performance remain open, and the source-demo corpus packets still carry their
+historical solver identities. The Section 4 post-primal
+dual/stiffness update is now a verified CPU partial over the promoted
+deformable and private free-rigid inventories; it remains open for
+articulated/unified rows, CUDA, and source-matched achieved-accuracy
+performance. The next bounded implementation work should prefer one of these
+remaining gaps, in order:
 
 1. **Articulated multibody AVBD extraction** — the private extractor now
    classifies free rigid-body endpoints separately from multibody links, and
@@ -997,10 +1139,15 @@ implementation work should prefer one of these gaps, in order:
    tiny positive effort-limit coverage including non-cardinal
    child-/parent-endpoint axis bases, private fixed-row reset, and
    revolute/prismatic break/reset re-engagement for world-link polarity.
-   Finite-stiffness
-   private AVBD fixed point-joint
-   configs now also contribute compliant variational forces through persistent
-   stiffness-ramped rows, and non-topology multibody-link
+   Finite-stiffness private AVBD fixed point-joint configs and passive public
+   world-link spherical/revolute/prismatic masked rows now contribute compliant
+   variational forces through persistent stiffness-ramped state while keeping
+   their paper-defined free coordinates active. The focused behavior oracle
+   fails on exact parent, all three warmed allocation policies pass, and
+   `avbd_articulated_compliant_joints` plus
+   [`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json)
+   record visual and candidate-only 3/12/48-joint scale evidence without a
+   speedup claim. Non-topology multibody-link
    fixed/revolute/prismatic point-joint entities can now generate hard private
    configs from the simulation-entry current pose. Public same-multibody and
    world-link articulated facades now cover fixed, spherical linear-only
@@ -1119,10 +1266,12 @@ implementation work should prefer one of these gaps, in order:
    movable link-pair, tiny-limit, restored tiny-limit save/load, one-DOF
    break/reset, spherical reset, and movable-pair plus direct world-link
    save/load/reset checks remains open.
-   Extend that bridge to those row families, then broaden fracture
-   lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
-   the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
-   Breakable source-demo fixed-joint break/reset rows, and public articulated
+   Same-multibody finite endpoint pairs, bounded free-axis velocity motors, and
+   physical finite-plus-motor break-force accounting are now covered narrowly.
+   Broaden fracture lifecycle/corpus coverage beyond that articulated contract,
+   the narrow hard point-joint threshold, the private fixed-row/world-fixed
+   reset, and the 2D Fracture/3D Breakable source-demo fixed-joint rows; also
+   broaden public articulated
    World facade coverage
    beyond the new same-multibody link-link, world-link, explicit-anchor, and
    spherical linear-only point-joint entrypoints plus same-multibody link-link
@@ -1278,6 +1427,211 @@ AVBD parity additionally requires:
 ## Progress log
 
 Relocated from the dashboard on 2026-07-03; newest first.
+
+On 2026-08-01, one strict quiet-host five-repeat Figure 13 run was accepted
+after merging `origin/main` at `ef10cb2633b` and rejecting noisy,
+contaminated, or source-stale candidates. It binds
+capture-source digest
+`10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d` and
+benchmark translation-unit digest
+`f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370`.
+Median CPU costs/CVs are 9.515544 ms/0.49% AVBD, 9.292560 ms/0.18% VBD, and
+15.651049 ms/0.34% Sequential Impulse. The AVBD -> VBD -> SI packet chain was
+regenerated from the one raw JSON. The resealed current head passes all 192
+focused tests, the 58-packet corpus checker, the 176-row parity checker, and the
+18-row allocation matrix. Its uncached default `test-all` passes all six phases,
+including 229/229 core C++ tests and all 81 runnable simulation tests plus two
+disabled wrappers. Its uncached CUDA `test-all` passes all seven phases,
+including 213/213 core C++ tests, all 80 runnable simulation tests plus two
+disabled wrappers, all eight CUDA device tests, and all nine CUDA benchmark
+smoke commands. Both aggregate runs pass their complete Python and docs phases;
+no exact pytest count is claimed from the captured aggregate output. CUDA
+environment success does not close the open solver-specific GPU-parity rows.
+Independent code and architecture/claims reviews approved the pre-merge SI
+tree, and the `main`-merged tree received a final local review after conflict
+resolution and handoff correction. The
+canonical Figure 13/video rows link the SI packet, and the checker pins every
+legacy filename to its exact version-1 or version-3 schema. Ratios remain
+descriptive because the three outcomes differ and no achieved-accuracy
+reference denominator exists.
+
+On 2026-07-30, the default public Sequential Impulse family gained
+solver-owned hard rigid pair rows. Fixed/spherical/revolute/prismatic masks and
+bounded velocity motors interleave with contact rows across the configured PGS
+sweeps; accumulated impulse over `dt` drives breakage, broken rows remain
+excluded, and the configured non-velocity post-stabilization sweeps reduce
+pose drift.
+Finite-stiffness pair rows fail closed to VBD/AVBD. Crossing through SI,
+including the private-AVBD compatibility fallback, clears only the SI-owned
+AVBD contact and hard point-joint/motor continuation state and preserves
+independently active AVBD distance-spring continuation. Focused C++ regressions
+cover no-contact stabilization without velocity injection, joint/contact
+co-convergence, impulse-derived breakage, finite-row rejection, public motors,
+AVBD compatibility, and fallback distance-spring warm-start preservation. The
+matched
+`sequential_impulse_paper_breakable_wall` scene shares fingerprint
+`8ca3fbfa00c3dce9` with regenerated AVBD/VBD evidence. It records exactly five
+frame-14 broken identities spanning the three impact regions and none outside
+while retaining all brick placement. At frame 120 the same five identities
+remain broken, but retained rows outside the impacts carry large measured
+linear/angular residuals and total placement falls to 19.05% as the wall
+visibly collapses. Six current-source three-method captures pass their engine,
+pixel-integrity, and semantic-review gates. Three benchmark attempts were
+rejected for host contention, so the five-repeat timing and current packet
+reseal remain pending, with no speedup or achieved-accuracy claim. The
+cross-linked evidence will be sealed in
+[`avbd-paper-sequential-impulse-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json).
+Figure 13 remains partial for XPBD, exact unpublished constants, the
+source-matched four-method edit, CUDA, and comparable reference performance.
+
+On 2026-07-30, the rigid-body solver selector gained a distinct public
+fixed-penalty VBD family in C++ and dartpy. It reuses the DART-owned 6-DOF
+block-descent contact and pair-row infrastructure while disabling AVBD dual
+accumulation and progressive stiffness, preserves selection through binary
+save/load and resolved configuration, rejects boxed-LCP and multibody
+envelopes, and has schedule, serialization, Python, fixed-penalty state,
+fracture-load, and all three first-post-bake allocation-policy regressions. The
+matched `vbd_paper_breakable_wall` scene shares the AVBD wall's exact
+`2a746821cc10faee` fingerprint, 1/60 s step, and 20-sweep budget. Its frame-14
+bend and frame-120 retained-wall oracles pass with 0 broken and 712 unbroken
+attachments, as do both assessed renders. The five-repeat same-host benchmark
+records 9.218 ms VBD versus 7.467 ms AVBD median CPU time, a descriptive
+1.234 cost ratio with no speedup or achieved-accuracy equivalence claim.
+[`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json)
+bound those rows to the then-current AVBD packet and pinned source hashes.
+This entry is a point-in-time record: the initial Sequential Impulse bake
+regenerated the tracked packet with the shared `8ca3fbfa00c3dce9`
+fingerprint, a frame-18 bend oracle, and 8.620 ms VBD versus 8.697 ms AVBD
+medians. The later post-review reseal is summarized in the newest entry above.
+Figure 13 and video row 12 remained partial
+because Sequential Impulse, XPBD, exact unpublished constants, a source edit,
+CUDA, and achieved-accuracy reference performance were open at that bake.
+
+On 2026-07-30, the public rigid-body solver selector gained an AVBD family and
+a serialized/replay-safe rigid-constraint options value object. The default remains
+sequential impulse; public AVBD owns supported rigid contact plus point-joint
+rows, reports its resolved family, rejects incompatible contact-method
+configuration, and is covered through C++/dartpy construction, mutation,
+schedule, serialization, replay, and first-post-bake allocation gates. The
+new `avbd_paper_breakable_wall` scene and
+`BM_AvbdPaperBreakableWallStep` reproduce the published Figure 13 shape at
+1/60 s and 20 iterations: three high-momentum balls fracture a 252-brick,
+712-attachment staggered wall while the deterministic frame-120 oracle keeps
+damage in all three impact bands and substantial outside/total retention. The assessed
+impact/outcome renders and five-repeat Release benchmark are sealed in
+[`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
+The packet makes no reference speedup claim and keeps Figure 13 plus video row
+12 partial because exact source constants, the other three method rows, CUDA,
+and comparable performance were open at that slice.
+
+On 2026-07-30, the articulated finite-fracture packet closed the narrow CPU
+load-accounting gap left by the finite-motor slice. Accepted finite-row forces
+use the same stiffness/residual values as the variational solve, while hard and
+bounded-motor position-projection loads are converted to public force/torque
+units by dividing by `dt^2`; all rows owned by one joint contribute to one L2
+break load. Focused C++ oracles cover finite-only, motor-only at two timesteps,
+combined finite-plus-motor thresholds, skip/reset/re-arm, and simulation-mode
+save/load. Both mutation-sensitive tests fail in five required cases on exact
+parent `9ebd9b895b1`; all 55 AVBD breakage tests and all three warmed
+finite-row allocation policies pass on the candidate. The
+`avbd_articulated_compliant_breakable_motor` text oracle and assessed
+149-frame docking capture show weak break, strong reset/intact, and weak
+re-arm/break phases. A pinned candidate-only benchmark records median CPU time
+of 103.2 us for 2 breakable motors, 585.0 us for 8, and 6.633 ms for 32; no
+parent speedup is claimed because the parent omitted the new load accounting.
+[`avbd-articulated-compliant-fracture-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json)
+keeps the four linked method rows partial: the paper wall, broad fracture and
+joint corpus, unified rigid/soft rows, CUDA, and source/paper achieved-accuracy
+performance remain open.
+
+On 2026-07-30, the articulated finite-motor packet closed two adjacent CPU
+extraction gaps: passive finite spherical/revolute/prismatic masks now support
+same-multibody movable-link pairs, and finite revolute/prismatic `Velocity`
+joints add one bounded motor-only projection row on the free coordinate while
+their constrained coordinates remain compliant. Non-cardinal off-origin C++
+oracles cover strong and tiny effort limits and fail both driven coordinates
+on exact parent `761263bbd4`; passive same-multibody behavior and all three
+warmed allocation policies pass. The
+`avbd_articulated_compliant_motors` py-demo has a text-first command/reversal
+oracle and an assessed 119-frame docking-build capture. A pinned
+candidate-only benchmark records median CPU time of 104.2 us for 2 motors,
+579.8 us for 8, and 5.803 ms for 32; the parent skipped this mechanism, so no
+speedup is claimed.
+[`avbd-articulated-compliant-motors-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json)
+keeps `avbd.method.joints_and_attachments`,
+`avbd.method.finite_stiffness_ramping`, and `avbd.method.motors` partial:
+finite-row fracture accounting, unified soft/rigid rows, CUDA, and
+source/paper achieved-accuracy performance remain open.
+
+On 2026-07-30, the articulated finite-row packet extended the CPU variational
+bridge from finite fixed rows to passive public world-link spherical,
+revolute, and prismatic point joints. Their masked constrained coordinates use
+persistent per-axis stiffness ramp state while spherical rotation, revolute
+hinge rotation, and prismatic axis translation remain free. The public
+behavior oracle fails on exact parent `0b0154573b8` and passes on the candidate;
+a fixed-size 6x6 articulated inverse-mass solve matches the dense nine-DOF
+oracle, and warmed world-base, global-`new`, and raw-malloc gates all pass. The
+`avbd_articulated_compliant_joints` py-demo has a text-first free-coordinate
+oracle and assessed 120-frame software capture. A pinned candidate-only
+benchmark records median CPU time of 71.7 us for 3 joints, 333.5 us for 12,
+and 2.404 ms for 48; the parent skipped these rows, so no speedup is claimed.
+[`avbd-articulated-compliant-joints-packet.json`](104-vertex-block-descent-solver/avbd-articulated-compliant-joints-packet.json)
+keeps `avbd.method.joints_and_attachments` and
+`avbd.method.finite_stiffness_ramping` partial: finite one-DOF motor coupling,
+same-multibody finite pairs, fracture accounting, unified soft/rigid rows,
+CUDA, and source/paper achieved-accuracy performance were left open by that
+packet; the adjacent finite-motor packet above closes the first two only.
+
+On 2026-07-30, the bounded AVBD Section 4 packet added a deterministic
+post-primal CPU dual/stiffness pass for the currently promoted deformable and
+private free-rigid row inventories. The serial primal/color order is unchanged;
+inventories at or below 8,192 rows stay inline, while larger independent
+contact, attachment, spring, tet-material, self-contact, angular, and paired
+friction inventories use allocation-stable persistent-worker ranges.
+Bitwise serial/2-worker/4-worker state tests cover every promoted row family,
+invalid-row no-ops, and non-finite propagation. Production `World` tests prove
+parallel executors no longer disable supported AVBD rows and that a
+dispatch-sized self-contact scene adds no warmed world-base, global-`new`, or
+raw-malloc allocation above the empty-graph floor. The final pinned
+exact-parent B-C-B-C benchmark records current 2-/4-worker speedups of
+1.66x/2.20x at 16,384 rows, 2.34x/3.77x at 32,768 rows, and 1.78x/3.90x at
+65,536 rows. These are descriptive mechanism-throughput results, not
+source-reference or paper-performance claims.
+[`avbd-parallel-dual-update-evidence.json`](104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json)
+advances `avbd.method.parallel_dual_stiffness_pass` from `missing` to
+`partial`; articulated/unified row coverage, CUDA, and source-matched
+achieved-accuracy performance remain open.
+
+On 2026-07-30, the bounded AVBD Section 3.5 quasi-Newton packet added a shared
+fixed-size column-norm kernel and applied the paper's force-scaled geometric
+diagonal to CPU deformable distance springs, rigid distance springs, rigid
+point attachments, and nonlinear rigid point-pair joint/motor rows. Contact
+normal and friction rows now encode their intentional Taylor-linearized
+zero-curvature policy instead of inheriting the nonlinear model accidentally.
+Mutation-sensitive analytic and finite-difference tests cover compressed and
+off-center cases, and the promoted deformable finite-stiffness path now enters
+PLAN-122's world-base/global/raw post-bake allocation gates.
+[`avbd-quasi-newton-evidence.json`](104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json)
+records the 60-second source Spring text oracle, assessed current-build render,
+and exact-HEAD interleaved mechanism-cost benchmark. Specializing the
+fixed-size projector and origin-anchor paths reduced a rejected 24-26% Spring
+regression to 1.9-2.3%, while the fixed-joint row improved by 1.0%. The
+canonical method row remains `partial`: angular/material families, explicit
+adjudication of the pinned 3D spring source's omitted geometric term, full
+source-corpus closure, achieved-accuracy reference performance, and CUDA parity
+are still open.
+
+On 2026-07-30, the official VBD and AVBD papers, project pages, repositories,
+and paper videos were normalized into the fail-closed
+[`paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md)
+and two machine-readable coverage contracts. The gate inventories 88 VBD and
+88 AVBD requirements and deliberately records zero complete rows: existing
+implementation and packet evidence is partial until source-matched solver
+identity, quantitative outcome, CPU/CUDA, visual, comparable-performance, and
+current-build predicates all close. `pixi run check-plan104-paper-parity`
+rejects source-pin drift, row deletion/reordering, invalid evidence paths,
+media-timecode drift, incomplete predicates/backends, and premature aggregate
+completion.
 
 The DART-owned VBD CPU+CUDA solver landed on `main` (#2781):
 per-vertex block kernels, graph coloring, the colored Gauss-Seidel
@@ -1558,24 +1912,18 @@ with finite replay counters, tracked benchmark/stability evidence in
 and a rendered
 [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
 The same-hardware comparison and GPU gates remain open. Solver-identity
-relabel (PLAN-091 WP-091.1): no
-`avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene emplaces the internal
-AVBD rigid-contact opt-in config (`comps::RigidAvbdContactConfig`), because
-AVBD contact is not facade-selectable, so every rigid contact in the
-source-row scenes below ran DART's default sequential-impulse contact path.
-The native-runner timing ratios for contact scenes are whole-pipeline
-`World::step` comparisons, not AVBD-contact-solver comparisons: the
-pure-contact rows (2D Dynamic Friction, Static Friction, Pyramid, Cards,
-Stack, and Stack Ratio; 3D Ground, Dynamic Friction, Static Friction,
-Pyramid, Stack, and Stack Ratio) timed no AVBD rows at all; the
-joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and Net; 3D
-Soft Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows
-while their ordinary contacts ran sequential impulse; and incidental
-link-link contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging
-Rope; 3D Rope and Heavy Rope) also ran sequential impulse. This relabel
-changes no committed packet bytes and neither closes nor reopens any
-PLAN-104 completion gate; new AVBD evidence packets must machine-record
-`resolved_solver_identity` at AVBD packet schema version 2, enforced by
+relabel (PLAN-091 WP-091.1): the checked-in historical
+`avbd-demo2d`/`avbd-demo3d` packets predate explicit public AVBD selection, so
+their rigid contacts ran DART's default sequential-impulse path at capture
+time. Their native-runner timing ratios remain historical whole-pipeline
+`World::step` comparisons, not AVBD-contact-solver comparisons: pure-contact
+rows timed no AVBD rows; joint-plus-contact rows timed AVBD
+point-joint/motor/spring rows while ordinary contacts ran sequential impulse;
+and incidental chain contacts also ran sequential impulse. Seven current
+source-row scenes now explicitly select public AVBD; that fail-closed runtime
+change does not retroactively reclassify the old packets. Refreshed AVBD
+evidence packets must machine-record `resolved_solver_identity` and
+`rigid_contact_selection` at current schema version 4, enforced by
 `pixi run check-avbd-packets`. Public
 empty-scene corpus baseline coverage is now visible through
 `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
@@ -1626,8 +1974,11 @@ CPU performance resolution and GPU parity remain open. The next
 revision, scene index, 11 chain links, two dynamic supports, 15 falling
 blocks, 10 breakable fixed joints, and 29 collision shapes, plus
 `BM_AvbdDemo2dFractureStep`. Focused integration coverage now also verifies
-that the source-row fixed joints fracture, reset at a high break force, stay
-unbroken, and reduce their anchor residuals again. The tracked
+that the source-configured fixed joints eventually fracture under DART's
+combined-row load contract, reset at a high break force, stay unbroken, and
+reduce their anchor residuals again. It does not claim parity with the
+source's torque-arm-scaled angular-dual fracture predicate or timing. The
+tracked
 `avbd-demo2d-fracture-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; after a refreshed same-source
 timing run, it records DART about 1.20x faster than the native Fracture
@@ -1868,8 +2219,11 @@ non-empty source row after that is visible through
 `avbd-demo3d` Breakable source revision, scene index, 19 rigid bodies, 10
 breakable fixed joints, and 19 collision shapes, plus
 `BM_AvbdDemo3dBreakableStep`. Focused integration coverage now also verifies
-that the source-row fixed joints fracture, reset at a high break force, stay
-unbroken, and reduce their anchor residuals again. The tracked
+that the source-configured fixed joints eventually fracture under DART's
+combined-row load contract, reset at a high break force, stay unbroken, and
+reduce their anchor residuals again. It does not claim parity with the
+source's torque-arm-scaled angular-dual fracture predicate or timing. The
+tracked
 `avbd-demo3d-breakable-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 1.42x faster
 than the native Breakable runner on this host. The next `avbd-demo3d` source

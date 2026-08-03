@@ -54,6 +54,9 @@ __all__: list[str] = [
     "ParallelExecutor",
     "PhysicalParameter",
     "ReadOptions",
+    "ResolvedConfigurationNote",
+    "ResolvedSolverConfiguration",
+    "RigidConstraintOptions",
     "RigidBody",
     "RigidBodyOptions",
     "RigidBodySolver",
@@ -168,10 +171,25 @@ class RigidBodySolver(enum.Enum):
 
     IPC = 1
 
+    AVBD = 2
+
+    VBD = 3
+
 class ContactSolverMethod(enum.Enum):
     SEQUENTIAL_IMPULSE = 0
 
     BOXED_LCP = 1
+
+class RigidConstraintOptions:
+    def __init__(self, iterations: int = ...) -> None: ...
+
+    @property
+    def iterations(self) -> int: ...
+
+    @iterations.setter
+    def iterations(self, arg: int, /) -> None: ...
+
+    def __repr__(self) -> str: ...
 
 class ContactGradientMode(enum.Enum):
     ANALYTIC = 0
@@ -1625,6 +1643,35 @@ class WorldStepProfile:
 
     def __str__(self) -> str: ...
 
+class ResolvedConfigurationNote:
+    @property
+    def domain(self) -> str: ...
+
+    @property
+    def requested(self) -> str: ...
+
+    @property
+    def resolved(self) -> str: ...
+
+    @property
+    def reason(self) -> str: ...
+
+    def is_substitution(self) -> bool: ...
+
+class ResolvedSolverConfiguration:
+    @property
+    def notes(self) -> list[ResolvedConfigurationNote]: ...
+
+    def is_empty(self) -> bool: ...
+
+    def has_substitution(self) -> bool: ...
+
+    def summary(self) -> str: ...
+
+    def __repr__(self) -> str: ...
+
+    def __str__(self) -> str: ...
+
 class StepMetrics:
     @property
     def kinetic_energy(self) -> float: ...
@@ -2406,7 +2453,7 @@ def load_seg_line_mesh(path: str | os.PathLike) -> DeformableBodyOptions: ...
 def load_point_set(path: str | os.PathLike) -> DeformableBodyOptions: ...
 
 class World:
-    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., rigid_body_solver: RigidBodySolver = RigidBodySolver.SEQUENTIAL_IMPULSE, multibody_options: MultibodyOptions = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC, compute_accelerator_policy: ComputeAcceleratorPolicy = ComputeAcceleratorPolicy.CPU_ONLY, deactivation_options: DeactivationOptions = ...) -> None: ...
+    def __init__(self, time_step: float = ..., *, gravity: object | None = ..., differentiable: bool = ..., rigid_body_solver: RigidBodySolver = RigidBodySolver.SEQUENTIAL_IMPULSE, rigid_constraint_options: RigidConstraintOptions = ..., multibody_options: MultibodyOptions = ..., contact_solver_method: ContactSolverMethod = ContactSolverMethod.SEQUENTIAL_IMPULSE, contact_gradient_mode: ContactGradientMode = ContactGradientMode.ANALYTIC, compute_accelerator_policy: ComputeAcceleratorPolicy = ComputeAcceleratorPolicy.CPU_ONLY, deactivation_options: DeactivationOptions = ...) -> None: ...
 
     def add_free_frame(self, name: str = ..., *, parent: object | None = ...) -> FreeFrame: ...
 
@@ -2543,6 +2590,9 @@ class World:
     @property
     def last_step_profile(self) -> WorldStepProfile: ...
 
+    @property
+    def resolved_configuration(self) -> ResolvedSolverConfiguration: ...
+
     def compute_step_metrics(self) -> StepMetrics: ...
 
     @property
@@ -2568,6 +2618,12 @@ class World:
 
     @rigid_body_solver.setter
     def rigid_body_solver(self, arg: RigidBodySolver, /) -> None: ...
+
+    @property
+    def rigid_constraint_options(self) -> RigidConstraintOptions: ...
+
+    @rigid_constraint_options.setter
+    def rigid_constraint_options(self, arg: RigidConstraintOptions, /) -> None: ...
 
     @property
     def multibody_options(self) -> MultibodyOptions: ...

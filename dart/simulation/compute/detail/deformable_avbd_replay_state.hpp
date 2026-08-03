@@ -82,6 +82,37 @@ struct DeformableAvbdWarmStartReplayState
   RowVector tetRows;
 };
 
+/// Replay snapshot of the rigid AVBD warm-start continuation state.
+///
+/// The live inventories belong to `RigidBodyContactStage`; replay preserves
+/// only the row records whose lambda/stiffness values affect the next solve.
+struct RigidAvbdWarmStartReplayState
+{
+  using RowAllocator = dart::common::StlAllocator<dvbd::AvbdScalarRowRecord>;
+  using RowVector = std::vector<dvbd::AvbdScalarRowRecord, RowAllocator>;
+
+  RigidAvbdWarmStartReplayState() = default;
+
+  explicit RigidAvbdWarmStartReplayState(
+      dart::common::MemoryAllocator& allocator)
+    : normalRows(RowAllocator{allocator}),
+      frictionRows(RowAllocator{allocator}),
+      jointLinearRows(RowAllocator{allocator}),
+      jointAngularRows(RowAllocator{allocator}),
+      motorRows(RowAllocator{allocator}),
+      distanceSpringRows(RowAllocator{allocator})
+  {
+    // Empty.
+  }
+
+  RowVector normalRows;
+  RowVector frictionRows;
+  RowVector jointLinearRows;
+  RowVector jointAngularRows;
+  RowVector motorRows;
+  RowVector distanceSpringRows;
+};
+
 using DeformableAvbdWarmStartReplayStates
     = std::vector<DeformableAvbdWarmStartReplayState>;
 using AllocatedDeformableAvbdWarmStartReplayStates = std::vector<

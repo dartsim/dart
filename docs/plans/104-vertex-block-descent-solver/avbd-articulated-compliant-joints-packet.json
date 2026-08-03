@@ -1,0 +1,499 @@
+{
+  "benchmark": {
+    "benchmark": "BM_AvbdArticulatedCompliantJointStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 5300,
+      "num_cpus": 32
+    },
+    "invariants": {
+      "angular_stiffness": 1000.0,
+      "family_instances": [
+        1,
+        4,
+        16
+      ],
+      "joint_types": [
+        "spherical",
+        "revolute",
+        "prismatic"
+      ],
+      "linear_stiffness": 1000.0,
+      "start_stiffness": 10.0,
+      "time_step": 0.002
+    },
+    "json_sha256": "ffd3a4b5e76be84b90716356bb4a3be1a6d3b6334effa232cd3e74e4a691a496",
+    "rows": [
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_joints": 3.0,
+        "cpu_time": 71774.63059239613,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/1_mean",
+        "per_family_instance_index": 0,
+        "prismatic_joints": 1.0,
+        "real_time": 71782.7725970655,
+        "repetitions": 5,
+        "revolute_joints": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
+        "run_type": "aggregate",
+        "spherical_joints": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_joints": 3.0,
+        "cpu_time": 71710.94341290895,
+        "family_index": 0,
+        "family_instances": 1.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/1_median",
+        "per_family_instance_index": 0,
+        "prismatic_joints": 1.0,
+        "real_time": 71722.36075973968,
+        "repetitions": 5,
+        "revolute_joints": 1.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
+        "run_type": "aggregate",
+        "spherical_joints": 1.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_joints": 0.0,
+        "cpu_time": 132.45102017831687,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/1_stddev",
+        "per_family_instance_index": 0,
+        "prismatic_joints": 0.0,
+        "real_time": 129.15567137903108,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_joints": 0.0,
+        "cpu_time": 0.0018453737634749855,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/1_cv",
+        "per_family_instance_index": 0,
+        "prismatic_joints": 0.0,
+        "real_time": 0.0017992572132037013,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_joints": 12.0,
+        "cpu_time": 333465.8440366972,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/4_mean",
+        "per_family_instance_index": 1,
+        "prismatic_joints": 4.0,
+        "real_time": 333467.37522435375,
+        "repetitions": 5,
+        "revolute_joints": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
+        "run_type": "aggregate",
+        "spherical_joints": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_joints": 12.0,
+        "cpu_time": 333543.27522935753,
+        "family_index": 0,
+        "family_instances": 4.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/4_median",
+        "per_family_instance_index": 1,
+        "prismatic_joints": 4.0,
+        "real_time": 333544.2982235957,
+        "repetitions": 5,
+        "revolute_joints": 4.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
+        "run_type": "aggregate",
+        "spherical_joints": 4.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_joints": 0.0,
+        "cpu_time": 390.96800549048885,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/4_stddev",
+        "per_family_instance_index": 1,
+        "prismatic_joints": 0.0,
+        "real_time": 389.8443675455768,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_joints": 0.0,
+        "cpu_time": 0.001172437934745316,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/4_cv",
+        "per_family_instance_index": 1,
+        "prismatic_joints": 0.0,
+        "real_time": 0.0011690629923940632,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "compliant_joints": 48.0,
+        "cpu_time": 2410699.096969697,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/16_mean",
+        "per_family_instance_index": 2,
+        "prismatic_joints": 16.0,
+        "real_time": 2410978.212014236,
+        "repetitions": 5,
+        "revolute_joints": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
+        "run_type": "aggregate",
+        "spherical_joints": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "compliant_joints": 48.0,
+        "cpu_time": 2403628.999999995,
+        "family_index": 0,
+        "family_instances": 16.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/16_median",
+        "per_family_instance_index": 2,
+        "prismatic_joints": 16.0,
+        "real_time": 2403645.393452748,
+        "repetitions": 5,
+        "revolute_joints": 16.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
+        "run_type": "aggregate",
+        "spherical_joints": 16.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "compliant_joints": 0.0,
+        "cpu_time": 16237.220725305564,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/16_stddev",
+        "per_family_instance_index": 2,
+        "prismatic_joints": 0.0,
+        "real_time": 16555.881931020635,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "compliant_joints": 0.0,
+        "cpu_time": 0.00673548214528977,
+        "family_index": 0,
+        "family_instances": 0.0,
+        "iterations": 5,
+        "name": "BM_AvbdArticulatedCompliantJointStep/16_cv",
+        "per_family_instance_index": 2,
+        "prismatic_joints": 0.0,
+        "real_time": 0.006866873308319586,
+        "repetitions": 5,
+        "revolute_joints": 0.0,
+        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
+        "run_type": "aggregate",
+        "spherical_joints": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ],
+    "scale_data": [
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantJointStep/1",
+        "compliant_joints": 3,
+        "cpu_time_per_joint_ns": 23903.647804302982,
+        "cpu_time_per_step_ns": 71710.94341290895,
+        "family_instances": 1,
+        "real_time_per_step_ns": 71722.36075973968,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantJointStep/4",
+        "compliant_joints": 12,
+        "cpu_time_per_joint_ns": 27795.272935779794,
+        "cpu_time_per_step_ns": 333543.27522935753,
+        "family_instances": 4,
+        "real_time_per_step_ns": 333544.2982235957,
+        "time_unit": "ns"
+      },
+      {
+        "benchmark": "BM_AvbdArticulatedCompliantJointStep/16",
+        "compliant_joints": 48,
+        "cpu_time_per_joint_ns": 50075.60416666656,
+        "cpu_time_per_step_ns": 2403628.999999995,
+        "family_instances": 16,
+        "real_time_per_step_ns": 2403645.393452748,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "correctness": {
+    "allocation_tests": [
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotGrowWorldBaseAllocator",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotAllocateGlobalHeap",
+      "World.BakedVariationalCompliantArticulatedPointJointRowsDoNotMallocOnHeap"
+    ],
+    "cpp_behavior_test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion",
+    "cpp_multi_dof_inverse_test": "VariationalIntegration.ArticulatedInverseMassMultiDofMatchesDenseSolve",
+    "exact_parent_mutation": {
+      "command": "./build/default/cpp/Release/bin/test_variational_integration --gtest_filter=VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion",
+      "exit_code": 1,
+      "failed_assertions": [
+        {
+          "actual": 0.10099999250024566,
+          "coordinate": "spherical constrained translation",
+          "upper_bound": 0.05049999625012283
+        },
+        {
+          "actual": 0.10099999730419329,
+          "coordinate": "revolute constrained translation",
+          "upper_bound": 0.050499998652096645
+        },
+        {
+          "actual": 0.08076857228987704,
+          "coordinate": "revolute constrained axis tilt",
+          "upper_bound": 0.04038428614493852
+        },
+        {
+          "actual": 0.10099999247697403,
+          "coordinate": "prismatic constrained transverse translation",
+          "upper_bound": 0.05049999623848701
+        },
+        {
+          "actual": 0.0673331824015065,
+          "coordinate": "prismatic constrained rotation",
+          "upper_bound": 0.03366659120075325
+        }
+      ],
+      "file": "exact_parent_mutation.json",
+      "interpretation": "The exact parent skips passive finite spherical, revolute, and prismatic articulated rows, so each constrained coordinate matches the free rollout and the candidate oracle fails.",
+      "mutation": "Apply the candidate behavior test to the exact parent without applying the solver implementation.",
+      "observed_result": "fail",
+      "parent_commit": "0b0154573b842c142d31ef9feef4567c5677c4fd",
+      "sha256": "e9b8ea90558c53e4129e840aca12447f9760564d9f5fd666bd2eb3a801191d2b",
+      "test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion"
+    },
+    "python_scene_test": "test_avbd_articulated_compliant_joints_demo_preserves_free_coordinates"
+  },
+  "packet": "avbd_articulated_compliant_joints",
+  "performance_claim_boundary": "Candidate-only finite mechanism cost and scaling. The exact parent intentionally skipped these non-Fixed finite rows, so this packet makes no before/after speedup claim.",
+  "remaining_gates": [
+    "finite articulated one-DOF velocity-motor coupling",
+    "finite-row break-force accounting and fracture lifecycle",
+    "same-multibody finite articulated endpoint pairs",
+    "unified soft/rigid row solve",
+    "CUDA AVBD row parity and same-hardware benchmark packets",
+    "source-demo, paper/site/video scene, and achieved-accuracy performance closure"
+  ],
+  "reproduction": {
+    "benchmark_command": "taskset -c 18 build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter='BM_AvbdArticulatedCompliantJointStep/(1|4|16)$' --benchmark_min_time=0.05s --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe PYTHONPATH=build/default/cpp/Release/python:python BUILD_TYPE=Release python scripts/capture_py_demo.py --scene avbd_articulated_compliant_joints --frames 120 --width 960 --height 540 --view three-quarter --camera-distance 8 --camera-target 0,0,1.2 --output-dir <capture-dir>",
+    "image_verdict_command": "pixi run image-verdict -- <capture-dir>/avbd_articulated_compliant_joints.png --out <capture-dir>/image_verdict.json --meta scene=avbd_articulated_compliant_joints --meta view=three-quarter"
+  },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "contact-free py-demo and articulated compliant-joint benchmark row family",
+    "rigid_contact_selection": "not_applicable",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd"
+  },
+  "scene": "avbd_articulated_compliant_joints",
+  "scene_invariants": {
+    "angular_stiffness": 1000.0,
+    "free_coordinates": {
+      "prismatic": "translation along the joint axis",
+      "revolute": "rotation about the joint axis",
+      "spherical": "rotation"
+    },
+    "joint_types": [
+      "spherical",
+      "revolute",
+      "prismatic"
+    ],
+    "linear_stiffness": 1000.0,
+    "start_stiffness": 10.0,
+    "time_step": 0.002
+  },
+  "schema_version": 3,
+  "target": {
+    "complete_paper_reproduction": false,
+    "contract_rows": [
+      "avbd.method.joints_and_attachments",
+      "avbd.method.finite_stiffness_ramping"
+    ],
+    "scope": "passive finite-stiffness articulated spherical, revolute, and prismatic masked rows on CPU"
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 120,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "83cd44d35728e5e7b56170ce5441d05aba4277e5671d96f25d6240899f8d2310"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000120.png",
+        "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c"
+      }
+    },
+    "image_verdict": {
+      "checks": {
+        "contrast": {
+          "bright_pixels": 562,
+          "dark_pixels": 0,
+          "mid_pixels": 125375,
+          "p05": 145.446,
+          "p95": 171.017,
+          "pass": false,
+          "reasons": [
+            "dark pixels 0 < 664",
+            "bright pixels 562 < 664",
+            "luminance spread 25.6 < 90.0"
+          ],
+          "region": {
+            "x0": 384,
+            "x1": 931,
+            "y0": 243,
+            "y1": 486
+          },
+          "sample_count": 132921,
+          "spread": 25.571,
+          "thresholds": {
+            "bright_luminance_gt": 190.0,
+            "dark_luminance_lt": 55.0,
+            "mid_luminance_max": 170.0,
+            "mid_luminance_min": 70.0,
+            "min_bright_pixels": 664,
+            "min_dark_pixels": 664,
+            "min_mid_pixels": 332,
+            "min_spread": 90.0
+          }
+        },
+        "non_blank": {
+          "nonzero_pixels": 518400,
+          "pass": true,
+          "reasons": [],
+          "total_pixels": 518400,
+          "unique_colors_seen": 2
+        }
+      },
+      "file": "image_verdict.json",
+      "machine_scope": "pixel-integrity",
+      "metadata": {
+        "scene": "avbd_articulated_compliant_joints",
+        "view": "three-quarter"
+      },
+      "pass": true,
+      "sha256": "61f9140a592b3f06f2bf465e7edd0860089c4a0207b9cf66d91d4ec8b1bb8ce7"
+    },
+    "manifest_sha256": "520194e1f6a156399f53cd60dba831ac38ffb63536359aca8a316742d2d44089",
+    "scene": "avbd_articulated_compliant_joints",
+    "screenshot": {
+      "file": "avbd_articulated_compliant_joints.png",
+      "height": 540,
+      "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c",
+      "width": 960
+    },
+    "semantic_review": {
+      "file": "visual_review.json",
+      "inspected_frames": [
+        {
+          "file": "png_frames/frame_000001.png",
+          "role": "start",
+          "sha256": "83cd44d35728e5e7b56170ce5441d05aba4277e5671d96f25d6240899f8d2310"
+        },
+        {
+          "file": "png_frames/frame_000060.png",
+          "role": "middle",
+          "sha256": "95f96cbc4fbfc054801fcddfd0ed179cabe8677745f44c383006ae7f2b649509"
+        },
+        {
+          "file": "png_frames/frame_000120.png",
+          "role": "end",
+          "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c"
+        }
+      ],
+      "limitations": "The images corroborate scene identity, finite motion, free-coordinate motion, and gross mask behavior. They do not quantify constraint residuals, prove stiffness-ramp state, or distinguish the fixed-size inverse-mass implementation; the focused C++ and Python text oracles decide those claims.",
+      "observations": "Across the start, middle, and end frames, all three bodies remain finite and fully visible. The blue spherical body and orange revolute bar visibly rotate while remaining near their anchor markers; the orange bar stays centered and coaxial with the vertical hinge guide. The green prismatic body advances along the gray horizontal rail without visible transverse or rotational escape.",
+      "reviewer_capability": "native image input at original detail",
+      "sha256": "35a53d9aef1034215d86ac91b58332c61f3da9e908c86dca34b1fca50f630d31",
+      "verdict": "pass"
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

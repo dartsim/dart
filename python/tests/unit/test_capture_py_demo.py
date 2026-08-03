@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import html
 from html.parser import HTMLParser
+from hashlib import sha256
 import importlib.util
 import json
 import pathlib
@@ -334,6 +335,22 @@ def test_visual_capture_manifest_records_image_evidence(
     }
     assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
     assert pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).is_file()
+    source_provenance = manifest["capture_source_provenance"]
+    assert source_provenance["algorithm"] == (
+        "sha256-length-prefixed-capture-source-tree-v1"
+    )
+    assert source_provenance["file_count"] > 0
+    assert len(source_provenance["digest"]) == 64
+    artifact_provenance = manifest["capture_artifact_provenance"]
+    assert artifact_provenance["algorithm"] == "sha256-v1"
+    assert artifact_provenance["screenshot_sha256"] == sha256(
+        pathlib.Path(manifest["artifacts"]["screenshot"]).read_bytes()
+    ).hexdigest()
+    assert artifact_provenance["scene_metrics_events_sha256"] == sha256(
+        pathlib.Path(
+            manifest["artifacts"]["scene_metrics_events"]
+        ).read_bytes()
+    ).hexdigest()
     assert len(list((output / "png_frames").glob("frame_*.png"))) == 2
     assert manifest["resolved_solver_identity"] == {
         "executor": "Sequential",
@@ -3758,6 +3775,14 @@ def test_visual_capture_records_env_and_metadata(
             "DART_TEST_CAPTURE_VALUE=new",
             "--metadata",
             "max_friction=2.5",
+            "--camera-azimuth",
+            "90",
+            "--camera-elevation",
+            "6",
+            "--camera-distance",
+            "11",
+            "--camera-target",
+            "0,0,1.4",
             "--output-dir",
             str(output),
         ]
@@ -3769,3 +3794,9 @@ def test_visual_capture_records_env_and_metadata(
     manifest = capture_py_demo.json.loads((output / "manifest.json").read_text())
     assert manifest["scene_environment"] == {"DART_TEST_CAPTURE_VALUE": "new"}
     assert manifest["metadata"] == {"max_friction": "2.5"}
+    assert manifest["camera"] == {
+        "azimuth": 90.0,
+        "distance": 11.0,
+        "elevation": 6.0,
+        "target": [0.0, 0.0, 1.4],
+    }

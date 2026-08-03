@@ -1172,6 +1172,7 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "friction coefficient sweep benchmark scene counters",
+    "rigid_contact_selection": "contact_solver_method",
     "rigid_contact_solver": "sequential_impulse",
     "rigid_point_joint_solver": "none"
   },
@@ -1196,7 +1197,7 @@
     "source_demo": "avbd-demo2d",
     "time_step": 0.016666666666666666
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "friction coefficient comparison",

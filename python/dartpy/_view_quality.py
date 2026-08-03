@@ -135,7 +135,9 @@ def assess_view(
 
     Resolves the focus names to descriptor ids, delegates the projection,
     occlusion, and ambiguity geometry to the core ``gui.assess_view_quality``,
-    and adapts the result into the public :class:`ViewReport`.
+    and adapts the result into the public :class:`ViewReport`. An explicit
+    focus scopes framing and ambiguity to the named subject while other
+    renderables remain eligible occluders.
     """
     from . import _world_render_bridge
 

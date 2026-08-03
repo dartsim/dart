@@ -69,8 +69,10 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   and MP4 with `--video` when ffmpeg is present).
 - **View quality + adaptive viewpoints** — `dart.gui.assess_view(world,
 camera, size, focus=...)` returns a machine-readable `ViewReport`
-  (coverage/crop, subject size, occlusion via CPU pick rays, ambiguity) with
-  named issues (`cropped`, `off-frame`, `too-far`, `too-close`, `occluded`,
+  (coverage/crop, subject size, occlusion via CPU pick rays, ambiguity).
+  Explicit focus scopes framing and ambiguity to the named subject while
+  retaining other visible renderables as possible occluders. Reports use named
+  issues (`cropped`, `off-frame`, `too-far`, `too-close`, `occluded`,
   `ambiguous`, `no-bounded-focus`);
   `dart.gui.select_viewpoints(...)` deterministically scores a candidate grid
   and returns the best azimuth-diverse cameras with recorded reasons;

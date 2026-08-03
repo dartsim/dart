@@ -301,6 +301,44 @@ void defSimPartCompute(nb::module_& m)
       .def("__repr__", &sim::compute::WorldStepProfile::toSummaryText)
       .def("__str__", &sim::compute::WorldStepProfile::toSummaryText);
 
+  nb::class_<sim::compute::ResolvedConfigurationNote>(
+      m, "ResolvedConfigurationNote")
+      .def_ro(
+          "domain",
+          &sim::compute::ResolvedConfigurationNote::domain,
+          "Domain governed by this solver-resolution decision.")
+      .def_ro(
+          "requested",
+          &sim::compute::ResolvedConfigurationNote::requested,
+          "Requested method family or policy value.")
+      .def_ro(
+          "resolved",
+          &sim::compute::ResolvedConfigurationNote::resolved,
+          "Method family or policy value actually used.")
+      .def_ro(
+          "reason",
+          &sim::compute::ResolvedConfigurationNote::reason,
+          "Reason for the resolution.")
+      .def(
+          "is_substitution",
+          &sim::compute::ResolvedConfigurationNote::isSubstitution);
+
+  nb::class_<sim::compute::ResolvedSolverConfiguration>(
+      m, "ResolvedSolverConfiguration")
+      .def_ro(
+          "notes",
+          &sim::compute::ResolvedSolverConfiguration::notes,
+          "Per-domain requested-to-resolved decisions.")
+      .def("is_empty", &sim::compute::ResolvedSolverConfiguration::isEmpty)
+      .def(
+          "has_substitution",
+          &sim::compute::ResolvedSolverConfiguration::hasSubstitution)
+      .def("summary", &sim::compute::ResolvedSolverConfiguration::toSummaryText)
+      .def(
+          "__repr__", &sim::compute::ResolvedSolverConfiguration::toSummaryText)
+      .def(
+          "__str__", &sim::compute::ResolvedSolverConfiguration::toSummaryText);
+
   nb::class_<sim::compute::StepMetrics>(m, "StepMetrics")
       .def_ro(
           "kinetic_energy",

@@ -1825,11 +1825,12 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "breakable joint scale benchmark row family",
+    "rigid_contact_selection": "not_applicable",
     "rigid_contact_solver": "none",
     "rigid_point_joint_solver": "avbd"
   },
   "scene": "avbd_breakable_joint_scale",
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "broad_breakable_constraint_complete": false,
     "row_families": [

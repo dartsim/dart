@@ -33,6 +33,7 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/neo_hookean.hpp>
+#include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 #include <dart/simulation/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <Eigen/Core>
@@ -121,11 +122,24 @@ inline void addAvbdSpringFiniteStiffness(
     const Eigen::Vector3d& self,
     const Eigen::Vector3d& other,
     double restLength,
-    const AvbdSpringFiniteStiffnessRow& row,
-    bool clampToPsd = true)
+    const AvbdSpringFiniteStiffnessRow& row)
 {
-  addSpringTerm(
-      block, row.state.stiffness, restLength, self, other, clampToPsd);
+  const Eigen::Vector3d delta = other - self;
+  const double length = delta.norm();
+  if (length <= kMinSpringLength || !std::isfinite(length)) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = delta / length;
+  const double constraintValue = length - restLength;
+  const double forceMagnitude = row.state.stiffness * constraintValue;
+
+  block.force.noalias() += forceMagnitude * direction;
+  block.hessian.noalias()
+      += row.state.stiffness * (direction * direction.transpose());
+
+  block.hessian.diagonal() += avbdQuasiNewtonProjectedDistanceDiagonal(
+      direction, forceMagnitude / length);
 }
 
 //==============================================================================

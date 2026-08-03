@@ -714,6 +714,7 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+    "rigid_contact_selection": "not_applicable",
     "rigid_contact_solver": "none",
     "rigid_point_joint_solver": "avbd"
   },
@@ -734,7 +735,7 @@
     "tip_link_mass": 50000.0,
     "tolerance": 1e-09
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "iteration-count sweep for the 50-link 50,000:1 chain",

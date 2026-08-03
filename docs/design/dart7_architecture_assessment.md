@@ -83,11 +83,16 @@ The domain selectors now share a typed-enum idiom on the facade: the
 `RigidBodySolver` enum (runtime-mutable, alters the schedule), the
 `ContactSolverMethod` enum (construction-only, a branch inside one stage), and
 the `MultibodyOptions.integrationFamily` enum (`MultibodyIntegrationFamily`,
-resolved once at finalize). AVBD rigid contact remains selected by a private ECS
-component invisible to the facade. Scene content
-silently swaps algorithms (VBD falls back per body to projected Newton on
-unsupported scene features with no facade-visible diagnostic; mixed scenes
-reroute contact solves across structurally different assemblies).
+resolved once at finalize). `RigidBodySolver::Vbd` and
+`RigidBodySolver::Avbd` now publicly select the supported free-rigid
+fixed-penalty VBD and augmented-Lagrangian AVBD contact and pair-constraint
+schedules. The private `RigidAvbdContactConfig` remains only as a compatibility
+AVBD opt-in under a non-VBD/non-AVBD public family. The
+resolved-configuration report distinguishes those selection sources, and
+unsupported public VBD/AVBD envelopes fail closed. Other
+scene-content routing remains unresolved: VBD can still fall back per body to
+projected Newton on unsupported features, and mixed scenes reroute contact
+solves across structurally different assemblies.
 
 Rigid contact-row physics is assembled five times (sequential-impulse
 scratch, boxed-LCP, unified constraint, AVBD snapshot, and the gradient
@@ -155,13 +160,20 @@ internal registry access. The capability matrix is documentation-only, so a
 researcher cannot ask "did the configured method actually run, and does it
 support this scene?". There is no shared scene corpus (the same box-stack
 scene is hand-built in four files) and no generic harness (dozens of
-per-scene packet-writer scripts). Worst, benchmark evidence packets do not
+per-scene packet-writer scripts). Historically, benchmark packets did not
 record solver identity, and flagship AVBD contact-scene packets recorded
 "DART beats reference" rows on scenes that actually ran the
-sequential-impulse contact path, because AVBD contact is not
-facade-selectable. Evidence integrity is the cheapest and most urgent fix:
-machine-record resolved solver configuration in every packet, and relabel the
-affected rows.
+sequential-impulse contact path. Those rows are now relabeled, the shared
+packet contract records both resolved solver and rigid-contact selection
+source, and the public-AVBD Figure 13 packet uses that contract. One matched
+public Sequential Impulse/VBD/AVBD Figure 13 comparison now shares a single
+scene builder and fingerprint across its demos and benchmark, binds
+independent outcome oracles and assessed renders, records broken-joint
+identities plus retained-row residuals, and keeps its same-host timing ratios
+descriptive. The broader substrate gap remains: XPBD is absent, this is one
+scenario-specific writer rather than a generic harness, legacy packets cannot
+be generalized beyond their recorded identities, and there is still no shared
+cross-family accuracy/performance substrate.
 
 ### F5 — Facade erosion at the edges
 

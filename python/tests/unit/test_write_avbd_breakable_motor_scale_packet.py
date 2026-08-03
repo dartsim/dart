@@ -134,11 +134,12 @@ def test_avbd_breakable_motor_scale_packet_records_scale_data(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_breakable_motor_scale"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
         "recorded_from": "breakable motor scale benchmark row family",
+        "rigid_contact_selection": "not_applicable",
         "rigid_contact_solver": "none",
         "rigid_point_joint_solver": "avbd",
     }

@@ -629,10 +629,13 @@ _ACM Transactions on Graphics (SIGGRAPH 2024)_, 43(4), 2024. DOI:
 Related public resources:
 
 - Paper PDF: <https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf>
-- Project page: <https://ankachan.github.io/Projects/VertexBlockDescent/index.html>
+- Project page: <https://graphics.cs.utah.edu/research/projects/vbd/>
 - Talk: <https://www.youtube.com/watch?v=2HCgKfKy3W8>
-- Reference implementations: [AnkaChan/Gaia](https://github.com/AnkaChan/Gaia),
-  [AnkaChan/TinyVBD](https://github.com/AnkaChan/TinyVBD)
+- Reference implementations:
+  [AnkaChan/Gaia](https://github.com/AnkaChan/Gaia) at
+  `c229692045465a76233f9fba9197fb22bbfb3694` and
+  [AnkaChan/TinyVBD](https://github.com/AnkaChan/TinyVBD) at
+  `dcd011a5d945172e247ecced90a6c2c4b4313520`
 
 ```bib
 @article{Chen2024VBD,
@@ -648,11 +651,12 @@ Related public resources:
 
 - **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
 - **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
-  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md).
+  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/vbd-paper-gap-audit.md)
+  and [paper-parity contract](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/paper-parity-matrix.md).
 - **Notes:** Block coordinate descent on the variational implicit-Euler
   objective for elastodynamics: each vertex is a 3-DOF block updated with one
-  regularized Newton step using a positive-definite local 3x3 Hessian, with
-  graph-colored parallel Gauss-Seidel sweeps and adaptive
+  Newton step using a stabilized local 3x3 solve, with graph-colored parallel
+  Gauss-Seidel sweeps and adaptive
   initialization/Chebyshev acceleration. DART targets it as a second deformable
   inner solver on the same DART 7 deformable ECS components and the same
   variational objective the current gradient-descent stage already minimizes.
@@ -735,9 +739,15 @@ Related public resources:
   [graphics.cs.utah.edu/research/projects/avbd](https://graphics.cs.utah.edu/research/projects/avbd/)
 - Paper PDF:
   [Augmented_VBD-SIGGRAPH25.pdf](https://graphics.cs.utah.edu/research/projects/avbd/Augmented_VBD-SIGGRAPH25.pdf)
+- Official project video:
+  [Augmented Vertex Block Descent](https://www.youtube.com/watch?v=bwJgifqvd5M)
+- Associated Real-Time Live extended abstract:
+  [Crazy Fast Physics! Augmented Vertex Block Descent in Action!](https://graphics.cs.utah.edu/research/projects/avbd/Augmented_VBD-SIGGRAPH25_RTL.pdf)
 - Reference demo sources:
-  [avbd-demo2d](https://github.com/savant117/avbd-demo2d) and
-  [avbd-demo3d](https://github.com/savant117/avbd-demo3d)
+  [avbd-demo2d](https://github.com/savant117/avbd-demo2d) at
+  `74699a11f8586d3ac34474c92b1ef8feb5f587de` and
+  [avbd-demo3d](https://github.com/savant117/avbd-demo3d) at
+  `7701bd427d55ca5d03ea1fdf331912ded9169f4b`
 - Online demos:
   [2D demo](https://graphics.cs.utah.edu/research/projects/avbd/avbd_demo2d.html)
   and
@@ -760,6 +770,8 @@ Related public resources:
 - **Where used:** [`PLAN-104`](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver.md)
   and its
   [AVBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md);
+  its [paper-parity contract](https://github.com/dartsim/dart/blob/main/docs/plans/104-vertex-block-descent-solver/paper-parity-matrix.md)
+  owns the canonical source-surface rows;
   also informs the PLAN-084 contact-extension survey.
 - **Notes:** Adopted as the hard-constraint extension of DART's VBD-family
   solver work: augmented-Lagrangian dual rows, bounded equality/inequality
@@ -767,6 +779,13 @@ Related public resources:
   ratios, quasi-Newton Hessian approximation, alpha-regularized error
   correction, warm-started dual/stiffness state, rigid-body 6-DOF blocks,
   articulated joints, fracture limits, and unified soft/rigid interactions.
+  DART now has one publication-shaped Figure 13 reconstruction with matched
+  public Sequential Impulse, fixed-penalty VBD, and AVBD CPU rows. Independent
+  numeric and assessed visual outcomes record exact broken-joint identities
+  and retained-row residuals as well as wall displacement; the same-host
+  timing remains descriptive. This is not an exact source replay, a
+  four-method result (XPBD is still missing), or an achieved-accuracy
+  performance comparison.
   Full completion requires CPU and GPU implementations, all paper/site/video
   experiments and demos integrated into DART tests/benchmarks/`py-demos`, and
   benchmark packets proving DART beats the reference demo repositories and the
@@ -1355,7 +1374,8 @@ Gazebo / gz-physics / SDFormat. <https://gazebosim.org/>
 
 ### `gaia`
 
-Gaia VBD research framework. <https://github.com/AnkaChan/Gaia>
+Gaia VBD research framework. <https://github.com/AnkaChan/Gaia>, pinned for
+PLAN-104 parity work at `c229692045465a76233f9fba9197fb22bbfb3694`.
 
 - **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
 - **Where used:** VBD correctness and performance comparison under
@@ -1365,7 +1385,8 @@ Gaia VBD research framework. <https://github.com/AnkaChan/Gaia>
 
 ### `tinyvbd`
 
-TinyVBD. <https://github.com/AnkaChan/TinyVBD>
+TinyVBD. <https://github.com/AnkaChan/TinyVBD>, pinned for PLAN-104 parity work
+at `dcd011a5d945172e247ecced90a6c2c4b4313520`.
 
 - **Type:** engine · **Topic:** comparative-implementation · **Status:** referenced · **Priority:** — · **Verdict:** baseline
 - **Where used:** minimal VBD algorithm comparison under
