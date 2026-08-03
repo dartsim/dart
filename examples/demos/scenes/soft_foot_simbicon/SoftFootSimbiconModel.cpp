@@ -36,6 +36,7 @@
 #include <dart/utils/urdf/urdf.hpp>
 #include <dart/utils/utils.hpp>
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -68,17 +69,49 @@ std::string sdfUriFor(Feet feet)
              : "dart://sample/sdf/atlas/atlas_v3_no_head.sdf";
 }
 
-//==============================================================================
-/// Builds a fresh model, settles it, applies a single lateral push of the given
-/// magnitude, and reports whether the biped stays finite and upright throughout
-/// the settled tail of the recovery window. Requiring uprightness across the
-/// whole tail (not just the final instant) rejects a biped that is still
-/// toppling or momentarily passes through an upright pose while tumbling.
-bool survivesPush(Feet feet, double magnitude)
-{
-  Model model = createModel(feet);
+// Fixed seeds for the deterministic perturbation streams. Both streams go
+// through splitmix64 below rather than <random>, because the standard
+// distributions are implementation-defined: the same seed draws different
+// sequences under libstdc++, libc++, and MSVC, and these draws are part of
+// gated, cross-platform measurements.
+constexpr std::uint64_t kMotorNoiseSeed = 0x5EED0F00D0C0FFEEull;
+constexpr std::uint64_t kFloorSeed = 0x5EED0F100D7113E5ull;
 
-  for (int i = 0; i < kSettleSteps; ++i) {
+//==============================================================================
+std::uint64_t splitmix64(std::uint64_t& state)
+{
+  state += 0x9E3779B97F4A7C15ull;
+  std::uint64_t z = state;
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+  return z ^ (z >> 31);
+}
+
+//==============================================================================
+/// Next uniform draw in [0, 1), from the top 53 bits (a double's mantissa).
+double nextUniform(std::uint64_t& state)
+{
+  return static_cast<double>(splitmix64(state) >> 11)
+         * (1.0 / 9007199254740992.0);
+}
+
+//==============================================================================
+/// Next uniform draw in [-1, 1).
+double nextSymmetricUniform(std::uint64_t& state)
+{
+  return 2.0 * nextUniform(state) - 1.0;
+}
+
+//==============================================================================
+/// Settles an already-built model for `settleSteps`, applies a single
+/// lateral push of the given magnitude, and reports whether the biped stays
+/// finite and upright throughout the settled tail of the recovery window.
+/// Requiring uprightness across the whole tail (not just the final instant)
+/// rejects a biped that is still toppling or momentarily passes through an
+/// upright pose while tumbling.
+bool settlesPushesAndRecovers(Model& model, double magnitude, int settleSteps)
+{
+  for (int i = 0; i < settleSteps; ++i) {
     step(model);
     if (!isFinite(model))
       return false;
@@ -96,6 +129,30 @@ bool survivesPush(Feet feet, double magnitude)
   }
 
   return true;
+}
+
+//==============================================================================
+/// One ensemble replica: build the requested configuration, enable the held
+/// motor noise, offset the root's X translation by the replica index (see
+/// kReplicaOffset), then settle, push, and observe recovery.
+bool replicaRecovers(
+    Feet feet,
+    double motorNoise,
+    double floorAmplitude,
+    double magnitude,
+    int replica)
+{
+  Model model = createModel(feet, floorAmplitude);
+  if (motorNoise > 0.0)
+    setMotorNoise(model, motorNoise);
+  // Root free joint: dofs 0-2 are rotation, 3-5 translation; dof 3 is world X.
+  model.atlas->setPosition(
+      3, model.atlas->getPosition(3) + replica * kReplicaOffset);
+  // Each replica also settles longer before the push lands, so the ensemble
+  // samples distinct gait phases, not five copies of one phase (see the
+  // header's ensemble note).
+  return settlesPushesAndRecovers(
+      model, magnitude, kSettleSteps + replica * kReplicaPhaseStride);
 }
 
 //==============================================================================
@@ -283,13 +340,101 @@ void normalizeRigidFoot(dart::dynamics::BodyNode* foot)
   foot->setInertia(combinedInertia);
 }
 
+//==============================================================================
+/// Top of the flat ground plane: ground.urdf's box is centered at y = -0.95
+/// with a height of 0.05. The tile floor references this so switching floors
+/// never moves the surface the biped spawns above.
+constexpr double kGroundTopY = -0.925;
+
 } // namespace
 
 //==============================================================================
-Model createModel(Feet feet)
+std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
+    double amplitude)
+{
+  // Shared-vertex quad lattice with seeded 3-axis offsets (see the header):
+  // horizontal jitter breaks the regular walls an axis-aligned tile grid
+  // would present, vertical offsets dig 0..amplitude below the plane. The
+  // horizontal clamp keeps every triangle's projected XZ winding equal to
+  // the lattice's, so the sheet stays a single-valued surface: with
+  // independent per-corner jitter bounded by d, the projected edge cross
+  // product keeps its sign whenever (pitch - 2d)^2 > (2d)^2, i.e.
+  // d < pitch/4. Per-axis vertex ORDER alone is not enough -- a 0.4*pitch
+  // clamp preserved order yet folded 10 of 3456 triangles at the paper's
+  // 2 cm amplitude (found in review), handing FCL overlapping geometry.
+  // The structure gate asserts the winding property on the generated mesh.
+  // Draws come from the fixed kFloorSeed stream in row-major vertex order,
+  // three per vertex, so every build at a given amplitude is identical on
+  // every platform.
+  const double horizontalClamp = std::min(amplitude, 0.2 * kFloorTileSize);
+  constexpr int verticesX = kFloorTilesX + 1;
+  constexpr int verticesZ = kFloorTilesZ + 1;
+
+  std::uint64_t state = kFloorSeed;
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  mesh->reserveVertices(
+      static_cast<std::size_t>(verticesX)
+      * static_cast<std::size_t>(verticesZ));
+  for (int i = 0; i < verticesX; ++i) {
+    for (int j = 0; j < verticesZ; ++j) {
+      const double jitterX = horizontalClamp * nextSymmetricUniform(state);
+      const double drop = amplitude * nextUniform(state);
+      const double jitterZ = horizontalClamp * nextSymmetricUniform(state);
+      mesh->addVertex(Eigen::Vector3d(
+          (i - 0.5 * (verticesX - 1)) * kFloorTileSize + jitterX,
+          kGroundTopY - drop,
+          kFloorPatchMinZ + j * kFloorTileSize + jitterZ));
+    }
+  }
+  const auto vertex = [](int i, int j) {
+    return static_cast<std::size_t>(i) * static_cast<std::size_t>(verticesZ)
+           + static_cast<std::size_t>(j);
+  };
+  for (int i = 0; i < kFloorTilesX; ++i) {
+    for (int j = 0; j < kFloorTilesZ; ++j) {
+      mesh->addTriangle(vertex(i, j), vertex(i, j + 1), vertex(i + 1, j + 1));
+      mesh->addTriangle(vertex(i, j), vertex(i + 1, j + 1), vertex(i + 1, j));
+    }
+  }
+  return mesh;
+}
+
+namespace {
+
+//==============================================================================
+/// Wraps makeNoisyFloorMesh() as the single immobile floor skeleton.
+dart::dynamics::SkeletonPtr buildNoisyTileFloor(double amplitude)
+{
+  auto floor = dart::dynamics::Skeleton::create("noisy_tile_floor");
+
+  dart::dynamics::WeldJoint::Properties jointProperties;
+  jointProperties.mName = "floor_joint";
+  dart::dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "floor_mesh";
+  auto pair = floor->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      nullptr, jointProperties, bodyProperties);
+
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(), makeNoisyFloorMesh(amplitude)));
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector4d(0.5, 0.5, 0.55, 1.0));
+
+  floor->setMobile(false);
+  return floor;
+}
+
+} // namespace
+
+//==============================================================================
+Model createModel(Feet feet, double floorAmplitude)
 {
   Model model;
   model.feet = feet;
+  model.floorAmplitude = floorAmplitude;
+  model.noiseState = kMotorNoiseSeed;
 
   auto world = dart::simulation::World::create();
   world->setTimeStep(kTimeStep);
@@ -307,11 +452,16 @@ Model createModel(Feet feet)
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::FCLCollisionDetector::create());
 
-  dart::utils::DartLoader urdfLoader;
-  auto ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
-  if (!ground)
-    throw std::runtime_error(
-        "failed to load dart://sample/sdf/atlas/ground.urdf");
+  dart::dynamics::SkeletonPtr ground;
+  if (floorAmplitude > 0.0) {
+    ground = buildNoisyTileFloor(floorAmplitude);
+  } else {
+    dart::utils::DartLoader urdfLoader;
+    ground = urdfLoader.parseSkeleton("dart://sample/sdf/atlas/ground.urdf");
+    if (!ground)
+      throw std::runtime_error(
+          "failed to load dart://sample/sdf/atlas/ground.urdf");
+  }
 
   auto atlas = dart::utils::SdfParser::readSkeleton(sdfUriFor(feet));
   if (!atlas)
@@ -383,6 +533,31 @@ void prepareStep(Model& model)
   }
 
   model.controller->update();
+
+  // Motor noise perturbs what the controller just wrote, and nothing else:
+  // Controller::update() ends in Skeleton::setForces, so scaling the
+  // generalized forces here corrupts exactly the motor torques while the
+  // scheduled pelvis push above travels separately through addExtForce. The
+  // multiplication also keeps the unactuated root's six forces at zero. One
+  // draw per degree of freedom per redraw keeps the stream aligned between
+  // the rigid and soft arms, whose skeletons expose the same generalized
+  // coordinates. The factors are held for kMotorNoiseHoldSteps between
+  // redraws (see the header on why per-step redraws would be vacuous).
+  if (model.motorNoise > 0.0) {
+    Eigen::VectorXd forces = model.atlas->getForces();
+    if (model.noiseHoldCounter <= 0
+        || model.noiseFactors.size() != forces.size()) {
+      model.noiseFactors.resize(forces.size());
+      for (Eigen::Index i = 0; i < forces.size(); ++i) {
+        model.noiseFactors[i]
+            = 1.0 + model.motorNoise * nextSymmetricUniform(model.noiseState);
+      }
+      model.noiseHoldCounter = kMotorNoiseHoldSteps;
+    }
+    --model.noiseHoldCounter;
+    forces.array() *= model.noiseFactors.array();
+    model.atlas->setForces(forces);
+  }
 }
 
 //==============================================================================
@@ -409,7 +584,11 @@ double meanFootHeightY(const Model& model)
 //==============================================================================
 bool isUpright(const Model& model)
 {
-  return (pelvisHeightY(model) - meanFootHeightY(model)) > kUprightGap;
+  // The absolute bound catches a biped falling off the world: free fall
+  // preserves the pelvis-above-feet gap, so the relative test alone would
+  // report a plummeting biped as standing (see kFellBelowWorldY).
+  return pelvisHeightY(model) > kFellBelowWorldY
+         && (pelvisHeightY(model) - meanFootHeightY(model)) > kUprightGap;
 }
 
 //==============================================================================
@@ -540,18 +719,67 @@ void resetModel(Model& model)
 
   model.externalForce.setZero();
   model.forceDuration = 0;
+
+  // The noise level is configuration and survives a reset, but the stream
+  // and the hold rewind with the rest of the state so a restarted noisy run
+  // repeats the original draw-for-draw.
+  model.noiseState = kMotorNoiseSeed;
+  model.noiseHoldCounter = 0;
+}
+
+//==============================================================================
+double robustRecoverablePush(
+    Feet feet,
+    double motorNoise,
+    double floorAmplitude,
+    std::string* fractionLog)
+{
+  // Prefix semantics: the threshold is the largest magnitude such that every
+  // magnitude up to it clears the ensemble majority. A bare max-sustained
+  // rule would re-admit isolated high-magnitude resonance pockets (the old
+  // single-trajectory sweep's 18000 N island still clears 4/5 replicas while
+  // everything from 6000 N up to it topples); "withstands pushes up to X"
+  // only means something if the interval below X is survivable. The full
+  // response curve is still measured and logged past the break for evidence.
+  double threshold = 0.0;
+  bool prefixIntact = true;
+  for (double magnitude = kPushSweepStart; magnitude <= kPushSweepEnd + 1e-9;
+       magnitude += kPushSweepStep) {
+    int recovered = 0;
+    for (int replica = 0; replica < kReplicaCount; ++replica) {
+      if (replicaRecovers(feet, motorNoise, floorAmplitude, magnitude, replica))
+        ++recovered;
+    }
+    if (recovered < kReplicasRequired)
+      prefixIntact = false;
+    else if (prefixIntact)
+      threshold = magnitude;
+    if (fractionLog != nullptr) {
+      *fractionLog += "  push=" + std::to_string(static_cast<int>(magnitude))
+                      + "  " + std::to_string(recovered) + "/"
+                      + std::to_string(kReplicaCount) + "\n";
+    }
+  }
+  return threshold;
 }
 
 //==============================================================================
 double maxRecoverablePush(Feet feet)
 {
-  double largestRecovered = 0.0;
-  for (double magnitude = kPushSweepStart; magnitude <= kPushSweepEnd + 1e-9;
-       magnitude += kPushSweepStep) {
-    if (survivesPush(feet, magnitude))
-      largestRecovered = magnitude;
-  }
-  return largestRecovered;
+  return robustRecoverablePush(feet, 0.0, 0.0);
+}
+
+//==============================================================================
+void setMotorNoise(Model& model, double level)
+{
+  const double clamped = std::max(0.0, level);
+  // A level change invalidates any held factors: they were drawn at the old
+  // amplitude, and prepareStep() would keep applying them for the rest of
+  // the 50-step hold while the panel already reports the new level. A
+  // same-level call stays a no-op so it cannot disturb a deterministic run.
+  if (clamped != model.motorNoise)
+    model.noiseHoldCounter = 0;
+  model.motorNoise = clamped;
 }
 
 } // namespace soft_foot_simbicon_model

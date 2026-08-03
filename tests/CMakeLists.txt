@@ -146,7 +146,8 @@ add_custom_target(
   tests_and_run
   COMMAND
     ${CMAKE_COMMAND} "-DDART_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
-    "-DDART_CTEST_CONFIGURATION=$<CONFIG>" -P
+    "-DDART_CTEST_CONFIGURATION=$<CONFIG>"
+    "-DDART_CTEST_BUILD_TYPE=${CMAKE_BUILD_TYPE}" -P
     "${PROJECT_SOURCE_DIR}/cmake/DARTRunCTest.cmake"
   DEPENDS ${integration_tests} ${regression_tests} ${unit_tests}
 )

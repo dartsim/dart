@@ -33,15 +33,22 @@ on the Jain/Liu point-mass surface model.
 [PR-3a soft-foot SIMBICON](12-pr3a-soft-foot-simbicon.md) is complete:
 [#3408](https://github.com/dartsim/dart/pull/3408) added the scene and gates,
 and [#3423](https://github.com/dartsim/dart/pull/3423) resolved the maintainer
-decisions. The contact-spreading claim and the push/contact portion of the
-push-recovery row reproduce and are gate-asserted — contacts 51.2 soft vs
-15.64 rigid, recoverable push 18000 N soft vs 8000 N rigid; the row's
-motor-noise clause is still open below. The maintainer-set goal
-(2026-08-01) is to fully complete this task for the DART 6.20 release,
-bundling the remaining work into as few PRs as review quality allows.
+decisions. The contact-spreading claim reproduces and is gate-asserted —
+contacts 51.2 soft vs 15.64 rigid. #3431 then re-measured push recovery
+with phase-strided replica ensembles and corrected the record: the
+single-trajectory 18000 N was an isolated resonance pocket, robust
+thresholds (rigid vs soft) are 8000/4000 N clean, 4000/4000 under 20% held
+motor noise, and 6000/2000 on the paper's 2 cm fold-free jittered-mesh
+floor, so
+the paper's soft-advantage push ordering is an open gap with a defined
+mechanism follow-up. The maintainer-set goal (2026-08-01) is to fully
+complete this task for the DART 6.20 release, bundling the remaining work
+into as few PRs as review quality allows.
 
-Still open under PLAN-622: the motor-noise variant of the push-recovery
-comparison, the noisy-floor biped and soft-contact walk rows, the hand/arm
+Still open under PLAN-622: the push-recovery mechanism gap (#3431 built
+the motor-noise variant and the noisy-floor surface; no measured
+configuration shows a soft advantage), the soft-contact walk row (which
+also unblocks the noisy-floor row's course-tracking outcome), the hand/arm
 manipulation rows (finger flick, arm fold, pinch grasp), the four-link
 flexible-foot comparison, applying the approved competitive envelope
 (`decisions.md` item 2, confirmed 2026-07-23) to performance acceptance,

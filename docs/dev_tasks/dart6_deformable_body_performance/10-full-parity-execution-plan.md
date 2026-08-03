@@ -14,9 +14,11 @@ Part B is retired: the Kim/Pollard volumetric-FEM lane was removed from DART 6 o
 2026-07-29 and retargeted to DART 7, and its sections are kept as DART 7
 reference material, **not** as instructions. Nothing in Part B is DART 6 work.
 
-PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
-push-recovery row reproduces and is gate-asserted; its motor-noise clause
-stays open in §5. Goal (maintainer direction, 2026-08-01): fully complete
+PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the row's
+contact-spreading claim is gate-asserted. #3431 then re-measured push
+recovery with replica ensembles and built the motor-noise variant and the
+noisy-floor surface: no measured configuration shows a soft advantage, so
+the row's push ordering is an open mechanism gap (§5). Goal (maintainer direction, 2026-08-01): fully complete
 Part A for the DART 6.20 release, bundling the remaining rows into as few
 PRs as review quality allows. The competitive-envelope definition is settled
 (`decisions.md` item 2, maintainer-confirmed 2026-07-23); what remains of it
@@ -85,22 +87,28 @@ Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 
 No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
 shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
-resolved decisions), completing the push/contact portion of the **biped push
-recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
-18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
-against the §1 Done rule until three more things have evidence: its
-motor-noise clause (§5), and the matrix acceptance rule's `dart`-versus-FCL
-and 1-thread/host-capped multi-thread rows — PR-3a supplies neither, since
-its comparison deliberately pins FCL and one thread for validity (the two
-foot representations only share a narrow phase under FCL, and single-thread
-keeps runs bit-identical), so that evidence needs its own configuration.
+resolved decisions): the **biped push recovery** row's contact-spreading
+claim is gate-asserted at 51.2 soft vs 15.64 rigid. #3431 superseded the
+single-trajectory push figure (the 18000 N soft reading was a resonance
+pocket) with phase-strided replica ensembles — rigid vs soft robust
+thresholds 8000/4000 N clean, 4000/4000 under 20% held motor noise,
+6000/2000 on the paper's 2 cm fold-free jittered-mesh floor — and built the
+motor-noise variant and the noisy-floor surface with gates on the measured
+floors. The row stays open against the §1 Done rule until three more
+things have evidence: the soft-advantage mechanism gap those measurements
+exposed (`12-pr3a-soft-foot-simbicon.md` "Robustness re-measurement"), and
+the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped
+multi-thread rows — the comparison deliberately pins FCL and one thread
+for validity (the two foot representations only share a narrow phase under
+FCL, and single-thread keeps runs bit-identical), so that evidence needs
+its own configuration.
 
 ## 5. Gap analysis (what Jain/Liu parity still needs)
 
 ### Jain/Liu (controllers + hand scenes missing)
 | Row | Needs |
 | --- | --- |
-| Biped push recovery (soft vs rigid) | **Push/contact portion shipped** (#3408/#3423); still open: the motor-noise variant, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — PR-3a's comparison deliberately pins FCL and one thread) |
+| Biped push recovery (soft vs rigid) | **Contact spreading shipped** (#3408/#3423); **push measurements rebuilt on replica ensembles with the motor-noise variant and noisy-floor surface** (#3431, no soft advantage in any configuration); still open: the soft-advantage mechanism gap, plus the matrix acceptance rule's `dart`-versus-FCL and 1-thread/host-capped multi-thread evidence (§4 — the comparison deliberately pins FCL and one thread) |
 | Noisy-floor biped | seeded 5×5cm tile floor with 0–2cm offsets; rigid-vs-soft outcome |
 | Biped walk | SIMBICON walk, LCP every 8 controller steps |
 | Finger flick / arm fold / pinch grasp | hand/arm models + manipulation + adaptive-DOF/contact/LCP-time rows |
@@ -153,12 +161,13 @@ deformable substrate. What exists to reuse:
 
 What must be **built/authored** for PR-3:
 - ~~soft-foot SIMBICON integration~~ — **shipped** by #3408/#3423 as
-  `soft_foot_simbicon` with the push-recovery threshold, contact-count, and
-  finite-state gates. What remains from that row is the **motor-noise
-  variant** of the same rigid-vs-soft comparison (deterministic seeded noise
-  on the controller torques; soft sustains at least the rigid level).
-- **noisy-floor** scene: seeded 5×5 cm tiles with 0–2 cm random offsets;
-  deterministic rigid-vs-soft outcome.
+  `soft_foot_simbicon` with the contact-count and finite-state gates.
+- ~~motor-noise variant and noisy-floor surface~~ — **shipped** by #3431
+  (held deterministic torque noise; seeded jittered-mesh floor per the
+  paper's vertex-offset spec; robust ensemble gates). What remains from
+  the push-recovery row is the **soft-advantage mechanism gap** those
+  measurements exposed; the noisy-floor row's own course-tracking outcome
+  is blocked on the walking gait below.
 - **biped walk** with soft contact (LCP cadence per paper).
 - **hand/arm models** (authoring required — no articulated-hand skeleton exists;
   `RHand.dof`/`fixedHand.dof` give a 30-DOF anatomical joint structure to build
@@ -205,11 +214,14 @@ What must be **built/authored** for PR-3:
 ## 10. Sequencing (DART 6)
 
 1. **PR-3a soft-foot SIMBICON** — shipped 2026-08-01 via #3408/#3423
-   (`12-pr3a-soft-foot-simbicon.md` records the resolved decisions); the
-   motor-noise clause of its row moves to the remaining rows below.
-2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
-   hand/arm models that must be authored and their manipulation scenes, then the
-   four-link flexible-foot comparison.
+   (`12-pr3a-soft-foot-simbicon.md` records the resolved decisions); #3431
+   rebuilt its push measurements on replica ensembles and shipped the
+   motor-noise variant and the noisy-floor surface.
+2. Remaining Jain/Liu rows: the push-recovery soft-advantage mechanism
+   gap, soft-contact walk (which also unblocks the noisy-floor row's
+   course-tracking outcome), then the hand/arm models that must be
+   authored and their manipulation scenes, then the four-link
+   flexible-foot comparison.
 3. Apply the approved competitive envelope (`decisions.md` item 2) at the
    performance-acceptance stage.
 4. Per-row acceptance plus at least two clean independent reviews and a durable

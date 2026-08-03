@@ -34,8 +34,10 @@
 #include <dart/dart.hpp>
 
 #include <memory>
+#include <string>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart_demos {
 
@@ -69,6 +71,30 @@ enum class Feet
   Soft,  ///< SoftBodyNode feet (atlas_v3_no_head_soft_feet.sdf)
 };
 
+/// Noisy floor, per the Jain/Liu noisy-floor experiment: a continuous 5 cm
+/// quad lattice whose shared vertices receive seeded random offsets in the
+/// horizontal axes (up to +-amplitude, clamped to 20% of the pitch -- the
+/// winding-preservation bound is jitter < pitch/4, see makeNoisyFloorMesh)
+/// and vertically (0 to amplitude, dug *down* from the flat ground plane so
+/// a freshly spawned biped can never start intersecting a raised vertex;
+/// the paper constrains the offsets' spread, not their sign). Two earlier
+/// revisions fell to review: axis-aligned box tiles with vertical drops
+/// only are not the paper's surface (and hand the rigid foot a keying
+/// grid), and a 40%-of-pitch horizontal clamp preserved per-axis vertex
+/// order but let triangles fold over in projection.
+inline constexpr double kFloorTileSize = 0.05;
+/// The amplitude the paper's noisy-floor experiment uses (0-2 cm offsets).
+inline constexpr double kFloorPaperAmplitude = 0.02;
+/// Patch extent in tiles. X (sagittal) only needs stance drift, but Z must
+/// cover the whole slide a large +Z push produces: a 1.2 m square patch let
+/// a pushed biped skate off the edge and free-fall, which reads as a topple
+/// (or worse, as upright -- see kFellBelowWorldY) and contaminates the
+/// measurement with patch size. The patch spans 0.6 m of -Z and 3.0 m of +Z.
+inline constexpr int kFloorTilesX = 24;
+inline constexpr int kFloorTilesZ = 72;
+/// World-Z where the tile patch begins (see kFloorTilesZ).
+inline constexpr double kFloorPatchMinZ = -0.6;
+
 /// GUI-free state for the soft-foot SIMBICON biped: the Atlas-on-ground world,
 /// its SIMBICON controller, and the handles the free-functions below drive and
 /// measure. The controller math hardcodes world-Y as vertical, so the world is
@@ -84,10 +110,29 @@ struct Model
   Eigen::Vector3d externalForce = Eigen::Vector3d::Zero();
   int forceDuration = 0;
   Feet feet = Feet::Rigid;
+  /// Multiplicative motor-noise level (see setMotorNoise); 0 disables.
+  double motorNoise = 0.0;
+  /// State of the deterministic noise stream; reset by resetModel().
+  std::uint64_t noiseState = 0;
+  /// Per-DOF noise factors currently held (see kMotorNoiseHoldSteps).
+  Eigen::VectorXd noiseFactors;
+  /// Steps until the held factors are redrawn.
+  int noiseHoldCounter = 0;
+  /// Height amplitude (m) of the noisy tile floor; 0 means the flat ground.
+  double floorAmplitude = 0.0;
 };
 
 /// Builds the Atlas-on-ground SIMBICON world for the requested foot geometry.
-Model createModel(Feet feet);
+/// A positive floorAmplitude replaces the flat ground with the seeded noisy
+/// mesh floor of that offset amplitude (see kFloorTileSize).
+Model createModel(Feet feet, double floorAmplitude = 0.0);
+
+/// The deterministic noisy-floor surface itself: the jittered quad lattice
+/// described at kFloorTileSize, as a triangle mesh. Exposed so the structure
+/// gate can regenerate and inspect the exact vertices the world collides
+/// with, instead of trusting a second copy of the numbers.
+std::shared_ptr<dart::math::TriMesh<double>> makeNoisyFloorMesh(
+    double amplitude);
 
 /// Schedules a pelvis push: `force` (N, world frame) applied for `steps` steps.
 void applyPush(Model& model, const Eigen::Vector3d& force, int steps);
@@ -135,10 +180,84 @@ constexpr double kPushSweepStart = 2000.0;
 constexpr double kPushSweepEnd = 24000.0;
 constexpr double kPushSweepStep = 2000.0;
 
-/// Largest pelvis push magnitude (N) from which the biped recovers upright,
-/// found by sweeping magnitudes in a fixed lateral direction and returning the
-/// largest that leaves the biped upright after a fixed recovery window.
+/// Ensemble controls for every sweep verdict in this model. A single
+/// trajectory is not a measurement here: near the recovery boundary the soft
+/// arm's outcome flips with a 10 um initial offset, with the binary hosting
+/// the same objects, and with gait phase (measured 2026-08-01 -- the
+/// previous single-trajectory sweep reported an isolated 18000 N resonance
+/// island as the soft threshold while 6000-16000 N all toppled). Each
+/// magnitude is therefore decided by kReplicaCount replicas; replica k
+/// starts with its root X translation offset by k * kReplicaOffset
+/// (deterministic, physically negligible, decorrelates microscopic chaos)
+/// AND settles k * kReplicaPhaseStride extra steps before the push lands
+/// (sampling distinct gait phases -- a push the biped only survives at one
+/// arrival phase is not "withstood"). A magnitude counts as sustained only
+/// when at least kReplicasRequired replicas recover.
+inline constexpr int kReplicaCount = 5;
+inline constexpr int kReplicasRequired = 4;
+inline constexpr double kReplicaOffset = 1e-5;
+inline constexpr int kReplicaPhaseStride = 60;
+
+/// Free fall preserves the pelvis-above-feet gap, so a biped that skates
+/// off the edge of the world (or through it) could read as upright forever.
+/// isUpright() therefore also requires the pelvis above this absolute
+/// world-Y (the ground plane tops out at -0.925).
+inline constexpr double kFellBelowWorldY = -2.0;
+
+/// Robust push-recovery threshold (N): the largest magnitude such that every
+/// swept magnitude up to it clears the replica-ensemble majority above
+/// (prefix semantics -- an isolated high-magnitude resonance pocket above a
+/// toppling interval is not a threshold), with optional sustained
+/// perturbations active from the first step: `motorNoise` (see
+/// setMotorNoise) and `floorAmplitude` (noisy tile floor; 0 selects the
+/// flat ground). When `fractionLog` is non-null, one
+/// "  push=<N>  <recovered>/<replicas>" line per swept magnitude is
+/// appended, so a gate's output records the whole response curve rather
+/// than a bare threshold.
+double robustRecoverablePush(
+    Feet feet,
+    double motorNoise,
+    double floorAmplitude,
+    std::string* fractionLog = nullptr);
+
+/// Flat-ground, unperturbed robustRecoverablePush().
 double maxRecoverablePush(Feet feet);
+
+/// Enables multiplicative motor noise: after each SIMBICON update, every
+/// generalized force is scaled by (1 + level * u) with u drawn uniformly from
+/// [-1, 1) by a deterministic, platform-independent generator owned by the
+/// model. Proportional actuation error is the standard motor-noise model, and
+/// scaling preserves the unactuated root's zero forces, so the noise perturbs
+/// exactly the motor torques the controller wrote.
+///
+/// The per-DOF factors are held for kMotorNoiseHoldSteps before being
+/// redrawn. Redrawing every 1 ms step would make the sweep vacuous: zero-mean
+/// noise refreshed far above the biped's mechanical bandwidth averages out,
+/// and both foot types then shrug off even 100% torque error (measured:
+/// the whole 0.1-1.0 sweep saturated). Held factors act on gait timescales,
+/// which is both discriminating and the more honest model of real actuation
+/// error, whose bias components persist across control cycles.
+///
+/// resetModel() rewinds the stream and the hold with everything else,
+/// keeping noisy runs deterministic and repeatable.
+void setMotorNoise(Model& model, double level);
+
+/// Steps each drawn set of per-DOF noise factors is held before redrawing
+/// (50 ms at the model timestep, i.e. a 20 Hz refresh -- the scale of the
+/// gait's own control cadence, not of the integrator).
+inline constexpr int kMotorNoiseHoldSteps = 50;
+
+/// Operating points for the perturbed push-recovery gates. Sustained
+/// perturbations alone do not discriminate -- measured, both foot types
+/// idle in place through 100% held torque noise and through the whole
+/// 0.4-3.2 cm tile-amplitude range, because the in-place gait is a
+/// trivially easy task. What the paper claims is robust *control*, so the
+/// perturbed gates instead measure each arm's robust push-recovery
+/// threshold (robustRecoverablePush) with the perturbation active from the
+/// first step: 20% held actuation error, and the paper's own 2 cm noisy
+/// floor.
+inline constexpr double kMotorNoiseGateLevel = 0.2;
+inline constexpr double kFloorGateAmplitude = kFloorPaperAmplitude;
 
 } // namespace soft_foot_simbicon_model
 } // namespace dart_demos
