@@ -140,7 +140,15 @@ void applyModernDarkColors()
 
   colors[ImGuiCol_TextSelectedBg] = accentSoft;
   colors[ImGuiCol_DragDropTarget] = accent;
-  colors[ImGuiCol_NavHighlight] = accent;
+  // ImGuiCol_NavCursor is the 1.91.4+ name for ImGuiCol_NavHighlight; the
+  // bundled docking build disables the obsolete alias.
+  colors[ImGuiCol_NavCursor] = accent;
+
+#ifdef IMGUI_HAS_DOCK
+  // Docking-branch-only slots, matching the DART 7 demos host theme.
+  colors[ImGuiCol_DockingPreview] = accentSoft;
+  colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.07f, 0.08f, 0.09f, 1.0f);
+#endif
 }
 
 //==============================================================================
@@ -168,6 +176,11 @@ void applyModernDarkMetrics()
   style.PopupBorderSize = 1.0f;
 
   style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
+
+#ifdef IMGUI_HAS_DOCK
+  // Hairline splitters between docked panels (docking branch only).
+  style.DockingSeparatorSize = 1.0f;
+#endif
 }
 
 } // namespace dart_demos

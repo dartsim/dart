@@ -414,7 +414,19 @@ else()
 
   include(FetchContent)
 
-  set(IMGUI_TARGET_VERSION "v1.92.8")
+  # Default to the vanilla tag so the installed dart-external-imgui component
+  # keeps its ABI across DART 6.20.x releases (docking adds public ImGuiIO /
+  # ImGuiStyle members and shifts enum values). DART_IMGUI_DOCKING opts a
+  # build into the docking-branch release of the same version — identical to
+  # v1.92.8 plus the dockspace/DockBuilder API (IMGUI_HAS_DOCK) — which the
+  # demos configuration (`pixi run demos` via config-demos) uses for the
+  # rearrangeable docked workspace. Non-docking builds keep working through
+  # the fixed-layout fallback.
+  if(DART_IMGUI_DOCKING)
+    set(IMGUI_TARGET_VERSION "v1.92.8-docking")
+  else()
+    set(IMGUI_TARGET_VERSION "v1.92.8")
+  endif()
 
   # DART applies its compatibility patch directly inside the FetchContent
   # checkout, which leaves that working tree dirty. If the requested tag changed

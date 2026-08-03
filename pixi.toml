@@ -72,6 +72,33 @@ config = { cmd = """
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
 
+# config-demos: the `config` variant for the dockable demos workspace. It only
+# differs by selecting the bundled ImGui docking branch
+# (DART_USE_SYSTEM_IMGUI=OFF plus DART_IMGUI_DOCKING=ON; the bundled default
+# stays on the ABI-stable vanilla tag for installs); `config` itself stays
+# literal because the test-all semantic gate requires a deterministic,
+# configuration-only command.
+config-demos = { cmd = """
+    cmake \
+        -G Ninja \
+        -S . \
+        -B "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE" \
+        -DBUILD_TESTING=ON \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DDART_DISABLE_COMPILER_CACHE="$DART_DISABLE_COMPILER_CACHE" \
+        -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_PROFILE=ON \
+        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+        -DDART_USE_SYSTEM_GOOGLETEST=ON \
+        -DDART_USE_SYSTEM_IMGUI=OFF \
+        -DDART_IMGUI_DOCKING=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
+        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_VERBOSE="$DART_VERBOSE"
+""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
+
 lint-cpp = { cmd = """
     cmake \
     --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -422,14 +449,18 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-# demos: the consolidated dart-demos scene catalog (examples/demos).
+# demos: the consolidated dart-demos scene catalog (examples/demos). Builds
+# against the bundled ImGui docking branch (config-demos) so the workspace
+# panels can be docked and rearranged; system-ImGui builds keep the fixed
+# panel layout. Alternating with plain `pixi run build` reconfigures the
+# shared tree between the two ImGui variants.
 demos = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
         --target dart-demos \
         --parallel \
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+""", depends-on = ["config-demos"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
@@ -464,7 +495,9 @@ bm-boxes-headless = { cmd = """
 # Off-screen still capture of a dart-demos scene via the dart-gui-osg
 # OffscreenViewer helper. On a headless host (no X server) prefix with
 # xvfb-run, e.g. `xvfb-run -a -s '-screen 0 1280x1024x24' pixi run capture`.
-# width/height set the off-screen render size.
+# width/height set the off-screen render size. Uses the same docking-ImGui
+# configuration as `pixi run demos` so captures show the workspace users
+# actually get (config-demos), not the fixed-layout fallback.
 capture = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -473,7 +506,7 @@ capture = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos \
         --scene {{ scene }} --headless --shot {{ out }} --width {{ width }} --height {{ height }}
 """, depends-on = [
-  "config",
+  "config-demos",
 ], args = [
   { arg = "scene", default = "sleeping" },
   { arg = "out", default = "capture.png" },

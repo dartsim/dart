@@ -393,6 +393,14 @@ ImGuiHandler::ImGuiHandler()
 {
   ImGui::CreateContext();
 
+#ifdef IMGUI_HAS_DOCK
+  // Docking-branch ImGui (the bundled DART_USE_SYSTEM_IMGUI=OFF build): let
+  // widgets dock into and rearrange within a viewer-provided dockspace. This
+  // flag alone changes nothing visually; apps opt in by submitting a
+  // DockSpace (see the demos host).
+  ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
+
   ImGui::StyleColorsDark();
 
   ImGui_ImplOpenGL2_Init();

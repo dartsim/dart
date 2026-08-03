@@ -373,10 +373,22 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
   io.DisplaySize = ImVec2(1600.0f, 1400.0f);
   io.DeltaTime = 1.0f / 60.0f;
   io.IniFilename = nullptr;
+#if IMGUI_VERSION_NUM >= 19200
+  // Declare the 1.92 texture protocol so NewFrame() builds and manages the
+  // font atlas itself: the legacy GetTexDataAsRGBA32() bake is obsolete-gated
+  // in the bundled docking build, and without either path the atlas builder
+  // stays null. This logic-only test inspects draw lists and never samples
+  // the texture.
+  io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+  io.Fonts->AddFontDefault();
+#else
+  // Pre-1.92 ImGui requires the font atlas to be baked before NewFrame();
+  // this legacy call also implicitly adds the default font.
   unsigned char* pixels = nullptr;
   int textureWidth = 0;
   int textureHeight = 0;
   io.Fonts->GetTexDataAsRGBA32(&pixels, &textureWidth, &textureHeight);
+#endif
 
   struct FrameDrawStats
   {
@@ -406,9 +418,11 @@ TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
     if (drawData != nullptr) {
       // Read the draw-list count from CmdLists.Size rather than the obsolete
       // CmdListsCount mirror: ImGui 1.92.9 regressed that field to always
-      // report 0 (fixed upstream in 1.92.9b), which silently emptied every
-      // measurement below. CmdLists is the canonical member on every ImGui
-      // version this branch supports (>= 1.91.9).
+      // report 0 (fixed upstream in 1.92.9b), and builds with
+      // IMGUI_DISABLE_OBSOLETE_FUNCTIONS (the bundled docking-branch target)
+      // leave it at zero as well, which silently emptied every measurement
+      // below. CmdLists is the canonical member on every ImGui version this
+      // branch supports (>= 1.91.9).
       stats.drawListCount = drawData->CmdLists.Size;
       for (int index = 0; index < drawData->CmdLists.Size; ++index) {
         stats.maximumVertices = std::max(

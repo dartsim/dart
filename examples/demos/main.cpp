@@ -110,7 +110,11 @@ void printUsage(const char* prog)
       << "  --width <w> --height <h>  Render/window size (default "
       << kDefaultWindowWidth << "x" << kDefaultWindowHeight << ").\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
-         "(default 1.0).\n"
+         "(default 1.0;\n"
+         "                  also --gui-scale=<f>; DART_GUI_SCALE seeds the "
+         "same scale;\n"
+         "                  supported range 0.5-4, out-of-range values are "
+         "clamped).\n"
       << "  --collision-detector <name>  Initial collision backend "
          "(e.g. fcl, dart, bullet, ode when available).\n"
       << "  --threads <n>   Initial simulation worker threads (0 selects "
@@ -140,6 +144,13 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     opt.collisionDetectorName = detectorEnv;
   if (const char* threadsEnv = std::getenv("THREADS"))
     opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
+  // Same environment seed as the shared dart::gui::osg helpers and the DART 7
+  // demos host; the --gui-scale flag below overrides it.
+  if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
+      guiScaleEnv != nullptr && guiScaleEnv[0] != '\0') {
+    opt.guiScale
+        = dart::gui::osg::parseGuiScale(guiScaleEnv, opt.guiScale, &std::cerr);
+  }
 
   auto needsValue = [&](int i) {
     if (i + 1 >= argc) {
@@ -186,6 +197,9 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
         return ParseResult::Error;
       opt.guiScale
           = dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr);
+    } else if (std::strncmp(a, "--gui-scale=", 12) == 0) {
+      opt.guiScale
+          = dart::gui::osg::parseGuiScale(a + 12, opt.guiScale, &std::cerr);
     } else if (std::strcmp(a, "--collision-detector") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;

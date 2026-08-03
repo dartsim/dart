@@ -1022,6 +1022,24 @@ namespace dart::examples::demos {
 namespace {
 
 //==============================================================================
+/// Outlines a memory-map cell. ImGui 1.92 reordered ImDrawList::AddRect to
+/// (rounding, thickness, flags) and the bundled docking build deletes the
+/// legacy overload, so dispatch on the compiled ImGui version.
+void addMemoryMapRect(
+    ImDrawList* drawList,
+    const ImVec2& minimum,
+    const ImVec2& maximum,
+    ImU32 color,
+    float thickness)
+{
+#if IMGUI_VERSION_NUM >= 19200
+  drawList->AddRect(minimum, maximum, color, 0.0f, thickness);
+#else
+  drawList->AddRect(minimum, maximum, color, 0.0f, 0, thickness);
+#endif
+}
+
+//==============================================================================
 std::string formatBytes(double bytes, bool signedValue)
 {
   constexpr double kKibibyte = 1024.0;
@@ -1390,12 +1408,11 @@ void renderMemoryMapLegendSwatch(
   if (memoryStorageStateUsesPattern(storageState)) {
     drawMemoryMapPattern(drawList, minimum, maximum, storageState);
   }
-  drawList->AddRect(
+  addMemoryMapRect(
+      drawList,
       minimum,
       maximum,
       memoryStorageStateBorder(storageState),
-      0.0f,
-      0,
       storageState == MemoryStorageState::Metadata ? 2.0f : 1.0f);
 }
 
@@ -1681,12 +1698,11 @@ void renderMemoryMapRegion(
             kCellVertexLimit - 16);
       }
       if (hasMemoryMapVertexCapacity(drawList, kCellVertexLimit, 16)) {
-        drawList->AddRect(
+        addMemoryMapRect(
+            drawList,
             minimum,
             maximum,
             memoryStorageStateBorder(span.storageState),
-            0.0f,
-            0,
             span.storageState == MemoryStorageState::Metadata ? 2.0f : 1.0f);
       } else {
         patternComplete = false;
