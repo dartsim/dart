@@ -105,7 +105,7 @@ DART_BUILD_MEMORY_DIAGNOSTICS_VALUE=${DART_BUILD_MEMORY_DIAGNOSTICS_OVERRIDE:-${
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
 DART_USE_MOLD_VALUE=${DART_USE_MOLD_OVERRIDE:-OFF}
-DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-ON}
+DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
@@ -196,6 +196,7 @@ cmake \
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
   { arg = "profile_tracy", default = "OFF" },
+  { arg = "use_system_imgui", default = "ON" },
 ] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
@@ -1679,15 +1680,27 @@ gui-offscreen-parity = { cmd = [
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_GUI_OFFSCREEN_PARITY = "1", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 # Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
-# switchable scenes). Uses system ImGui like other GUI examples; pick a scene
-# with `pixi run demos -- --scene <id>`.
+# switchable scenes). Builds against the fetched ImGui docking branch
+# (`config` with use_system_imgui=OFF, plus the per-run pin below) so the
+# docked workspace (catalog sidebar, toolbar, status bar) is available,
+# matching `pixi run dartsim` and `pixi run py-demos`. The config dependency
+# keeps `pixi run demos` self-contained on a fresh checkout, and because it
+# already configures the docking ImGui there is no cache flip between the
+# dependency and the run; pick a scene with `pixi run demos -- --scene <id>`.
 demos = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
   "demos",
 ], depends-on = [
-  "config",
-] }
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "ON",
+    "ON",
+    "OFF",
+    "OFF",
+  ] },
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [
@@ -2685,16 +2698,23 @@ DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 18 20
         -DDART_MSVC_FORCE_RELEASE_RUNTIME=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
-        -DDART_USE_SYSTEM_IMGUI=OFF \
+        -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}} \
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
+  # Same argument list and order as the root `config` so cross-platform
+  # depends-on entries (e.g. the `demos` task) map positionally on win-64 too.
+  # `build_type` is accepted for signature parity but unused: the Visual
+  # Studio generator is multi-config and selects the configuration at build
+  # time. Windows keeps bundled ImGui by default (use_system_imgui OFF).
   { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
   { arg = "profile_tracy", default = "OFF" },
+  { arg = "use_system_imgui", default = "OFF" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations

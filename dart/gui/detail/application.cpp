@@ -695,7 +695,9 @@ dart::gui::Panel makeDemoSimulationPanel(
   dart::gui::Panel panel;
   panel.title = "Simulation";
   panel.dockSide = dart::gui::DockSide::Top;
-  panel.initialSize = std::array<double, 2>{760.0, 132.0};
+  // One toolbar row (~46 px) plus the dock tab bar; a taller region just adds
+  // dead space between the toolbar and the viewport at every UI scale.
+  panel.initialSize = std::array<double, 2>{760.0, 78.0};
   panel.autoResize = false;
   panel.buildWithContext = [&scenes, activeIndex](
                                dart::gui::PanelBuilder& builder,
@@ -1127,6 +1129,8 @@ int runGuiBackendApplicationImpl(
   bool keepRunning = true;
   std::size_t finalContacts = 0;
   std::optional<int> pendingDemoFallbackIndex;
+  std::string demoStatusLabel;
+  std::string lastActivatedDemoId;
 
   // Outer scene loop. For the single-scene path this runs exactly once; for the
   // demos host it rebuilds the scene-bound state when a switch is requested,
@@ -1217,6 +1221,7 @@ int runGuiBackendApplicationImpl(
         panels.push_back(std::move(scenePanel));
       }
       appOptions.panels = std::move(panels);
+      demoStatusLabel = demoSceneDisplayName(demoEntry);
       lifecycle.sceneSwitchRequested = false;
       lifecycle.requestedScene.clear();
       // Per-scene transient controllers are reset; renderable ids from the
@@ -1225,15 +1230,32 @@ int runGuiBackendApplicationImpl(
       simulationStepper = SimulationStepper{};
     }
 
-    cameraController.camera
+    // Rebuild/Restart (or re-selecting the active demo) must reset only the
+    // physics, never the user's camera pose: keep the current orbit camera
+    // when the same demo re-activates, and apply the scene's default framing
+    // only when a different demo (or the first one) starts.
+    const bool sameDemoReactivation
+        = demoCatalog != nullptr && candidateDemoEntry != nullptr
+          && !lastActivatedDemoId.empty()
+          && lastActivatedDemoId == candidateDemoEntry->id;
+    lastActivatedDemoId = candidateDemoEntry != nullptr ? candidateDemoEntry->id
+                                                        : std::string();
+    auto homeCamera
         = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
-    if (appOptions.cameraUpdater) {
-      appOptions.cameraUpdater(cameraController.camera);
+    if (!sameDemoReactivation) {
+      cameraController.camera = homeCamera;
+      if (appOptions.cameraUpdater) {
+        appOptions.cameraUpdater(cameraController.camera);
+      }
+      homeCamera = cameraController.camera;
     }
-    auto homeCamera = cameraController.camera;
 
     const bool validateFixtureRequirements = false;
     DartScene dartScene = createDartScene(appOptions);
+    // The built-in status panel should name the running demo, not the internal
+    // fixture default (previously it always read "scene: mvp" in the demos
+    // host).
+    dartScene.statusSceneLabel = demoStatusLabel;
     std::optional<InitialSceneState> maybeInitialSceneState
         = createInitialSceneState(
             *engine,
@@ -1348,8 +1370,13 @@ int runGuiBackendApplicationImpl(
       if (!runMultiCapture) {
         // Single view (or an unsupported multi-view request, e.g. windowed):
         // resolve the primary camera in place for the normal capture loop.
-        cameraController.camera = resolveView(primaryPreset);
-        homeCamera = cameraController.camera;
+        // Not on a same-demo rebuild, though: re-resolving (and re-fitting)
+        // the CLI view there would overwrite the preserved camera pose that
+        // Rebuild/Restart promise to keep.
+        if (!sameDemoReactivation) {
+          cameraController.camera = resolveView(primaryPreset);
+          homeCamera = cameraController.camera;
+        }
       } else {
         // Build the ordered (token, camera) capture list.
         std::vector<std::pair<std::string, dart::gui::OrbitCamera>> captures;

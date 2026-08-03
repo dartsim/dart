@@ -21,6 +21,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <array>
 #include <memory>
 #include <string>
 #include <utility>
@@ -57,6 +58,10 @@ dart::gui::ApplicationOptions makePlannedWorldPortScene(
 
   dart::gui::Panel panel;
   panel.title = std::move(title);
+  // Scene panels join the right dock column of the demos workspace (same
+  // convention as the py-demos runner) instead of floating over the viewport.
+  panel.dockSide = dart::gui::DockSide::Right;
+  panel.initialSize = std::array<double, 2>{320.0, 440.0};
   panel.build = [legacySeeds = std::move(legacySeeds),
                  target = std::move(target)](dart::gui::PanelBuilder& builder) {
     builder.text("status: planned World demo");

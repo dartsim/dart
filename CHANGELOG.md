@@ -288,6 +288,29 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### GUI, Examples, and Tutorials
 
+- Made the docked ImGui workspace the default for the C++ demos host:
+  `pixi run demos` now builds against the fetched Dear ImGui docking branch
+  (matching `pixi run dartsim` and `pixi run py-demos`), scene control panels
+  dock into the right column instead of floating over the viewport, the
+  default dock layout sizes its regions from the panels' scaled content on any
+  window/DPI combination, the Simulation toolbar region hugs its content and
+  grows once when the capture/playback controls appear, demo switches preserve
+  the user's dock tree (a newly introduced side splits the live central node),
+  the built-in status panel names the running demo instead of the internal
+  fixture, and Rebuild/Restart of the active demo resets only the physics
+  while preserving the user's camera pose (selecting a different demo still
+  opens with that scene's own framing). System-ImGui builds keep the
+  floating-panel fallback.
+  ([#3425](https://github.com/dartsim/dart/pull/3425))
+- Added a regression test for the Dear ImGui 1.92.9 overlay fix below: the
+  draw-plan builder is exercised against an `ImDrawData` whose obsolete
+  `CmdListsCount` mirror is zeroed, locking in the `CmdLists.Size` iteration.
+  ([#3425](https://github.com/dartsim/dart/pull/3425))
+- Unified `--gui-scale` handling with the DART 6 viewers: GUI scene apps now
+  also accept `--gui-scale=N`, seed the scale from the `DART_GUI_SCALE`
+  environment variable (command line wins), and warn while clamping
+  out-of-range values instead of clamping silently.
+  ([#3425](https://github.com/dartsim/dart/pull/3425))
 - Added opt-in memory-layout diagnostics to `dart-demos` with exact
   address-ordered World allocator regions, typed ECS page overlays, separate
   logical capacity/history/process RSS, and explicit evidence limits. The demo

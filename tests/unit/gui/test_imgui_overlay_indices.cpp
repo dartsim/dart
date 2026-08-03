@@ -160,5 +160,41 @@ TEST(ImGuiOverlayIndices, PreservesCommandClipRectangles)
   EXPECT_EQ(plan.commands[1].scissorHeight, 150u);
 }
 
+TEST(ImGuiOverlayIndices, BuildsPlanWithoutLegacyCmdListsCount)
+{
+  ImGuiContextGuard context;
+  ImGuiIO& io = ImGui::GetIO();
+  io.DisplaySize = ImVec2(1280.0F, 720.0F);
+  io.DeltaTime = 1.0F / 60.0F;
+  io.Fonts->AddFontDefault();
+  unsigned char* fontPixels = nullptr;
+  int fontWidth = 0;
+  int fontHeight = 0;
+  io.Fonts->GetTexDataAsRGBA32(&fontPixels, &fontWidth, &fontHeight);
+
+  ImGui::NewFrame();
+  ImDrawList* const drawList = ImGui::GetForegroundDrawList();
+  drawList->AddRectFilled(
+      ImVec2(20.0F, 30.0F), ImVec2(100.0F, 210.0F), IM_COL32_WHITE);
+  ImGui::Render();
+
+  const ImDrawData* const drawData = ImGui::GetDrawData();
+  ASSERT_NE(drawData, nullptr);
+  ASSERT_GT(drawData->CmdLists.Size, 0);
+
+  // Dear ImGui 1.92.9 shipped the obsolete CmdListsCount mirror stuck at
+  // zero, which blanked the whole overlay for any renderer iterating it.
+  // Simulate that breakage: the plan must come from CmdLists itself.
+  ImDrawData legacyBrokenDrawData = *drawData;
+  legacyBrokenDrawData.CmdListsCount = 0;
+
+  const ImGuiOverlayDrawPlan plan
+      = buildImGuiOverlayDrawPlan(legacyBrokenDrawData, 1280u, 720u);
+  ASSERT_FALSE(plan.commands.empty());
+  ASSERT_FALSE(plan.indices.empty());
+  EXPECT_EQ(
+      plan.indices.size(), static_cast<std::size_t>(drawData->TotalIdxCount));
+}
+
 } // namespace
 } // namespace dart::gui::detail

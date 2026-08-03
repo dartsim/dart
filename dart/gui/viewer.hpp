@@ -107,6 +107,11 @@ struct ViewerLifecycleState
   /// One remembered panel per recently-used dock side. This preserves a dock
   /// node target when a side temporarily has no scene panels.
   std::vector<std::string> dockedPanelLayoutSideHistory;
+  /// Content height of the top dock bar's panels last frame. When the content
+  /// grows (e.g. the Simulation panel's capture/playback rows appearing), the
+  /// top node grows once to keep the new controls visible; it never shrinks
+  /// automatically, so user resizes stick.
+  double dockedTopPanelLastContentHeight = 0.0;
   /// Set by the demos sidebar to ask the application loop to swap the active
   /// scene to `requestedScene` without recreating the window.
   bool sceneSwitchRequested = false;
