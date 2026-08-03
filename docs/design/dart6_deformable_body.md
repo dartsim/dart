@@ -93,7 +93,7 @@ The DART collision object owns one retained deforming-geometry cache; pair
 kernels must not maintain parallel mirrors. Each pair preserves object order,
 contact point, normal, depth, soft-side face IDs, established non-finite-bounds
 behavior, and the full configured per-pair contact budget at both generation
-and emission. The rigid three-contact generation clamp must not truncate soft
+and emission. The rigid solver-facing manifold clamp must not truncate soft
 contacts before emission. Cache access uses the canonical local vertex formula,
 point position plus resting offset. A missing or mismatched cache view fails
 loudly rather than falling back to `getLocalPosition()`, which does not provide

@@ -247,6 +247,47 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   the remaining decision is whether to pursue a behavior-changing packet on
   the ODE/FCL wrappers. Deciding *not* to do it now must be recorded as a
   decision, not an omission.
+- **D9 — DECIDED 2026-08-01 (maintainer-delegated, evidence-based): SHIP
+  the detector stream-quality bundle** — full 4-contact face manifolds,
+  stable two-point cylinder side-line contacts (with the tilted-support
+  effective-radius correction), retained shallow crossed-cylinder
+  contacts, and spin-invariant aligned cylinder-box handling, as one
+  cohesive WP-PG.50 packet on `wp-pg-wsg-rebaseline-20260731`. Rationale:
+  every piece removes performance-from-lost-or-unstable-contacts, which
+  the `docs/design/dart6_collision_backends.md` correctness clause
+  forbids; the complete bundle measures **0.946x vs the audited
+  pre-consolidation stack on the primary fixture (direct quiet-host
+  interleave — slightly faster)** with fuller manifolds, keeps criterion
+  1 at ≈3.7x (≥ 3x bar; the only cross-session link is the standing
+  audit record, whose trajectory the audit arm reproduces bit-exactly),
+  flips ARM-PUSHER to a cross-engine win, settles S4/S5 4x faster, and
+  leaves FCL/Bullet/ODE bit-identical. Evidence:
+  01-baseline-evidence.md 2026-07-31/08-01 sections.
+- **D10 — DECIDED 2026-08-01, superseded for the better on the same day:
+  criterion 2 is MET on its original terms.** The root cause of the pile
+  never resting was a chain of detector stream defects, the last being
+  the aligned cap-patch path demanding exact rotational identity so
+  spun-but-upright cylinders fell to degenerate convex rim points and
+  crept without bound (measured on the intermediate build: seed 101 rising from ~0.016 m to
+  0.137 m across a 60k run). With the full bundle, S6 ends **71/71
+  resting with max penetration 0** on 60k runs of both the canonical
+  seed and the worst creeper, and 4/5 seeds fully deactivate within the
+  original 20k window (the audit-era stack managed 3/5); canonical 3056
+  freezes between 36k–38k steps (sleep latency; penetration stays in a
+  bounded ~1–3.6 mm band with no growth trend until the freeze). An intermediate re-anchoring of criterion 2 (recorded in
+  this entry's history via git) proved unnecessary once the final defect
+  fell. Measured-and-rejected alternative: raising the dense-island rest
+  tolerance (premature island freezing under load explodes penetration
+  to 0.256 m — a freeze-under-load hazard to remember). Non-blocking
+  follow-ups recorded: deactivation-latch latency for large
+  single-island piles near stillness (a dartpy-authored 0.1-scale
+  box-only pile converges to 5e-5–1.3e-3 m/s without latching in 40k
+  steps while contact_benchmark-authored piles do latch), rolling
+  friction as a physical feature for roller-heavy scenes, and
+  parallel-line single-point contacts (cyl-cyl/capsule pairs) as the
+  remaining 1-point supports. Evidence: 01-baseline-evidence.md
+  "2026-08-01 spin-canonicalization"; seed matrices and 60k trends in
+  `~/dart-wsg-evidence-20260731/aug01/`.
 
 ## Closeout plan (promotion targets, decided up front)
 

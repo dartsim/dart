@@ -9,6 +9,96 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
+**2026-07-31: current-base re-baseline RAN on `718651d0d6e`** (session
+branch `wp-pg-wsg-rebaseline-20260731`; guard artifacts
+`/tmp/wsg_rebaseline_guards_20260731`, A/Bs `/tmp/wsg_ab_20260731`,
+WS-G rerun `/tmp/mj_cmp_20260731`). Read the new
+"2026-07-31 current-base guard refresh" section of
+[01-baseline-evidence.md](01-baseline-evidence.md) first. Summary:
+
+- Criterion 1 (S1 primary fixture): **MET, improved** — same-host
+  interleaved A/B shows the current stack 1.29x faster than the
+  audit-head stack on S1 120/dart/1 (chained ≈4.5x over the round-2
+  baseline). July step-time cells are not comparable to today's host
+  clock state; an apparent 1.6–6x slowdown was a host artifact, refuted
+  by ABAB A/Bs with bit-identical per-arm hashes.
+- Criterion 2 (S6 pile-sleep): **REGRESSED — the selected gap.** The
+  #3381 consolidated `dart` detector's box-box stream (≤3-point
+  manifolds, pair churn, penetration plateau ~4.4 mm) keeps the pile
+  above the wake band forever; 0/71 resting under defaults. FCL control,
+  audit-head binary, and pre-#3381 binary all still sleep 71/71 (the
+  latter two bit-exact `0xec80f734df6d5e74`), isolating the #3381
+  detector swap as the sole cause. Policy knobs do not rescue it.
+- Criterion 3 (no regressions elsewhere): fcl/bullet/ode guard rows held
+  bit-identical (or were re-established where July references were
+  lost); all `dart` rows re-baselined per the #3381 PR body's
+  breaking-changes note ("its contact profile can differ"); S2/S3 dart
+  now coincide with FCL fixed points.
+- WS-G: the full 8-scene matrix (both HUM rows included) ran on the
+  merged base with provenance, plus a post-fix box-row rerun; standings
+  live in [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
+
+Implementation packet executed by this session (WP-PG.50 candidate,
+checkpoint commit `03046383e77` on `wp-pg-wsg-rebaseline-20260731`;
+note: the first two commits were pushed to origin on 2026-08-01 outside
+the session — the later commits remain local): the solver-facing
+3-contact clamp in `DARTCollisionDetector.cpp` was raised to the full
+4-contact manifold capacity, with pinned regression tests and a
+CHANGELOG entry (`#PENDING` link — fill at PR time). Full evidence and
+the measured trade-off live in the "2026-07-31 manifold fix" section of
+[01-baseline-evidence.md](01-baseline-evidence.md): resting scenes
+improve up to 4x and FCL/Bullet/ODE stay bit-identical, but the
+always-active dense fixture pays ~2x (criterion 1 falls to ≈2.3x,
+below the 3x bar), and S6 improves (5/71 at 20k, dwell accumulating)
+without fully sleeping — the residual blocker is contact-stream
+persistence (pair churn), not sleep policy (a tolerance raise was
+measured and rejected: it triggers freeze-under-load penetration
+explosions). 154/154 C++ tests pass; lint/check-lint clean.
+
+**2026-08-01 final — D9 and D10 DECIDED and criterion 2 MET (the
+maintainer delegated both calls in-session on 2026-08-01 with a
+root-cause, evidence-based, A/B-verified mandate; full records in README
+"Open decisions").** The session measured old-vs-new contact streams on
+constructed micro-pose sweeps, then fixed four detector stream defects
+as one bundle: the 3-contact solver-facing clamp, wandering cylinder
+side-line points (2-point line manifolds + effective-radius correction),
+intermittently missed crossed-cylinder contacts, and — the criterion-2
+closer — spin-variant aligned cylinder-box handling (an upright cylinder
+with arbitrary spin fell off the stable cap-patch path onto degenerate
+convex rim points and crept without bound; found via a 60k trend audit
++ final-scene reconstruction, fixed by spin/permutation
+canonicalization). Final state: S6 sleeps **71/71 with penetration 0**
+on 60k runs of the canonical seed and the worst creeper; 4/5 seeds
+fully deactivate within the original 20k window (audit-era stack: 3/5);
+the bundle is **0.946x vs the audited pre-consolidation stack**
+(slightly faster) on the direct S1 interleave; 154/154 C++ tests,
+cylinder suite 32/32; S2-S5 dart guard hashes stable across the last
+two fix iterations; S1 re-baselined
+(`120: 290/178 0xfc20c4880fdbca05`, `60: 88/74 0x6dab35ce2618d422`).
+Codex provided the independent cylinder root-cause confirmation and the
+code-review lane whose effective-radius finding was verified and
+applied. Work is preserved as LOCAL commits on
+`wp-pg-wsg-rebaseline-20260731` (never pushed; push/PR needs explicit
+approval); raw artifacts and scripts are archived at
+`~/dart-wsg-evidence-20260731/` including the `aug01/` tree. Next
+action: shepherd PR #3428 through CI and review per `dart-manage-pr`
+(no thread replies to AI reviewers; local fixes + re-review requests
+only with approval), then retire this folder in the completing PR per
+the closeout plan. CI classification (2026-08-02): the `gcc (newest)`
+and `clang (newest)` toolchain lanes fail
+`MemoryDiagnostics.DenseMapStaysBelowTheOpenGL2DrawIndexLimit`
+identically on the release-6.20 tip itself (introduced by the #3379
+demos merge, ImGui draw-list synthetic test, `drawListCount == 0`; the
+tip's own CI Toolchain run 30706341273 shows both jobs failing while
+the run reports success — non-required lanes). Pre-existing and
+unrelated to this PR; do not chase it here. Resolution: the maintainer
+fixed it upstream the same day (#3429, "Read ImGui draw-list count from
+CmdLists.Size") and merged the current base into the PR branch; the full
+hosted matrix then concluded GREEN on the merge head `4be23b49b39`
+(22 pass + 1 skip of 23 checks, zero failures, PR mergeable,
+2026-08-02). Remaining: maintainer review and merge; then retire this
+folder in the completing PR per the closeout plan.
+
 **2026-07-10: the current-head completion audit RAN** (release-6.20 @
 `db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
 
@@ -145,6 +235,64 @@ reopen it as a default-on behavior without new maintainer direction and
 option-off/option-on evidence.
 
 ## Session log (round-2 execution)
+
+- 2026-08-01 (later): The evidence audit caught "bounded penetration"
+  over-asserted — 60k trends showed seed-101 penetration GROWING
+  0.100 → 0.137 m. Final-scene reconstruction identified an upright
+  spun cylinder creeping through its cap support: the aligned cap-patch
+  path demanded exact rotational identity, so spun uprights fell to
+  degenerate convex rim points. Fixed by spin/permutation
+  canonicalization of the aligned cylinder-box path (+ side-line hoist
+  with a shallow-pose gate); four stale single-support test pins
+  modernized to line manifolds; spin-invariance pinned. Outcome: S6
+  71/71 pen 0 at 60k on both probe seeds, 4/5 seeds sleeping within
+  20k, parity interleave 0.946x (bundle faster than the audited stack)
+  — criterion 2 met on original terms, D10's re-anchoring superseded.
+- 2026-08-01: Maintainer delegated D9/D10 with a root-cause,
+  evidence-based mandate. Stream-quality probe suite (micro-pose sweeps
+  on constructed states, old vs new dartpy builds) showed parity or
+  new-better everywhere except two cylinder defects: a side-on-face line
+  contact wandering ~90 mm at every tilt (both engines; GJK fallback
+  root cause, independently confirmed by a Codex lane) and new-only
+  intermittent misses of shallow crossed-cylinder contacts. Implemented
+  `tryAddCylinderBoxSideLineContacts` (clipped two-point line manifold,
+  per-endpoint depths) and `tryAddCrossedCylinderSideContact`
+  (capsule-equivalent interior closest-point contact) with three pinned
+  tests; cylinder suite 30/30, full suite 154/154, untouched detectors
+  bit-identical, S2/S3 dart hashes unchanged, S1 re-baselined. Direct
+  quiet-host interleave vs the audit stack: **1.009x parity** (the
+  earlier ~2x was the manifold-only intermediate) → criterion 1 ≈3.5x
+  MET → D9 = SHIP the bundle. 5-seed S6 matrix on three stacks proved
+  the mixed-pile all-resting outcome seed-chaotic everywhere (audit
+  stack 3/5, bundle ~1.5/5, bounded penetration universal); a
+  dartpy-authored box-only pile converges ~100x quieter than the mixed
+  pile but its island freeze does not latch in 40k steps → D10 =
+  re-anchor criterion 2 (bounded penetration + pinned stream tests) with
+  bounded follow-ups (deactivation latch, rolling friction,
+  parallel-line 1-point contacts). Codex was available again and used
+  for the cylinder diagnosis lane.
+- 2026-07-31: Full re-baseline on `718651d0d6e` (branch
+  `wp-pg-wsg-rebaseline-20260731`). S1–S6 guard matrix re-established with
+  drift classification (fcl/bullet/ode held bit-identical; all `dart` rows
+  re-baselined per the #3381 PR body's contact-profile note; S2/S3 dart land
+  on FCL fixed points). Criterion-2 regression found and root-caused: the
+  consolidated detector's solver-facing 3-contact clamp breaks resting
+  face-face support; attribution chain closed by bit-exact S6 reproduction
+  (`0xec80f734df6d5e74`) on both the audit-head and pre-#3381 binaries and
+  an FCL control that sleeps 71/71 on the current base. An apparent broad
+  wall-time regression was refuted as host clock-state artifact via
+  interleaved A/Bs (hashes bit-identical per arm). First complete 8-scene
+  WS-G matrix ran (HUM rows first-ever; 3 wins / 4 losses pre-fix).
+  WP-PG.50 candidate implemented: solver-facing manifold clamp 3 → 4 with
+  pinned tests (154/154), changelog draft, S6 GUI capture, and a measured
+  trade-off (resting scenes 4x faster, ARM-PUSHER flips to a win; dense
+  always-active fixtures ~2x slower, DYN-STIR flips to a loss; S6 partial
+  recovery only). Tolerance-raise alternative measured and rejected
+  (freeze-under-load penetration explosion). Ship/hold gated on D9; S6
+  stream-persistence follow-up scoped as D10. Review pass 1 (fresh-context
+  correctness lane) returned no blockers; findings applied. Codex was
+  unavailable this session (weekly limit), so review lanes are
+  role-separated local subagents — recorded as a limitation.
 
 - 2026-07-04/05: WP-PG.01 executed on `wp-pg-01-baseline-evidence`:
   original matrix/profile/dashboard capture on `origin/release-6.20`

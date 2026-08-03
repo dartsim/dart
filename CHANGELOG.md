@@ -201,6 +201,27 @@
 
 * Collision
 
+  * Restore full-quality contact streams in the `dart` detector: emit the
+    complete four-contact face manifold from solver-facing queries instead
+    of the previous three-contact target (a tripod manifold cannot hold a
+    resting face-face box stack), give side-lying cylinders a stable
+    two-point contact-line manifold instead of one point that wanders
+    ~90 mm under micro-motion, and keep shallow crossed-cylinder contacts
+    that the convex fallback intermittently missed
+    ([#3056](https://github.com/dartsim/dart/issues/3056)), and make the
+    aligned cylinder-box path invariant to spin about the cylinder axis so
+    upright cylinders take the stable analytic cap patch instead of
+    creeping through degenerate convex-fallback rim points. Generated
+    resting scenes settle and deactivate up to 4x faster, the dense
+    mixed-shape pile fixture now reaches full deactivation with zero
+    penetration under default settings (4 of 5 tested seeds within the
+    original 20-second window, all tested seeds by 60 seconds), and the
+    complete bundle measures slightly faster than the pre-consolidation
+    detector on the dense active-container fixture while reporting fuller
+    manifolds. FCL, Bullet, and ODE results are bit-identical;
+    the built-in default (`fcl`) is unchanged:
+    [#3428](https://github.com/dartsim/dart/pull/3428)
+
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
     released `DARTCollide` entry points and detector ABI remain compatible, as
