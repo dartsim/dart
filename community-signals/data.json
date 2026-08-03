@@ -1,13 +1,13 @@
 {
   "citations": {
     "crossref": 190,
-    "google_scholar": 5,
-    "google_scholar_checked": "2026-07-28",
+    "google_scholar": 398,
+    "google_scholar_checked": "2026-08-03",
     "google_scholar_manual_fallback": false,
-    "indexed_max": 306,
+    "indexed_max": 307,
     "indexed_min": 190,
     "openalex": 273,
-    "semantic_scholar": 306,
+    "semantic_scholar": 307,
     "semantic_scholar_influential": 9
   },
   "downstream": [
@@ -15,17 +15,17 @@
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-sim",
-      "pushed_at": "2026-07-28T03:12:01Z",
+      "pushed_at": "2026-08-03T07:26:13Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1429
+      "stars": 1437
     },
     {
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-physics",
-      "pushed_at": "2026-07-23T16:41:48Z",
+      "pushed_at": "2026-07-29T13:06:29Z",
       "repo": "gazebosim/gz-physics",
-      "stars": 89
+      "stars": 90
     },
     {
       "age": "1.4 years ago",
@@ -57,7 +57,7 @@
       "label": "Nimble Physics",
       "pushed_at": "2025-09-14T18:37:46Z",
       "repo": "keenon/nimblephysics",
-      "stars": 488
+      "stars": 489
     },
     {
       "age": "2.9 years ago",
@@ -65,7 +65,7 @@
       "label": "MASS",
       "pushed_at": "2023-09-19T22:42:33Z",
       "repo": "lsw9021/MASS",
-      "stars": 629
+      "stars": 630
     },
     {
       "age": "4.9 years ago",
@@ -94,29 +94,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-28T05:39:45.163736Z",
+  "generated_at": "2026-08-03T07:50:09.769886Z",
   "packages": {
     "conda": {
-      "combined_gross": 1067277,
-      "dartpy": 262904,
-      "dartsim": 670730,
-      "dartsim-cpp": 133643
+      "combined_gross": 1081541,
+      "dartpy": 268062,
+      "dartsim": 677762,
+      "dartsim-cpp": 135717
     },
-    "homebrew_installs_365d": 18278,
-    "homebrew_on_request_365d": 1433,
-    "pepy_dartpy_all_time": 261766
+    "homebrew_installs_365d": 18335,
+    "homebrew_on_request_365d": 1458,
+    "pepy_dartpy_all_time": 262714
   },
-  "since": "2025-07-28",
+  "since": "2025-08-03",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-28",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-08-03",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-28",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-08-03",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -134,16 +134,16 @@
     "contributors_login": 54,
     "contributors_with_anon": 78,
     "created_issues_12m": 29,
-    "created_prs_12m": 1378,
-    "forks": 300,
-    "latest_push": "2026-07-26",
+    "created_prs_12m": 1404,
+    "forks": 304,
+    "latest_push": "2026-08-02",
     "latest_release": "v6.19.4",
     "latest_release_date": "2026-07-19",
-    "merged_prs_12m": 1286,
+    "merged_prs_12m": 1318,
     "open_issues": 1,
-    "open_prs": 9,
-    "releases_12m": 20,
-    "stars": 1163,
+    "open_prs": 6,
+    "releases_12m": 21,
+    "stars": 1189,
     "watchers": 50
   },
   "traffic": {
