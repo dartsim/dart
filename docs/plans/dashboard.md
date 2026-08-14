@@ -44,6 +44,29 @@ its own line so status updates remain git-history friendly.
   through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
   must add the gate before promotion.
 
+### PLAN-123: Citation-Driven Simulation Trust
+
+- Owner doc:
+  [`123-citation-driven-simulation-trust.md`](123-citation-driven-simulation-trust.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: WS0 audit and the WS1 fail-closed claim/evidence manifest landed
+  with the first CT-001 rolling-direction packet and a permanent
+  negative-control packet. Next: finish the capped six first-wave fixture
+  families (dense inelastic/elastic, articulated energy/momentum/control,
+  heel-strike/toe-off, high mass-ratio, reset/concurrency queries) with
+  branch-qualified dispositions, reusing existing demos scenes and PLAN-104/621/622
+  evidence, before contact-identity/semantics work (WS3) and cross-family
+  diagnostics (WS4). History and sequencing live in the owner plan and
+  `docs/dev_tasks/citation_driven_simulation_trust/`.
+- Gate: Every claim row is branch/version-qualified and source-bound;
+  `pixi run check-citation-evidence` fails closed on missing commit, scene
+  digest, requested/resolved method, command, ensemble, disposition, or claim
+  boundary and rejects unsupported-as-zero metrics; behavioral slices need
+  negative controls, deterministic or ensemble evidence, two clean reviews,
+  and PLAN-122 allocation coverage before promotion.
+
 ### PLAN-012: Cloud Dartpy Tutorials
 
 - Owner doc:

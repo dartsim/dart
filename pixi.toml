@@ -391,6 +391,11 @@ check-lint-cmake = { cmd = ["python", "scripts/lint_cmake.py", "--check"] }
 
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
+check-citation-evidence = { cmd = [
+  "python",
+  "scripts/check_citation_evidence.py",
+] }
+
 check-dart7-clean-break-policy = { cmd = [
   "python",
   "scripts/check_dart7_clean_break_policy.py",
@@ -494,6 +499,7 @@ test-ai-infra = { cmd = [
   "tests/test_check_agent_hook.py",
   "tests/test_setup_ai.py",
   "tests/test_check_docs_policy.py",
+  "tests/test_check_citation_evidence.py",
   "-q",
 ] }
 
@@ -534,6 +540,7 @@ check-lint = { depends-on = [
   "check-lcp-solver-roster",
   "check-plan122-allocation-matrix",
   "check-avbd-packets",
+  "check-citation-evidence",
   "check-architecture-page",
   "check-ai-commands",
   "check-ai-infra",

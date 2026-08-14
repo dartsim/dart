@@ -1,0 +1,426 @@
+{
+  "schema": "dart.citation_claim_manifest/v1",
+  "corpus_doc": "docs/plans/123-citation-driven-simulation-trust/citation-claim-corpus.md",
+  "audited": "2026-08-14",
+  "first_wave_families": [
+    "rolling_friction_direction",
+    "dense_contact",
+    "articulated_energy_momentum_control",
+    "heel_strike_toe_off",
+    "high_mass_ratio_stack_manipulation",
+    "reset_concurrency_queries"
+  ],
+  "claims": [
+    {
+      "id": "CT-001",
+      "title": "Rolling-direction friction dependence",
+      "source": "SimBenchmark / historical DART contact comparison",
+      "first_wave_family": "rolling_friction_direction",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 with PLAN-080",
+          "status": "in-progress",
+          "disposition": null,
+          "evidence": [
+            "evidence/CT-001-dart7-rolling-direction.json"
+          ],
+          "notes": "First packet: sphere rolling-direction sweep, SI vs boxed LCP; seeded by python/examples/demos/scenes/rigid_spin_roll_coupling.py."
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust (reference PR #3377 scenes)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": [],
+          "notes": "Open PR #3377 owns exact-Coulomb FBF rolling scenes on release-6.20; reuse, do not duplicate."
+        }
+      }
+    },
+    {
+      "id": "CT-002",
+      "title": "Dense inelastic contact stability and scaling",
+      "source": "SimBenchmark dense 6x6x6 inelastic contact",
+      "first_wave_family": "dense_contact",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 with PLAN-080/122",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-003",
+      "title": "Dense elastic contact energy behavior",
+      "source": "SimBenchmark dense elastic contact",
+      "first_wave_family": "dense_contact",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 with PLAN-080",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": [],
+          "notes": "python/examples/demos/scenes/rigid_restitution_ladder.py is the existing seed scene."
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-004",
+      "title": "Articulated momentum/energy accuracy at matched cost",
+      "source": "SimBenchmark articulated momentum/energy",
+      "first_wave_family": "articulated_energy_momentum_control",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 with PLAN-080/084 using StepMetrics",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-005",
+      "title": "Articulated PD-control tracking tradeoffs",
+      "source": "SimBenchmark articulated PD control",
+      "first_wave_family": "articulated_energy_momentum_control",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 with PLAN-080",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": [],
+          "notes": "python/examples/demos/scenes/atlas_simbicon.py is the existing controlled-articulated seed."
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-006",
+      "title": "Heel-strike/toe-off contact-force transients",
+      "source": "2026 exoskeleton contact-force criticism",
+      "first_wave_family": "heel_strike_toe_off",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 contact semantics (WS3)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": [],
+          "notes": "Clarify/diagnose legacy Contact.force semantics without ABI/default change."
+        }
+      }
+    },
+    {
+      "id": "CT-007",
+      "title": "Exact Coulomb cones vs pyramid anisotropy/conditioning",
+      "source": "From Compliant to Rigid Contact Simulation",
+      "first_wave_family": "high_mass_ratio_stack_manipulation",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 exact-cone GO/NO-GO (WS5)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "evidence only; reference PR #3377 research lane",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-008",
+      "title": "Shared contact problem with compliance vs regularization split",
+      "source": "From Compliant to Rigid Contact Simulation",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 exact-cone problem design (WS5)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "document existing behavior only",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-009",
+      "title": "Contact-aware inverse dynamics with feasibility diagnostics",
+      "source": "From Compliant to Rigid Contact Simulation / robotics need",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 WS6",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": null,
+          "status": "not-applicable",
+          "reason": "No new inverse-dynamics architecture on the LTS branch beyond existing APIs.",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-010",
+      "title": "Analytic hard-contact derivatives agree with finite differences",
+      "source": "Nimble",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-110 with PLAN-123 validity evidence",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": null,
+          "status": "not-applicable",
+          "reason": "Differentiable architecture is DART 7 only.",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-011",
+      "title": "Fast reset, concurrency, and deterministic synchronous stepping",
+      "source": "RobotDART",
+      "first_wave_family": "reset_concurrency_queries",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-030/122/123 one-model/many-state",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "existing clone/reset/Recording evidence only",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-012",
+      "title": "High-throughput collision checking for long-horizon planning",
+      "source": "PEEL",
+      "first_wave_family": "reset_concurrency_queries",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-120/123 planning companion intake",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "optional benchmark/adapter evidence",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-013",
+      "title": "Thread-safe state-validity and collision queries",
+      "source": "Fibration Trees",
+      "first_wave_family": "reset_concurrency_queries",
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-120/123",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "optional query benchmark",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-014",
+      "title": "Multi-stage manipulation environment contracts",
+      "source": "Behavior Policy Learning",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-103/123 environment companion intake",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "companion-only evidence",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-015",
+      "title": "Scalable muscle-actuated models and trustworthy gait outputs",
+      "source": "MASS / musculoskeletal DART use",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "future companion after PLAN-123 foundation",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "existing SoftBody/contact evidence only",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-016",
+      "title": "Standardized experiment model/sensor/data contracts",
+      "source": "FARMS",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-103/123 companion intake",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "companion-only",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-017",
+      "title": "Codimensional rods/plants beyond rigid-body approximation",
+      "source": "Gazebo Plants",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "existing deformable families; bounded intake after trust foundation",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": null,
+          "status": "not-applicable",
+          "reason": "No codimensional rod/shell architecture on the LTS branch.",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-018",
+      "title": "Large settled worlds must not stay orders of magnitude slower",
+      "source": "DART issue #3056 and DART 6 performance campaign",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 scalability evidence where equivalent",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "PLAN-621 (docs/dev_tasks/dart6_performance_generalization)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": [],
+          "notes": "Issue #3056 open; PR #3428 active; PLAN-621 stays the owner and this row only references its evidence."
+        }
+      }
+    },
+    {
+      "id": "CT-019",
+      "title": "Unambiguous contact normal/order/sign/frame/wrench ownership",
+      "source": "Historical contact-normal / wrench issues (#1425, #1073)",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 observation and wrench contract (WS3)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "docs/dev_tasks/dart6_citation_contact_trust",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    },
+    {
+      "id": "CT-020",
+      "title": "Single trajectories and saturated thresholds create false claims",
+      "source": "Current DART paper-parity work",
+      "first_wave_family": null,
+      "lanes": {
+        "dart7": {
+          "owner": "PLAN-123 methodology; apply to all threshold/robustness claims",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        },
+        "dart6": {
+          "owner": "PLAN-622 perturbation-ensemble evidence (PR #3431)",
+          "status": "audit-required",
+          "disposition": null,
+          "evidence": []
+        }
+      }
+    }
+  ]
+}

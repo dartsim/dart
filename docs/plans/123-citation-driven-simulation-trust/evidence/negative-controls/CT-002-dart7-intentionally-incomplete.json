@@ -1,0 +1,57 @@
+{
+  "schema": "dart.citation_claim_evidence/v1",
+  "claim_id": "CT-002",
+  "title": "Intentionally incomplete negative control: this packet must FAIL check_citation_evidence forever; it proves the validator rejects missing resolved identity, missing scene digest, single-run ensembles, unsupported-as-zero metrics, and prose-only closure",
+  "source": {
+    "url": "https://leggedrobotics.github.io/SimBenchmark/",
+    "claim": "Dense contact may fail, become unstable, or scale poorly for some timestep/solver settings."
+  },
+  "target": {
+    "branch": "main",
+    "commit": "not-a-commit"
+  },
+  "scene": {
+    "id": "ct002_dense_contact_grid",
+    "description": "A 6x6x6 sphere grid described only in prose, with no digest."
+  },
+  "configuration": {
+    "requested": {
+      "contact_solver_method": "BOXED_LCP"
+    },
+    "detector": "dart7 native pipeline",
+    "timestep": 0.002,
+    "substeps": 1
+  },
+  "ensemble": {
+    "kind": "single-run",
+    "deterministic_repeats": 1
+  },
+  "metrics": {
+    "physical": {
+      "max_penetration_m": 0.0,
+      "energy_drift_j": 0.0
+    },
+    "numerical": {
+      "status": "unsupported"
+    },
+    "performance": {
+      "wall_time_ms": 0.0
+    },
+    "allocation": {
+      "status": "unsupported",
+      "reason": "not measured"
+    }
+  },
+  "evidence": {
+    "commands": [],
+    "raw_paths": [],
+    "visual": []
+  },
+  "result": {
+    "disposition": "reproduced",
+    "limitations": []
+  },
+  "review": {
+    "passes": []
+  }
+}

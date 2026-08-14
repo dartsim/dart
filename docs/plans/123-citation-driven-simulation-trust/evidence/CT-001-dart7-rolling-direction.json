@@ -1,0 +1,684 @@
+{
+  "claim_id": "CT-001",
+  "configuration": {
+    "detector": "DART 7 native World collision pipeline (the World step API exposes no detector selection on main)",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main (PLAN-123 WS4 follow-up)",
+    "iterations": "World defaults; per-step actual iterations recorded via StepMetrics.last_step_iterations",
+    "requested": {
+      "backend": "cpu",
+      "contact_solver_method_sweep": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "integrator": "World default semi-implicit stepping",
+      "precision": "float64",
+      "rigid_body_solver": "SEQUENTIAL_IMPULSE (World default)",
+      "threads": "World default sequential step"
+    },
+    "resolved": {
+      "by_contact_solver_method": {
+        "BOXED_LCP": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        }
+      }
+    },
+    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode plus final-step WorldStepProfile stage names recorded per run; World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "substeps": 1,
+    "timestep": 0.002
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 1.0,
+      "start_s": 0.0,
+      "steps": 500
+    },
+    "sweep": [
+      {
+        "angle_deg": 0.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 15.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 30.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 45.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 60.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 75.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 90.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "angle_deg": 0.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 15.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 30.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 45.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 60.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 75.0,
+        "contact_solver_method": "BOXED_LCP"
+      },
+      {
+        "angle_deg": 90.0,
+        "contact_solver_method": "BOXED_LCP"
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct001_rolling_direction_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "along_travel_m": 0.7258893117142907,
+        "angle_deg": 0.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857155,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 0.0,
+        "lateral_drift_m": 0.0,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 0.0,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.082,
+        "trajectory_sha256": "a839b7f050262f80e450a25831e5b4144eb74f3f725807eb0e92855f762b96d5"
+      },
+      {
+        "along_travel_m": 0.7249208585743429,
+        "angle_deg": 15.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857154,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": -3.1169435878342416e-14,
+        "lateral_drift_m": -0.0021005566494608774,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.078,
+        "trajectory_sha256": "4579581ae2bab0980e689803c5fc8e7296f2b79314c1b9644855360102d16ced"
+      },
+      {
+        "along_travel_m": 0.7232079593029788,
+        "angle_deg": 30.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857152,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": -5.343331864858703e-14,
+        "lateral_drift_m": -0.001883289782513231,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.07,
+        "trajectory_sha256": "ace9350655e315351bede1b8474feac16c223921633fbf2a5497af3ae57d941a"
+      },
+      {
+        "along_travel_m": 0.7224082209135987,
+        "angle_deg": 45.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857155,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 0.0,
+        "lateral_drift_m": 5.551115123125783e-17,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.058,
+        "trajectory_sha256": "8446fd6f1793674e853a71724405db019de7f5acd799e9e61af877310443edc7"
+      },
+      {
+        "along_travel_m": 0.7232079593029789,
+        "angle_deg": 60.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857151,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 5.343331864858703e-14,
+        "lateral_drift_m": 0.0018832897825133976,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 1.1102230246251565e-16,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.07,
+        "trajectory_sha256": "fce89de8287195fea41ecdbc5771c027b838e91d2c5be2e7255a6cc2abffeb2d"
+      },
+      {
+        "along_travel_m": 0.7249208585743429,
+        "angle_deg": 75.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857154,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 3.1169435878342416e-14,
+        "lateral_drift_m": 0.0021005566494608774,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.078,
+        "trajectory_sha256": "2ca8f5b51e27817c76eedef74e1b9c59813fa9052244f219e3143eb0327f5d7a"
+      },
+      {
+        "along_travel_m": 0.7258893117142907,
+        "angle_deg": 90.0,
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_planar_speed_mps": 0.7142857142857155,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 6.426647569961019e-30,
+        "lateral_drift_m": 7.105154224747257e-19,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 0.0,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 8,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.082,
+        "trajectory_sha256": "d7bd5003831ed9c7c1a477345d578fe7f3f5a99706d3a4e9720e11d770a9c5b8"
+      },
+      {
+        "along_travel_m": 0.7258893117976364,
+        "angle_deg": 0.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857155,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 0.0,
+        "lateral_drift_m": 0.0,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.082,
+        "trajectory_sha256": "f92fc6c64c534a96459ce3ac0a970c931618a8533dd3974b565db61b7cacd150"
+      },
+      {
+        "along_travel_m": 0.7249208586267563,
+        "angle_deg": 15.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857154,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": -3.1169435878342416e-14,
+        "lateral_drift_m": -0.002100556554215066,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.078,
+        "trajectory_sha256": "fbe57d7b17ff7fdfe97b1cfe5112698ae2ae9c7c413e4c08eb13baba931e0899"
+      },
+      {
+        "along_travel_m": 0.7232079593620271,
+        "angle_deg": 30.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857152,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": -5.343331864858703e-14,
+        "lateral_drift_m": -0.0018832896891917694,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.07,
+        "trajectory_sha256": "baed575b592007dcfedeefa6f7b8c17858d47860acb3e6f2c06e925766e575fe"
+      },
+      {
+        "along_travel_m": 0.7224082209952696,
+        "angle_deg": 45.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857154,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": -4.4527765540489165e-15,
+        "lateral_drift_m": 5.551115123125783e-17,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.058,
+        "trajectory_sha256": "4f8571c3013779682bcf99ce7dd5f3cc7bb3ccb49182fc64f8f55199fa3b19ef"
+      },
+      {
+        "along_travel_m": 0.7232079593620271,
+        "angle_deg": 60.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857152,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 4.8980542094538094e-14,
+        "lateral_drift_m": 0.0018832896891918804,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.07,
+        "trajectory_sha256": "be2f9b06b52ffb94c3c4c65e2ef2a1ba188e02b852e89c1fcd355fb87e27079d"
+      },
+      {
+        "along_travel_m": 0.7249208586267563,
+        "angle_deg": 75.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857154,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 3.1169435878342416e-14,
+        "lateral_drift_m": 0.002100556554215066,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.078,
+        "trajectory_sha256": "dd250dfabf218e68548f9edf30a342bc1bc595d6675b5f602f4bf608f88921e0"
+      },
+      {
+        "along_travel_m": 0.7258893117976364,
+        "angle_deg": 90.0,
+        "contact_solver_method": "BOXED_LCP",
+        "final_planar_speed_mps": 0.7142857142857155,
+        "final_step_stage_names": [
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "rigid_body_position",
+          "kinematics"
+        ],
+        "heading_error_deg": 6.426647569961019e-30,
+        "lateral_drift_m": 7.105150776790931e-19,
+        "max_active_contacts": 1,
+        "max_energy_gain_j": 5.551115123125783e-17,
+        "max_penetration_m": 0.0,
+        "max_solver_iterations": 0,
+        "max_solver_residual": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "slide_end_time_s": 0.082,
+        "trajectory_sha256": "631d89a93d54a08badc23834c755a2a84c88f7d6f6b94a2357bd81a5a3e7d9a5"
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is numeric rotational symmetry; per-angle trajectories have no visual claim beyond the recorded metrics. Visual capture joins when a corpus row makes a visible-behavior claim.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "max_active_contacts": 1,
+      "max_penetration_m": 0.0,
+      "max_solver_iterations": 8,
+      "max_solver_residual": 0.0,
+      "method": "Max over run of StepMetrics.max_penetration_depth, last_step_iterations, last_step_residual, active_contact_count"
+    },
+    "performance": {
+      "reason": "This packet makes no timing claim; interleaved same-host methodology is required before any performance row",
+      "status": "unsupported"
+    },
+    "physical": {
+      "anisotropic_methods": [
+        "BOXED_LCP",
+        "SEQUENTIAL_IMPULSE"
+      ],
+      "isotropy_tolerance": {
+        "max_abs_heading_error_deg": 0.1,
+        "max_abs_lateral_drift_m": 0.0001,
+        "travel_spread_relative": 0.01
+      },
+      "method": "Rotational-symmetry sweep: per-angle lateral drift from the launch ray, final-velocity heading error, along-ray travel, slide-to-roll transition time, and max single-step kinetic-energy gain from StepMetrics.kinetic_energy",
+      "per_solver_summary": {
+        "BOXED_LCP": {
+          "max_abs_heading_error_deg": 5.343331864858703e-14,
+          "max_abs_lateral_drift_m": 0.002100556554215066,
+          "max_energy_gain_j": 5.551115123125783e-17,
+          "max_penetration_m": 0.0,
+          "max_solver_residual": 0.0,
+          "runs": 7,
+          "travel_mean_m": 0.7243492115097299,
+          "travel_spread_m": 0.003481090802366804,
+          "travel_spread_relative": 0.00480581844648014
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "max_abs_heading_error_deg": 5.343331864858703e-14,
+          "max_abs_lateral_drift_m": 0.0021005566494608774,
+          "max_energy_gain_j": 1.1102230246251565e-16,
+          "max_penetration_m": 0.0,
+          "max_solver_residual": 0.0,
+          "runs": 7,
+          "travel_mean_m": 0.7243492114424034,
+          "travel_spread_m": 0.0034810908006920327,
+          "travel_spread_relative": 0.004805818444614723
+        }
+      }
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
+    "disposition": "reproduced",
+    "limitations": [
+      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback plus stage names.",
+      "Friction-cone/complementarity residual per contact is not exposed; solver residual is the aggregate StepMetrics value.",
+      "The sweep covers 0-90 deg; pyramid orientation with a period other than 90 deg would need a wider sweep.",
+      "No high-mass-ratio or stacked variant yet; those belong to CT-002/CT-007 fixtures.",
+      "SEQUENTIAL_IMPULSE and BOXED_LCP produce metric summaries that agree to printed precision on this single-contact scene while their full trajectory hashes differ; this packet is not a solver comparison and must not be quoted as one."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "One 1 kg sphere per run, radius 0.08 m, launched sliding (no spin) at 1.0 m/s along a swept in-plane angle on a static ground box, restitution 0, friction 0.35 on both bodies.",
+    "digest": "sha256:1c722e156e8b4cd38c8580347b09734dd07d23fa42e6f75fc52ebe633845856d",
+    "id": "ct001_rolling_direction_sweep",
+    "parameters": {
+      "contact_solver_methods": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "description": "One 1 kg sphere per run, radius 0.08 m, launched sliding (no spin) at 1.0 m/s along a swept in-plane angle on a static ground box, restitution 0, friction 0.35 on both bodies.",
+      "deterministic_repeats": 2,
+      "friction": 0.35,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "ground_half_extents_m": [
+        2.5,
+        2.5,
+        0.05
+      ],
+      "launch_angles_deg": [
+        0.0,
+        15.0,
+        30.0,
+        45.0,
+        60.0,
+        75.0,
+        90.0
+      ],
+      "launch_speed_mps": 1.0,
+      "restitution": 0.0,
+      "scene_id": "ct001_rolling_direction_sweep",
+      "slip_ratio_rolling_threshold": 0.02,
+      "sphere_mass_kg": 1.0,
+      "sphere_radius_m": 0.08,
+      "step_count": 500,
+      "time_step_s": 0.002
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Polyhedral friction can produce direction-dependent rolling/sliding behavior.",
+    "url": "https://leggedrobotics.github.io/SimBenchmark/"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "20501341226338f42740f1b6ef1ab52a34e5a035"
+  },
+  "title": "Rolling-direction friction dependence (DART 7 first packet)"
+}

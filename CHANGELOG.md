@@ -607,6 +607,15 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Tests, Benchmarks, and Quality Gates
 
+- Added the PLAN-123 citation-claim evidence contract: a machine-checked claims
+  manifest for external/historical DART claims, a fail-closed
+  `pixi run check-citation-evidence` gate (missing commit, scene digest,
+  requested/resolved solver identity, command, ensemble, disposition, claim
+  boundary, or typed-unsupported metrics fail validation, and a permanent
+  intentionally incomplete negative-control packet must keep failing), and the
+  first branch-qualified CT-001 rolling-direction evidence packet showing the
+  friction-pyramid direction dependence on `main` under both Sequential
+  Impulse and boxed-LCP contact solvers.
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
