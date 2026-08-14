@@ -181,6 +181,7 @@ check-lint = { depends-on = [
   "check-lint-spell",
   "check-ai-commands",
   "check-ai-infra",
+  "check-citation-evidence",
 ] }
 
 # Fast compatibility alias retained for older local workflows.
@@ -191,6 +192,7 @@ install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
+check-citation-evidence = { cmd = "python scripts/check_citation_evidence.py" }
 ai-setup = { cmd = "python scripts/setup_ai.py" }
 ai-doctor = { cmd = "python scripts/check_ai_infrastructure.py --doctor" }
 check-agent-hook = { cmd = "python scripts/check_agent_hook.py --profile staged" }
@@ -205,6 +207,7 @@ test-ai-infra = { cmd = [
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
+  "tests/test_check_citation_evidence.py",
   "-q",
 ] }
 

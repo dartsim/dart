@@ -1,0 +1,535 @@
+#!/usr/bin/env python3
+"""Write the CT-001 rolling-direction evidence packet for release-6.20.
+
+Bounded claim (PLAN-123 corpus row CT-001, owned on `main`): polyhedral
+friction can produce direction-dependent rolling/sliding behavior. Under an
+isotropic Coulomb model a sphere launched sliding (no spin) on a horizontal
+plane behaves identically for every in-plane launch direction; a friction
+pyramid aligned to fixed tangent axes breaks that rotational symmetry.
+
+DART 6 lane: reproduce with existing methods/detectors only. The fixture
+launches one sphere per run across a swept launch angle on a static ground
+box and repeats the sweep for every collision detector available in this
+build (`fcl` default, `dart`, plus `bullet`/`ode` when compiled), keeping the
+default boxed-LCP constraint solver. Per run it records lateral drift from
+the launch ray, final-velocity heading error, along-ray travel,
+slide-to-roll transition time, kinetic-energy gain bound, max penetration,
+and contact counts; each cell runs twice and must be bit-identical.
+
+Additive evidence tooling only: no library, API, ABI, or default change.
+
+Usage (after `pixi run build` with dartpy):
+
+    PYTHONPATH=build/default/cpp/Release/python/dartpy pixi run python \
+        scripts/write_citation_ct001_rolling_direction_packet.py
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import platform
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+import dartpy as dart
+import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_OUTPUT = (
+    REPO_ROOT
+    / "docs"
+    / "design"
+    / "dart6_citation_driven_contact_trust"
+    / "evidence"
+    / "CT-001-dart6-rolling-direction.json"
+)
+
+SCENE_PARAMETERS: dict[str, Any] = {
+    "scene_id": "ct001_rolling_direction_sweep_dart6",
+    "description": (
+        "One 1 kg sphere per run, radius 0.08 m, launched sliding (no spin) "
+        "at 1.0 m/s along a swept in-plane angle on a static ground box, "
+        "restitution 0, friction 0.35 on both bodies, default boxed-LCP "
+        "constraint solver, one sweep per available collision detector."
+    ),
+    "gravity_mps2": [0.0, 0.0, -9.81],
+    "time_step_s": 0.002,
+    "step_count": 500,
+    "sphere_radius_m": 0.08,
+    "sphere_mass_kg": 1.0,
+    "launch_speed_mps": 1.0,
+    "friction": 0.35,
+    "restitution": 0.0,
+    "ground_half_extents_m": [2.5, 2.5, 0.05],
+    "launch_angles_deg": [0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0],
+    "deterministic_repeats": 2,
+    "slip_ratio_rolling_threshold": 0.02,
+}
+
+DETECTOR_FACTORIES = (
+    ("fcl", "FCLCollisionDetector"),
+    ("dart", "DARTCollisionDetector"),
+    ("bullet", "BulletCollisionDetector"),
+    ("ode", "OdeCollisionDetector"),
+)
+
+
+def available_detectors() -> list[str]:
+    return [
+        key
+        for key, class_name in DETECTOR_FACTORIES
+        if hasattr(dart.collision, class_name)
+    ]
+
+
+def make_detector(key: str):
+    for candidate, class_name in DETECTOR_FACTORIES:
+        if candidate == key:
+            return getattr(dart.collision, class_name)()
+    raise SystemExit(f"unknown collision detector key {key!r}")
+
+
+def scene_digest(parameters: dict[str, Any]) -> str:
+    canonical = json.dumps(parameters, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _make_sphere(parameters: dict[str, Any]) -> tuple[Any, Any, Any]:
+    radius = float(parameters["sphere_radius_m"])
+    mass = float(parameters["sphere_mass_kg"])
+    skel = dart.dynamics.Skeleton("ct001_sphere")
+    joint, body = skel.createFreeJointAndBodyNodePair(None)
+    body.setName("ct001_sphere_body")
+    shape = dart.dynamics.SphereShape(radius)
+    shape_node = body.createShapeNode(shape)
+    shape_node.createCollisionAspect()
+    dynamics_aspect = shape_node.createDynamicsAspect()
+    dynamics_aspect.setFrictionCoeff(float(parameters["friction"]))
+    dynamics_aspect.setRestitutionCoeff(float(parameters["restitution"]))
+    body.setInertia(
+        dart.dynamics.Inertia(mass, np.zeros(3), shape.computeInertia(mass))
+    )
+    start = np.array([0.0, 0.0, radius])
+    joint.setTransform(dart.math.Isometry3(np.eye(3), start))
+    return skel, joint, body
+
+
+def _make_ground(parameters: dict[str, Any]) -> Any:
+    half = np.asarray(parameters["ground_half_extents_m"], dtype=float)
+    skel = dart.dynamics.Skeleton("ct001_ground")
+    _, body = skel.createFreeJointAndBodyNodePair(None)
+    body.setName("ct001_ground_body")
+    shape = dart.dynamics.BoxShape(2.0 * half)
+    shape_node = body.createShapeNode(shape)
+    shape_node.createCollisionAspect()
+    dynamics_aspect = shape_node.createDynamicsAspect()
+    dynamics_aspect.setFrictionCoeff(float(parameters["friction"]))
+    dynamics_aspect.setRestitutionCoeff(float(parameters["restitution"]))
+    skel.getJoint(0).setTransform(
+        dart.math.Isometry3(np.eye(3), np.array([0.0, 0.0, -half[2]]))
+    )
+    skel.setMobile(False)
+    return skel
+
+
+def run_single(
+    detector_key: str, angle_deg: float, parameters: dict[str, Any]
+) -> dict[str, Any]:
+    """Run one launch and return raw metrics plus a trajectory hash."""
+    radius = float(parameters["sphere_radius_m"])
+    speed = float(parameters["launch_speed_mps"])
+    dt = float(parameters["time_step_s"])
+    step_count = int(parameters["step_count"])
+    angle = math.radians(angle_deg)
+    direction = np.array([math.cos(angle), math.sin(angle), 0.0])
+    lateral_axis = np.array([-direction[1], direction[0], 0.0])
+
+    world = dart.simulation.World("ct001")
+    world.setGravity(np.asarray(parameters["gravity_mps2"], dtype=float))
+    world.setTimeStep(dt)
+    constraint_solver = world.getConstraintSolver()
+    constraint_solver.setCollisionDetector(make_detector(detector_key))
+
+    world.addSkeleton(_make_ground(parameters))
+    sphere_skel, joint, body = _make_sphere(parameters)
+    world.addSkeleton(sphere_skel)
+
+    joint.setVelocities(np.concatenate([np.zeros(3), speed * direction]))
+    launch_velocity = np.asarray(body.getLinearVelocity(), dtype=float)
+    if not np.allclose(launch_velocity, speed * direction, atol=1.0e-12):
+        raise SystemExit(
+            f"free-joint launch velocity readback {launch_velocity} does not "
+            f"match requested {speed * direction}"
+        )
+
+    resolved = {
+        "collision_detector": constraint_solver.getCollisionDetector().getType(),
+        "constraint_solver": type(constraint_solver).__name__,
+        "gravity_mps2": [float(v) for v in np.asarray(world.getGravity())],
+        "time_step_s": float(world.getTimeStep()),
+    }
+
+    trajectory = hashlib.sha256()
+    start = np.array([0.0, 0.0, radius])
+    slide_end_time = None
+    max_energy_gain = 0.0
+    max_penetration = 0.0
+    contact_count_max = 0
+    previous_energy = None
+
+    for step_index in range(step_count):
+        world.step()
+        position = np.asarray(body.getTransform().translation(), dtype=float)
+        velocity = np.asarray(body.getLinearVelocity(), dtype=float)
+        angular = np.asarray(body.getAngularVelocity(), dtype=float)
+        trajectory.update(position.tobytes())
+        trajectory.update(velocity.tobytes())
+        trajectory.update(angular.tobytes())
+
+        kinetic = float(sphere_skel.computeKineticEnergy())
+        if previous_energy is not None:
+            max_energy_gain = max(max_energy_gain, kinetic - previous_energy)
+        previous_energy = kinetic
+
+        collision_result = world.getLastCollisionResult()
+        contacts = collision_result.getContacts()
+        contact_count_max = max(contact_count_max, len(contacts))
+        for contact in contacts:
+            max_penetration = max(max_penetration, float(contact.penetrationDepth))
+
+        if slide_end_time is None:
+            planar_speed = float(np.linalg.norm(velocity[:2]))
+            spin_axis = np.array([-direction[1], direction[0], 0.0])
+            surface_speed = radius * float(np.dot(angular, spin_axis))
+            slip = abs(planar_speed - surface_speed)
+            denom = planar_speed + abs(surface_speed) + 1.0e-9
+            if slip / denom < float(parameters["slip_ratio_rolling_threshold"]):
+                slide_end_time = (step_index + 1) * dt
+
+    final_position = np.asarray(body.getTransform().translation(), dtype=float)
+    final_velocity = np.asarray(body.getLinearVelocity(), dtype=float)
+    displacement = final_position - start
+    along = float(np.dot(displacement, direction))
+    lateral = float(np.dot(displacement, lateral_axis))
+    planar_speed = float(np.linalg.norm(final_velocity[:2]))
+    if planar_speed > 1.0e-9:
+        heading_error_deg = math.degrees(
+            math.atan2(
+                float(np.dot(final_velocity, lateral_axis)),
+                float(np.dot(final_velocity, direction)),
+            )
+        )
+    else:
+        heading_error_deg = 0.0
+
+    return {
+        "angle_deg": angle_deg,
+        "collision_detector": detector_key,
+        "resolved": resolved,
+        "trajectory_sha256": trajectory.hexdigest(),
+        "along_travel_m": along,
+        "lateral_drift_m": lateral,
+        "heading_error_deg": heading_error_deg,
+        "final_planar_speed_mps": planar_speed,
+        "slide_end_time_s": slide_end_time,
+        "max_energy_gain_j": max_energy_gain,
+        "max_penetration_m": max_penetration,
+        "max_contact_count": contact_count_max,
+        "final_height_m": float(final_position[2]),
+    }
+
+
+def summarize(rows: list[dict[str, Any]], detectors: list[str]) -> dict[str, Any]:
+    """Per-detector rotational-symmetry summary across the angle sweep."""
+    summary: dict[str, Any] = {}
+    for detector in detectors:
+        detector_rows = [row for row in rows if row["collision_detector"] == detector]
+        drifts = [abs(row["lateral_drift_m"]) for row in detector_rows]
+        travels = [row["along_travel_m"] for row in detector_rows]
+        headings = [abs(row["heading_error_deg"]) for row in detector_rows]
+        travel_mean = sum(travels) / len(travels)
+        travel_spread = max(travels) - min(travels)
+        summary[detector] = {
+            "runs": len(detector_rows),
+            "max_abs_lateral_drift_m": max(drifts),
+            "max_abs_heading_error_deg": max(headings),
+            "travel_mean_m": travel_mean,
+            "travel_spread_m": travel_spread,
+            "travel_spread_relative": (
+                travel_spread / travel_mean if travel_mean > 0.0 else 0.0
+            ),
+            "max_energy_gain_j": max(row["max_energy_gain_j"] for row in detector_rows),
+            "max_penetration_m": max(row["max_penetration_m"] for row in detector_rows),
+            "min_final_height_m": min(row["final_height_m"] for row in detector_rows),
+            "max_contact_count": max(row["max_contact_count"] for row in detector_rows),
+        }
+    return summary
+
+
+def git_head() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def build_packet() -> dict[str, Any]:
+    parameters = dict(SCENE_PARAMETERS)
+    detectors = available_detectors()
+    parameters["collision_detectors"] = detectors
+
+    rows: list[dict[str, Any]] = []
+    determinism_failures: list[str] = []
+    resolved_by_detector: dict[str, dict[str, Any]] = {}
+
+    for detector in detectors:
+        for angle in parameters["launch_angles_deg"]:
+            repeats = [
+                run_single(detector, angle, parameters)
+                for _ in range(int(parameters["deterministic_repeats"]))
+            ]
+            hashes = {run["trajectory_sha256"] for run in repeats}
+            if len(hashes) != 1:
+                determinism_failures.append(
+                    f"{detector} angle {angle}: trajectory hashes differ "
+                    f"{sorted(hashes)}"
+                )
+            row = repeats[0]
+            readback = row["resolved"]
+            if readback["collision_detector"] != detector:
+                raise SystemExit(
+                    f"requested detector {detector} but readback reports "
+                    f"{readback['collision_detector']}"
+                )
+            resolved_by_detector.setdefault(detector, readback)
+            rows.append(row)
+
+    if determinism_failures:
+        raise SystemExit(
+            "deterministic repeats failed:\n  " + "\n  ".join(determinism_failures)
+        )
+
+    summary = summarize(rows, detectors)
+    isotropy_tolerance = {
+        "max_abs_lateral_drift_m": 1.0e-4,
+        "max_abs_heading_error_deg": 0.1,
+        "travel_spread_relative": 0.01,
+    }
+    anisotropic_detectors = sorted(
+        detector
+        for detector, stats in summary.items()
+        if stats["max_abs_lateral_drift_m"]
+        > isotropy_tolerance["max_abs_lateral_drift_m"]
+        or stats["max_abs_heading_error_deg"]
+        > isotropy_tolerance["max_abs_heading_error_deg"]
+        or stats["travel_spread_relative"]
+        > isotropy_tolerance["travel_spread_relative"]
+    )
+    disposition = "reproduced" if anisotropic_detectors else "unresolved"
+
+    command = (
+        "PYTHONPATH=build/default/cpp/Release/python/dartpy pixi run python "
+        "scripts/write_citation_ct001_rolling_direction_packet.py"
+    )
+    packet: dict[str, Any] = {
+        "schema": "dart.citation_claim_evidence/v1",
+        "claim_id": "CT-001",
+        "title": (
+            "Rolling-direction friction dependence " "(release-6.20 detector sweep)"
+        ),
+        "source": {
+            "url": "https://leggedrobotics.github.io/SimBenchmark/",
+            "claim": (
+                "Polyhedral friction can produce direction-dependent "
+                "rolling/sliding behavior."
+            ),
+        },
+        "target": {
+            "branch": "release-6.20",
+            "commit": git_head(),
+        },
+        "scene": {
+            "id": parameters["scene_id"],
+            "digest": scene_digest(parameters),
+            "description": parameters["description"],
+            "parameters": parameters,
+        },
+        "configuration": {
+            "requested": {
+                "collision_detector_sweep": detectors,
+                "constraint_solver": "World default (boxed LCP)",
+                "integrator": "World::step semi-implicit default",
+                "precision": "float64",
+                "backend": "cpu",
+                "threads": "single-threaded default",
+            },
+            "resolved": {
+                "by_collision_detector": resolved_by_detector,
+            },
+            "resolved_provenance": (
+                "ConstraintSolver.getCollisionDetector().getType() readback "
+                "after setCollisionDetector plus constraint-solver type "
+                "name; the writer aborts if readback differs from the "
+                "request. Boxed-LCP internal Dantzig/PGS selection is not "
+                "exposed per solve on release-6.20."
+            ),
+            "detector": "swept: " + ", ".join(detectors),
+            "timestep": parameters["time_step_s"],
+            "substeps": 1,
+            "iterations": (
+                "Dantzig direct solve with PGS fallback; per-solve "
+                "iteration counts are not exposed on release-6.20"
+            ),
+            "fallback_policy": (
+                "BoxedLcpConstraintSolver secondary-solver fallback "
+                "(default); per-solve fallback events are not exposed on "
+                "release-6.20"
+            ),
+        },
+        "ensemble": {
+            "kind": "parameter-sweep-with-deterministic-repeats",
+            "sweep": [
+                {"collision_detector": detector, "angle_deg": angle}
+                for detector in detectors
+                for angle in parameters["launch_angles_deg"]
+            ],
+            "deterministic_repeats": int(parameters["deterministic_repeats"]),
+            "deterministic_repeats_identical": True,
+            "measurement_window": {
+                "start_s": 0.0,
+                "end_s": parameters["time_step_s"] * parameters["step_count"],
+                "steps": parameters["step_count"],
+            },
+        },
+        "metrics": {
+            "physical": {
+                "method": (
+                    "Rotational-symmetry sweep: per-angle lateral drift "
+                    "from the launch ray, final-velocity heading error, "
+                    "along-ray travel, slide-to-roll transition time, and "
+                    "max single-step kinetic-energy gain from "
+                    "Skeleton.computeKineticEnergy"
+                ),
+                "per_detector_summary": summary,
+                "isotropy_tolerance": isotropy_tolerance,
+                "anisotropic_detectors": anisotropic_detectors,
+            },
+            "numerical": {
+                "method": (
+                    "Max over run of contact penetrationDepth and contact "
+                    "count from World.getLastCollisionResult; sphere final "
+                    "height guards against fall-through"
+                ),
+                "max_penetration_m": max(row["max_penetration_m"] for row in rows),
+                "max_contact_count": max(row["max_contact_count"] for row in rows),
+                "min_final_height_m": min(row["final_height_m"] for row in rows),
+            },
+            "performance": {
+                "status": "unsupported",
+                "reason": (
+                    "This packet makes no timing claim; interleaved "
+                    "same-host methodology is required before any "
+                    "performance row"
+                ),
+            },
+            "allocation": {
+                "status": "unsupported",
+                "reason": (
+                    "No allocation methodology on this row; DART 6 has no "
+                    "PLAN-122-style allocation gates and this packet does "
+                    "not measure allocations"
+                ),
+            },
+        },
+        "evidence": {
+            "commands": [command],
+            "raw_rows": rows,
+            "visual": {
+                "status": "not-applicable",
+                "reason": (
+                    "The oracle is numeric rotational symmetry; per-angle "
+                    "trajectories carry no visible-behavior claim beyond "
+                    "the recorded metrics."
+                ),
+            },
+        },
+        "result": {
+            "disposition": disposition,
+            "claim_boundary": (
+                "release-6.20, this commit, one sphere sliding to rolling "
+                "on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s "
+                "horizon, default boxed-LCP constraint solver, launch "
+                "angles 0-90 deg in 15 deg steps, detectors "
+                + ", ".join(detectors)
+                + ". Says nothing about other speeds, shapes, stacks, "
+                "historical DART versions, or DART 7."
+            ),
+            "limitations": [
+                "Per-solve LCP iteration counts, residuals, and "
+                "Dantzig-vs-PGS fallback events are not exposed on "
+                "release-6.20; solver identity is type-level readback.",
+                "The sweep covers 0-90 deg; pyramid orientation with a "
+                "period other than 90 deg would need a wider sweep.",
+                "Detector availability depends on the build; the packet "
+                "records the swept set explicitly.",
+                "This packet is not a cross-detector accuracy ranking; it "
+                "only measures rotational-symmetry breaking per detector.",
+            ],
+        },
+        "review": {"passes": []},
+        "host": {
+            "platform": platform.platform(),
+            "python": sys.version.split()[0],
+            "machine": platform.machine(),
+            "performance_valid": False,
+            "note": (
+                "Host recorded for provenance only; no timing methodology "
+                "was applied"
+            ),
+        },
+    }
+    return packet
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_OUTPUT,
+        help=f"Packet output path (default: {DEFAULT_OUTPUT})",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    packet = build_packet()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    summary = packet["metrics"]["physical"]["per_detector_summary"]
+    print(f"wrote {args.output}")
+    for detector, stats in summary.items():
+        print(
+            f"  {detector}: max |lateral drift| "
+            f"{stats['max_abs_lateral_drift_m']:.3e} m, max |heading err| "
+            f"{stats['max_abs_heading_error_deg']:.3e} deg, travel spread "
+            f"{stats['travel_spread_relative']:.3e} rel, min height "
+            f"{stats['min_final_height_m']:.4f} m"
+        )
+    print(f"  disposition: {packet['result']['disposition']}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

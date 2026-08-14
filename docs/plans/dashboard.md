@@ -55,6 +55,28 @@ Priority order is document order. Active implementation handoff remains in
   multi-thread determinism/scaling evidence; allocation gates and Gazebo
   coverage before any collision, constraint, or backend-default change.
 
+### PLAN-623: Citation-Driven Contact Trust
+
+- Owner doc:
+  [DART 6 citation-driven contact trust](../design/dart6_citation_driven_contact_trust.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Contact correctness, evidence, and LTS compatibility.
+- Next step: The branch-local claim manifest, fail-closed
+  `pixi run check-citation-evidence` gate, and permanent negative control
+  landed with the 2026-08-14 audit (PLAN-621 owns CT-018, PLAN-622/PR #3431
+  own CT-020, PR #3377 owns exact-Coulomb fixtures). Next: produce the first
+  complete `release-6.20` evidence packet for a first-wave row not owned
+  elsewhere (CT-001 rolling-direction across supported detectors), then the
+  remaining first-wave contact rows. Active handoff:
+  `docs/dev_tasks/dart6_citation_contact_trust/`.
+- Gate: Preserve C++17, pybind11, ABI, installed components, FCL default, OSG,
+  and unaffected behavior; every packet is `release-6.20`-qualified with
+  explicit detector/solver/timestep/seed/claim boundaries and deterministic or
+  ensemble evidence; `pixi run lint`, focused tests,
+  `pixi run check-citation-evidence`, and
+  `pixi run -e gazebo test-gz` for downstream-sensitive changes.
+
 ### PLAN-620: Dependency Minimization And Collision Backends
 
 - Owner doc: [DART 6 collision backends](../design/dart6_collision_backends.md)

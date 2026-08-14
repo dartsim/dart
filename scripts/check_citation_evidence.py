@@ -1,0 +1,598 @@
+#!/usr/bin/env python3
+"""Fail-closed validator for the DART 6.20 citation claim/evidence contract.
+
+Branch adaptation of the DART 7 PLAN-123 validator (same packet schema, same
+dispositions, same fail-closed rules) with `release-6.20` lane ownership:
+
+- validates `docs/design/dart6_citation_driven_contact_trust/claims-manifest.json`
+  (schema `dart.citation_claim_manifest/v1`, `branch: release-6.20`, a
+  `corpus_reference` pointing at the DART 7 corpus that owns claim IDs, and a
+  single `dart6` lane per claim);
+- validates every packet in `evidence/` against
+  `dart.citation_claim_evidence/v1`: missing target commit, scene digest,
+  requested/resolved method, command, ensemble, disposition, claim boundary,
+  or review record fails, and metric groups must be measured-with-method or
+  explicitly typed `unsupported` with a reason -- never silently absent, null,
+  zero-for-unsupported, or NaN;
+- requires every packet in `evidence/negative-controls/` to FAIL validation
+  with >= 3 errors (permanent proof the validator fails closed);
+- cross-checks manifest lane/evidence links, `release-6.20` branch tags, and
+  the two-review floor for packets that close a lane.
+
+`--freshness` additionally requires packets to record the current `HEAD`; it
+is a packet-writing aid, not a CI gate, because squash merges legitimately
+retire topic-branch commits.
+
+This is additive tooling only: no public API, ABI, default, or runtime change.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DESIGN_DIR = REPO_ROOT / "docs" / "design" / "dart6_citation_driven_contact_trust"
+MANIFEST_NAME = "claims-manifest.json"
+
+MANIFEST_SCHEMA = "dart.citation_claim_manifest/v1"
+PACKET_SCHEMA = "dart.citation_claim_evidence/v1"
+BRANCH = "release-6.20"
+
+CLAIM_ID_RE = re.compile(r"^CT-\d{3}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+SCENE_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+DISPOSITIONS = (
+    "missing",
+    "reproduced",
+    "fixed",
+    "version-specific",
+    "not-applicable",
+    "invalid-original-setup",
+    "unresolved",
+)
+LANE_STATUSES = ("audit-required", "in-progress", "closed", "not-applicable")
+LANE_KEYS = ("dart6",)
+BRANCH_BY_LANE = {"dart6": BRANCH}
+
+PACKET_TOP_LEVEL_KEYS = {
+    "schema",
+    "claim_id",
+    "title",
+    "source",
+    "target",
+    "scene",
+    "configuration",
+    "ensemble",
+    "metrics",
+    "evidence",
+    "result",
+    "review",
+    "host",
+}
+REQUIRED_PACKET_KEYS = PACKET_TOP_LEVEL_KEYS - {"host"}
+METRIC_GROUPS = ("physical", "numerical", "performance", "allocation")
+
+GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
+
+
+def _is_nonempty_str(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_finite_number(value: object) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _metric_leaves(value: object) -> list[object]:
+    if isinstance(value, dict):
+        leaves: list[object] = []
+        for child in value.values():
+            leaves.extend(_metric_leaves(child))
+        return leaves
+    if isinstance(value, list):
+        leaves = []
+        for child in value:
+            leaves.extend(_metric_leaves(child))
+        return leaves
+    return [value]
+
+
+def metric_group_errors(name: str, group: object) -> list[str]:
+    """A metric group is measured-with-method or typed unsupported."""
+    errors: list[str] = []
+    if not isinstance(group, dict) or not group:
+        return [f"metrics.{name} must be a non-empty object"]
+    if group.get("status") == "unsupported":
+        if not _is_nonempty_str(group.get("reason")):
+            errors.append(f"metrics.{name} is unsupported but has no non-empty reason")
+        extra = set(group) - {"status", "reason"}
+        if extra:
+            errors.append(
+                f"metrics.{name} mixes unsupported status with values: {sorted(extra)}"
+            )
+        return errors
+    if "status" in group:
+        errors.append(f"metrics.{name}.status must be 'unsupported' when present")
+    if not _is_nonempty_str(group.get("method")):
+        errors.append(
+            f"metrics.{name} must record a non-empty measurement 'method' "
+            "(or be typed unsupported with a reason)"
+        )
+    value_keys = [key for key in group if key != "method"]
+    if not value_keys:
+        errors.append(f"metrics.{name} has a method but no measured values")
+    for key in value_keys:
+        for leaf in _metric_leaves(group[key]):
+            if leaf is None:
+                errors.append(
+                    f"metrics.{name}.{key} contains null; unsupported values "
+                    "must be typed, not null"
+                )
+            elif isinstance(leaf, (int, float)) and not _is_finite_number(leaf):
+                errors.append(f"metrics.{name}.{key} contains a non-finite number")
+    return errors
+
+
+def packet_errors(
+    packet: object,
+    *,
+    known_claim_ids: set[str] | None = None,
+    expected_branches: tuple[str, ...] = (BRANCH,),
+) -> list[str]:
+    """Return every fail-closed violation for one evidence packet."""
+    if not isinstance(packet, dict):
+        return ["packet must be a JSON object"]
+    errors: list[str] = []
+
+    if packet.get("schema") != PACKET_SCHEMA:
+        errors.append(f"schema must be {PACKET_SCHEMA!r}")
+    unknown = set(packet) - PACKET_TOP_LEVEL_KEYS
+    if unknown:
+        errors.append(f"unknown top-level keys: {sorted(unknown)}")
+    missing = REQUIRED_PACKET_KEYS - set(packet)
+    if missing:
+        errors.append(f"missing required top-level keys: {sorted(missing)}")
+
+    claim_id = packet.get("claim_id")
+    if not (isinstance(claim_id, str) and CLAIM_ID_RE.match(claim_id)):
+        errors.append("claim_id must match CT-NNN")
+    elif known_claim_ids is not None and claim_id not in known_claim_ids:
+        errors.append(f"claim_id {claim_id} is not in the claims manifest")
+    if not _is_nonempty_str(packet.get("title")):
+        errors.append("title must be a non-empty string")
+
+    source = packet.get("source")
+    if not isinstance(source, dict):
+        errors.append("source must be an object")
+    else:
+        if not _is_nonempty_str(source.get("url")):
+            errors.append("source.url must be a non-empty string")
+        if not _is_nonempty_str(source.get("claim")):
+            errors.append("source.claim must be a non-empty string")
+
+    target = packet.get("target")
+    if not isinstance(target, dict):
+        errors.append("target must be an object")
+    else:
+        branch = target.get("branch")
+        if branch not in expected_branches:
+            errors.append(f"target.branch must be one of {list(expected_branches)}")
+        commit = target.get("commit")
+        if not (isinstance(commit, str) and COMMIT_RE.match(commit)):
+            errors.append("target.commit must be a 40-hex commit hash")
+
+    scene = packet.get("scene")
+    if not isinstance(scene, dict):
+        errors.append("scene must be an object")
+    else:
+        if not _is_nonempty_str(scene.get("id")):
+            errors.append("scene.id must be a non-empty string")
+        digest = scene.get("digest")
+        if not (isinstance(digest, str) and SCENE_DIGEST_RE.match(digest)):
+            errors.append("scene.digest must match sha256:<64 hex>")
+
+    configuration = packet.get("configuration")
+    if not isinstance(configuration, dict):
+        errors.append("configuration must be an object")
+    else:
+        for side in ("requested", "resolved"):
+            value = configuration.get(side)
+            if not isinstance(value, dict) or not value:
+                errors.append(f"configuration.{side} must be a non-empty object")
+        if not _is_nonempty_str(configuration.get("resolved_provenance")):
+            errors.append(
+                "configuration.resolved_provenance must name how the resolved "
+                "method identity was obtained"
+            )
+        if not _is_nonempty_str(configuration.get("detector")):
+            errors.append("configuration.detector must be a non-empty string")
+        timestep = configuration.get("timestep")
+        if not (_is_finite_number(timestep) and timestep > 0.0):
+            errors.append("configuration.timestep must be a positive number")
+        if not _is_nonempty_str(configuration.get("fallback_policy")):
+            errors.append("configuration.fallback_policy must be a non-empty string")
+
+    ensemble = packet.get("ensemble")
+    if not isinstance(ensemble, dict):
+        errors.append("ensemble must be an object")
+    else:
+        if not _is_nonempty_str(ensemble.get("kind")):
+            errors.append("ensemble.kind must be a non-empty string")
+        repeats = ensemble.get("deterministic_repeats")
+        sweep = ensemble.get("sweep")
+        seeds = ensemble.get("seeds")
+        has_repeats = (
+            isinstance(repeats, int) and not isinstance(repeats, bool) and repeats >= 2
+        )
+        has_sweep = isinstance(sweep, list) and len(sweep) >= 2
+        has_seeds = isinstance(seeds, list) and len(seeds) >= 2
+        if not (has_repeats or has_sweep or has_seeds):
+            errors.append(
+                "ensemble must record deterministic_repeats >= 2, a sweep of "
+                ">= 2 points, or >= 2 seeds; single runs are not evidence"
+            )
+        if "measurement_window" not in ensemble:
+            errors.append("ensemble.measurement_window is required")
+
+    metrics = packet.get("metrics")
+    if not isinstance(metrics, dict):
+        errors.append("metrics must be an object")
+    else:
+        for name in METRIC_GROUPS:
+            if name not in metrics:
+                errors.append(
+                    f"metrics.{name} is required (measured or typed unsupported)"
+                )
+            else:
+                errors.extend(metric_group_errors(name, metrics[name]))
+
+    evidence = packet.get("evidence")
+    if not isinstance(evidence, dict):
+        errors.append("evidence must be an object")
+    else:
+        commands = evidence.get("commands")
+        if not (
+            isinstance(commands, list)
+            and commands
+            and all(_is_nonempty_str(command) for command in commands)
+        ):
+            errors.append("evidence.commands must be a non-empty list of commands")
+        raw_paths = evidence.get("raw_paths")
+        raw_rows = evidence.get("raw_rows")
+        has_paths = isinstance(raw_paths, list) and bool(raw_paths)
+        has_rows = isinstance(raw_rows, list) and bool(raw_rows)
+        if not (has_paths or has_rows):
+            errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
+        visual = evidence.get("visual")
+        if isinstance(visual, dict):
+            if visual.get("status") != "not-applicable" or not _is_nonempty_str(
+                visual.get("reason")
+            ):
+                errors.append(
+                    "evidence.visual object form must be "
+                    "{'status': 'not-applicable', 'reason': ...}"
+                )
+        elif not (isinstance(visual, list) and visual):
+            errors.append(
+                "evidence.visual must list visual artifacts or be typed "
+                "not-applicable with a reason"
+            )
+
+    result = packet.get("result")
+    if not isinstance(result, dict):
+        errors.append("result must be an object")
+    else:
+        if result.get("disposition") not in DISPOSITIONS:
+            errors.append(f"result.disposition must be one of {list(DISPOSITIONS)}")
+        if not _is_nonempty_str(result.get("claim_boundary")):
+            errors.append("result.claim_boundary must be a non-empty string")
+        limitations = result.get("limitations")
+        if not (
+            isinstance(limitations, list)
+            and limitations
+            and all(_is_nonempty_str(item) for item in limitations)
+        ):
+            errors.append(
+                "result.limitations must be a non-empty list; every packet "
+                "has at least one honest limitation"
+            )
+
+    review = packet.get("review")
+    if not isinstance(review, dict):
+        errors.append("review must be an object")
+    else:
+        passes = review.get("passes")
+        if not isinstance(passes, list):
+            errors.append("review.passes must be a list")
+        else:
+            for index, entry in enumerate(passes):
+                if (
+                    not isinstance(entry, dict)
+                    or not _is_nonempty_str(entry.get("reviewer"))
+                    or not _is_nonempty_str(entry.get("summary"))
+                ):
+                    errors.append(
+                        f"review.passes[{index}] needs non-empty reviewer and summary"
+                    )
+
+    return errors
+
+
+def manifest_errors(manifest: object) -> list[str]:
+    """Validate the branch claims manifest structure."""
+    if not isinstance(manifest, dict):
+        return ["manifest must be a JSON object"]
+    errors: list[str] = []
+    if manifest.get("schema") != MANIFEST_SCHEMA:
+        errors.append(f"manifest schema must be {MANIFEST_SCHEMA!r}")
+    if manifest.get("branch") != BRANCH:
+        errors.append(f"manifest branch must be {BRANCH!r}")
+
+    corpus_reference = manifest.get("corpus_reference")
+    if (
+        not isinstance(corpus_reference, dict)
+        or not _is_nonempty_str(corpus_reference.get("path"))
+        or not _is_nonempty_str(corpus_reference.get("branch"))
+    ):
+        errors.append("corpus_reference must record the owning corpus path and branch")
+
+    claims = manifest.get("claims")
+    if not isinstance(claims, list) or not claims:
+        errors.append("claims must be a non-empty list")
+        return errors
+
+    seen_ids: list[str] = []
+    for claim in claims:
+        if not isinstance(claim, dict):
+            errors.append("every claim must be an object")
+            continue
+        claim_id = claim.get("id", "<missing>")
+        if not (isinstance(claim_id, str) and CLAIM_ID_RE.match(claim_id)):
+            errors.append(f"claim id {claim_id!r} must match CT-NNN")
+            continue
+        seen_ids.append(claim_id)
+        if not _is_nonempty_str(claim.get("title")):
+            errors.append(f"{claim_id}: title must be non-empty")
+        if not _is_nonempty_str(claim.get("source")):
+            errors.append(f"{claim_id}: source must be non-empty")
+        lanes = claim.get("lanes")
+        if not isinstance(lanes, dict) or set(lanes) != set(LANE_KEYS):
+            errors.append(f"{claim_id}: lanes must define exactly {LANE_KEYS}")
+            continue
+        for lane_name, lane in lanes.items():
+            prefix = f"{claim_id}.lanes.{lane_name}"
+            if not isinstance(lane, dict):
+                errors.append(f"{prefix} must be an object")
+                continue
+            status = lane.get("status")
+            if status not in LANE_STATUSES:
+                errors.append(f"{prefix}.status must be one of {list(LANE_STATUSES)}")
+                continue
+            evidence = lane.get("evidence")
+            if not isinstance(evidence, list):
+                errors.append(f"{prefix}.evidence must be a list")
+                evidence = []
+            if status == "not-applicable":
+                if not _is_nonempty_str(lane.get("reason")):
+                    errors.append(
+                        f"{prefix} is not-applicable and must record a reason"
+                    )
+                continue
+            if not _is_nonempty_str(lane.get("owner")):
+                errors.append(f"{prefix}.owner must be non-empty")
+            disposition = lane.get("disposition")
+            if status == "closed":
+                if disposition not in DISPOSITIONS:
+                    errors.append(f"{prefix} is closed without a valid disposition")
+                if not evidence:
+                    errors.append(
+                        f"{prefix} is closed without evidence packets; prose "
+                        "cannot close a row"
+                    )
+            elif disposition is not None and disposition not in DISPOSITIONS:
+                errors.append(
+                    f"{prefix}.disposition must be null or one of {list(DISPOSITIONS)}"
+                )
+
+    duplicates = sorted({cid for cid in seen_ids if seen_ids.count(cid) > 1})
+    if duplicates:
+        errors.append(f"duplicate claim ids: {duplicates}")
+    return errors
+
+
+def _load_json(path: Path, errors: list[str]) -> object | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"{path}: unreadable JSON ({error})")
+        return None
+
+
+def _git_head(repo_root: Path) -> str | None:
+    try:
+        return (
+            subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            or None
+        )
+    except GIT_QUERY_ERRORS:
+        return None
+
+
+def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> list[str]:
+    """Validate the branch manifest, evidence packets, and negative controls."""
+    errors: list[str] = []
+    manifest_path = design_dir / MANIFEST_NAME
+    evidence_dir = design_dir / "evidence"
+    negative_dir = evidence_dir / "negative-controls"
+
+    manifest = _load_json(manifest_path, errors)
+    known_ids: set[str] = set()
+    lane_evidence: dict[str, tuple[str, str]] = {}
+    closed_lane_packets: set[str] = set()
+    if manifest is not None:
+        manifest_issues = manifest_errors(manifest)
+        errors.extend(f"{manifest_path}: {issue}" for issue in manifest_issues)
+        if isinstance(manifest, dict) and isinstance(manifest.get("claims"), list):
+            for claim in manifest["claims"]:
+                if not isinstance(claim, dict):
+                    continue
+                claim_id = claim.get("id")
+                if isinstance(claim_id, str):
+                    known_ids.add(claim_id)
+                lanes = claim.get("lanes")
+                if not isinstance(lanes, dict):
+                    continue
+                for lane_name, lane in lanes.items():
+                    if not isinstance(lane, dict):
+                        continue
+                    for rel in lane.get("evidence") or []:
+                        if isinstance(rel, str):
+                            lane_evidence[rel] = (str(claim_id), str(lane_name))
+                            if lane.get("status") == "closed":
+                                closed_lane_packets.add(rel)
+
+    for rel, (claim_id, lane_name) in sorted(lane_evidence.items()):
+        packet_path = design_dir / rel
+        if not packet_path.is_file():
+            errors.append(
+                f"{manifest_path}: {claim_id}.lanes.{lane_name} references "
+                f"missing packet {rel}"
+            )
+
+    packet_paths = sorted(evidence_dir.glob("*.json")) if evidence_dir.is_dir() else []
+    for packet_path in packet_paths:
+        packet = _load_json(packet_path, errors)
+        if packet is None:
+            continue
+        issues = packet_errors(packet, known_claim_ids=known_ids or None)
+        errors.extend(f"{packet_path}: {issue}" for issue in issues)
+        if issues or not isinstance(packet, dict):
+            continue
+        rel = packet_path.relative_to(design_dir).as_posix()
+        linked = lane_evidence.get(rel)
+        if linked is None:
+            errors.append(
+                f"{packet_path}: not referenced by any manifest lane; every "
+                "packet needs a claim owner"
+            )
+        else:
+            claim_id, lane_name = linked
+            if packet.get("claim_id") != claim_id:
+                errors.append(
+                    f"{packet_path}: claim_id {packet.get('claim_id')} does "
+                    f"not match manifest lane {claim_id}.{lane_name}"
+                )
+            expected_branch = BRANCH_BY_LANE.get(lane_name)
+            branch = (
+                packet.get("target", {}).get("branch")
+                if isinstance(packet.get("target"), dict)
+                else None
+            )
+            if expected_branch is not None and branch != expected_branch:
+                errors.append(
+                    f"{packet_path}: target.branch {branch!r} does not match "
+                    f"lane {lane_name} branch {expected_branch!r}"
+                )
+            if rel in closed_lane_packets:
+                passes = (
+                    packet.get("review", {}).get("passes")
+                    if isinstance(packet.get("review"), dict)
+                    else None
+                )
+                if not isinstance(passes, list) or len(passes) < 2:
+                    errors.append(
+                        f"{packet_path}: a packet closing a lane needs at "
+                        "least two recorded review passes"
+                    )
+        if freshness_head is not None:
+            commit = (
+                packet.get("target", {}).get("commit")
+                if isinstance(packet.get("target"), dict)
+                else None
+            )
+            if commit != freshness_head:
+                errors.append(
+                    f"{packet_path}: target.commit {commit} is not the "
+                    f"current HEAD {freshness_head} (--freshness)"
+                )
+
+    negative_paths = (
+        sorted(negative_dir.glob("*.json")) if negative_dir.is_dir() else []
+    )
+    if not negative_paths:
+        errors.append(
+            f"{negative_dir}: at least one intentionally incomplete "
+            "negative-control packet is required to prove the validator "
+            "fails closed"
+        )
+    for packet_path in negative_paths:
+        packet = _load_json(packet_path, errors)
+        if packet is None:
+            continue
+        issues = packet_errors(packet, known_claim_ids=known_ids or None)
+        if len(issues) < 3:
+            errors.append(
+                f"{packet_path}: negative control produced only "
+                f"{len(issues)} validation error(s); it must stay clearly "
+                "incomplete (>= 3) or the fail-closed proof is vacuous"
+            )
+
+    return errors
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--design-dir",
+        type=Path,
+        default=DESIGN_DIR,
+        help="Design sidecar directory holding the manifest and evidence",
+    )
+    parser.add_argument(
+        "--freshness",
+        action="store_true",
+        help="Require every evidence packet to record the current HEAD",
+    )
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    freshness_head: str | None = None
+    if args.freshness:
+        freshness_head = _git_head(REPO_ROOT)
+        if freshness_head is None:
+            print(
+                "check_citation_evidence: --freshness requires a readable git HEAD",
+                file=sys.stderr,
+            )
+            return 1
+    errors = validate_tree(args.design_dir, freshness_head=freshness_head)
+    if errors:
+        print(f"check_citation_evidence: {len(errors)} error(s)", file=sys.stderr)
+        for error in errors:
+            print(f"  - {error}", file=sys.stderr)
+        return 1
+    print("check_citation_evidence: OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

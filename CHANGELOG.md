@@ -751,6 +751,17 @@
 
 * Tests
 
+  * Add the branch-local citation-claim evidence contract (PLAN-623): a
+    machine-checked `release-6.20` claims manifest under
+    `docs/design/dart6_citation_driven_contact_trust/`, a fail-closed
+    `pixi run check-citation-evidence` gate (missing commit, scene digest,
+    requested/resolved detector or solver identity, command, ensemble,
+    disposition, claim boundary, or typed-unsupported metrics fail
+    validation, with a permanent intentionally incomplete negative-control
+    packet), and the first CT-001 rolling-direction evidence packet sweeping
+    the available collision detectors. Additive evidence tooling only; no
+    library, API, ABI, or default behavior change.
+
   * Force the ASan and required assertions-enabled builds to run without
     OpenSceneGraph, and require exact-candidate optional-dependency and Gazebo
     integration evidence before DART 6 releases:
