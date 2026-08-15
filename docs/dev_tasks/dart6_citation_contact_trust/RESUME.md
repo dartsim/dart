@@ -28,16 +28,18 @@ Reconciled against a live checkout on 2026-08-14; bootstrap statuses verified.
 
 `feature/dart6-citation-contact-trust` in
 `.claude/worktrees/citation-trust-620`, based on `origin/release-6.20`
-39ccd52068b. Local only; nothing pushed. GitHub mutations need maintainer
-approval.
+39ccd52068b, at `978b48e6653` (7 commits: contract + CT-001 packet, three
+review-fix passes, and the PR draft). `check-lint`, `test-all` (158/158),
+and the citation gate are green on this head. Local only; nothing pushed.
+GitHub mutations need maintainer approval.
 
 ## Immediate next step
 
-Run the branch gates (`pixi run lint`, `pixi run check-lint`,
-`pixi run test-ai-infra`, `pixi run check-citation-evidence`) and record two
-independent review passes; then continue Phase 2 (audit/guard PLAN-621/622
-evidence rows) and Phase 3 with the next first-wave contact row not owned
-elsewhere (dense inelastic/elastic grids, CT-002/CT-003).
+Awaiting maintainer approval to push and open the PR (`pr-draft-620.md`).
+All gates are green and three independent review rounds are recorded. After
+the PR, Phase 2 continues with auditing/guarding PLAN-621/622 evidence rows
+and the next first-wave contact rows not owned elsewhere (dense
+inelastic/elastic grids, CT-002/CT-003) on a new branch.
 
 ## Context that would be lost
 
