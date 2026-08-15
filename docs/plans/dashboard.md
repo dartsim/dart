@@ -51,22 +51,14 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: WS0 audit and the WS1 fail-closed claim/evidence manifest landed
-  with a permanent negative control and five first-wave packets: CT-001
-  rolling-direction (`reproduced`), CT-002 dense inelastic contact
-  (`reproduced`), CT-003 dense elastic contact (`unresolved` -- no energy
-  injection observed), and CT-004 articulated energy drift versus timestep
-  (`unresolved`: drift converges with timestep in both integration families,
-  but the cited claim concerns matched cost, which is not measured), and
-  CT-005 PD tracking (`unresolved`: tracking error is controller-limited, so
-  refining the timestep does not improve it, and step cost is not measured).
-  Next: the remaining first-wave families (heel-strike/toe-off, high
-  mass-ratio, reset/concurrency queries) with branch-qualified dispositions, reusing
-  existing demos scenes and PLAN-104/621/622 evidence, before
-  contact-identity/semantics work (WS3) and cross-family diagnostics (WS4);
-  WS4's first slice is exposing `ResolvedSolverConfiguration` to Python and a
-  comparable residual, both currently typed unsupported in every packet.
-  History and sequencing live in the owner plan and
+- Next step: WS0/WS1 and five first-wave packets have landed on `main`, one on
+  `release-6.20`. Continue WS2 with the remaining first-wave families:
+  heel-strike/toe-off (CT-006, gated on WS3 contact semantics), high
+  mass-ratio stacks (CT-007), and reset/concurrency queries (CT-011..013).
+  In parallel, start WS4's first slice, which several packets are waiting on:
+  expose `ResolvedSolverConfiguration` to Python and a comparable per-solve
+  residual, both currently typed unsupported everywhere. History:
+  `## Progress log` in the owner plan and
   `docs/dev_tasks/citation_driven_simulation_trust/`.
 - Gate: Every claim row is branch/version-qualified and source-bound;
   `pixi run check-citation-evidence` fails closed on missing commit, scene

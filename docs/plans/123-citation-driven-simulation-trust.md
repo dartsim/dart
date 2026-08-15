@@ -217,6 +217,39 @@ and domain expansion are DART 7 only.
 - Using citation count or routine library use as evidence of physical accuracy.
 - Keeping an unbounded paper-support backlog in this plan.
 
+## Progress log
+
+### 2026-08-14 — WS0/WS1 foundation and first-wave packets
+
+- WS0 audit reconciled the corpus against `main` 20501341226 and
+  `release-6.20` 39ccd52068b: plan IDs confirmed free, PLAN-091 heritage
+  mapped, open PRs (#3432, #3377, #3431, #3428) and issue #3056 routed to
+  existing owners, and existing demos scenes recorded as fixture seeds.
+- WS1 landed the checked claim manifest and the fail-closed
+  `pixi run check-citation-evidence` gate on both branches, wired into
+  `check-lint`, with permanent intentionally incomplete negative controls.
+  The gate rejects prose/non-JSON/outside-`evidence/`/negative-control/
+  non-string lane references, dangling or directory `raw_paths`, digests that
+  disagree with the published scene, single-run ensembles, spelled
+  placeholders, and any exact zero that is not declared a real measurement or
+  typed unsupported with a reason.
+- WS2 first-wave packets on `main`: CT-001 rolling direction (`reproduced`),
+  CT-002 dense inelastic contact (`reproduced`), CT-003 dense elastic contact
+  (`unresolved`), CT-004 articulated energy drift (`unresolved`), CT-005 PD
+  tracking (`unresolved`). On `release-6.20`: CT-001 detector sweep
+  (`reproduced` on fcl/dart/ode; bullet excluded for lacking the pyramid
+  signature). Three of six dispositions are negative because the cited
+  behavior was not observed or the cited quantity was not measured.
+- Review record: three independent rounds per branch found a validator
+  bypass twice (nested paths, then non-string lane entries),
+  unsupported-as-zero metrics, false provenance strings, a verification block
+  imported from the wrong branch, and two dispositions that were not earned.
+  All fixed in-branch; details live in
+  `docs/dev_tasks/citation_driven_simulation_trust/verification.md`.
+- Known gap: the validator does not arithmetically cross-check derived
+  metrics against `raw_rows`, so a falsified summary would pass. Closing that
+  needs the gate to know each packet's derivation (WS4-scale).
+
 ## Revision triggers
 
 - A corpus row shows an existing plan already owns the proposed shared surface.
