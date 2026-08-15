@@ -1196,7 +1196,7 @@
   },
   "target": {
     "branch": "release-6.20",
-    "commit": "afc6d7ac3c2460a569e7315dcc60aba94ec80588"
+    "commit": "d4f95f1298f658c3677854b127ac31dbc3279be3"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }

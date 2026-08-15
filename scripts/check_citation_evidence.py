@@ -34,6 +34,7 @@ This is additive tooling only: no public API, ABI, default, or runtime change.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -291,6 +292,24 @@ def packet_errors(
         digest = scene.get("digest")
         if not (isinstance(digest, str) and SCENE_DIGEST_RE.match(digest)):
             errors.append("scene.digest must match sha256:<64 hex>")
+        elif isinstance(scene.get("parameters"), dict):
+            # When the packet publishes the parameters the digest was taken
+            # over, recompute it. A digest that cannot be reproduced from the
+            # packet's own scene description binds nothing.
+            expected = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        scene["parameters"], sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest()
+            )
+            if digest != expected:
+                errors.append(
+                    f"scene.digest {digest} does not match the digest of "
+                    f"scene.parameters ({expected}); the scene description "
+                    "and its digest disagree"
+                )
 
     configuration = packet.get("configuration")
     if not isinstance(configuration, dict):
@@ -377,7 +396,7 @@ def packet_errors(
                         f"evidence.raw_paths[{index}] must be a non-empty string"
                     )
                 elif base_dir is not None and not any(
-                    (root / raw_path).exists() for root in (base_dir, REPO_ROOT)
+                    (root / raw_path).is_file() for root in (base_dir, REPO_ROOT)
                 ):
                     errors.append(
                         f"evidence.raw_paths[{index}] {raw_path!r} does not "
@@ -579,7 +598,16 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                         )
                         lane_paths = []
                     for rel in lane_paths or []:
-                        if isinstance(rel, str):
+                        if not isinstance(rel, str):
+                            errors.append(
+                                f"{manifest_path}: {claim_id}.lanes."
+                                f"{lane_name}.evidence contains a non-string "
+                                f"entry {rel!r}; every entry must be a packet "
+                                "path, or a lane could be closed by something "
+                                "the packet checks never reach"
+                            )
+                            continue
+                        if True:
                             if rel in lane_evidence:
                                 owner = lane_evidence[rel]
                                 errors.append(
@@ -697,7 +725,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                 )
 
     negative_paths = (
-        sorted(negative_dir.glob("*.json")) if negative_dir.is_dir() else []
+        sorted(negative_dir.rglob("*.json")) if negative_dir.is_dir() else []
     )
     if not negative_paths:
         errors.append(

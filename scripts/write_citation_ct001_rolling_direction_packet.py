@@ -43,6 +43,7 @@ from citation_packet_utils import (
     UNSUPPORTED_FALLBACK_EVENTS,
     UNSUPPORTED_SOLVER_ITERATIONS,
     UNSUPPORTED_SOLVER_RESIDUAL,
+    preserve_review,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -311,7 +312,7 @@ def git_head() -> str:
     ).stdout.strip()
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     parameters = dict(SCENE_PARAMETERS)
     detectors = available_detectors()
     parameters["collision_detectors"] = detectors
@@ -653,7 +654,9 @@ def build_packet() -> dict[str, Any]:
                 "only measures rotational-symmetry breaking per detector.",
             ],
         },
-        "review": {"passes": []},
+        "review": (
+            preserve_review(output_path) if output_path is not None else {"passes": []}
+        ),
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -681,7 +684,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    packet = build_packet()
+    packet = build_packet(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"

@@ -122,6 +122,28 @@
   (5.0e-4 J here). Measured: bullet 1.925e-4 J, fcl/dart/ode ~3.0e-8 J, so no
   cell trips it, but a blow-up can no longer pass the gate while a symmetry
   verdict is drawn.
+- Final review (independent, on `d4f95f1298f`): compatibility gate passes
+  (16 changed files, none under `dart/`, `python/`, `cmake/`, `CMakeLists.txt`,
+  packaging, `.github/`, or `pixi.lock`); 37/37 bypass attempts rejected with
+  the unmodified tree validating at zero errors as a control; every
+  antisymmetry number reproduces exactly from `raw_rows`; the typed-unsupported
+  reasons re-verified against `dart/constraint/` on this head. Findings acted
+  on:
+  1. MAJOR — the packet attested to assertions and a `target.commit` its
+     recorded run predated, because writer changes landed without regenerating.
+     The packet has been regenerated on the current writer. Its `raw_rows` are
+     byte-identical across regenerations because the fixture is deterministic,
+     which the packet itself evidences through
+     `raw_rows[*].repeat_trajectory_sha256`.
+  2. MINOR — `raw_paths` accepted a directory (`.exists()`), negative controls
+     in a subdirectory were enumerated by neither loop, a non-string entry in a
+     lane's `evidence` list was silently dropped (a genuine bypass: a lane could
+     be closed by `[{"path": ...}]`), and `scene.digest` was format-checked but
+     never recomputed. All four are fixed and covered by new tests (52 cases).
+  3. Residual gap recorded, not fixed: the validator performs no arithmetic
+     cross-check of derived metrics against `raw_rows`, so a falsified summary
+     would pass. That is a WS4-scale change (the gate would need to know each
+     packet's derivation) and is listed as follow-up rather than attempted here.
 - Known gaps: Phase 2 (guard PLAN-621/622 evidence) and remaining first-wave
   rows; per-solve LCP diagnostics remain typed unsupported.
 
