@@ -55,9 +55,10 @@ its own line so status updates remain git-history friendly.
   `release-6.20`. Continue WS2 with the remaining first-wave families:
   heel-strike/toe-off (CT-006, gated on WS3 contact semantics), high
   mass-ratio stacks (CT-007), and reset/concurrency queries (CT-011..013).
-  In parallel, start WS4's first slice, which several packets are waiting on:
-  expose `ResolvedSolverConfiguration` to Python and a comparable per-solve
-  residual, both currently typed unsupported everywhere. History:
+  WS4's first slice has landed: `World.resolved_configuration` is exposed to
+  Python and every packet now records the World's own bake-time resolution.
+  The remaining WS4 gap is a comparable per-solve residual, still unexposed
+  and typed unsupported everywhere. History:
   `## Progress log` in the owner plan and
   `docs/dev_tasks/citation_driven_simulation_trust/`.
 - Gate: Every claim row is branch/version-qualified and source-bound;

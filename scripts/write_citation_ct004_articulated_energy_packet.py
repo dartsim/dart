@@ -46,6 +46,7 @@ import numpy as np
 from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
+    world_resolved_configuration,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -133,6 +134,7 @@ def run_single(
     world.enter_simulation_mode()
 
     resolved = {
+        "world_resolution": world_resolved_configuration(world),
         "integration_family": world.multibody_options.integration_family.name,
         "rigid_body_solver": world.rigid_body_solver.name,
         "gravity_mps2": [float(v) for v in np.asarray(world.gravity)],

@@ -246,6 +246,13 @@ and domain expansion are DART 7 only.
   imported from the wrong branch, and two dispositions that were not earned.
   All fixed in-branch; details live in
   `docs/dev_tasks/citation_driven_simulation_trust/verification.md`.
+- WS4 first slice: `World.resolved_configuration` is now exposed to Python
+  (`ResolvedSolverConfiguration` and `ResolvedConfigurationNote` bindings,
+  stubs, and tests), so every packet records the World's own bake-time
+  resolution per domain -- requested, resolved, reason, substitution flag --
+  instead of echoing back the requested option. A benchmark can no longer
+  name a method that did not run. A comparable per-solve residual remains
+  unexposed and is still typed unsupported everywhere.
 - Known gap: the validator does not arithmetically cross-check derived
   metrics against `raw_rows`, so a falsified summary would pass. Closing that
   needs the gate to know each packet's derivation (WS4-scale).

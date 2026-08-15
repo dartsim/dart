@@ -131,3 +131,27 @@ def preserve_review(output_path: "Any") -> dict[str, Any]:
     if isinstance(review, dict) and isinstance(review.get("passes"), list):
         return {"passes": review["passes"]}
     return {"passes": []}
+
+
+def world_resolved_configuration(world: Any) -> dict[str, Any]:
+    """Record the World's own bake-time solver resolution.
+
+    This is the authoritative answer to "which method actually ran": the
+    World reports, per domain, what was requested, what it resolved to, and
+    why. Echoing back the requested option cannot distinguish a method that
+    ran from one that was silently substituted.
+    """
+    resolved = world.resolved_configuration
+    return {
+        "source": "World.resolved_configuration (bake-time resolution)",
+        "has_substitution": bool(resolved.has_substitution()),
+        "by_domain": {
+            note.domain: {
+                "requested": note.requested,
+                "resolved": note.resolved,
+                "reason": note.reason,
+                "is_substitution": bool(note.is_substitution),
+            }
+            for note in resolved.notes
+        },
+    }

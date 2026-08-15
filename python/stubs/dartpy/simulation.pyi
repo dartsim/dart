@@ -65,6 +65,8 @@ __all__: list[str] = [
     "StateVariable",
     "StepDerivatives",
     "StepGradient",
+    "ResolvedConfigurationNote",
+    "ResolvedSolverConfiguration",
     "StepMetrics",
     "World",
     "WorldEcsDiagnostics",
@@ -1625,6 +1627,38 @@ class WorldStepProfile:
 
     def __str__(self) -> str: ...
 
+class ResolvedConfigurationNote:
+    @property
+    def domain(self) -> str: ...
+
+    @property
+    def requested(self) -> str: ...
+
+    @property
+    def resolved(self) -> str: ...
+
+    @property
+    def reason(self) -> str: ...
+
+    @property
+    def is_substitution(self) -> bool: ...
+
+    def __repr__(self) -> str: ...
+
+class ResolvedSolverConfiguration:
+    @property
+    def notes(self) -> list[ResolvedConfigurationNote]: ...
+
+    def is_empty(self) -> bool: ...
+
+    def has_substitution(self) -> bool: ...
+
+    def summary(self) -> str: ...
+
+    def __repr__(self) -> str: ...
+
+    def __str__(self) -> str: ...
+
 class StepMetrics:
     @property
     def kinetic_energy(self) -> float: ...
@@ -2542,6 +2576,9 @@ class World:
 
     @property
     def last_step_profile(self) -> WorldStepProfile: ...
+
+    @property
+    def resolved_configuration(self) -> ResolvedSolverConfiguration: ...
 
     def compute_step_metrics(self) -> StepMetrics: ...
 

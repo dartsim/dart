@@ -47,6 +47,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
     solver_iterations_by_method,
+    world_resolved_configuration,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -150,6 +151,7 @@ def run_single(
     world.enter_simulation_mode()
 
     resolved = {
+        "world_resolution": world_resolved_configuration(world),
         "contact_solver_method": world.contact_solver_method.name,
         "rigid_body_solver": world.rigid_body_solver.name,
         "gravity_mps2": [float(v) for v in np.asarray(world.gravity)],
@@ -594,10 +596,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "The settle window is the second half of the run; a pile "
                 "that settles later would put free-fall discretization error "
                 "inside the window and inflate the energy metric.",
-                "Resolved identity comes from World property readback per "
-                "cell (contact solver, timestep, and gravity each asserted "
-                "against the request); ResolvedSolverConfiguration is not "
-                "Python-exposed.",
+                "Resolved identity comes from the World's own bake-time "
+                "resolution, with contact solver, timestep, and gravity "
+                "each additionally asserted against the request per cell.",
                 "No solver residual exists on this path and the boxed-LCP "
                 "branch records no iteration count; both are typed "
                 "unsupported rather than reported as zero, so the corpus "

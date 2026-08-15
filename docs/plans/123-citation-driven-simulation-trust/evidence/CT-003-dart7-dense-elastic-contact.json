@@ -29,7 +29,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "BOXED_LCP@dt=0.004": {
           "contact_solver_method": "BOXED_LCP",
@@ -39,7 +69,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEQUENTIAL_IMPULSE@dt=0.002": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -49,7 +109,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEQUENTIAL_IMPULSE@dt=0.004": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -59,7 +149,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         }
       }
     },
@@ -125,7 +245,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "steps": 1000,
         "timestep_s": 0.002
@@ -156,7 +306,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "steps": 500,
         "timestep_s": 0.004
@@ -187,7 +367,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "steps": 1000,
         "timestep_s": 0.002
@@ -218,7 +428,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "steps": 500,
         "timestep_s": 0.004
@@ -334,7 +574,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "9101d917fdb33998abd0a48d705fe42a632d1493"
+    "commit": "ca78b0980e88617b98bdbcb84cfeb01931238d05"
   },
   "title": "Dense elastic contact energy envelope (DART 7 first packet)"
 }

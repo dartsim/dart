@@ -51,6 +51,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
     solver_iterations_by_method,
+    world_resolved_configuration,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -143,6 +144,7 @@ def run_single(
     world.enter_simulation_mode()
 
     resolved = {
+        "world_resolution": world_resolved_configuration(world),
         "contact_solver_method": world.contact_solver_method.name,
         "rigid_body_solver": world.rigid_body_solver.name,
         "gravity_mps2": [float(v) for v in np.asarray(world.gravity)],
@@ -596,9 +598,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "shapes, stacks, historical DART versions, or DART 6."
             ),
             "limitations": [
-                "ResolvedSolverConfiguration is not Python-exposed; "
-                "resolved identity is property readback, corroborated by "
-                "per-solver trajectory-hash differences.",
+                "Resolved identity now comes from the World's own bake-time "
+                "resolution, corroborated by per-solver trajectory-hash "
+                "differences.",
                 "No solver residual exists on this path: it is typed "
                 "unsupported, not reported as zero. Friction-cone and "
                 "complementarity violations are not exposed either.",

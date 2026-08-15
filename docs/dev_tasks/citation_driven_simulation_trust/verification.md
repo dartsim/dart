@@ -299,3 +299,33 @@ WS4-scale work.
   typed unsupported because this scene has no constraints to violate.
 - Commands: packet writer as recorded in the packet;
   `pixi run check-citation-evidence` — OK; 72 pytest cases pass.
+
+## WS4 first slice: resolved configuration in Python — 2026-08-14
+
+- What changed: nanobind bindings for `ResolvedConfigurationNote` and
+  `ResolvedSolverConfiguration` (`python/dartpy/simulation/module_compute.cpp`),
+  the `World.resolved_configuration` property
+  (`python/dartpy/simulation/module_world.cpp`), surgical stub entries, two
+  Python tests, a `world_resolved_configuration()` helper, and all five
+  packets regenerated to record it.
+- Why it mattered: every packet had been recording resolved identity by
+  reading back the option it had just set, which cannot distinguish a method
+  that ran from one that was silently substituted. Three review rounds
+  flagged this as the blocking gap behind the typed-unsupported markers.
+  Packets now carry, per domain, the World's own bake-time decision:
+  requested, resolved, reason, and a substitution flag.
+- Verified against a live World: before `enter_simulation_mode` the
+  configuration is empty; after bake it reports four domains
+  (rigid-body, rigid-contact, multibody, deformable-psd), and requesting
+  BOXED_LCP versus SEQUENTIAL_IMPULSE changes the recorded `rigid-contact`
+  resolution accordingly.
+- Scope discipline: `pixi run generate-stubs` rewrote 1990 lines across eight
+  stub files, because the committed stubs were already stale relative to the
+  build. That churn was reverted and the 37 lines corresponding to this
+  change were added by hand, keeping the diff surgical; the pre-existing stub
+  drift is left for whoever owns it rather than being swept in here.
+- Commands: `pixi run build` — success; the two new tests pass;
+  `pixi run check-dartpy-import-layout` — passed;
+  `pixi run check-docs-policy` — passed.
+- Remaining WS4 gap: no comparable per-solve residual exists, so
+  `metrics.numerical.solver_residual` stays typed unsupported in every packet.

@@ -301,6 +301,53 @@ void defSimPartCompute(nb::module_& m)
       .def("__repr__", &sim::compute::WorldStepProfile::toSummaryText)
       .def("__str__", &sim::compute::WorldStepProfile::toSummaryText);
 
+  nb::class_<sim::compute::ResolvedConfigurationNote>(
+      m, "ResolvedConfigurationNote")
+      .def_ro(
+          "domain",
+          &sim::compute::ResolvedConfigurationNote::domain,
+          "Domain the decision applies to, e.g. 'rigid-contact'.")
+      .def_ro(
+          "requested",
+          &sim::compute::ResolvedConfigurationNote::requested,
+          "Method family the World was asked for.")
+      .def_ro(
+          "resolved",
+          &sim::compute::ResolvedConfigurationNote::resolved,
+          "Method family the step actually ran.")
+      .def_ro(
+          "reason",
+          &sim::compute::ResolvedConfigurationNote::reason,
+          "Why the resolution differs from the request, or 'as requested'.")
+      .def_prop_ro(
+          "is_substitution",
+          &sim::compute::ResolvedConfigurationNote::isSubstitution,
+          "True when the resolved family differs from the requested one.")
+      .def("__repr__", [](const sim::compute::ResolvedConfigurationNote& self) {
+        return self.domain + ": " + self.requested + " -> " + self.resolved
+               + " (" + self.reason + ")";
+      });
+
+  nb::class_<sim::compute::ResolvedSolverConfiguration>(
+      m, "ResolvedSolverConfiguration")
+      .def_ro(
+          "notes",
+          &sim::compute::ResolvedSolverConfiguration::notes,
+          "Per-domain requested -> resolved decisions recorded at bake time.")
+      .def("is_empty", &sim::compute::ResolvedSolverConfiguration::isEmpty)
+      .def(
+          "has_substitution",
+          &sim::compute::ResolvedSolverConfiguration::hasSubstitution,
+          "True if any domain resolved to a different family than requested.")
+      .def(
+          "summary",
+          &sim::compute::ResolvedSolverConfiguration::toSummaryText,
+          "Compact 'domain: requested -> resolved (reason)' table.")
+      .def(
+          "__repr__", &sim::compute::ResolvedSolverConfiguration::toSummaryText)
+      .def(
+          "__str__", &sim::compute::ResolvedSolverConfiguration::toSummaryText);
+
   nb::class_<sim::compute::StepMetrics>(m, "StepMetrics")
       .def_ro(
           "kinetic_energy",

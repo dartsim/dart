@@ -30,7 +30,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.0005
+          "time_step_s": 0.0005,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEMI_IMPLICIT@dt=0.001": {
           "gravity_mps2": [
@@ -39,7 +69,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.001
+          "time_step_s": 0.001,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEMI_IMPLICIT@dt=0.002": {
           "gravity_mps2": [
@@ -48,7 +108,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEMI_IMPLICIT@dt=0.004": {
           "gravity_mps2": [
@@ -57,7 +147,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "VARIATIONAL@dt=0.0005": {
           "gravity_mps2": [
@@ -66,7 +186,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.0005
+          "time_step_s": 0.0005,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "VARIATIONAL@dt=0.001": {
           "gravity_mps2": [
@@ -75,7 +225,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.001
+          "time_step_s": 0.001,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "VARIATIONAL@dt=0.002": {
           "gravity_mps2": [
@@ -84,7 +264,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "VARIATIONAL@dt=0.004": {
           "gravity_mps2": [
@@ -93,11 +303,41 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         }
       }
     },
-    "resolved_provenance": "World property readback after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. The controller is applied by this script, not resolved by the World. configuration.timestep is the smallest swept value; configuration.resolved.by_cell is authoritative per cell. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "resolved_provenance": "World property readback after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. The controller is applied by this script, not resolved by the World. configuration.timestep is the smallest swept value; configuration.resolved.by_cell is authoritative per cell. The resolved identity is the World's own bake-time resolution (World.resolved_configuration), recorded per domain with requested, resolved, reason, and a substitution flag, so a method that did not run cannot be reported as if it had. Requested options are additionally asserted against readback per repeat and per cell.",
     "substeps": 1,
     "timestep": 0.0005
   },
@@ -166,7 +406,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.0021383697024277538,
         "steps": 500,
@@ -191,7 +461,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.0022892179585315767,
         "steps": 1000,
@@ -216,7 +516,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.001
+          "time_step_s": 0.001,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.002370166622085158,
         "steps": 2000,
@@ -241,7 +571,37 @@
             -9.81
           ],
           "integration_family": "SEMI_IMPLICIT",
-          "time_step_s": 0.0005
+          "time_step_s": 0.0005,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.0024118796589271295,
         "steps": 4000,
@@ -266,7 +626,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.004
+          "time_step_s": 0.004,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.0021389444846853533,
         "steps": 500,
@@ -291,7 +681,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.0022896056362997587,
         "steps": 1000,
@@ -316,7 +736,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.001
+          "time_step_s": 0.001,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.002370382161031873,
         "steps": 2000,
@@ -341,7 +791,37 @@
             -9.81
           ],
           "integration_family": "VARIATIONAL",
-          "time_step_s": 0.0005
+          "time_step_s": 0.0005,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "variational",
+                "resolved": "variational"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "rms_tracking_error_rad": 0.002411992465209295,
         "steps": 4000,
@@ -496,7 +976,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "2c33043f8ca9616dad99df65593894138e1c5201",
+    "commit": "ca78b0980e88617b98bdbcb84cfeb01931238d05",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
   },
   "title": "PD-control tracking error and control work versus timestep (DART 7 first packet)"

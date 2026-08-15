@@ -46,6 +46,7 @@ import numpy as np
 from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
+    world_resolved_configuration,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -198,6 +199,7 @@ def run_single(
     world.enter_simulation_mode()
 
     resolved = {
+        "world_resolution": world_resolved_configuration(world),
         "integration_family": world.multibody_options.integration_family.name,
         "gravity_mps2": [float(v) for v in np.asarray(world.gravity)],
         "time_step_s": float(world.time_step),
@@ -466,8 +468,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "is applied by this script, not resolved by the World. "
                 "configuration.timestep is the smallest swept value; "
                 "configuration.resolved.by_cell is authoritative per cell. "
-                "World::getResolvedConfiguration() is not yet exposed to "
-                "Python (PLAN-123 WS4 follow-up)."
+                "The resolved identity is the World's own bake-time resolution (World.resolved_configuration), recorded per domain with requested, resolved, reason, and a substitution flag, so a method that did not run cannot be reported as if it had. Requested options are additionally asserted against readback per repeat and per cell."
             ),
             "detector": (
                 "not applicable: the scene has no collision shapes and runs "

@@ -546,6 +546,7 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "is_valid",
         "step_profiling_enabled",
         "last_step_profile",
+        "resolved_configuration",
         "worker_count",
         "inline_threshold",
         "graph_profiles",
@@ -9505,3 +9506,61 @@ def test_simulation_deformable_scene_loader_python_api(tmp_path):
     assert diagnostics.tetrahedron_count == 1
     # Unit corner tetrahedron volume 1/6 at density 6 has total mass 1.
     assert diagnostics.total_mass == pytest.approx(1.0)
+
+
+def test_simulation_world_resolved_configuration_reports_actual_methods():
+    """Resolved solver identity must come from the World, not the request.
+
+    A benchmark or evidence packet that echoes back the requested option
+    cannot tell whether the method it names actually ran. This exposes the
+    World's own bake-time resolution so a packet can record what really
+    executed, per domain, with substitutions flagged.
+    """
+    world = dart.simulation.World(
+        time_step=0.002,
+        contact_solver_method=dart.simulation.ContactSolverMethod.BOXED_LCP,
+    )
+    assert world.resolved_configuration.is_empty()
+
+    body = world.add_rigid_body("body")
+    body.mass = 1.0
+    body.set_collision_shape(dart.simulation.CollisionShape.sphere(0.1))
+    world.enter_simulation_mode()
+
+    resolved = world.resolved_configuration
+    assert not resolved.is_empty()
+    assert not resolved.has_substitution()
+
+    by_domain = {note.domain: note for note in resolved.notes}
+    assert "rigid-contact" in by_domain
+    contact = by_domain["rigid-contact"]
+    assert contact.requested == "boxed-lcp"
+    assert contact.resolved == "boxed-lcp"
+    assert contact.is_substitution is False
+    assert contact.reason
+    assert "boxed-lcp" in resolved.summary()
+
+    for note in resolved.notes:
+        assert note.is_substitution == (note.requested != note.resolved)
+
+
+def test_simulation_world_resolved_configuration_tracks_requested_method():
+    """Changing the requested contact solver changes what is reported."""
+    resolutions = {}
+    for method in ("SEQUENTIAL_IMPULSE", "BOXED_LCP"):
+        world = dart.simulation.World(
+            time_step=0.002,
+            contact_solver_method=getattr(
+                dart.simulation.ContactSolverMethod, method
+            ),
+        )
+        body = world.add_rigid_body("body")
+        body.mass = 1.0
+        body.set_collision_shape(dart.simulation.CollisionShape.sphere(0.1))
+        world.enter_simulation_mode()
+        by_domain = {
+            note.domain: note for note in world.resolved_configuration.notes
+        }
+        resolutions[method] = by_domain["rigid-contact"].resolved
+
+    assert resolutions["SEQUENTIAL_IMPULSE"] != resolutions["BOXED_LCP"]

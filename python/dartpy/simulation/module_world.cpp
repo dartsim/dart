@@ -571,6 +571,16 @@ void defSimPartWorld(nb::module_& m)
           "Per-stage wall-clock profile of the most recent step taken while "
           "step profiling was enabled (empty otherwise). Call .summary() for a "
           "compact text breakdown of where the step spent its time.")
+      .def_prop_ro(
+          "resolved_configuration",
+          &sim::World::getResolvedConfiguration,
+          nb::rv_policy::reference_internal,
+          "Per-domain solver families this World resolved at "
+          "enter_simulation_mode: what was requested, what actually ran, and "
+          "why. Empty until the World enters simulation mode, and re-recorded "
+          "on every rebake. Use this rather than echoing back the requested "
+          "option, so a benchmark or evidence packet cannot report a method "
+          "that did not run.")
       .def(
           "compute_step_metrics",
           &sim::World::computeStepMetrics,

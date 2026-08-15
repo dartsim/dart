@@ -25,7 +25,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "SEQUENTIAL_IMPULSE": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -35,7 +65,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         }
       }
     },
@@ -146,7 +206,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.082,
         "trajectory_sha256": "a839b7f050262f80e450a25831e5b4144eb74f3f725807eb0e92855f762b96d5"
@@ -181,7 +271,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.08,
         "trajectory_sha256": "4579581ae2bab0980e689803c5fc8e7296f2b79314c1b9644855360102d16ced"
@@ -216,7 +336,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.07,
         "trajectory_sha256": "ace9350655e315351bede1b8474feac16c223921633fbf2a5497af3ae57d941a"
@@ -251,7 +401,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.058,
         "trajectory_sha256": "8446fd6f1793674e853a71724405db019de7f5acd799e9e61af877310443edc7"
@@ -286,7 +466,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.07,
         "trajectory_sha256": "fce89de8287195fea41ecdbc5771c027b838e91d2c5be2e7255a6cc2abffeb2d"
@@ -321,7 +531,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.08,
         "trajectory_sha256": "2ca8f5b51e27817c76eedef74e1b9c59813fa9052244f219e3143eb0327f5d7a"
@@ -356,7 +596,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.082,
         "trajectory_sha256": "d7bd5003831ed9c7c1a477345d578fe7f3f5a99706d3a4e9720e11d770a9c5b8"
@@ -391,7 +661,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.082,
         "trajectory_sha256": "f92fc6c64c534a96459ce3ac0a970c931618a8533dd3974b565db61b7cacd150"
@@ -426,7 +726,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.08,
         "trajectory_sha256": "fbe57d7b17ff7fdfe97b1cfe5112698ae2ae9c7c413e4c08eb13baba931e0899"
@@ -461,7 +791,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.07,
         "trajectory_sha256": "baed575b592007dcfedeefa6f7b8c17858d47860acb3e6f2c06e925766e575fe"
@@ -496,7 +856,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.058,
         "trajectory_sha256": "4f8571c3013779682bcf99ce7dd5f3cc7bb3ccb49182fc64f8f55199fa3b19ef"
@@ -531,7 +921,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.07,
         "trajectory_sha256": "be2f9b06b52ffb94c3c4c65e2ef2a1ba188e02b852e89c1fcd355fb87e27079d"
@@ -566,7 +986,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.08,
         "trajectory_sha256": "dd250dfabf218e68548f9edf30a342bc1bc595d6675b5f602f4bf608f88921e0"
@@ -601,7 +1051,37 @@
             -9.81
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
-          "time_step_s": 0.002
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
         },
         "slide_end_time_s": 0.082,
         "trajectory_sha256": "631d89a93d54a08badc23834c755a2a84c88f7d6f6b94a2357bd81a5a3e7d9a5"
@@ -721,7 +1201,7 @@
     "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Outcome actually observed: lateral drift reaches 2.1e-3 m against a 1e-4 m isotropy tolerance, with exact nulls at 0, 45, and 90 deg and antisymmetry about 45 deg to within 1e-13 of peak, in both contact solvers; the drift criterion is the only one of the three tolerances exceeded, and every cell passes the physical-validity gate. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
     "disposition": "reproduced",
     "limitations": [
-      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback, corroborated by per-solver trajectory-hash differences.",
+      "Resolved identity now comes from the World's own bake-time resolution, corroborated by per-solver trajectory-hash differences.",
       "No solver residual exists on this path: it is typed unsupported, not reported as zero. Friction-cone and complementarity violations are not exposed either.",
       "The boxed-LCP path records no iteration count; only sequential impulse reports one, and that is its configured sweep count rather than an observed convergence measure.",
       "Penetration is clamped at zero by the runtime, so 0.0 means no positive penetration was observed and does not distinguish resting-tangent from separated contacts.",
@@ -782,7 +1262,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "9101d917fdb33998abd0a48d705fe42a632d1493",
+    "commit": "ca78b0980e88617b98bdbcb84cfeb01931238d05",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one."
   },
   "title": "Rolling-direction friction dependence (DART 7 first packet)"

@@ -48,6 +48,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
     solver_iterations_by_method,
+    world_resolved_configuration,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -150,6 +151,7 @@ def run_single(
     world.enter_simulation_mode()
 
     resolved = {
+        "world_resolution": world_resolved_configuration(world),
         "contact_solver_method": world.contact_solver_method.name,
         "rigid_body_solver": world.rigid_body_solver.name,
         "gravity_mps2": [float(v) for v in np.asarray(world.gravity)],
