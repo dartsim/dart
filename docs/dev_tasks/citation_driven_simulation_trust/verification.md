@@ -329,3 +329,44 @@ WS4-scale work.
   `pixi run check-docs-policy` — passed.
 - Remaining WS4 gap: no comparable per-solve residual exists, so
   `metrics.numerical.solver_residual` stays typed unsupported in every packet.
+
+## CT-007 high-mass-ratio slice — 2026-08-14
+
+- Scene: two-box stack at rest (0.2 m cubes, 1 kg lower box), upper mass swept
+  over four decades so the loaded contact sees ratios 1:1 to 1000:1, both
+  contact solvers, dt 2 ms, 2 s horizon, two deterministic repeats per cell.
+- Disposition `unresolved`: the cited claim compares against exact-cone
+  methods and no exact-cone arm exists on this branch, so the row cannot be
+  reproduced. The packet establishes the baseline arm the WS5 GO/NO-GO needs.
+
+### Finding worth a maintainer decision
+
+`SEQUENTIAL_IMPULSE`, the World's default contact solver, fails completely at
+mass ratios 100 and 1000:
+
+| solver             | ratio 1 | ratio 10 | ratio 100  | ratio 1000 |
+| ------------------ | ------- | -------- | ---------- | ---------- |
+| SEQUENTIAL_IMPULSE | 1.41e-4 | 1.02e-3  | **1.0000** | **1.0000** |
+| BOXED_LCP          | 1.96e-4 | 1.98e-4  | 3.26e-5    | -3.01e-4   |
+
+(relative closure of the loaded contact: 1.0 means the two box centers have
+closed by a full box height.)
+
+At ratios 100 and 1000 the heavy box descends 0.20002 m -- exactly one box
+height -- while the lower box moves by microns (2.4e-6 and 5.3e-6 m), and the
+pair comes to rest fully interpenetrated at near-zero velocity (4.8e-7 and
+3.5e-6 m/s). The upper box passes through the lower one rather than the pair
+sinking into the ground. Both outcomes are bit-identical across repeats.
+`BOXED_LCP` holds the same stack across all four decades.
+
+This is consistent with the known behavior of iterative Gauss-Seidel contact
+at high mass ratio under a fixed iteration budget, which is what makes it
+credible rather than a fixture artifact. The packet does not claim the
+mechanism: confirming it needs the per-solve residual WS4 has not exposed.
+The scene rests each box exactly on the one below, so the initial overlap is
+zero and the observed closure is produced by the solve.
+
+- Commands: packet writer as recorded in the packet;
+  `pixi run check-citation-evidence` — OK (it rejected an untyped `None` for
+  the "no failure onset" case on the first attempt, which is now a typed
+  unsupported marker).

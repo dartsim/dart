@@ -17,7 +17,9 @@
       energy drift versus timestep (`unresolved`: both integration families
       converge, but the cited matched-cost comparison is not measured), and
       CT-005 PD tracking (`unresolved`: error is controller-limited and step
-      cost is not measured). Landed on
+      cost is not measured), and CT-007 high mass-ratio stack (`unresolved`
+      for the comparative claim, but it found that the default contact solver
+      fails completely at mass ratios 100 and 1000 where boxed LCP holds). Landed on
       `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
       bullet excluded for lacking the pyramid signature). Open: articulated
       energy/momentum/control, heel-strike/toe-off, high mass-ratio, and
@@ -160,10 +162,13 @@ for downstream-sensitive changes.
 ## Immediate next steps
 
 1. Read `RESUME.md` and verify both branch tips/worktrees.
-2. Continue Phase 2 with heel-strike/toe-off (CT-006), which depends on the
-   WS3 contact semantics, and the high mass-ratio stack row (CT-007).
-3. Start WS4's first slice in parallel where it unblocks packets: expose
+2. Bring the CT-007 sequential-impulse failure to the maintainer: it is a
+   default-path defect, the strongest WS5 GO input so far, and confirming its
+   mechanism needs the per-solve residual WS4 has not exposed.
+3. Continue Phase 2 with heel-strike/toe-off (CT-006), which depends on the
+   WS3 contact semantics, and reset/concurrency queries (CT-011..013).
+4. Start WS4's first slice in parallel where it unblocks packets: expose
    `ResolvedSolverConfiguration` to Python and a comparable per-solve
    residual, both currently typed unsupported in every packet.
-4. Reuse PR #3377 fixtures for the DART 6 CT-007 lane rather than adding
+5. Reuse PR #3377 fixtures for the DART 6 CT-007 lane rather than adding
    new scenes; keep PLAN-621/622 rows referenced, not copied.

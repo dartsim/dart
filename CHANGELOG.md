@@ -622,7 +622,10 @@ compatibility remains on the active DART 6 LTS branch._
   integration families (also unresolved: convergence is observed, the cited
   matched-cost comparison is not measured), and CT-005 PD-control tracking
   (also unresolved: tracking error proves controller-limited rather than
-  integration-limited, and step cost is not measured).
+  integration-limited, and step cost is not measured), and CT-007
+  high-mass-ratio stack conditioning, which records that the default
+  sequential-impulse contact solver fails to hold a two-box stack at mass
+  ratios of 100 and above while the boxed-LCP path holds across four decades.
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.

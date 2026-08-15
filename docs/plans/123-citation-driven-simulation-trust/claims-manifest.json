@@ -156,9 +156,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-123 exact-cone GO/NO-GO (WS5)",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": []
+          "evidence": [
+            "evidence/CT-007-dart7-high-mass-ratio.json"
+          ],
+          "notes": "Two-box stack swept over mass ratios 1..1000 for both contact solvers. Disposition unresolved: the cited claim is comparative and no exact-cone arm exists on this branch. The baseline arm is established and is not a null result -- SEQUENTIAL_IMPULSE (the World default) fails completely at ratios 100 and 1000, the heavy box descending a full box height into the light one, while BOXED_LCP holds across all four decades. This is the WS5 GO/NO-GO input and is worth a maintainer decision on its own."
         },
         "dart6": {
           "owner": "evidence only; reference PR #3377 research lane",

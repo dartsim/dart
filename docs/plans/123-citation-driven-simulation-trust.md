@@ -253,6 +253,13 @@ and domain expansion are DART 7 only.
   instead of echoing back the requested option. A benchmark can no longer
   name a method that did not run. A comparable per-solve residual remains
   unexposed and is still typed unsupported everywhere.
+- CT-007 established the WS5 baseline arm and produced the session's most
+  consequential finding: the World's default contact solver
+  (`SEQUENTIAL_IMPULSE`) fails completely on a two-box stack at mass ratios
+  100 and 1000 -- the heavy box descends a full box height into the light one
+  and rests there -- while `BOXED_LCP` holds across all four swept decades.
+  Deterministic across repeats. This needs a maintainer decision on the
+  default path, and it is the strongest evidence so far toward a WS5 GO.
 - Known gap: the validator does not arithmetically cross-check derived
   metrics against `raw_rows`, so a falsified summary would pass. Closing that
   needs the gate to know each packet's derivation (WS4-scale).

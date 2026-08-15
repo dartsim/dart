@@ -1,0 +1,1014 @@
+{
+  "claim_id": "CT-007",
+  "configuration": {
+    "detector": "DART 7 native World collision pipeline (the World step API exposes no detector selection on main)",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main",
+    "iterations": "World defaults; sequential impulse reports its configured sweep count and the boxed-LCP path records none",
+    "requested": {
+      "backend": "cpu",
+      "contact_solver_method_sweep": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "exact_cone_solver": "not available on this branch; the comparison arm the cited claim needs does not exist yet",
+      "mass_ratio_sweep": [
+        1.0,
+        10.0,
+        100.0,
+        1000.0
+      ],
+      "precision": "float64",
+      "threads": "World default sequential step"
+    },
+    "resolved": {
+      "by_cell": {
+        "BOXED_LCP@ratio=1.0": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "BOXED_LCP@ratio=10.0": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "BOXED_LCP@ratio=100.0": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "BOXED_LCP@ratio=1000.0": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "SEQUENTIAL_IMPULSE@ratio=1.0": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "SEQUENTIAL_IMPULSE@ratio=10.0": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "SEQUENTIAL_IMPULSE@ratio=100.0": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "SEQUENTIAL_IMPULSE@ratio=1000.0": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        }
+      }
+    },
+    "resolved_provenance": "The resolved identity is the World's own bake-time resolution (World.resolved_configuration), recorded per domain with requested, resolved, reason, and a substitution flag. Requested contact solver and timestep are additionally asserted against readback per repeat and per cell.",
+    "substeps": 1,
+    "timestep": 0.002
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 2.0,
+      "start_s": 0.0
+    },
+    "sweep": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "mass_ratio": 1.0
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "mass_ratio": 10.0
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "mass_ratio": 100.0
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "mass_ratio": 1000.0
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "mass_ratio": 1.0
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "mass_ratio": 10.0
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "mass_ratio": 100.0
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "mass_ratio": 1000.0
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct007_high_mass_ratio_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_max_speed_mps": 0.00045895830534830895,
+        "final_state_sha256": "0d8e9e8806ccf8792179d1d7a7ab1803a91339b44302827bf36e481d64e3de1c",
+        "finite": true,
+        "gap_closure_m": 2.8186383662115455e-05,
+        "lower_sink_m": 3.8875436905949634e-05,
+        "mass_ratio": 1.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 0.00010552432357324726,
+        "max_solver_iterations": 8,
+        "relative_gap_closure": 0.00014093191831057728,
+        "repeat_state_sha256": [
+          "0d8e9e8806ccf8792179d1d7a7ab1803a91339b44302827bf36e481d64e3de1c",
+          "0d8e9e8806ccf8792179d1d7a7ab1803a91339b44302827bf36e481d64e3de1c"
+        ],
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 6.706182056809284e-05
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_max_speed_mps": 0.029482304187420837,
+        "final_state_sha256": "546e71ddc989dab2389455d59f9735021eac98f9b8a54fccaf980777d01b8345",
+        "finite": true,
+        "gap_closure_m": 0.00020330330581502798,
+        "lower_sink_m": 0.0003313631340894213,
+        "mass_ratio": 10.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 0.000993297316667946,
+        "max_solver_iterations": 8,
+        "relative_gap_closure": 0.00101651652907514,
+        "repeat_state_sha256": [
+          "546e71ddc989dab2389455d59f9735021eac98f9b8a54fccaf980777d01b8345",
+          "546e71ddc989dab2389455d59f9735021eac98f9b8a54fccaf980777d01b8345"
+        ],
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 0.0005346664399044632
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_max_speed_mps": 4.830545337362943e-07,
+        "final_state_sha256": "f6872ff128b5b9d6bd9bbd1fc3adee6e270f78b5f69db09dc2f296a07c391ce7",
+        "finite": true,
+        "gap_closure_m": 0.2000161894973165,
+        "lower_sink_m": 2.403341138421111e-06,
+        "mass_ratio": 100.0,
+        "max_active_contacts": 12,
+        "max_penetration_m": 0.03329680014905512,
+        "max_solver_iterations": 8,
+        "relative_gap_closure": 1.0000809474865824,
+        "repeat_state_sha256": [
+          "f6872ff128b5b9d6bd9bbd1fc3adee6e270f78b5f69db09dc2f296a07c391ce7",
+          "f6872ff128b5b9d6bd9bbd1fc3adee6e270f78b5f69db09dc2f296a07c391ce7"
+        ],
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 0.20001859283845497
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_max_speed_mps": 3.542993305133921e-06,
+        "final_state_sha256": "d0c911c7ae66e79c3b76279726147f29ab73c6e1b261e2661ce52ea22ee2567e",
+        "finite": true,
+        "gap_closure_m": 0.2000041526819762,
+        "lower_sink_m": 5.348353172895948e-06,
+        "mass_ratio": 1000.0,
+        "max_active_contacts": 9,
+        "max_penetration_m": 0.09336215318424317,
+        "max_solver_iterations": 8,
+        "relative_gap_closure": 1.0000207634098808,
+        "repeat_state_sha256": [
+          "d0c911c7ae66e79c3b76279726147f29ab73c6e1b261e2661ce52ea22ee2567e",
+          "d0c911c7ae66e79c3b76279726147f29ab73c6e1b261e2661ce52ea22ee2567e"
+        ],
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 0.20000950103514914
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_max_speed_mps": 1.4938402596549068e-11,
+        "final_state_sha256": "d84ea1f3527a71440ea5adec7ba0f7b7e6441595a2ed019131cd0065904fefbb",
+        "finite": true,
+        "gap_closure_m": 3.925327088483144e-05,
+        "lower_sink_m": 1.3457496714358586e-06,
+        "mass_ratio": 1.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 3.947738840376358e-05,
+        "max_solver_iterations": 0,
+        "relative_gap_closure": 0.00019626635442415719,
+        "repeat_state_sha256": [
+          "d84ea1f3527a71440ea5adec7ba0f7b7e6441595a2ed019131cd0065904fefbb",
+          "d84ea1f3527a71440ea5adec7ba0f7b7e6441595a2ed019131cd0065904fefbb"
+        ],
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 4.059902055630893e-05
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_max_speed_mps": 8.665822654413277e-06,
+        "final_state_sha256": "ac4dc0f23c4de5fbbdb30f19506cb6eb798962e06bc9d429593a7f324e95deaf",
+        "finite": true,
+        "gap_closure_m": 3.957920874031462e-05,
+        "lower_sink_m": 3.093141870136318e-07,
+        "mass_ratio": 10.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 5.523249223463034e-05,
+        "max_solver_iterations": 0,
+        "relative_gap_closure": 0.0001978960437015731,
+        "repeat_state_sha256": [
+          "ac4dc0f23c4de5fbbdb30f19506cb6eb798962e06bc9d429593a7f324e95deaf",
+          "ac4dc0f23c4de5fbbdb30f19506cb6eb798962e06bc9d429593a7f324e95deaf"
+        ],
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 3.988852292735601e-05
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_max_speed_mps": 0.0008169729485216048,
+        "final_state_sha256": "43ac32aeec725c269d2b042c4ebae272c40d5f5bbf817e010c1f0353740e385f",
+        "finite": true,
+        "gap_closure_m": 6.527479483597887e-06,
+        "lower_sink_m": 3.401292682585211e-05,
+        "mass_ratio": 100.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 0.00017047603952824453,
+        "max_solver_iterations": 0,
+        "relative_gap_closure": 3.263739741798943e-05,
+        "repeat_state_sha256": [
+          "43ac32aeec725c269d2b042c4ebae272c40d5f5bbf817e010c1f0353740e385f",
+          "43ac32aeec725c269d2b042c4ebae272c40d5f5bbf817e010c1f0353740e385f"
+        ],
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 4.054040630946387e-05
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_max_speed_mps": 0.041688097943890993,
+        "final_state_sha256": "2ced2859d56f20af8c566c3c5192580f8e5d768e9acff317f5097839f7829fa1",
+        "finite": true,
+        "gap_closure_m": -6.027789048593246e-05,
+        "lower_sink_m": 0.00011855439148550362,
+        "mass_ratio": 1000.0,
+        "max_active_contacts": 8,
+        "max_penetration_m": 0.0009128958700206913,
+        "max_solver_iterations": 0,
+        "relative_gap_closure": -0.0003013894524296623,
+        "repeat_state_sha256": [
+          "2ced2859d56f20af8c566c3c5192580f8e5d768e9acff317f5097839f7829fa1",
+          "2ced2859d56f20af8c566c3c5192580f8e5d768e9acff317f5097839f7829fa1"
+        ],
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "upper_sink_m": 5.827650099959891e-05
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is the numeric steady-state closure of the loaded contact; no visible-behavior claim is made.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "max_active_contacts": 12,
+      "max_penetration_m": 0.09336215318424317,
+      "method": "Max over run of StepMetrics.max_penetration_depth and active_contact_count; per-method iteration counts where the runtime records them",
+      "penetration_semantics": "StepMetrics.max_penetration_depth clamps each contact depth with std::max(0.0, depth), so a reported 0.0 means no positive penetration was observed and does not distinguish resting-exactly-tangent from separated contacts.",
+      "solver_iterations_by_method": {
+        "BOXED_LCP": {
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so this scene recorded no iteration count for the method: a 0 here means 'not reported', not 'zero iterations'. (An opt-in AVBD stage earlier in the same step can record a count before that branch is reached; this scene enables none, and a nonzero count is published with its provenance instead of this marker.)",
+          "status": "unsupported"
+        },
+        "SEQUENTIAL_IMPULSE": 8
+      },
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "This packet makes no timing claim; the matched-residual timing a Pareto comparison needs is WS5 work and requires the exact-cone arm to exist first",
+      "status": "unsupported"
+    },
+    "physical": {
+      "all_cells_finite": true,
+      "baseline_finding": {
+        "BOXED_LCP": {
+          "fails_at_mass_ratios": [],
+          "failure_onset_ratio": {
+            "reason": "This method held the stack at every swept ratio, so there is no onset within the swept range; the onset is unmeasured, not zero or infinite.",
+            "status": "unsupported"
+          },
+          "holds_across_swept_range": true
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "fails_at_mass_ratios": [
+            100.0,
+            1000.0
+          ],
+          "failure_onset_ratio": 100.0,
+          "holds_across_swept_range": false
+        }
+      },
+      "collapse_threshold_relative": 0.1,
+      "degraded_cells": [
+        {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "finite": true,
+          "mass_ratio": 100.0,
+          "relative_gap_closure": 1.0000809474865824
+        },
+        {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "finite": true,
+          "mass_ratio": 1000.0,
+          "relative_gap_closure": 1.0000207634098808
+        }
+      ],
+      "method": "Steady-state closure of the loaded contact: how far the two box centers approach each other by the horizon, relative to a box height. Reported per mass ratio and solver, with survival and residual speed.",
+      "per_method_summary": {
+        "BOXED_LCP": {
+          "all_finite": true,
+          "cells": 4,
+          "closure_growth_factor": -1.5356144628758956,
+          "max_final_speed_mps": 0.041688097943890993,
+          "max_relative_gap_closure": 0.0001978960437015731,
+          "relative_gap_closure_by_ratio": {
+            "1.0": 0.00019626635442415719,
+            "10.0": 0.0001978960437015731,
+            "100.0": 3.263739741798943e-05,
+            "1000.0": -0.0003013894524296623
+          }
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "all_finite": true,
+          "cells": 4,
+          "closure_growth_factor": 7095.772025227779,
+          "max_final_speed_mps": 0.029482304187420837,
+          "max_relative_gap_closure": 1.0000809474865824,
+          "relative_gap_closure_by_ratio": {
+            "1.0": 0.00014093191831057728,
+            "10.0": 0.00101651652907514,
+            "100.0": 1.0000809474865824,
+            "1000.0": 1.0000207634098808
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a two-box stack with a 1 kg lower box, mass ratios 1 to 1000, 2 ms timestep, 2 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP. The cited claim is comparative and its exact-cone arm does not exist on this branch, so the row is NOT reproduced and nothing here says whether an exact cone would help. What this establishes is the baseline arm the WS5 GO/NO-GO needs, and it is not a null result: SEQUENTIAL_IMPULSE -- the World's default contact solver -- holds the stack at mass ratios 1 and 10 (relative closure 1.4e-4 and 1.0e-3) but fails completely at 100 and 1000, where the heavy box descends a full box height (0.20002 m) while the light box beneath it moves by microns, coming to rest fully interpenetrated at near-zero velocity. BOXED_LCP holds across all four decades (closure 3.3e-5 to 3.0e-4). Both outcomes are bit-identical across repeats. Says nothing about deeper stacks, other shapes or materials, other timesteps, historical DART versions, or DART 6.",
+    "disposition": "unresolved",
+    "limitations": [
+      "The sequential-impulse failure is a geometric observation at one timestep. This packet does not establish the mechanism; a fixed iteration budget is the obvious suspect, and confirming it needs the per-solve residual WS4 has not exposed yet.",
+      "Two boxes only. Conditioning problems are usually worse in deeper stacks, so this is a floor on the effect, not a characterization of it.",
+      "One timestep. Contact stiffness interacts with the step size, so a ratio sweep at a single dt cannot separate the two.",
+      "No exact-cone arm exists, so the packet cannot test the cited improvement; it only records what the current solvers do.",
+      "Closure is measured at the horizon, not tracked as a time series, so a stack that closes and recovers is not distinguished from one that never closed.",
+      "No solver residual exists on this path and boxed LCP records no iteration count; both are typed unsupported rather than reported as zero, so the conditioning signal here is geometric rather than algebraic."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "Two-box stack at rest on a static ground: a 1 kg lower box supporting an upper box whose mass is swept over four decades, so the loaded contact sees mass ratios from 1:1 to 1000:1. Boxes are 0.2 m cubes, friction 0.8, restitution 0, simulated to a 2 s horizon per ratio/solver cell.",
+    "digest": "sha256:e4abfffd26d2eb9655286a23ad72f626144f0ef8d16fc45abc9e47f87d541c83",
+    "id": "ct007_high_mass_ratio_stack",
+    "parameters": {
+      "box_half_extent_m": 0.1,
+      "contact_solver_methods": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "description": "Two-box stack at rest on a static ground: a 1 kg lower box supporting an upper box whose mass is swept over four decades, so the loaded contact sees mass ratios from 1:1 to 1000:1. Boxes are 0.2 m cubes, friction 0.8, restitution 0, simulated to a 2 s horizon per ratio/solver cell.",
+      "deterministic_repeats": 2,
+      "friction": 0.8,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "ground_half_extents_m": [
+        1.0,
+        1.0,
+        0.05
+      ],
+      "horizon_s": 2.0,
+      "lower_mass_kg": 1.0,
+      "mass_ratios": [
+        1.0,
+        10.0,
+        100.0,
+        1000.0
+      ],
+      "restitution": 0.0,
+      "scene_id": "ct007_high_mass_ratio_stack",
+      "timestep_s": 0.002
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Exact Coulomb cones and adaptive proximal methods may improve conditioning and remove friction-pyramid anisotropy.",
+    "url": "https://arxiv.org/abs/2405.17020"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "ebbbb853a49cf59bafb590cf111c110acbd0531b",
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+  },
+  "title": "High-mass-ratio stack conditioning baseline for the exact-cone GO/NO-GO (DART 7)"
+}
