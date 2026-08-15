@@ -620,7 +620,9 @@ compatibility remains on the active DART 6 LTS branch._
   recorded as an honest negative result rather than a reproduction), and
   CT-004 articulated energy drift versus timestep across both multibody
   integration families (also unresolved: convergence is observed, the cited
-  matched-cost comparison is not measured).
+  matched-cost comparison is not measured), and CT-005 PD-control tracking
+  (also unresolved: tracking error proves controller-limited rather than
+  integration-limited, and step cost is not measured).
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.

@@ -266,3 +266,36 @@ WS4-scale work.
 
 - Commands after this pass: `pixi run check-citation-evidence` — OK;
   `tests/test_check_citation_evidence.py` — 72 passed.
+
+## CT-005 PD-tracking slice — 2026-08-14
+
+- What changed: `scripts/write_citation_ct005_pd_tracking_packet.py` and its
+  packet; manifest lane, dashboard, changelog, task status.
+- Scene: 4-link chain hanging under gravity, links 0.3 m / 1.0 kg with mass at
+  mid-link, tracking a 0.5 Hz / 0.25 rad phase-shifted sinusoidal joint
+  reference, no contact, 2 s horizon.
+- Four tuning iterations were needed and are worth recording, because the
+  first three produced a fixture that measured the controller rather than the
+  integrator: a fixed-gain diagonal PD saturated its 500 Nm limit in every
+  cell and diverged at the coarser timesteps. The diagnosis, from a direct
+  probe rather than another guess, was that the root joint of a serial chain
+  sees a far smaller articulated inertia than the composite rigid-body
+  inertia used to size its gains, so root gains stiff enough to hold the
+  chain were unstable while the tip tracked fine. Replaced with a
+  computed-torque controller built on `Multibody.compute_inverse_dynamics`,
+  which gives every configuration the same closed-loop bandwidth. Result:
+  no saturation, max torque 143.7 Nm, RMS error about 1% of the reference
+  amplitude.
+- Measured RMS tracking error and control work, per family, dt 4 ms -> 0.5 ms:
+  SEMI_IMPLICIT 2.138e-3 -> 2.412e-3 rad with work 6.086 -> 6.534 J;
+  VARIATIONAL 2.139e-3 -> 2.412e-3 rad with work 6.085 -> 6.534 J.
+- Finding: the error is controller-limited, not integration-limited.
+  Refining the timestep eightfold does not reduce tracking error (it varies
+  by ~13% and is slightly lower at the coarsest step) while control work
+  rises monotonically. That is a substantive result about the row's premise:
+  the whole-step tradeoff is not simply "smaller timestep is more accurate".
+- Disposition `unresolved`: the cited claim is a speed/accuracy tradeoff and
+  no step cost is measured, so the row is not promoted. `constraint_error` is
+  typed unsupported because this scene has no constraints to violate.
+- Commands: packet writer as recorded in the packet;
+  `pixi run check-citation-evidence` — OK; 72 pytest cases pass.

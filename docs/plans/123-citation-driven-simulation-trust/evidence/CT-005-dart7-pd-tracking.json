@@ -1,0 +1,503 @@
+{
+  "claim_id": "CT-005",
+  "configuration": {
+    "detector": "not applicable: the scene has no collision shapes and runs no narrow phase",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main (PLAN-123 WS4 follow-up)",
+    "iterations": "World defaults; the variational family uses its default iteration limit and tolerance, which this packet does not vary",
+    "requested": {
+      "backend": "cpu",
+      "contact": "none (no collision shapes)",
+      "controller": "joint PD with per-joint gains scaled to each joint's downstream inertia for a uniform 20 rad/s closed-loop natural frequency at critical damping, torque limit 500 Nm, applied before each step",
+      "integration_family_sweep": [
+        "SEMI_IMPLICIT",
+        "VARIATIONAL"
+      ],
+      "precision": "float64",
+      "threads": "World default sequential step",
+      "timestep_sweep_s": [
+        0.004,
+        0.002,
+        0.001,
+        0.0005
+      ]
+    },
+    "resolved": {
+      "by_cell": {
+        "SEMI_IMPLICIT@dt=0.0005": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.0005
+        },
+        "SEMI_IMPLICIT@dt=0.001": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.001
+        },
+        "SEMI_IMPLICIT@dt=0.002": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.002
+        },
+        "SEMI_IMPLICIT@dt=0.004": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.004
+        },
+        "VARIATIONAL@dt=0.0005": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.0005
+        },
+        "VARIATIONAL@dt=0.001": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.001
+        },
+        "VARIATIONAL@dt=0.002": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.002
+        },
+        "VARIATIONAL@dt=0.004": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.004
+        }
+      }
+    },
+    "resolved_provenance": "World property readback after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. The controller is applied by this script, not resolved by the World. configuration.timestep is the smallest swept value; configuration.resolved.by_cell is authoritative per cell. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "substeps": 1,
+    "timestep": 0.0005
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 2.0,
+      "start_s": 0.0
+    },
+    "sweep": [
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.004
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.002
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.001
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.0005
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.004
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.002
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.001
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.0005
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct005_pd_tracking_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "control_work_j": 6.0859664494528225,
+        "finite": true,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.012325258615201645,
+        "repeat_trajectory_sha256": [
+          "a40a576ab8ac68c9dc8e9da2a5589d2f148112e3df77557b9b590b6854da7e7e",
+          "a40a576ab8ac68c9dc8e9da2a5589d2f148112e3df77557b9b590b6854da7e7e"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.004
+        },
+        "rms_tracking_error_rad": 0.0021383697024277538,
+        "steps": 500,
+        "timestep_s": 0.004,
+        "torque_saturated": false,
+        "trajectory_sha256": "a40a576ab8ac68c9dc8e9da2a5589d2f148112e3df77557b9b590b6854da7e7e"
+      },
+      {
+        "control_work_j": 6.344908570962907,
+        "finite": true,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.013387884667837628,
+        "repeat_trajectory_sha256": [
+          "42625d3562e2fd830f46d76d502dc392061bcad4a29f0017ffceed8392322443",
+          "42625d3562e2fd830f46d76d502dc392061bcad4a29f0017ffceed8392322443"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.002
+        },
+        "rms_tracking_error_rad": 0.0022892179585315767,
+        "steps": 1000,
+        "timestep_s": 0.002,
+        "torque_saturated": false,
+        "trajectory_sha256": "42625d3562e2fd830f46d76d502dc392061bcad4a29f0017ffceed8392322443"
+      },
+      {
+        "control_work_j": 6.471559759362399,
+        "finite": true,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.013918071592133652,
+        "repeat_trajectory_sha256": [
+          "22f17a85005a5d86777ee99ae45f0e50c6de5912017b095219298447eb1352d8",
+          "22f17a85005a5d86777ee99ae45f0e50c6de5912017b095219298447eb1352d8"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.001
+        },
+        "rms_tracking_error_rad": 0.002370166622085158,
+        "steps": 2000,
+        "timestep_s": 0.001,
+        "torque_saturated": false,
+        "trajectory_sha256": "22f17a85005a5d86777ee99ae45f0e50c6de5912017b095219298447eb1352d8"
+      },
+      {
+        "control_work_j": 6.534246144844606,
+        "finite": true,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.014182536997537777,
+        "repeat_trajectory_sha256": [
+          "b3b5af89e1d5b4b04116a59b902a62952945f43adfe3cc7a51e645a05ef59ea2",
+          "b3b5af89e1d5b4b04116a59b902a62952945f43adfe3cc7a51e645a05ef59ea2"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "time_step_s": 0.0005
+        },
+        "rms_tracking_error_rad": 0.0024118796589271295,
+        "steps": 4000,
+        "timestep_s": 0.0005,
+        "torque_saturated": false,
+        "trajectory_sha256": "b3b5af89e1d5b4b04116a59b902a62952945f43adfe3cc7a51e645a05ef59ea2"
+      },
+      {
+        "control_work_j": 6.084679193001343,
+        "finite": true,
+        "integration_family": "VARIATIONAL",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.012325258615201746,
+        "repeat_trajectory_sha256": [
+          "3069b57dec65a0b082ffadea1480ab0838485aac0b4cf9d7ee0bfe8a3f595466",
+          "3069b57dec65a0b082ffadea1480ab0838485aac0b4cf9d7ee0bfe8a3f595466"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.004
+        },
+        "rms_tracking_error_rad": 0.0021389444846853533,
+        "steps": 500,
+        "timestep_s": 0.004,
+        "torque_saturated": false,
+        "trajectory_sha256": "3069b57dec65a0b082ffadea1480ab0838485aac0b4cf9d7ee0bfe8a3f595466"
+      },
+      {
+        "control_work_j": 6.344268146975802,
+        "finite": true,
+        "integration_family": "VARIATIONAL",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.013387884667837479,
+        "repeat_trajectory_sha256": [
+          "a8806d11b3d0d34394958b98e598e40c3a2b6a96d60a6733b72163868b1c52b9",
+          "a8806d11b3d0d34394958b98e598e40c3a2b6a96d60a6733b72163868b1c52b9"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.002
+        },
+        "rms_tracking_error_rad": 0.0022896056362997587,
+        "steps": 1000,
+        "timestep_s": 0.002,
+        "torque_saturated": false,
+        "trajectory_sha256": "a8806d11b3d0d34394958b98e598e40c3a2b6a96d60a6733b72163868b1c52b9"
+      },
+      {
+        "control_work_j": 6.471245047928654,
+        "finite": true,
+        "integration_family": "VARIATIONAL",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.013918071592133655,
+        "repeat_trajectory_sha256": [
+          "0475697e5a6b4918d09ab414085c2814520d0661221cd88bd437236420654861",
+          "0475697e5a6b4918d09ab414085c2814520d0661221cd88bd437236420654861"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.001
+        },
+        "rms_tracking_error_rad": 0.002370382161031873,
+        "steps": 2000,
+        "timestep_s": 0.001,
+        "torque_saturated": false,
+        "trajectory_sha256": "0475697e5a6b4918d09ab414085c2814520d0661221cd88bd437236420654861"
+      },
+      {
+        "control_work_j": 6.534089744691069,
+        "finite": true,
+        "integration_family": "VARIATIONAL",
+        "max_abs_torque_nm": 143.74710461593904,
+        "max_abs_tracking_error_rad": 0.014182536997537746,
+        "repeat_trajectory_sha256": [
+          "d3aab588bca5baf1be2eafc3b3d56ffb472c41e0e26cbab3e284764b9fb15ac8",
+          "d3aab588bca5baf1be2eafc3b3d56ffb472c41e0e26cbab3e284764b9fb15ac8"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "time_step_s": 0.0005
+        },
+        "rms_tracking_error_rad": 0.002411992465209295,
+        "steps": 4000,
+        "timestep_s": 0.0005,
+        "torque_saturated": false,
+        "trajectory_sha256": "d3aab588bca5baf1be2eafc3b3d56ffb472c41e0e26cbab3e284764b9fb15ac8"
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is numeric tracking error and control work; no visible-behavior claim is made.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "any_torque_saturated": false,
+      "constraint_error": {
+        "reason": "The corpus row names constraint error as an oracle. This chain has no loop closures or contacts, so there is no constraint residual to measure; the quantity is absent rather than zero.",
+        "status": "unsupported"
+      },
+      "max_abs_torque_nm_over_cells": 143.74710461593904,
+      "method": "Maximum applied joint torque and whether the configured torque limit was reached in any cell",
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "The corpus row asks for a whole-step speed/accuracy tradeoff, but no interleaved same-host timing methodology was applied, so step cost is not measured and no tradeoff is established",
+      "status": "unsupported"
+    },
+    "physical": {
+      "accuracy_finding": {
+        "all_cells_finite": true,
+        "families_with_improving_tracking": [],
+        "note": "Under computed-torque control the tracking error is set by the closed-loop bandwidth, not by integration error: refining the timestep eightfold does not reduce RMS error (it varies by about 13% and is in fact slightly lower at the coarsest timestep), while control work rises monotonically as the timestep shrinks. So for this system the whole-step tradeoff is not the simple 'smaller timestep is more accurate' shape. Step cost is still not measured, so no speed/accuracy tradeoff is established and this finding does not promote the corpus row.",
+        "regime": "controller-limited",
+        "rms_error_ratio_smallest_over_largest_timestep": {
+          "SEMI_IMPLICIT": 1.1279058322743967,
+          "VARIATIONAL": 1.127655477960714
+        }
+      },
+      "method": "Per-step joint error against the sinusoidal reference (RMS and maximum over the window), and control work as the integral of |tau . qdot| dt accumulated per step",
+      "per_family_summary": {
+        "SEMI_IMPLICIT": {
+          "any_torque_saturated": false,
+          "cells": 4,
+          "control_work_by_timestep": {
+            "0.0005": 6.534246144844606,
+            "0.001": 6.471559759362399,
+            "0.002": 6.344908570962907,
+            "0.004": 6.0859664494528225
+          },
+          "max_abs_torque_nm": 143.74710461593904,
+          "rms_error_at_largest_timestep": 0.0021383697024277538,
+          "rms_error_at_smallest_timestep": 0.0024118796589271295,
+          "rms_tracking_error_by_timestep": {
+            "0.0005": 0.0024118796589271295,
+            "0.001": 0.002370166622085158,
+            "0.002": 0.0022892179585315767,
+            "0.004": 0.0021383697024277538
+          },
+          "tracking_improves_with_timestep": false
+        },
+        "VARIATIONAL": {
+          "any_torque_saturated": false,
+          "cells": 4,
+          "control_work_by_timestep": {
+            "0.0005": 6.534089744691069,
+            "0.001": 6.471245047928654,
+            "0.002": 6.344268146975802,
+            "0.004": 6.084679193001343
+          },
+          "max_abs_torque_nm": 143.74710461593904,
+          "rms_error_at_largest_timestep": 0.0021389444846853533,
+          "rms_error_at_smallest_timestep": 0.002411992465209295,
+          "rms_tracking_error_by_timestep": {
+            "0.0005": 0.002411992465209295,
+            "0.001": 0.002370382161031873,
+            "0.002": 0.0022896056362997587,
+            "0.004": 0.0021389444846853533
+          },
+          "tracking_improves_with_timestep": false
+        }
+      }
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a 4-link PD-tracked chain with no contact, fixed gains, a 2 s horizon, timesteps 0.5-4 ms, and both multibody integration families. What is established: the controller stays stable and unsaturated in every cell, and RMS tracking error does NOT improve as the timestep is refined eightfold (about 2.1e-3 rad at 4 ms versus 2.4e-3 rad at 0.5 ms, against a 0.25 rad reference amplitude), while control work rises monotonically as the timestep shrinks -- the error here is controller-limited, not integration-limited. What is NOT established: the cited speed/accuracy tradeoff, because step cost is not measured at all; constraint error, because this scene has no constraints to violate; and any ranking between the integration families. Says nothing about contacting or legged control, gain tuning, historical DART versions, or DART 6.",
+    "disposition": "unresolved",
+    "limitations": [
+      "No contact: a controlled robot's hard cases are contact transitions, which this fixture deliberately excludes so the tracking signal is unambiguous.",
+      "Step cost is not measured, so the row's speed half is absent; performance is typed unsupported rather than estimated.",
+      "One gain policy (uniform 20 rad/s, critically damped) and one reference trajectory; a gain sweep would change the error/effort balance and is not attempted.",
+      "Control work uses the commanded torque and the joint velocity sampled before the step, so it is a first-order estimate of actuation effort rather than an exact integral.",
+      "The torque limit is recorded and its saturation flagged; a saturated cell would make the comparison between cells unequal, which is why the flag is published per family."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "4-link chain hanging downward under gravity (revolute hinges about y, 0.3 m links, 1.0 kg each, mass centered at mid-link), driven by an inertia-scaled joint PD controller toward a smooth sinusoidal reference about the hanging equilibrium, no contact, simulated to a 2 s horizon per timestep/integration-family cell.",
+    "digest": "sha256:36ab2a98ddd1a3b11e3ad60001339f5107442b8f372f9ceca853c35ec46917b9",
+    "id": "ct005_pd_tracked_chain",
+    "parameters": {
+      "description": "4-link chain hanging downward under gravity (revolute hinges about y, 0.3 m links, 1.0 kg each, mass centered at mid-link), driven by an inertia-scaled joint PD controller toward a smooth sinusoidal reference about the hanging equilibrium, no contact, simulated to a 2 s horizon per timestep/integration-family cell.",
+      "deterministic_repeats": 2,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "horizon_s": 2.0,
+      "integration_families": [
+        "SEMI_IMPLICIT",
+        "VARIATIONAL"
+      ],
+      "link_count": 4,
+      "link_length_m": 0.3,
+      "link_mass_kg": 1.0,
+      "link_radius_m": 0.05,
+      "pd_damping_ratio": 1.0,
+      "pd_natural_frequency_rad_per_s": 20.0,
+      "reference_amplitude_rad": 0.25,
+      "reference_frequency_hz": 0.5,
+      "scene_id": "ct005_pd_tracked_chain",
+      "timesteps_s": [
+        0.004,
+        0.002,
+        0.001,
+        0.0005
+      ],
+      "torque_limit_nm": 500.0
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Controlled robot tracking exposes whole-step speed/accuracy tradeoffs.",
+    "url": "https://leggedrobotics.github.io/SimBenchmark/"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "2c33043f8ca9616dad99df65593894138e1c5201",
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+  },
+  "title": "PD-control tracking error and control work versus timestep (DART 7 first packet)"
+}

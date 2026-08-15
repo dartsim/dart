@@ -112,10 +112,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-123 with PLAN-080",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": [],
-          "notes": "python/examples/demos/scenes/atlas_simbicon.py is the existing controlled-articulated seed."
+          "evidence": [
+            "evidence/CT-005-dart7-pd-tracking.json"
+          ],
+          "notes": "Computed-torque-controlled 4-link hanging chain tracking a sinusoidal joint reference, swept over timestep for both integration families. Disposition unresolved: the cited claim is a whole-step speed/accuracy tradeoff and no step cost is measured. The measured half is itself informative -- tracking error is controller-limited, so refining the timestep eightfold does not reduce it while control work rises."
         },
         "dart6": {
           "owner": "docs/dev_tasks/dart6_citation_contact_trust",

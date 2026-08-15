@@ -15,7 +15,9 @@
       CT-002 dense inelastic contact (`reproduced`), CT-003 dense elastic
       contact (`unresolved` -- no energy injection observed), CT-004 articulated
       energy drift versus timestep (`unresolved`: both integration families
-      converge, but the cited matched-cost comparison is not measured). Landed on
+      converge, but the cited matched-cost comparison is not measured), and
+      CT-005 PD tracking (`unresolved`: error is controller-limited and step
+      cost is not measured). Landed on
       `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
       bullet excluded for lacking the pyramid signature). Open: articulated
       energy/momentum/control, heel-strike/toe-off, high mass-ratio, and
@@ -158,9 +160,8 @@ for downstream-sensitive changes.
 ## Immediate next steps
 
 1. Read `RESUME.md` and verify both branch tips/worktrees.
-2. Continue Phase 2 with the controlled-articulated row (CT-005), seeded by
-   `python/examples/demos/scenes/atlas_simbicon.py`, then heel-strike/toe-off
-   (CT-006), which depends on the WS3 contact semantics.
+2. Continue Phase 2 with heel-strike/toe-off (CT-006), which depends on the
+   WS3 contact semantics, and the high mass-ratio stack row (CT-007).
 3. Start WS4's first slice in parallel where it unblocks packets: expose
    `ResolvedSolverConfiguration` to Python and a comparable per-solve
    residual, both currently typed unsupported in every packet.
