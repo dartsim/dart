@@ -3,7 +3,7 @@
   "configuration": {
     "detector": "swept: fcl, dart, bullet, ode",
     "fallback_policy": "BoxedLcpConstraintSolver secondary-solver fallback (default); per-solve fallback events are not exposed on release-6.20",
-    "iterations": "Dantzig direct solve with PGS fallback; per-solve iteration counts are not exposed on release-6.20",
+    "iterations": "Dantzig direct solve with PGS fallback; per-solve iteration counts are not exposed on release-6.20 and are typed unsupported in metrics.numerical.solver_iterations rather than reported as zero",
     "requested": {
       "backend": "cpu",
       "collision_detector_sweep": [
@@ -205,6 +205,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.0003008910650664e-08,
         "max_penetration_m": 3.89795699606843e-08,
+        "repeat_trajectory_sha256": [
+          "4a77aca83ca57ba322909cdb84214e7f74f03d511693b7e62b18299833545aae",
+          "4a77aca83ca57ba322909cdb84214e7f74f03d511693b7e62b18299833545aae"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -229,6 +233,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.200552320010047e-09,
         "max_penetration_m": 3.897957004395103e-08,
+        "repeat_trajectory_sha256": [
+          "671b2885b12ada4eca7ffc5a0fbd720877fc477caf178f02be39a13d5b703d39",
+          "671b2885b12ada4eca7ffc5a0fbd720877fc477caf178f02be39a13d5b703d39"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -253,6 +261,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.633952195767563e-09,
         "max_penetration_m": 3.897956998843988e-08,
+        "repeat_trajectory_sha256": [
+          "385847571d413022412b9d97cb762da411f74963f6bd796e01b855dd2f462d18",
+          "385847571d413022412b9d97cb762da411f74963f6bd796e01b855dd2f462d18"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -277,6 +289,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 2.9435435422442424e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "530ddcbcea801dc161696faa54cd95024f40aa0493cfdfcc2e589493e89922f3",
+          "530ddcbcea801dc161696faa54cd95024f40aa0493cfdfcc2e589493e89922f3"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -301,6 +317,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.6339523623010166e-09,
         "max_penetration_m": 3.897957004395103e-08,
+        "repeat_trajectory_sha256": [
+          "3b3a1e0efc3893bb2839d9dfec9ee6eccd200c3539f3cc4c5951f37eb75c2d6d",
+          "3b3a1e0efc3893bb2839d9dfec9ee6eccd200c3539f3cc4c5951f37eb75c2d6d"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -325,6 +345,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.200552375521198e-09,
         "max_penetration_m": 3.897956998843988e-08,
+        "repeat_trajectory_sha256": [
+          "d43efd64d62bd595556d9c3885f9aa4656c89d478775c314014c9103652d21c0",
+          "d43efd64d62bd595556d9c3885f9aa4656c89d478775c314014c9103652d21c0"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -349,6 +373,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.000300885513951e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "586a60a444ee4bf5568ce85c45a688a2886d2b775cebfb3543bdf6171920a796",
+          "586a60a444ee4bf5568ce85c45a688a2886d2b775cebfb3543bdf6171920a796"
+        ],
         "resolved": {
           "collision_detector": "fcl",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -373,6 +401,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.0239960868705396e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "983271ef2f164e9c710d1f44df94d04fdfa3fa59aedf5ed5e304dfd30c422725",
+          "983271ef2f164e9c710d1f44df94d04fdfa3fa59aedf5ed5e304dfd30c422725"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -397,6 +429,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.439880099826325e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "e9571091d7cc8a062d6838cabf811d8fdb7fbe00921fc4fe2c4b507c347996e4",
+          "e9571091d7cc8a062d6838cabf811d8fdb7fbe00921fc4fe2c4b507c347996e4"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -421,6 +457,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.883046885087225e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "8d84816917c8326fca76bb567f0f43c120078f0dca2eb3fe5db9828466087986",
+          "8d84816917c8326fca76bb567f0f43c120078f0dca2eb3fe5db9828466087986"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -445,6 +485,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 2.9702688530974797e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "39e79e76da1b41ae6d628132c327f3f226433df095aad691c25c6d55c9fb36ae",
+          "39e79e76da1b41ae6d628132c327f3f226433df095aad691c25c6d55c9fb36ae"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -469,6 +513,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.8830467185537714e-09,
         "max_penetration_m": 3.897956998843988e-08,
+        "repeat_trajectory_sha256": [
+          "59ee9e67bf9a5b5b932dfb4940cf50fdc675508f6c3e23354c76454171ef22f7",
+          "59ee9e67bf9a5b5b932dfb4940cf50fdc675508f6c3e23354c76454171ef22f7"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -493,6 +541,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.439880210848628e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "9881d8b8402de324c7ed3942febb0d00c7c840f0eaaff507592e73b9a939a4d1",
+          "9881d8b8402de324c7ed3942febb0d00c7c840f0eaaff507592e73b9a939a4d1"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -517,6 +569,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.0239960868705396e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "4c94d702c54034f8e2186327888ed16f4570040d8b22fafd4f0f6ef784e647a6",
+          "4c94d702c54034f8e2186327888ed16f4570040d8b22fafd4f0f6ef784e647a6"
+        ],
         "resolved": {
           "collision_detector": "dart",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -541,6 +597,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 0.00019237419087947405,
         "max_penetration_m": 3.921613097190857e-05,
+        "repeat_trajectory_sha256": [
+          "b4b6ac64c3c930ee3ef749e7adebb32fae32f174549eef1fad7fcda04280873c",
+          "b4b6ac64c3c930ee3ef749e7adebb32fae32f174549eef1fad7fcda04280873c"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -565,6 +625,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 0.0001923531015808333,
         "max_penetration_m": 3.9208680391311646e-05,
+        "repeat_trajectory_sha256": [
+          "2b7f6c8158c3a8c715bd8c51590a5c198025f298e344eca137682f79c6615c98",
+          "2b7f6c8158c3a8c715bd8c51590a5c198025f298e344eca137682f79c6615c98"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -589,6 +653,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 0.00019247568394265002,
         "max_penetration_m": 3.9245933294296265e-05,
+        "repeat_trajectory_sha256": [
+          "bf5df720c70b7c9544ab78089118ef70ec1c3990965ac279c967a67a54f51c61",
+          "bf5df720c70b7c9544ab78089118ef70ec1c3990965ac279c967a67a54f51c61"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -613,6 +681,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 0.00019247568394131775,
         "max_penetration_m": 3.9245933294296265e-05,
+        "repeat_trajectory_sha256": [
+          "c2795c5cd37e056d63300c3d7ee0e5d154def682874b90e6b2b07fb708de3b89",
+          "c2795c5cd37e056d63300c3d7ee0e5d154def682874b90e6b2b07fb708de3b89"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -637,6 +709,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 0.00019247568394265002,
         "max_penetration_m": 3.9245933294296265e-05,
+        "repeat_trajectory_sha256": [
+          "cc4717f8ffa95deee723d633adbff7989ca63d3648dd5072feb29c8d5a7fa8bf",
+          "cc4717f8ffa95deee723d633adbff7989ca63d3648dd5072feb29c8d5a7fa8bf"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -661,6 +737,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 2.4131278808514622e-08,
         "max_penetration_m": 1.825392246246338e-07,
+        "repeat_trajectory_sha256": [
+          "29db8c982bc07ff57552ecbb13ceefdb44552bfa1275c417a98666484a9a172a",
+          "29db8c982bc07ff57552ecbb13ceefdb44552bfa1275c417a98666484a9a172a"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -685,6 +765,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 2.9374232712875425e-08,
         "max_penetration_m": 2.123415470123291e-07,
+        "repeat_trajectory_sha256": [
+          "6a98bff6f630816073dcd588f2f7051a6dac63ea974155957ebd2f90c5497d7a",
+          "6a98bff6f630816073dcd588f2f7051a6dac63ea974155957ebd2f90c5497d7a"
+        ],
         "resolved": {
           "collision_detector": "bullet",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -709,6 +793,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.0239960868705396e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "983271ef2f164e9c710d1f44df94d04fdfa3fa59aedf5ed5e304dfd30c422725",
+          "983271ef2f164e9c710d1f44df94d04fdfa3fa59aedf5ed5e304dfd30c422725"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -733,6 +821,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.439880099826325e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "e9571091d7cc8a062d6838cabf811d8fdb7fbe00921fc4fe2c4b507c347996e4",
+          "e9571091d7cc8a062d6838cabf811d8fdb7fbe00921fc4fe2c4b507c347996e4"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -757,6 +849,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.883046885087225e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "8d84816917c8326fca76bb567f0f43c120078f0dca2eb3fe5db9828466087986",
+          "8d84816917c8326fca76bb567f0f43c120078f0dca2eb3fe5db9828466087986"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -781,6 +877,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 2.9702688530974797e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "39e79e76da1b41ae6d628132c327f3f226433df095aad691c25c6d55c9fb36ae",
+          "39e79e76da1b41ae6d628132c327f3f226433df095aad691c25c6d55c9fb36ae"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -805,6 +905,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 1.8830467185537714e-09,
         "max_penetration_m": 3.897956998843988e-08,
+        "repeat_trajectory_sha256": [
+          "59ee9e67bf9a5b5b932dfb4940cf50fdc675508f6c3e23354c76454171ef22f7",
+          "59ee9e67bf9a5b5b932dfb4940cf50fdc675508f6c3e23354c76454171ef22f7"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -829,6 +933,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 9.439880210848628e-09,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "9881d8b8402de324c7ed3942febb0d00c7c840f0eaaff507592e73b9a939a4d1",
+          "9881d8b8402de324c7ed3942febb0d00c7c840f0eaaff507592e73b9a939a4d1"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -853,6 +961,10 @@
         "max_contact_count": 1,
         "max_energy_gain_j": 3.0239960868705396e-08,
         "max_penetration_m": 3.897957001619545e-08,
+        "repeat_trajectory_sha256": [
+          "4c94d702c54034f8e2186327888ed16f4570040d8b22fafd4f0f6ef784e647a6",
+          "4c94d702c54034f8e2186327888ed16f4570040d8b22fafd4f0f6ef784e647a6"
+        ],
         "resolved": {
           "collision_detector": "ode",
           "constraint_solver": "BoxedLcpConstraintSolver",
@@ -887,8 +999,20 @@
     "numerical": {
       "max_contact_count": 1,
       "max_penetration_m": 3.9245933294296265e-05,
-      "method": "Max over run of contact penetrationDepth and contact count from World.getLastCollisionResult; sphere final height guards against fall-through",
-      "min_final_height_m": 0.07999963676540488
+      "method": "Max over run of contact penetrationDepth and contact count from World.getLastCollisionResult; sphere final height is checked against fall-through in the disposition validity gate",
+      "min_final_height_m": 0.07999963676540488,
+      "solver_fallback_events": {
+        "reason": "The Dantzig-primary/PGS-secondary fallback inside BoxedLcpConstraintSolver emits no observable event on this branch, so per-solve fallback occurrences cannot be counted.",
+        "status": "unsupported"
+      },
+      "solver_iterations": {
+        "reason": "release-6.20 exposes no per-solve LCP iteration count: BoxedLcpConstraintSolver has no getNumIterations()-style accessor, so an iteration number cannot be recorded without changing public API, which the LTS compatibility contract forbids.",
+        "status": "unsupported"
+      },
+      "solver_residual": {
+        "reason": "release-6.20 exposes no per-solve LCP residual: the boxed-LCP solvers report no convergence measure through public API, so a residual cannot be recorded without an API change the LTS compatibility contract forbids.",
+        "status": "unsupported"
+      }
     },
     "performance": {
       "reason": "This packet makes no timing claim; interleaved same-host methodology is required before any performance row",
@@ -896,10 +1020,49 @@
     },
     "physical": {
       "anisotropic_detectors": [
-        "bullet",
         "dart",
         "fcl",
         "ode"
+      ],
+      "anisotropy_findings": {
+        "bullet": {
+          "attribution": "scatter exceeding tolerance without angular structure; not attributed to polyhedral friction by this packet",
+          "criteria_exceeded": [
+            "max_abs_lateral_drift_m"
+          ],
+          "pyramid_signature": false,
+          "signature_test": "lateral drift antisymmetric about 45 deg to within 5% of peak drift"
+        },
+        "dart": {
+          "attribution": "orientation-dependent friction-pyramid anisotropy",
+          "criteria_exceeded": [
+            "max_abs_lateral_drift_m"
+          ],
+          "pyramid_signature": true,
+          "signature_test": "lateral drift antisymmetric about 45 deg to within 5% of peak drift"
+        },
+        "fcl": {
+          "attribution": "orientation-dependent friction-pyramid anisotropy",
+          "criteria_exceeded": [
+            "max_abs_lateral_drift_m"
+          ],
+          "pyramid_signature": true,
+          "signature_test": "lateral drift antisymmetric about 45 deg to within 5% of peak drift"
+        },
+        "ode": {
+          "attribution": "orientation-dependent friction-pyramid anisotropy",
+          "criteria_exceeded": [
+            "max_abs_lateral_drift_m"
+          ],
+          "pyramid_signature": true,
+          "signature_test": "lateral drift antisymmetric about 45 deg to within 5% of peak drift"
+        }
+      },
+      "identical_detector_groups": [
+        [
+          "dart",
+          "ode"
+        ]
       ],
       "isotropy_tolerance": {
         "max_abs_heading_error_deg": 0.1,
@@ -909,6 +1072,8 @@
       "method": "Rotational-symmetry sweep: per-angle lateral drift from the launch ray, final-velocity heading error, along-ray travel, slide-to-roll transition time, and max single-step kinetic-energy gain from Skeleton.computeKineticEnergy",
       "per_detector_summary": {
         "bullet": {
+          "antisymmetry_residual_m": 0.0012008356361037364,
+          "antisymmetry_residual_over_peak_drift": 1.793236402231177,
           "max_abs_heading_error_deg": 0.0001606013494080212,
           "max_abs_lateral_drift_m": 0.0006696471444644081,
           "max_contact_count": 1,
@@ -921,6 +1086,8 @@
           "travel_spread_relative": 0.0009235779456713422
         },
         "dart": {
+          "antisymmetry_residual_m": 1.5543122344752192e-15,
+          "antisymmetry_residual_over_peak_drift": 7.399524018723217e-13,
           "max_abs_heading_error_deg": 1.3176791637633171e-07,
           "max_abs_lateral_drift_m": 0.0021005570500782222,
           "max_contact_count": 1,
@@ -933,6 +1100,8 @@
           "travel_spread_relative": 0.0048058022231364725
         },
         "fcl": {
+          "antisymmetry_residual_m": 4.6074255521944e-15,
+          "antisymmetry_residual_over_peak_drift": 2.1934290297198943e-12,
           "max_abs_heading_error_deg": 1.4353389881463893e-07,
           "max_abs_lateral_drift_m": 0.0021005582992501826,
           "max_contact_count": 1,
@@ -945,6 +1114,8 @@
           "travel_spread_relative": 0.00480580991670681
         },
         "ode": {
+          "antisymmetry_residual_m": 1.5543122344752192e-15,
+          "antisymmetry_residual_over_peak_drift": 7.399524018723217e-13,
           "max_abs_heading_error_deg": 1.3176791637633171e-07,
           "max_abs_lateral_drift_m": 0.0021005570500782222,
           "max_contact_count": 1,
@@ -956,14 +1127,17 @@
           "travel_spread_m": 0.003481078961123152,
           "travel_spread_relative": 0.0048058022231364725
         }
-      }
+      },
+      "validity_failures": []
     }
   },
   "result": {
-    "claim_boundary": "release-6.20, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, default boxed-LCP constraint solver, launch angles 0-90 deg in 15 deg steps, detectors fcl, dart, bullet, ode. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 7.",
+    "claim_boundary": "release-6.20, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, default boxed-LCP constraint solver, launch angles 0-90 deg in 15 deg steps, detectors fcl, dart, bullet, ode. The claim reproduces on dart, fcl, ode, which show the antisymmetric friction-pyramid signature; bullet exceeds the drift tolerance without that angular structure and is excluded. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 7.",
     "disposition": "reproduced",
     "limitations": [
-      "Per-solve LCP iteration counts, residuals, and Dantzig-vs-PGS fallback events are not exposed on release-6.20; solver identity is type-level readback.",
+      "Per-solve LCP iteration counts, residuals, and Dantzig-vs-PGS fallback events are not exposed on release-6.20; they are typed unsupported in metrics.numerical rather than reported as zero, and solver identity is type-level readback.",
+      "bullet exceeds the drift tolerance without the antisymmetric pyramid signature (its antisymmetry residual is comparable to its own peak drift, its largest drift sits at 45 deg where the mechanism predicts zero, and its penetration and energy gain are orders of magnitude above the other detectors). Its scatter is NOT attributed to polyhedral friction here, and it is excluded from the reproducing set.",
+      "dart and ode produce bit-identical trajectory hashes at every angle, so the sweep contains fewer independent measurements than detectors; see metrics.physical.identical_detector_groups.",
       "The sweep covers 0-90 deg; pyramid orientation with a period other than 90 deg would need a wider sweep.",
       "Detector availability depends on the build; the packet records the swept set explicitly.",
       "This packet is not a cross-detector accuracy ranking; it only measures rotational-symmetry breaking per detector."
@@ -1022,7 +1196,7 @@
   },
   "target": {
     "branch": "release-6.20",
-    "commit": "39ccd52068b3288b8749be842cc767eadeab7d97"
+    "commit": "1189155fe625ee8d83691d0ebd548801562abd5b"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }

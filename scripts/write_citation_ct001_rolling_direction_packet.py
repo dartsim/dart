@@ -38,6 +38,12 @@ from typing import Any
 
 import dartpy as dart
 import numpy as np
+from citation_packet_utils import (
+    UNSUPPORTED_ANTISYMMETRY_RATIO,
+    UNSUPPORTED_FALLBACK_EVENTS,
+    UNSUPPORTED_SOLVER_ITERATIONS,
+    UNSUPPORTED_SOLVER_RESIDUAL,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = (
@@ -244,6 +250,24 @@ def run_single(
     }
 
 
+def antisymmetry_residual(rows: list[dict[str, Any]]) -> float:
+    """Largest |d(theta) + d(90-theta)| over the sweep.
+
+    A friction pyramid aligned to the tangent axes makes lateral drift
+    antisymmetric about 45 degrees, so this residual is ~0 for a genuine
+    pyramid signature and comparable to the peak drift for isotropic
+    contact-generation scatter. Exceeding a drift tolerance is not by itself
+    evidence of the cited mechanism; this statistic is what separates them.
+    """
+    by_angle = {row["angle_deg"]: row["lateral_drift_m"] for row in rows}
+    residual = 0.0
+    for angle, drift in by_angle.items():
+        mirror = by_angle.get(90.0 - angle)
+        if mirror is not None:
+            residual = max(residual, abs(drift + mirror))
+    return residual
+
+
 def summarize(rows: list[dict[str, Any]], detectors: list[str]) -> dict[str, Any]:
     """Per-detector rotational-symmetry summary across the angle sweep."""
     summary: dict[str, Any] = {}
@@ -267,6 +291,12 @@ def summarize(rows: list[dict[str, Any]], detectors: list[str]) -> dict[str, Any
             "max_penetration_m": max(row["max_penetration_m"] for row in detector_rows),
             "min_final_height_m": min(row["final_height_m"] for row in detector_rows),
             "max_contact_count": max(row["max_contact_count"] for row in detector_rows),
+            "antisymmetry_residual_m": antisymmetry_residual(detector_rows),
+            "antisymmetry_residual_over_peak_drift": (
+                antisymmetry_residual(detector_rows) / max(drifts)
+                if max(drifts) > 0.0
+                else dict(UNSUPPORTED_ANTISYMMETRY_RATIO)
+            ),
         }
     return summary
 
@@ -303,13 +333,28 @@ def build_packet() -> dict[str, Any]:
                     f"{sorted(hashes)}"
                 )
             row = repeats[0]
-            readback = row["resolved"]
-            if readback["collision_detector"] != detector:
+            for repeat in repeats:
+                readback = repeat["resolved"]
+                if readback["collision_detector"] != detector:
+                    raise SystemExit(
+                        f"requested detector {detector} but readback reports "
+                        f"{readback['collision_detector']}"
+                    )
+                if readback != row["resolved"]:
+                    raise SystemExit(
+                        f"{detector} angle {angle}: resolved configuration "
+                        f"differs between repeats: {readback} vs "
+                        f"{row['resolved']}"
+                    )
+            row["repeat_trajectory_sha256"] = [
+                repeat["trajectory_sha256"] for repeat in repeats
+            ]
+            previous = resolved_by_detector.setdefault(detector, row["resolved"])
+            if previous != row["resolved"]:
                 raise SystemExit(
-                    f"requested detector {detector} but readback reports "
-                    f"{readback['collision_detector']}"
+                    f"{detector}: resolved configuration drifted across the "
+                    f"sweep: {previous} vs {row['resolved']}"
                 )
-            resolved_by_detector.setdefault(detector, readback)
             rows.append(row)
 
     if determinism_failures:
@@ -323,17 +368,90 @@ def build_packet() -> dict[str, Any]:
         "max_abs_heading_error_deg": 0.1,
         "travel_spread_relative": 0.01,
     }
+    # Record which criterion fired per detector and whether the drift carries
+    # the antisymmetric pyramid signature. Exceeding a drift tolerance with no
+    # angular structure is contact-generation scatter, not the cited
+    # orientation-dependent mechanism, and must not be counted as a fourth
+    # corroborating instance.
+    anisotropy_findings: dict[str, Any] = {}
+    for detector, stats in summary.items():
+        criteria = sorted(
+            key
+            for key, tolerance in isotropy_tolerance.items()
+            if isinstance(stats.get(key), (int, float)) and stats[key] > tolerance
+        )
+        ratio = stats["antisymmetry_residual_over_peak_drift"]
+        has_signature = isinstance(ratio, (int, float)) and ratio <= 0.05
+        anisotropy_findings[detector] = {
+            "criteria_exceeded": criteria,
+            "pyramid_signature": has_signature,
+            "signature_test": (
+                "lateral drift antisymmetric about 45 deg to within 5% of " "peak drift"
+            ),
+            "attribution": (
+                "orientation-dependent friction-pyramid anisotropy"
+                if has_signature and criteria
+                else (
+                    "scatter exceeding tolerance without angular structure; "
+                    "not attributed to polyhedral friction by this packet"
+                    if criteria
+                    else "within isotropy tolerance"
+                )
+            ),
+        }
     anisotropic_detectors = sorted(
         detector
-        for detector, stats in summary.items()
-        if stats["max_abs_lateral_drift_m"]
-        > isotropy_tolerance["max_abs_lateral_drift_m"]
-        or stats["max_abs_heading_error_deg"]
-        > isotropy_tolerance["max_abs_heading_error_deg"]
-        or stats["travel_spread_relative"]
-        > isotropy_tolerance["travel_spread_relative"]
+        for detector, finding in anisotropy_findings.items()
+        if finding["criteria_exceeded"] and finding["pyramid_signature"]
     )
-    disposition = "reproduced" if anisotropic_detectors else "unresolved"
+
+    # Detectors whose trajectory hashes match exactly are one measurement, not
+    # several; recording that keeps the sweep from reading as more independent
+    # corroboration than it is.
+    hash_groups: dict[tuple[str, ...], list[str]] = {}
+    for detector in detectors:
+        key = tuple(
+            row["trajectory_sha256"]
+            for row in rows
+            if row["collision_detector"] == detector
+        )
+        hash_groups.setdefault(key, []).append(detector)
+    identical_detector_groups = sorted(
+        sorted(group) for group in hash_groups.values() if len(group) > 1
+    )
+
+    # A degenerate run (tunnelling, blow-up) would also break symmetry, so the
+    # disposition is gated on physical validity, not on deviation alone.
+    radius = float(parameters["sphere_radius_m"])
+    validity_failures = [
+        f"{row['collision_detector']} angle {row['angle_deg']}: {reason}"
+        for row in rows
+        for reason, bad in (
+            (
+                "final speed departs from the analytic rolling speed 5/7 v0",
+                abs(
+                    row["final_planar_speed_mps"]
+                    - (5.0 / 7.0) * float(parameters["launch_speed_mps"])
+                )
+                > 1.0e-2,
+            ),
+            ("never reached rolling", row["slide_end_time_s"] is None),
+            (
+                "sphere sank below its own radius (fall-through)",
+                row["final_height_m"] < 0.5 * radius,
+            ),
+            (
+                "penetration exceeded a tenth of the radius",
+                row["max_penetration_m"] > 0.1 * radius,
+            ),
+        )
+        if bad
+    ]
+    disposition = (
+        "reproduced"
+        if anisotropic_detectors and not validity_failures
+        else "unresolved"
+    )
 
     command = (
         "PYTHONPATH=build/default/cpp/Release/python/dartpy pixi run python "
@@ -385,8 +503,10 @@ def build_packet() -> dict[str, Any]:
             "timestep": parameters["time_step_s"],
             "substeps": 1,
             "iterations": (
-                "Dantzig direct solve with PGS fallback; per-solve "
-                "iteration counts are not exposed on release-6.20"
+                "Dantzig direct solve with PGS fallback; per-solve iteration "
+                "counts are not exposed on release-6.20 and are typed "
+                "unsupported in metrics.numerical.solver_iterations rather "
+                "than reported as zero"
             ),
             "fallback_policy": (
                 "BoxedLcpConstraintSolver secondary-solver fallback "
@@ -402,7 +522,7 @@ def build_packet() -> dict[str, Any]:
                 for angle in parameters["launch_angles_deg"]
             ],
             "deterministic_repeats": int(parameters["deterministic_repeats"]),
-            "deterministic_repeats_identical": True,
+            "deterministic_repeats_identical": not determinism_failures,
             "measurement_window": {
                 "start_s": 0.0,
                 "end_s": parameters["time_step_s"] * parameters["step_count"],
@@ -420,17 +540,24 @@ def build_packet() -> dict[str, Any]:
                 ),
                 "per_detector_summary": summary,
                 "isotropy_tolerance": isotropy_tolerance,
+                "anisotropy_findings": anisotropy_findings,
                 "anisotropic_detectors": anisotropic_detectors,
+                "identical_detector_groups": identical_detector_groups,
+                "validity_failures": validity_failures,
             },
             "numerical": {
                 "method": (
                     "Max over run of contact penetrationDepth and contact "
                     "count from World.getLastCollisionResult; sphere final "
-                    "height guards against fall-through"
+                    "height is checked against fall-through in the "
+                    "disposition validity gate"
                 ),
                 "max_penetration_m": max(row["max_penetration_m"] for row in rows),
                 "max_contact_count": max(row["max_contact_count"] for row in rows),
                 "min_final_height_m": min(row["final_height_m"] for row in rows),
+                "solver_iterations": dict(UNSUPPORTED_SOLVER_ITERATIONS),
+                "solver_residual": dict(UNSUPPORTED_SOLVER_RESIDUAL),
+                "solver_fallback_events": dict(UNSUPPORTED_FALLBACK_EVENTS),
             },
             "performance": {
                 "status": "unsupported",
@@ -469,13 +596,31 @@ def build_packet() -> dict[str, Any]:
                 "horizon, default boxed-LCP constraint solver, launch "
                 "angles 0-90 deg in 15 deg steps, detectors "
                 + ", ".join(detectors)
-                + ". Says nothing about other speeds, shapes, stacks, "
-                "historical DART versions, or DART 7."
+                + ". The claim reproduces on "
+                + ", ".join(anisotropic_detectors)
+                + ", which show the antisymmetric friction-pyramid "
+                "signature; bullet exceeds the drift tolerance without that "
+                "angular structure and is excluded. Says nothing about other "
+                "speeds, shapes, stacks, historical DART versions, or DART 7."
             ),
             "limitations": [
                 "Per-solve LCP iteration counts, residuals, and "
                 "Dantzig-vs-PGS fallback events are not exposed on "
-                "release-6.20; solver identity is type-level readback.",
+                "release-6.20; they are typed unsupported in "
+                "metrics.numerical rather than reported as zero, and solver "
+                "identity is type-level readback.",
+                "bullet exceeds the drift tolerance without the "
+                "antisymmetric pyramid signature (its antisymmetry residual "
+                "is comparable to its own peak drift, its largest drift sits "
+                "at 45 deg where the mechanism predicts zero, and its "
+                "penetration and energy gain are orders of magnitude above "
+                "the other detectors). Its scatter is NOT attributed to "
+                "polyhedral friction here, and it is excluded from the "
+                "reproducing set.",
+                "dart and ode produce bit-identical trajectory hashes at "
+                "every angle, so the sweep contains fewer independent "
+                "measurements than detectors; see "
+                "metrics.physical.identical_detector_groups.",
                 "The sweep covers 0-90 deg; pyramid orientation with a "
                 "period other than 90 deg would need a wider sweep.",
                 "Detector availability depends on the build; the packet "

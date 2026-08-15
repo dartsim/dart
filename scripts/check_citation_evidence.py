@@ -8,12 +8,17 @@ dispositions, same fail-closed rules) with `release-6.20` lane ownership:
   (schema `dart.citation_claim_manifest/v1`, `branch: release-6.20`, a
   `corpus_reference` pointing at the DART 7 corpus that owns claim IDs, and a
   single `dart6` lane per claim);
-- validates every packet in `evidence/` against
-  `dart.citation_claim_evidence/v1`: missing target commit, scene digest,
-  requested/resolved method, command, ensemble, disposition, claim boundary,
-  or review record fails, and metric groups must be measured-with-method or
-  explicitly typed `unsupported` with a reason -- never silently absent, null,
-  zero-for-unsupported, or NaN;
+- validates every packet under `evidence/` (recursively, excluding negative
+  controls) and every packet a manifest lane references, wherever it sits,
+  against `dart.citation_claim_evidence/v1`: missing target commit, scene
+  digest, requested/resolved method, command, ensemble, disposition, claim
+  boundary, or review record fails; a lane may not point at prose, a non-JSON
+  file, a path outside `evidence/`, or a negative control; metric groups must
+  be measured-with-method or explicitly typed `unsupported` with a reason --
+  never silently absent, null, NaN, a spelled placeholder such as "n/a", or an
+  unacknowledged exact zero (an unmeasurable quantity is a typed-unsupported
+  marker; a real zero is declared in `measured_zero_fields`); `raw_paths` must
+  resolve to files that exist;
 - requires every packet in `evidence/negative-controls/` to FAIL validation
   with >= 3 errors (permanent proof the validator fails closed);
 - cross-checks manifest lane/evidence links, `release-6.20` branch tags, and
@@ -58,6 +63,9 @@ DISPOSITIONS = (
     "unresolved",
 )
 LANE_STATUSES = ("audit-required", "in-progress", "closed", "not-applicable")
+UNSUPPORTED_SENTINELS = frozenset(
+    {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
+)
 LANE_KEYS = ("dart6",)
 BRANCH_BY_LANE = {"dart6": BRANCH}
 
@@ -94,22 +102,46 @@ def _is_finite_number(value: object) -> bool:
     )
 
 
-def _metric_leaves(value: object) -> list[object]:
+def _is_unsupported_leaf(value: object) -> bool:
+    """True when a nested value is a typed-unsupported marker."""
+    return (
+        isinstance(value, dict)
+        and value.get("status") == "unsupported"
+        and set(value) <= {"status", "reason"}
+    )
+
+
+def _metric_leaves(value: object, path: str = "") -> list[tuple[str, object]]:
+    """Flatten a metric value into (dotted-path, leaf) pairs.
+
+    Typed-unsupported markers are returned whole so callers can validate them
+    instead of descending into their `status`/`reason` strings.
+    """
+    if _is_unsupported_leaf(value):
+        return [(path, value)]
     if isinstance(value, dict):
-        leaves: list[object] = []
-        for child in value.values():
-            leaves.extend(_metric_leaves(child))
+        leaves: list[tuple[str, object]] = []
+        for key, child in value.items():
+            leaves.extend(_metric_leaves(child, f"{path}.{key}" if path else str(key)))
         return leaves
     if isinstance(value, list):
         leaves = []
-        for child in value:
-            leaves.extend(_metric_leaves(child))
+        for index, child in enumerate(value):
+            leaves.extend(_metric_leaves(child, f"{path}[{index}]"))
         return leaves
-    return [value]
+    return [(path, value)]
 
 
 def metric_group_errors(name: str, group: object) -> list[str]:
-    """A metric group is measured-with-method or typed unsupported."""
+    """A metric group is measured-with-method or typed unsupported. Nothing else.
+
+    Inside a measured group, every exact-zero number must be acknowledged: an
+    unmeasurable quantity is a typed-unsupported marker
+    (`{"status": "unsupported", "reason": ...}`), and a genuinely measured zero
+    is listed in `measured_zero_fields` by its dotted path. That is what makes
+    "unsupported is never silently zero" an enforced rule instead of a promise:
+    a zero cannot reach a packet without its author naming which kind it is.
+    """
     errors: list[str] = []
     if not isinstance(group, dict) or not group:
         return [f"metrics.{name} must be a non-empty object"]
@@ -119,7 +151,8 @@ def metric_group_errors(name: str, group: object) -> list[str]:
         extra = set(group) - {"status", "reason"}
         if extra:
             errors.append(
-                f"metrics.{name} mixes unsupported status with values: {sorted(extra)}"
+                f"metrics.{name} mixes unsupported status with values: "
+                f"{sorted(extra)}"
             )
         return errors
     if "status" in group:
@@ -129,18 +162,74 @@ def metric_group_errors(name: str, group: object) -> list[str]:
             f"metrics.{name} must record a non-empty measurement 'method' "
             "(or be typed unsupported with a reason)"
         )
-    value_keys = [key for key in group if key != "method"]
+
+    declared_zero_fields = group.get("measured_zero_fields", [])
+    if not isinstance(declared_zero_fields, list) or not all(
+        isinstance(item, str) for item in declared_zero_fields
+    ):
+        errors.append(
+            f"metrics.{name}.measured_zero_fields must be a list of dotted "
+            "field paths"
+        )
+        declared_zero_fields = []
+
+    value_keys = [key for key in group if key not in {"method", "measured_zero_fields"}]
     if not value_keys:
         errors.append(f"metrics.{name} has a method but no measured values")
+
+    observed_zero_fields: list[str] = []
+    leaf_count = 0
     for key in value_keys:
-        for leaf in _metric_leaves(group[key]):
+        leaves = _metric_leaves(group[key], key)
+        leaf_count += len(leaves)
+        for path, leaf in leaves:
+            if _is_unsupported_leaf(leaf):
+                if not _is_nonempty_str(leaf.get("reason")):
+                    errors.append(
+                        f"metrics.{name}.{path} is typed unsupported but has "
+                        "no non-empty reason"
+                    )
+                continue
             if leaf is None:
                 errors.append(
-                    f"metrics.{name}.{key} contains null; unsupported values "
+                    f"metrics.{name}.{path} contains null; unsupported values "
                     "must be typed, not null"
                 )
-            elif isinstance(leaf, (int, float)) and not _is_finite_number(leaf):
-                errors.append(f"metrics.{name}.{key} contains a non-finite number")
+            elif (
+                isinstance(leaf, str) and leaf.strip().lower() in UNSUPPORTED_SENTINELS
+            ):
+                errors.append(
+                    f"metrics.{name}.{path} uses the placeholder {leaf!r}; "
+                    "unsupported values must be typed, not spelled"
+                )
+            elif isinstance(leaf, (int, float)) and not isinstance(leaf, bool):
+                if not math.isfinite(leaf):
+                    errors.append(f"metrics.{name}.{path} contains a non-finite number")
+                elif leaf == 0:
+                    observed_zero_fields.append(path)
+
+    if value_keys and leaf_count == 0:
+        errors.append(
+            f"metrics.{name} has a method but only empty containers; that is "
+            "not a measurement"
+        )
+
+    unacknowledged = [
+        path for path in observed_zero_fields if path not in declared_zero_fields
+    ]
+    if unacknowledged:
+        errors.append(
+            f"metrics.{name} reports exact zero at {sorted(set(unacknowledged))} "
+            "without acknowledgement; type each unmeasurable value as "
+            "{'status': 'unsupported', 'reason': ...} or list a genuinely "
+            "measured zero in measured_zero_fields"
+        )
+    stale = [path for path in declared_zero_fields if path not in observed_zero_fields]
+    if stale:
+        errors.append(
+            f"metrics.{name}.measured_zero_fields lists {sorted(set(stale))} "
+            "which are not zero in this packet"
+        )
     return errors
 
 
@@ -149,6 +238,7 @@ def packet_errors(
     *,
     known_claim_ids: set[str] | None = None,
     expected_branches: tuple[str, ...] = (BRANCH,),
+    base_dir: Path | None = None,
 ) -> list[str]:
     """Return every fail-closed violation for one evidence packet."""
     if not isinstance(packet, dict):
@@ -242,8 +332,14 @@ def packet_errors(
                 "ensemble must record deterministic_repeats >= 2, a sweep of "
                 ">= 2 points, or >= 2 seeds; single runs are not evidence"
             )
+        window = ensemble.get("measurement_window")
         if "measurement_window" not in ensemble:
             errors.append("ensemble.measurement_window is required")
+        elif not window or (isinstance(window, str) and not window.strip()):
+            errors.append(
+                "ensemble.measurement_window must record an actual window, "
+                "not an empty value"
+            )
 
     metrics = packet.get("metrics")
     if not isinstance(metrics, dict):
@@ -274,6 +370,19 @@ def packet_errors(
         has_rows = isinstance(raw_rows, list) and bool(raw_rows)
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
+        if has_paths:
+            for index, raw_path in enumerate(raw_paths):
+                if not _is_nonempty_str(raw_path):
+                    errors.append(
+                        f"evidence.raw_paths[{index}] must be a non-empty string"
+                    )
+                elif base_dir is not None and not any(
+                    (root / raw_path).exists() for root in (base_dir, REPO_ROOT)
+                ):
+                    errors.append(
+                        f"evidence.raw_paths[{index}] {raw_path!r} does not "
+                        "resolve to an existing file; a dangling path is prose"
+                    )
         visual = evidence.get("visual")
         if isinstance(visual, dict):
             if visual.get("status") != "not-applicable" or not _is_nonempty_str(
@@ -462,12 +571,31 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                 for lane_name, lane in lanes.items():
                     if not isinstance(lane, dict):
                         continue
-                    for rel in lane.get("evidence") or []:
+                    lane_paths = lane.get("evidence")
+                    if lane_paths is not None and not isinstance(lane_paths, list):
+                        errors.append(
+                            f"{manifest_path}: {claim_id}.lanes.{lane_name}"
+                            ".evidence must be a list"
+                        )
+                        lane_paths = []
+                    for rel in lane_paths or []:
                         if isinstance(rel, str):
+                            if rel in lane_evidence:
+                                owner = lane_evidence[rel]
+                                errors.append(
+                                    f"{manifest_path}: packet {rel} is claimed "
+                                    f"by both {owner[0]}.{owner[1]} and "
+                                    f"{claim_id}.{lane_name}; one packet has "
+                                    "one owner"
+                                )
                             lane_evidence[rel] = (str(claim_id), str(lane_name))
                             if lane.get("status") == "closed":
                                 closed_lane_packets.add(rel)
 
+    # Every lane-referenced path is validated as a packet, wherever it sits.
+    # Enumerating only `evidence/*.json` would let a lane close a row with a
+    # file the packet checks never reach (prose, an empty object, or the
+    # negative control itself) simply by living one directory deeper.
     for rel, (claim_id, lane_name) in sorted(lane_evidence.items()):
         packet_path = design_dir / rel
         if not packet_path.is_file():
@@ -475,13 +603,48 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                 f"{manifest_path}: {claim_id}.lanes.{lane_name} references "
                 f"missing packet {rel}"
             )
+            continue
+        if packet_path.suffix != ".json":
+            errors.append(
+                f"{manifest_path}: {claim_id}.lanes.{lane_name} references "
+                f"{rel} which is not a .json packet"
+            )
+        try:
+            relative = packet_path.resolve().relative_to(evidence_dir.resolve())
+        except ValueError:
+            errors.append(
+                f"{manifest_path}: {claim_id}.lanes.{lane_name} references "
+                f"{rel} outside evidence/"
+            )
+            continue
+        if relative.parts and relative.parts[0] == "negative-controls":
+            errors.append(
+                f"{manifest_path}: {claim_id}.lanes.{lane_name} references "
+                f"negative control {rel}; a control proves the validator "
+                "fails closed and can never be a claim's evidence"
+            )
 
-    packet_paths = sorted(evidence_dir.glob("*.json")) if evidence_dir.is_dir() else []
+    packet_paths = (
+        sorted(
+            path
+            for path in evidence_dir.rglob("*.json")
+            if negative_dir.resolve() not in path.resolve().parents
+        )
+        if evidence_dir.is_dir()
+        else []
+    )
+    for rel in lane_evidence:
+        candidate = design_dir / rel
+        if candidate.is_file() and candidate not in packet_paths:
+            packet_paths.append(candidate)
+    packet_paths = sorted(set(packet_paths))
     for packet_path in packet_paths:
         packet = _load_json(packet_path, errors)
         if packet is None:
             continue
-        issues = packet_errors(packet, known_claim_ids=known_ids or None)
+        issues = packet_errors(
+            packet, known_claim_ids=known_ids or None, base_dir=design_dir
+        )
         errors.extend(f"{packet_path}: {issue}" for issue in issues)
         if issues or not isinstance(packet, dict):
             continue

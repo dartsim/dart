@@ -63,12 +63,12 @@ Priority order is document order. Active implementation handoff remains in
 - Horizon: Now
 - Dimension: Contact correctness, evidence, and LTS compatibility.
 - Next step: The branch-local claim manifest, fail-closed
-  `pixi run check-citation-evidence` gate, and permanent negative control
-  landed with the 2026-08-14 audit (PLAN-621 owns CT-018, PLAN-622/PR #3431
-  own CT-020, PR #3377 owns exact-Coulomb fixtures). Next: produce the first
-  complete `release-6.20` evidence packet for a first-wave row not owned
-  elsewhere (CT-001 rolling-direction across supported detectors), then the
-  remaining first-wave contact rows. Active handoff:
+  `pixi run check-citation-evidence` gate, permanent negative control, and the
+  first CT-001 rolling-direction packet (fcl/dart/bullet/ode sweep) landed
+  with the 2026-08-14 audit; PLAN-621 owns CT-018, PLAN-622/PR #3431 own
+  CT-020, PR #3377 owns exact-Coulomb fixtures. Next: the remaining
+  first-wave contact rows not owned elsewhere, starting with dense
+  inelastic/elastic grids (CT-002/CT-003). Active handoff:
   `docs/dev_tasks/dart6_citation_contact_trust/`.
 - Gate: Preserve C++17, pybind11, ABI, installed components, FCL default, OSG,
   and unaffected behavior; every packet is `release-6.20`-qualified with
