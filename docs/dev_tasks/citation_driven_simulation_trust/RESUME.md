@@ -34,28 +34,26 @@ statuses were verified; the corpus sidecar now carries the WS0 audit record.
 
 - DART 7: `feature/citation-trust-foundation` in
   `.claude/worktrees/citation-trust-main`, based on `origin/main`
-  20501341226, now at `85e5db2c168` with five commits: the PLAN-123
-  contract, the gate hardening plus dense-contact packets, the round-2
-  verdict/provenance corrections, the RESUME state record, and the CT-004
-  articulated energy-drift packet.
+  20501341226, at `bfa4f0c99bd` (15 commits): the contract and gate, packets for
+  all six first-wave families (CT-001..005, 007, 011), the
+  resolved-configuration bindings, three review-fix passes, and the CT-007 /
+  CT-011 issue drafts plus both PR drafts.
 - DART 6: `feature/dart6-citation-contact-trust` in
   `.claude/worktrees/citation-trust-620`, based on `origin/release-6.20`
-  39ccd52068b, now at `afc6d7ac3c2` with four commits.
+  39ccd52068b, at `978b48e6653` (7 commits).
 
-Both are local-only; nothing pushed. GitHub mutations need maintainer
-approval.
+Both local-only; every head has `check-lint` + `test-all` + the citation
+gate green. GitHub mutations need maintainer approval.
 
 ## Immediate next step
 
-Continue Phase 2 on `main` with the controlled-articulated row (CT-005),
-seeded by `python/examples/demos/scenes/atlas_simbicon.py`: tracking error and
-constraint error under a PD controller, swept over timestep, with control work
-recorded. Keep the same discipline as CT-004 -- no timing claim unless an
-interleaved same-host methodology is actually applied.
-
-Remaining first-wave families after that: heel-strike/toe-off (CT-006, which
-depends on the WS3 contact semantics), high mass-ratio stacks (CT-007), and
-reset/concurrency queries (CT-011..CT-013).
+Awaiting maintainer decisions: post the CT-007 and CT-011 issues
+(`ct007-issue-draft.md`, `ct011-issue-draft.md`), and push/open the two PRs
+(`pr-draft-main.md` here, `pr-draft-620.md` on the 6.20 branch). After that,
+the next implementation slice is WS3 contact ordering/identity on a NEW
+branch (this one is bounded per the work-package rules), motivated concretely
+by CT-011's hidden contact state, followed by CT-006 heel-strike and the
+per-solve residual (WS4 remainder).
 
 ## Context that would be lost
 
