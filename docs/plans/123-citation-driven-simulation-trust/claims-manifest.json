@@ -89,9 +89,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-123 with PLAN-080/084 using StepMetrics",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": []
+          "evidence": [
+            "evidence/CT-004-dart7-articulated-energy-momentum.json"
+          ],
+          "notes": "Passive 4-link pendulum chain swept over timestep for both multibody integration families: relative energy drift shrinks with timestep in both (observed log-log slopes ~1.0). The matched-cost half of the row is NOT covered: no timing methodology was applied, so performance is typed unsupported and no family ranking is claimed."
         },
         "dart6": {
           "owner": "docs/dev_tasks/dart6_citation_contact_trust",

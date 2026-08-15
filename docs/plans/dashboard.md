@@ -54,10 +54,11 @@ its own line so status updates remain git-history friendly.
 - Next step: WS0 audit and the WS1 fail-closed claim/evidence manifest landed
   with a permanent negative control and three first-wave packets: CT-001
   rolling-direction (`reproduced`), CT-002 dense inelastic contact
-  (`reproduced`), and CT-003 dense elastic contact (`unresolved` -- no energy
-  injection observed). Next: the remaining first-wave families (articulated
-  energy/momentum/control, heel-strike/toe-off, high mass-ratio,
-  reset/concurrency queries) with branch-qualified dispositions, reusing
+  (`reproduced`), CT-003 dense elastic contact (`unresolved` -- no energy
+  injection observed), and CT-004 articulated energy drift versus timestep
+  (`reproduced`; the matched-cost half is explicitly uncovered). Next: the
+  remaining first-wave families (articulated control, heel-strike/toe-off,
+  high mass-ratio, reset/concurrency queries) with branch-qualified dispositions, reusing
   existing demos scenes and PLAN-104/621/622 evidence, before
   contact-identity/semantics work (WS3) and cross-family diagnostics (WS4);
   WS4's first slice is exposing `ResolvedSolverConfiguration` to Python and a

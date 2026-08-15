@@ -617,7 +617,9 @@ compatibility remains on the active DART 6 LTS branch._
   friction-pyramid direction dependence reproduces on `main` under both
   Sequential Impulse and boxed-LCP contact solvers), CT-002 dense inelastic
   contact, and CT-003 dense elastic contact (no energy injection observed,
-  recorded as an honest negative result rather than a reproduction).
+  recorded as an honest negative result rather than a reproduction), and
+  CT-004 articulated energy drift versus timestep across both multibody
+  integration families.
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.

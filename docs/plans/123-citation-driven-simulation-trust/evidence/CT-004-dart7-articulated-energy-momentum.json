@@ -1,0 +1,494 @@
+{
+  "claim_id": "CT-004",
+  "configuration": {
+    "detector": "not applicable: the scene has no collision shapes and runs no narrow phase",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main (PLAN-123 WS4 follow-up)",
+    "iterations": "World defaults; the variational family uses MultibodyOptions.variational_max_iterations/tolerance defaults, which this packet does not vary",
+    "requested": {
+      "backend": "cpu",
+      "contact": "none (passive chain, no collision shapes)",
+      "control": "none (released from rest)",
+      "integration_family_sweep": [
+        "SEMI_IMPLICIT",
+        "VARIATIONAL"
+      ],
+      "precision": "float64",
+      "threads": "World default sequential step",
+      "timestep_sweep_s": [
+        0.004,
+        0.002,
+        0.001,
+        0.0005
+      ]
+    },
+    "resolved": {
+      "by_cell": {
+        "SEMI_IMPLICIT@dt=0.0005": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.0005
+        },
+        "SEMI_IMPLICIT@dt=0.001": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.001
+        },
+        "SEMI_IMPLICIT@dt=0.002": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "SEMI_IMPLICIT@dt=0.004": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "VARIATIONAL@dt=0.0005": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.0005
+        },
+        "VARIATIONAL@dt=0.001": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.001
+        },
+        "VARIATIONAL@dt=0.002": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "VARIATIONAL@dt=0.004": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        }
+      }
+    },
+    "resolved_provenance": "World property readback (multibody_options.integration_family, rigid_body_solver, gravity, time_step) after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "substeps": 1,
+    "timestep": 0.0005
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 2.0,
+      "start_s": 0.0
+    },
+    "sweep": [
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.004
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.002
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.001
+      },
+      {
+        "integration_family": "SEMI_IMPLICIT",
+        "timestep_s": 0.0005
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.004
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.002
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.001
+      },
+      {
+        "integration_family": "VARIATIONAL",
+        "timestep_s": 0.0005
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct004_articulated_energy_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "final_total_energy_j": -1.0538611186027076,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_angular_momentum": 5.941837277739446,
+        "max_abs_energy_drift_j": 1.1453730886021916,
+        "max_abs_relative_energy_drift": 0.5674949600416408,
+        "repeat_trajectory_sha256": [
+          "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b",
+          "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004,
+        "trajectory_sha256": "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b"
+      },
+      {
+        "final_total_energy_j": -1.5674156373231396,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_angular_momentum": 5.923917480629072,
+        "max_abs_energy_drift_j": 0.5434502873429725,
+        "max_abs_relative_energy_drift": 0.2692618694897877,
+        "repeat_trajectory_sha256": [
+          "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03",
+          "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002,
+        "trajectory_sha256": "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03"
+      },
+      {
+        "final_total_energy_j": -1.8004734230407382,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_angular_momentum": 5.915049158062866,
+        "max_abs_energy_drift_j": 0.26467289477035383,
+        "max_abs_relative_energy_drift": 0.13113677572528915,
+        "repeat_trajectory_sha256": [
+          "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a",
+          "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.001
+        },
+        "steps": 2000,
+        "timestep_s": 0.001,
+        "trajectory_sha256": "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a"
+      },
+      {
+        "final_total_energy_j": -1.911266312486568,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "SEMI_IMPLICIT",
+        "max_abs_angular_momentum": 5.910616829568312,
+        "max_abs_energy_drift_j": 0.1306014805077389,
+        "max_abs_relative_energy_drift": 0.0647087684350685,
+        "repeat_trajectory_sha256": [
+          "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73",
+          "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "SEMI_IMPLICIT",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.0005
+        },
+        "steps": 4000,
+        "timestep_s": 0.0005,
+        "trajectory_sha256": "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73"
+      },
+      {
+        "final_total_energy_j": -2.0437843185234734,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "VARIATIONAL",
+        "max_abs_angular_momentum": 5.90501861618165,
+        "max_abs_energy_drift_j": 0.1755340480261065,
+        "max_abs_relative_energy_drift": 0.08697138824179299,
+        "repeat_trajectory_sha256": [
+          "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36",
+          "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004,
+        "trajectory_sha256": "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36"
+      },
+      {
+        "final_total_energy_j": -2.0311100411781546,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "VARIATIONAL",
+        "max_abs_angular_momentum": 5.905652977912613,
+        "max_abs_energy_drift_j": 0.08610771893666502,
+        "max_abs_relative_energy_drift": 0.042663562644792916,
+        "repeat_trajectory_sha256": [
+          "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582",
+          "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002,
+        "trajectory_sha256": "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582"
+      },
+      {
+        "final_total_energy_j": -2.02471920214893,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "VARIATIONAL",
+        "max_abs_angular_momentum": 5.905947739122709,
+        "max_abs_energy_drift_j": 0.04264872954602339,
+        "max_abs_relative_energy_drift": 0.02113105267654267,
+        "repeat_trajectory_sha256": [
+          "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae",
+          "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.001
+        },
+        "steps": 2000,
+        "timestep_s": 0.001,
+        "trajectory_sha256": "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae"
+      },
+      {
+        "final_total_energy_j": -2.0215116473513888,
+        "finite": true,
+        "initial_total_energy_j": -2.0182964946827866,
+        "integration_family": "VARIATIONAL",
+        "max_abs_angular_momentum": 5.906075287504381,
+        "max_abs_energy_drift_j": 0.02121937787327255,
+        "max_abs_relative_energy_drift": 0.01051350875809135,
+        "repeat_trajectory_sha256": [
+          "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd",
+          "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd"
+        ],
+        "resolved": {
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "integration_family": "VARIATIONAL",
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.0005
+        },
+        "steps": 4000,
+        "timestep_s": 0.0005,
+        "trajectory_sha256": "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd"
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is the numeric energy-drift trend against timestep; no visible-behavior claim is made.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "angular_momentum_semantics": "Gravity exerts a torque about the world origin, so angular momentum is NOT conserved in this scene. The envelope is recorded as an observed trajectory bound, not as a conservation oracle.",
+      "max_abs_angular_momentum_over_cells": 5.941837277739446,
+      "method": "Angular momentum magnitude about the world origin from StepMetrics.angular_momentum, reported as an observed envelope",
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "The corpus row asks for a matched-cost comparison, but no interleaved same-host timing methodology was applied here, so no cost is measured and no accuracy-per-cost claim is made",
+      "status": "unsupported"
+    },
+    "physical": {
+      "all_cells_finite": true,
+      "families_with_shrinking_drift": [
+        "SEMI_IMPLICIT",
+        "VARIATIONAL"
+      ],
+      "method": "Passive chain: total mechanical energy is conserved analytically, so the oracle is max |total_energy - initial| over the run from StepMetrics.total_energy, normalized by the initial energy, swept over timestep. The convergence order is the least-squares slope of log(drift) versus log(dt).",
+      "per_family_summary": {
+        "SEMI_IMPLICIT": {
+          "cells": 4,
+          "drift_at_largest_timestep": 0.5674949600416408,
+          "drift_at_smallest_timestep": 0.0647087684350685,
+          "drift_shrinks_with_timestep": true,
+          "max_abs_angular_momentum": 5.941837277739446,
+          "observed_convergence_order": 1.0435660979320294,
+          "relative_energy_drift_by_timestep": {
+            "0.0005": 0.0647087684350685,
+            "0.001": 0.13113677572528915,
+            "0.002": 0.2692618694897877,
+            "0.004": 0.5674949600416408
+          }
+        },
+        "VARIATIONAL": {
+          "cells": 4,
+          "drift_at_largest_timestep": 0.08697138824179299,
+          "drift_at_smallest_timestep": 0.01051350875809135,
+          "drift_shrinks_with_timestep": true,
+          "max_abs_angular_momentum": 5.906075287504381,
+          "observed_convergence_order": 1.0158529696870273,
+          "relative_energy_drift_by_timestep": {
+            "0.0005": 0.01051350875809135,
+            "0.001": 0.02113105267654267,
+            "0.002": 0.042663562644792916,
+            "0.004": 0.08697138824179299
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a passive 4-link planar pendulum chain with no contact and no control, 2 s horizon, timesteps 0.5-4 ms, SEMI_IMPLICIT and VARIATIONAL multibody integration families. What is established: both families stay finite and their relative energy drift shrinks as the timestep shrinks, with the observed log-log slopes recorded per family. What is NOT established: the 'at matched cost' half of the corpus row, because no timing was measured; any contact-accuracy claim, because the scene has no contact; and any ranking between the two families. Says nothing about historical DART versions, controlled or contacting articulated scenes, or DART 6.",
+    "disposition": "reproduced",
+    "limitations": [
+      "No contact and no control: this isolates integration accuracy and therefore covers only part of the corpus row, whose contact and matched-cost halves need separate work.",
+      "Cost is recorded as step count only; performance is typed unsupported, so nothing here supports an accuracy-per-cost comparison.",
+      "Angular momentum is not conserved under gravity about the world origin, so it is reported as an envelope rather than an invariant.",
+      "Variational iteration limits and tolerance are left at World defaults and not swept; a tighter tolerance would change the drift figures.",
+      "Four timesteps over one decade; the observed slope is a trend summary, not a certified order of accuracy."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "Passive 4-link planar pendulum chain (revolute hinges about y, link length 0.3 m, mass 1.0 kg) released from rest at alternating joint angles under gravity, no contact and no control, simulated to a 2 s horizon per timestep/integration-family cell.",
+    "digest": "sha256:26b58c168fd28b84eaad15411bccede42f35661b1f76198dd34d6daa6b238b76",
+    "id": "ct004_passive_pendulum_chain",
+    "parameters": {
+      "description": "Passive 4-link planar pendulum chain (revolute hinges about y, link length 0.3 m, mass 1.0 kg) released from rest at alternating joint angles under gravity, no contact and no control, simulated to a 2 s horizon per timestep/integration-family cell.",
+      "deterministic_repeats": 2,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "horizon_s": 2.0,
+      "initial_joint_angle_rad": 0.35,
+      "integration_families": [
+        "SEMI_IMPLICIT",
+        "VARIATIONAL"
+      ],
+      "link_count": 4,
+      "link_length_m": 0.3,
+      "link_mass_kg": 1.0,
+      "link_radius_m": 0.05,
+      "scene_id": "ct004_passive_pendulum_chain",
+      "timesteps_s": [
+        0.004,
+        0.002,
+        0.001,
+        0.0005
+      ]
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Articulated integration/contact accuracy must be compared at matched cost.",
+    "url": "https://leggedrobotics.github.io/SimBenchmark/"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "d7281579701e4f009122968c5782291d12f69ac7",
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+  },
+  "title": "Articulated energy drift versus timestep across integration families (DART 7 first packet)"
+}

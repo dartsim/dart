@@ -13,7 +13,9 @@
 - [ ] Phase 2: Reproduce and classify the six-family first-wave corpus.
       Landed on `main`: CT-001 rolling/friction-direction (`reproduced`),
       CT-002 dense inelastic contact (`reproduced`), CT-003 dense elastic
-      contact (`unresolved` -- no energy injection observed). Landed on
+      contact (`unresolved` -- no energy injection observed), CT-004 articulated
+      energy drift versus timestep (`reproduced` for the convergence half;
+      matched cost explicitly not measured). Landed on
       `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
       bullet excluded for lacking the pyramid signature). Open: articulated
       energy/momentum/control, heel-strike/toe-off, high mass-ratio, and
@@ -156,10 +158,9 @@ for downstream-sensitive changes.
 ## Immediate next steps
 
 1. Read `RESUME.md` and verify both branch tips/worktrees.
-2. Continue Phase 2 with the articulated energy/momentum family (CT-004),
-   reusing `StepMetrics` and the PLAN-084 variational integrator, then the
-   controlled-articulated row (CT-005) seeded by
-   `python/examples/demos/scenes/atlas_simbicon.py`.
+2. Continue Phase 2 with the controlled-articulated row (CT-005), seeded by
+   `python/examples/demos/scenes/atlas_simbicon.py`, then heel-strike/toe-off
+   (CT-006), which depends on the WS3 contact semantics.
 3. Start WS4's first slice in parallel where it unblocks packets: expose
    `ResolvedSolverConfiguration` to Python and a comparable per-solve
    residual, both currently typed unsupported in every packet.
