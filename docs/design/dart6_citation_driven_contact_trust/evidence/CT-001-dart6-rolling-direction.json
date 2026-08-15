@@ -61,7 +61,7 @@
         }
       }
     },
-    "resolved_provenance": "ConstraintSolver.getCollisionDetector().getType() readback after setCollisionDetector plus constraint-solver type name; the writer aborts if readback differs from the request. Boxed-LCP internal Dantzig/PGS selection is not exposed per solve on release-6.20.",
+    "resolved_provenance": "ConstraintSolver.getCollisionDetector().getType() readback after setCollisionDetector plus constraint-solver type name; the writer aborts if readback differs from the request: detector type, timestep, and gravity are each asserted per run and across repeats. Boxed-LCP internal Dantzig/PGS selection is not exposed per solve on release-6.20.",
     "substeps": 1,
     "timestep": 0.002
   },
@@ -1196,7 +1196,7 @@
   },
   "target": {
     "branch": "release-6.20",
-    "commit": "1189155fe625ee8d83691d0ebd548801562abd5b"
+    "commit": "8aedb37a90233acead8f40938a6dc4412812b414"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }

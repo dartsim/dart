@@ -75,6 +75,16 @@
   Compatibility was reviewed clean: the diff touches only `docs/`, `scripts/`,
   `tests/`, `pixi.toml`, and `CHANGELOG.md`, with nothing under `dart/`,
   `python/dartpy/`, `cmake/`, or packaging.
+- Round-2 verification (post-fix, independent): confirmed the bypass is
+  closed, the antisymmetry attribution matches recomputation from raw_rows,
+  and the source claims about `recordSolverDiagnostics` and the BoxedLcp
+  branch are exact in the current tree. It also refined one claim: an opt-in
+  AVBD stage can record an iteration count earlier in the same step, so
+  "never recorded for this method" was over-broad. The marker wording and the
+  helper now key off the observed value rather than the method name, so a
+  genuinely recorded count is published instead of being laundered as
+  unsupported. Resolved-configuration assertions were widened to cover
+  detector, timestep, and gravity per run rather than detector alone.
 - Known gaps: Phase 2 (guard PLAN-621/622 evidence) and remaining first-wave
   rows; per-solve LCP diagnostics remain typed unsupported.
 

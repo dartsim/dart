@@ -340,6 +340,16 @@ def build_packet() -> dict[str, Any]:
                         f"requested detector {detector} but readback reports "
                         f"{readback['collision_detector']}"
                     )
+                if readback["time_step_s"] != float(parameters["time_step_s"]):
+                    raise SystemExit(
+                        f"requested timestep {parameters['time_step_s']} but "
+                        f"readback reports {readback['time_step_s']}"
+                    )
+                if readback["gravity_mps2"] != list(parameters["gravity_mps2"]):
+                    raise SystemExit(
+                        f"requested gravity {parameters['gravity_mps2']} but "
+                        f"readback reports {readback['gravity_mps2']}"
+                    )
                 if readback != row["resolved"]:
                     raise SystemExit(
                         f"{detector} angle {angle}: resolved configuration "
@@ -496,8 +506,10 @@ def build_packet() -> dict[str, Any]:
                 "ConstraintSolver.getCollisionDetector().getType() readback "
                 "after setCollisionDetector plus constraint-solver type "
                 "name; the writer aborts if readback differs from the "
-                "request. Boxed-LCP internal Dantzig/PGS selection is not "
-                "exposed per solve on release-6.20."
+                "request: detector type, timestep, and gravity are each "
+                "asserted per run and across repeats. Boxed-LCP internal "
+                "Dantzig/PGS selection is not exposed per solve on "
+                "release-6.20."
             ),
             "detector": "swept: " + ", ".join(detectors),
             "timestep": parameters["time_step_s"],
