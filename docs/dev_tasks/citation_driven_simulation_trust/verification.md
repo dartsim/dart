@@ -97,9 +97,51 @@ scripts/write_citation_ct002_dense_contact_packet.py` — all cells finite;
     as a negative result rather than a refutation of the original report.
 - Negative control: still fails (>= 3 errors) and is now also rejected if a
   lane references it as evidence.
+
+## Round-2 verification and second fix pass — 2026-08-14
+
+Two independent verifiers re-checked the post-fix state. Both confirmed the
+bypass is closed and the zero rule is real, and both found further defects in
+the CT-002/CT-003 packets that were then fixed:
+
+1. CT-002's `reproduced` verdict rested on one cell crossing a hardcoded
+   0.05 m/s settle threshold. The verifier showed the settle speed is
+   bit-exactly linear in dt (`speed/dt` identical to 17 digits across the two
+   timesteps), which is a converging integrator's quasi-static residual, not
+   instability. The packet now computes that dt-linearity explicitly and
+   refuses to count a dt-linear excess as instability.
+2. Replacing it, CT-002 gained a real oracle: total mechanical energy must not
+   increase after the pile settles. Measured per-step gain in the settle
+   window is 9.98e-4 J (2 ms) and 1.31e-3 J (4 ms) under SEQUENTIAL_IMPULSE
+   against a 1.80e-4 J tolerance, while BOXED_LCP shows 0.0 and 1.34e-6 J.
+   That solver-specific, non-divergent energy gain is what the packet now
+   reports as reproducing the claim, with the scaling limb marked
+   uninstrumented. The first attempt at this oracle measured the whole run and
+   fired on all four cells; that was free-fall discretization error, so the
+   window is gated to the settled phase.
+3. `configuration.resolved_provenance` claimed per-cell assertion of four
+   fields while only the contact solver was checked, and `setdefault` kept the
+   first timestep so 4 ms cells were published as 2 ms. Resolved identity is
+   now keyed per cell (`METHOD@dt=...`) with contact solver, timestep, and
+   gravity each asserted; the same widening was applied to CT-001 and to the
+   `release-6.20` writer.
+4. `solver_iterations_by_method()` keyed "unsupported" off the method name, so
+   a genuinely recorded AVBD-sourced count would have been laundered into
+   "unsupported". It now keys off the observed value, and the BOXED_LCP marker
+   no longer claims the count is _never_ written.
+5. CT-002 cited an "energy monotonicity" oracle it did not have (it tracked
+   kinetic energy only); CT-003's envelope maximum was set by its seed value.
+   Both are now transparent: CT-002 tracks total energy, and CT-003 records
+   `max_total_energy_after_step_j` and `envelope_set_by_initial_state` so the
+   one-sidedness of the test is visible.
+
+- Commands after the second fix pass: `pixi run check-citation-evidence` — OK
+  (it caught two further unacknowledged zeros during the rework, both now
+  declared as genuine measurements); 68 pytest cases pass.
 - Known gaps after this slice: CT-002/CT-003 are bounded reconstructions, not
   source-exact SimBenchmark scenes; per-contact cone/complementarity metrics
-  remain unavailable until WS4.
+  remain unavailable until WS4; the solver-failure limb of CT-003 is only
+  instrumented as non-finite state.
 
 ## Bootstrap record — 2026-08-14
 

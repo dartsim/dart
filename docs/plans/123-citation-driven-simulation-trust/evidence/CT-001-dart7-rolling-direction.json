@@ -39,7 +39,7 @@
         }
       }
     },
-    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, asserted equal to the request and stable across every repeat and sweep point. The independent evidence that the selection changed behavior is that the per-angle trajectory hashes differ between the two contact solvers at every angle; the recorded WorldStepProfile stage names are identical for both methods and therefore do not discriminate. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, with contact solver, timestep, and gravity each asserted equal to the request and stable across every repeat and sweep point. The independent evidence that the selection changed behavior is that the per-angle trajectory hashes differ between the two contact solvers at every angle; the recorded WorldStepProfile stage names are identical for both methods and therefore do not discriminate. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
     "substeps": 1,
     "timestep": 0.002
   },
@@ -635,7 +635,7 @@
       "sequential_impulse_iterations_semantics": "Sequential impulse records the configured iteration count (recordSolverDiagnostics(world, m_iterations)); its Gauss-Seidel loop has no convergence exit, so this is the configured sweep count, not an observed iteration-to-convergence.",
       "solver_iterations_by_method": {
         "BOXED_LCP": {
-          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations is never written for this method; a recorded 0 would mean 'not reported', not 'zero iterations'.",
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so this scene recorded no iteration count for the method: a 0 here means 'not reported', not 'zero iterations'. (An opt-in AVBD stage earlier in the same step can record a count before that branch is reached; this scene enables none, and a nonzero count is published with its provenance instead of this marker.)",
           "status": "unsupported"
         },
         "SEQUENTIAL_IMPULSE": 8
@@ -782,7 +782,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "d0cb640860d7da5a39792a385e7f499610c0536f",
+    "commit": "ac0c074d637304fa7c02aa457d123d54e63f738e",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one."
   },
   "title": "Rolling-direction friction dependence (DART 7 first packet)"

@@ -161,6 +161,7 @@ def run_single(
     state_hash = hashlib.sha256()
     non_finite = False
     max_total_energy = initial_total_energy
+    max_total_energy_after_step = None
     max_penetration = 0.0
     max_iterations = 0
     max_residual = 0.0
@@ -174,6 +175,11 @@ def run_single(
             non_finite = True
             break
         max_total_energy = max(max_total_energy, total_energy)
+        max_total_energy_after_step = (
+            total_energy
+            if max_total_energy_after_step is None
+            else max(max_total_energy_after_step, total_energy)
+        )
         max_penetration = max(max_penetration, float(metrics.max_penetration_depth))
         max_iterations = max(max_iterations, int(metrics.last_step_iterations))
         max_residual = max(max_residual, float(metrics.last_step_residual))
@@ -199,6 +205,11 @@ def run_single(
         "final_state_sha256": state_hash.hexdigest() if not non_finite else None,
         "initial_total_energy_j": initial_total_energy,
         "max_total_energy_j": max_total_energy,
+        "max_total_energy_after_step_j": max_total_energy_after_step,
+        "envelope_set_by_initial_state": (
+            max_total_energy_after_step is not None
+            and max_total_energy_after_step <= initial_total_energy
+        ),
         "energy_envelope_excess_j": max_total_energy - initial_total_energy,
         "final_total_energy_j": (
             float(final_metrics.total_energy) if not non_finite else None
@@ -224,7 +235,7 @@ def build_packet() -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
-    resolved_by_method: dict[str, dict[str, Any]] = {}
+    resolved_by_cell: dict[str, dict[str, Any]] = {}
 
     for method in parameters["contact_solver_methods"]:
         for timestep in parameters["timesteps_s"]:
@@ -239,13 +250,32 @@ def build_packet() -> dict[str, Any]:
                     f"{sorted(map(str, hashes))}"
                 )
             row = repeats[0]
-            readback = row["resolved"]
-            if readback["contact_solver_method"] != method:
-                raise SystemExit(
-                    f"requested contact solver {method} but World readback "
-                    f"reports {readback['contact_solver_method']}"
-                )
-            resolved_by_method.setdefault(method, readback)
+            for repeat in repeats:
+                readback = repeat["resolved"]
+                if readback != row["resolved"]:
+                    raise SystemExit(
+                        f"{method} dt {timestep}: resolved configuration "
+                        f"differs between repeats"
+                    )
+                if readback["contact_solver_method"] != method:
+                    raise SystemExit(
+                        f"requested contact solver {method} but World readback "
+                        f"reports {readback['contact_solver_method']}"
+                    )
+                if readback["time_step_s"] != timestep:
+                    raise SystemExit(
+                        f"requested timestep {timestep} but World readback "
+                        f"reports {readback['time_step_s']}"
+                    )
+                if readback["gravity_mps2"] != list(parameters["gravity_mps2"]):
+                    raise SystemExit(
+                        f"requested gravity {parameters['gravity_mps2']} but "
+                        f"World readback reports {readback['gravity_mps2']}"
+                    )
+            row["repeat_state_sha256"] = [
+                repeat["final_state_sha256"] for repeat in repeats
+            ]
+            resolved_by_cell[f"{method}@dt={timestep}"] = row["resolved"]
             rows.append(row)
 
     if determinism_failures:
@@ -309,7 +339,7 @@ def build_packet() -> dict[str, Any]:
                 "backend": "cpu",
                 "threads": "World default sequential step",
             },
-            "resolved": {"by_contact_solver_method": resolved_by_method},
+            "resolved": {"by_cell": resolved_by_cell},
             "resolved_provenance": (
                 "World property readback (contact_solver_method, "
                 "rigid_body_solver, gravity, time_step) after "
@@ -340,7 +370,7 @@ def build_packet() -> dict[str, Any]:
                 for timestep in parameters["timesteps_s"]
             ],
             "deterministic_repeats": int(parameters["deterministic_repeats"]),
-            "deterministic_repeats_identical": True,
+            "deterministic_repeats_identical": not determinism_failures,
             "measurement_window": {
                 "start_s": 0.0,
                 "end_s": parameters["horizon_s"],
@@ -438,8 +468,20 @@ def build_packet() -> dict[str, Any]:
                 "The envelope uses aggregate world energy; per-body "
                 "restitution-outcome tracking (bounce-height ratios) is "
                 "future work for this row.",
-                "ResolvedSolverConfiguration is not Python-exposed; "
-                "resolved identity is property readback.",
+                "The envelope maximum is set by the initial state in every "
+                "cell (energy never rose above its starting value), so the "
+                "1.8e-4 J tolerance is never exercised; the test is "
+                "one-sided by construction and is reported as such in "
+                "raw_rows.envelope_set_by_initial_state.",
+                "The cited claim also names solver failure. That limb is "
+                "only instrumented as non-finite state: no residual exists "
+                "on this path and the boxed-LCP branch records no iteration "
+                "count, so a non-diverging solver failure would not be "
+                "detected here.",
+                "max_penetration_m is bit-identical across the two solvers "
+                "at each timestep while the trajectories diverge, so it is "
+                "set during the shared first impact and carries no "
+                "solver-discriminating information.",
                 "Two timesteps and two solvers only.",
             ],
         },

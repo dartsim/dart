@@ -20,8 +20,8 @@
       ]
     },
     "resolved": {
-      "by_contact_solver_method": {
-        "BOXED_LCP": {
+      "by_cell": {
+        "BOXED_LCP@dt=0.002": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
             0.0,
@@ -31,7 +31,17 @@
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
           "time_step_s": 0.002
         },
-        "SEQUENTIAL_IMPULSE": {
+        "BOXED_LCP@dt=0.004": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "SEQUENTIAL_IMPULSE@dt=0.002": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
             0.0,
@@ -40,6 +50,16 @@
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
           "time_step_s": 0.002
+        },
+        "SEQUENTIAL_IMPULSE@dt=0.004": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
         }
       }
     },
@@ -82,6 +102,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "energy_envelope_excess_j": 0.0,
+        "envelope_set_by_initial_state": true,
         "final_state_sha256": "f1d5fac4ff2da8ee3e862cc55b49ea2362ecefd6a6527464dab5352f784c949c",
         "final_total_energy_j": 63.44696118939535,
         "finite": true,
@@ -89,8 +110,13 @@
         "max_active_contacts": 216,
         "max_penetration_m": 0.007707330160000275,
         "max_solver_iterations": 8,
+        "max_total_energy_after_step_j": 180.10744260048014,
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "f1d5fac4ff2da8ee3e862cc55b49ea2362ecefd6a6527464dab5352f784c949c",
+          "f1d5fac4ff2da8ee3e862cc55b49ea2362ecefd6a6527464dab5352f784c949c"
+        ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
@@ -107,6 +133,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "energy_envelope_excess_j": 0.0,
+        "envelope_set_by_initial_state": true,
         "final_state_sha256": "6cc4601838f1c5213104137dabb8e8064e376090d6cb22068335c12c87a8b125",
         "final_total_energy_j": 63.25766139362141,
         "finite": true,
@@ -114,8 +141,13 @@
         "max_active_contacts": 216,
         "max_penetration_m": 0.01716770175999996,
         "max_solver_iterations": 8,
+        "max_total_energy_after_step_j": 180.09497040192002,
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "6cc4601838f1c5213104137dabb8e8064e376090d6cb22068335c12c87a8b125",
+          "6cc4601838f1c5213104137dabb8e8064e376090d6cb22068335c12c87a8b125"
+        ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
@@ -132,6 +164,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "energy_envelope_excess_j": 0.0,
+        "envelope_set_by_initial_state": true,
         "final_state_sha256": "31c88c2d34b7e738c731aaa2e3e5a4dc9ebca29de00e901dc7296ebddb3402c1",
         "final_total_energy_j": 63.58479412413587,
         "finite": true,
@@ -139,8 +172,13 @@
         "max_active_contacts": 216,
         "max_penetration_m": 0.007707330160000275,
         "max_solver_iterations": 0,
+        "max_total_energy_after_step_j": 180.10744260048014,
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "31c88c2d34b7e738c731aaa2e3e5a4dc9ebca29de00e901dc7296ebddb3402c1",
+          "31c88c2d34b7e738c731aaa2e3e5a4dc9ebca29de00e901dc7296ebddb3402c1"
+        ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
@@ -157,6 +195,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "energy_envelope_excess_j": 0.0,
+        "envelope_set_by_initial_state": true,
         "final_state_sha256": "2438f7c534de26f786af0b223b92f0898d8fcc5618698326c5e9f14be6936513",
         "final_total_energy_j": 63.746668542792605,
         "finite": true,
@@ -164,8 +203,13 @@
         "max_active_contacts": 216,
         "max_penetration_m": 0.01716770175999996,
         "max_solver_iterations": 0,
+        "max_total_energy_after_step_j": 180.09497040192002,
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "2438f7c534de26f786af0b223b92f0898d8fcc5618698326c5e9f14be6936513",
+          "2438f7c534de26f786af0b223b92f0898d8fcc5618698326c5e9f14be6936513"
+        ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
@@ -205,7 +249,7 @@
       "sequential_impulse_iterations_semantics": "Sequential impulse records the configured iteration count (recordSolverDiagnostics(world, m_iterations)); its Gauss-Seidel loop has no convergence exit, so this is the configured sweep count, not an observed iteration-to-convergence.",
       "solver_iterations_by_method": {
         "BOXED_LCP": {
-          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations is never written for this method; a recorded 0 would mean 'not reported', not 'zero iterations'.",
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so this scene recorded no iteration count for the method: a 0 here means 'not reported', not 'zero iterations'. (An opt-in AVBD stage earlier in the same step can record a count before that branch is reached; this scene enables none, and a nonzero count is published with its provenance instead of this marker.)",
           "status": "unsupported"
         },
         "SEQUENTIAL_IMPULSE": 8
@@ -237,7 +281,9 @@
     "limitations": [
       "Bounded reconstruction: the original SimBenchmark elastic test assets and parameters are not reproduced exactly.",
       "The envelope uses aggregate world energy; per-body restitution-outcome tracking (bounce-height ratios) is future work for this row.",
-      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback.",
+      "The envelope maximum is set by the initial state in every cell (energy never rose above its starting value), so the 1.8e-4 J tolerance is never exercised; the test is one-sided by construction and is reported as such in raw_rows.envelope_set_by_initial_state.",
+      "The cited claim also names solver failure. That limb is only instrumented as non-finite state: no residual exists on this path and the boxed-LCP branch records no iteration count, so a non-diverging solver failure would not be detected here.",
+      "max_penetration_m is bit-identical across the two solvers at each timestep while the trajectories diverge, so it is set during the shared first impact and carries no solver-discriminating information.",
       "Two timesteps and two solvers only."
     ]
   },
@@ -287,7 +333,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "d0cb640860d7da5a39792a385e7f499610c0536f"
+    "commit": "ac0c074d637304fa7c02aa457d123d54e63f738e"
   },
   "title": "Dense elastic contact energy envelope (DART 7 first packet)"
 }

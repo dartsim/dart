@@ -329,6 +329,16 @@ def build_packet() -> dict[str, Any]:
                         f"requested contact solver {method} but World readback "
                         f"reports {readback['contact_solver_method']}"
                     )
+                if readback["time_step_s"] != float(parameters["time_step_s"]):
+                    raise SystemExit(
+                        f"requested timestep {parameters['time_step_s']} but "
+                        f"World readback reports {readback['time_step_s']}"
+                    )
+                if readback["gravity_mps2"] != list(parameters["gravity_mps2"]):
+                    raise SystemExit(
+                        f"requested gravity {parameters['gravity_mps2']} but "
+                        f"World readback reports {readback['gravity_mps2']}"
+                    )
             row["repeat_trajectory_sha256"] = [
                 repeat["trajectory_sha256"] for repeat in repeats
             ]
@@ -457,7 +467,8 @@ def build_packet() -> dict[str, Any]:
             "resolved_provenance": (
                 "World property readback (contact_solver_method, "
                 "rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode, asserted equal to the request and "
+                "enter_simulation_mode, with contact solver, timestep, and gravity "
+                "each asserted equal to the request and "
                 "stable across every repeat and sweep point. The independent "
                 "evidence that the selection changed behavior is that the "
                 "per-angle trajectory hashes differ between the two contact "

@@ -163,7 +163,9 @@ def run_single(
     max_residual = 0.0
     max_contacts = 0
     max_energy_gain_after_settle = 0.0
+    max_total_energy_gain_after_settle = 0.0
     previous_kinetic = None
+    previous_total = None
     initial_metrics = world.compute_step_metrics()
     initial_total_energy = float(initial_metrics.total_energy)
 
@@ -171,9 +173,16 @@ def run_single(
         world.step()
         metrics = world.compute_step_metrics()
         kinetic = float(metrics.kinetic_energy)
-        if not math.isfinite(kinetic):
+        total_energy = float(metrics.total_energy)
+        if not (math.isfinite(kinetic) and math.isfinite(total_energy)):
             non_finite = True
             break
+        if previous_total is not None and step_index >= settle_step:
+            max_total_energy_gain_after_settle = max(
+                max_total_energy_gain_after_settle,
+                total_energy - previous_total,
+            )
+        previous_total = total_energy
         if previous_kinetic is not None and step_index >= settle_step:
             max_energy_gain_after_settle = max(
                 max_energy_gain_after_settle, kinetic - previous_kinetic
@@ -213,6 +222,7 @@ def run_single(
         ),
         "initial_total_energy_j": initial_total_energy,
         "max_energy_gain_after_settle_j": max_energy_gain_after_settle,
+        "max_total_energy_gain_after_settle_j": (max_total_energy_gain_after_settle),
         "max_penetration_m": max_penetration,
         "max_solver_iterations": max_iterations,
         "raw_last_step_residual_max": max_residual,
@@ -224,7 +234,7 @@ def build_packet() -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
-    resolved_by_method: dict[str, dict[str, Any]] = {}
+    resolved_by_cell: dict[str, dict[str, Any]] = {}
 
     for method in parameters["contact_solver_methods"]:
         for timestep in parameters["timesteps_s"]:
@@ -239,13 +249,36 @@ def build_packet() -> dict[str, Any]:
                     f"{sorted(map(str, hashes))}"
                 )
             row = repeats[0]
-            readback = row["resolved"]
-            if readback["contact_solver_method"] != method:
-                raise SystemExit(
-                    f"requested contact solver {method} but World readback "
-                    f"reports {readback['contact_solver_method']}"
-                )
-            resolved_by_method.setdefault(method, readback)
+            for repeat in repeats:
+                readback = repeat["resolved"]
+                if readback != row["resolved"]:
+                    raise SystemExit(
+                        f"{method} dt {timestep}: resolved configuration "
+                        f"differs between repeats: {readback} vs "
+                        f"{row['resolved']}"
+                    )
+                # Assert every recorded resolved field against what was asked
+                # for; recording a field without checking it is how a packet
+                # ends up misreporting the configuration that actually ran.
+                if readback["contact_solver_method"] != method:
+                    raise SystemExit(
+                        f"requested contact solver {method} but World readback "
+                        f"reports {readback['contact_solver_method']}"
+                    )
+                if readback["time_step_s"] != timestep:
+                    raise SystemExit(
+                        f"requested timestep {timestep} but World readback "
+                        f"reports {readback['time_step_s']}"
+                    )
+                if readback["gravity_mps2"] != list(parameters["gravity_mps2"]):
+                    raise SystemExit(
+                        f"requested gravity {parameters['gravity_mps2']} but "
+                        f"World readback reports {readback['gravity_mps2']}"
+                    )
+            row["repeat_state_sha256"] = [
+                repeat["final_state_sha256"] for repeat in repeats
+            ]
+            resolved_by_cell[f"{method}@dt={timestep}"] = row["resolved"]
             rows.append(row)
 
     if determinism_failures:
@@ -256,43 +289,100 @@ def build_packet() -> dict[str, Any]:
     all_finite = all(row["finite"] for row in rows)
     max_penetration = max(row["max_penetration_m"] for row in rows)
     max_gain = max(row["max_energy_gain_after_settle_j"] for row in rows)
-    settle_speed = max(row["final_max_speed_mps"] for row in rows if row["finite"])
+    max_total_gain = max(row["max_total_energy_gain_after_settle_j"] for row in rows)
+    final_max_speed_by_cell = {
+        f"{row['contact_solver_method']}@dt={row['timestep_s']}": row[
+            "final_max_speed_mps"
+        ]
+        for row in rows
+        if row["finite"]
+    }
     stability_tolerance = {
         "max_penetration_m": 0.5 * float(parameters["sphere_radius_m"]),
         "final_max_speed_mps": 0.05,
         "max_energy_gain_after_settle_j": 1.0e-3,
+        # Relative to the scene's own initial mechanical energy: after the
+        # pile settles, total energy must not climb. During free fall a
+        # semi-implicit integrator legitimately perturbs total energy, so
+        # this is measured only in the settle window.
+        "max_total_energy_gain_after_settle_j": 1.0e-6
+        * abs(rows[0]["initial_total_energy_j"]),
     }
-    unstable_cells = [
-        {
-            "contact_solver_method": row["contact_solver_method"],
-            "timestep_s": row["timestep_s"],
-            "reasons": [
-                reason
-                for reason, bad in (
-                    ("non-finite state", not row["finite"]),
-                    (
-                        "penetration above half radius",
-                        row["max_penetration_m"]
-                        > stability_tolerance["max_penetration_m"],
-                    ),
-                    (
-                        "pile still moving at horizon",
-                        row["finite"]
-                        and row["final_max_speed_mps"]
-                        > stability_tolerance["final_max_speed_mps"],
-                    ),
-                    (
-                        "energy injected after settle window",
-                        row["max_energy_gain_after_settle_j"]
-                        > stability_tolerance["max_energy_gain_after_settle_j"],
-                    ),
-                )
-                if bad
-            ],
+    residual_speed_tolerance = {
+        "dt_linearity_relative": 1.0e-3,
+        "note": (
+            "A settle speed proportional to dt is the quasi-static residual "
+            "of a converging semi-implicit integrator, not instability: "
+            "halving dt halves it. Instability grows super-linearly or "
+            "diverges. A cell whose speed/dt matches the other cells of its "
+            "method to this relative tolerance is classified as residual."
+        ),
+    }
+
+    # Per method, test whether final speed scales linearly with dt.
+    speed_over_dt: dict[str, list[float]] = {}
+    for row in rows:
+        if row["finite"] and row["timestep_s"] > 0.0:
+            speed_over_dt.setdefault(row["contact_solver_method"], []).append(
+                row["final_max_speed_mps"] / row["timestep_s"]
+            )
+    dt_linearity: dict[str, Any] = {}
+    for method, ratios in speed_over_dt.items():
+        mean = sum(ratios) / len(ratios)
+        spread = (max(ratios) - min(ratios)) / mean if mean > 0.0 else 0.0
+        dt_linearity[method] = {
+            "speed_over_dt": ratios,
+            "relative_spread": spread,
+            "linear_in_dt": (
+                len(ratios) >= 2
+                and mean > 0.0
+                and spread <= residual_speed_tolerance["dt_linearity_relative"]
+            ),
         }
-        for row in rows
-    ]
-    unstable_cells = [cell for cell in unstable_cells if cell["reasons"]]
+
+    cell_findings = []
+    for row in rows:
+        method = row["contact_solver_method"]
+        reasons = []
+        if not row["finite"]:
+            reasons.append("non-finite state")
+        if row["max_penetration_m"] > stability_tolerance["max_penetration_m"]:
+            reasons.append("penetration above half radius")
+        if (
+            row["max_energy_gain_after_settle_j"]
+            > stability_tolerance["max_energy_gain_after_settle_j"]
+        ):
+            reasons.append("kinetic energy injected after settle window")
+        if (
+            row["max_total_energy_gain_after_settle_j"]
+            > stability_tolerance["max_total_energy_gain_after_settle_j"]
+        ):
+            reasons.append("total mechanical energy increased after settle")
+        speed_over_tolerance = (
+            row["finite"]
+            and row["final_max_speed_mps"] > stability_tolerance["final_max_speed_mps"]
+        )
+        residual_only = speed_over_tolerance and dt_linearity.get(method, {}).get(
+            "linear_in_dt", False
+        )
+        if speed_over_tolerance and not residual_only:
+            reasons.append("pile still moving at horizon, not dt-linear")
+        cell_findings.append(
+            {
+                "contact_solver_method": method,
+                "timestep_s": row["timestep_s"],
+                "final_max_speed_mps": row["final_max_speed_mps"],
+                "speed_over_tolerance": speed_over_tolerance,
+                "classified_as_integrator_residual": residual_only,
+                "instability_reasons": reasons,
+            }
+        )
+
+    unstable_cells = [cell for cell in cell_findings if cell["instability_reasons"]]
+    # The cited claim is failure, instability, or poor scaling. Failure and
+    # instability are instrumented here; scaling is not (performance is typed
+    # unsupported). A settle speed that is exactly linear in dt is integrator
+    # residual, so it does not reproduce the claim.
     disposition = "reproduced" if unstable_cells else "unresolved"
 
     command = (
@@ -327,7 +417,7 @@ def build_packet() -> dict[str, Any]:
                 "backend": "cpu",
                 "threads": "World default sequential step",
             },
-            "resolved": {"by_contact_solver_method": resolved_by_method},
+            "resolved": {"by_cell": resolved_by_cell},
             "resolved_provenance": (
                 "World property readback (contact_solver_method, "
                 "rigid_body_solver, gravity, time_step) after "
@@ -358,7 +448,7 @@ def build_packet() -> dict[str, Any]:
                 for timestep in parameters["timesteps_s"]
             ],
             "deterministic_repeats": int(parameters["deterministic_repeats"]),
-            "deterministic_repeats_identical": True,
+            "deterministic_repeats_identical": not determinism_failures,
             "measurement_window": {
                 "start_s": 0.0,
                 "end_s": parameters["horizon_s"],
@@ -375,10 +465,31 @@ def build_packet() -> dict[str, Any]:
                 ),
                 "all_cells_finite": all_finite,
                 "max_penetration_m": max_penetration,
-                "settled_final_max_speed_mps": settle_speed,
+                "final_max_speed_mps_by_cell": final_max_speed_by_cell,
                 "max_energy_gain_after_settle_j": max_gain,
+                "max_total_energy_gain_after_settle_j": max_total_gain,
                 "stability_tolerance": stability_tolerance,
+                "residual_speed_tolerance": residual_speed_tolerance,
+                "dt_linearity": dt_linearity,
+                "cell_findings": cell_findings,
                 "unstable_cells": unstable_cells,
+                # An exactly-zero spread is the finding, not a missing value:
+                # the speed/dt ratios are bit-identical across timesteps.
+                "measured_zero_fields": [
+                    f"dt_linearity.{method}.relative_spread"
+                    for method, linearity in dt_linearity.items()
+                    if linearity["relative_spread"] == 0
+                ]
+                + [
+                    f"final_max_speed_mps_by_cell.{cell}"
+                    for cell, speed in final_max_speed_by_cell.items()
+                    if speed == 0
+                ]
+                + (
+                    ["max_total_energy_gain_after_settle_j"]
+                    if max_total_gain == 0
+                    else []
+                ),
             },
             "numerical": {
                 "method": (
@@ -426,9 +537,10 @@ def build_packet() -> dict[str, Any]:
             "visual": {
                 "status": "not-applicable",
                 "reason": (
-                    "The oracle is numeric (finite state, settle speed, "
-                    "penetration, energy monotonicity); no visible-behavior "
-                    "claim is made by this packet."
+                    "The oracle is numeric (finite state, final speed and "
+                    "its dt scaling, penetration, and non-increase of total "
+                    "mechanical energy from StepMetrics.total_energy); no "
+                    "visible-behavior claim is made by this packet."
                 ),
             },
         },
@@ -438,7 +550,22 @@ def build_packet() -> dict[str, Any]:
                 "DART 7 main, this commit, a bounded (not source-exact) "
                 "6x6x6 sphere-grid drop with restitution 0 and mu=0.8, "
                 "2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and "
-                "BOXED_LCP contact solvers. Says nothing about the original "
+                "BOXED_LCP contact solvers. Outcome actually observed: no "
+                "cell failed (4 of 4 finite, no fall-through, penetration "
+                "within tolerance), and the one cell above the settle-speed "
+                "tolerance has a final speed exactly proportional to dt "
+                "(speed/dt identical across timesteps), which is converging "
+                "integrator residual and is explicitly NOT counted as "
+                "instability. What does reproduce is narrower and "
+                "solver-specific: after the pile settles, total mechanical "
+                "energy increases per step under SEQUENTIAL_IMPULSE at both "
+                "timesteps (about 1.0e-3 J at 2 ms and 1.3e-3 J at 4 ms "
+                "against a 1.8e-4 J tolerance, on a 180 J scene) while "
+                "BOXED_LCP stays at or near zero. That is a small, "
+                "non-divergent, non-physical energy gain in a resting "
+                "inelastic pile, not a blow-up. The poor-scaling limb of the "
+                "cited claim is not instrumented at all (performance is "
+                "typed unsupported). Says nothing about the original "
                 "SimBenchmark scene parameters, historical DART versions, "
                 "other densities/materials, or DART 6."
             ),
@@ -446,12 +573,29 @@ def build_packet() -> dict[str, Any]:
                 "Bounded reconstruction: the original SimBenchmark asset, "
                 "material, and timestep grid are not reproduced exactly; "
                 "sourcing the exact historical setup is future corpus work.",
-                "ResolvedSolverConfiguration is not Python-exposed; "
-                "resolved identity is property readback.",
+                "The reproduced signal is a small per-step energy gain in a "
+                "settled pile, not divergence or failure. It must not be "
+                "quoted as 'dense contact fails' or as a solver ranking.",
+                "The settle window is the second half of the run; a pile "
+                "that settles later would put free-fall discretization error "
+                "inside the window and inflate the energy metric.",
+                "Resolved identity comes from World property readback per "
+                "cell (contact solver, timestep, and gravity each asserted "
+                "against the request); ResolvedSolverConfiguration is not "
+                "Python-exposed.",
+                "No solver residual exists on this path and the boxed-LCP "
+                "branch records no iteration count; both are typed "
+                "unsupported rather than reported as zero, so the corpus "
+                "row's residual and iteration oracles are not yet covered.",
+                "The corpus row also names wall time over the timestep "
+                "grid; this packet makes no timing claim (performance is "
+                "typed unsupported) because no interleaved same-host "
+                "methodology was applied.",
+                "max_active_contacts is 216 in every cell (a fully stacked "
+                "column geometry), so it carries no discriminating "
+                "information here.",
                 "Two timesteps and two solvers only; a wider grid belongs "
                 "to a follow-up once per-island diagnostics exist.",
-                "No per-contact residual/cone reporting is available on "
-                "main; solver residual is the aggregate StepMetrics value.",
             ],
         },
         "review": {"passes": []},
@@ -501,10 +645,16 @@ def main() -> int:
     print(f"wrote {args.output}")
     print(
         f"  all finite: {physical['all_cells_finite']}; max penetration "
-        f"{physical['max_penetration_m']:.3e} m; settled max speed "
-        f"{physical['settled_final_max_speed_mps']:.3e} m/s; max post-settle "
-        f"energy gain {physical['max_energy_gain_after_settle_j']:.3e} J"
+        f"{physical['max_penetration_m']:.3e} m; max total-energy gain "
+        f"{physical['max_total_energy_gain_after_settle_j']:.3e} J"
     )
+    for cell, speed in physical["final_max_speed_mps_by_cell"].items():
+        print(f"  {cell}: final max speed {speed:.4e} m/s")
+    for method, linearity in physical["dt_linearity"].items():
+        print(
+            f"  {method}: speed/dt spread {linearity['relative_spread']:.3e} "
+            f"-> linear_in_dt={linearity['linear_in_dt']}"
+        )
     print(f"  unstable cells: {physical['unstable_cells']}")
     print(f"  disposition: {packet['result']['disposition']}")
     return 0

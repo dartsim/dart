@@ -37,9 +37,12 @@ UNSUPPORTED_BOXED_LCP_ITERATIONS: dict[str, str] = {
     "reason": (
         "The BoxedLcp branch in "
         "dart/simulation/compute/rigid_body_contact_stage.cpp returns before "
-        "recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations "
-        "is never written for this method; a recorded 0 would mean 'not "
-        "reported', not 'zero iterations'."
+        "recordSolverDiagnostics() runs, so this scene recorded no iteration "
+        "count for the method: a 0 here means 'not reported', not 'zero "
+        "iterations'. (An opt-in AVBD stage earlier in the same step can "
+        "record a count before that branch is reached; this scene enables "
+        "none, and a nonzero count is published with its provenance instead "
+        "of this marker.)"
     ),
 }
 
@@ -80,16 +83,30 @@ UNSUPPORTED_ANTISYMMETRY_RATIO: dict[str, str] = {
 def solver_iterations_by_method(
     iterations_by_method: dict[str, int],
 ) -> dict[str, Any]:
-    """Type per-method iteration counts, marking unreported methods.
+    """Type per-method iteration counts, marking unrecorded ones.
 
-    A method that never reaches `recordSolverDiagnostics()` is emitted as a
-    typed-unsupported marker instead of the sentinel 0 the runtime leaves in
-    place.
+    A zero is the runtime's "nothing was recorded" sentinel: the BoxedLcp
+    branch returns before `recordSolverDiagnostics()`, and the
+    sequential-impulse call is skipped when a step assembles no constraints.
+    Either way an absent count is emitted as a typed-unsupported marker.
+    A genuinely recorded count is published as measured, whichever method
+    produced it -- keying off the method name instead would launder a real
+    AVBD-sourced count into "unsupported".
     """
     typed: dict[str, Any] = {}
     for method, value in sorted(iterations_by_method.items()):
-        if method == "BOXED_LCP":
+        if isinstance(value, int) and value > 0:
+            typed[method] = value
+        elif method == "BOXED_LCP":
             typed[method] = dict(UNSUPPORTED_BOXED_LCP_ITERATIONS)
         else:
-            typed[method] = value
+            typed[method] = {
+                "status": "unsupported",
+                "reason": (
+                    "No iteration count was recorded for this method in this "
+                    "scene: StepMetrics.last_step_iterations stayed at its "
+                    "per-step reset value, which means 'not reported' rather "
+                    "than 'zero iterations'."
+                ),
+            }
     return typed

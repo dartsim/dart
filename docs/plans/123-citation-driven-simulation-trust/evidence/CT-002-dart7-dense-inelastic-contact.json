@@ -20,8 +20,8 @@
       ]
     },
     "resolved": {
-      "by_contact_solver_method": {
-        "BOXED_LCP": {
+      "by_cell": {
+        "BOXED_LCP@dt=0.002": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
             0.0,
@@ -31,7 +31,17 @@
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
           "time_step_s": 0.002
         },
-        "SEQUENTIAL_IMPULSE": {
+        "BOXED_LCP@dt=0.004": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "SEQUENTIAL_IMPULSE@dt=0.002": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
             0.0,
@@ -40,6 +50,16 @@
           ],
           "rigid_body_solver": "SEQUENTIAL_IMPULSE",
           "time_step_s": 0.002
+        },
+        "SEQUENTIAL_IMPULSE@dt=0.004": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
         }
       }
     },
@@ -92,7 +112,12 @@
         "max_energy_gain_after_settle_j": 0.0,
         "max_penetration_m": 0.006675685044093327,
         "max_solver_iterations": 8,
+        "max_total_energy_gain_after_settle_j": 0.0009981350274301803,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "d3f6fdd984ba5e6eabaa2841a1bc305f6237a6e224039a079177ec6ca400eb04",
+          "d3f6fdd984ba5e6eabaa2841a1bc305f6237a6e224039a079177ec6ca400eb04"
+        ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
@@ -118,7 +143,12 @@
         "max_energy_gain_after_settle_j": 0.0,
         "max_penetration_m": 0.011362281723803547,
         "max_solver_iterations": 8,
+        "max_total_energy_gain_after_settle_j": 0.001308211355691924,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "bed22ef86fbea67a6176944a75e64973b4d0ab7f14c0d2604f61d67823b05f9d",
+          "bed22ef86fbea67a6176944a75e64973b4d0ab7f14c0d2604f61d67823b05f9d"
+        ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "gravity_mps2": [
@@ -144,7 +174,12 @@
         "max_energy_gain_after_settle_j": 6.459280144009318e-31,
         "max_penetration_m": 0.005411200000000366,
         "max_solver_iterations": 0,
+        "max_total_energy_gain_after_settle_j": 0.0,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "5260253337e1348e1b0f89954a78b9d01a5715d982d77fe0384818189a8f9e33",
+          "5260253337e1348e1b0f89954a78b9d01a5715d982d77fe0384818189a8f9e33"
+        ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
@@ -170,7 +205,12 @@
         "max_energy_gain_after_settle_j": 9.594362860530006e-10,
         "max_penetration_m": 0.02046842021148934,
         "max_solver_iterations": 0,
+        "max_total_energy_gain_after_settle_j": 1.342411593441284e-06,
         "raw_last_step_residual_max": 0.0,
+        "repeat_state_sha256": [
+          "1a94d8a3a56f6cf1088d78188cbc7982f71e7b0287d0b2335c18dfac375ca3b8",
+          "1a94d8a3a56f6cf1088d78188cbc7982f71e7b0287d0b2335c18dfac375ca3b8"
+        ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
           "gravity_mps2": [
@@ -186,7 +226,7 @@
       }
     ],
     "visual": {
-      "reason": "The oracle is numeric (finite state, settle speed, penetration, energy monotonicity); no visible-behavior claim is made by this packet.",
+      "reason": "The oracle is numeric (finite state, final speed and its dt scaling, penetration, and non-increase of total mechanical energy from StepMetrics.total_energy); no visible-behavior claim is made by this packet.",
       "status": "not-applicable"
     }
   },
@@ -210,7 +250,7 @@
       "sequential_impulse_iterations_semantics": "Sequential impulse records the configured iteration count (recordSolverDiagnostics(world, m_iterations)); its Gauss-Seidel loop has no convergence exit, so this is the configured sweep count, not an observed iteration-to-convergence.",
       "solver_iterations_by_method": {
         "BOXED_LCP": {
-          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations is never written for this method; a recorded 0 would mean 'not reported', not 'zero iterations'.",
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so this scene recorded no iteration count for the method: a 0 here means 'not reported', not 'zero iterations'. (An opt-in AVBD stage earlier in the same step can record a count before that branch is reached; this scene enables none, and a nonzero count is published with its provenance instead of this marker.)",
           "status": "unsupported"
         },
         "SEQUENTIAL_IMPULSE": 8
@@ -226,34 +266,121 @@
     },
     "physical": {
       "all_cells_finite": true,
+      "cell_findings": [
+        {
+          "classified_as_integrator_residual": false,
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "final_max_speed_mps": 0.04032772547075842,
+          "instability_reasons": [
+            "total mechanical energy increased after settle"
+          ],
+          "speed_over_tolerance": false,
+          "timestep_s": 0.002
+        },
+        {
+          "classified_as_integrator_residual": true,
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "final_max_speed_mps": 0.08065545094151684,
+          "instability_reasons": [
+            "total mechanical energy increased after settle"
+          ],
+          "speed_over_tolerance": true,
+          "timestep_s": 0.004
+        },
+        {
+          "classified_as_integrator_residual": false,
+          "contact_solver_method": "BOXED_LCP",
+          "final_max_speed_mps": 2.3901020052008448e-14,
+          "instability_reasons": [],
+          "speed_over_tolerance": false,
+          "timestep_s": 0.002
+        },
+        {
+          "classified_as_integrator_residual": false,
+          "contact_solver_method": "BOXED_LCP",
+          "final_max_speed_mps": 1.1914080833008711e-14,
+          "instability_reasons": [],
+          "speed_over_tolerance": false,
+          "timestep_s": 0.004
+        }
+      ],
+      "dt_linearity": {
+        "BOXED_LCP": {
+          "linear_in_dt": false,
+          "relative_spread": 1.2019521264234254,
+          "speed_over_dt": [
+            1.1950510026004224e-11,
+            2.9785202082521778e-12
+          ]
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "linear_in_dt": true,
+          "relative_spread": 0.0,
+          "speed_over_dt": [
+            20.163862735379208,
+            20.163862735379208
+          ]
+        }
+      },
+      "final_max_speed_mps_by_cell": {
+        "BOXED_LCP@dt=0.002": 2.3901020052008448e-14,
+        "BOXED_LCP@dt=0.004": 1.1914080833008711e-14,
+        "SEQUENTIAL_IMPULSE@dt=0.002": 0.04032772547075842,
+        "SEQUENTIAL_IMPULSE@dt=0.004": 0.08065545094151684
+      },
       "max_energy_gain_after_settle_j": 9.594362860530006e-10,
       "max_penetration_m": 0.02046842021148934,
+      "max_total_energy_gain_after_settle_j": 0.001308211355691924,
+      "measured_zero_fields": [
+        "dt_linearity.SEQUENTIAL_IMPULSE.relative_spread"
+      ],
       "method": "Per-cell finite-state check over 216 bodies, final max body speed, final min body height, kinetic energy at the horizon, and max single-step kinetic-energy gain after the settle window from StepMetrics",
-      "settled_final_max_speed_mps": 0.08065545094151684,
+      "residual_speed_tolerance": {
+        "dt_linearity_relative": 0.001,
+        "note": "A settle speed proportional to dt is the quasi-static residual of a converging semi-implicit integrator, not instability: halving dt halves it. Instability grows super-linearly or diverges. A cell whose speed/dt matches the other cells of its method to this relative tolerance is classified as residual."
+      },
       "stability_tolerance": {
         "final_max_speed_mps": 0.05,
         "max_energy_gain_after_settle_j": 0.001,
-        "max_penetration_m": 0.025
+        "max_penetration_m": 0.025,
+        "max_total_energy_gain_after_settle_j": 0.0001801116000000002
       },
       "unstable_cells": [
         {
+          "classified_as_integrator_residual": false,
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
-          "reasons": [
-            "pile still moving at horizon"
+          "final_max_speed_mps": 0.04032772547075842,
+          "instability_reasons": [
+            "total mechanical energy increased after settle"
           ],
+          "speed_over_tolerance": false,
+          "timestep_s": 0.002
+        },
+        {
+          "classified_as_integrator_residual": true,
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "final_max_speed_mps": 0.08065545094151684,
+          "instability_reasons": [
+            "total mechanical energy increased after settle"
+          ],
+          "speed_over_tolerance": true,
           "timestep_s": 0.004
         }
       ]
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers. Says nothing about the original SimBenchmark scene parameters, historical DART versions, other densities/materials, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers. Outcome actually observed: no cell failed (4 of 4 finite, no fall-through, penetration within tolerance), and the one cell above the settle-speed tolerance has a final speed exactly proportional to dt (speed/dt identical across timesteps), which is converging integrator residual and is explicitly NOT counted as instability. What does reproduce is narrower and solver-specific: after the pile settles, total mechanical energy increases per step under SEQUENTIAL_IMPULSE at both timesteps (about 1.0e-3 J at 2 ms and 1.3e-3 J at 4 ms against a 1.8e-4 J tolerance, on a 180 J scene) while BOXED_LCP stays at or near zero. That is a small, non-divergent, non-physical energy gain in a resting inelastic pile, not a blow-up. The poor-scaling limb of the cited claim is not instrumented at all (performance is typed unsupported). Says nothing about the original SimBenchmark scene parameters, historical DART versions, other densities/materials, or DART 6.",
     "disposition": "reproduced",
     "limitations": [
       "Bounded reconstruction: the original SimBenchmark asset, material, and timestep grid are not reproduced exactly; sourcing the exact historical setup is future corpus work.",
-      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback.",
-      "Two timesteps and two solvers only; a wider grid belongs to a follow-up once per-island diagnostics exist.",
-      "No per-contact residual/cone reporting is available on main; solver residual is the aggregate StepMetrics value."
+      "The reproduced signal is a small per-step energy gain in a settled pile, not divergence or failure. It must not be quoted as 'dense contact fails' or as a solver ranking.",
+      "The settle window is the second half of the run; a pile that settles later would put free-fall discretization error inside the window and inflate the energy metric.",
+      "Resolved identity comes from World property readback per cell (contact solver, timestep, and gravity each asserted against the request); ResolvedSolverConfiguration is not Python-exposed.",
+      "No solver residual exists on this path and the boxed-LCP branch records no iteration count; both are typed unsupported rather than reported as zero, so the corpus row's residual and iteration oracles are not yet covered.",
+      "The corpus row also names wall time over the timestep grid; this packet makes no timing claim (performance is typed unsupported) because no interleaved same-host methodology was applied.",
+      "max_active_contacts is 216 in every cell (a fully stacked column geometry), so it carries no discriminating information here.",
+      "Two timesteps and two solvers only; a wider grid belongs to a follow-up once per-island diagnostics exist."
     ]
   },
   "review": {
@@ -303,7 +430,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "d0cb640860d7da5a39792a385e7f499610c0536f"
+    "commit": "ac0c074d637304fa7c02aa457d123d54e63f738e"
   },
   "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"
 }
