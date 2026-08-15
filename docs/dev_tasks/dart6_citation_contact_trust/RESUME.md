@@ -35,8 +35,11 @@ GitHub mutations need maintainer approval.
 
 ## Immediate next step
 
-Awaiting maintainer approval to push and open the PR (`pr-draft-620.md`).
-All gates are green and three independent review rounds are recorded. After
+PR opened with maintainer approval on 2026-08-15: #3444 (base release-6.20,
+milestone DART 6.20.0), after merging the moved base and a clean-rebuild
+test-all (the lockfile bump upgraded gtest and exposed stale-object link
+errors; a clean rebuild resolved them). Shepherd it through CI and Codex
+review (re-request '@codex review' after every push). After
 the PR, Phase 2 continues with auditing/guarding PLAN-621/622 evidence rows
 and the next first-wave contact rows not owned elsewhere (dense
 inelastic/elastic grids, CT-002/CT-003) on a new branch.

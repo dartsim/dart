@@ -1,7 +1,7 @@
 # PR draft: release-6.20 citation contact trust
 
-Status: DRAFT. Pushing the branch and opening the PR need maintainer
-approval. Branch `feature/dart6-citation-contact-trust`, base
+Status: OPENED as https://github.com/dartsim/dart/pull/3444 on 2026-08-15
+with maintainer approval; this file is the posted body's source. Branch `feature/dart6-citation-contact-trust`, base
 `release-6.20`, milestone DART 6.20.0. Delete this file with the dev-task
 folder at task completion.
 
