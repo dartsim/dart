@@ -44,6 +44,13 @@ from typing import Any
 
 import dartpy as sx
 import numpy as np
+from citation_packet_utils import (
+    PENETRATION_CLAMP_NOTE,
+    SEQUENTIAL_IMPULSE_ITERATIONS_NOTE,
+    UNSUPPORTED_ANTISYMMETRY_RATIO,
+    UNSUPPORTED_SOLVER_RESIDUAL,
+    solver_iterations_by_method,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = (
@@ -172,12 +179,23 @@ def run_single(
         contact_count_max = max(contact_count_max, int(metrics.active_contact_count))
 
         if slide_end_time is None:
+            # Contact-point slip as a planar vector, so a transient sign
+            # cancellation in one component cannot be mistaken for rolling.
+            # The contact point moves at v + omega x (-R z_hat), whose planar
+            # part is (v_x - R*w_y, v_y + R*w_x).
+            slip_vector = np.array(
+                [
+                    velocity[0] - radius * angular[1],
+                    velocity[1] + radius * angular[0],
+                ]
+            )
+            slip = float(np.linalg.norm(slip_vector))
             planar_speed = float(np.linalg.norm(velocity[:2]))
-            spin_axis = np.array([-direction[1], direction[0], 0.0])
-            surface_speed = radius * float(np.dot(angular, spin_axis))
-            slip = abs(planar_speed - surface_speed)
-            denom = planar_speed + abs(surface_speed) + 1.0e-9
-            if slip / denom < float(parameters["slip_ratio_rolling_threshold"]):
+            surface_speed = radius * float(np.linalg.norm(angular[:2]))
+            denom = planar_speed + surface_speed + 1.0e-9
+            rolling = slip / denom < float(parameters["slip_ratio_rolling_threshold"])
+            # A sphere at rest has no slip but is not rolling; require motion.
+            if rolling and planar_speed > 1.0e-6:
                 slide_end_time = (step_index + 1) * dt
 
         if step_index == step_count - 1:
@@ -214,7 +232,7 @@ def run_single(
         "max_energy_gain_j": max_energy_gain,
         "max_penetration_m": max_penetration,
         "max_solver_iterations": max_iterations,
-        "max_solver_residual": max_residual,
+        "raw_last_step_residual_max": max_residual,
         "max_active_contacts": contact_count_max,
         "final_step_stage_names": stage_names,
     }
@@ -241,11 +259,32 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             ),
             "max_energy_gain_j": max(row["max_energy_gain_j"] for row in method_rows),
             "max_penetration_m": max(row["max_penetration_m"] for row in method_rows),
-            "max_solver_residual": max(
-                row["max_solver_residual"] for row in method_rows
+            "solver_residual": dict(UNSUPPORTED_SOLVER_RESIDUAL),
+            "antisymmetry_residual_m": antisymmetry_residual(method_rows),
+            "antisymmetry_residual_over_peak_drift": (
+                antisymmetry_residual(method_rows) / max(drifts)
+                if max(drifts) > 0.0
+                else dict(UNSUPPORTED_ANTISYMMETRY_RATIO)
             ),
         }
     return summary
+
+
+def antisymmetry_residual(rows: list[dict[str, Any]]) -> float:
+    """Largest |d(theta) + d(90-theta)| over the sweep.
+
+    A friction pyramid aligned to the tangent axes makes lateral drift
+    antisymmetric about 45 degrees, so this residual is ~0 for a genuine
+    pyramid signature and comparable to the peak drift for isotropic scatter.
+    It is what separates orientation-dependent anisotropy from contact noise.
+    """
+    by_angle = {row["angle_deg"]: row["lateral_drift_m"] for row in rows}
+    residual = 0.0
+    for angle, drift in by_angle.items():
+        mirror = by_angle.get(90.0 - angle)
+        if mirror is not None:
+            residual = max(residual, abs(drift + mirror))
+    return residual
 
 
 def git_head() -> str:
@@ -277,13 +316,28 @@ def build_packet() -> dict[str, Any]:
                     f"{sorted(hashes)}"
                 )
             row = repeats[0]
-            readback = row["resolved"]
-            if readback["contact_solver_method"] != method:
+            for repeat in repeats:
+                readback = repeat["resolved"]
+                if readback != row["resolved"]:
+                    raise SystemExit(
+                        f"{method} angle {angle}: resolved configuration "
+                        f"differs between repeats: {readback} vs "
+                        f"{row['resolved']}"
+                    )
+                if readback["contact_solver_method"] != method:
+                    raise SystemExit(
+                        f"requested contact solver {method} but World readback "
+                        f"reports {readback['contact_solver_method']}"
+                    )
+            row["repeat_trajectory_sha256"] = [
+                repeat["trajectory_sha256"] for repeat in repeats
+            ]
+            previous = resolved_by_method.setdefault(method, row["resolved"])
+            if previous != row["resolved"]:
                 raise SystemExit(
-                    f"requested contact solver {method} but World readback "
-                    f"reports {readback['contact_solver_method']}"
+                    f"{method}: resolved configuration drifted across the "
+                    f"sweep: {previous} vs {row['resolved']}"
                 )
-            resolved_by_method.setdefault(method, readback)
             rows.append(row)
 
     if determinism_failures:
@@ -297,17 +351,64 @@ def build_packet() -> dict[str, Any]:
         "max_abs_heading_error_deg": 0.1,
         "travel_spread_relative": 0.01,
     }
+    # Record which criterion fired per method, and whether the drift carries
+    # the antisymmetric pyramid signature rather than orientation-independent
+    # scatter. Exceeding a tolerance is not by itself evidence of the cited
+    # mechanism.
+    anisotropy_findings: dict[str, Any] = {}
+    for method, stats in summary.items():
+        criteria = sorted(
+            key
+            for key, tolerance in isotropy_tolerance.items()
+            if isinstance(stats.get(key), (int, float)) and stats[key] > tolerance
+        )
+        ratio = stats["antisymmetry_residual_over_peak_drift"]
+        has_signature = isinstance(ratio, (int, float)) and ratio <= 0.05
+        anisotropy_findings[method] = {
+            "criteria_exceeded": criteria,
+            "pyramid_signature": has_signature,
+            "signature_test": (
+                "lateral drift antisymmetric about 45 deg to within 5% of " "peak drift"
+            ),
+        }
     anisotropic_methods = sorted(
         method
-        for method, stats in summary.items()
-        if stats["max_abs_lateral_drift_m"]
-        > isotropy_tolerance["max_abs_lateral_drift_m"]
-        or stats["max_abs_heading_error_deg"]
-        > isotropy_tolerance["max_abs_heading_error_deg"]
-        or stats["travel_spread_relative"]
-        > isotropy_tolerance["travel_spread_relative"]
+        for method, finding in anisotropy_findings.items()
+        if finding["criteria_exceeded"] and finding["pyramid_signature"]
     )
-    disposition = "reproduced" if anisotropic_methods else "unresolved"
+
+    # A degenerate run (tunnelling, blow-up) would also break symmetry, so the
+    # disposition is gated on physical validity, not on deviation alone.
+    validity_failures = [
+        f"{row['contact_solver_method']} angle {row['angle_deg']}: {reason}"
+        for row in rows
+        for reason, bad in (
+            (
+                "final speed departs from the analytic rolling speed 5/7 v0",
+                abs(
+                    row["final_planar_speed_mps"]
+                    - (5.0 / 7.0) * float(parameters["launch_speed_mps"])
+                )
+                > 1.0e-3,
+            ),
+            ("energy injected", row["max_energy_gain_j"] > 1.0e-6),
+            ("never reached rolling", row["slide_end_time_s"] is None),
+        )
+        if bad
+    ]
+    disposition = (
+        "reproduced" if anisotropic_methods and not validity_failures else "unresolved"
+    )
+
+    # Zeros this fixture asserts are genuine measurements, not missing data.
+    # The validator rejects any other exact zero and any stale entry here, so
+    # an unexpected zero in a future run fails the gate instead of passing as
+    # a silent sentinel.
+    measured_zero_physical = [
+        f"per_solver_summary.{method}.max_penetration_m"
+        for method in parameters["contact_solver_methods"]
+    ]
+    measured_zero_numerical = ["max_penetration_m"]
 
     command = (
         "PYTHONPATH=build/default/cpp/Release/python pixi run python "
@@ -327,6 +428,13 @@ def build_packet() -> dict[str, Any]:
         "target": {
             "branch": "main",
             "commit": git_head(),
+            "commit_role": (
+                "Source state measured: the library and fixture were run at "
+                "this commit, which is HEAD at capture time. The packet and "
+                "its writer land in a later commit, so re-running the "
+                "recorded command requires the child commit that adds the "
+                "writer; the measured behavior belongs to this one."
+            ),
         },
         "scene": {
             "id": parameters["scene_id"],
@@ -349,10 +457,14 @@ def build_packet() -> dict[str, Any]:
             "resolved_provenance": (
                 "World property readback (contact_solver_method, "
                 "rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode plus final-step WorldStepProfile "
-                "stage names recorded per run; "
-                "World::getResolvedConfiguration() is not yet exposed to "
-                "Python (PLAN-123 WS4 follow-up)."
+                "enter_simulation_mode, asserted equal to the request and "
+                "stable across every repeat and sweep point. The independent "
+                "evidence that the selection changed behavior is that the "
+                "per-angle trajectory hashes differ between the two contact "
+                "solvers at every angle; the recorded WorldStepProfile stage "
+                "names are identical for both methods and therefore do not "
+                "discriminate. World::getResolvedConfiguration() is not yet "
+                "exposed to Python (PLAN-123 WS4 follow-up)."
             ),
             "detector": (
                 "DART 7 native World collision pipeline (the World step API "
@@ -361,8 +473,10 @@ def build_packet() -> dict[str, Any]:
             "timestep": parameters["time_step_s"],
             "substeps": 1,
             "iterations": (
-                "World defaults; per-step actual iterations recorded via "
-                "StepMetrics.last_step_iterations"
+                "World defaults. Sequential impulse reports its configured "
+                "sweep count through StepMetrics.last_step_iterations; the "
+                "boxed-LCP path records no iteration count at all (see "
+                "metrics.numerical.solver_iterations_by_method)."
             ),
             "fallback_policy": (
                 "World defaults; no per-island fallback reporting is exposed "
@@ -377,7 +491,7 @@ def build_packet() -> dict[str, Any]:
                 for angle in parameters["launch_angles_deg"]
             ],
             "deterministic_repeats": int(parameters["deterministic_repeats"]),
-            "deterministic_repeats_identical": True,
+            "deterministic_repeats_identical": not determinism_failures,
             "measurement_window": {
                 "start_s": 0.0,
                 "end_s": parameters["time_step_s"] * parameters["step_count"],
@@ -395,20 +509,35 @@ def build_packet() -> dict[str, Any]:
                 ),
                 "per_solver_summary": summary,
                 "isotropy_tolerance": isotropy_tolerance,
+                "anisotropy_findings": anisotropy_findings,
                 "anisotropic_methods": anisotropic_methods,
+                "validity_failures": validity_failures,
+                "measured_zero_fields": measured_zero_physical,
             },
             "numerical": {
                 "method": (
-                    "Max over run of StepMetrics.max_penetration_depth, "
-                    "last_step_iterations, last_step_residual, "
-                    "active_contact_count"
+                    "Max over run of StepMetrics.max_penetration_depth and "
+                    "active_contact_count; per-method iteration counts where "
+                    "the runtime records them"
                 ),
                 "max_penetration_m": max(row["max_penetration_m"] for row in rows),
-                "max_solver_iterations": max(
-                    row["max_solver_iterations"] for row in rows
+                "penetration_semantics": PENETRATION_CLAMP_NOTE,
+                "solver_iterations_by_method": solver_iterations_by_method(
+                    {
+                        method: max(
+                            row["max_solver_iterations"]
+                            for row in rows
+                            if row["contact_solver_method"] == method
+                        )
+                        for method in parameters["contact_solver_methods"]
+                    }
                 ),
-                "max_solver_residual": max(row["max_solver_residual"] for row in rows),
+                "sequential_impulse_iterations_semantics": (
+                    SEQUENTIAL_IMPULSE_ITERATIONS_NOTE
+                ),
+                "solver_residual": dict(UNSUPPORTED_SOLVER_RESIDUAL),
                 "max_active_contacts": max(row["max_active_contacts"] for row in rows),
+                "measured_zero_fields": measured_zero_numerical,
             },
             "performance": {
                 "status": "unsupported",
@@ -451,10 +580,21 @@ def build_packet() -> dict[str, Any]:
             ),
             "limitations": [
                 "ResolvedSolverConfiguration is not Python-exposed; "
-                "resolved identity is property readback plus stage names.",
-                "Friction-cone/complementarity residual per contact is not "
-                "exposed; solver residual is the aggregate StepMetrics "
-                "value.",
+                "resolved identity is property readback, corroborated by "
+                "per-solver trajectory-hash differences.",
+                "No solver residual exists on this path: it is typed "
+                "unsupported, not reported as zero. Friction-cone and "
+                "complementarity violations are not exposed either.",
+                "The boxed-LCP path records no iteration count; only "
+                "sequential impulse reports one, and that is its configured "
+                "sweep count rather than an observed convergence measure.",
+                "Penetration is clamped at zero by the runtime, so 0.0 means "
+                "no positive penetration was observed and does not "
+                "distinguish resting-tangent from separated contacts.",
+                "The corpus row also names stopping distance and cone "
+                "violation as oracles; neither is measured here (the sphere "
+                "rolls indefinitely at 5/7 v0, and no cone metric is "
+                "exposed).",
                 "The sweep covers 0-90 deg; pyramid orientation with a "
                 "period other than 90 deg would need a wider sweep.",
                 "No high-mass-ratio or stacked variant yet; those belong "

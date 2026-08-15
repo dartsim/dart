@@ -13,14 +13,18 @@ statuses were verified; the corpus sidecar now carries the WS0 audit record.
   WP-PG.50) and issue #3056 routed as row owners, existing demos scenes
   recorded as fixture seeds.
 - PLAN-123 integrated into `docs/plans/dashboard.md` and `docs/plans/README.md`.
-- WS1 landed on the DART 7 branch: `claims-manifest.json` (20 rows),
-  fail-closed `scripts/check_citation_evidence.py`
-  (`pixi run check-citation-evidence`, wired into `check-lint`),
-  `tests/test_check_citation_evidence.py`, a permanent intentionally
-  incomplete negative-control packet, and the first complete CT-001
-  rolling-direction packet (disposition `reproduced`: friction-pyramid
-  lateral drift up to 2.1 mm with zero drift at 0/45/90 deg, identical-run
-  determinism, per-method requested/resolved readback).
+- WS1 landed on both branches: checked claims manifests, fail-closed
+  `check-citation-evidence` gates wired into `check-lint`, permanent
+  intentionally incomplete negative controls, and pytest suites (68 cases on
+  `main`, 48 on `release-6.20`).
+- Two independent role-separated reviews ran per branch. All four returned
+  "not clean". Every finding was verified against source and fixed; the
+  substantive ones were a validator bypass (a lane could close a row with a
+  file the packet checks never reached), unsupported-as-zero metrics in this
+  program's own packets, and a DART 6 attribution error crediting bullet with
+  a friction-pyramid signature its data does not show. See `verification.md`.
+- First-wave packets landed: CT-001 (both branches), CT-002 and CT-003
+  (`main`).
 
 ## Current branches
 
@@ -35,13 +39,11 @@ approval.
 
 ## Immediate next step
 
-Finish the DART 6 Phase 1 adoption on `release-6.20`: branch-local
-`check_citation_evidence.py` + manifest + negative control (no DART 7 API
-backports), then run branch gates on both worktrees and record reviews.
-
-After that, Phase 2 continues with the next first-wave family on `main`
-(dense inelastic/elastic contact, CT-002/CT-003) reusing
-`rigid_restitution_ladder` and a 6x6x6 grid fixture.
+Continue Phase 2 on `main` with the articulated energy/momentum family
+(CT-004): a passive multi-link chain swept over timestep, using
+`StepMetrics.total_energy`/`angular_momentum` as the oracle and the PLAN-084
+variational integrator as the comparison arm, written with
+`scripts/citation_packet_utils.py` so unsupported quantities stay typed.
 
 ## Context that would be lost
 

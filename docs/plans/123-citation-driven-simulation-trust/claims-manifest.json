@@ -43,9 +43,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-123 with PLAN-080/122",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": []
+          "evidence": [
+            "evidence/CT-002-dart7-dense-inelastic-contact.json"
+          ],
+          "notes": "Bounded (not source-exact) 6x6x6 sphere-grid drop over a timestep/solver grid; the intentionally incomplete negative control also carries claim CT-002 and is never lane evidence."
         },
         "dart6": {
           "owner": "docs/dev_tasks/dart6_citation_contact_trust",
@@ -63,10 +66,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-123 with PLAN-080",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": [],
-          "notes": "python/examples/demos/scenes/rigid_restitution_ladder.py is the existing seed scene."
+          "evidence": [
+            "evidence/CT-003-dart7-dense-elastic-contact.json"
+          ],
+          "notes": "Bounded 6x6x6 elastic (restitution 0.8) grid drop: no energy injection and no solver failure observed on main, so the packet disposition is unresolved rather than reproduced. python/examples/demos/scenes/rigid_restitution_ladder.py remains the seed scene for per-body restitution outcomes."
         },
         "dart6": {
           "owner": "docs/dev_tasks/dart6_citation_contact_trust",

@@ -7,9 +7,11 @@ PLAN-123. It is not a bibliography, sentiment table, or promise to reproduce
 every citation. A row exists only when it has a bounded DART-relevant claim,
 scene, metric, and closing condition.
 
-The machine-readable manifest should be derived from this document once the
-current repository evidence system is audited. Until then, this file is the
-human authority for row identity and intended claim boundary.
+This file is the human authority for row identity, bounded claim text, and
+intended oracle. Live per-branch status and dispositions live in the checked
+manifest [`claims-manifest.json`](claims-manifest.json), which
+`pixi run check-citation-evidence` requires to carry exactly the claim IDs in
+the table below.
 
 ## Dispositions
 
@@ -149,45 +151,67 @@ a maintainer explicitly revises the cap.
 
 ## Evidence packet skeleton
 
-```yaml
-schema: dart.citation_claim_evidence/v1
-claim_id: CT-001
-source:
-  url: ...
-  claim: ...
-target:
-  branch: main
-  commit: ...
-scene:
-  id: ...
-  digest: ...
-configuration:
-  requested: ...
-  resolved: ...
-  detector: ...
-  timestep: ...
-  substeps: ...
-  tolerances: ...
-  fallback_policy: ...
-ensemble:
-  seeds: [...]
-  perturbations: ...
-metrics:
-  physical: { ... }
-  numerical: { ... }
-  performance: { ... }
-  allocation: { ... }
-evidence:
-  commands: [...]
-  raw_paths: [...]
-  visual_paths: [...]
-result:
-  disposition: unresolved
-  claim_boundary: ...
-  limitations: [...]
-review:
-  passes: [...]
+Packets are JSON (`dart.citation_claim_evidence/v1`) under
+`evidence/`, validated by `pixi run check-citation-evidence`. The shape below
+matches what the validator actually requires; a packet written from it passes.
+
+```json
+{
+  "schema": "dart.citation_claim_evidence/v1",
+  "claim_id": "CT-001",
+  "title": "One line naming the fixture and lane",
+  "source": { "url": "...", "claim": "quoted or bounded paraphrase" },
+  "target": { "branch": "main", "commit": "<40 hex>", "commit_role": "..." },
+  "scene": { "id": "...", "digest": "sha256:<64 hex>", "parameters": {} },
+  "configuration": {
+    "requested": {},
+    "resolved": {},
+    "resolved_provenance": "how resolved identity was obtained",
+    "detector": "...",
+    "timestep": 0.002,
+    "substeps": 1,
+    "iterations": "...",
+    "fallback_policy": "..."
+  },
+  "ensemble": {
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "deterministic_repeats": 2,
+    "measurement_window": { "start_s": 0.0, "end_s": 1.0 }
+  },
+  "metrics": {
+    "physical": { "method": "...", "measured_zero_fields": [] },
+    "numerical": {
+      "method": "...",
+      "solver_residual": { "status": "unsupported", "reason": "..." }
+    },
+    "performance": { "status": "unsupported", "reason": "..." },
+    "allocation": { "status": "unsupported", "reason": "..." }
+  },
+  "evidence": {
+    "commands": ["..."],
+    "raw_rows": [],
+    "visual": { "status": "not-applicable", "reason": "..." }
+  },
+  "result": {
+    "disposition": "unresolved",
+    "claim_boundary": "...",
+    "limitations": ["..."]
+  },
+  "review": { "passes": [] }
+}
 ```
 
-The schema must fail closed on missing target commit, scene digest, requested
-and resolved method, command, disposition, or claim boundary.
+The validator fails closed on a missing target commit, scene digest,
+requested/resolved method, resolved provenance, command, ensemble (a single
+run is not evidence), disposition, claim boundary, or limitation. Inside a
+measured metric group it also rejects nulls, NaNs, spelled placeholders such
+as `"n/a"`, and any exact zero that is not either typed
+`{"status": "unsupported", "reason": ...}` or declared in
+`measured_zero_fields` -- that is how "unsupported is never silently zero"
+becomes an enforced rule rather than a promise. A lane may not be closed by
+prose, a non-JSON file, a path outside `evidence/`, or a negative control,
+and a closing packet needs two recorded review passes.
+
+Negative controls live in `evidence/negative-controls/`. They must keep
+failing validation (at least three errors); the gate rejects a negative
+control that starts passing as a vacuous proof.

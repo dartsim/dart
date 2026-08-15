@@ -1,0 +1,293 @@
+{
+  "claim_id": "CT-003",
+  "configuration": {
+    "detector": "DART 7 native World collision pipeline (the World step API exposes no detector selection on main)",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main (PLAN-123 WS4 follow-up)",
+    "iterations": "World defaults; per-step actual iterations recorded via StepMetrics.last_step_iterations",
+    "requested": {
+      "backend": "cpu",
+      "contact_solver_method_sweep": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "integrator": "World default semi-implicit stepping",
+      "precision": "float64",
+      "rigid_body_solver": "SEQUENTIAL_IMPULSE (World default)",
+      "threads": "World default sequential step",
+      "timestep_sweep_s": [
+        0.002,
+        0.004
+      ]
+    },
+    "resolved": {
+      "by_contact_solver_method": {
+        "BOXED_LCP": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        }
+      }
+    },
+    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, asserted equal to the request per cell; World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "substeps": 1,
+    "timestep": 0.002
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 2.0,
+      "start_s": 0.0
+    },
+    "sweep": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "timestep_s": 0.004
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "timestep_s": 0.004
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct003_elastic_contact_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "energy_envelope_excess_j": 0.0,
+        "final_state_sha256": "f1d5fac4ff2da8ee3e862cc55b49ea2362ecefd6a6527464dab5352f784c949c",
+        "final_total_energy_j": 63.44696118939535,
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_penetration_m": 0.007707330160000275,
+        "max_solver_iterations": 8,
+        "max_total_energy_j": 180.1116000000002,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "energy_envelope_excess_j": 0.0,
+        "final_state_sha256": "6cc4601838f1c5213104137dabb8e8064e376090d6cb22068335c12c87a8b125",
+        "final_total_energy_j": 63.25766139362141,
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_penetration_m": 0.01716770175999996,
+        "max_solver_iterations": 8,
+        "max_total_energy_j": 180.1116000000002,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "energy_envelope_excess_j": 0.0,
+        "final_state_sha256": "31c88c2d34b7e738c731aaa2e3e5a4dc9ebca29de00e901dc7296ebddb3402c1",
+        "final_total_energy_j": 63.58479412413587,
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_penetration_m": 0.007707330160000275,
+        "max_solver_iterations": 0,
+        "max_total_energy_j": 180.1116000000002,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "energy_envelope_excess_j": 0.0,
+        "final_state_sha256": "2438f7c534de26f786af0b223b92f0898d8fcc5618698326c5e9f14be6936513",
+        "final_total_energy_j": 63.746668542792605,
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_penetration_m": 0.01716770175999996,
+        "max_solver_iterations": 0,
+        "max_total_energy_j": 180.1116000000002,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is the numeric energy envelope and finite state; no visible-behavior claim is made by this packet.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "max_active_contacts": 216,
+      "max_penetration_m": 0.01716770175999996,
+      "method": "Max over run of StepMetrics.max_penetration_depth and active_contact_count; per-method iteration counts where the runtime records them",
+      "penetration_semantics": "StepMetrics.max_penetration_depth clamps each contact depth with std::max(0.0, depth), so a reported 0.0 means no positive penetration was observed and does not distinguish resting-exactly-tangent from separated contacts.",
+      "sequential_impulse_iterations_semantics": "Sequential impulse records the configured iteration count (recordSolverDiagnostics(world, m_iterations)); its Gauss-Seidel loop has no convergence exit, so this is the configured sweep count, not an observed iteration-to-convergence.",
+      "solver_iterations_by_method": {
+        "BOXED_LCP": {
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations is never written for this method; a recorded 0 would mean 'not reported', not 'zero iterations'.",
+          "status": "unsupported"
+        },
+        "SEQUENTIAL_IMPULSE": 8
+      },
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "This packet makes no timing claim; interleaved same-host methodology is required before any performance row",
+      "status": "unsupported"
+    },
+    "physical": {
+      "all_cells_finite": true,
+      "envelope_tolerance_j": 0.0001801116000000002,
+      "initial_total_energy_j": 180.1116000000002,
+      "max_energy_envelope_excess_j": 0.0,
+      "measured_zero_fields": [
+        "max_energy_envelope_excess_j"
+      ],
+      "method": "Mechanical-energy envelope from StepMetrics.total_energy (max over run vs initial), finite-state check over 216 bodies",
+      "violating_cells": []
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0.8 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, energy envelope from StepMetrics.total_energy. The cited failure mode was NOT observed here: no cell exceeded its initial mechanical energy and no cell went non-finite, so this bounded reconstruction does not reproduce the claim. That is not a refutation of the original report, which concerns a different engine version and scene. Says nothing about the original SimBenchmark scene parameters, historical DART versions, restitution values other than 0.8, or DART 6.",
+    "disposition": "unresolved",
+    "limitations": [
+      "Bounded reconstruction: the original SimBenchmark elastic test assets and parameters are not reproduced exactly.",
+      "The envelope uses aggregate world energy; per-body restitution-outcome tracking (bounce-height ratios) is future work for this row.",
+      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback.",
+      "Two timesteps and two solvers only."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "6x6x6 grid of 216 spheres (radius 0.05 m, mass 0.1 kg, spacing 0.12 m) dropped from 0.5 m clearance onto a static ground box, restitution 0.8, friction 0.8 on all bodies, simulated to a 2 s horizon per timestep/solver cell.",
+    "digest": "sha256:56ba1fb073c06dd4e961fe729d03dac79162db39301c4086fd61cbd427e048bb",
+    "id": "ct003_dense_elastic_grid",
+    "parameters": {
+      "contact_solver_methods": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "description": "6x6x6 grid of 216 spheres (radius 0.05 m, mass 0.1 kg, spacing 0.12 m) dropped from 0.5 m clearance onto a static ground box, restitution 0.8, friction 0.8 on all bodies, simulated to a 2 s horizon per timestep/solver cell.",
+      "deterministic_repeats": 2,
+      "drop_clearance_m": 0.5,
+      "friction": 0.8,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "grid_dimension": 6,
+      "grid_spacing_m": 0.12,
+      "ground_half_extents_m": [
+        2.0,
+        2.0,
+        0.05
+      ],
+      "horizon_s": 2.0,
+      "restitution": 0.8,
+      "scene_id": "ct003_dense_elastic_grid",
+      "sphere_mass_kg": 0.1,
+      "sphere_radius_m": 0.05,
+      "timesteps_s": [
+        0.002,
+        0.004
+      ]
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Elastic dense contact may inject energy or expose solver failure.",
+    "url": "https://leggedrobotics.github.io/SimBenchmark/"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "d0cb640860d7da5a39792a385e7f499610c0536f"
+  },
+  "title": "Dense elastic contact energy envelope (DART 7 first packet)"
+}

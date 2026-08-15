@@ -57,7 +57,11 @@ def complete_packet() -> dict:
             "measurement_window": {"start_s": 0.0, "end_s": 1.0},
         },
         "metrics": {
-            "physical": {"method": "sweep", "lateral_drift_m": 0.0},
+            "physical": {
+                "method": "sweep",
+                "lateral_drift_m": 0.0,
+                "measured_zero_fields": ["lateral_drift_m"],
+            },
             "numerical": {"method": "step metrics", "max_penetration_m": 1e-5},
             "performance": {
                 "status": "unsupported",
@@ -386,6 +390,155 @@ def test_validate_tree_rejects_missing_referenced_packet(tmp_path):
     plan_dir = _write_tree(tmp_path, negative={"schema": "x"}, manifest=manifest)
     errors = MODULE.validate_tree(plan_dir)
     assert any("missing packet" in error for error in errors)
+
+
+def test_unacknowledged_zero_fails():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["max_solver_residual"] = 0.0
+    errors = MODULE.packet_errors(packet)
+    assert any("without acknowledgement" in error for error in errors)
+
+
+def test_acknowledged_measured_zero_passes():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["max_solver_residual"] = 0.0
+    packet["metrics"]["numerical"]["measured_zero_fields"] = ["max_solver_residual"]
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_typed_unsupported_leaf_passes_and_needs_reason():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["solver_residual"] = {
+        "status": "unsupported",
+        "reason": "never computed on this path",
+    }
+    assert MODULE.packet_errors(packet) == []
+    packet["metrics"]["numerical"]["solver_residual"] = {"status": "unsupported"}
+    errors = MODULE.packet_errors(packet)
+    assert any("typed unsupported" in error for error in errors)
+
+
+def test_stale_measured_zero_declaration_fails():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["measured_zero_fields"] = ["not_zero_here"]
+    errors = MODULE.packet_errors(packet)
+    assert any("which are not zero" in error for error in errors)
+
+
+def test_nested_zero_is_caught_by_path():
+    packet = complete_packet()
+    packet["metrics"]["physical"]["per_solver_summary"] = {
+        "BOXED_LCP": {"max_penetration_m": 0.0}
+    }
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "per_solver_summary.BOXED_LCP.max_penetration_m" in error for error in errors
+    )
+
+
+def test_spelled_placeholder_fails():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["max_penetration_m"] = "n/a"
+    errors = MODULE.packet_errors(packet)
+    assert any("placeholder" in error for error in errors)
+
+
+def test_only_empty_containers_fails():
+    packet = complete_packet()
+    packet["metrics"]["numerical"] = {"method": "m", "values": {}}
+    errors = MODULE.packet_errors(packet)
+    assert any("only empty containers" in error for error in errors)
+
+
+def test_empty_list_alongside_real_values_passes():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["violations"] = []
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_dangling_raw_path_fails(tmp_path):
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["does/not/exist.csv"]
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("does not resolve" in error for error in errors)
+    (tmp_path / "real.csv").write_text("x", encoding="utf-8")
+    packet["evidence"]["raw_paths"] = ["real.csv"]
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_empty_measurement_window_fails():
+    packet = complete_packet()
+    packet["ensemble"]["measurement_window"] = {}
+    errors = MODULE.packet_errors(packet)
+    assert any("measurement_window" in error for error in errors)
+
+
+def test_validate_tree_validates_packets_in_subdirectories(tmp_path):
+    """A lane may not close a row with a file the packet checks never reach."""
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "closed"
+    lane["disposition"] = "reproduced"
+    lane["evidence"] = ["evidence/sub/prose.json"]
+    plan_dir = _write_tree(tmp_path, negative={"schema": "x"}, manifest=manifest)
+    sub = plan_dir / "evidence" / "sub"
+    sub.mkdir(parents=True)
+    (sub / "prose.json").write_text(
+        json.dumps({"this is": "not a packet"}), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert errors, "a nested non-packet must not close a lane"
+    assert any("missing required top-level keys" in error for error in errors)
+
+
+def test_validate_tree_rejects_negative_control_as_lane_evidence(tmp_path):
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "closed"
+    lane["disposition"] = "reproduced"
+    lane["evidence"] = ["evidence/negative-controls/incomplete.json"]
+    plan_dir = _write_tree(tmp_path, negative={"schema": "x"}, manifest=manifest)
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("negative control" in error for error in errors)
+
+
+def test_validate_tree_rejects_non_json_lane_evidence(tmp_path):
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "closed"
+    lane["disposition"] = "reproduced"
+    lane["evidence"] = ["evidence/notes.md"]
+    plan_dir = _write_tree(tmp_path, negative={"schema": "x"}, manifest=manifest)
+    (plan_dir / "evidence" / "notes.md").write_text("prose", encoding="utf-8")
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("not a .json packet" in error for error in errors)
+
+
+def test_validate_tree_rejects_scalar_lane_evidence(tmp_path):
+    manifest = _minimal_manifest(["CT-001"])
+    manifest["claims"][0]["lanes"]["dart7"]["evidence"] = 7
+    plan_dir = _write_tree(tmp_path, negative={"schema": "x"}, manifest=manifest)
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("evidence must be a list" in error for error in errors)
+
+
+def test_validate_tree_rejects_shared_packet_owner(tmp_path):
+    manifest = _minimal_manifest(["CT-001", "CT-002"])
+    for claim in manifest["claims"]:
+        claim["lanes"]["dart7"]["status"] = "in-progress"
+        claim["lanes"]["dart7"]["evidence"] = ["evidence/packet.json"]
+    plan_dir = _write_tree(
+        tmp_path,
+        packet=complete_packet(),
+        negative={"schema": "x"},
+        manifest=manifest,
+    )
+    (plan_dir / "citation-claim-corpus.md").write_text(
+        "| CT-001 | claim |\n| CT-002 | claim |\n", encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("one packet has one owner" in error for error in errors)
 
 
 def test_validate_tree_closed_lane_needs_two_review_passes(tmp_path):

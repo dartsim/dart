@@ -1,0 +1,309 @@
+{
+  "claim_id": "CT-002",
+  "configuration": {
+    "detector": "DART 7 native World collision pipeline (the World step API exposes no detector selection on main)",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main (PLAN-123 WS4 follow-up)",
+    "iterations": "World defaults; per-step actual iterations recorded via StepMetrics.last_step_iterations",
+    "requested": {
+      "backend": "cpu",
+      "contact_solver_method_sweep": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "integrator": "World default semi-implicit stepping",
+      "precision": "float64",
+      "rigid_body_solver": "SEQUENTIAL_IMPULSE (World default)",
+      "threads": "World default sequential step",
+      "timestep_sweep_s": [
+        0.002,
+        0.004
+      ]
+    },
+    "resolved": {
+      "by_contact_solver_method": {
+        "BOXED_LCP": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        }
+      }
+    },
+    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, asserted equal to the request per cell; World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "substeps": 1,
+    "timestep": 0.002
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "parameter-sweep-with-deterministic-repeats",
+    "measurement_window": {
+      "end_s": 2.0,
+      "settle_window_start_fraction": 0.5,
+      "start_s": 0.0
+    },
+    "sweep": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "timestep_s": 0.004
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "timestep_s": 0.004
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct002_dense_contact_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_kinetic_energy_j": 0.0073483693432820196,
+        "final_max_speed_mps": 0.04032772547075842,
+        "final_min_height_m": 0.048578028173510944,
+        "final_state_sha256": "d3f6fdd984ba5e6eabaa2841a1bc305f6237a6e224039a079177ec6ca400eb04",
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_energy_gain_after_settle_j": 0.0,
+        "max_penetration_m": 0.006675685044093327,
+        "max_solver_iterations": 8,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "final_kinetic_energy_j": 0.029393477373128078,
+        "final_max_speed_mps": 0.08065545094151684,
+        "final_min_height_m": 0.04459709802896138,
+        "final_state_sha256": "bed22ef86fbea67a6176944a75e64973b4d0ab7f14c0d2604f61d67823b05f9d",
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_energy_gain_after_settle_j": 0.0,
+        "max_penetration_m": 0.011362281723803547,
+        "max_solver_iterations": 8,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_kinetic_energy_j": 1.4819720438078604e-27,
+        "final_max_speed_mps": 2.3901020052008448e-14,
+        "final_min_height_m": 0.04989999999999998,
+        "final_state_sha256": "5260253337e1348e1b0f89954a78b9d01a5715d982d77fe0384818189a8f9e33",
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_energy_gain_after_settle_j": 6.459280144009318e-31,
+        "max_penetration_m": 0.005411200000000366,
+        "max_solver_iterations": 0,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002
+        },
+        "steps": 1000,
+        "timestep_s": 0.002
+      },
+      {
+        "contact_solver_method": "BOXED_LCP",
+        "final_kinetic_energy_j": 3.674601533738957e-28,
+        "final_max_speed_mps": 1.1914080833008711e-14,
+        "final_min_height_m": 0.04989999999999998,
+        "final_state_sha256": "1a94d8a3a56f6cf1088d78188cbc7982f71e7b0287d0b2335c18dfac375ca3b8",
+        "finite": true,
+        "initial_total_energy_j": 180.1116000000002,
+        "max_active_contacts": 216,
+        "max_energy_gain_after_settle_j": 9.594362860530006e-10,
+        "max_penetration_m": 0.02046842021148934,
+        "max_solver_iterations": 0,
+        "raw_last_step_residual_max": 0.0,
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "gravity_mps2": [
+            0.0,
+            0.0,
+            -9.81
+          ],
+          "rigid_body_solver": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.004
+        },
+        "steps": 500,
+        "timestep_s": 0.004
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is numeric (finite state, settle speed, penetration, energy monotonicity); no visible-behavior claim is made by this packet.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Post-bake allocation gates are owned by PLAN-122 tooling; this packet does not measure allocations",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "max_active_contacts": 216,
+      "max_penetration_m": 0.02046842021148934,
+      "method": "Max over run of StepMetrics.max_penetration_depth and active_contact_count; per-method iteration counts where the runtime records them",
+      "penetration_semantics": "StepMetrics.max_penetration_depth clamps each contact depth with std::max(0.0, depth), so a reported 0.0 means no positive penetration was observed and does not distinguish resting-exactly-tangent from separated contacts.",
+      "sequential_impulse_iterations_semantics": "Sequential impulse records the configured iteration count (recordSolverDiagnostics(world, m_iterations)); its Gauss-Seidel loop has no convergence exit, so this is the configured sweep count, not an observed iteration-to-convergence.",
+      "solver_iterations_by_method": {
+        "BOXED_LCP": {
+          "reason": "The BoxedLcp branch in dart/simulation/compute/rigid_body_contact_stage.cpp returns before recordSolverDiagnostics() runs, so StepMetrics.last_step_iterations is never written for this method; a recorded 0 would mean 'not reported', not 'zero iterations'.",
+          "status": "unsupported"
+        },
+        "SEQUENTIAL_IMPULSE": 8
+      },
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "This packet makes no timing or scaling claim; interleaved same-host methodology is required before any performance row",
+      "status": "unsupported"
+    },
+    "physical": {
+      "all_cells_finite": true,
+      "max_energy_gain_after_settle_j": 9.594362860530006e-10,
+      "max_penetration_m": 0.02046842021148934,
+      "method": "Per-cell finite-state check over 216 bodies, final max body speed, final min body height, kinetic energy at the horizon, and max single-step kinetic-energy gain after the settle window from StepMetrics",
+      "settled_final_max_speed_mps": 0.08065545094151684,
+      "stability_tolerance": {
+        "final_max_speed_mps": 0.05,
+        "max_energy_gain_after_settle_j": 0.001,
+        "max_penetration_m": 0.025
+      },
+      "unstable_cells": [
+        {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "reasons": [
+            "pile still moving at horizon"
+          ],
+          "timestep_s": 0.004
+        }
+      ]
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers. Says nothing about the original SimBenchmark scene parameters, historical DART versions, other densities/materials, or DART 6.",
+    "disposition": "reproduced",
+    "limitations": [
+      "Bounded reconstruction: the original SimBenchmark asset, material, and timestep grid are not reproduced exactly; sourcing the exact historical setup is future corpus work.",
+      "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback.",
+      "Two timesteps and two solvers only; a wider grid belongs to a follow-up once per-island diagnostics exist.",
+      "No per-contact residual/cone reporting is available on main; solver residual is the aggregate StepMetrics value."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "6x6x6 grid of 216 spheres (radius 0.05 m, mass 0.1 kg, spacing 0.12 m) dropped from 0.5 m clearance onto a static ground box, restitution 0, friction 0.8 on all bodies, simulated to a 2 s horizon per timestep/solver cell.",
+    "digest": "sha256:063ef6bc7a4efd38bdd2c1a7e6f3a04d62475d788d05bef401a726deead1ad94",
+    "id": "ct002_dense_inelastic_grid",
+    "parameters": {
+      "contact_solver_methods": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "description": "6x6x6 grid of 216 spheres (radius 0.05 m, mass 0.1 kg, spacing 0.12 m) dropped from 0.5 m clearance onto a static ground box, restitution 0, friction 0.8 on all bodies, simulated to a 2 s horizon per timestep/solver cell.",
+      "deterministic_repeats": 2,
+      "drop_clearance_m": 0.5,
+      "friction": 0.8,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "grid_dimension": 6,
+      "grid_spacing_m": 0.12,
+      "ground_half_extents_m": [
+        2.0,
+        2.0,
+        0.05
+      ],
+      "horizon_s": 2.0,
+      "impact_settle_fraction": 0.5,
+      "restitution": 0.0,
+      "scene_id": "ct002_dense_inelastic_grid",
+      "sphere_mass_kg": 0.1,
+      "sphere_radius_m": 0.05,
+      "timesteps_s": [
+        0.002,
+        0.004
+      ]
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Dense contact may fail, become unstable, or scale poorly for some timestep/solver settings.",
+    "url": "https://leggedrobotics.github.io/SimBenchmark/"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "d0cb640860d7da5a39792a385e7f499610c0536f"
+  },
+  "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"
+}

@@ -10,9 +10,14 @@
       negative-control fixtures (`claims-manifest.json`,
       `scripts/check_citation_evidence.py`, `pixi run check-citation-evidence`
       in `check-lint`, permanent negative control, CT-001 packet).
-- [ ] Phase 2: Reproduce and classify the six-family first-wave corpus
-      (CT-001 `main` packet landed with disposition `reproduced`; remaining
-      families and all DART 6 lanes open).
+- [ ] Phase 2: Reproduce and classify the six-family first-wave corpus.
+      Landed on `main`: CT-001 rolling/friction-direction (`reproduced`),
+      CT-002 dense inelastic contact (`reproduced`), CT-003 dense elastic
+      contact (`unresolved` -- no energy injection observed). Landed on
+      `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
+      bullet excluded for lacking the pyramid signature). Open: articulated
+      energy/momentum/control, heel-strike/toe-off, high mass-ratio, and
+      reset/concurrency families.
 - [ ] Phase 3: Land contact identity and impulse/wrench semantics.
 - [ ] Phase 4: Extend resolved-method and cross-family solve diagnostics.
 - [ ] Phase 5: Record exact-cone GO/NO-GO; implement only after GO.
@@ -151,8 +156,12 @@ for downstream-sensitive changes.
 ## Immediate next steps
 
 1. Read `RESUME.md` and verify both branch tips/worktrees.
-2. Audit current code/docs/PRs against every initial corpus row.
-3. Integrate PLAN-123/dashboard/index without clobbering newer state.
-4. Implement the smallest checked manifest plus one intentionally incomplete
-   fixture that proves the validator fails closed.
-5. Select the first three corpus rows using reuse and risk, not novelty.
+2. Continue Phase 2 with the articulated energy/momentum family (CT-004),
+   reusing `StepMetrics` and the PLAN-084 variational integrator, then the
+   controlled-articulated row (CT-005) seeded by
+   `python/examples/demos/scenes/atlas_simbicon.py`.
+3. Start WS4's first slice in parallel where it unblocks packets: expose
+   `ResolvedSolverConfiguration` to Python and a comparable per-solve
+   residual, both currently typed unsupported in every packet.
+4. Reuse PR #3377 fixtures for the DART 6 CT-007 lane rather than adding
+   new scenes; keep PLAN-621/622 rows referenced, not copied.

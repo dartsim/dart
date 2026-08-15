@@ -613,9 +613,11 @@ compatibility remains on the active DART 6 LTS branch._
   requested/resolved solver identity, command, ensemble, disposition, claim
   boundary, or typed-unsupported metrics fail validation, and a permanent
   intentionally incomplete negative-control packet must keep failing), and the
-  first branch-qualified CT-001 rolling-direction evidence packet showing the
-  friction-pyramid direction dependence on `main` under both Sequential
-  Impulse and boxed-LCP contact solvers.
+  first branch-qualified evidence packets: CT-001 rolling-direction (the
+  friction-pyramid direction dependence reproduces on `main` under both
+  Sequential Impulse and boxed-LCP contact solvers), CT-002 dense inelastic
+  contact, and CT-003 dense elastic contact (no energy injection observed,
+  recorded as an honest negative result rather than a reproduction).
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
