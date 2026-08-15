@@ -246,7 +246,7 @@
           "evidence": [
             "evidence/CT-011-dart7-restore-equivalence.json"
           ],
-          "notes": "Restore-equivalence protocol over seven arms, both contact solvers. Finding: World.state_vector restore is NOT a function of the restored state once contact history exists (in-place restores diverge at the first step and depend on prior history), while fresh-world restore is bit-exact and repeatable, identical histories agree, pre-contact history is harmless, and the ballistic control is exact. Deterministic throughout; deactivation ruled out by probing. Reset cost, allocation, and concurrency remain unmeasured. The mechanism hunt is the WS3 contact-identity work. Filed as issue #3443."
+          "notes": "Restore-equivalence protocol over seven arms, both contact solvers. Finding with identified root cause: World.state_vector is translational by design (position + linear velocity per rigid body), so orientation and angular velocity are never restored; a restored world keeps its prior rotational state, and friction couples that into the continuation. Fresh-world restore is bit-exact because fresh worlds share default rotational state. Reset cost, allocation, and concurrency remain unmeasured. Filed as issue #3443 (mechanism corrected after the root-cause probe)."
         },
         "dart6": {
           "owner": "existing clone/reset/Recording evidence only",

@@ -38,14 +38,24 @@ once the world has ever had contact:
   bit-exactly.
 
 Everything is deterministic given full history — this is not nondeterminism.
-Some result-affecting contact state survives the `state_vector` write, so
-the continuation depends on what the world did before the restore. The
-failure is silent: state stays finite and each individual run is
+
+**Root cause (identified after filing; body updated):**
+`World.state_vector` is a translational state by design: per dynamic rigid
+body it carries position and linear velocity only (30 entries for the
+five-sphere repro below), matching the header's "dynamic rigid-body
+translations" wording for the differentiable rigid-body path. Orientation
+and angular velocity are never captured or restored. A restored world
+therefore keeps whatever rotational state it already had — after the warm-up
+the spheres carry rolled orientations and ~7 rad/s spin, a fresh world has
+identity orientations and zero spin — and friction couples that rotational
+state into the continuation. Contact history matters only because contact is
+what makes spheres spin. The failure is silent: the property name and shape
+(`x = [q; qdot]`) invite reading it as the full state, nothing warns that
+rotational state is omitted, and each individual run stays finite and
 reproducible, which makes it easy to mistake restored rollouts for
-equivalent ones. Both `SEQUENTIAL_IMPULSE` and `BOXED_LCP` are affected
-identically, which points at shared contact-pipeline state rather than a
-solver-specific cache. Deactivation/sleeping is ruled out: no body was
-asleep at the snapshot, and disabling deactivation changes nothing.
+equivalent ones. Both contact solvers are affected identically for this
+reason. (Deactivation/sleeping was ruled out separately: nothing was asleep
+at the snapshot and disabling it changes nothing.)
 
 **Steps to Reproduce:**
 
@@ -125,12 +135,16 @@ restore changes nothing.
   explicitly choose whether solver/contact history is preserved"
   (`docs/design/contact_trust_and_observability.md`). Currently the choice
   is implicit and history leaks through.
-- Either resolution is defensible — clear contact history on state writes,
-  or capture it in the state vector — but the semantics should be explicit,
-  documented, and tested. The one-model/many-state work (PLAN-030/PLAN-123
-  WS7) needs this settled.
+- Suggested resolution: (a) make the translational scope impossible to
+  miss in the Python/C++ docs and consider a name that says so, and (b)
+  provide a lightweight full dynamic-state capture/restore (positions
+  including orientation, velocities including angular) for reset-heavy
+  workflows. `save_binary`/`load_binary` exist but serialize the full entity
+  graph through a file, and `restore_replay_frame` requires recording; the
+  one-model/many-state work (PLAN-030/PLAN-123 WS7) needs the lightweight
+  path settled.
 - Workaround: restore into a freshly built world; that is bit-exact and
-  repeatable.
+  repeatable (fresh worlds share default rotational state).
 - Full evidence packet (seven protocol arms, all hashes, deterministic
   repeats): `CT-011-dart7-restore-equivalence.json` under
   `docs/plans/123-citation-driven-simulation-trust/evidence/` on the

@@ -420,3 +420,37 @@ both branches, and opening the two PRs):
 - Merged the moved bases into both branches before pushing (lockfile-only
   commits #3441 on `main`, #3440 on `release-6.20`), per the merge-first
   push rule; `test-all` re-run on both merged heads before the push.
+
+## CT-011 root cause identified — 2026-08-15
+
+The WS3 mechanism hunt closed in three probes against the rebuilt tree:
+
+1. At the identical restored state, in-place and fresh worlds report the same
+   contact pairs, depths, world points, and normals -- only `local_point_a`
+   differs, and the in-place value is a radius-length vector pointing away
+   from the bottom pole: a body-frame anchor of a ROTATED sphere.
+2. Reading `World::getStateVector()` shows the design directly: per dynamic
+   rigid body it stores `transform.position` and `velocity.linear` only. The
+   header documents the dense order as "dynamic rigid-body translations"
+   (built for the differentiable rigid-body path).
+3. The decisive probe: `state_vector` has 30 entries for the five-sphere
+   scene (3 pos + 3 linvel each); after restoring the same vector, the
+   in-place sphere keeps a rolled orientation (Frobenius deviation 2.41 from
+   identity) and ~7 rad/s angular velocity while the fresh sphere sits at
+   identity with zero spin.
+
+So the CT-011 divergence is a PARTIAL RESTORE by design, not hidden contact
+state: orientation and angular velocity are never captured, a restored world
+keeps whatever rotational state it had, and friction couples that into the
+continuation. Contact history mattered only because contact is what makes
+spheres spin -- the earlier "shared contact-pipeline state" hypothesis in
+issue #3443 was wrong in mechanism (the behavioral facts and repro all
+stand) and the issue body was corrected with maintainer approval as part of
+the approved posting workflow. The packet limitation now states the root
+cause and the full-state alternatives (save_binary/load_binary,
+restore_replay_frame), neither of which is a lightweight in-memory reset.
+
+The dead-end candidates are recorded because ruling them out was real work:
+persistent_manifold_cache.cpp (warm-start impulses, classic dart detector
+facade -- not on the DART 7 World query path) and deactivation state (probed,
+nothing asleep, disabling changed nothing).
