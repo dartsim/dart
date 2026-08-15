@@ -53,10 +53,13 @@
      lane-referenced path wherever it sits and rejecting non-JSON, outside,
      and negative-control references.
   2. MAJOR — bullet was listed as symmetry-breaking on scatter with no
-     angular structure (its antisymmetry residual exceeds its own peak drift,
-     its largest drift sits at 45 deg where the mechanism predicts zero, and
-     its penetration/energy gain are ~1000x/~6000x the other detectors). The
-     packet now applies an antisymmetry-signature test and excludes bullet
+     angular structure. Measured antisymmetry residual relative to each
+     detector's own peak drift: fcl 4.607e-15 / 2.101e-3 = 0.000, dart and
+     ode 1.554e-15 / 2.101e-3 = 0.000, bullet 1.201e-3 / 6.697e-4 = 1.793 —
+     bullet's asymmetry exceeds its own signal, its largest drift sits at
+     45 deg where the mechanism predicts zero, and its penetration/energy
+     gain are ~1000x/~6000x the others. The packet now applies that
+     antisymmetry-signature test (threshold 5% of peak) and excludes bullet
      from the reproducing set with an explicit limitation.
   3. MAJOR — the disposition had no physical-validity gate, so a degenerate
      run would have strengthened "reproduced". A validity gate (rolling speed
