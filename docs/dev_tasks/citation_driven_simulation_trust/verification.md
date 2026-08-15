@@ -370,3 +370,40 @@ zero and the observed closure is produced by the solve.
   `pixi run check-citation-evidence` — OK (it rejected an untyped `None` for
   the "no failure onset" case on the first attempt, which is now a typed
   unsupported marker).
+
+## CT-011 restore-equivalence slice — 2026-08-15
+
+- Scene: five-sphere pile with a 0.5 s contact-rich warm-up; seven protocol
+  arms per contact solver, every continuation hashed bit-exactly over the
+  full state vector; whole protocol repeated twice and required identical.
+- The finding was pinned by four escalating probes before the packet was
+  written, each ruling out an explanation:
+  1. In-place `state_vector` restore diverges from the original continuation
+     at the FIRST post-restore step (max state delta ~5e-3 to 1e-2 within a
+     0.2 s window), both solvers.
+  2. Ballistic control is bit-exact (protocol and state vector are sound for
+     free motion), and `update_kinematics()` after restore changes nothing.
+  3. Two in-place restores of the SAME snapshot differ from each other when
+     different history precedes them -- but two FRESH worlds restoring that
+     snapshot agree bit-exactly, two worlds with IDENTICAL histories agree,
+     and a world whose history ends before first contact matches fresh.
+  4. Deactivation ruled out: no body was asleep at the snapshot and
+     disabling deactivation changes nothing.
+- Conclusion: once a World has contact history, the post-restore trajectory
+  is a function of (restored state, prior contact history), not of the
+  restored state alone. Everything is deterministic given full history; this
+  is hidden result-affecting contact state surviving the restore, not
+  nondeterminism. This is precisely the design doc's requirement that
+  "reset semantics must explicitly choose whether solver/contact history is
+  preserved", demonstrated unmet/undocumented on `main`, and it is the
+  motivating evidence for the WS3 contact-identity work.
+- Practical workaround established by the packet: restore into a freshly
+  built world -- bit-exact and repeatable.
+- Disposition `unresolved`: CT-011 is a requirements claim (research
+  workflows need X), which a fixture cannot reproduce; reset cost,
+  allocation, and concurrency are typed unsupported.
+- The gate rejected `first_divergent_step: 0` until it was declared a
+  measured zero -- which it genuinely is: divergence starts at the very
+  first step.
+- Commands: packet writer as recorded in the packet;
+  `pixi run check-citation-evidence` — OK.

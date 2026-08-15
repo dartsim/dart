@@ -51,12 +51,15 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: WS0/WS1 and six first-wave packets have landed on `main`, one on
-  `release-6.20`. CT-007 found that the default contact solver
-  (SEQUENTIAL_IMPULSE) fails completely at mass ratios 100 and 1000 where
-  BOXED_LCP holds; that needs a maintainer decision and is the strongest WS5
-  GO input so far. Continue WS2 with heel-strike/toe-off (CT-006, gated on
-  WS3 contact semantics) and reset/concurrency queries (CT-011..013).
+- Next step: all six first-wave families now have at least one `main`
+  packet (plus CT-001 on `release-6.20`). Two findings need maintainer
+  decisions: CT-007 (the default SEQUENTIAL_IMPULSE solver lets a heavy box
+  sink fully through a light one at mass ratios >= 100 while BOXED_LCP
+  holds) and CT-011 (state-vector restore is not a function of the restored
+  state once contact history exists; fresh-world restore is bit-exact).
+  Issue drafts live in the dev task. Next slices: WS3 contact
+  ordering/identity (now motivated by CT-011), CT-006 heel-strike (gated on
+  WS3), and the per-solve residual (WS4 remainder).
   WS4's first slice has landed: `World.resolved_configuration` is exposed to
   Python and every packet now records the World's own bake-time resolution.
   The remaining WS4 gap is a comparable per-solve residual, still unexposed

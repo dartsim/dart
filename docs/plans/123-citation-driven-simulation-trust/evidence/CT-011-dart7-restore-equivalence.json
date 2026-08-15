@@ -1,0 +1,378 @@
+{
+  "claim_id": "CT-011",
+  "configuration": {
+    "detector": "DART 7 native World collision pipeline (the World step API exposes no detector selection on main)",
+    "fallback_policy": "World defaults; no per-island fallback reporting is exposed on main",
+    "iterations": "World defaults",
+    "requested": {
+      "backend": "cpu",
+      "contact_solver_method_sweep": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "precision": "float64",
+      "restore_mechanism": "World.state_vector write plus World.time write; update_kinematics() made no difference in probing and is not part of the protocol",
+      "threads": "World default sequential step"
+    },
+    "resolved": {
+      "by_cell": {
+        "BOXED_LCP": {
+          "contact_solver_method": "BOXED_LCP",
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        }
+      }
+    },
+    "resolved_provenance": "The resolved identity is the World's own bake-time resolution (World.resolved_configuration), recorded per domain with requested, resolved, reason, and a substitution flag. The requested contact solver is additionally asserted against readback per repeat.",
+    "substeps": 1,
+    "timestep": 0.002
+  },
+  "ensemble": {
+    "deterministic_repeats": 2,
+    "deterministic_repeats_identical": true,
+    "kind": "protocol-arms-with-deterministic-repeats",
+    "measurement_window": {
+      "continuation_steps": 100,
+      "warmup_steps": 250
+    },
+    "sweep": [
+      {
+        "contact_solver_method": "SEQUENTIAL_IMPULSE"
+      },
+      {
+        "contact_solver_method": "BOXED_LCP"
+      }
+    ]
+  },
+  "evidence": {
+    "commands": [
+      "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct011_restore_equivalence_packet.py"
+    ],
+    "raw_rows": [
+      {
+        "ballistic_control_sha256": [
+          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9",
+          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9"
+        ],
+        "contact_solver_method": "SEQUENTIAL_IMPULSE",
+        "continuation_sha256": "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61",
+        "findings": {
+          "ballistic_restore_exact": true,
+          "fresh_restore_matches_continuation": false,
+          "fresh_restores_match_each_other": true,
+          "inplace_restore_matches_continuation": false,
+          "inplace_restores_match_each_other": false,
+          "precontact_history_matches_fresh": true,
+          "same_history_restores_match": true
+        },
+        "fresh_restore_sha256": [
+          "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b",
+          "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b"
+        ],
+        "inplace_divergence_vs_continuation": {
+          "first_divergent_step": 0,
+          "max_abs_state_delta": 0.004756158618442807
+        },
+        "inplace_restore_sha256": [
+          "5879f6fde1ccb32093a641e2720b45a147580a93c1079a981c19888a52263d21",
+          "cc166727c022a4f0cd763d38351ea19f1177c9906c5e5ace5555abfd02b9d22d"
+        ],
+        "precontact_history_restore_sha256": "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b",
+        "resolved": {
+          "contact_solver_method": "SEQUENTIAL_IMPULSE",
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "same_history_restore_sha256": [
+          "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61",
+          "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61"
+        ]
+      },
+      {
+        "ballistic_control_sha256": [
+          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9",
+          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9"
+        ],
+        "contact_solver_method": "BOXED_LCP",
+        "continuation_sha256": "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6",
+        "findings": {
+          "ballistic_restore_exact": true,
+          "fresh_restore_matches_continuation": false,
+          "fresh_restores_match_each_other": true,
+          "inplace_restore_matches_continuation": false,
+          "inplace_restores_match_each_other": false,
+          "precontact_history_matches_fresh": true,
+          "same_history_restores_match": true
+        },
+        "fresh_restore_sha256": [
+          "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe",
+          "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe"
+        ],
+        "inplace_divergence_vs_continuation": {
+          "first_divergent_step": 0,
+          "max_abs_state_delta": 0.012694905840379356
+        },
+        "inplace_restore_sha256": [
+          "452b08b7a2ba4943f9bc475849b3f9f37d4c62a5fbb10f8e1aa78b0bd198a3e1",
+          "a1dd32085b5ae5b6b25b48cc30f01b7402160c9be2e44fabf82670d450f04ede"
+        ],
+        "precontact_history_restore_sha256": "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe",
+        "resolved": {
+          "contact_solver_method": "BOXED_LCP",
+          "time_step_s": 0.002,
+          "world_resolution": {
+            "by_domain": {
+              "deformable-psd": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "cpu",
+                "resolved": "cpu"
+              },
+              "multibody": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "semi-implicit",
+                "resolved": "semi-implicit"
+              },
+              "rigid-body": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "sequential-impulse",
+                "resolved": "sequential-impulse"
+              },
+              "rigid-contact": {
+                "is_substitution": false,
+                "reason": "as requested",
+                "requested": "boxed-lcp",
+                "resolved": "boxed-lcp"
+              }
+            },
+            "has_substitution": false,
+            "source": "World.resolved_configuration (bake-time resolution)"
+          }
+        },
+        "same_history_restore_sha256": [
+          "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6",
+          "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6"
+        ]
+      }
+    ],
+    "visual": {
+      "reason": "The oracle is bit-exact hash equality between trajectories; there is nothing visual to assess.",
+      "status": "not-applicable"
+    }
+  },
+  "host": {
+    "machine": "x86_64",
+    "note": "Host recorded for provenance only; no timing methodology was applied",
+    "performance_valid": false,
+    "platform": "Linux-7.0.0-29-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6"
+  },
+  "metrics": {
+    "allocation": {
+      "reason": "Reset allocation behavior is PLAN-122 territory and is not measured by this packet",
+      "status": "unsupported"
+    },
+    "numerical": {
+      "method": "Hash bookkeeping only; every hash the findings compare is published in raw_rows so the booleans can be recomputed",
+      "protocol_arms": 7,
+      "solver_residual": {
+        "reason": "StepMetrics.last_step_residual is structurally zero for rigid contact on this branch: recordSolverDiagnostics() in dart/simulation/compute/rigid_body_contact_stage.cpp takes residual = 0.0 by default and no rigid contact call site passes one, so no residual is computed for either contact solver. Exposing a comparable residual is PLAN-123 WS4 work.",
+        "status": "unsupported"
+      }
+    },
+    "performance": {
+      "reason": "The corpus row also asks for reset cost and overhead; no timing methodology was applied, so cost is not measured",
+      "status": "unsupported"
+    },
+    "physical": {
+      "inplace_divergence": {
+        "BOXED_LCP": {
+          "first_divergent_step": 0,
+          "max_abs_state_delta": 0.012694905840379356
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "first_divergent_step": 0,
+          "max_abs_state_delta": 0.004756158618442807
+        }
+      },
+      "measured_zero_fields": [
+        "inplace_divergence.SEQUENTIAL_IMPULSE.first_divergent_step",
+        "inplace_divergence.BOXED_LCP.first_divergent_step"
+      ],
+      "method": "Bit-exact comparison of full state-vector trajectories (SHA-256 over every post-restore step) across restore protocols, plus first divergent step and max state delta for the in-place arm against the continuation",
+      "per_solver_findings": {
+        "BOXED_LCP": {
+          "ballistic_restore_exact": true,
+          "fresh_restore_matches_continuation": false,
+          "fresh_restores_match_each_other": true,
+          "inplace_restore_matches_continuation": false,
+          "inplace_restores_match_each_other": false,
+          "precontact_history_matches_fresh": true,
+          "same_history_restores_match": true
+        },
+        "SEQUENTIAL_IMPULSE": {
+          "ballistic_restore_exact": true,
+          "fresh_restore_matches_continuation": false,
+          "fresh_restores_match_each_other": true,
+          "inplace_restore_matches_continuation": false,
+          "inplace_restores_match_each_other": false,
+          "precontact_history_matches_fresh": true,
+          "same_history_restores_match": true
+        }
+      },
+      "restore_is_a_function_of_restored_state": false
+    }
+  },
+  "result": {
+    "claim_boundary": "DART 7 main, this commit, a five-sphere pile with a 0.5 s contact-rich warm-up, restored via World.state_vector, both contact solvers. Established: restore is NOT a function of the restored state once the world has contact history -- the in-place continuation differs from the original at the first step, and two in-place restores of the same snapshot differ from each other when different history precedes them -- while a freshly built world restoring the same vector is bit-exact and repeatable, identical histories give identical continuations, pre-contact history is harmless, and the ballistic control is exact. Everything is deterministic given full history; nothing here is nondeterminism. The corpus row's reset cost, overhead, and concurrency halves are not measured. Says nothing about Skeleton-based state APIs, clone(), replay restore, historical DART versions, or DART 6.",
+    "disposition": "unresolved",
+    "limitations": [
+      "The mechanism is not identified: contact history leaves result-affecting state that a state-vector write does not reset, in both contact solvers, and deactivation was ruled out by probing (nothing was asleep and disabling it changed nothing). Naming the exact carrier (contact manifold caches, warm starts, or contact ordering) is the WS3 contact-identity work this finding motivates.",
+      "One scene, one snapshot point, 0.2 s windows; the magnitude of divergence (up to ~1e-2 in state units within the window) will vary with scene and horizon.",
+      "Reset cost, allocation, and thread/lane isolation are typed unsupported; they are the other halves of the corpus row.",
+      "The replay-frame restore mechanism (World.restore_replay_frame) is not tested here and may have different semantics."
+    ]
+  },
+  "review": {
+    "passes": []
+  },
+  "scene": {
+    "description": "Five 0.5 kg spheres (radius 0.06 m) dropped from staggered offsets into a loose pile on a static ground box; snapshot taken after a 0.5 s warm-up (well after first contact), then 0.2 s continuations compared bit-exactly across restore protocols. A ballistic variant with no ground is the control.",
+    "digest": "sha256:e13de5bb15b3d371c34f0bc9c294673dc8ad059e37f4a73a400707cc2e405e9b",
+    "id": "ct011_restore_equivalence_pile",
+    "parameters": {
+      "contact_solver_methods": [
+        "SEQUENTIAL_IMPULSE",
+        "BOXED_LCP"
+      ],
+      "continuation_steps": 100,
+      "description": "Five 0.5 kg spheres (radius 0.06 m) dropped from staggered offsets into a loose pile on a static ground box; snapshot taken after a 0.5 s warm-up (well after first contact), then 0.2 s continuations compared bit-exactly across restore protocols. A ballistic variant with no ground is the control.",
+      "deterministic_repeats": 2,
+      "extra_history_steps": 100,
+      "friction": 0.6,
+      "gravity_mps2": [
+        0.0,
+        0.0,
+        -9.81
+      ],
+      "ground_half_extents_m": [
+        1.0,
+        1.0,
+        0.05
+      ],
+      "precontact_history_steps": 50,
+      "restitution": 0.2,
+      "scene_id": "ct011_restore_equivalence_pile",
+      "sphere_count": 5,
+      "sphere_mass_kg": 0.5,
+      "sphere_radius_m": 0.06,
+      "timestep_s": 0.002,
+      "warmup_steps": 250
+    }
+  },
+  "schema": "dart.citation_claim_evidence/v1",
+  "source": {
+    "claim": "Research workflows need fast reset, concurrency, low overhead, and deterministic synchronous stepping around DART.",
+    "url": "https://doi.org/10.21105/joss.06771"
+  },
+  "target": {
+    "branch": "main",
+    "commit": "ce5142e8cd7c76d6adc120e703482e3f898e4567",
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+  },
+  "title": "State-vector restore equivalence under contact (DART 7 first packet)"
+}

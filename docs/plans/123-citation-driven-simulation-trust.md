@@ -260,6 +260,16 @@ and domain expansion are DART 7 only.
   and rests there -- while `BOXED_LCP` holds across all four swept decades.
   Deterministic across repeats. This needs a maintainer decision on the
   default path, and it is the strongest evidence so far toward a WS5 GO.
+- CT-011 completed first-packet coverage of all six capped families and
+  produced the second maintainer-decision finding: `World.state_vector`
+  restore is not a function of the restored state once contact history
+  exists -- in-place restores diverge at the first step and depend on prior
+  history, while fresh-world restores of the same vector are bit-exact,
+  identical histories agree, pre-contact history is harmless, and the
+  ballistic control is exact. Deactivation was ruled out by probing. This is
+  the design doc's "reset semantics must explicitly choose whether
+  solver/contact history is preserved" requirement observed unmet, and it is
+  the concrete motivation for WS3 contact ordering/identity.
 - Known gap: the validator does not arithmetically cross-check derived
   metrics against `raw_rows`, so a falsified summary would pass. Closing that
   needs the gate to know each packet's derivation (WS4-scale).

@@ -241,9 +241,12 @@
       "lanes": {
         "dart7": {
           "owner": "PLAN-030/122/123 one-model/many-state",
-          "status": "audit-required",
+          "status": "in-progress",
           "disposition": null,
-          "evidence": []
+          "evidence": [
+            "evidence/CT-011-dart7-restore-equivalence.json"
+          ],
+          "notes": "Restore-equivalence protocol over seven arms, both contact solvers. Finding: World.state_vector restore is NOT a function of the restored state once contact history exists (in-place restores diverge at the first step and depend on prior history), while fresh-world restore is bit-exact and repeatable, identical histories agree, pre-contact history is harmless, and the ballistic control is exact. Deterministic throughout; deactivation ruled out by probing. Reset cost, allocation, and concurrency remain unmeasured. The mechanism hunt is the WS3 contact-identity work."
         },
         "dart6": {
           "owner": "existing clone/reset/Recording evidence only",

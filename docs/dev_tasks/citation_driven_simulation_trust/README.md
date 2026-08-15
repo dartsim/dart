@@ -19,7 +19,12 @@
       CT-005 PD tracking (`unresolved`: error is controller-limited and step
       cost is not measured), and CT-007 high mass-ratio stack (`unresolved`
       for the comparative claim, but it found that the default contact solver
-      fails completely at mass ratios 100 and 1000 where boxed LCP holds). Landed on
+      fails completely at mass ratios 100 and 1000 where boxed LCP holds), and
+      CT-011 restore equivalence (`unresolved` for the requirements claim,
+      but it found that state-vector restore is not a function of the
+      restored state once contact history exists; fresh-world restore is
+      bit-exact). All six first-wave families now have at least one `main`
+      packet. Landed on
       `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
       bullet excluded for lacking the pyramid signature). Open: articulated
       energy/momentum/control, heel-strike/toe-off, high mass-ratio, and
@@ -162,11 +167,11 @@ for downstream-sensitive changes.
 ## Immediate next steps
 
 1. Read `RESUME.md` and verify both branch tips/worktrees.
-2. Bring the CT-007 sequential-impulse failure to the maintainer: it is a
-   default-path defect, the strongest WS5 GO input so far, and confirming its
-   mechanism needs the per-solve residual WS4 has not exposed.
-3. Continue Phase 2 with heel-strike/toe-off (CT-006), which depends on the
-   WS3 contact semantics, and reset/concurrency queries (CT-011..013).
+2. Bring the CT-007 and CT-011 findings to the maintainer: a default-path
+   contact failure at high mass ratio, and restore semantics that silently
+   depend on contact history. Issue drafts live in this folder.
+3. Start WS3 contact ordering/identity, now motivated concretely by CT-011's
+   hidden contact state; CT-006 heel-strike follows it.
 4. Start WS4's first slice in parallel where it unblocks packets: expose
    `ResolvedSolverConfiguration` to Python and a comparable per-solve
    residual, both currently typed unsupported in every packet.

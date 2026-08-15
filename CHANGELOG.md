@@ -625,7 +625,11 @@ compatibility remains on the active DART 6 LTS branch._
   integration-limited, and step cost is not measured), and CT-007
   high-mass-ratio stack conditioning, which records that the default
   sequential-impulse contact solver fails to hold a two-box stack at mass
-  ratios of 100 and above while the boxed-LCP path holds across four decades.
+  ratios of 100 and above while the boxed-LCP path holds across four decades,
+  and CT-011 restore equivalence, which records that `World.state_vector`
+  restore is not a function of the restored state once the world has contact
+  history (a fresh world restoring the same vector is bit-exact), completing
+  first-packet coverage of all six capped first-wave fixture families.
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
