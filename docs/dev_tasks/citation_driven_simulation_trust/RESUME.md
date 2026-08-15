@@ -29,10 +29,13 @@ statuses were verified; the corpus sidecar now carries the WS0 audit record.
 ## Current branches
 
 - DART 7: `feature/citation-trust-foundation` in
-  `.claude/worktrees/citation-trust-main`, based on `origin/main` 20501341226.
+  `.claude/worktrees/citation-trust-main`, based on `origin/main`
+  20501341226, now at `54bf5884abe` with three commits:
+  the PLAN-123 contract, the gate hardening plus dense-contact packets, and
+  the round-2 verdict/provenance corrections.
 - DART 6: `feature/dart6-citation-contact-trust` in
   `.claude/worktrees/citation-trust-620`, based on `origin/release-6.20`
-  39ccd52068b (docs applied; branch-local adoption in progress).
+  39ccd52068b, now at `afc6d7ac3c2` with four commits.
 
 Both are local-only; nothing pushed. GitHub mutations need maintainer
 approval.
@@ -47,20 +50,29 @@ variational integrator as the comparison arm, written with
 
 ## Context that would be lost
 
-- `ResolvedSolverConfiguration` is C++-only (`World::getResolvedConfiguration`);
-  packets record resolved identity from World property readback plus step
-  profile stage names, and the Python exposure is the first WS4 slice.
-- The CT-001 packet must not be quoted as a solver comparison: SI and boxed
-  LCP metric summaries coincide to printed precision on the single-contact
-  scene while trajectory hashes differ per solver.
-- `check-citation-evidence` validates committed packets structurally;
-  `--freshness` (packet commit == HEAD) is a packet-writing aid, not CI,
-  because squash merges retire topic commits.
-- Negative-control packets live under `evidence/negative-controls/` and must
-  keep failing validation with >= 3 errors; the gate rejects a passing
-  negative control as vacuous.
-- dartpy runs from a built tree via
-  `PYTHONPATH=build/default/cpp/Release/python pixi run python ...`.
+- The gate is fail-closed in ways worth knowing before writing a packet:
+  every exact zero in a measured metric group must be typed
+  `{"status": "unsupported", "reason": ...}` or listed in
+  `measured_zero_fields`, and a stale declaration (a listed field that is not
+  zero) also fails. Use `scripts/citation_packet_utils.py` for the shared
+  markers rather than inventing wording.
+- Quantities that do not exist on `main` today, and must stay typed
+  unsupported until WS4 lands them: per-solve solver residual (rigid contact
+  never passes one to `recordSolverDiagnostics`), boxed-LCP iteration counts
+  (its branch returns before the diagnostics call), per-island fallback
+  reporting, and `ResolvedSolverConfiguration` in Python.
+- Packet dispositions must survive an adversarial read. Two rounds of review
+  killed a verdict that rested on a hardcoded threshold: a settle speed
+  exactly linear in dt is integrator residual, not instability. Prefer an
+  oracle a reviewer can recompute from `raw_rows`.
+- `target.commit` is the commit the library was measured at; the packet and
+  its writer necessarily land one commit later. `target.commit_role` says so.
+- dartpy runs from a built tree:
+  `PYTHONPATH=build/default/cpp/Release/python pixi run python ...` on
+  `main`, and `.../python/dartpy` on `release-6.20` (which also needs
+  `pixi run build-py-dev`).
+- The `main` manifest keeps dart6 lanes as routing pointers only; the
+  `release-6.20` branch manifest owns that branch's lane state.
 
 ## How to resume
 
