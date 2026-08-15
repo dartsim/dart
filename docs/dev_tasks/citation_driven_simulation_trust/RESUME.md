@@ -23,16 +23,18 @@ statuses were verified; the corpus sidecar now carries the WS0 audit record.
   file the packet checks never reached), unsupported-as-zero metrics in this
   program's own packets, and a DART 6 attribution error crediting bullet with
   a friction-pyramid signature its data does not show. See `verification.md`.
-- First-wave packets landed: CT-001 (both branches), CT-002 and CT-003
-  (`main`).
+- First-wave packets landed: CT-001 (both branches), CT-002, CT-003, and
+  CT-004 (`main`). Four of the six capped families now have at least one
+  branch-qualified packet.
 
 ## Current branches
 
 - DART 7: `feature/citation-trust-foundation` in
   `.claude/worktrees/citation-trust-main`, based on `origin/main`
-  20501341226, now at `54bf5884abe` with three commits:
-  the PLAN-123 contract, the gate hardening plus dense-contact packets, and
-  the round-2 verdict/provenance corrections.
+  20501341226, now at `85e5db2c168` with five commits: the PLAN-123
+  contract, the gate hardening plus dense-contact packets, the round-2
+  verdict/provenance corrections, the RESUME state record, and the CT-004
+  articulated energy-drift packet.
 - DART 6: `feature/dart6-citation-contact-trust` in
   `.claude/worktrees/citation-trust-620`, based on `origin/release-6.20`
   39ccd52068b, now at `afc6d7ac3c2` with four commits.
@@ -42,11 +44,15 @@ approval.
 
 ## Immediate next step
 
-Continue Phase 2 on `main` with the articulated energy/momentum family
-(CT-004): a passive multi-link chain swept over timestep, using
-`StepMetrics.total_energy`/`angular_momentum` as the oracle and the PLAN-084
-variational integrator as the comparison arm, written with
-`scripts/citation_packet_utils.py` so unsupported quantities stay typed.
+Continue Phase 2 on `main` with the controlled-articulated row (CT-005),
+seeded by `python/examples/demos/scenes/atlas_simbicon.py`: tracking error and
+constraint error under a PD controller, swept over timestep, with control work
+recorded. Keep the same discipline as CT-004 -- no timing claim unless an
+interleaved same-host methodology is actually applied.
+
+Remaining first-wave families after that: heel-strike/toe-off (CT-006, which
+depends on the WS3 contact semantics), high mass-ratio stacks (CT-007), and
+reset/concurrency queries (CT-011..CT-013).
 
 ## Context that would be lost
 

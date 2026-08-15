@@ -98,6 +98,33 @@ scripts/write_citation_ct002_dense_contact_packet.py` — all cells finite;
 - Negative control: still fails (>= 3 errors) and is now also rejected if a
   lane references it as evidence.
 
+## CT-004 articulated energy slice — 2026-08-14
+
+- What changed: `scripts/write_citation_ct004_articulated_energy_packet.py`
+  and its packet; manifest lane, dashboard, changelog, and task status.
+- Scene: passive 4-link planar pendulum chain (revolute hinges about y, 0.3 m
+  links, 1 kg each) released from rest at alternating 0.35 rad joint angles,
+  no contact and no control, 2 s horizon. A passive chain conserves total
+  mechanical energy exactly, which makes the oracle solver-neutral.
+- Commands and results:
+  - `PYTHONPATH=build/default/cpp/Release/python pixi run python
+scripts/write_citation_ct004_articulated_energy_packet.py` — 8 cells
+    (2 families x 4 timesteps), 2 deterministic repeats each, all
+    bit-identical; integration family, timestep, and gravity each asserted
+    against the request per repeat and per cell.
+  - Measured relative energy drift as dt goes 4 ms -> 0.5 ms:
+    SEMI_IMPLICIT 5.675e-1 -> 6.471e-2, VARIATIONAL 8.697e-2 -> 1.051e-2.
+    Observed least-squares log-log slopes 1.04 and 1.02.
+  - `pixi run check-citation-evidence` — OK; 68 pytest cases pass.
+- Disposition `reproduced` covers only the convergence half of the corpus
+  row. The "at matched cost" half is explicitly uncovered: no timing
+  methodology was applied, `metrics.performance` is typed unsupported, and no
+  ranking between the two families is claimed even though their drift figures
+  differ.
+- Angular momentum is recorded as an observed envelope, not a conservation
+  oracle, because gravity exerts a torque about the world origin.
+- Negative control: unchanged and still failing.
+
 ## Round-2 verification and second fix pass — 2026-08-14
 
 Two independent verifiers re-checked the post-fix state. Both confirmed the
