@@ -1136,7 +1136,7 @@
     "disposition": "reproduced",
     "limitations": [
       "Per-solve LCP iteration counts, residuals, and Dantzig-vs-PGS fallback events are not exposed on release-6.20; they are typed unsupported in metrics.numerical rather than reported as zero, and solver identity is type-level readback.",
-      "bullet exceeds the drift tolerance without the antisymmetric pyramid signature (its antisymmetry residual is comparable to its own peak drift, its largest drift sits at 45 deg where the mechanism predicts zero, and its penetration and energy gain are orders of magnitude above the other detectors). Its scatter is NOT attributed to polyhedral friction here, and it is excluded from the reproducing set.",
+      "bullet exceeds the drift tolerance without the antisymmetric pyramid signature: its antisymmetry residual exceeds its own peak drift (ratio 1.79), its drift at 45 deg -- where the mechanism predicts exactly zero -- is 90% of its largest, and its penetration and energy gain are orders of magnitude above the other detectors. Its scatter is NOT attributed to polyhedral friction here, and it is excluded from the reproducing set.",
       "dart and ode produce bit-identical trajectory hashes at every angle, so the sweep contains fewer independent measurements than detectors; see metrics.physical.identical_detector_groups.",
       "The sweep covers 0-90 deg; pyramid orientation with a period other than 90 deg would need a wider sweep.",
       "Detector availability depends on the build; the packet records the swept set explicitly.",
@@ -1196,7 +1196,7 @@
   },
   "target": {
     "branch": "release-6.20",
-    "commit": "8aedb37a90233acead8f40938a6dc4412812b414"
+    "commit": "afc6d7ac3c2460a569e7315dcc60aba94ec80588"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }

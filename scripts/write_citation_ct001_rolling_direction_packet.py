@@ -454,6 +454,18 @@ def build_packet() -> dict[str, Any]:
                 "penetration exceeded a tenth of the radius",
                 row["max_penetration_m"] > 0.1 * radius,
             ),
+            (
+                # A sliding sphere must dissipate; a per-step kinetic gain
+                # above a thousandth of the launch energy is a blow-up
+                # signature, which the gate must catch before any symmetry
+                # verdict is trusted.
+                "kinetic energy injected during the run",
+                row["max_energy_gain_j"]
+                > 1.0e-3
+                * 0.5
+                * float(parameters["sphere_mass_kg"])
+                * float(parameters["launch_speed_mps"]) ** 2,
+            ),
         )
         if bad
     ]
@@ -622,13 +634,13 @@ def build_packet() -> dict[str, Any]:
                 "metrics.numerical rather than reported as zero, and solver "
                 "identity is type-level readback.",
                 "bullet exceeds the drift tolerance without the "
-                "antisymmetric pyramid signature (its antisymmetry residual "
-                "is comparable to its own peak drift, its largest drift sits "
-                "at 45 deg where the mechanism predicts zero, and its "
-                "penetration and energy gain are orders of magnitude above "
-                "the other detectors). Its scatter is NOT attributed to "
-                "polyhedral friction here, and it is excluded from the "
-                "reproducing set.",
+                "antisymmetric pyramid signature: its antisymmetry residual "
+                "exceeds its own peak drift (ratio 1.79), its drift at "
+                "45 deg -- where the mechanism predicts exactly zero -- is "
+                "90% of its largest, and its penetration and energy gain are "
+                "orders of magnitude above the other detectors. Its scatter "
+                "is NOT attributed to polyhedral friction here, and it is "
+                "excluded from the reproducing set.",
                 "dart and ode produce bit-identical trajectory hashes at "
                 "every angle, so the sweep contains fewer independent "
                 "measurements than detectors; see "

@@ -29,10 +29,11 @@
   4.806e-3; bullet 6.696e-4 m and 9.236e-4; heading errors <= 1.6e-4 deg;
   min final sphere height 0.0800 m (no fall-through). Only fcl, dart, and ode
   carry the antisymmetric friction-pyramid signature; bullet exceeds the
-  drift tolerance without angular structure (largest drift at 45 deg, where
+  drift tolerance without angular structure (its 45 deg drift is 90% of its
+  largest, where
   the mechanism predicts zero) and is explicitly excluded from the
   reproducing set. dart and ode are bit-identical, so the sweep holds three
-  independent behaviors, not four. Disposition `reproduced` for fcl/dart/ode
+  distinct trajectory sets, not four. (fcl still agrees with dart/ode to ~6e-7 relative, and the friction pyramid under test lives in the shared BoxedLcpConstraintSolver, so the detectors are not independent implementations of the mechanism.) Disposition `reproduced` for fcl/dart/ode
   under a validity gate (rolling speed 5/7 v0, no fall-through, bounded
   penetration) plus an explicit claim boundary.
 - Negative control: permanent intentionally incomplete packet fails with
@@ -57,7 +58,8 @@
      detector's own peak drift: fcl 4.607e-15 / 2.101e-3 = 0.000, dart and
      ode 1.554e-15 / 2.101e-3 = 0.000, bullet 1.201e-3 / 6.697e-4 = 1.793 —
      bullet's asymmetry exceeds its own signal, its largest drift sits at
-     45 deg where the mechanism predicts zero, and its penetration/energy
+     45 deg, where the mechanism predicts zero, is 90% of its largest, and
+     its penetration/energy
      gain are ~1000x/~6000x the others. The packet now applies that
      antisymmetry-signature test (threshold 5% of peak) and excludes bullet
      from the reproducing set with an explicit limitation.
@@ -75,16 +77,51 @@
   Compatibility was reviewed clean: the diff touches only `docs/`, `scripts/`,
   `tests/`, `pixi.toml`, and `CHANGELOG.md`, with nothing under `dart/`,
   `python/dartpy/`, `cmake/`, or packaging.
-- Round-2 verification (post-fix, independent): confirmed the bypass is
-  closed, the antisymmetry attribution matches recomputation from raw_rows,
-  and the source claims about `recordSolverDiagnostics` and the BoxedLcp
-  branch are exact in the current tree. It also refined one claim: an opt-in
-  AVBD stage can record an iteration count earlier in the same step, so
-  "never recorded for this method" was over-broad. The marker wording and the
-  helper now key off the observed value rather than the method name, so a
-  genuinely recorded count is published instead of being laundered as
-  unsupported. Resolved-configuration assertions were widened to cover
-  detector, timestep, and gravity per run rather than detector alone.
+- Round-2 verification (post-fix, independent, on this branch): confirmed the
+  lane-reference bypass is closed (nested non-packet, negative control,
+  non-JSON, outside-evidence, and shared-owner references all rejected, with
+  the real tree validating at zero errors as a control); confirmed every
+  antisymmetry number in the packet reproduces exactly from its own
+  `raw_rows`; confirmed the disposition validity gate is real by driving
+  `build_packet()` against a stubbed dartpy (each of the four conditions
+  independently forces `unresolved`); confirmed the typed-unsupported reasons
+  are factually true for `release-6.20` (no `getNumIterations`- or
+  `getResidual`-style accessor exists anywhere in `dart/constraint/`;
+  `BoxedLcpSolver::solve()` returns a bare `bool` and
+  `PgsBoxedLcpSolver::Option::mMaxIteration` is an input budget, not an
+  achieved count); and confirmed the LTS compatibility gate (16 changed
+  files, none under `dart/`, `python/`, `cmake/`, `CMakeLists.txt`,
+  packaging, `.github/`, or `pixi.lock`).
+- Correction (2026-08-14): an earlier draft of this block described
+  `recordSolverDiagnostics`, an AVBD fall-through, and a
+  `solver_iterations_by_method` helper. Those belong to the DART 7 `main`
+  lane; none of that code exists on `release-6.20`, where
+  `scripts/citation_packet_utils.py` is four static markers with no
+  conditional logic. The text was imported in error and has been replaced by
+  the branch-local record above. AVBD is explicitly out of scope here (see
+  `decisions.md` and the branch design doc).
+- Correction (2026-08-14): bullet's largest lateral drift is at 75 deg
+  (6.696e-4 m), not 45 deg. Its 45 deg drift is 6.004e-4 m -- 90% of its
+  largest, where the mechanism predicts exactly zero -- which is still a
+  failure of the pyramid signature, and the exclusion rests on the 1.79
+  antisymmetry ratio regardless. The packet limitation and this record now
+  state it correctly.
+- Correction (2026-08-14): the commit message of `afc6d7ac3c2` claimed two
+  changes it did not make on this branch -- "scope the iteration marker" and
+  deriving `deterministic_repeats_identical` from the comparison. Both were
+  DART 7 changes; on `release-6.20` the marker file is static and the field
+  was already derived by the preceding commit. Recorded here rather than
+  rewritten, since the branch is unpushed but the log should not be silently
+  edited to hide the overclaim.
+- Note: `deterministic_repeats_identical` is structurally always `true`,
+  because a hash mismatch raises `SystemExit` before the packet is built. It
+  is a fail-closed guarantee, not a measurement; the independently checkable
+  evidence is `raw_rows[*].repeat_trajectory_sha256`.
+- Follow-up applied: the disposition validity gate now also fails a run whose
+  per-step kinetic-energy gain exceeds a thousandth of the launch energy
+  (5.0e-4 J here). Measured: bullet 1.925e-4 J, fcl/dart/ode ~3.0e-8 J, so no
+  cell trips it, but a blow-up can no longer pass the gate while a symmetry
+  verdict is drawn.
 - Known gaps: Phase 2 (guard PLAN-621/622 evidence) and remaining first-wave
   rows; per-solve LCP diagnostics remain typed unsupported.
 
