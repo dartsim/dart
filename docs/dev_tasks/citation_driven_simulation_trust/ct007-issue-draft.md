@@ -1,6 +1,7 @@
 # Issue draft: default contact solver fails high-mass-ratio stacks
 
-Status: DRAFT, not posted. Posting to GitHub needs maintainer approval.
+Status: POSTED as https://github.com/dartsim/dart/issues/3442 on
+2026-08-15 with maintainer approval. This file is the posted text's source.
 Working copy for the CT-007 finding; delete with this dev-task folder after
 the issue is filed (or a decision is recorded not to file it).
 

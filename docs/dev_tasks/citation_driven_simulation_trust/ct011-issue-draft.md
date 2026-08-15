@@ -1,6 +1,7 @@
 # Issue draft: state-vector restore depends on prior contact history
 
-Status: DRAFT, not posted. Posting to GitHub needs maintainer approval.
+Status: POSTED as https://github.com/dartsim/dart/issues/3443 on
+2026-08-15 with maintainer approval. This file is the posted text's source.
 Working copy for the CT-011 finding; delete with this dev-task folder after
 the issue is filed (or a decision is recorded not to file it).
 

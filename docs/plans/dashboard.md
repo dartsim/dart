@@ -57,7 +57,7 @@ its own line so status updates remain git-history friendly.
   sink fully through a light one at mass ratios >= 100 while BOXED_LCP
   holds) and CT-011 (state-vector restore is not a function of the restored
   state once contact history exists; fresh-world restore is bit-exact).
-  Issue drafts live in the dev task. Next slices: WS3 contact
+  Filed as issues #3442 and #3443. Next slices: WS3 contact
   ordering/identity (now motivated by CT-011), CT-006 heel-strike (gated on
   WS3), and the per-solve residual (WS4 remainder).
   WS4's first slice has landed: `World.resolved_configuration` is exposed to

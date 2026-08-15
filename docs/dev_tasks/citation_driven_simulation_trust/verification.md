@@ -407,3 +407,16 @@ zero and the observed closure is produced by the solve.
   first step.
 - Commands: packet writer as recorded in the packet;
   `pixi run check-citation-evidence` — OK.
+
+## External mutations — 2026-08-15
+
+With explicit maintainer approval ("go ahead" on posting the issues, pushing
+both branches, and opening the two PRs):
+
+- Posted issue #3442 (CT-007: SEQUENTIAL_IMPULSE lets a heavy box sink
+  through a light one at mass ratios >= 100) and issue #3443 (CT-011:
+  state-vector restore depends on prior contact history), from the drafts in
+  this folder.
+- Merged the moved bases into both branches before pushing (lockfile-only
+  commits #3441 on `main`, #3440 on `release-6.20`), per the merge-first
+  push rule; `test-all` re-run on both merged heads before the push.

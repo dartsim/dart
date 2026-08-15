@@ -17,8 +17,7 @@ contract, six first-wave packets, and resolved-configuration bindings`
   fixture families, and Python bindings for the World's bake-time
   `ResolvedSolverConfiguration` so packets record the method that actually
   ran.
-- Two findings surfaced by the packets need maintainer decisions and have
-  issue drafts in the dev task: the default `SEQUENTIAL_IMPULSE` contact
+- Two findings surfaced by the packets are filed as #3442 and #3443: the default `SEQUENTIAL_IMPULSE` contact
   solver lets a heavy box sink fully through a light one at mass ratios of
   100 and above (CT-007), and `World.state_vector` restore is not a function
   of the restored state once the world has contact history (CT-011).
@@ -84,8 +83,9 @@ tests/test_check_citation_evidence.py -q` — 74 passed.
 
 - Companion release-6.20 PR: branch `feature/dart6-citation-contact-trust`
   (independent; adopts the same contract without DART 7 APIs).
-- Issue drafts pending approval: CT-007 default-solver high-mass-ratio
-  failure; CT-011 restore-history dependence.
+- Files #3442 (CT-007 default-solver high-mass-ratio failure) and #3443
+  (CT-011 restore-history dependence); both packets and issue sources are in
+  this PR.
 
 #### Checklist
 
