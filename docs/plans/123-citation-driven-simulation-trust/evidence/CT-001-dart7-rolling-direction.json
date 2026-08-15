@@ -718,7 +718,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Outcome actually observed: lateral drift reaches 2.1e-3 m against a 1e-4 m isotropy tolerance, with exact nulls at 0, 45, and 90 deg and antisymmetry about 45 deg to within 1e-13 of peak, in both contact solvers; the drift criterion is the only one of the three tolerances exceeded, and every cell passes the physical-validity gate. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
     "disposition": "reproduced",
     "limitations": [
       "ResolvedSolverConfiguration is not Python-exposed; resolved identity is property readback, corroborated by per-solver trajectory-hash differences.",
@@ -782,7 +782,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "ac0c074d637304fa7c02aa457d123d54e63f738e",
+    "commit": "9101d917fdb33998abd0a48d705fe42a632d1493",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one."
   },
   "title": "Rolling-direction friction dependence (DART 7 first packet)"

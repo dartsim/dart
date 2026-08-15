@@ -45,6 +45,7 @@ from citation_packet_utils import (
     PENETRATION_CLAMP_NOTE,
     SEQUENTIAL_IMPULSE_ITERATIONS_NOTE,
     UNSUPPORTED_SOLVER_RESIDUAL,
+    preserve_review,
     solver_iterations_by_method,
 )
 
@@ -230,7 +231,7 @@ def run_single(
     }
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
@@ -307,6 +308,14 @@ def build_packet() -> dict[str, Any]:
         # this is measured only in the settle window.
         "max_total_energy_gain_after_settle_j": 1.0e-6
         * abs(rows[0]["initial_total_energy_j"]),
+        "max_total_energy_gain_after_settle_j_basis": (
+            "1.0e-6 x |initial total mechanical energy| of this scene, a "
+            "chosen floor. The verdict does not depend on its exact "
+            "value: BOXED_LCP on the same scene, integrator, and "
+            "timestep is the internal control, and the verdict is "
+            "unchanged for any tolerance lying between the two solvers "
+            "observed gains."
+        ),
     }
     residual_speed_tolerance = {
         "dt_linearity_relative": 1.0e-3,
@@ -419,10 +428,13 @@ def build_packet() -> dict[str, Any]:
             },
             "resolved": {"by_cell": resolved_by_cell},
             "resolved_provenance": (
-                "World property readback (contact_solver_method, "
-                "rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode, asserted equal to the request per "
-                "cell; World::getResolvedConfiguration() is not yet exposed "
+                "World property readback after enter_simulation_mode, with "
+                "contact solver, timestep, and gravity each asserted equal "
+                "to the request per repeat and per cell. rigid_body_solver "
+                "is recorded but not asserted, because this scene does not "
+                "request one. configuration.timestep is the smallest swept "
+                "value; configuration.resolved.by_cell is authoritative per "
+                "cell. World::getResolvedConfiguration() is not yet exposed "
                 "to Python (PLAN-123 WS4 follow-up)."
             ),
             "detector": (
@@ -557,11 +569,14 @@ def build_packet() -> dict[str, Any]:
                 "(speed/dt identical across timesteps), which is converging "
                 "integrator residual and is explicitly NOT counted as "
                 "instability. What does reproduce is narrower and "
-                "solver-specific: after the pile settles, total mechanical "
-                "energy increases per step under SEQUENTIAL_IMPULSE at both "
-                "timesteps (about 1.0e-3 J at 2 ms and 1.3e-3 J at 4 ms "
-                "against a 1.8e-4 J tolerance, on a 180 J scene) while "
-                "BOXED_LCP stays at or near zero. That is a small, "
+                "solver-specific: after the pile settles, the largest "
+                "single-step increase in total mechanical energy under "
+                "SEQUENTIAL_IMPULSE is about 1.0e-3 J at 2 ms and 1.3e-3 J "
+                "at 4 ms against a 1.8e-4 J tolerance on a 180 J scene, "
+                "while BOXED_LCP stays at or near zero (0.0 and 1.3e-6 J). "
+                "The metric is a maximum over settle-window steps, so it "
+                "does not distinguish one anomalous step from sustained "
+                "pumping. That is a small, "
                 "non-divergent, non-physical energy gain in a resting "
                 "inelastic pile, not a blow-up. The poor-scaling limb of the "
                 "cited claim is not instrumented at all (performance is "
@@ -598,7 +613,9 @@ def build_packet() -> dict[str, Any]:
                 "to a follow-up once per-island diagnostics exist.",
             ],
         },
-        "review": {"passes": []},
+        "review": (
+            preserve_review(output_path) if output_path is not None else {"passes": []}
+        ),
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -636,7 +653,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    packet = build_packet()
+    packet = build_packet(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"

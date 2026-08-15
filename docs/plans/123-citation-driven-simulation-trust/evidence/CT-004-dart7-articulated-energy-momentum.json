@@ -105,7 +105,7 @@
         }
       }
     },
-    "resolved_provenance": "World property readback (multibody_options.integration_family, rigid_body_solver, gravity, time_step) after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "resolved_provenance": "World property readback after enter_simulation_mode, with integration family, timestep, and gravity each asserted equal to the request per repeat and per cell. rigid_body_solver is recorded but not asserted, because this scene requests none. configuration.timestep is the smallest swept value; configuration.resolved.by_cell is authoritative per cell. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
     "substeps": 1,
     "timestep": 0.0005
   },
@@ -398,6 +398,15 @@
     },
     "physical": {
       "all_cells_finite": true,
+      "convergence_finding": {
+        "all_cells_finite": true,
+        "all_families_converge": true,
+        "families_with_shrinking_drift": [
+          "SEMI_IMPLICIT",
+          "VARIATIONAL"
+        ],
+        "note": "This is the packet's positive result. It does not promote the corpus row, whose claim concerns comparison at matched cost."
+      },
       "families_with_shrinking_drift": [
         "SEMI_IMPLICIT",
         "VARIATIONAL"
@@ -437,8 +446,9 @@
   },
   "result": {
     "claim_boundary": "DART 7 main, this commit, a passive 4-link planar pendulum chain with no contact and no control, 2 s horizon, timesteps 0.5-4 ms, SEMI_IMPLICIT and VARIATIONAL multibody integration families. What is established: both families stay finite and their relative energy drift shrinks as the timestep shrinks, with the observed log-log slopes recorded per family. What is NOT established: the 'at matched cost' half of the corpus row, because no timing was measured; any contact-accuracy claim, because the scene has no contact; and any ranking between the two families. Says nothing about historical DART versions, controlled or contacting articulated scenes, or DART 6.",
-    "disposition": "reproduced",
+    "disposition": "unresolved",
     "limitations": [
+      "The relative drift divides by the initial total energy, which contains a gravitational term measured from the world-origin datum. Moving the mount changes that divisor without changing the absolute drift, so the relative figures are gauge-dependent; the verdict and the log-log slope are not, because the divisor is constant within a family. Absolute drift is published per row as max_abs_energy_drift_j.",
       "No contact and no control: this isolates integration accuracy and therefore covers only part of the corpus row, whose contact and matched-cost halves need separate work.",
       "Cost is recorded as step count only; performance is typed unsupported, so nothing here supports an accuracy-per-cost comparison.",
       "Angular momentum is not conserved under gravity about the world origin, so it is reported as an envelope rather than an invariant.",
@@ -487,7 +497,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "d7281579701e4f009122968c5782291d12f69ac7",
+    "commit": "9101d917fdb33998abd0a48d705fe42a632d1493",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
   },
   "title": "Articulated energy drift versus timestep across integration families (DART 7 first packet)"

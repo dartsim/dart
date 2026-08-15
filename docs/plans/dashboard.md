@@ -52,11 +52,12 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: WS0 audit and the WS1 fail-closed claim/evidence manifest landed
-  with a permanent negative control and three first-wave packets: CT-001
+  with a permanent negative control and four first-wave packets: CT-001
   rolling-direction (`reproduced`), CT-002 dense inelastic contact
   (`reproduced`), CT-003 dense elastic contact (`unresolved` -- no energy
   injection observed), and CT-004 articulated energy drift versus timestep
-  (`reproduced`; the matched-cost half is explicitly uncovered). Next: the
+  (`unresolved`: drift converges with timestep in both integration families,
+  but the cited claim concerns matched cost, which is not measured). Next: the
   remaining first-wave families (articulated control, heel-strike/toe-off,
   high mass-ratio, reset/concurrency queries) with branch-qualified dispositions, reusing
   existing demos scenes and PLAN-104/621/622 evidence, before

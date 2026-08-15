@@ -110,3 +110,24 @@ def solver_iterations_by_method(
                 ),
             }
     return typed
+
+
+def preserve_review(output_path: "Any") -> dict[str, Any]:
+    """Carry forward review passes already recorded in a packet.
+
+    Packets are generated, but review passes are recorded by people and other
+    agents after the fact. Without this, every regeneration silently erases
+    them, and the two-review floor a lane needs to close could only be met by
+    hand-editing a file the next run clobbers.
+    """
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+
+        existing = _json.loads(_Path(output_path).read_text(encoding="utf-8"))
+    except OSError, ValueError:
+        return {"passes": []}
+    review = existing.get("review")
+    if isinstance(review, dict) and isinstance(review.get("passes"), list):
+        return {"passes": review["passes"]}
+    return {"passes": []}

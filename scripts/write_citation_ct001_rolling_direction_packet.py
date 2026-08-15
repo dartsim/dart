@@ -49,6 +49,7 @@ from citation_packet_utils import (
     SEQUENTIAL_IMPULSE_ITERATIONS_NOTE,
     UNSUPPORTED_ANTISYMMETRY_RATIO,
     UNSUPPORTED_SOLVER_RESIDUAL,
+    preserve_review,
     solver_iterations_by_method,
 )
 
@@ -297,7 +298,7 @@ def git_head() -> str:
     ).stdout.strip()
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
@@ -585,9 +586,14 @@ def build_packet() -> dict[str, Any]:
                 "DART 7 main, this commit, one sphere sliding to rolling on "
                 "a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s "
                 "horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, "
-                "launch angles 0-90 deg in 15 deg steps. Says nothing about "
-                "other speeds, shapes, stacks, historical DART versions, or "
-                "DART 6."
+                "launch angles 0-90 deg in 15 deg steps. Outcome actually "
+                "observed: lateral drift reaches 2.1e-3 m against a 1e-4 m "
+                "isotropy tolerance, with exact nulls at 0, 45, and 90 deg "
+                "and antisymmetry about 45 deg to within 1e-13 of peak, in "
+                "both contact solvers; the drift criterion is the only one of "
+                "the three tolerances exceeded, and every cell passes the "
+                "physical-validity gate. Says nothing about other speeds, "
+                "shapes, stacks, historical DART versions, or DART 6."
             ),
             "limitations": [
                 "ResolvedSolverConfiguration is not Python-exposed; "
@@ -617,7 +623,9 @@ def build_packet() -> dict[str, Any]:
                 "as one.",
             ],
         },
-        "review": {"passes": []},
+        "review": (
+            preserve_review(output_path) if output_path is not None else {"passes": []}
+        ),
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -645,7 +653,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    packet = build_packet()
+    packet = build_packet(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"

@@ -25,7 +25,10 @@ statuses were verified; the corpus sidecar now carries the WS0 audit record.
   a friction-pyramid signature its data does not show. See `verification.md`.
 - First-wave packets landed: CT-001 (both branches), CT-002, CT-003, and
   CT-004 (`main`). Four of the six capped families now have at least one
-  branch-qualified packet.
+  branch-qualified packet. Dispositions: CT-001 and CT-002 `reproduced`,
+  CT-003 and CT-004 `unresolved` -- in both cases because the cited
+  behavior was not observed, which the packets state plainly rather than
+  reaching for a positive verdict.
 
 ## Current branches
 
@@ -67,10 +70,13 @@ reset/concurrency queries (CT-011..CT-013).
   never passes one to `recordSolverDiagnostics`), boxed-LCP iteration counts
   (its branch returns before the diagnostics call), per-island fallback
   reporting, and `ResolvedSolverConfiguration` in Python.
-- Packet dispositions must survive an adversarial read. Two rounds of review
-  killed a verdict that rested on a hardcoded threshold: a settle speed
-  exactly linear in dt is integrator residual, not instability. Prefer an
-  oracle a reviewer can recompute from `raw_rows`.
+- Packet dispositions must survive an adversarial read. Review killed two
+  verdicts: one rested on a hardcoded threshold (a settle speed exactly
+  linear in dt is integrator residual, not instability), and one measured
+  something the cited claim never asserted (CT-004 convergence against a
+  claim about matched cost). Check the disposition against the corpus
+  definition -- "the claimed behavior is observed" -- not against whether
+  the fixture produced an interesting result.
 - `target.commit` is the commit the library was measured at; the packet and
   its writer necessarily land one commit later. `target.commit_role` says so.
 - dartpy runs from a built tree:

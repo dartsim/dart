@@ -222,3 +222,47 @@ Add a dated section with:
 - changelog decision.
 
 Never replace raw evidence with a summary number.
+
+## Final independent review and third fix pass — 2026-08-14
+
+A fresh reviewer ran 44 adversarial bypass attempts against the current head
+(all rejected), re-verified the three `citation_packet_utils.py` source claims
+against the tree, and confirmed the negative control trips 17 errors. Two
+majors and four minors were found and acted on:
+
+1. MAJOR — a genuine gate bypass: a non-string entry in a lane's `evidence`
+   list was silently dropped, so `evidence: [{"path": ...}]` on a `closed`
+   lane validated with zero errors, skipping the missing-packet, not-JSON,
+   outside-`evidence/`, negative-control, and two-review checks. This is the
+   same "drop what you don't understand" shape as the round-1 subdirectory
+   bypass. Non-string entries now fail, with a test covering five variants.
+2. MAJOR — CT-004's disposition was `reproduced` on an oracle unrelated to
+   the cited claim. The corpus defines `reproduced` as "the claimed behavior
+   is observed"; CT-004's claim is a methodological prescription (compare at
+   matched cost) and this packet measures no cost, so none of the claim's
+   content was observed. The row is now `unresolved`, following the CT-003
+   precedent, and the convergence result it did establish is published as
+   `metrics.physical.convergence_finding` with an explicit note that it does
+   not promote the row.
+3. MINOR — `raw_paths` accepted a directory (`.exists()` -> `.is_file()`), and
+   `scene.digest` was format-checked but never recomputed from the parameters
+   the packet publishes (now verified; a hand-edited scene fails).
+4. MINOR — CT-004's relative drift divides by an initial energy containing a
+   datum-dependent gravitational term, so the headline percentage is
+   gauge-dependent while the slope and verdict are not. Disclosed, with the
+   absolute drift published per row.
+5. MINOR — CT-001's claim boundary stated parameters only; it now leads with
+   the observed outcome like the other three. CT-002 publishes the basis of
+   its energy tolerance rather than a bare number.
+6. MINOR — every packet shipped `review.passes: []` hardcoded, so recorded
+   reviews could not survive regeneration. Writers now carry forward an
+   existing review block, which is what makes the two-review closure floor
+   reachable without hand-editing a generated file.
+
+Recorded as follow-up, not fixed: the validator does not arithmetically
+cross-check derived metrics against `raw_rows`, so a falsified summary would
+pass. Closing that needs the gate to know each packet's derivation, which is
+WS4-scale work.
+
+- Commands after this pass: `pixi run check-citation-evidence` — OK;
+  `tests/test_check_citation_evidence.py` — 72 passed.

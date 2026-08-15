@@ -46,6 +46,7 @@ from citation_packet_utils import (
     PENETRATION_CLAMP_NOTE,
     SEQUENTIAL_IMPULSE_ITERATIONS_NOTE,
     UNSUPPORTED_SOLVER_RESIDUAL,
+    preserve_review,
     solver_iterations_by_method,
 )
 
@@ -231,7 +232,7 @@ def git_head() -> str:
     ).stdout.strip()
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
@@ -341,10 +342,13 @@ def build_packet() -> dict[str, Any]:
             },
             "resolved": {"by_cell": resolved_by_cell},
             "resolved_provenance": (
-                "World property readback (contact_solver_method, "
-                "rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode, asserted equal to the request per "
-                "cell; World::getResolvedConfiguration() is not yet exposed "
+                "World property readback after enter_simulation_mode, with "
+                "contact solver, timestep, and gravity each asserted equal "
+                "to the request per repeat and per cell. rigid_body_solver "
+                "is recorded but not asserted, because this scene does not "
+                "request one. configuration.timestep is the smallest swept "
+                "value; configuration.resolved.by_cell is authoritative per "
+                "cell. World::getResolvedConfiguration() is not yet exposed "
                 "to Python (PLAN-123 WS4 follow-up)."
             ),
             "detector": (
@@ -482,10 +486,15 @@ def build_packet() -> dict[str, Any]:
                 "at each timestep while the trajectories diverge, so it is "
                 "set during the shared first impact and carries no "
                 "solver-discriminating information.",
+                "max_active_contacts is 216 in every cell (a fully "
+                "stacked column geometry), so it carries no "
+                "discriminating information here.",
                 "Two timesteps and two solvers only.",
             ],
         },
-        "review": {"passes": []},
+        "review": (
+            preserve_review(output_path) if output_path is not None else {"passes": []}
+        ),
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -513,7 +522,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    packet = build_packet()
+    packet = build_packet(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"

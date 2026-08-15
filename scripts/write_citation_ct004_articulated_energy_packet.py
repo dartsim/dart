@@ -43,7 +43,10 @@ from typing import Any
 
 import dartpy as sx
 import numpy as np
-from citation_packet_utils import UNSUPPORTED_SOLVER_RESIDUAL
+from citation_packet_utils import (
+    UNSUPPORTED_SOLVER_RESIDUAL,
+    preserve_review,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = (
@@ -225,7 +228,7 @@ def observed_order(drifts_by_timestep: dict[float, float]) -> Any:
     return numerator / denominator
 
 
-def build_packet() -> dict[str, Any]:
+def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     parameters = SCENE_PARAMETERS
     rows: list[dict[str, Any]] = []
     determinism_failures: list[str] = []
@@ -307,11 +310,25 @@ def build_packet() -> dict[str, Any]:
         for family, stats in family_summary.items()
         if stats["drift_shrinks_with_timestep"]
     )
-    disposition = (
-        "reproduced"
-        if all_finite and len(converging) == len(parameters["integration_families"])
-        else "unresolved"
-    )
+    # The corpus defines `reproduced` as "the claimed behavior is observed".
+    # The cited claim is a methodological prescription -- accuracy compared at
+    # matched cost -- and this packet measures no cost, so none of the claim's
+    # content is observed here. Convergence with timestep is a real result the
+    # source asserts nothing about, so it cannot promote the row. The row stays
+    # `unresolved` until matched-cost timing lands, following the CT-003
+    # precedent for "the cited behavior was not observed".
+    disposition = "unresolved"
+    convergence_finding = {
+        "all_cells_finite": all_finite,
+        "families_with_shrinking_drift": converging,
+        "all_families_converge": (
+            all_finite and len(converging) == len(parameters["integration_families"])
+        ),
+        "note": (
+            "This is the packet's positive result. It does not promote the "
+            "corpus row, whose claim concerns comparison at matched cost."
+        ),
+    }
 
     command = (
         "PYTHONPATH=build/default/cpp/Release/python pixi run python "
@@ -358,11 +375,13 @@ def build_packet() -> dict[str, Any]:
             },
             "resolved": {"by_cell": resolved_by_cell},
             "resolved_provenance": (
-                "World property readback (multibody_options.integration_"
-                "family, rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode, with integration family, timestep, "
-                "and gravity each asserted equal to the request per repeat "
-                "and per cell. World::getResolvedConfiguration() is not yet "
+                "World property readback after enter_simulation_mode, with "
+                "integration family, timestep, and gravity each asserted "
+                "equal to the request per repeat and per cell. "
+                "rigid_body_solver is recorded but not asserted, because "
+                "this scene requests none. configuration.timestep is the "
+                "smallest swept value; configuration.resolved.by_cell is "
+                "authoritative per cell. World::getResolvedConfiguration() is not yet "
                 "exposed to Python (PLAN-123 WS4 follow-up)."
             ),
             "detector": (
@@ -408,6 +427,7 @@ def build_packet() -> dict[str, Any]:
                 "all_cells_finite": all_finite,
                 "per_family_summary": family_summary,
                 "families_with_shrinking_drift": converging,
+                "convergence_finding": convergence_finding,
             },
             "numerical": {
                 "method": (
@@ -471,6 +491,14 @@ def build_packet() -> dict[str, Any]:
                 "contacting articulated scenes, or DART 6."
             ),
             "limitations": [
+                "The relative drift divides by the initial total energy, "
+                "which contains a gravitational term measured from the "
+                "world-origin datum. Moving the mount changes that "
+                "divisor without changing the absolute drift, so the "
+                "relative figures are gauge-dependent; the verdict and "
+                "the log-log slope are not, because the divisor is "
+                "constant within a family. Absolute drift is published "
+                "per row as max_abs_energy_drift_j.",
                 "No contact and no control: this isolates integration "
                 "accuracy and therefore covers only part of the corpus row, "
                 "whose contact and matched-cost halves need separate work.",
@@ -487,7 +515,9 @@ def build_packet() -> dict[str, Any]:
                 "trend summary, not a certified order of accuracy.",
             ],
         },
-        "review": {"passes": []},
+        "review": (
+            preserve_review(output_path) if output_path is not None else {"passes": []}
+        ),
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -515,7 +545,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    packet = build_packet()
+    packet = build_packet(args.output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(packet, indent=2, sort_keys=True) + "\n", encoding="utf-8"

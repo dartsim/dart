@@ -14,8 +14,8 @@
       Landed on `main`: CT-001 rolling/friction-direction (`reproduced`),
       CT-002 dense inelastic contact (`reproduced`), CT-003 dense elastic
       contact (`unresolved` -- no energy injection observed), CT-004 articulated
-      energy drift versus timestep (`reproduced` for the convergence half;
-      matched cost explicitly not measured). Landed on
+      energy drift versus timestep (`unresolved`: both integration families
+      converge, but the cited matched-cost comparison is not measured). Landed on
       `release-6.20`: CT-001 detector sweep (`reproduced` on fcl/dart/ode;
       bullet excluded for lacking the pyramid signature). Open: articulated
       energy/momentum/control, heel-strike/toe-off, high mass-ratio, and

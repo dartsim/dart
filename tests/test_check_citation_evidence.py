@@ -27,6 +27,7 @@ def _load_module():
 
 
 MODULE = _load_module()
+LANE = "dart7"
 
 
 def complete_packet() -> dict:
@@ -571,3 +572,58 @@ def test_repository_tree_validates():
     """The committed manifest, packets, and negative controls must pass."""
     errors = MODULE.validate_tree(PLAN_DIR)
     assert errors == []
+
+
+def test_non_string_lane_evidence_entry_fails(tmp_path):
+    """A lane must not be closable by an entry the packet checks cannot read."""
+    for bad in ({"path": "evidence/x.json"}, None, 42, True, ["evidence/x.json"]):
+        manifest = _minimal_manifest(["CT-001"])
+        lane = manifest["claims"][0]["lanes"]["dart7"]
+        lane["status"] = "closed"
+        lane["disposition"] = "reproduced"
+        lane["evidence"] = [bad]
+        tree = _write_tree(
+            tmp_path / f"case{abs(hash(str(bad)))}",
+            negative={"schema": "x"},
+            manifest=manifest,
+        )
+        errors = MODULE.validate_tree(tree)
+        assert any("non-string entry" in error for error in errors), bad
+
+
+def test_raw_path_pointing_at_a_directory_fails(tmp_path):
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    (tmp_path / "somedir").mkdir()
+    packet["evidence"]["raw_paths"] = ["somedir"]
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("does not resolve" in error for error in errors)
+
+
+def test_scene_digest_must_match_published_parameters():
+    packet = complete_packet()
+    packet["scene"]["parameters"] = {"a": 1}
+    errors = MODULE.packet_errors(packet)
+    assert any("does not match the digest" in error for error in errors)
+    import hashlib as _h
+    import json as _j
+
+    packet["scene"]["digest"] = (
+        "sha256:"
+        + _h.sha256(
+            _j.dumps({"a": 1}, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_nested_negative_control_is_enumerated(tmp_path):
+    """A control in a subdirectory must still be required to fail."""
+    tree = _write_tree(tmp_path, negative={"schema": "x"})
+    nested = tree / "evidence" / "negative-controls" / "deep"
+    nested.mkdir(parents=True)
+    (nested / "passing.json").write_text(
+        json.dumps(complete_packet()), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(tree)
+    assert any("fail-closed proof is vacuous" in error for error in errors)
