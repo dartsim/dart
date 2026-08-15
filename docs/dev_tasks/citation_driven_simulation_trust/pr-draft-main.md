@@ -1,7 +1,7 @@
 # PR draft: DART 7 citation-trust foundation
 
-Status: DRAFT. Pushing the branch and opening the PR need maintainer
-approval. Branch `feature/citation-trust-foundation`, base `main`, milestone
+Status: OPENED as https://github.com/dartsim/dart/pull/3445 on 2026-08-15
+with maintainer approval; this file is the posted body's source. Branch `feature/citation-trust-foundation`, base `main`, milestone
 DART 7.0. Delete this file with the dev-task folder at task completion.
 
 ---

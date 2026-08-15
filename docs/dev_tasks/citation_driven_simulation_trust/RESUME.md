@@ -47,10 +47,13 @@ gate green. GitHub mutations need maintainer approval.
 
 ## Immediate next step
 
-Awaiting maintainer decisions: post the CT-007 and CT-011 issues
-(`ct007-issue-draft.md`, `ct011-issue-draft.md`), and push/open the two PRs
-(`pr-draft-main.md` here, `pr-draft-620.md` on the 6.20 branch). After that,
-the next implementation slice is WS3 contact ordering/identity on a NEW
+Approved and executed on 2026-08-15: issues #3442 and #3443 posted (#3443
+later corrected with the identified root cause), both branches pushed after
+merging the moved bases and clean-rebuild test-all, and PRs opened -- #3445
+(main, DART 7.0) and #3444 (release-6.20, DART 6.20.0), each with a Codex
+review requested. Shepherd both PRs through CI and review (re-request
+'@codex review' after every push, iterate until clean). After merge, the
+next implementation slice is WS3 contact ordering/identity on a NEW
 branch (this one is bounded per the work-package rules), motivated concretely
 by CT-011's hidden contact state, followed by CT-006 heel-strike and the
 per-solve residual (WS4 remainder).
