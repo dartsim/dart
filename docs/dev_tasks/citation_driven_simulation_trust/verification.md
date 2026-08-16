@@ -628,3 +628,23 @@ raw-data artifacts are parsed structurally (JSON variants must parse,
 CSV/TSV need delimited lines, NumPy/parquet magic bytes — deep semantic
 validation of tabular contents is a recorded boundary). Tests:
 116 -> 120 (main), 96 -> 100 (6.20).
+
+## Codex review round 10 (PR #3445) — 2026-08-16
+
+Four findings, two genuine. The substantive one: CT-011's comparison
+instrument hashed `World.state_vector` — the translational-only state
+whose incompleteness is the packet's own finding — so "bit-exact" arms
+could not see rotational divergence (the ballistic control especially,
+where rotation never feeds translation). The writer now hashes the FULL
+rigid-body state (pose including orientation, linear and angular
+velocity, per body in name order) in every arm, the boundary says so,
+and the packet is regenerated under the stronger instrument (the
+exact-pattern guard aborts if any arm outcome changed). Second genuine
+defect: the documented DART_CITATION_PR override emitted hints the
+branch validator rejects — removed; ownership transfer updates the
+writer constant and FETCH_HINT_RE together. Also: declared sweep/seed
+point counts must be matched by recorded raw rows, and path-based
+evidence must pin artifact bytes via evidence.artifact_digests
+(sha256 verified against the file), so swapping a referenced artifact
+invalidates the packet and its digest-bound reviews. Tests: 120 -> 122
+(main), 100 -> 102 (6.20).

@@ -122,14 +122,14 @@ def target_fetch_hint(commit: str) -> str:
     """The runnable command reaching `commit` from a clean checkout forever.
 
     CITATION_PR_NUMBER is the PR that owns this evidence tree revision. When
-    a later PR takes ownership, update the constant together with the
-    validator's FETCH_HINT_RE; for forward work from another PR, override
-    with the DART_CITATION_PR environment variable.
+    a later PR takes ownership, update this constant TOGETHER WITH the
+    validator's FETCH_HINT_RE in the same change; there is deliberately no
+    env override, because a hint the branch validator rejects would only
+    manufacture invalid packets.
     """
-    import os as _os
-
-    pr = _os.environ.get("DART_CITATION_PR", str(CITATION_PR_NUMBER))
-    return f"git fetch origin pull/{pr}/head && git checkout {commit}"
+    return (
+        f"git fetch origin pull/{CITATION_PR_NUMBER}/head && " f"git checkout {commit}"
+    )
 
 
 def packet_content_digest(packet: dict[str, Any]) -> str:

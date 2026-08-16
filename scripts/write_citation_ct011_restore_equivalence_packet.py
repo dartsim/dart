@@ -9,7 +9,10 @@ a function of the restored state alone?
 
 The fixture is a five-sphere pile settling on a ground box, run per contact
 solver, with a ballistic (no-ground) control scene. Arms, each hashed over
-the full state vector for every post-restore step:
+the FULL rigid-body state (pose including orientation, linear and angular
+velocity, per body) for every post-restore step -- hashing the translational
+`state_vector` itself would blind the comparison to exactly the rotational
+divergence this packet documents:
 
 - `continuation`: keep stepping from the snapshot point (baseline);
 - `inplace_restore` x2: restore the snapshot into the same world twice, with
@@ -132,11 +135,31 @@ def build_world(
     return world
 
 
+def full_state_array(world: Any) -> np.ndarray:
+    """Full rigid-body state: pose (4x4) + linear + angular velocity per
+    dynamic body, bodies in name order.
+
+    `World.state_vector` is translational by design (the very CT-011
+    finding), so hashing it would blind these comparisons to rotational
+    divergence -- especially in the ballistic control, where rotation never
+    feeds translation. This observable closes that hole.
+    """
+    parts: list[np.ndarray] = []
+    for name in sorted(world.get_rigid_body_names()):
+        body = world.get_rigid_body(name)
+        if body.is_static:
+            continue
+        parts.append(np.asarray(body.transform, dtype=float).reshape(-1))
+        parts.append(np.asarray(body.linear_velocity, dtype=float))
+        parts.append(np.asarray(body.angular_velocity, dtype=float))
+    return np.concatenate(parts)
+
+
 def hash_continuation(world: Any, steps: int) -> str:
     digest = hashlib.sha256()
     for _ in range(steps):
         world.step()
-        digest.update(np.ascontiguousarray(world.state_vector).tobytes())
+        digest.update(np.ascontiguousarray(full_state_array(world)).tobytes())
     return digest.hexdigest()
 
 
@@ -147,7 +170,7 @@ def divergence_profile(
     max_delta = 0.0
     for index in range(steps):
         world.step()
-        delta = float(np.max(np.abs(np.asarray(world.state_vector) - reference[index])))
+        delta = float(np.max(np.abs(full_state_array(world) - reference[index])))
         if delta > 0.0 and first is None:
             first = index
         max_delta = max(max_delta, delta)
@@ -191,7 +214,7 @@ def run_protocol(method_name: str, parameters: dict[str, Any]) -> dict[str, Any]
     reference_digest = hashlib.sha256()
     for _ in range(steps):
         world.step()
-        state = np.array(world.state_vector, copy=True)
+        state = full_state_array(world)
         reference_states.append(state)
         reference_digest.update(np.ascontiguousarray(state).tobytes())
     continuation_hash = reference_digest.hexdigest()
@@ -538,7 +561,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             "claim_boundary": (
                 "DART 7 main, this commit, a five-sphere pile with a 0.5 s "
                 "contact-rich warm-up, restored via World.state_vector, "
-                "both contact solvers. Established: restore is NOT a "
+                "both contact solvers, all arms compared over the FULL "
+                "rigid-body state (pose including orientation, linear and "
+                "angular velocity) so rotational divergence is visible even "
+                "where it does not feed translation. Established: restore is NOT a "
                 "function of the restored state once the world has contact "
                 "history -- the in-place continuation differs from the "
                 "original at the first step, and two in-place restores of "
