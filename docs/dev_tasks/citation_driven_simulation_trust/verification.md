@@ -771,3 +771,16 @@ boundary); and a measured-with-method group whose every quantity is a
 typed-unsupported marker is rejected — an unmeasured group must be
 typed unsupported as a WHOLE, not dressed as measured. Tests:
 141 -> 143 (main), 121 -> 123 (6.20).
+
+## Codex review round 18 (PR #3445) — 2026-08-16
+
+Five findings, one a genuine documentation bug, all fixed: the
+dashboard overclaimed that all six first-wave families have a `main`
+packet — CT-006 heel-strike has none (audit-required, gated on WS3);
+corrected to five of six. Validator: allocation measurements also
+require a performance-valid host (the round-16 rule covered only
+timing); sweep points may not declare null coordinates (absent row
+fields would spuriously match them); seed fields match by whole token
+(`unseeded_metric` no longer counts); the build step must PRECEDE the
+evidence command, not merely appear somewhere in the list. Tests:
+143 -> 147 (main), 123 -> 127 (6.20).

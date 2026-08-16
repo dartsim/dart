@@ -51,8 +51,9 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: all six first-wave families now have at least one `main`
-  packet (plus CT-001 on `release-6.20`). Two findings need maintainer
+- Next step: five of the six first-wave families have a `main` packet
+  (plus CT-001 on `release-6.20`); CT-006 heel-strike stays open, gated
+  on WS3 contact semantics. Two findings need maintainer
   decisions: CT-007 (the default SEQUENTIAL_IMPULSE solver lets a heavy box
   sink fully through a light one at mass ratios >= 100 while BOXED_LCP
   holds) and CT-011 (state-vector restore is not a function of the restored
