@@ -386,3 +386,10 @@ Two findings here plus one shared, all fixed (mirrored with main):
 required build step in commands; numeric/boolean NPY dtypes;
 whole-group unsupported typing for unmeasured groups. Tests:
 121 -> 123.
+
+## Codex review round 18 (PR #3444) — 2026-08-16
+
+Three findings here plus two shared, all fixed (mirrored with main):
+allocation under host validity; non-null sweep coordinates;
+token-matched seed fields; build-before-evidence ordering. Tests:
+123 -> 127.

@@ -1519,3 +1519,46 @@ def test_string_dtype_npy_fails(tmp_path):
     assert any(
         "does not parse as its claimed raw-data format" in error for error in errors
     )
+
+
+def test_allocation_needs_a_valid_host_too():
+    packet = complete_packet()
+    packet["metrics"]["allocation"] = {"method": "counter", "allocs": 12.0}
+    errors = MODULE.packet_errors(packet)
+    assert any("allocation counts" in error for error in errors)
+
+
+def test_null_sweep_coordinates_fail():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": None}, {"other": None}]
+    packet["evidence"]["raw_rows"] = [
+        {"metric": 1.0, "trajectory_sha256": "d" * 64},
+        {"metric": 2.0, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("null" in error and "coordinates" in error for error in errors)
+
+
+def test_seed_fields_match_by_token():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["seeds"] = [7, 11]
+    packet["evidence"]["raw_rows"] = [
+        {"unseeded_metric": 7.0, "trajectory_sha256": "d" * 64},
+        {"unseeded_metric": 11.0, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("has no row recording it" in error for error in errors)
+
+
+def test_build_must_precede_the_evidence_command():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "pixi run python scripts/example.py",
+        "pixi run build",
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("BEFORE the evidence command" in error for error in errors)

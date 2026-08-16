@@ -182,6 +182,13 @@ NUMERIC_BOOKKEEPING_KEYS = frozenset(
 )
 
 
+def _is_seed_key(key: str) -> bool:
+    """Whole-token seed match: `seed`, `rng_seed`, `seed_value` count;
+    `unseeded_metric` does not."""
+    tokens = re.split(r"[^a-zA-Z0-9]+", key.lower())
+    return "seed" in tokens or "seeds" in tokens
+
+
 def _distinct_assignment_exists(match_sets: "list[set[int]]") -> bool:
     """Backtracking search for a system of distinct representatives: every
     declared point must map to its OWN row."""
@@ -1119,14 +1126,26 @@ def packet_errors(
                         "shell strings are not the promised reproduction "
                         "path"
                     )
-            if not any(
-                re.match(r"^pixi run build\b", command.strip()) for command in commands
-            ):
+            build_indices = [
+                index
+                for index, command in enumerate(commands)
+                if re.match(r"^pixi run build\b", command.strip())
+            ]
+            non_build_indices = [
+                index for index in range(len(commands)) if index not in build_indices
+            ]
+            if not build_indices:
                 errors.append(
                     "evidence.commands must include the build step "
                     "('pixi run build ...') before execution; a clean "
                     "checkout from target.fetch_hint has no artifacts, and "
                     "an existing checkout may hold stale ones"
+                )
+            elif non_build_indices and min(build_indices) > min(non_build_indices):
+                errors.append(
+                    "evidence.commands must run the build step BEFORE the "
+                    "evidence command; building afterwards reproduces "
+                    "nothing"
                 )
         raw_paths = evidence.get("raw_paths")
         raw_rows = evidence.get("raw_rows")
@@ -1147,6 +1166,16 @@ def packet_errors(
             ]
             match_sets = []
             for point in object_points:
+                null_coords = sorted(
+                    key for key, value in point.items() if value is None
+                )
+                if null_coords:
+                    errors.append(
+                        f"ensemble.sweep point {point} declares null "
+                        f"coordinates at {null_coords}; absent row fields "
+                        "would spuriously match them"
+                    )
+                    continue
                 matches = {
                     index
                     for index, row in enumerate(raw_rows)
@@ -1179,9 +1208,7 @@ def packet_errors(
                     index
                     for index, row in enumerate(raw_rows)
                     if isinstance(row, dict)
-                    and any(
-                        "seed" in str(key).lower() and row[key] == seed for key in row
-                    )
+                    and any(_is_seed_key(str(key)) and row[key] == seed for key in row)
                 }
                 if not matches:
                     errors.append(
@@ -1395,6 +1422,20 @@ def packet_errors(
                     "metrics.performance publishes measurements while "
                     "host.performance_valid is false; timing from an "
                     "uncontrolled host must be typed unsupported"
+                )
+            allocation_group = (
+                packet.get("metrics", {}).get("allocation")
+                if isinstance(packet.get("metrics"), dict)
+                else None
+            )
+            if (
+                isinstance(allocation_group, dict)
+                and allocation_group.get("status") != "unsupported"
+            ):
+                errors.append(
+                    "metrics.allocation publishes measurements while "
+                    "host.performance_valid is false; allocation counts "
+                    "from an uncontrolled host must be typed unsupported"
                 )
 
     review = packet.get("review")
