@@ -612,3 +612,19 @@ npz/npy/parquet — prose or code files rejected); hash leaves must be
 actual hex digests, so "hash": "pending" cannot bind a repeat claim;
 and source URLs must be retrievable http(s) URLs. Tests: 110 -> 116
 (main), 90 -> 96 (6.20).
+
+## Codex review round 9 (PR #3445) — 2026-08-16
+
+Five findings (one reported on both PRs), all fixed on both branches.
+One was a GENUINE defect in the round-8 hardening: COMMAND_RE's negated
+character classes admitted embedded newlines and `$` matched before a
+trailing newline, so a two-line payload passed as one command — fixed
+with newline-excluding classes and \\Z anchoring, with tests. The rest:
+repeat claims above 2 now require a recorded per-repeat hash list of
+that length (two verified repeats may rely on the identical-flag plus a
+trajectory digest — recorded boundary); scene.parameters must carry at
+least one numeric/boolean value (metadata-only objects bind nothing);
+raw-data artifacts are parsed structurally (JSON variants must parse,
+CSV/TSV need delimited lines, NumPy/parquet magic bytes — deep semantic
+validation of tabular contents is a recorded boundary). Tests:
+116 -> 120 (main), 96 -> 100 (6.20).
