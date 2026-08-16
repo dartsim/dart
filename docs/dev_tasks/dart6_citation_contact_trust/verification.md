@@ -379,3 +379,10 @@ distinct-row seed matching; non-empty time windows; the design doc's
 packet-contract list aligned with the enforced schema; build-step
 commands; performance-validity enforcement; parquet footer sanity.
 CT-001's commands migrated in place. Tests: 117 -> 121.
+
+## Codex review round 17 (PR #3444) — 2026-08-16
+
+Two findings here plus one shared, all fixed (mirrored with main):
+required build step in commands; numeric/boolean NPY dtypes;
+whole-group unsupported typing for unmeasured groups. Tests:
+121 -> 123.
