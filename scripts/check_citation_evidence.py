@@ -170,6 +170,9 @@ UNSUPPORTED_SENTINELS = frozenset(
     {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
 )
 
+BUILD_COMMAND_RE = re.compile(
+    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*pixi run build\b"
+)
 COMMAND_RE = re.compile(
     r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*" r"pixi run[ \t]+[^;|&`$\n\r]+\Z"
 )
@@ -209,14 +212,24 @@ def _distinct_assignment_exists(match_sets: "list[set[int]]") -> bool:
     return assign(0)
 
 
+def _is_bookkeeping_key(terminal: str) -> bool:
+    """Case-insensitive whole-token bookkeeping match: `Seed`, `run_id`,
+    and `repeat-2` are bookkeeping; `contact_count_max` is a measurement."""
+    tokens = [
+        token
+        for token in re.split(r"[^a-zA-Z0-9]+", terminal.lower())
+        if token and not token.isdigit()
+    ]
+    return bool(tokens) and all(token in NUMERIC_BOOKKEEPING_KEYS for token in tokens)
+
+
 def _has_measurement_leaf(value: object) -> bool:
     """True when the value contains a numeric/boolean leaf beyond
     bookkeeping keys (the raw-rows measurement rule, applied to parsed
     artifacts)."""
     return any(
         (_is_finite_number(leaf) or isinstance(leaf, bool))
-        and re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
-        not in NUMERIC_BOOKKEEPING_KEYS
+        and not _is_bookkeeping_key(re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1]))
         for path, leaf in _metric_leaves(value)
     )
 
@@ -433,7 +446,7 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             return no_content
         return None
     if suffix == ".npy":
-        return _npy_header_issue(head, mismatch)
+        return _npy_header_issue(head, mismatch, path.stat().st_size)
     if suffix == ".npz":
         try:
             import io
@@ -475,7 +488,9 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
     return None
 
 
-def _npy_header_issue(head: bytes, mismatch: str) -> "str | None":
+def _npy_header_issue(
+    head: bytes, mismatch: str, total_size: "int | None" = None
+) -> "str | None":
     """Parse the NPY header structurally (stdlib only): magic, version,
     header length, and a literal dict with descr/shape/fortran_order whose
     shape is a tuple of non-negative ints."""
@@ -514,8 +529,15 @@ def _npy_header_issue(head: bytes, mismatch: str) -> "str | None":
         # String/object/structured dtypes carry no numeric measurement;
         # structured record dtypes are a recorded boundary.
         return mismatch
-    if len(head) <= header_start + header_len:
-        # Header-only file: a declared array with no payload bytes.
+    if total_size is None:
+        total_size = len(head)
+    itemsize_match = re.search(r"([0-9]+)$", header["descr"])
+    itemsize = int(itemsize_match.group(1)) if itemsize_match else 1
+    expected_payload = itemsize
+    for dim in header["shape"]:
+        expected_payload *= dim
+    if total_size < header_start + header_len + expected_payload:
+        # Truncated payload: the declared array does not fit in the file.
         return mismatch
     return None
 
@@ -975,7 +997,19 @@ def packet_errors(
                 "digest, larger claims must show their repeats"
             )
             has_repeats = False
-        if has_repeats and not _has_hash_leaf(packet.get("evidence")):
+        evidence_for_repeats = (
+            {
+                key: value
+                for key, value in packet.get("evidence", {}).items()
+                if key != "artifact_digests"
+            }
+            if isinstance(packet.get("evidence"), dict)
+            else packet.get("evidence")
+        )
+        repeat_hash_sources = [evidence_for_repeats, ensemble]
+        if has_repeats and not any(
+            _has_hash_leaf(source) for source in repeat_hash_sources
+        ):
             errors.append(
                 "ensemble.deterministic_repeats is asserted but the "
                 "evidence carries no *hash*/sha256 field binding the "
@@ -1129,7 +1163,7 @@ def packet_errors(
             build_indices = [
                 index
                 for index, command in enumerate(commands)
-                if re.match(r"^pixi run build\b", command.strip())
+                if BUILD_COMMAND_RE.match(command.strip())
             ]
             non_build_indices = [
                 index for index in range(len(commands)) if index not in build_indices
@@ -1243,8 +1277,9 @@ def packet_errors(
                     continue
                 if not any(
                     (_is_finite_number(leaf) or isinstance(leaf, bool))
-                    and re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
-                    not in NUMERIC_BOOKKEEPING_KEYS
+                    and not _is_bookkeeping_key(
+                        re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
+                    )
                     for path, leaf in _metric_leaves(row)
                 ):
                     errors.append(

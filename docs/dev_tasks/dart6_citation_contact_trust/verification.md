@@ -393,3 +393,8 @@ Three findings here plus two shared, all fixed (mirrored with main):
 allocation under host validity; non-null sweep coordinates;
 token-matched seed fields; build-before-evidence ordering. Tests:
 123 -> 127.
+
+## Codex review round 19 (PR #3444) — 2026-08-16
+
+One finding here (the env-prefixed build-command false positive) plus
+three shared, all fixed (mirrored with main). Tests: 127 -> 131.
