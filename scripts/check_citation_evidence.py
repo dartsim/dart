@@ -106,6 +106,20 @@ METRIC_STRING_KEY_SUFFIXES = (
     "_basis",
 )
 
+# Visual evidence must be actual media; an ordinary text file satisfying a
+# path-existence check is not a capture.
+VISUAL_MEDIA_SUFFIXES = (
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".apng",
+    ".mp4",
+    ".webm",
+)
+
 # configuration.requested/resolved must name a recognizable identity, not an
 # arbitrary placeholder object.
 IDENTITY_KEY_RE = re.compile(
@@ -337,6 +351,19 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                     errors.append(f"metrics.{name}.{path} contains a non-finite number")
                 elif leaf == 0:
                     observed_zero_fields.append(path)
+            elif isinstance(leaf, bool):
+                # Boolean findings (stability flags, signature verdicts) are
+                # legitimate measured outcomes; accepting them EXPLICITLY here
+                # keeps the type chain exhaustive so nothing falls through
+                # unvalidated.
+                pass
+            else:
+                errors.append(
+                    f"metrics.{name}.{path} has unrecognized leaf type "
+                    f"{type(leaf).__name__}; a measurement is a finite "
+                    "number, a boolean finding, a whitelisted semantic "
+                    "string, or a typed-unsupported marker"
+                )
 
     if value_keys and leaf_count == 0:
         errors.append(
@@ -427,7 +454,14 @@ def packet_errors(
         digest = scene.get("digest")
         if not (isinstance(digest, str) and SCENE_DIGEST_RE.match(digest)):
             errors.append("scene.digest must match sha256:<64 hex>")
-        elif isinstance(scene.get("parameters"), dict):
+        parameters = scene.get("parameters")
+        if not (isinstance(parameters, dict) and parameters):
+            errors.append(
+                "scene.parameters must publish the non-empty parameter "
+                "object the digest was computed over; a well-formed digest "
+                "with no content binds nothing"
+            )
+        elif isinstance(digest, str) and SCENE_DIGEST_RE.match(digest):
             # When the packet publishes the parameters the digest was taken
             # over, recompute it. A digest that cannot be reproduced from the
             # packet's own scene description binds nothing, and a hand-edited
@@ -615,6 +649,14 @@ def packet_errors(
                         f"evidence.visual[{index}] must be an artifact path "
                         "or {'path': ..., 'description': ...}; a placeholder "
                         "cannot stand in for visual evidence"
+                    )
+                    continue
+                if PurePosixPath(item_path).suffix.lower() not in VISUAL_MEDIA_SUFFIXES:
+                    errors.append(
+                        f"evidence.visual[{index}] {item_path!r} is not a "
+                        "recognized visual media artifact "
+                        f"({', '.join(VISUAL_MEDIA_SUFFIXES)}); an ordinary "
+                        "file cannot stand in for visual evidence"
                     )
                     continue
                 issue = _evidence_path_issue(item_path, base_dir)
@@ -999,7 +1041,7 @@ def validate_tree(
                     )
                 else:
                     reviewers = {
-                        entry.get("reviewer")
+                        entry["reviewer"].strip().casefold()
                         for entry in passes
                         if isinstance(entry, dict)
                         and _is_nonempty_str(entry.get("reviewer"))

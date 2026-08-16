@@ -72,8 +72,10 @@ per-solve residual (WS4 remainder).
 - Quantities that do not exist on `main` today, and must stay typed
   unsupported until WS4 lands them: per-solve solver residual (rigid contact
   never passes one to `recordSolverDiagnostics`), boxed-LCP iteration counts
-  (its branch returns before the diagnostics call), per-island fallback
-  reporting, and `ResolvedSolverConfiguration` in Python.
+  (its branch returns before the diagnostics call), and per-island fallback
+  reporting. `ResolvedSolverConfiguration` IS bound to Python in this branch
+  (`World.resolved_configuration`; module_compute.cpp / module_world.cpp)
+  and every packet records it — do not re-implement it.
 - Packet dispositions must survive an adversarial read. Review killed two
   verdicts: one rested on a hardcoded threshold (a settle speed exactly
   linear in dt is integrator residual, not instability), and one measured

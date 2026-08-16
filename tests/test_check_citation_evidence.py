@@ -5,6 +5,7 @@ degraded; a complete packet must pass; negative-control packets must fail.
 """
 
 import copy
+import hashlib
 import importlib.util
 import json
 import sys
@@ -43,7 +44,15 @@ def complete_packet() -> dict:
         },
         "scene": {
             "id": "test_scene",
-            "digest": "sha256:" + "a" * 64,
+            "digest": (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        {"gravity": -9.81}, sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest()
+            ),
+            "parameters": {"gravity": -9.81},
             "description": "A scene.",
         },
         "configuration": {
@@ -843,3 +852,41 @@ def test_nested_negative_control_is_enumerated(tmp_path):
     )
     errors = MODULE.validate_tree(tree)
     assert any("fail-closed proof is vacuous" in error for error in errors)
+
+
+def test_scene_parameters_are_required():
+    packet = complete_packet()
+    del packet["scene"]["parameters"]
+    errors = MODULE.packet_errors(packet)
+    assert any("binds nothing" in error for error in errors)
+
+
+def test_boolean_metric_leaves_are_valid_but_odd_types_fail():
+    packet = complete_packet()
+    packet["metrics"]["physical"]["pyramid_signature"] = True
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_reviewer_identities_are_normalized_before_counting(tmp_path):
+    packet = copy.deepcopy(complete_packet())
+    packet["review"]["passes"] = [
+        _bound_pass(packet, "reviewer-a"),
+        _bound_pass(packet, "  Reviewer-A "),
+    ]
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"][LANE]
+    lane["status"] = "closed"
+    lane["disposition"] = "unresolved"
+    lane["evidence"] = ["evidence/packet.json"]
+    tree_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("INDEPENDENT" in error for error in errors)
+
+
+def test_visual_entries_must_be_media_artifacts():
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["CHANGELOG.md"]
+    errors = MODULE.packet_errors(packet)
+    assert any("not a recognized visual media artifact" in error for error in errors)

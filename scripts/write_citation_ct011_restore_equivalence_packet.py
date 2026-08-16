@@ -352,18 +352,39 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     restore_is_state_function = all(
         all(row["findings"][key] for key in state_function_arm_keys) for row in rows
     )
-    if restore_is_state_function:
-        # This writer's claim boundary and limitations describe the measured
-        # divergence and its identified root cause. If a future branch makes
-        # every arm bit-exact, regenerating that narrative would publish a
-        # false conclusion; stop and force a conscious rewrite instead.
-        raise SystemExit(
-            "CT-011: every restore arm matched bit-exactly, contradicting "
-            "this packet's divergence narrative. Restore behavior on this "
-            "branch has changed; rewrite the claim boundary, limitations, "
-            "and disposition from the new findings instead of regenerating "
-            "the old conclusion."
-        )
+    # This writer's claim boundary and limitations assert one SPECIFIC
+    # measured pattern: the two in-place arms diverge while the fresh-world,
+    # same-history, pre-contact, and ballistic arms match (the omitted
+    # rotational state explains exactly that split). ANY deviation -- not
+    # just all-arms-exact -- would make the regenerated narrative false, so
+    # the writer aborts on the first arm whose outcome changes and forces a
+    # conscious rewrite.
+    expected_arm_pattern = {
+        "inplace_restore_matches_continuation": False,
+        "inplace_restores_match_each_other": False,
+        "fresh_restores_match_each_other": True,
+        "fresh_restore_matches_continuation": False,
+        "same_history_restores_match": True,
+        "precontact_history_matches_fresh": True,
+        "ballistic_restore_exact": True,
+    }
+    for row in rows:
+        deviations = {
+            key: row["findings"][key]
+            for key, expected in expected_arm_pattern.items()
+            if row["findings"][key] != expected
+        }
+        if deviations:
+            raise SystemExit(
+                f"CT-011 {row['contact_solver_method']}: measured arm "
+                f"outcomes {deviations} deviate from the divergence pattern "
+                "this packet's claim boundary asserts (in-place restores "
+                "diverge; fresh-world, same-history, pre-contact, and "
+                "ballistic arms match). Restore behavior has changed; "
+                "rewrite the claim boundary, limitations, and disposition "
+                "from the new findings instead of regenerating the old "
+                "conclusion."
+            )
 
     # CT-011 is a requirements claim about research workflows; running a
     # fixture cannot reproduce a need, so the row is not promoted. What the
