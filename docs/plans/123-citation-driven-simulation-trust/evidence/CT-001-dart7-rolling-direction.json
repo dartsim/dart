@@ -187,6 +187,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 0.0,
         "lateral_drift_m": 0.0,
         "max_active_contacts": 1,
@@ -252,6 +253,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": -3.1169435878342416e-14,
         "lateral_drift_m": -0.0021005566494608774,
         "max_active_contacts": 1,
@@ -317,6 +319,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": -5.343331864858703e-14,
         "lateral_drift_m": -0.001883289782513231,
         "max_active_contacts": 1,
@@ -382,6 +385,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 0.0,
         "lateral_drift_m": 5.551115123125783e-17,
         "max_active_contacts": 1,
@@ -447,6 +451,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 5.343331864858703e-14,
         "lateral_drift_m": 0.0018832897825133976,
         "max_active_contacts": 1,
@@ -512,6 +517,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 3.1169435878342416e-14,
         "lateral_drift_m": 0.0021005566494608774,
         "max_active_contacts": 1,
@@ -577,6 +583,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 6.426647569961019e-30,
         "lateral_drift_m": 7.105154224747257e-19,
         "max_active_contacts": 1,
@@ -642,6 +649,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 0.0,
         "lateral_drift_m": 0.0,
         "max_active_contacts": 1,
@@ -707,6 +715,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": -3.1169435878342416e-14,
         "lateral_drift_m": -0.002100556554215066,
         "max_active_contacts": 1,
@@ -772,6 +781,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": -5.343331864858703e-14,
         "lateral_drift_m": -0.0018832896891917694,
         "max_active_contacts": 1,
@@ -837,6 +847,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": -4.4527765540489165e-15,
         "lateral_drift_m": 5.551115123125783e-17,
         "max_active_contacts": 1,
@@ -902,6 +913,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 4.8980542094538094e-14,
         "lateral_drift_m": 0.0018832896891918804,
         "max_active_contacts": 1,
@@ -967,6 +979,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 3.1169435878342416e-14,
         "lateral_drift_m": 0.002100556554215066,
         "max_active_contacts": 1,
@@ -1032,6 +1045,7 @@
           "rigid_body_position",
           "kinematics"
         ],
+        "finite": true,
         "heading_error_deg": 6.426647569961019e-30,
         "lateral_drift_m": 7.105150776790931e-19,
         "max_active_contacts": 1,
@@ -1262,9 +1276,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
+    "commit": "dd68714d6a7a928b3af784e08369469b0e945216",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout dd68714d6a7a928b3af784e08369469b0e945216"
   },
   "title": "Rolling-direction friction dependence (DART 7 first packet)"
 }
