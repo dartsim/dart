@@ -169,7 +169,7 @@ def _has_identity_key(value: object) -> bool:
     with a non-null value; {"placeholder": null} has none."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if IDENTITY_KEY_RE.search(str(key)) and item is not None:
+            if IDENTITY_KEY_RE.search(str(key)) and _is_nonempty_str(item):
                 return True
             if _has_identity_key(item):
                 return True
@@ -199,14 +199,62 @@ def _evidence_path_issue(raw_path: str, base_dir: "Path | None") -> "str | None"
         )
     if base_dir is None:
         return None
+    if _resolve_evidence_path(raw_path, base_dir) is None:
+        return (
+            f"{raw_path!r} does not resolve to an existing file inside an "
+            "approved evidence root; a dangling or escaping path is prose"
+        )
+    return None
+
+
+def _resolve_evidence_path(raw_path: str, base_dir: "Path | None") -> "Path | None":
+    """The resolved in-root file a relative evidence path names, or None."""
+    if base_dir is None:
+        return None
     for root in (base_dir, REPO_ROOT):
         candidate = (root / raw_path).resolve()
         if candidate.is_file() and candidate.is_relative_to(root.resolve()):
-            return None
-    return (
-        f"{raw_path!r} does not resolve to an existing file inside an "
-        "approved evidence root; a dangling or escaping path is prose"
+            return candidate
+    return None
+
+
+_VISUAL_SIGNATURES = {
+    ".png": (b"\x89PNG\r\n\x1a\n",),
+    ".apng": (b"\x89PNG\r\n\x1a\n",),
+    ".jpg": (b"\xff\xd8\xff",),
+    ".jpeg": (b"\xff\xd8\xff",),
+    ".gif": (b"GIF87a", b"GIF89a"),
+    ".webm": (b"\x1a\x45\xdf\xa3",),
+}
+
+
+def _visual_content_issue(path: "Path") -> "str | None":
+    """Why a resolved visual artifact's bytes do not match its claimed type.
+
+    A prose file renamed to `capture.png` satisfies a suffix check; the
+    magic-signature check makes the artifact itself carry the evidence.
+    """
+    suffix = path.suffix.lower()
+    try:
+        with path.open("rb") as stream:
+            header = stream.read(256)
+    except OSError:
+        return "could not be read for media-signature verification"
+    mismatch = (
+        "does not carry the media signature its suffix claims; a renamed "
+        "non-media file is not visual evidence"
     )
+    if suffix in _VISUAL_SIGNATURES:
+        if not any(header.startswith(sig) for sig in _VISUAL_SIGNATURES[suffix]):
+            return mismatch
+        return None
+    if suffix == ".webp":
+        return None if header[:4] == b"RIFF" and header[8:12] == b"WEBP" else mismatch
+    if suffix == ".mp4":
+        return None if header[4:8] == b"ftyp" else mismatch
+    if suffix == ".svg":
+        return None if b"<svg" in header else mismatch
+    return None
 
 
 def _packet_content_digest(packet: dict) -> str:
@@ -567,10 +615,32 @@ def packet_errors(
         window = ensemble.get("measurement_window")
         if "measurement_window" not in ensemble:
             errors.append("ensemble.measurement_window is required")
-        elif not window or (isinstance(window, str) and not window.strip()):
+        elif isinstance(window, str):
+            if not window.strip():
+                errors.append(
+                    "ensemble.measurement_window must record an actual "
+                    "window, not an empty value"
+                )
+        elif isinstance(window, dict) and window:
+            bad_values = sorted(
+                key for key, item in window.items() if not _is_finite_number(item)
+            )
+            if bad_values:
+                errors.append(
+                    "ensemble.measurement_window values at "
+                    f"{bad_values} must be finite numbers"
+                )
+            start = window.get("start_s")
+            end = window.get("end_s")
+            if _is_finite_number(start) and _is_finite_number(end) and start > end:
+                errors.append(
+                    "ensemble.measurement_window start_s must not exceed end_s"
+                )
+        else:
             errors.append(
-                "ensemble.measurement_window must record an actual window, "
-                "not an empty value"
+                "ensemble.measurement_window must be a non-empty string or a "
+                "non-empty object of finite numeric bounds; a truthy "
+                "placeholder does not record when measurements were collected"
             )
 
     metrics = packet.get("metrics")
@@ -657,6 +727,15 @@ def packet_errors(
                 issue = _evidence_path_issue(item_path, base_dir)
                 if issue is not None:
                     errors.append(f"evidence.visual[{index}] {issue}")
+                    continue
+                resolved = _resolve_evidence_path(item_path, base_dir)
+                if resolved is not None:
+                    content_issue = _visual_content_issue(resolved)
+                    if content_issue is not None:
+                        errors.append(
+                            f"evidence.visual[{index}] {item_path!r} "
+                            f"{content_issue}"
+                        )
         else:
             errors.append(
                 "evidence.visual must list visual artifacts or be typed "
@@ -701,6 +780,13 @@ def packet_errors(
                         f"review.passes[{index}] needs non-empty reviewer and summary"
                     )
                     continue
+                if entry.get("verdict") != "pass":
+                    errors.append(
+                        f"review.passes[{index}] must record verdict 'pass'; "
+                        "an entry without an explicit passing verdict (or "
+                        "one recording a failure) cannot count toward "
+                        "closure"
+                    )
                 if entry.get("content_digest") != expected_digest:
                     errors.append(
                         f"review.passes[{index}] is not bound to this "

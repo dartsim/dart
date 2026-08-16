@@ -467,6 +467,7 @@ def _bound_pass(packet: dict, reviewer: str) -> dict:
     return {
         "reviewer": reviewer,
         "summary": "clean",
+        "verdict": "pass",
         "content_digest": MODULE._packet_content_digest(packet),
     }
 
@@ -786,3 +787,54 @@ def test_visual_entries_must_be_media_artifacts():
     packet["evidence"]["visual"] = ["CHANGELOG.md"]
     errors = MODULE.packet_errors(packet)
     assert any("not a recognized visual media artifact" in error for error in errors)
+
+
+def test_review_entries_require_a_passing_verdict():
+    packet = complete_packet()
+    entry = _bound_pass(packet, "first")
+    del entry["verdict"]
+    packet["review"]["passes"] = [entry]
+    errors = MODULE.packet_errors(packet)
+    assert any("verdict 'pass'" in error for error in errors)
+    entry["verdict"] = "fail"
+    errors = MODULE.packet_errors(packet)
+    assert any("verdict 'pass'" in error for error in errors)
+
+
+def test_identity_values_must_be_non_empty():
+    for bad in ("", [], False, {}):
+        packet = complete_packet()
+        packet["configuration"]["resolved"] = {"solver": bad}
+        errors = MODULE.packet_errors(packet)
+        assert any("no recognizable" in error for error in errors), bad
+
+
+def test_measurement_window_placeholders_fail():
+    for bad in (True, 1, [None], {"a": None}, {"start_s": 2.0, "end_s": 1.0}):
+        packet = complete_packet()
+        packet["ensemble"]["measurement_window"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any("measurement_window" in error for error in errors), bad
+    packet = complete_packet()
+    packet["ensemble"]["measurement_window"] = {"warmup_steps": 250}
+    assert MODULE.packet_errors(packet) == []
+    packet["ensemble"]["measurement_window"] = "full 1 s horizon"
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_visual_artifacts_are_verified_by_content(tmp_path):
+    fake = tmp_path / "design"
+    fake.mkdir()
+    (fake / "capture.png").write_text("not an image", encoding="utf-8")
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["capture.png"]
+    errors = MODULE.packet_errors(packet, base_dir=fake)
+    assert any("media signature" in error for error in errors)
+    png = b"\x89PNG\r\n\x1a\n" + bytes.fromhex(
+        "0000000d49484452000000010000000108060000001f15c489"
+        "0000000a49444154789c63000100000500010d0a2db4"
+        "0000000049454e44ae426082"
+    )
+    (fake / "real.png").write_bytes(png)
+    packet["evidence"]["visual"] = ["real.png"]
+    assert MODULE.packet_errors(packet, base_dir=fake) == []

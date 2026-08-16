@@ -244,3 +244,15 @@ CT-001 packet was regenerated at the round-2 commit `1a811de5bbb` so its
 recorded command runs the current writer at its recorded, fetchable
 target. Disposition unchanged (reproduced). Tests: 65 -> 69; tree
 validates; negative control still fails.
+
+## Codex review round 3 (PR #3444) — 2026-08-16
+
+Three findings, all fixed on both branches: `measurement_window` is
+structurally validated (non-empty string, or a non-empty object of finite
+numeric values with `start_s <= end_s`; truthy placeholders rejected);
+visual artifacts are verified by media SIGNATURE, not filename — a prose
+file renamed to `capture.png` is rejected by magic-byte check
+(PNG/JPEG/GIF/WebP/SVG/MP4/WebM); configuration identity values must be
+non-empty strings. Review passes additionally require an explicit
+`verdict: "pass"` (mirrored from the main round-3 finding). Tests:
+69 -> 73.
