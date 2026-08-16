@@ -519,3 +519,22 @@ recorded identity), and review passes must record an explicit
 `verdict: "pass"` — a digest-bound entry summarizing a FAILED review can
 no longer count toward the two-review closure floor
 (`record_review_pass` stamps the verdict). Tests: 89 -> 93.
+
+## Codex review round 4 (PR #3445) — 2026-08-16
+
+Four findings, all fixed (shared rules mirrored on release-6.20):
+metadata-suffixed keys (method_note, backend_reason) no longer count as
+configuration identities (one own-goal caught in the round: the first
+exclusion list reused the metric-string suffixes, whose `_method` entry
+would have knocked out `contact_solver_method` itself — the validator
+suite caught it before commit); raw rows must carry at least one
+numeric/boolean measurement (metadata-only rows rejected); a measured
+metric group needs at least one numeric/boolean/typed-unsupported leaf
+(method+note alone no longer passes); the CT-001 claim boundary is now
+formatted from the run's own summary (peak drift, isotropy tolerance,
+null angles, antisymmetry ratio, criteria, validity-gate state) so a
+regeneration cannot pair fresh raw rows with stale quantitative prose.
+Also from the 3444 side: not-applicable lanes cannot publish
+dispositions or hold evidence, and the Windows check-lint variant now
+includes the citation gate. Tests: 93 -> 97. CT-001 regenerated at the
+round-4 commit in the follow-up commit.

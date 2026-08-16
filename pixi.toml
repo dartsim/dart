@@ -2793,6 +2793,7 @@ check-lint = { depends-on = [
   "check-lcp-solver-roster",
   "check-ai-commands",
   "check-ai-infra",
+  "check-citation-evidence",
 ] }
 
 build = { cmd = """

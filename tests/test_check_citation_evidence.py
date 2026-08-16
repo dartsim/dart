@@ -942,3 +942,38 @@ def test_visual_artifacts_are_verified_by_content(tmp_path):
     (fake / "real.png").write_bytes(png)
     packet["evidence"]["visual"] = ["real.png"]
     assert MODULE.packet_errors(packet, base_dir=fake) == []
+
+
+def test_not_applicable_lane_cannot_conclude(tmp_path):
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"][LANE]
+    lane["status"] = "not-applicable"
+    lane["reason"] = "does not apply here"
+    lane["disposition"] = "fixed"
+    lane["evidence"] = ["evidence/packet.json"]
+    errors = MODULE.manifest_errors(manifest, ["CT-001"])
+    assert any("concludes nothing" in error for error in errors)
+    assert any("must not hold" in error for error in errors)
+
+
+def test_metadata_keys_are_not_identities():
+    packet = complete_packet()
+    packet["configuration"]["resolved"] = {"method_note": "not measured"}
+    errors = MODULE.packet_errors(packet)
+    assert any("no recognizable" in error for error in errors)
+
+
+def test_raw_rows_need_measurement_content():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"note": "pending"}]
+    errors = MODULE.packet_errors(packet)
+    assert any("metadata-only record" in error for error in errors)
+    packet["evidence"]["raw_rows"] = [{"lateral_drift_m": 1.5e-3}]
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_metric_group_needs_a_real_measurement():
+    packet = complete_packet()
+    packet["metrics"]["numerical"] = {"method": "manual", "note": "not measured"}
+    errors = MODULE.packet_errors(packet)
+    assert any("only semantic annotations" in error for error in errors)

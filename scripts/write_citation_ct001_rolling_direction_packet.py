@@ -414,6 +414,58 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         "reproduced" if anisotropic_methods and not validity_failures else "unresolved"
     )
 
+    # The claim boundary quotes quantitative outcomes; format them from THIS
+    # run's summary so a regeneration with different rolling behavior cannot
+    # combine fresh raw rows with a stale conclusion.
+    peak_drift = max(stats["max_abs_lateral_drift_m"] for stats in summary.values())
+    ratios = [
+        stats["antisymmetry_residual_over_peak_drift"]
+        for stats in summary.values()
+        if isinstance(stats["antisymmetry_residual_over_peak_drift"], (int, float))
+    ]
+    max_ratio = max(ratios) if ratios else None
+    swept_angles = sorted({row["angle_deg"] for row in rows})
+    null_angles = [
+        angle
+        for angle in swept_angles
+        if all(
+            row["lateral_drift_m"] == 0.0 for row in rows if row["angle_deg"] == angle
+        )
+    ]
+    criteria_union = sorted(
+        {
+            criterion
+            for finding in anisotropy_findings.values()
+            for criterion in finding["criteria_exceeded"]
+        }
+    )
+    solver_names = " and ".join(sorted(summary))
+    outcome_sentence = (
+        "Outcome actually observed: lateral drift reaches "
+        f"{peak_drift:.1e} m against a "
+        f"{isotropy_tolerance['max_abs_lateral_drift_m']:.0e} m isotropy "
+        "tolerance"
+        + (
+            ", with exact nulls at "
+            + ", ".join(f"{angle:g}" for angle in null_angles)
+            + " deg"
+            if null_angles
+            else ""
+        )
+        + (
+            f" and antisymmetry about 45 deg to within {max_ratio:.0e} of peak"
+            if max_ratio is not None
+            else ""
+        )
+        + f", in {solver_names}; criteria exceeded: "
+        + (", ".join(criteria_union) if criteria_union else "none")
+        + (
+            ", and every cell passes the physical-validity gate."
+            if not validity_failures
+            else "; some cells FAIL the physical-validity gate."
+        )
+    )
+
     # Zeros this fixture asserts are genuine measurements, not missing data.
     # The validator rejects any other exact zero and any stale entry here, so
     # an unexpected zero in a future run fails the gate instead of passing as
@@ -590,13 +642,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "DART 7 main, this commit, one sphere sliding to rolling on "
                 "a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s "
                 "horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, "
-                "launch angles 0-90 deg in 15 deg steps. Outcome actually "
-                "observed: lateral drift reaches 2.1e-3 m against a 1e-4 m "
-                "isotropy tolerance, with exact nulls at 0, 45, and 90 deg "
-                "and antisymmetry about 45 deg to within 1e-13 of peak, in "
-                "both contact solvers; the drift criterion is the only one of "
-                "the three tolerances exceeded, and every cell passes the "
-                "physical-validity gate. Says nothing about other speeds, "
+                "launch angles 0-90 deg in 15 deg steps. "
+                + outcome_sentence
+                + " Says nothing about other speeds, "
                 "shapes, stacks, historical DART versions, or DART 6."
             ),
             "limitations": [
