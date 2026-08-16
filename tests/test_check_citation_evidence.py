@@ -1176,3 +1176,47 @@ def test_swapped_artifacts_invalidate_the_packet(tmp_path):
     packet["evidence"]["artifact_digests"] = {"real.csv": "sha256:" + "0" * 64}
     errors = MODULE.packet_errors(packet, base_dir=tmp_path)
     assert any("does not match the referenced file's bytes" in e for e in errors)
+
+
+def test_sweep_points_must_be_observed_by_rows():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    packet["evidence"]["raw_rows"] = [
+        {"angle_deg": 0.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+        {"angle_deg": 0.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("has no matching row" in error for error in errors)
+
+
+def test_declared_seeds_must_be_observed_by_rows():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["seeds"] = [7, 11]
+    packet["evidence"]["raw_rows"] = [
+        {"seed": 7, "lateral_drift_m": 0.1, "trajectory_sha256": "d" * 64},
+        {"seed": 7, "lateral_drift_m": 0.1, "trajectory_sha256": "d" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("has no row recording it" in error for error in errors)
+
+
+def test_structurally_empty_json_artifacts_fail(tmp_path):
+    (tmp_path / "rows.json").write_text('"just prose"', encoding="utf-8")
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.json"]
+    packet["evidence"]["artifact_digests"] = {
+        "rows.json": "sha256:"
+        + hashlib.sha256((tmp_path / "rows.json").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "carries no numeric or boolean measurement content" in error for error in errors
+    )

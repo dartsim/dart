@@ -324,3 +324,13 @@ DART_CITATION_PR override removed (ownership transfer updates writer
 and validator constants together); artifact_digests bind path-based
 evidence bytes; the CT-011 full-state instrument fix is main-only (no
 6.20 restore packet). Tests: 100 -> 102.
+
+## Codex review round 11 (PR #3444) — 2026-08-16
+
+Three findings here plus two shared, all fixed (mirrored with main):
+clean-tree enforcement in writers; sweep-point/seed observation
+binding; JSON artifact content requirements; and the instrument sweep
+fixed this branch's CT-001 NaN-blindness (validity gates would pass a
+NaN trajectory since NaN comparisons are False — rows now carry an
+explicit full-state finite flag gated in validity_failures). CT-001
+regenerated at the round-11 commit. Tests: 102 -> 105.

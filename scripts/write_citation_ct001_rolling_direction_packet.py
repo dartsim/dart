@@ -193,11 +193,24 @@ def run_single(
     # dissipate must not escape the physical-validity gate.
     previous_energy = float(sphere_skel.computeKineticEnergy())
 
+    finite = True
     for step_index in range(step_count):
         world.step()
         position = np.asarray(body.getTransform().translation(), dtype=float)
         velocity = np.asarray(body.getLinearVelocity(), dtype=float)
         angular = np.asarray(body.getAngularVelocity(), dtype=float)
+        # NaN comparisons are False, so the analytic-speed validity gates
+        # would silently PASS a NaN trajectory; track finiteness explicitly
+        # over the full observed state.
+        if not (
+            np.all(np.isfinite(position))
+            and np.all(np.isfinite(velocity))
+            and np.all(np.isfinite(angular))
+            and np.all(
+                np.isfinite(np.asarray(body.getTransform().matrix(), dtype=float))
+            )
+        ):
+            finite = False
         trajectory.update(position.tobytes())
         trajectory.update(velocity.tobytes())
         trajectory.update(angular.tobytes())
@@ -241,6 +254,7 @@ def run_single(
         "angle_deg": angle_deg,
         "collision_detector": detector_key,
         "resolved": resolved,
+        "finite": finite,
         "trajectory_sha256": trajectory.hexdigest(),
         "along_travel_m": along,
         "lateral_drift_m": lateral,
@@ -306,6 +320,35 @@ def summarize(rows: list[dict[str, Any]], detectors: list[str]) -> dict[str, Any
 
 
 def git_head() -> str:
+    """HEAD commit, refusing to attribute a dirty tree's results to it.
+
+    A packet's target.commit claims the recorded results come from that
+    commit's code; uncommitted modifications to tracked files would make
+    that attribution false, so generation aborts instead. (The packet
+    output file itself is checked before being overwritten, so an
+    unmodified existing packet does not block regeneration.)
+    """
+    dirty = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            ".",
+            ":(exclude)docs/plans/123-citation-driven-simulation-trust/evidence",
+            ":(exclude)docs/design/dart6_citation_driven_contact_trust/evidence",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(
+            "refusing to generate evidence from a dirty tree; commit or "
+            "stash these tracked modifications first:\n" + dirty
+        )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,
@@ -451,6 +494,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         f"{row['collision_detector']} angle {row['angle_deg']}: {reason}"
         for row in rows
         for reason, bad in (
+            ("non-finite state", not row["finite"]),
             (
                 "final speed departs from the analytic rolling speed 5/7 v0",
                 abs(

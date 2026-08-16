@@ -181,6 +181,18 @@ NUMERIC_BOOKKEEPING_KEYS = frozenset(
 )
 
 
+def _has_measurement_leaf(value: object) -> bool:
+    """True when the value contains a numeric/boolean leaf beyond
+    bookkeeping keys (the raw-rows measurement rule, applied to parsed
+    artifacts)."""
+    return any(
+        (_is_finite_number(leaf) or isinstance(leaf, bool))
+        and re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
+        not in NUMERIC_BOOKKEEPING_KEYS
+        for path, leaf in _metric_leaves(value)
+    )
+
+
 def _has_hash_list(value: object, length: int) -> bool:
     """True when a hash-named key holds a list of >= `length` digest values."""
     if isinstance(value, dict):
@@ -343,19 +355,29 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
         "does not parse as its claimed raw-data format; a renamed prose "
         "file is not raw evidence"
     )
+    no_content = (
+        "parses but carries no numeric or boolean measurement content; a "
+        "structurally empty artifact is not raw evidence"
+    )
     if suffix == ".json":
         try:
-            json.loads(path.read_text(encoding="utf-8"))
+            parsed = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return mismatch
+        if not _has_measurement_leaf(parsed):
+            return no_content
         return None
     if suffix in (".jsonl", ".ndjson"):
         try:
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    json.loads(line)
+            parsed_lines = [
+                json.loads(line)
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
         except (OSError, ValueError):
             return mismatch
+        if not parsed_lines or not _has_measurement_leaf(parsed_lines):
+            return no_content
         return None
     if suffix in (".csv", ".tsv"):
         delimiter = b"," if suffix == ".csv" else b"\t"
@@ -770,6 +792,8 @@ def packet_errors(
             errors.append("configuration.fallback_policy must be a non-empty string")
 
     declared_points = 0
+    sweep = None
+    seeds = None
     ensemble = packet.get("ensemble")
     if not isinstance(ensemble, dict):
         errors.append("ensemble must be an object")
@@ -950,6 +974,43 @@ def packet_errors(
                 f"evidence.raw_rows records only {len(raw_rows)} rows; every "
                 "declared point needs at least one recorded sample"
             )
+        # Count parity is not enough: each declared object point must be
+        # OBSERVED by a row carrying its exact coordinates, or one point's
+        # measurements could be repeated to stand in for the others.
+        if has_rows and isinstance(sweep, list):
+            for point in sweep:
+                if not (isinstance(point, dict) and point):
+                    continue
+                if not any(
+                    isinstance(row, dict)
+                    and all(row.get(key) == value for key, value in point.items())
+                    for row in raw_rows
+                ):
+                    errors.append(
+                        f"ensemble.sweep point {point} has no matching row "
+                        "in evidence.raw_rows recording those coordinates; "
+                        "a declared configuration without an observation is "
+                        "not swept"
+                    )
+        if has_rows and isinstance(seeds, list):
+            for seed in seeds:
+                if not (
+                    (isinstance(seed, int) and not isinstance(seed, bool))
+                    or _is_nonempty_str(seed)
+                ):
+                    continue
+                if not any(
+                    isinstance(row, dict)
+                    and any(
+                        "seed" in str(key).lower() and row[key] == seed for key in row
+                    )
+                    for row in raw_rows
+                ):
+                    errors.append(
+                        f"ensemble seed {seed!r} has no row recording it "
+                        "under a seed field; a declared seed without an "
+                        "observation is not an ensemble member"
+                    )
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
         if has_rows:
