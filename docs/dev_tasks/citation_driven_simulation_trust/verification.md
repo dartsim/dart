@@ -648,3 +648,22 @@ evidence must pin artifact bytes via evidence.artifact_digests
 (sha256 verified against the file), so swapping a referenced artifact
 invalidates the packet and its digest-bound reviews. Tests: 120 -> 122
 (main), 100 -> 102 (6.20).
+
+## Codex review round 11 (PR #3445) — 2026-08-16
+
+Five findings, two genuine, all fixed on both branches. Genuine #1:
+writers could attribute a dirty tree's results to HEAD — git_head() now
+aborts on tracked modifications (evidence outputs excluded, since they
+are the writers' own products). Genuine #2: CT-007's finiteness and
+repeat hashes inspected translation only — the CT-011 lesson
+generalized; the instrument sweep found the same blindness in
+CT-002/003 (final-state checks and hashes) and a NaN-blindness in both
+branches' CT-001 (NaN comparisons are False, so the analytic-speed
+validity gates would silently PASS a NaN trajectory) — every writer now
+checks and hashes the FULL rigid-body state (CT-004/005 operate in
+joint space, which is already complete for their scenes). Hardening:
+declared sweep points must be OBSERVED by rows carrying their exact
+coordinates (count parity is not enough), declared seeds must appear in
+rows under a seed field, and JSON raw artifacts must parse to content
+with at least one real measurement leaf. Affected packets regenerated
+at the round-11 commit. Tests: 122 -> 125 (main), 102 -> 105 (6.20).

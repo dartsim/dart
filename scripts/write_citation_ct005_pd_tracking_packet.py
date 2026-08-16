@@ -287,6 +287,35 @@ def run_single(
 
 
 def git_head() -> str:
+    """HEAD commit, refusing to attribute a dirty tree's results to it.
+
+    A packet's target.commit claims the recorded results come from that
+    commit's code; uncommitted modifications to tracked files would make
+    that attribution false, so generation aborts instead. (The packet
+    output file itself is checked before being overwritten, so an
+    unmodified existing packet does not block regeneration.)
+    """
+    dirty = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            ".",
+            ":(exclude)docs/plans/123-citation-driven-simulation-trust/evidence",
+            ":(exclude)docs/design/dart6_citation_driven_contact_trust/evidence",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(
+            "refusing to generate evidence from a dirty tree; commit or "
+            "stash these tracked modifications first:\n" + dirty
+        )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,

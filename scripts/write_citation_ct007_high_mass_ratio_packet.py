@@ -163,8 +163,16 @@ def run_single(
         max_iterations = max(max_iterations, int(metrics.last_step_iterations))
         max_contacts = max(max_contacts, int(metrics.active_contact_count))
         for body in boxes:
-            position = np.asarray(body.translation, dtype=float)
-            if not np.all(np.isfinite(position)):
+            # Full-state finiteness: a blow-up confined to orientation or
+            # angular velocity must not publish as a finite cell.
+            state = np.concatenate(
+                [
+                    np.asarray(body.transform, dtype=float).reshape(-1),
+                    np.asarray(body.linear_velocity, dtype=float),
+                    np.asarray(body.angular_velocity, dtype=float),
+                ]
+            )
+            if not np.all(np.isfinite(state)):
                 non_finite = True
                 break
         if non_finite:
@@ -194,8 +202,11 @@ def run_single(
         velocity = np.asarray(body.linear_velocity, dtype=float)
         positions.append(position)
         speeds.append(float(np.linalg.norm(velocity)))
-        state_hash.update(position.tobytes())
+        # Full-state hash so rotational differences are visible in the
+        # repeat comparison, not just translation.
+        state_hash.update(np.asarray(body.transform, dtype=float).tobytes())
         state_hash.update(velocity.tobytes())
+        state_hash.update(np.asarray(body.angular_velocity, dtype=float).tobytes())
 
     lower_sink = lower_rest_z - float(positions[0][2])
     upper_sink = upper_rest_z - float(positions[1][2])
@@ -222,6 +233,35 @@ def run_single(
 
 
 def git_head() -> str:
+    """HEAD commit, refusing to attribute a dirty tree's results to it.
+
+    A packet's target.commit claims the recorded results come from that
+    commit's code; uncommitted modifications to tracked files would make
+    that attribution false, so generation aborts instead. (The packet
+    output file itself is checked before being overwritten, so an
+    unmodified existing packet does not block regeneration.)
+    """
+    dirty = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            ".",
+            ":(exclude)docs/plans/123-citation-driven-simulation-trust/evidence",
+            ":(exclude)docs/design/dart6_citation_driven_contact_trust/evidence",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(
+            "refusing to generate evidence from a dirty tree; commit or "
+            "stash these tracked modifications first:\n" + dirty
+        )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,

@@ -203,13 +203,20 @@ def run_single(
         for body in bodies:
             velocity = np.asarray(body.linear_velocity, dtype=float)
             position = np.asarray(body.translation, dtype=float)
-            if not (np.all(np.isfinite(velocity)) and np.all(np.isfinite(position))):
+            transform = np.asarray(body.transform, dtype=float)
+            angular = np.asarray(body.angular_velocity, dtype=float)
+            if not (
+                np.all(np.isfinite(velocity))
+                and np.all(np.isfinite(transform))
+                and np.all(np.isfinite(angular))
+            ):
                 non_finite = True
                 break
             speeds.append(float(np.linalg.norm(velocity)))
             min_height = min(min_height, float(position[2]))
-            state_hash.update(position.tobytes())
+            state_hash.update(transform.tobytes())
             state_hash.update(velocity.tobytes())
+            state_hash.update(angular.tobytes())
 
     final_metrics = world.compute_step_metrics()
     return {
@@ -694,6 +701,35 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
 
 
 def git_head() -> str:
+    """HEAD commit, refusing to attribute a dirty tree's results to it.
+
+    A packet's target.commit claims the recorded results come from that
+    commit's code; uncommitted modifications to tracked files would make
+    that attribution false, so generation aborts instead. (The packet
+    output file itself is checked before being overwritten, so an
+    unmodified existing packet does not block regeneration.)
+    """
+    dirty = subprocess.run(
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            ".",
+            ":(exclude)docs/plans/123-citation-driven-simulation-trust/evidence",
+            ":(exclude)docs/design/dart6_citation_driven_contact_trust/evidence",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if dirty:
+        raise SystemExit(
+            "refusing to generate evidence from a dirty tree; commit or "
+            "stash these tracked modifications first:\n" + dirty
+        )
     return subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,
