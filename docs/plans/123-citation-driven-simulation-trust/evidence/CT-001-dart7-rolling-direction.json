@@ -99,7 +99,7 @@
         }
       }
     },
-    "resolved_provenance": "World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, with contact solver, timestep, and gravity each asserted equal to the request and stable across every repeat and sweep point. The independent evidence that the selection changed behavior is that the per-angle trajectory hashes differ between the two contact solvers at every angle; the recorded WorldStepProfile stage names are identical for both methods and therefore do not discriminate. World::getResolvedConfiguration() is not yet exposed to Python (PLAN-123 WS4 follow-up).",
+    "resolved_provenance": "World.resolved_configuration (the bake-time ResolvedSolverConfiguration bound to Python in this branch), recorded per cell as world_resolution, plus World property readback (contact_solver_method, rigid_body_solver, gravity, time_step) after enter_simulation_mode, each asserted equal to the request and stable across every repeat and sweep point. The independent evidence that the selection changed behavior is that the per-angle trajectory hashes differ between the two contact solvers at every angle.",
     "substeps": 1,
     "timestep": 0.002
   },
@@ -1262,7 +1262,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "5abeeb81a701d353027e3027ae227287f8cac71f",
+    "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one.",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },

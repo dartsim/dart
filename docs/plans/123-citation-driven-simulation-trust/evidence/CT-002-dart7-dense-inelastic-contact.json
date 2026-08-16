@@ -611,7 +611,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers. Outcome actually observed: no cell failed (4 of 4 finite, no fall-through, penetration within tolerance), and the one cell above the settle-speed tolerance has a final speed exactly proportional to dt (speed/dt identical across timesteps), which is converging integrator residual and is explicitly NOT counted as instability. What does reproduce is narrower and solver-specific: after the pile settles, the largest single-step increase in total mechanical energy under SEQUENTIAL_IMPULSE is about 1.0e-3 J at 2 ms and 1.3e-3 J at 4 ms against a 1.8e-4 J tolerance on a 180 J scene, while BOXED_LCP stays at or near zero (0.0 and 1.3e-6 J). The metric is a maximum over settle-window steps, so it does not distinguish one anomalous step from sustained pumping. That is a small, non-divergent, non-physical energy gain in a resting inelastic pile, not a blow-up. The poor-scaling limb of the cited claim is not instrumented at all (performance is typed unsupported). Says nothing about the original SimBenchmark scene parameters, historical DART versions, other densities/materials, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, a bounded (not source-exact) 6x6x6 sphere-grid drop with restitution 0 and mu=0.8, 2 s horizon, timesteps 2 and 4 ms, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers. Outcome actually observed: no cell failed (4 of 4 finite, no fall-through, penetration within tolerance), and the one cell above the settle-speed tolerance has a final speed exactly proportional to dt (speed/dt identical across timesteps), which is converging integrator residual and is explicitly NOT counted as instability. What does reproduce is narrower and solver-specific: after the pile settles, the largest single-step increase in total mechanical energy under SEQUENTIAL_IMPULSE is 1.0e-03 J at 2 ms and 1.3e-03 J at 4 ms against a 1.8e-04 J tolerance on a 180 J scene, while BOXED_LCP stays at or near zero (0.0e+00 J and 1.3e-06 J). The metric is a maximum over settle-window steps, so it does not distinguish one anomalous step from sustained pumping. That is a small, non-divergent, non-physical energy gain in a resting inelastic pile, not a blow-up. The poor-scaling limb of the cited claim is not instrumented at all (performance is typed unsupported). Says nothing about the original SimBenchmark scene parameters, historical DART versions, other densities/materials, or DART 6.",
     "disposition": "reproduced",
     "limitations": [
       "Bounded reconstruction: the original SimBenchmark asset, material, and timestep grid are not reproduced exactly; sourcing the exact historical setup is future corpus work.",
@@ -671,7 +671,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
   "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"

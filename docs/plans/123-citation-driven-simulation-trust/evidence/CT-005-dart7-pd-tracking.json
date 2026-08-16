@@ -921,7 +921,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, a 4-link PD-tracked chain with no contact, fixed gains, a 2 s horizon, timesteps 0.5-4 ms, and both multibody integration families. What is established: the controller stays stable and unsaturated in every cell, and RMS tracking error does NOT improve as the timestep is refined eightfold (about 2.1e-3 rad at 4 ms versus 2.4e-3 rad at 0.5 ms, against a 0.25 rad reference amplitude), while control work rises monotonically as the timestep shrinks -- the error here is controller-limited, not integration-limited. What is NOT established: the cited speed/accuracy tradeoff, because step cost is not measured at all; constraint error, because this scene has no constraints to violate; and any ranking between the integration families. Says nothing about contacting or legged control, gain tuning, historical DART versions, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, a 4-link PD-tracked chain with no contact, fixed gains, a 2 s horizon, timesteps 0.5-4 ms, and both multibody integration families. What is established: the controller stays stable and unsaturated in every cell, and RMS tracking error does NOT improve as the timestep is refined eightfold (about 2.1e-03 rad at 4 ms versus 2.4e-03 rad at 0.5 ms, against a 0.25 rad reference amplitude), while control work rises monotonically as the timestep shrinks -- the error here is controller-limited, not integration-limited. What is NOT established: the cited speed/accuracy tradeoff, because step cost is not measured at all; constraint error, because this scene has no constraints to violate; and any ranking between the integration families. Says nothing about contacting or legged control, gain tuning, historical DART versions, or DART 6.",
     "disposition": "unresolved",
     "limitations": [
       "No contact: a controlled robot's hard cases are contact transitions, which this fixture deliberately excludes so the tracking signal is unambiguous.",
@@ -976,7 +976,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },

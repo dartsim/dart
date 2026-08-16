@@ -950,7 +950,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, a two-box stack with a 1 kg lower box, mass ratios 1 to 1000, 2 ms timestep, 2 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP. The cited claim is comparative and its exact-cone arm does not exist on this branch, so the row is NOT reproduced and nothing here says whether an exact cone would help. What this establishes is the baseline arm the WS5 GO/NO-GO needs, and it is not a null result: SEQUENTIAL_IMPULSE -- the World's default contact solver -- holds the stack at mass ratios 1 and 10 (relative closure 1.4e-4 and 1.0e-3) but fails completely at 100 and 1000, where the heavy box descends a full box height (0.20002 m) while the light box beneath it moves by microns, coming to rest fully interpenetrated at near-zero velocity. BOXED_LCP holds across all four decades (closure 3.3e-5 to 3.0e-4). Both outcomes are bit-identical across repeats. Says nothing about deeper stacks, other shapes or materials, other timesteps, historical DART versions, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, a two-box stack with a 1 kg lower box, mass ratios 1 to 1000, 2 ms timestep, 2 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP. The cited claim is comparative and its exact-cone arm does not exist on this branch, so the row is NOT reproduced and nothing here says whether an exact cone would help. What this establishes is the baseline arm the WS5 GO/NO-GO needs, and it is not a null result: SEQUENTIAL_IMPULSE -- the World's default contact solver -- holds the stack at mass ratios 1 and 10 (relative closure 1.4e-04 and 1.0e-03) but fails completely at 100 and 1000, where the heavy box descends a full box height (0.20002 m) while the light box beneath it moves by microns, coming to rest fully interpenetrated at near-zero velocity. BOXED_LCP holds across the swept range (closure -3.0e-04 to 2.0e-04). Both outcomes are bit-identical across repeats. Says nothing about deeper stacks, other shapes or materials, other timesteps, historical DART versions, or DART 6.",
     "disposition": "unresolved",
     "limitations": [
       "The sequential-impulse failure is a geometric observation at one timestep. This packet does not establish the mechanism; a fixed iteration budget is the obvious suspect, and confirming it needs the per-solve residual WS4 has not exposed yet.",
@@ -1007,7 +1007,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
