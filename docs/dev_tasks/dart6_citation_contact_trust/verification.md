@@ -281,3 +281,12 @@ decode would need an image dependency — recorded boundary); fetch hints
 must match the durable PR-ref fetch form (reachability is guaranteed by
 GitHub PR head refs, checked at write time via --freshness — recorded
 boundary). Identity keys also match whole tokens now. Tests: 77 -> 81.
+
+## Codex review round 6 (PR #3444) — 2026-08-16
+
+Two findings here plus four shared, all fixed (mirrored with main):
+exact-form fetch hints (fullmatch of the fetch-and-checkout command);
+named measurement-window bounds; placeholder identity values rejected;
+header+tail media reads (no false truncation above 8 MiB); negative
+controls pinned defect-by-defect via .expected-errors.json sidecars
+(CT-019 sidecar added). Tests: 81 -> 84.

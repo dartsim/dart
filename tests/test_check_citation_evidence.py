@@ -40,7 +40,9 @@ def complete_packet() -> dict:
         "target": {
             "branch": "release-6.20",
             "commit": "0" * 40,
-            "fetch_hint": "git fetch origin pull/3444/head",
+            "fetch_hint": (
+                "git fetch origin pull/3444/head && git checkout <target.commit>"
+            ),
         },
         "scene": {
             "id": "test_scene",
@@ -281,6 +283,9 @@ def _write_tree(tmp_path, *, packet=None, negative=None, manifest=None):
     if negative is not None:
         (negative_dir / "incomplete.json").write_text(
             json.dumps(negative), encoding="utf-8"
+        )
+        (negative_dir / "incomplete.expected-errors.json").write_text(
+            json.dumps(["missing required top-level keys"]), encoding="utf-8"
         )
     return design_dir
 
@@ -817,8 +822,14 @@ def test_measurement_window_placeholders_fail():
         errors = MODULE.packet_errors(packet)
         assert any("measurement_window" in error for error in errors), bad
     packet = complete_packet()
-    packet["ensemble"]["measurement_window"] = {"warmup_steps": 250}
+    packet["ensemble"]["measurement_window"] = {
+        "warmup_steps": 250,
+        "continuation_steps": 100,
+    }
     assert MODULE.packet_errors(packet) == []
+    packet["ensemble"]["measurement_window"] = {"foo": 1.0}
+    errors = MODULE.packet_errors(packet)
+    assert any("must name its bounds" in error for error in errors)
     packet["ensemble"]["measurement_window"] = "full 1 s horizon"
     errors = MODULE.packet_errors(packet)
     assert any("measurement_window" in error for error in errors)
@@ -909,3 +920,38 @@ def test_signature_only_media_is_rejected(tmp_path):
     packet["evidence"]["visual"] = ["stub.png"]
     errors = MODULE.packet_errors(packet, base_dir=root)
     assert any("structurally complete" in error for error in errors)
+
+
+def test_identity_placeholder_values_are_rejected():
+    for bad in ("unknown", "n/a", "not measured", "pending"):
+        packet = complete_packet()
+        packet["configuration"]["resolved"] = {"solver": bad}
+        errors = MODULE.packet_errors(packet)
+        assert any("no recognizable" in error for error in errors), bad
+
+
+def test_fetch_hint_suffix_or_prefix_variants_fail():
+    for bad in (
+        "git fetch origin pull/3444/head",
+        "git fetch origin pull/3444/head; echo no-checkout",
+        "git fetch origin pull/3444/head-wrong && git checkout <target.commit>",
+    ):
+        packet = complete_packet()
+        packet["target"]["fetch_hint"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any("durable PR-ref fetch command" in error for error in errors), bad
+
+
+def test_negative_control_sidecar_pins_each_seeded_defect(tmp_path):
+    tree_dir = _write_tree(tmp_path, packet=None, negative={"schema": "x"})
+    sidecar = (
+        tree_dir / "evidence" / "negative-controls" / "incomplete.expected-errors.json"
+    )
+    sidecar.write_text(
+        json.dumps(["an error text that no check produces"]), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("seeded defect no longer detected" in error for error in errors)
+    sidecar.unlink()
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("no .expected-errors.json sidecar" in error for error in errors)
