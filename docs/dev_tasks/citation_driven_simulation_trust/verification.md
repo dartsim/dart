@@ -810,3 +810,19 @@ match no longer accepts invented suffixed tasks like `build-nothing`
 are rejected; and numerically equivalent sweep points (1 vs 1.0)
 deduplicate in the distinct-point check, matching the row matcher's
 equality semantics. Tests: 151 -> 155 (main), 131 -> 135 (6.20).
+
+## Codex review round 21 (PR #3445) — 2026-08-16
+
+Six findings, one a genuine parity gap: main's CT-001 energy-injection
+gate still started from `previous_energy = None`, skipping the first
+contact solve — the very fix its release-6.20 twin received in round 2
+but that was never mirrored; seeded from the configured pre-step state
+and the packet regenerated. Also: identity metadata suffixes are
+excluded case-insensitively; a configuration must name a
+solver/method/integrator identity (a detector alone is not a
+configuration; requested method SWEEPS count as identity lists); a
+non-build command must run a repository harness (build+lint sequences
+rejected); CSV numeric cells must be finite; and Parquet is dropped
+from supported raw formats — stdlib cannot decode it, and the
+fail-closed answer to an unvalidatable format is to not accept it.
+Tests: 155 -> 159 (main), 135 -> 139 (6.20).

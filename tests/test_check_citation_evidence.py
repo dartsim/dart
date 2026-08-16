@@ -1582,7 +1582,9 @@ def test_invalid_host_forbids_measured_performance():
     assert any("uncontrolled host" in error for error in errors)
 
 
-def test_parquet_stub_fails(tmp_path):
+def test_parquet_is_an_unsupported_raw_format(tmp_path):
+    # Parquet cannot be decoded with the stdlib, so the fail-closed answer
+    # is to not accept it as raw evidence at all.
     (tmp_path / "rows.parquet").write_bytes(b"PAR1PAR1")
     packet = complete_packet()
     del packet["evidence"]["raw_rows"]
@@ -1591,10 +1593,9 @@ def test_parquet_stub_fails(tmp_path):
         "rows.parquet": "sha256:"
         + hashlib.sha256((tmp_path / "rows.parquet").read_bytes()).hexdigest()
     }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
     errors = MODULE.packet_errors(packet, base_dir=tmp_path)
-    assert any(
-        "does not parse as its claimed raw-data format" in error for error in errors
-    )
+    assert any("must name a raw-data artifact" in error for error in errors)
 
 
 def test_all_unsupported_measured_groups_fail():
@@ -1765,3 +1766,42 @@ def test_numeric_equivalent_sweep_points_deduplicate():
     ]
     errors = MODULE.packet_errors(packet)
     assert any("DISTINCT points" in error for error in errors)
+
+
+def test_cased_metadata_identity_keys_are_rejected():
+    packet = complete_packet()
+    packet["configuration"]["resolved"] = {"Method_Note": "arbitrary prose"}
+    errors = MODULE.packet_errors(packet)
+    assert any("no recognizable" in error for error in errors)
+
+
+def test_detector_alone_is_not_a_configuration():
+    packet = complete_packet()
+    packet["configuration"]["resolved"] = {"detector": "fcl"}
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "a detector alone does not record which solver ran" in error for error in errors
+    )
+
+
+def test_maintenance_tasks_do_not_execute_evidence():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = ["pixi run build", "pixi run lint"]
+    errors = MODULE.packet_errors(packet)
+    assert any("repository harness" in error for error in errors)
+
+
+def test_non_finite_csv_cells_do_not_count(tmp_path):
+    (tmp_path / "rows.csv").write_text("metric,other\nNaN,text\n", encoding="utf-8")
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.csv"]
+    packet["evidence"]["artifact_digests"] = {
+        "rows.csv": "sha256:"
+        + hashlib.sha256((tmp_path / "rows.csv").read_bytes()).hexdigest()
+    }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "carries no numeric or boolean measurement content" in error for error in errors
+    )

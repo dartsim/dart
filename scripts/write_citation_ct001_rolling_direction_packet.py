@@ -159,7 +159,10 @@ def run_single(
     max_iterations = 0
     max_residual = 0.0
     contact_count_max = 0
-    previous_energy = None
+    # Seed from the configured pre-step state so the first contact solve is
+    # inside the energy-injection gate (the sphere starts touching the
+    # ground); mirrors the release-6.20 writer's fix.
+    previous_energy = float(world.compute_step_metrics().kinetic_energy)
     stage_names: list[str] = []
 
     lateral_axis = np.array([-direction[1], direction[0], 0.0])
@@ -185,8 +188,7 @@ def run_single(
 
         metrics = world.compute_step_metrics()
         kinetic = float(metrics.kinetic_energy)
-        if previous_energy is not None:
-            max_energy_gain = max(max_energy_gain, kinetic - previous_energy)
+        max_energy_gain = max(max_energy_gain, kinetic - previous_energy)
         previous_energy = kinetic
         max_penetration = max(max_penetration, float(metrics.max_penetration_depth))
         max_iterations = max(max_iterations, int(metrics.last_step_iterations))
