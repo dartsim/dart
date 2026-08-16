@@ -351,3 +351,10 @@ Full `pixi run test-all` on the checkpoint head `886558f28f1`: exit 0,
 all phases pass (158/158). This is the pre-merge evidence for PR #3444;
 the merge decision (or a continue-the-loop call) rests with the
 maintainer.
+
+## Codex review round 13 (PR #3444) — 2026-08-16, loop resumed by maintainer
+
+Two findings here plus three shared, all fixed (mirrored with main):
+structural NPY/NPZ/parquet parsing; WebM DocType verification;
+NFKC-normalized reviewer identities; object-only sweep points. Tests:
+110 -> 113.

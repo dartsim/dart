@@ -1223,17 +1223,17 @@ def test_structurally_empty_json_artifacts_fail(tmp_path):
     )
 
 
-def test_scalar_sweep_points_must_be_observed():
+def test_scalar_sweep_points_are_rejected():
     packet = complete_packet()
     del packet["ensemble"]["deterministic_repeats"]
     del packet["ensemble"]["deterministic_repeats_identical"]
     packet["ensemble"]["sweep"] = [0.0, 15.0]
     packet["evidence"]["raw_rows"] = [
         {"angle_deg": 0.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
-        {"angle_deg": 99.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+        {"angle_deg": 15.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
     ]
     errors = MODULE.packet_errors(packet)
-    assert any("has no row carrying that value" in error for error in errors)
+    assert any("naming its coordinates" in error for error in errors)
 
 
 def test_sweep_ensembles_require_rows(tmp_path):
@@ -1291,6 +1291,59 @@ def test_signature_only_webp_and_mp4_fail(tmp_path):
     packet["evidence"]["artifact_digests"] = {
         "clip.webp": "sha256:"
         + hashlib.sha256((root / "clip.webp").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=root)
+    assert any("structurally complete" in error for error in errors)
+
+
+def test_unicode_variant_reviewers_count_once(tmp_path):
+    packet = copy.deepcopy(complete_packet())
+    packet["review"]["passes"] = [
+        _bound_pass(packet, "Jos\u00e9"),
+        _bound_pass(packet, "Jose\u0301"),
+    ]
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"][LANE]
+    lane["status"] = "closed"
+    lane["disposition"] = "unresolved"
+    lane["evidence"] = ["evidence/packet.json"]
+    tree_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("INDEPENDENT" in error for error in errors)
+
+
+def test_stub_binary_artifacts_fail(tmp_path):
+    import zipfile as _zip
+
+    empty_zip = tmp_path / "empty.npz"
+    with _zip.ZipFile(empty_zip, "w"):
+        pass
+    stub_npy = tmp_path / "stub.npy"
+    stub_npy.write_bytes(b"\x93NUMPY" + b"x" * 100)
+    for name in ("empty.npz", "stub.npy"):
+        packet = complete_packet()
+        del packet["evidence"]["raw_rows"]
+        packet["evidence"]["raw_paths"] = [name]
+        packet["evidence"]["artifact_digests"] = {
+            name: "sha256:" + hashlib.sha256((tmp_path / name).read_bytes()).hexdigest()
+        }
+        errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+        assert any(
+            "does not parse as its claimed raw-data format" in error for error in errors
+        ), name
+
+
+def test_stub_webm_fails(tmp_path):
+    root = tmp_path / "d"
+    root.mkdir()
+    (root / "clip.webm").write_bytes(b"\x1a\x45\xdf\xa3" + b"p" * 96)
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["clip.webm"]
+    packet["evidence"]["artifact_digests"] = {
+        "clip.webm": "sha256:"
+        + hashlib.sha256((root / "clip.webm").read_bytes()).hexdigest()
     }
     errors = MODULE.packet_errors(packet, base_dir=root)
     assert any("structurally complete" in error for error in errors)
