@@ -113,10 +113,30 @@ VISUAL_MEDIA_SUFFIXES = (
 )
 
 # configuration.requested/resolved must name a recognizable identity, not an
-# arbitrary placeholder object.
+# arbitrary placeholder object. Keys that merely mention an identity word in
+# a metadata role (method_note, backend_reason, ...) do not count.
 IDENTITY_KEY_RE = re.compile(
     r"solver|method|detector|integrator|integration|backend|family", re.I
 )
+IDENTITY_METADATA_SUFFIXES = (
+    "_note",
+    "_notes",
+    "_semantics",
+    "_reason",
+    "_reasons",
+    "_criteria",
+    "_test",
+    "_basis",
+    "_provenance",
+    "_policy",
+)
+
+
+def _is_identity_key(key: str) -> bool:
+    return bool(IDENTITY_KEY_RE.search(key)) and not key.endswith(
+        IDENTITY_METADATA_SUFFIXES
+    )
+
 
 # Claim identity is owned by the DART 7 corpus on `main`; the manifest may
 # not silently point anywhere else.
@@ -166,10 +186,11 @@ def _is_finite_number(value: object) -> bool:
 
 def _has_identity_key(value: object) -> bool:
     """True when any key at any depth names a solver/method/... identity
-    with a non-null value; {"placeholder": null} has none."""
+    with a non-empty string value; {"placeholder": null} and
+    {"method_note": "..."} have none."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if IDENTITY_KEY_RE.search(str(key)) and _is_nonempty_str(item):
+            if _is_identity_key(str(key)) and _is_nonempty_str(item):
                 return True
             if _has_identity_key(item):
                 return True
@@ -350,11 +371,13 @@ def metric_group_errors(name: str, group: object) -> list[str]:
 
     observed_zero_fields: list[str] = []
     leaf_count = 0
+    measurement_leaves = 0
     for key in value_keys:
         leaves = _metric_leaves(group[key], key)
         leaf_count += len(leaves)
         for path, leaf in leaves:
             if _is_unsupported_leaf(leaf):
+                measurement_leaves += 1
                 if not _is_nonempty_str(leaf.get("reason")):
                     errors.append(
                         f"metrics.{name}.{path} is typed unsupported but has "
@@ -391,16 +414,17 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                         "annotation or drop the key"
                     )
             elif isinstance(leaf, (int, float)) and not isinstance(leaf, bool):
+                measurement_leaves += 1
                 if not math.isfinite(leaf):
                     errors.append(f"metrics.{name}.{path} contains a non-finite number")
                 elif leaf == 0:
                     observed_zero_fields.append(path)
             elif isinstance(leaf, bool):
                 # Boolean findings (stability flags, signature verdicts) are
-                # legitimate measured outcomes; accepting them EXPLICITLY here
-                # keeps the type chain exhaustive so nothing falls through
-                # unvalidated.
-                pass
+                # legitimate measured outcomes; accepting them EXPLICITLY
+                # here keeps the type chain exhaustive so nothing falls
+                # through unvalidated.
+                measurement_leaves += 1
             else:
                 errors.append(
                     f"metrics.{name}.{path} has unrecognized leaf type "
@@ -409,6 +433,12 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                     "string, or a typed-unsupported marker"
                 )
 
+    if value_keys and leaf_count > 0 and measurement_leaves == 0:
+        errors.append(
+            f"metrics.{name} carries only semantic annotations; a measured "
+            "group needs at least one numeric/boolean measurement or "
+            "typed-unsupported marker"
+        )
     if value_keys and leaf_count == 0:
         errors.append(
             f"metrics.{name} has a method but only empty containers; that is "
@@ -680,6 +710,16 @@ def packet_errors(
                         "structured record; null or scalar placeholders are "
                         "not raw evidence"
                     )
+                    continue
+                if not any(
+                    _is_finite_number(leaf) or isinstance(leaf, bool)
+                    for _, leaf in _metric_leaves(row)
+                ):
+                    errors.append(
+                        f"evidence.raw_rows[{index}] carries no numeric or "
+                        "boolean measurement; a metadata-only record is not "
+                        "raw evidence"
+                    )
         if has_paths:
             for index, raw_path in enumerate(raw_paths):
                 if not _is_nonempty_str(raw_path):
@@ -869,6 +909,18 @@ def manifest_errors(manifest: object) -> list[str]:
                 if not _is_nonempty_str(lane.get("reason")):
                     errors.append(
                         f"{prefix} is not-applicable and must record a reason"
+                    )
+                na_disposition = lane.get("disposition")
+                if na_disposition not in (None, "not-applicable"):
+                    errors.append(
+                        f"{prefix} is not-applicable and cannot publish "
+                        f"disposition {na_disposition!r}; a lane that does "
+                        "not apply concludes nothing"
+                    )
+                if evidence:
+                    errors.append(
+                        f"{prefix} is not-applicable and must not hold "
+                        "evidence packets"
                     )
                 continue
             if not _is_nonempty_str(lane.get("owner")):

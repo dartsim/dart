@@ -256,3 +256,16 @@ file renamed to `capture.png` is rejected by magic-byte check
 non-empty strings. Review passes additionally require an explicit
 `verdict: "pass"` (mirrored from the main round-3 finding). Tests:
 69 -> 73.
+
+## Codex review round 4 (PR #3444) — 2026-08-16
+
+Two findings, both fixed: not-applicable lanes can no longer publish a
+disposition or hold evidence packets (an early `continue` had skipped all
+consistency checks for them), and the Windows `check-lint` task variant
+now includes `check-citation-evidence` so the gate runs on the Windows CI
+lane too. Shared round-4 rules mirrored from main: metadata-suffixed keys
+(method_note, backend_reason) no longer count as configuration
+identities; raw rows and metric groups must carry at least one
+numeric/boolean measurement or typed-unsupported marker — metadata-only
+records cannot satisfy the raw-evidence or measured-group requirements.
+Tests: 73 -> 77.

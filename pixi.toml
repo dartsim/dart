@@ -877,6 +877,7 @@ check-lint = { depends-on = [
   "check-lint-spell",
   "check-lint-py",
   "check-ai-infra",
+  "check-citation-evidence",
 ] }
 
 build = { cmd = """
