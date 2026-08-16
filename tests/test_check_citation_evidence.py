@@ -68,6 +68,7 @@ def complete_packet() -> dict:
         "ensemble": {
             "kind": "deterministic-repeats",
             "deterministic_repeats": 2,
+            "deterministic_repeats_identical": True,
             "measurement_window": {"start_s": 0.0, "end_s": 1.0},
         },
         "metrics": {
@@ -819,7 +820,8 @@ def test_measurement_window_placeholders_fail():
     packet["ensemble"]["measurement_window"] = {"warmup_steps": 250}
     assert MODULE.packet_errors(packet) == []
     packet["ensemble"]["measurement_window"] = "full 1 s horizon"
-    assert MODULE.packet_errors(packet) == []
+    errors = MODULE.packet_errors(packet)
+    assert any("measurement_window" in error for error in errors)
 
 
 def test_visual_artifacts_are_verified_by_content(tmp_path):
@@ -829,7 +831,7 @@ def test_visual_artifacts_are_verified_by_content(tmp_path):
     packet = complete_packet()
     packet["evidence"]["visual"] = ["capture.png"]
     errors = MODULE.packet_errors(packet, base_dir=fake)
-    assert any("media signature" in error for error in errors)
+    assert any("structurally complete" in error for error in errors)
     png = b"\x89PNG\r\n\x1a\n" + bytes.fromhex(
         "0000000d49484452000000010000000108060000001f15c489"
         "0000000a49444154789c63000100000500010d0a2db4"
@@ -873,3 +875,37 @@ def test_metric_group_needs_a_real_measurement():
     packet["metrics"]["numerical"] = {"method": "manual", "note": "not measured"}
     errors = MODULE.packet_errors(packet)
     assert any("only semantic annotations" in error for error in errors)
+
+
+def test_identity_tokens_are_whole_words():
+    packet = complete_packet()
+    packet["configuration"]["resolved"] = {"methodology": "pending"}
+    errors = MODULE.packet_errors(packet)
+    assert any("no recognizable" in error for error in errors)
+
+
+def test_asserted_repeats_need_recorded_verification():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    errors = MODULE.packet_errors(packet)
+    assert any("did not verify bit-identical" in error for error in errors)
+
+
+def test_fetch_hint_must_be_the_durable_pr_ref_command():
+    packet = complete_packet()
+    packet["target"]["fetch_hint"] = "not a command"
+    errors = MODULE.packet_errors(packet)
+    assert any("durable PR-ref fetch command" in error for error in errors)
+    packet["target"]["fetch_hint"] = "git fetch origin pull/999/head"
+    errors = MODULE.packet_errors(packet)
+    assert any("durable PR-ref fetch command" in error for error in errors)
+
+
+def test_signature_only_media_is_rejected(tmp_path):
+    root = tmp_path / "design"
+    root.mkdir()
+    (root / "stub.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["stub.png"]
+    errors = MODULE.packet_errors(packet, base_dir=root)
+    assert any("structurally complete" in error for error in errors)

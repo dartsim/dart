@@ -269,3 +269,15 @@ identities; raw rows and metric groups must carry at least one
 numeric/boolean measurement or typed-unsupported marker — metadata-only
 records cannot satisfy the raw-evidence or measured-group requirements.
 Tests: 73 -> 77.
+
+## Codex review round 5 (PR #3444) — 2026-08-16
+
+Four findings, all fixed (mirrored on main): asserted deterministic
+repeats require the recorded `deterministic_repeats_identical: true`
+verification flag; measurement windows must be structured numeric objects
+(prose strings rejected); visual artifacts are validated as structurally
+complete media containers (begin and end markers plus minimum size; full
+decode would need an image dependency — recorded boundary); fetch hints
+must match the durable PR-ref fetch form (reachability is guaranteed by
+GitHub PR head refs, checked at write time via --freshness — recorded
+boundary). Identity keys also match whole tokens now. Tests: 77 -> 81.
