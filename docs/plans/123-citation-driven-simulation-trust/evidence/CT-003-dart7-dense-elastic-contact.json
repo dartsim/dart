@@ -223,7 +223,7 @@
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "energy_envelope_excess_j": 0.0,
         "envelope_set_by_initial_state": true,
-        "final_state_sha256": "785ee993fda9dd80b394f5964edd34844bbf69dccfac7061f673698b6c6e5d6e",
+        "final_state_sha256": "0fefb9f04ad592f14b99ea48690698e2f8cb86e9a91680782ed4b7138019083e",
         "final_total_energy_j": 63.44696118939535,
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
@@ -234,8 +234,8 @@
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "785ee993fda9dd80b394f5964edd34844bbf69dccfac7061f673698b6c6e5d6e",
-          "785ee993fda9dd80b394f5964edd34844bbf69dccfac7061f673698b6c6e5d6e"
+          "0fefb9f04ad592f14b99ea48690698e2f8cb86e9a91680782ed4b7138019083e",
+          "0fefb9f04ad592f14b99ea48690698e2f8cb86e9a91680782ed4b7138019083e"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -284,7 +284,7 @@
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "energy_envelope_excess_j": 0.0,
         "envelope_set_by_initial_state": true,
-        "final_state_sha256": "3e111883d46bcd87f0296a824fde812b8f026e884fae7b47072f343873d79d46",
+        "final_state_sha256": "dcaf261f1e5efdb9d037e72d43e6c6931d77f891079ab502d9332a0ebb5adeb0",
         "final_total_energy_j": 63.25766139362141,
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
@@ -295,8 +295,8 @@
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "3e111883d46bcd87f0296a824fde812b8f026e884fae7b47072f343873d79d46",
-          "3e111883d46bcd87f0296a824fde812b8f026e884fae7b47072f343873d79d46"
+          "dcaf261f1e5efdb9d037e72d43e6c6931d77f891079ab502d9332a0ebb5adeb0",
+          "dcaf261f1e5efdb9d037e72d43e6c6931d77f891079ab502d9332a0ebb5adeb0"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -345,7 +345,7 @@
         "contact_solver_method": "BOXED_LCP",
         "energy_envelope_excess_j": 0.0,
         "envelope_set_by_initial_state": true,
-        "final_state_sha256": "31c731bd98621b0db2c88edf07cb7f3d429cc7c53b0036c199e3bcf640c49670",
+        "final_state_sha256": "aa8f86db2ed20270f2775810e277122c4f207c33ba74acb1ad0ed0985cfd497b",
         "final_total_energy_j": 63.58479412413587,
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
@@ -356,8 +356,8 @@
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "31c731bd98621b0db2c88edf07cb7f3d429cc7c53b0036c199e3bcf640c49670",
-          "31c731bd98621b0db2c88edf07cb7f3d429cc7c53b0036c199e3bcf640c49670"
+          "aa8f86db2ed20270f2775810e277122c4f207c33ba74acb1ad0ed0985cfd497b",
+          "aa8f86db2ed20270f2775810e277122c4f207c33ba74acb1ad0ed0985cfd497b"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -406,7 +406,7 @@
         "contact_solver_method": "BOXED_LCP",
         "energy_envelope_excess_j": 0.0,
         "envelope_set_by_initial_state": true,
-        "final_state_sha256": "5fceb3e62646e056c3ba3d84a7460f672bb6f1fb1fa041178be399451837f142",
+        "final_state_sha256": "699fc4cb41bca1b43c3df6db2347a8b32946602e261744ee3b3ac26d5a1db06f",
         "final_total_energy_j": 63.746668542792605,
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
@@ -417,8 +417,8 @@
         "max_total_energy_j": 180.1116000000002,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "5fceb3e62646e056c3ba3d84a7460f672bb6f1fb1fa041178be399451837f142",
-          "5fceb3e62646e056c3ba3d84a7460f672bb6f1fb1fa041178be399451837f142"
+          "699fc4cb41bca1b43c3df6db2347a8b32946602e261744ee3b3ac26d5a1db06f",
+          "699fc4cb41bca1b43c3df6db2347a8b32946602e261744ee3b3ac26d5a1db06f"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -574,8 +574,8 @@
   },
   "target": {
     "branch": "main",
-    "commit": "dd68714d6a7a928b3af784e08369469b0e945216",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout dd68714d6a7a928b3af784e08369469b0e945216"
+    "commit": "654193f85be94b2e5d9f45cee1093a4715b16baa",
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout 654193f85be94b2e5d9f45cee1093a4715b16baa"
   },
   "title": "Dense elastic contact energy envelope (DART 7 first packet)"
 }

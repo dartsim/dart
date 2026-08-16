@@ -391,7 +391,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "final_max_speed_mps": 0.00045895830534830895,
-        "final_state_sha256": "cc33a80165e5e0a58e8b10bb10869981a784e80dcae8ea4c32d968928a8f3ce6",
+        "final_state_sha256": "b0b12d128066d56e2f71250f7c2d313ed2435fcb1830fc3a68389f9464b1323e",
         "finite": true,
         "gap_closure_m": 2.8186383662115455e-05,
         "lower_sink_m": 3.8875436905949634e-05,
@@ -401,8 +401,8 @@
         "max_solver_iterations": 8,
         "relative_gap_closure": 0.00014093191831057728,
         "repeat_state_sha256": [
-          "cc33a80165e5e0a58e8b10bb10869981a784e80dcae8ea4c32d968928a8f3ce6",
-          "cc33a80165e5e0a58e8b10bb10869981a784e80dcae8ea4c32d968928a8f3ce6"
+          "b0b12d128066d56e2f71250f7c2d313ed2435fcb1830fc3a68389f9464b1323e",
+          "b0b12d128066d56e2f71250f7c2d313ed2435fcb1830fc3a68389f9464b1323e"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -448,7 +448,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "final_max_speed_mps": 0.029482304187420837,
-        "final_state_sha256": "28c654f5bbda220b08138deccc24b3b71d316c85e528915cccefc2ee5e9f4ffb",
+        "final_state_sha256": "604e554951a6265fb4c98b8e79d72af6ee5bf2379b9ebfff7a86aa9ca49b63ac",
         "finite": true,
         "gap_closure_m": 0.00020330330581502798,
         "lower_sink_m": 0.0003313631340894213,
@@ -458,8 +458,8 @@
         "max_solver_iterations": 8,
         "relative_gap_closure": 0.00101651652907514,
         "repeat_state_sha256": [
-          "28c654f5bbda220b08138deccc24b3b71d316c85e528915cccefc2ee5e9f4ffb",
-          "28c654f5bbda220b08138deccc24b3b71d316c85e528915cccefc2ee5e9f4ffb"
+          "604e554951a6265fb4c98b8e79d72af6ee5bf2379b9ebfff7a86aa9ca49b63ac",
+          "604e554951a6265fb4c98b8e79d72af6ee5bf2379b9ebfff7a86aa9ca49b63ac"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -505,7 +505,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "final_max_speed_mps": 4.830545337362943e-07,
-        "final_state_sha256": "88751ed0d540613946ff1961b182136cb8d80977d021060e10cd499dbf341975",
+        "final_state_sha256": "b01e5cf5b6aea2120746a5a005e6743cdc14ebd61849db3e5c7cb0bac1201194",
         "finite": true,
         "gap_closure_m": 0.2000161894973165,
         "lower_sink_m": 2.403341138421111e-06,
@@ -515,8 +515,8 @@
         "max_solver_iterations": 8,
         "relative_gap_closure": 1.0000809474865824,
         "repeat_state_sha256": [
-          "88751ed0d540613946ff1961b182136cb8d80977d021060e10cd499dbf341975",
-          "88751ed0d540613946ff1961b182136cb8d80977d021060e10cd499dbf341975"
+          "b01e5cf5b6aea2120746a5a005e6743cdc14ebd61849db3e5c7cb0bac1201194",
+          "b01e5cf5b6aea2120746a5a005e6743cdc14ebd61849db3e5c7cb0bac1201194"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -562,7 +562,7 @@
       {
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
         "final_max_speed_mps": 3.542993305133921e-06,
-        "final_state_sha256": "c7eb04fb30595972cdd4a82be8086c27520aad419e02a22e8fb92b2484dc8c0b",
+        "final_state_sha256": "cbe313663ff3a086901bdb6629b6c5e69430cde7c6c0a953064516e9a35c4bf1",
         "finite": true,
         "gap_closure_m": 0.2000041526819762,
         "lower_sink_m": 5.348353172895948e-06,
@@ -572,8 +572,8 @@
         "max_solver_iterations": 8,
         "relative_gap_closure": 1.0000207634098808,
         "repeat_state_sha256": [
-          "c7eb04fb30595972cdd4a82be8086c27520aad419e02a22e8fb92b2484dc8c0b",
-          "c7eb04fb30595972cdd4a82be8086c27520aad419e02a22e8fb92b2484dc8c0b"
+          "cbe313663ff3a086901bdb6629b6c5e69430cde7c6c0a953064516e9a35c4bf1",
+          "cbe313663ff3a086901bdb6629b6c5e69430cde7c6c0a953064516e9a35c4bf1"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -619,7 +619,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "final_max_speed_mps": 1.4938402596549068e-11,
-        "final_state_sha256": "0b1b397ea8cc02c519448933ba052996198f4ec818306633b4854203cf538c80",
+        "final_state_sha256": "0f3e93ee597d0900b1752ef9c7196d7fe859aa292ee4b7bc1cb3b13742641e67",
         "finite": true,
         "gap_closure_m": 3.925327088483144e-05,
         "lower_sink_m": 1.3457496714358586e-06,
@@ -629,8 +629,8 @@
         "max_solver_iterations": 0,
         "relative_gap_closure": 0.00019626635442415719,
         "repeat_state_sha256": [
-          "0b1b397ea8cc02c519448933ba052996198f4ec818306633b4854203cf538c80",
-          "0b1b397ea8cc02c519448933ba052996198f4ec818306633b4854203cf538c80"
+          "0f3e93ee597d0900b1752ef9c7196d7fe859aa292ee4b7bc1cb3b13742641e67",
+          "0f3e93ee597d0900b1752ef9c7196d7fe859aa292ee4b7bc1cb3b13742641e67"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -676,7 +676,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "final_max_speed_mps": 8.665822654413277e-06,
-        "final_state_sha256": "98b2aee62fa0aff364ad8cf622c02a0ebf5e2fcbed9ee01043d9c233f529b471",
+        "final_state_sha256": "27327611123e8f800304c77e0b78104c79e2098eee69068eddd2749870f0ccef",
         "finite": true,
         "gap_closure_m": 3.957920874031462e-05,
         "lower_sink_m": 3.093141870136318e-07,
@@ -686,8 +686,8 @@
         "max_solver_iterations": 0,
         "relative_gap_closure": 0.0001978960437015731,
         "repeat_state_sha256": [
-          "98b2aee62fa0aff364ad8cf622c02a0ebf5e2fcbed9ee01043d9c233f529b471",
-          "98b2aee62fa0aff364ad8cf622c02a0ebf5e2fcbed9ee01043d9c233f529b471"
+          "27327611123e8f800304c77e0b78104c79e2098eee69068eddd2749870f0ccef",
+          "27327611123e8f800304c77e0b78104c79e2098eee69068eddd2749870f0ccef"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -733,7 +733,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "final_max_speed_mps": 0.0008169729485216048,
-        "final_state_sha256": "b78d23a138a9a9e2c7786b9a318cb49e4f0ab61504005ff3cd589b3bcd93240c",
+        "final_state_sha256": "2089a6b074450753cba04f55015c4c8c544a5b60ae79b8d3cd944573cff51bab",
         "finite": true,
         "gap_closure_m": 6.527479483597887e-06,
         "lower_sink_m": 3.401292682585211e-05,
@@ -743,8 +743,8 @@
         "max_solver_iterations": 0,
         "relative_gap_closure": 3.263739741798943e-05,
         "repeat_state_sha256": [
-          "b78d23a138a9a9e2c7786b9a318cb49e4f0ab61504005ff3cd589b3bcd93240c",
-          "b78d23a138a9a9e2c7786b9a318cb49e4f0ab61504005ff3cd589b3bcd93240c"
+          "2089a6b074450753cba04f55015c4c8c544a5b60ae79b8d3cd944573cff51bab",
+          "2089a6b074450753cba04f55015c4c8c544a5b60ae79b8d3cd944573cff51bab"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -790,7 +790,7 @@
       {
         "contact_solver_method": "BOXED_LCP",
         "final_max_speed_mps": 0.041688097943890993,
-        "final_state_sha256": "89fd0ea4211562eedc94ea2c17363c8d48e1f8c8b7b0a2ab8c8ad4a3537ff2f7",
+        "final_state_sha256": "15628287ee93ea8632372d54bb0aefe8fb90e2c60c4b4f9a859ed028c4bfcabc",
         "finite": true,
         "gap_closure_m": -6.027789048593246e-05,
         "lower_sink_m": 0.00011855439148550362,
@@ -800,8 +800,8 @@
         "max_solver_iterations": 0,
         "relative_gap_closure": -0.0003013894524296623,
         "repeat_state_sha256": [
-          "89fd0ea4211562eedc94ea2c17363c8d48e1f8c8b7b0a2ab8c8ad4a3537ff2f7",
-          "89fd0ea4211562eedc94ea2c17363c8d48e1f8c8b7b0a2ab8c8ad4a3537ff2f7"
+          "15628287ee93ea8632372d54bb0aefe8fb90e2c60c4b4f9a859ed028c4bfcabc",
+          "15628287ee93ea8632372d54bb0aefe8fb90e2c60c4b4f9a859ed028c4bfcabc"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -1007,9 +1007,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "dd68714d6a7a928b3af784e08369469b0e945216",
+    "commit": "654193f85be94b2e5d9f45cee1093a4715b16baa",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout dd68714d6a7a928b3af784e08369469b0e945216"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout 654193f85be94b2e5d9f45cee1093a4715b16baa"
   },
   "title": "High-mass-ratio stack conditioning baseline for the exact-cone GO/NO-GO (DART 7)"
 }

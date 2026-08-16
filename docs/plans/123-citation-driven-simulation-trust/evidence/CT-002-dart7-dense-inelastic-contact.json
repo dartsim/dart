@@ -225,7 +225,7 @@
         "final_kinetic_energy_j": 0.0073483693432820196,
         "final_max_speed_mps": 0.04032772547075842,
         "final_min_height_m": 0.048578028173510944,
-        "final_state_sha256": "5d4c0c3f7dca99eeb91fcd4e6ccc18a8f279d2239be70bbc116e7566e2c5f251",
+        "final_state_sha256": "cf98f2db55323032686ac102d9b2a8ce3434a684961144139337a2ab2f8bfa86",
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
         "max_active_contacts": 216,
@@ -235,8 +235,8 @@
         "max_total_energy_gain_after_settle_j": 0.0009981350274301803,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "5d4c0c3f7dca99eeb91fcd4e6ccc18a8f279d2239be70bbc116e7566e2c5f251",
-          "5d4c0c3f7dca99eeb91fcd4e6ccc18a8f279d2239be70bbc116e7566e2c5f251"
+          "cf98f2db55323032686ac102d9b2a8ce3434a684961144139337a2ab2f8bfa86",
+          "cf98f2db55323032686ac102d9b2a8ce3434a684961144139337a2ab2f8bfa86"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -286,7 +286,7 @@
         "final_kinetic_energy_j": 0.029393477373128078,
         "final_max_speed_mps": 0.08065545094151684,
         "final_min_height_m": 0.04459709802896138,
-        "final_state_sha256": "a57da239b087400119b423d4365a6e7748ab5b892f107978bf7e3ac8f9952292",
+        "final_state_sha256": "5e1abe9c3bc5d7faa494bb849b3841f90dc765c56f52a86e3f463dc7f0ef6c72",
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
         "max_active_contacts": 216,
@@ -296,8 +296,8 @@
         "max_total_energy_gain_after_settle_j": 0.001308211355691924,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "a57da239b087400119b423d4365a6e7748ab5b892f107978bf7e3ac8f9952292",
-          "a57da239b087400119b423d4365a6e7748ab5b892f107978bf7e3ac8f9952292"
+          "5e1abe9c3bc5d7faa494bb849b3841f90dc765c56f52a86e3f463dc7f0ef6c72",
+          "5e1abe9c3bc5d7faa494bb849b3841f90dc765c56f52a86e3f463dc7f0ef6c72"
         ],
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
@@ -347,7 +347,7 @@
         "final_kinetic_energy_j": 1.4819720438078604e-27,
         "final_max_speed_mps": 2.3901020052008448e-14,
         "final_min_height_m": 0.04989999999999998,
-        "final_state_sha256": "66e2142f4b817762eeff5c34e35e3ad4f79a2f7fd09a3fc0f6e9513d014e7b56",
+        "final_state_sha256": "2315ba41bfe626fc491f77231495ba8c523170dd7eb2e5aae3b7f9133f224e7a",
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
         "max_active_contacts": 216,
@@ -357,8 +357,8 @@
         "max_total_energy_gain_after_settle_j": 0.0,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "66e2142f4b817762eeff5c34e35e3ad4f79a2f7fd09a3fc0f6e9513d014e7b56",
-          "66e2142f4b817762eeff5c34e35e3ad4f79a2f7fd09a3fc0f6e9513d014e7b56"
+          "2315ba41bfe626fc491f77231495ba8c523170dd7eb2e5aae3b7f9133f224e7a",
+          "2315ba41bfe626fc491f77231495ba8c523170dd7eb2e5aae3b7f9133f224e7a"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -408,7 +408,7 @@
         "final_kinetic_energy_j": 3.674601533738957e-28,
         "final_max_speed_mps": 1.1914080833008711e-14,
         "final_min_height_m": 0.04989999999999998,
-        "final_state_sha256": "c73cf1f3ede55e68bb58581c948738d6471403bb75c99ad2b71f7e95f0a924dc",
+        "final_state_sha256": "078454f244beabf5c11719f6700c9651aa8a9adc327f5410fb5dcfacb6efe06a",
         "finite": true,
         "initial_total_energy_j": 180.1116000000002,
         "max_active_contacts": 216,
@@ -418,8 +418,8 @@
         "max_total_energy_gain_after_settle_j": 1.342411593441284e-06,
         "raw_last_step_residual_max": 0.0,
         "repeat_state_sha256": [
-          "c73cf1f3ede55e68bb58581c948738d6471403bb75c99ad2b71f7e95f0a924dc",
-          "c73cf1f3ede55e68bb58581c948738d6471403bb75c99ad2b71f7e95f0a924dc"
+          "078454f244beabf5c11719f6700c9651aa8a9adc327f5410fb5dcfacb6efe06a",
+          "078454f244beabf5c11719f6700c9651aa8a9adc327f5410fb5dcfacb6efe06a"
         ],
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
@@ -671,8 +671,8 @@
   },
   "target": {
     "branch": "main",
-    "commit": "dd68714d6a7a928b3af784e08369469b0e945216",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout dd68714d6a7a928b3af784e08369469b0e945216"
+    "commit": "654193f85be94b2e5d9f45cee1093a4715b16baa",
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout 654193f85be94b2e5d9f45cee1093a4715b16baa"
   },
   "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"
 }
