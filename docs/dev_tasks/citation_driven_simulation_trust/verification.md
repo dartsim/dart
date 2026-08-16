@@ -826,3 +826,24 @@ rejected); CSV numeric cells must be finite; and Parquet is dropped
 from supported raw formats — stdlib cannot decode it, and the
 fail-closed answer to an unvalidatable format is to not accept it.
 Tests: 155 -> 159 (main), 135 -> 139 (6.20).
+
+## Codex review round 22 (PR #3445) — 2026-08-16
+
+Three findings, all closing "well-shaped but nonexistent" gaps. A
+40-hex target commit is now verified against the repository object
+store (a hash that names no commit attributes measurements to no
+source revision); the CI lint checkout fetches full history so the
+check can answer for historical targets, and shallow clones get an
+explicit unshallow error instead of a silent pass. Every
+`scripts/...` path referenced by an evidence command must be a real
+file in the scripts/ tree — `pixi run python scripts/does_not_exist.py`
+is no longer a valid reproduction sequence. NPY/NPZ payloads are now
+value-checked with the stdlib: float/complex arrays must contain at
+least one finite element (all-NaN/Inf artifacts are rejected the way
+inline rows and CSV cells already were), f2/f4/f8 and c8/c16 decode,
+and other float widths are rejected as unverifiable. The 6.20 round-22
+CSV finding is mirrored here too: with a header row, the finite-cell
+requirement applies only to non-bookkeeping columns, so `seed,note`
+metadata cannot close a lane. Network reachability of the PR ref
+remains with `--freshness`; the default gate is offline by design.
+Tests: 159 -> 169 (main), 139 -> 149 (6.20).

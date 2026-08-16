@@ -46,6 +46,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # check-citation-evidence verifies every packet's target commit
+          # against the local object store; a shallow clone cannot answer
+          # whether a historical commit exists.
+          fetch-depth: 0
 
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
