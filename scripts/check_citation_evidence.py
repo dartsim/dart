@@ -118,7 +118,7 @@ VISUAL_MEDIA_SUFFIXES = (
 # arbitrary placeholder object. Keys that merely mention an identity word in
 # a metadata role (method_note, backend_reason, ...) do not count.
 FETCH_HINT_RE = re.compile(
-    r"^git fetch origin pull/3444/head && git checkout ([0-9a-f]{40})$"
+    r"^git fetch origin pull/([0-9]+)/head && git checkout ([0-9a-f]{40})$"
 )
 IDENTITY_KEY_TOKENS = frozenset(
     {
@@ -186,6 +186,13 @@ RAW_DATA_SUFFIXES = frozenset(
 NUMERIC_BOOKKEEPING_KEYS = frozenset(
     {"seed", "seeds", "index", "idx", "id", "ids", "repeat", "repeats", "run"}
 )
+NPY_DTYPE_WIDTHS = {
+    "b": frozenset({1}),
+    "i": frozenset({1, 2, 4, 8}),
+    "u": frozenset({1, 2, 4, 8}),
+    "f": frozenset({2, 4, 8, 16}),
+    "c": frozenset({8, 16, 32}),
+}
 
 
 def _is_seed_key(key: str) -> bool:
@@ -645,10 +652,13 @@ def _npy_parsed_header(
         # String/object/structured dtypes carry no numeric measurement;
         # structured record dtypes are a recorded boundary.
         return mismatch
+    kind = header["descr"].lstrip("<>|=")[0]
+    itemsize = int(header["descr"].lstrip("<>|=")[1:])
+    if itemsize not in NPY_DTYPE_WIDTHS[kind]:
+        # `<i3` names no dtype numpy will load; only real widths parse.
+        return mismatch
     if total_size is None:
         total_size = len(head)
-    itemsize_match = re.search(r"([0-9]+)$", header["descr"])
-    itemsize = int(itemsize_match.group(1)) if itemsize_match else 1
     expected_payload = itemsize
     for dim in header["shape"]:
         expected_payload *= dim
@@ -1035,10 +1045,10 @@ def packet_errors(
                 "PR head refs surviving squash-merge and is checked at "
                 "packet-writing time via --freshness"
             )
-        elif isinstance(commit, str) and hint_match.group(1) != commit:
+        elif isinstance(commit, str) and hint_match.group(2) != commit:
             errors.append(
                 "target.fetch_hint checks out "
-                f"{hint_match.group(1)[:12]}... but target.commit is "
+                f"{hint_match.group(2)[:12]}... but target.commit is "
                 f"{commit[:12]}...; the hint must reproduce THIS packet's "
                 "target"
             )
@@ -1050,7 +1060,8 @@ def packet_errors(
                     "repository's object store; a well-shaped hash for a "
                     "nonexistent commit attributes the measurements to no "
                     "source revision (regenerate the packet at a real, "
-                    "pushed commit)"
+                    "pushed commit, or restore a squash-merged topic "
+                    "commit with --fetch-target-refs)"
                 )
             elif object_status == "shallow":
                 errors.append(
@@ -1396,13 +1407,17 @@ def packet_errors(
                     "command"
                 )
             elif not any(
-                re.search(r"python[ \t].*scripts/", commands[index])
+                re.search(
+                    r"python[ \t].*scripts/write_citation[A-Za-z0-9_]*\.py",
+                    commands[index],
+                )
                 for index in non_build_indices
             ):
                 errors.append(
-                    "no evidence.commands entry runs a repository harness "
-                    "(python ... scripts/...); build or maintenance tasks "
-                    "alone do not regenerate evidence"
+                    "no evidence.commands entry runs an evidence-writer "
+                    "harness (python ... scripts/write_citation*.py); build "
+                    "or maintenance tasks and unrelated scripts do not "
+                    "regenerate this packet's evidence"
                 )
             elif min(build_indices) > min(non_build_indices):
                 errors.append(
@@ -1789,6 +1804,25 @@ def manifest_errors(manifest: object) -> list[str]:
             errors.append(f"{claim_id}: title must be non-empty")
         if not _is_nonempty_str(claim.get("source")):
             errors.append(f"{claim_id}: source must be non-empty")
+        lanes_probe = claim.get("lanes")
+        has_lane_evidence = isinstance(lanes_probe, dict) and any(
+            isinstance(lane, dict) and lane.get("evidence")
+            for lane in lanes_probe.values()
+        )
+        source_url = claim.get("source_url")
+        source_claim = claim.get("source_claim")
+        url_ok = _is_nonempty_str(source_url) and re.match(r"^https?://", source_url)
+        if source_url is not None and not url_ok:
+            errors.append(f"{claim_id}: source_url must be an http(s) citation URL")
+        if source_claim is not None and not _is_nonempty_str(source_claim):
+            errors.append(f"{claim_id}: source_claim must be non-empty text")
+        if has_lane_evidence and not (url_ok and _is_nonempty_str(source_claim)):
+            errors.append(
+                f"{claim_id}: a claim with lane evidence must pin the "
+                "canonical source_url and source_claim its packets bind "
+                "to; without them a lane can close on evidence for a "
+                "different cited assertion"
+            )
         lanes = claim.get("lanes")
         if not isinstance(lanes, dict) or set(lanes) != set(LANE_KEYS):
             errors.append(f"{claim_id}: lanes must define exactly {LANE_KEYS}")
@@ -1908,6 +1942,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
     known_ids: set[str] = set()
     lane_evidence: dict[str, tuple[str, str]] = {}
     lane_dispositions: dict[str, tuple[str, object]] = {}
+    claim_sources: dict[str, tuple[object, object]] = {}
     if manifest is not None:
         manifest_issues = manifest_errors(manifest)
         errors.extend(f"{manifest_path}: {issue}" for issue in manifest_issues)
@@ -1918,6 +1953,10 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                 claim_id = claim.get("id")
                 if isinstance(claim_id, str):
                     known_ids.add(claim_id)
+                    claim_sources[claim_id] = (
+                        claim.get("source_url"),
+                        claim.get("source_claim"),
+                    )
                 lanes = claim.get("lanes")
                 if not isinstance(lanes, dict):
                     continue
@@ -2054,6 +2093,24 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                     f"{packet_path}: claim_id {packet.get('claim_id')} does "
                     f"not match manifest lane {claim_id}.{lane_name}"
                 )
+            canonical_url, canonical_claim = claim_sources.get(claim_id, (None, None))
+            source = packet.get("source")
+            packet_url = source.get("url") if isinstance(source, dict) else None
+            packet_claim = source.get("claim") if isinstance(source, dict) else None
+            if canonical_url is not None and packet_url != canonical_url:
+                errors.append(
+                    f"{packet_path}: source.url {packet_url!r} does not "
+                    f"match the manifest's canonical source_url for "
+                    f"{claim_id}; a lane must close on evidence for the "
+                    "cited source, not a different one"
+                )
+            if canonical_claim is not None and packet_claim != canonical_claim:
+                errors.append(
+                    f"{packet_path}: source.claim does not match the "
+                    f"manifest's canonical source_claim for {claim_id}; "
+                    "evidence for a different assertion cannot close this "
+                    "lane"
+                )
             expected_branch = BRANCH_BY_LANE.get(lane_name)
             branch = (
                 packet.get("target", {}).get("branch")
@@ -2181,6 +2238,25 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
     return errors
 
 
+def collect_target_refs(design_dir: Path) -> "list[str]":
+    """Unique `pull/N/head` refs named by packet fetch hints (negative
+    controls included; fetching an extra ref is harmless)."""
+    refs: set[str] = set()
+    for packet_path in sorted(design_dir.rglob("*.json")):
+        try:
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(packet, dict):
+            continue
+        target = packet.get("target")
+        hint = target.get("fetch_hint") if isinstance(target, dict) else None
+        match = FETCH_HINT_RE.match(hint.strip()) if isinstance(hint, str) else None
+        if match is not None:
+            refs.add(f"pull/{match.group(1)}/head")
+    return sorted(refs)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -2194,11 +2270,32 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Require every evidence packet to record the current HEAD",
     )
+    parser.add_argument(
+        "--fetch-target-refs",
+        action="store_true",
+        help=(
+            "Fetch every packet's recorded PR head ref into the local "
+            "object store and exit (CI aid: keeps squash-merged target "
+            "commits verifiable); validation still reports any ref that "
+            "stays unavailable"
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.fetch_target_refs:
+        for ref in collect_target_refs(args.design_dir):
+            fetched = subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "fetch", "origin", ref],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            state = "fetched" if fetched.returncode == 0 else "unavailable"
+            print(f"check_citation_evidence: {ref}: {state}")
+        return 0
     freshness_head: str | None = None
     if args.freshness:
         freshness_head = _git_head(REPO_ROOT)

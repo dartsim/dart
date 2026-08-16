@@ -22,7 +22,9 @@
           ],
           "notes": "First packet: rolling-direction sweep across fcl/dart/bullet/ode with the default boxed-LCP solver. Open PR #3377 owns exact-Coulomb FBF rolling/incline/turntable scenes on this branch; reuse its fixtures and evidence rather than duplicating."
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Polyhedral friction can produce direction-dependent rolling/sliding behavior."
     },
     {
       "id": "CT-002",

@@ -234,6 +234,8 @@ def _minimal_manifest(ids):
                 "id": claim_id,
                 "title": f"Claim {claim_id}",
                 "source": "somewhere",
+                "source_url": "https://example.org/claim",
+                "source_claim": "A claim.",
                 "lanes": {
                     "dart6": {
                         "owner": "dev task",
@@ -1695,7 +1697,7 @@ def test_maintenance_tasks_do_not_execute_evidence():
     packet = complete_packet()
     packet["evidence"]["commands"] = ["pixi run build", "pixi run lint"]
     errors = MODULE.packet_errors(packet)
-    assert any("repository harness" in error for error in errors)
+    assert any("evidence-writer" in error for error in errors)
 
 
 def test_non_finite_csv_cells_do_not_count(tmp_path):
@@ -1832,3 +1834,69 @@ def test_csv_measurement_columns_still_pass(tmp_path):
 def test_headerless_numeric_csv_still_passes(tmp_path):
     packet = _path_packet(tmp_path, "grid.csv", b"1.0,2.0\n3.0,4.0\n")
     assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_fetch_hints_may_name_other_evidence_prs():
+    packet = complete_packet()
+    packet["target"]["fetch_hint"] = (
+        "git fetch origin pull/9999/head && git checkout " + HEAD_COMMIT
+    )
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_invalid_npy_dtype_widths_fail(tmp_path):
+    packet = _path_packet(tmp_path, "odd.npy", _npy_bytes("<i3", "1", b"\x00" * 3))
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_non_writer_scripts_are_not_evidence_harnesses():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "pixi run build",
+        "pixi run python scripts/check_citation_evidence.py",
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("evidence-writer" in error for error in errors)
+
+
+def test_claims_with_lane_evidence_require_canonical_source():
+    manifest = _minimal_manifest(["CT-001"])
+    manifest["claims"][0]["lanes"]["dart6"]["status"] = "in-progress"
+    manifest["claims"][0]["lanes"]["dart6"]["evidence"] = ["evidence/packet.json"]
+    del manifest["claims"][0]["source_url"]
+    errors = MODULE.manifest_errors(manifest)
+    assert any("must pin the canonical source_url" in error for error in errors)
+
+
+def test_packet_sources_must_match_the_manifest(tmp_path):
+    packet = complete_packet()
+    packet["source"]["url"] = "https://example.com/unrelated"
+    design_dir = _write_tree(
+        tmp_path,
+        packet=packet,
+        negative={"schema": "dart.citation_claim_evidence/v1"},
+    )
+    errors = MODULE.validate_tree(design_dir)
+    assert any("canonical source_url" in error for error in errors)
+
+    packet = complete_packet()
+    packet["source"]["claim"] = "An unrelated assertion."
+    design_dir = _write_tree(
+        tmp_path / "second",
+        packet=packet,
+        negative={"schema": "dart.citation_claim_evidence/v1"},
+    )
+    errors = MODULE.validate_tree(design_dir)
+    assert any("canonical source_claim" in error for error in errors)
+
+
+def test_collect_target_refs_lists_packet_prs(tmp_path):
+    design_dir = _write_tree(
+        tmp_path,
+        packet=complete_packet(),
+        negative={"schema": "dart.citation_claim_evidence/v1"},
+    )
+    assert MODULE.collect_target_refs(design_dir) == ["pull/3444/head"]

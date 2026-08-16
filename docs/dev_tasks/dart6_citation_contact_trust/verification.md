@@ -431,3 +431,22 @@ and every `scripts/...` path in an evidence command must be a real file
 in the scripts/ tree. Network reachability of the PR ref remains with
 `--freshness`; the default gate is offline by design.
 Tests: 139 -> 149 (6.20), 159 -> 169 (main).
+
+## Codex review round 23 (PR #3444) — 2026-08-16
+
+Three findings on this lane plus two mirrored from main. The
+fetch-hint regex no longer pins this PR: any `pull/N/head` ref with a
+sha equal to target.commit is a runnable durable command, so the
+CT-002/CT-003 slices planned for their own PRs stay landable (the
+recorded PR number is packet data; reachability stays with
+--freshness). NPY dtype widths are whitelisted per kind — `<i3` names
+no dtype numpy will load, so it no longer passes as raw evidence. The
+harness-execution requirement now demands an evidence writer
+(`scripts/write_citation*.py`); an existing but unrelated script such
+as `scripts/parallel_jobs.py` is not a reproduction path. From main:
+claims that carry lane evidence must pin canonical
+source_url/source_claim and lane-referenced packets must match them
+exactly, and `--fetch-target-refs` (run before check-lint in the three
+platform workflows) restores squash-merged target commits so the
+round-22 object-store check stays answerable after this PR merges.
+Tests: 149 -> 155 (6.20), 169 -> 175 (main).
