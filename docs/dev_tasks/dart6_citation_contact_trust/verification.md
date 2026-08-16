@@ -358,3 +358,10 @@ Two findings here plus three shared, all fixed (mirrored with main):
 structural NPY/NPZ/parquet parsing; WebM DocType verification;
 NFKC-normalized reviewer identities; object-only sweep points. Tests:
 110 -> 113.
+
+## Codex review round 14 (PR #3444) — 2026-08-16
+
+One finding here plus shared fixes (mirrored with main): evidence/raw/
+is reserved for raw-data artifacts — excluded from packet discovery and
+un-referenceable by lanes. This branch's CT-001 already hashed per
+step, so no regeneration was needed. Tests: 113 -> 114.

@@ -1347,3 +1347,23 @@ def test_stub_webm_fails(tmp_path):
     }
     errors = MODULE.packet_errors(packet, base_dir=root)
     assert any("structurally complete" in error for error in errors)
+
+
+def test_raw_artifacts_under_evidence_raw_are_not_packets(tmp_path):
+    tree_dir = _write_tree(tmp_path, packet=None, negative={"schema": "x"})
+    raw_dir = tree_dir / "evidence" / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "rows.json").write_text(
+        json.dumps([{"lateral_drift_m": 0.5}]), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert not any("rows.json" in error for error in errors)
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"][LANE]
+    lane["status"] = "in-progress"
+    lane["evidence"] = ["evidence/raw/rows.json"]
+    (tree_dir / "claims-manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("holds raw artifacts, not packets" in error for error in errors)
