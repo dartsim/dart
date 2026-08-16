@@ -90,7 +90,10 @@ def complete_packet() -> dict:
             },
         },
         "evidence": {
-            "commands": ["pixi run python scripts/example.py"],
+            "commands": [
+                "pixi run build",
+                "pixi run python scripts/example.py",
+            ],
             "raw_rows": [
                 {
                     "angle_deg": 0.0,
@@ -1121,9 +1124,15 @@ def test_commands_must_be_the_reproducible_pixi_form():
         assert any("reproducible repository form" in error for error in errors), bad
     packet = complete_packet()
     packet["evidence"]["commands"] = [
-        "PYTHONPATH=build/x pixi run python scripts/write.py"
+        "pixi run build",
+        "PYTHONPATH=build/x pixi run python scripts/write.py",
     ]
     assert MODULE.packet_errors(packet) == []
+    packet["evidence"]["commands"] = [
+        "PYTHONPATH=build/x pixi run python scripts/write.py"
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("must include the build step" in error for error in errors)
 
 
 def test_bookkeeping_only_rows_fail():
@@ -1579,6 +1588,36 @@ def test_parquet_stub_fails(tmp_path):
     packet["evidence"]["artifact_digests"] = {
         "rows.parquet": "sha256:"
         + hashlib.sha256((tmp_path / "rows.parquet").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_all_unsupported_measured_groups_fail():
+    packet = complete_packet()
+    packet["metrics"]["numerical"] = {
+        "method": "not actually measured",
+        "value": {"status": "unsupported", "reason": "instrument absent"},
+    }
+    errors = MODULE.packet_errors(packet)
+    assert any("dressing" in error for error in errors)
+
+
+def test_string_dtype_npy_fails(tmp_path):
+    header = b"{'descr': '<U12', 'fortran_order': False, 'shape': (2,), }"
+    header += b" " * (63 - len(header) % 64) + b"\n"
+    payload = (
+        b"\x93NUMPY\x01\x00" + len(header).to_bytes(2, "little") + header + b"x" * 96
+    )
+    (tmp_path / "strings.npy").write_bytes(payload)
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["strings.npy"]
+    packet["evidence"]["artifact_digests"] = {
+        "strings.npy": "sha256:"
+        + hashlib.sha256((tmp_path / "strings.npy").read_bytes()).hexdigest()
     }
     errors = MODULE.packet_errors(packet, base_dir=tmp_path)
     assert any(

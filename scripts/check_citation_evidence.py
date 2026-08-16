@@ -496,7 +496,11 @@ def _npy_header_issue(head: bytes, mismatch: str) -> "str | None":
             isinstance(dim, int) and not isinstance(dim, bool) and dim >= 1
             for dim in header["shape"]
         )
+        and isinstance(header["descr"], str)
+        and re.match(r"^[<>|=]?[bifuc][0-9]+$", header["descr"])
     ):
+        # String/object/structured dtypes carry no numeric measurement;
+        # structured record dtypes are a recorded boundary.
         return mismatch
     if len(head) <= header_start + header_len:
         # Header-only file: a declared array with no payload bytes.
@@ -675,6 +679,7 @@ def metric_group_errors(name: str, group: object) -> list[str]:
     observed_zero_fields: list[str] = []
     leaf_count = 0
     measurement_leaves = 0
+    real_measurement_leaves = 0
     for key in value_keys:
         leaves = _metric_leaves(group[key], key)
         leaf_count += len(leaves)
@@ -718,6 +723,7 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                     )
             elif isinstance(leaf, (int, float)) and not isinstance(leaf, bool):
                 measurement_leaves += 1
+                real_measurement_leaves += 1
                 if not math.isfinite(leaf):
                     errors.append(f"metrics.{name}.{path} contains a non-finite number")
                 elif leaf == 0:
@@ -728,6 +734,7 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                 # here keeps the type chain exhaustive so nothing falls
                 # through unvalidated.
                 measurement_leaves += 1
+                real_measurement_leaves += 1
             else:
                 errors.append(
                     f"metrics.{name}.{path} has unrecognized leaf type "
@@ -741,6 +748,18 @@ def metric_group_errors(name: str, group: object) -> list[str]:
             f"metrics.{name} carries only semantic annotations; a measured "
             "group needs at least one numeric/boolean measurement or "
             "typed-unsupported marker"
+        )
+    if (
+        value_keys
+        and leaf_count > 0
+        and real_measurement_leaves == 0
+        and (measurement_leaves > 0)
+    ):
+        errors.append(
+            f"metrics.{name} records a method but every quantity is typed "
+            "unsupported; type the WHOLE group "
+            "{'status': 'unsupported', 'reason': ...} instead of dressing "
+            "an unmeasured group as measured-with-method"
         )
     if value_keys and leaf_count == 0:
         errors.append(
@@ -1104,6 +1123,15 @@ def packet_errors(
                         "shell strings are not the promised reproduction "
                         "path"
                     )
+            if not any(
+                re.match(r"^pixi run build\b", command.strip()) for command in commands
+            ):
+                errors.append(
+                    "evidence.commands must include the build step "
+                    "('pixi run build ...') before execution; a clean "
+                    "checkout from target.fetch_hint has no artifacts, and "
+                    "an existing checkout may hold stale ones"
+                )
         raw_paths = evidence.get("raw_paths")
         raw_rows = evidence.get("raw_rows")
         has_paths = isinstance(raw_paths, list) and bool(raw_paths)

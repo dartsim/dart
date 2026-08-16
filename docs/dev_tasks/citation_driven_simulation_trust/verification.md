@@ -759,3 +759,15 @@ the enforced schema (model/license provenance applies when external
 assets are used; procedural scenes carry their construction in
 scene.parameters). CT-007 regenerated at the round-16 commit. Tests:
 137 -> 141 (main), 117 -> 121 (6.20).
+
+## Codex review round 17 (PR #3445) — 2026-08-16
+
+Three findings, all fixed on both branches: the validator now requires
+a recognized build step in evidence.commands (the writer-side emission
+alone could not stop a future packet from omitting it); NPY descr
+dtypes are restricted to numeric/boolean/complex (string and object
+arrays carry no measurement; structured record dtypes are a recorded
+boundary); and a measured-with-method group whose every quantity is a
+typed-unsupported marker is rejected — an unmeasured group must be
+typed unsupported as a WHOLE, not dressed as measured. Tests:
+141 -> 143 (main), 121 -> 123 (6.20).
