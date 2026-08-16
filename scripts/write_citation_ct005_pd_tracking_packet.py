@@ -388,6 +388,30 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     # absent and the row cannot be promoted -- the same reasoning that keeps
     # CT-004 unresolved. The accuracy result is published as its own finding.
     disposition = "unresolved"
+    # The claim boundary asserts: stable and unsaturated in every cell, and
+    # RMS tracking error NOT improving under timestep refinement. Assert the
+    # pattern and derive the quoted numbers from this run.
+    if any(row["torque_saturated"] for row in rows) or not all(
+        row["finite"] for row in rows
+    ):
+        raise SystemExit(
+            "CT-005: a cell saturated or went non-finite; the claim "
+            "boundary asserts a stable, unsaturated controller everywhere. "
+            "Rewrite the boundary from the new findings."
+        )
+    if improving:
+        raise SystemExit(
+            "CT-005: tracking error now improves with timestep refinement "
+            f"for {improving}; the claim boundary asserts the opposite "
+            "(controller-limited error). Rewrite the boundary from the new "
+            "findings."
+        )
+    rms_at_largest = max(
+        stats["rms_error_at_largest_timestep"] for stats in family_summary.values()
+    )
+    rms_at_smallest = max(
+        stats["rms_error_at_smallest_timestep"] for stats in family_summary.values()
+    )
     error_spread = {
         family: (
             stats["rms_error_at_smallest_timestep"]
@@ -568,8 +592,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "both multibody integration families. What is established: "
                 "the controller stays stable and unsaturated in every "
                 "cell, and RMS tracking error does NOT improve as the "
-                "timestep is refined eightfold (about 2.1e-3 rad at 4 ms "
-                "versus 2.4e-3 rad at 0.5 ms, against a 0.25 rad reference "
+                f"timestep is refined eightfold (about {rms_at_largest:.1e} "
+                f"rad at 4 ms versus {rms_at_smallest:.1e} rad at 0.5 ms, "
+                "against a 0.25 rad reference "
                 "amplitude), while control work rises monotonically as the "
                 "timestep shrinks -- the error here is controller-limited, "
                 "not integration-limited. What is "

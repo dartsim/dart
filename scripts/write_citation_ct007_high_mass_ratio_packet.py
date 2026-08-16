@@ -366,6 +366,44 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     # row stays unresolved and the measurement is published as WS5 input.
     disposition = "unresolved"
 
+    # The claim boundary quotes this run's failure pattern and closures;
+    # assert the pattern and derive the numbers so a regeneration under
+    # different behavior cannot keep stale prose.
+    si_finding = baseline_finding["SEQUENTIAL_IMPULSE"]
+    lcp_finding = baseline_finding["BOXED_LCP"]
+    si_closures = {
+        float(ratio): value
+        for ratio, value in method_summary["SEQUENTIAL_IMPULSE"][
+            "relative_gap_closure_by_ratio"
+        ].items()
+    }
+    lcp_closures = {
+        float(ratio): value
+        for ratio, value in method_summary["BOXED_LCP"][
+            "relative_gap_closure_by_ratio"
+        ].items()
+    }
+    si_fails = [float(r) for r in si_finding["fails_at_mass_ratios"]]
+    si_holds = sorted(set(si_closures) - set(si_fails))
+    if not si_fails or not si_holds or not lcp_finding["holds_across_swept_range"]:
+        raise SystemExit(
+            "CT-007: the failure pattern changed (sequential impulse "
+            f"fails at {si_fails}, boxed-LCP holds="
+            f"{lcp_finding['holds_across_swept_range']}); the claim boundary "
+            "describes SI holding at low ratios, failing at high ones, and "
+            "boxed-LCP holding throughout. Rewrite it from the new findings."
+        )
+    si_holds_text = " and ".join(f"{r:g}" for r in si_holds)
+    si_fails_text = " and ".join(f"{r:g}" for r in si_fails)
+    si_hold_closures = " and ".join(f"{si_closures[r]:.1e}" for r in si_holds)
+    heavy_descent_m = (
+        2.0
+        * float(parameters["box_half_extent_m"])
+        * max(si_closures[r] for r in si_fails)
+    )
+    lcp_values = sorted(lcp_closures.values())
+    lcp_range_text = f"{lcp_values[0]:.1e} to {lcp_values[-1]:.1e}"
+
     command = (
         "PYTHONPATH=build/default/cpp/Release/python pixi run python "
         "scripts/write_citation_ct007_high_mass_ratio_packet.py"
@@ -521,13 +559,14 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "whether an exact cone would help. What this establishes is "
                 "the baseline arm the WS5 GO/NO-GO needs, and it is not a "
                 "null result: SEQUENTIAL_IMPULSE -- the World's default "
-                "contact solver -- holds the stack at mass ratios 1 and 10 "
-                "(relative closure 1.4e-4 and 1.0e-3) but fails completely "
-                "at 100 and 1000, where the heavy box descends a full box "
-                "height (0.20002 m) while the light box beneath it moves by "
+                f"contact solver -- holds the stack at mass ratios "
+                f"{si_holds_text} (relative closure {si_hold_closures}) but "
+                f"fails completely at {si_fails_text}, where the heavy box "
+                f"descends a full box height ({heavy_descent_m:.5f} m) while "
+                "the light box beneath it moves by "
                 "microns, coming to rest fully interpenetrated at near-zero "
-                "velocity. BOXED_LCP holds across all four decades (closure "
-                "3.3e-5 to 3.0e-4). Both outcomes are bit-identical across "
+                f"velocity. BOXED_LCP holds across the swept range (closure "
+                f"{lcp_range_text}). Both outcomes are bit-identical across "
                 "repeats. Says nothing about deeper stacks, other shapes or "
                 "materials, other timesteps, historical DART versions, or "
                 "DART 6."

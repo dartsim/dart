@@ -397,6 +397,60 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     # residual, so it does not reproduce the claim.
     disposition = "reproduced" if unstable_cells else "unresolved"
 
+    # The claim boundary asserts one specific measured pattern; regenerating
+    # its prose against different measurements would publish a false
+    # conclusion, so assert the pattern and derive the quoted numbers.
+    si_gains = {
+        row["timestep_s"]: row["max_total_energy_gain_after_settle_j"]
+        for row in rows
+        if row["contact_solver_method"] == "SEQUENTIAL_IMPULSE"
+    }
+    lcp_gains = {
+        row["timestep_s"]: row["max_total_energy_gain_after_settle_j"]
+        for row in rows
+        if row["contact_solver_method"] == "BOXED_LCP"
+    }
+    energy_tolerance_j = stability_tolerance["max_total_energy_gain_after_settle_j"]
+    boundary_expectations = {
+        "only sequential impulse unstable": (
+            {cell["contact_solver_method"] for cell in unstable_cells}
+            == {"SEQUENTIAL_IMPULSE"}
+        ),
+        "sequential impulse above tolerance at every timestep": all(
+            gain > energy_tolerance_j for gain in si_gains.values()
+        ),
+        "boxed lcp within tolerance at every timestep": all(
+            gain <= energy_tolerance_j for gain in lcp_gains.values()
+        ),
+        "residual speed classified dt-linear": not any(
+            "not dt-linear" in reason
+            for cell in cell_findings
+            for reason in cell["instability_reasons"]
+        ),
+        "instability reasons are settle-energy only": all(
+            set(cell["instability_reasons"])
+            <= {
+                "kinetic energy injected after settle window",
+                "total mechanical energy increased after settle",
+            }
+            for cell in unstable_cells
+        ),
+    }
+    failed_expectations = sorted(
+        name for name, ok in boundary_expectations.items() if not ok
+    )
+    if failed_expectations:
+        raise SystemExit(
+            "CT-002: measured outcomes no longer match the claim boundary's "
+            f"asserted pattern ({failed_expectations}); rewrite the boundary "
+            "from the new findings instead of regenerating stale prose."
+        )
+    si_gain_text = " and ".join(
+        f"{si_gains[dt]:.1e} J at {dt * 1000:g} ms" for dt in sorted(si_gains)
+    )
+    lcp_gain_text = " and ".join(f"{lcp_gains[dt]:.1e} J" for dt in sorted(lcp_gains))
+    initial_energy_j = rows[0]["initial_total_energy_j"]
+
     command = (
         "PYTHONPATH=build/default/cpp/Release/python pixi run python "
         "scripts/write_citation_ct002_dense_contact_packet.py"
@@ -578,9 +632,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "instability. What does reproduce is narrower and "
                 "solver-specific: after the pile settles, the largest "
                 "single-step increase in total mechanical energy under "
-                "SEQUENTIAL_IMPULSE is about 1.0e-3 J at 2 ms and 1.3e-3 J "
-                "at 4 ms against a 1.8e-4 J tolerance on a 180 J scene, "
-                "while BOXED_LCP stays at or near zero (0.0 and 1.3e-6 J). "
+                f"SEQUENTIAL_IMPULSE is {si_gain_text} "
+                f"against a {energy_tolerance_j:.1e} J tolerance on a "
+                f"{initial_energy_j:.0f} J scene, "
+                f"while BOXED_LCP stays at or near zero ({lcp_gain_text}). "
                 "The metric is a maximum over settle-window steps, so it "
                 "does not distinguish one anomalous step from sustained "
                 "pumping. That is a small, "

@@ -123,8 +123,22 @@ VISUAL_MEDIA_SUFFIXES = (
 # configuration.requested/resolved must name a recognizable identity, not an
 # arbitrary placeholder object. Keys that merely mention an identity word in
 # a metadata role (method_note, backend_reason, ...) do not count.
-IDENTITY_KEY_RE = re.compile(
-    r"solver|method|detector|integrator|integration|backend|family", re.I
+FETCH_HINT_RE = re.compile(r"^git fetch origin pull/3445/head\b")
+IDENTITY_KEY_TOKENS = frozenset(
+    {
+        "solver",
+        "solvers",
+        "method",
+        "methods",
+        "detector",
+        "detectors",
+        "integrator",
+        "integration",
+        "backend",
+        "backends",
+        "family",
+        "families",
+    }
 )
 IDENTITY_METADATA_SUFFIXES = (
     "_note",
@@ -141,9 +155,13 @@ IDENTITY_METADATA_SUFFIXES = (
 
 
 def _is_identity_key(key: str) -> bool:
-    return bool(IDENTITY_KEY_RE.search(key)) and not key.endswith(
-        IDENTITY_METADATA_SUFFIXES
-    )
+    """Whole-token identity match: `contact_solver_method` counts,
+    `methodology` (substring only) and `method_note` (metadata role) do
+    not."""
+    if key.endswith(IDENTITY_METADATA_SUFFIXES):
+        return False
+    tokens = re.split(r"[^a-zA-Z0-9]+", key.lower())
+    return any(token in IDENTITY_KEY_TOKENS for token in tokens)
 
 
 def _has_identity_key(value: object) -> bool:
@@ -234,42 +252,53 @@ def _resolve_evidence_path(raw_path: str, base_dir: "Path | None") -> "Path | No
     return None
 
 
-_VISUAL_SIGNATURES = {
-    ".png": (b"\x89PNG\r\n\x1a\n",),
-    ".apng": (b"\x89PNG\r\n\x1a\n",),
-    ".jpg": (b"\xff\xd8\xff",),
-    ".jpeg": (b"\xff\xd8\xff",),
-    ".gif": (b"GIF87a", b"GIF89a"),
-    ".webm": (b"\x1a\x45\xdf\xa3",),
-}
-
-
 def _visual_content_issue(path: "Path") -> "str | None":
     """Why a resolved visual artifact's bytes do not match its claimed type.
 
-    A prose file renamed to `capture.png` satisfies a suffix check; the
-    magic-signature check makes the artifact itself carry the evidence.
+    A prose file renamed to `capture.png` satisfies a suffix check, and a
+    bare eight-byte signature satisfies a header check; requiring the
+    container's structural begin AND end markers (plus a minimum size) means
+    the artifact must at least be a complete container of its claimed type.
+    Full decoding would need an image dependency; that boundary is recorded
+    in the dev-task verification log.
     """
     suffix = path.suffix.lower()
     try:
         with path.open("rb") as stream:
-            header = stream.read(256)
+            data = stream.read(8 * 1024 * 1024)
     except OSError:
         return "could not be read for media-signature verification"
     mismatch = (
-        "does not carry the media signature its suffix claims; a renamed "
-        "non-media file is not visual evidence"
+        "is not a structurally complete media file of its claimed type; a "
+        "renamed or truncated artifact is not visual evidence"
     )
-    if suffix in _VISUAL_SIGNATURES:
-        if not any(header.startswith(sig) for sig in _VISUAL_SIGNATURES[suffix]):
-            return mismatch
-        return None
+    if len(data) < 64:
+        return mismatch
+    header = data[:256]
+    if suffix in (".png", ".apng"):
+        ok = (
+            header.startswith(b"\x89PNG\r\n\x1a\n")
+            and b"IHDR" in data[:64]
+            and data.rstrip().endswith(b"IEND\xaeB`\x82")
+        )
+        return None if ok else mismatch
+    if suffix in (".jpg", ".jpeg"):
+        ok = header.startswith(b"\xff\xd8\xff") and data.rstrip().endswith(b"\xff\xd9")
+        return None if ok else mismatch
+    if suffix == ".gif":
+        ok = header.startswith((b"GIF87a", b"GIF89a")) and data.rstrip().endswith(
+            b"\x3b"
+        )
+        return None if ok else mismatch
     if suffix == ".webp":
         return None if header[:4] == b"RIFF" and header[8:12] == b"WEBP" else mismatch
     if suffix == ".mp4":
         return None if header[4:8] == b"ftyp" else mismatch
+    if suffix == ".webm":
+        return None if header.startswith(b"\x1a\x45\xdf\xa3") else mismatch
     if suffix == ".svg":
-        return None if b"<svg" in header else mismatch
+        ok = b"<svg" in header and b"</svg>" in data
+        return None if ok else mismatch
     return None
 
 
@@ -515,11 +544,17 @@ def packet_errors(
         commit = target.get("commit")
         if not (isinstance(commit, str) and COMMIT_RE.match(commit)):
             errors.append("target.commit must be a 40-hex commit hash")
-        if not _is_nonempty_str(target.get("fetch_hint")):
+        fetch_hint = target.get("fetch_hint")
+        if not (
+            _is_nonempty_str(fetch_hint) and FETCH_HINT_RE.match(fetch_hint.strip())
+        ):
             errors.append(
-                "target.fetch_hint must record how a clean checkout fetches "
-                "target.commit (e.g. 'git fetch origin pull/<PR>/head'); a "
-                "commit that later becomes unreachable is not reproducible"
+                "target.fetch_hint must be the durable PR-ref fetch command "
+                f"(matching {FETCH_HINT_RE.pattern!r}); arbitrary prose does "
+                "not make target.commit reachable from a clean checkout. "
+                "Reachability itself is guaranteed by GitHub PR head refs "
+                "surviving squash-merge and is checked at packet-writing "
+                "time via --freshness"
             )
 
     scene = packet.get("scene")
@@ -604,6 +639,13 @@ def packet_errors(
         has_repeats = (
             isinstance(repeats, int) and not isinstance(repeats, bool) and repeats >= 2
         )
+        if has_repeats and ensemble.get("deterministic_repeats_identical") is not True:
+            errors.append(
+                "ensemble.deterministic_repeats is asserted without "
+                "deterministic_repeats_identical: true; a repeat count the "
+                "writer did not verify bit-identical is a claim, not evidence"
+            )
+            has_repeats = False
         # A sweep or seed list only counts as an ensemble when its entries are
         # valid and mutually distinct; [null, null] or a duplicated point is
         # one run wearing an ensemble's clothes.
@@ -649,12 +691,6 @@ def packet_errors(
         window = ensemble.get("measurement_window")
         if "measurement_window" not in ensemble:
             errors.append("ensemble.measurement_window is required")
-        elif isinstance(window, str):
-            if not window.strip():
-                errors.append(
-                    "ensemble.measurement_window must record an actual "
-                    "window, not an empty value"
-                )
         elif isinstance(window, dict) and window:
             bad_values = sorted(
                 key for key, item in window.items() if not _is_finite_number(item)
@@ -672,9 +708,9 @@ def packet_errors(
                 )
         else:
             errors.append(
-                "ensemble.measurement_window must be a non-empty string or a "
-                "non-empty object of finite numeric bounds; a truthy "
-                "placeholder does not record when measurements were collected"
+                "ensemble.measurement_window must be a non-empty object of "
+                "finite numeric bounds; prose or truthy placeholders do not "
+                "record when measurements were collected"
             )
 
     metrics = packet.get("metrics")

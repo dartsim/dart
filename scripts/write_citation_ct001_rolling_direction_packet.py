@@ -20,9 +20,9 @@ angle, without initial spin, on a static ground box, and measures per angle:
 
 Each (contact solver, angle) cell runs twice and must be bit-identical
 (deterministic repeats). The packet records requested and resolved solver
-identity; `ResolvedSolverConfiguration` is not yet Python-exposed, so the
-resolved identity comes from World property readback plus step-profile stage
-names, and that gap is a recorded limitation feeding PLAN-123 WS4.
+identity from `World.resolved_configuration` (the bake-time
+`ResolvedSolverConfiguration`, bound to Python in this branch) plus World
+property readback and step-profile stage names.
 
 Usage (after `pixi run build`):
 
@@ -522,17 +522,16 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "by_contact_solver_method": resolved_by_method,
             },
             "resolved_provenance": (
-                "World property readback (contact_solver_method, "
+                "World.resolved_configuration (the bake-time "
+                "ResolvedSolverConfiguration bound to Python in this "
+                "branch), recorded per cell as world_resolution, plus World "
+                "property readback (contact_solver_method, "
                 "rigid_body_solver, gravity, time_step) after "
-                "enter_simulation_mode, with contact solver, timestep, and gravity "
-                "each asserted equal to the request and "
-                "stable across every repeat and sweep point. The independent "
-                "evidence that the selection changed behavior is that the "
-                "per-angle trajectory hashes differ between the two contact "
-                "solvers at every angle; the recorded WorldStepProfile stage "
-                "names are identical for both methods and therefore do not "
-                "discriminate. World::getResolvedConfiguration() is not yet "
-                "exposed to Python (PLAN-123 WS4 follow-up)."
+                "enter_simulation_mode, each asserted equal to the request "
+                "and stable across every repeat and sweep point. The "
+                "independent evidence that the selection changed behavior "
+                "is that the per-angle trajectory hashes differ between the "
+                "two contact solvers at every angle."
             ),
             "detector": (
                 "DART 7 native World collision pipeline (the World step API "

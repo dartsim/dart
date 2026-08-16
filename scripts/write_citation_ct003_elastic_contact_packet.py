@@ -311,6 +311,16 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     ]
     violating_cells = [cell for cell in violating_cells if cell["reasons"]]
     disposition = "reproduced" if violating_cells else "unresolved"
+    if violating_cells:
+        # The claim boundary asserts the cited failure mode was NOT observed;
+        # a rerun that observes violations must not pair `reproduced` with
+        # that prose. Abort and force a conscious rewrite.
+        raise SystemExit(
+            "CT-003: this run observed energy-envelope or finiteness "
+            f"violations ({violating_cells}); the claim boundary asserts "
+            "the failure mode was not observed. Rewrite the boundary, "
+            "limitations, and disposition rationale from the new findings."
+        )
 
     command = (
         "PYTHONPATH=build/default/cpp/Release/python pixi run python "

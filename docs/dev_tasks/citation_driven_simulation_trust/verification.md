@@ -538,3 +538,26 @@ Also from the 3444 side: not-applicable lanes cannot publish
 dispositions or hold evidence, and the Windows check-lint variant now
 includes the citation gate. Tests: 93 -> 97. CT-001 regenerated at the
 round-4 commit in the follow-up commit.
+
+## Codex review round 5 (PR #3445) — 2026-08-16
+
+Three findings here plus four on #3444, all addressed on both branches:
+identity keys now match whole tokens (`methodology` no longer counts via
+its `method` substring); every writer's claim boundary is now either
+derived from the run's own measurements or guarded by an exact-pattern
+SystemExit — CT-002 (settle-energy pattern + derived joules), CT-003
+(abort if violations are observed while the prose says they were not),
+CT-004 (finiteness + per-family convergence), CT-005 (no saturation, no
+dt-improvement, derived RMS values), CT-007 (hold/fail pattern with
+derived closures and descent) join CT-001/CT-011; the CT-001
+resolved_provenance no longer claims the ResolvedSolverConfiguration
+binding is unexposed. From #3444: asserted deterministic repeats require
+the recorded `deterministic_repeats_identical: true` verification flag;
+measurement windows must be structured numeric objects (prose strings
+rejected); visual artifacts are checked as structurally complete
+containers (begin AND end markers plus minimum size — a bare eight-byte
+signature is rejected; full decoding would need an image dependency and
+is a recorded boundary); fetch hints must be the durable PR-ref fetch
+command form (reachability itself is guaranteed by GitHub PR head refs
+and checked at write time via --freshness — a recorded boundary, since a
+hard existence check would break post-squash-merge CI). Tests: 97 -> 101.

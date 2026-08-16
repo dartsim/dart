@@ -321,6 +321,16 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     # `unresolved` until matched-cost timing lands, following the CT-003
     # precedent for "the cited behavior was not observed".
     disposition = "unresolved"
+    if not all_finite or set(converging) != set(family_summary):
+        # The claim boundary asserts both families stay finite with drift
+        # shrinking as the timestep shrinks; abort rather than regenerate
+        # that prose against contradicting measurements.
+        raise SystemExit(
+            "CT-004: finiteness or per-family convergence no longer matches "
+            f"the claim boundary (all_finite={all_finite}, "
+            f"converging={converging}); rewrite the boundary from the new "
+            "findings."
+        )
     convergence_finding = {
         "all_cells_finite": all_finite,
         "families_with_shrinking_drift": converging,
