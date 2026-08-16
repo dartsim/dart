@@ -398,3 +398,10 @@ token-matched seed fields; build-before-evidence ordering. Tests:
 
 One finding here (the env-prefixed build-command false positive) plus
 three shared, all fixed (mirrored with main). Tests: 127 -> 131.
+
+## Codex review round 20 (PR #3444) — 2026-08-16
+
+Four findings here plus the shared build-task item, all fixed
+(mirrored with main): execution-command requirement; exact build-task
+matching; zero-width NPY dtypes; numeric sweep-point deduplication.
+Tests: 131 -> 135.

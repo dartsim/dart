@@ -171,7 +171,8 @@ UNSUPPORTED_SENTINELS = frozenset(
 )
 
 BUILD_COMMAND_RE = re.compile(
-    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*pixi run build\b"
+    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*pixi run build"
+    r"(?:[ \t][^;|&`$\n\r]*)?\Z"
 )
 COMMAND_RE = re.compile(
     r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*" r"pixi run[ \t]+[^;|&`$\n\r]+\Z"
@@ -524,7 +525,7 @@ def _npy_header_issue(
             for dim in header["shape"]
         )
         and isinstance(header["descr"], str)
-        and re.match(r"^[<>|=]?[bifuc][0-9]+$", header["descr"])
+        and re.match(r"^[<>|=]?[bifuc][1-9][0-9]*$", header["descr"])
     ):
         # String/object/structured dtypes carry no numeric measurement;
         # structured record dtypes are a recorded boundary.
@@ -1030,9 +1031,25 @@ def packet_errors(
         has_sweep = isinstance(sweep, list) and len(sweep) >= 2
         if has_sweep:
             canonical_points: list[str] = []
+
+            def _canonical_value(value: object) -> object:
+                # 1 and 1.0 are the same coordinate; the row matcher's ==
+                # treats them as equal, so the distinct-point check must too.
+                if isinstance(value, int) and not isinstance(value, bool):
+                    return float(value)
+                return value
+
             for index, entry in enumerate(sweep):
                 if isinstance(entry, dict) and entry:
-                    canonical_points.append(json.dumps(entry, sort_keys=True))
+                    canonical_points.append(
+                        json.dumps(
+                            {
+                                key: _canonical_value(value)
+                                for key, value in entry.items()
+                            },
+                            sort_keys=True,
+                        )
+                    )
                 else:
                     errors.append(
                         f"ensemble.sweep[{index}] must be a non-empty object "
@@ -1175,7 +1192,13 @@ def packet_errors(
                     "checkout from target.fetch_hint has no artifacts, and "
                     "an existing checkout may hold stale ones"
                 )
-            elif non_build_indices and min(build_indices) > min(non_build_indices):
+            elif not non_build_indices:
+                errors.append(
+                    "evidence.commands contains only build steps; a "
+                    "reproduction sequence must also RUN the evidence "
+                    "command"
+                )
+            elif min(build_indices) > min(non_build_indices):
                 errors.append(
                     "evidence.commands must run the build step BEFORE the "
                     "evidence command; building afterwards reproduces "
