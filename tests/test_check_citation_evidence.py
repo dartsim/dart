@@ -36,7 +36,11 @@ def complete_packet() -> dict:
         "claim_id": "CT-001",
         "title": "Test packet",
         "source": {"url": "https://example.org/claim", "claim": "A claim."},
-        "target": {"branch": "main", "commit": "0" * 40},
+        "target": {
+            "branch": "main",
+            "commit": "0" * 40,
+            "fetch_hint": "git fetch origin pull/3445/head",
+        },
         "scene": {
             "id": "test_scene",
             "digest": "sha256:" + "a" * 64,
@@ -542,9 +546,59 @@ def test_validate_tree_rejects_shared_packet_owner(tmp_path):
     assert any("one packet has one owner" in error for error in errors)
 
 
+def _bound_pass(packet: dict, reviewer: str) -> dict:
+    """A review pass bound to the packet's current non-review content."""
+    return {
+        "reviewer": reviewer,
+        "summary": "clean",
+        "content_digest": MODULE._packet_content_digest(packet),
+    }
+
+
 def test_validate_tree_closed_lane_needs_two_review_passes(tmp_path):
     packet = copy.deepcopy(complete_packet())
-    packet["review"]["passes"] = [{"reviewer": "first", "summary": "clean"}]
+    packet["review"]["passes"] = [_bound_pass(packet, "first")]
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "closed"
+    lane["disposition"] = "unresolved"
+    lane["evidence"] = ["evidence/packet.json"]
+    plan_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("at least two recorded review passes" in error for error in errors)
+    packet["review"]["passes"].append(_bound_pass(packet, "second"))
+    (plan_dir / "evidence" / "packet.json").write_text(
+        json.dumps(packet), encoding="utf-8"
+    )
+    assert MODULE.validate_tree(plan_dir) == []
+
+
+def test_validate_tree_closed_lane_needs_distinct_reviewers(tmp_path):
+    packet = copy.deepcopy(complete_packet())
+    packet["review"]["passes"] = [
+        _bound_pass(packet, "same"),
+        _bound_pass(packet, "same"),
+    ]
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "closed"
+    lane["disposition"] = "unresolved"
+    lane["evidence"] = ["evidence/packet.json"]
+    plan_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("INDEPENDENT" in error for error in errors)
+
+
+def test_validate_tree_closed_lane_disposition_must_match_packet(tmp_path):
+    packet = copy.deepcopy(complete_packet())  # result.disposition: unresolved
+    packet["review"]["passes"] = [
+        _bound_pass(packet, "first"),
+        _bound_pass(packet, "second"),
+    ]
     manifest = _minimal_manifest(["CT-001"])
     lane = manifest["claims"][0]["lanes"]["dart7"]
     lane["status"] = "closed"
@@ -554,12 +608,29 @@ def test_validate_tree_closed_lane_needs_two_review_passes(tmp_path):
         tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
     )
     errors = MODULE.validate_tree(plan_dir)
-    assert any("at least two recorded review passes" in error for error in errors)
-    packet["review"]["passes"].append({"reviewer": "second", "summary": "clean"})
-    (plan_dir / "evidence" / "packet.json").write_text(
-        json.dumps(packet), encoding="utf-8"
+    assert any(
+        "cannot publish a conclusion its evidence does not support" in error
+        for error in errors
     )
-    assert MODULE.validate_tree(plan_dir) == []
+
+
+def test_review_pass_must_bind_to_packet_content():
+    packet = complete_packet()
+    packet["review"]["passes"] = [
+        {
+            "reviewer": "first",
+            "summary": "clean",
+            "content_digest": "sha256:" + "0" * 64,
+        }
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("not bound to this packet's content" in error for error in errors)
+    packet["review"]["passes"] = [_bound_pass(packet, "first")]
+    assert MODULE.packet_errors(packet) == []
+    # Changing any non-review content invalidates the binding.
+    packet["result"]["claim_boundary"] = "Changed after review."
+    errors = MODULE.packet_errors(packet)
+    assert any("not bound to this packet's content" in error for error in errors)
 
 
 def test_validate_tree_freshness_flags_stale_commit(tmp_path):
@@ -572,6 +643,151 @@ def test_repository_tree_validates():
     """The committed manifest, packets, and negative controls must pass."""
     errors = MODULE.validate_tree(PLAN_DIR)
     assert errors == []
+
+
+def test_fetch_hint_is_required():
+    packet = complete_packet()
+    del packet["target"]["fetch_hint"]
+    errors = MODULE.packet_errors(packet)
+    assert any("fetch_hint" in error for error in errors)
+
+
+def test_raw_rows_placeholders_fail():
+    for bad in ([None], ["prose"], [{}], [{"k": 1}, None]):
+        packet = complete_packet()
+        packet["evidence"]["raw_rows"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any(
+            "raw_rows" in error and "structured record" in error for error in errors
+        ), bad
+
+
+def test_raw_paths_must_stay_inside_evidence_roots(tmp_path):
+    for bad in ("/etc/passwd", "../escape.json", "C:\\evil.json", "a/../../b"):
+        packet = complete_packet()
+        del packet["evidence"]["raw_rows"]
+        packet["evidence"]["raw_paths"] = [bad]
+        errors = MODULE.packet_errors(packet)
+        assert any(
+            "relative path inside the repository" in error for error in errors
+        ), bad
+    # A relative path escaping via symlink-free resolution is caught with a
+    # base_dir even when the file exists outside the roots.
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+    plan = tmp_path / "plan"
+    plan.mkdir()
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["missing/nowhere.json"]
+    errors = MODULE.packet_errors(packet, base_dir=plan)
+    assert any("does not resolve to an existing file" in error for error in errors)
+
+
+def test_ensemble_sweep_and_seed_entries_must_be_valid_and_distinct():
+    base = complete_packet()
+    del base["ensemble"]["deterministic_repeats"]
+    for bad, needle in (
+        ([None, None], "sweep[0]"),
+        ([{"a": 1}, {"a": 1}], "DISTINCT points"),
+        ([{}, {"a": 1}], "sweep[0]"),
+    ):
+        packet = copy.deepcopy(base)
+        packet["ensemble"]["sweep"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any(needle in error for error in errors), (bad, errors)
+    for bad, needle in (
+        ([None, None], "seeds[0]"),
+        ([7, 7], "DISTINCT seeds"),
+        ([True, False], "seeds[0]"),
+    ):
+        packet = copy.deepcopy(base)
+        packet["ensemble"]["seeds"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any(needle in error for error in errors), (bad, errors)
+    good = copy.deepcopy(base)
+    good["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    assert MODULE.packet_errors(good) == []
+
+
+def test_visual_entries_are_validated():
+    for bad in ([None], [{"path": "x.png"}], [123]):
+        packet = complete_packet()
+        packet["evidence"]["visual"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any("evidence.visual[0]" in error for error in errors), bad
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["/abs/frame.png"]
+    errors = MODULE.packet_errors(packet)
+    assert any("relative path inside the repository" in error for error in errors)
+
+
+def test_prose_cannot_masquerade_as_measurement():
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["max_penetration_m"] = "not measured yet"
+    errors = MODULE.packet_errors(packet)
+    assert any("prose where a measurement is expected" in error for error in errors)
+    # Semantic annotation keys stay allowed.
+    packet = complete_packet()
+    packet["metrics"]["numerical"]["penetration_semantics"] = "clamped at zero"
+    packet["metrics"]["numerical"]["clamp_note"] = "runtime clamps depth"
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_configuration_placeholder_objects_fail():
+    packet = complete_packet()
+    packet["configuration"]["resolved"] = {"placeholder": None}
+    errors = MODULE.packet_errors(packet)
+    assert any("null values" in error for error in errors)
+    assert any("no recognizable" in error for error in errors)
+
+
+def test_nonstandard_json_constants_fail_at_load(tmp_path):
+    packet = complete_packet()
+    packet["host"] = {"skew": float("nan")}
+    plan_dir = _write_tree(tmp_path, packet=None, negative={"schema": "x"})
+    (plan_dir / "evidence" / "packet.json").write_text(
+        json.dumps(packet, allow_nan=True), encoding="utf-8"
+    )
+    manifest = _minimal_manifest(["CT-001"])
+    manifest["claims"][0]["lanes"]["dart7"]["status"] = "in-progress"
+    manifest["claims"][0]["lanes"]["dart7"]["evidence"] = ["evidence/packet.json"]
+    (plan_dir / "claims-manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("unreadable JSON" in error for error in errors)
+
+
+def test_lane_evidence_paths_are_canonicalized(tmp_path):
+    packet = copy.deepcopy(complete_packet())
+    manifest = _minimal_manifest(["CT-001", "CT-002"])
+    first = manifest["claims"][0]["lanes"]["dart7"]
+    second = manifest["claims"][1]["lanes"]["dart7"]
+    first["status"] = "in-progress"
+    first["evidence"] = ["evidence/packet.json"]
+    second["status"] = "in-progress"
+    second["evidence"] = ["evidence/./packet.json"]
+    plan_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    (plan_dir / "citation-claim-corpus.md").write_text(
+        "| CT-001 | claim |\n| CT-002 | claim |\n", encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("one packet has one owner" in error for error in errors)
+
+
+def test_lane_evidence_paths_cannot_escape(tmp_path):
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"]["dart7"]
+    lane["status"] = "in-progress"
+    lane["evidence"] = ["../outside.json"]
+    plan_dir = _write_tree(
+        tmp_path, packet=None, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(plan_dir)
+    assert any("escapes the plan directory" in error for error in errors)
 
 
 def test_non_string_lane_evidence_entry_fails(tmp_path):

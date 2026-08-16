@@ -172,8 +172,10 @@ for downstream-sensitive changes.
    depend on contact history. Issue drafts live in this folder.
 3. Start WS3 contact ordering/identity, now motivated concretely by CT-011's
    hidden contact state; CT-006 heel-strike follows it.
-4. Start WS4's first slice in parallel where it unblocks packets: expose
-   `ResolvedSolverConfiguration` to Python and a comparable per-solve
-   residual, both currently typed unsupported in every packet.
+4. WS4 slice 1 is DONE in this branch: `ResolvedSolverConfiguration` and
+   `World.resolved_configuration` are bound to Python (module_compute.cpp /
+   module_world.cpp) and every packet records the World's bake-time
+   resolution. The remaining WS4 packet gap is a comparable per-solve
+   residual, still typed unsupported everywhere.
 5. Reuse PR #3377 fixtures for the DART 6 CT-007 lane rather than adding
    new scenes; keep PLAN-621/622 rows referenced, not copied.

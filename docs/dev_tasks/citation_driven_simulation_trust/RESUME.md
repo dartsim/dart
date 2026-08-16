@@ -51,8 +51,11 @@ Approved and executed on 2026-08-15: issues #3442 and #3443 posted (#3443
 later corrected with the identified root cause), both branches pushed after
 merging the moved bases and clean-rebuild test-all, and PRs opened -- #3445
 (main, DART 7.0) and #3444 (release-6.20, DART 6.20.0), each with a Codex
-review requested. Shepherd both PRs through CI and review (re-request
-'@codex review' after every push, iterate until clean). After merge, the
+review requested. Shepherd both PRs through CI and review. A Codex
+re-request is an external mutation: post '@codex review' only for a push
+that addresses prior Codex feedback within a maintainer-approved review
+round (see AGENTS.md external-mutation policy) -- never unconditionally,
+and never as a repeated nudge, which also risks review throttling. After merge, the
 next implementation slice is WS3 contact ordering/identity on a NEW
 branch (this one is bounded per the work-package rules), motivated concretely
 by CT-011's hidden contact state, followed by CT-006 heel-strike and the

@@ -372,8 +372,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "b716e9071b7ca9b6f40d4058dcefae26534a6264",
-    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+    "commit": "cebf5a86799a10615f0f7a6878a1ccdf5f315db0",
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
   "title": "State-vector restore equivalence under contact (DART 7 first packet)"
 }

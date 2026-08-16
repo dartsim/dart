@@ -454,3 +454,41 @@ The dead-end candidates are recorded because ruling them out was real work:
 persistent_manifold_cache.cpp (warm-start impulses, classic dart detector
 facade -- not on the DART 7 World query path) and deactivation state (probed,
 nothing asleep, disabling changed nothing).
+
+## Codex review round 1 (PR #3445) — 2026-08-16
+
+Codex posted 4 reviews with 14 inline findings (P1/P2); all addressed in
+this round, fixes silent per repo convention (no thread replies):
+
+- Validator fail-closed gaps (mirrored on release-6.20): closed-lane
+  disposition must match the packet's `result.disposition`; the two-review
+  floor requires DISTINCT reviewers; review passes must carry a
+  `content_digest` binding them to the packet content they reviewed;
+  `raw_rows` entries must be non-empty structured records;
+  `raw_paths`/`visual` paths must be relative, non-escaping, and resolve
+  inside approved roots; sweep/seed ensembles need valid DISTINCT entries;
+  string metric leaves are allowed only under semantic keys; requested/
+  resolved configurations must carry a recognizable identity key with no
+  null values; NaN/Infinity rejected at JSON load; lane evidence paths
+  normalized before indexing; `target.fetch_hint` required (PR head refs
+  survive squash-merge, keeping recorded commits reproducible — all seven
+  packet target commits verified as ancestors of the PR head).
+- `preserve_review` binds carried passes to the regenerated packet's
+  content digest; `record_review_pass` added; all seven writers rebind
+  after assembly and emit `target.fetch_hint`.
+- CT-011 writer: the state-function aggregate now includes EVERY protocol
+  arm (fresh-world, cross-history, pre-contact, ballistic — not just the
+  two in-place booleans), and the writer aborts with an explicit error if
+  a future branch makes every arm bit-exact, instead of regenerating the
+  divergence narrative against contradicting measurements. Packet
+  regenerated; findings unchanged (divergence still observed, disposition
+  `unresolved`).
+- Dev-task docs: RESUME no longer instructs unconditional `@codex review`
+  re-triggering (scoped to approved post-fix rounds per the
+  external-mutation policy); README's next-steps no longer tell a resumed
+  agent to re-implement the already-landed `ResolvedSolverConfiguration`
+  bindings (only the per-solve residual remains WS4 work).
+- Validator test suite: 74 -> 85 cases; existing packets migrated with
+  `fetch_hint`; `pixi run check-citation-evidence` passes on the real
+  tree; the permanent negative control keeps failing with a higher error
+  count under the stricter rules.

@@ -47,6 +47,7 @@ import numpy as np
 from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
+    target_fetch_hint,
     world_resolved_configuration,
 )
 
@@ -334,11 +335,35 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         )
 
     finding_summary = {row["contact_solver_method"]: row["findings"] for row in rows}
-    restore_is_state_function = all(
-        row["findings"]["inplace_restore_matches_continuation"]
-        and row["findings"]["inplace_restores_match_each_other"]
-        for row in rows
+    # "Function of the restored state alone" must hold across EVERY protocol
+    # arm: two worlds given the same restored vector must continue
+    # identically regardless of what preceded the restore. Considering only
+    # the in-place arms would let a fresh-world or cross-history divergence
+    # (a direct counterexample) flip this aggregate to true.
+    state_function_arm_keys = (
+        "inplace_restore_matches_continuation",
+        "inplace_restores_match_each_other",
+        "fresh_restores_match_each_other",
+        "fresh_restore_matches_continuation",
+        "same_history_restores_match",
+        "precontact_history_matches_fresh",
+        "ballistic_restore_exact",
     )
+    restore_is_state_function = all(
+        all(row["findings"][key] for key in state_function_arm_keys) for row in rows
+    )
+    if restore_is_state_function:
+        # This writer's claim boundary and limitations describe the measured
+        # divergence and its identified root cause. If a future branch makes
+        # every arm bit-exact, regenerating that narrative would publish a
+        # false conclusion; stop and force a conscious rewrite instead.
+        raise SystemExit(
+            "CT-011: every restore arm matched bit-exactly, contradicting "
+            "this packet's divergence narrative. Restore behavior on this "
+            "branch has changed; rewrite the claim boundary, limitations, "
+            "and disposition from the new findings instead of regenerating "
+            "the old conclusion."
+        )
 
     # CT-011 is a requirements claim about research workflows; running a
     # fixture cannot reproduce a need, so the row is not promoted. What the
@@ -367,6 +392,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         "target": {
             "branch": "main",
             "commit": git_head(),
+            "fetch_hint": target_fetch_hint(),
             "commit_role": (
                 "Source state measured: the library and fixture ran at this "
                 "commit, which is HEAD at capture time. The packet and its "
@@ -539,9 +565,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "have different semantics.",
             ],
         },
-        "review": (
-            preserve_review(output_path) if output_path is not None else {"passes": []}
-        ),
+        "review": {"passes": []},
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -553,6 +577,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             ),
         },
     }
+    if output_path is not None:
+        # Rebind after assembly: only passes whose content_digest matches the
+        # regenerated packet survive (see preserve_review).
+        packet["review"] = preserve_review(output_path, packet)
     return packet
 
 

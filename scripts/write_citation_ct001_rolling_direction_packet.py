@@ -51,6 +51,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
     solver_iterations_by_method,
+    target_fetch_hint,
     world_resolved_configuration,
 )
 
@@ -441,6 +442,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         "target": {
             "branch": "main",
             "commit": git_head(),
+            "fetch_hint": target_fetch_hint(),
             "commit_role": (
                 "Source state measured: the library and fixture were run at "
                 "this commit, which is HEAD at capture time. The packet and "
@@ -625,9 +627,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "as one.",
             ],
         },
-        "review": (
-            preserve_review(output_path) if output_path is not None else {"passes": []}
-        ),
+        "review": {"passes": []},
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -639,6 +639,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             ),
         },
     }
+    if output_path is not None:
+        # Rebind after assembly: only passes whose content_digest matches the
+        # regenerated packet survive (see preserve_review).
+        packet["review"] = preserve_review(output_path, packet)
     return packet
 
 

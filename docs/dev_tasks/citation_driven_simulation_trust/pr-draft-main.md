@@ -39,7 +39,7 @@ contract, six first-wave packets, and resolved-configuration bindings`
   agreement with the human corpus enforced), packet schema
   `dart.citation_claim_evidence/v1`, validator
   `scripts/check_citation_evidence.py` in `check-lint`, permanent
-  intentionally incomplete negative control that must keep failing, 74
+  intentionally incomplete negative control that must keep failing, 85
   pytest cases. The gate rejects prose/non-JSON/outside-`evidence/`/
   negative-control/non-string lane references, dangling or directory
   `raw_paths`, scene digests that disagree with the published parameters,
@@ -68,7 +68,7 @@ contract, six first-wave packets, and resolved-configuration bindings`
 - `pixi run check-lint` (includes the new `check-citation-evidence` gate) and
   `pixi run test-all` — all phases pass on the branch head.
 - `pixi run python -I scripts/run_pytest.py
-tests/test_check_citation_evidence.py -q` — 74 passed.
+tests/test_check_citation_evidence.py -q` — 85 passed.
 - Every packet regenerated on the current writers; deterministic repeats
   bit-identical; dispositions computed from recorded data with negative
   controls and physical-validity gates.

@@ -48,6 +48,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
     solver_iterations_by_method,
+    target_fetch_hint,
     world_resolved_configuration,
 )
 
@@ -325,7 +326,11 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "Elastic dense contact may inject energy or expose solver " "failure."
             ),
         },
-        "target": {"branch": "main", "commit": git_head()},
+        "target": {
+            "branch": "main",
+            "commit": git_head(),
+            "fetch_hint": target_fetch_hint(),
+        },
         "scene": {
             "id": parameters["scene_id"],
             "digest": scene_digest(parameters),
@@ -494,9 +499,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "Two timesteps and two solvers only.",
             ],
         },
-        "review": (
-            preserve_review(output_path) if output_path is not None else {"passes": []}
-        ),
+        "review": {"passes": []},
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -508,6 +511,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             ),
         },
     }
+    if output_path is not None:
+        # Rebind after assembly: only passes whose content_digest matches the
+        # regenerated packet survive (see preserve_review).
+        packet["review"] = preserve_review(output_path, packet)
     return packet
 
 

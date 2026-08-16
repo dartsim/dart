@@ -977,7 +977,8 @@
   "target": {
     "branch": "main",
     "commit": "ca78b0980e88617b98bdbcb84cfeb01931238d05",
-    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit."
+    "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
   "title": "PD-control tracking error and control work versus timestep (DART 7 first packet)"
 }
