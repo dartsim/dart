@@ -272,13 +272,15 @@ def _git_object_status(commit: str) -> str:
     return "missing"
 
 
+REPEAT_HASH_KEY_RE = re.compile(r"^(?:repeat_)?(?:final_)?(?:trajectory|state)_sha256$")
+
+
 def _has_hash_list(value: object, length: int) -> bool:
-    """True when a hash-named key holds a list of >= `length` digest values."""
+    """True when a supported repeat-hash key holds >= `length` digests."""
     if isinstance(value, dict):
         for key, item in value.items():
-            key_l = str(key).lower()
             if (
-                ("sha256" in key_l or "hash" in key_l)
+                REPEAT_HASH_KEY_RE.match(str(key).lower())
                 and isinstance(item, list)
                 and len(item) >= length
                 and all(
@@ -295,20 +297,18 @@ def _has_hash_list(value: object, length: int) -> bool:
 
 
 def _has_hash_leaf(value: object) -> bool:
-    """True when any nested key names a hash/sha256 with a non-empty value."""
+    """True when a SUPPORTED repeat-hash key (the trajectory/state_sha256
+    family) holds a digest or a list of digests; an arbitrarily named hash
+    field does not bind repeats to their recorded runs."""
     if isinstance(value, dict):
         for key, item in value.items():
-            key_l = str(key).lower()
-            if "sha256" in key_l or "hash" in key_l or "digest" in key_l:
+            if REPEAT_HASH_KEY_RE.match(str(key).lower()):
                 if _is_nonempty_str(item) and HASH_VALUE_RE.match(item.strip()):
                     return True
-                if isinstance(item, dict) and any(
-                    _is_nonempty_str(entry)
-                    and HASH_VALUE_RE.match(entry.strip().removeprefix("sha256:"))
-                    for entry in item.values()
+                if isinstance(item, list) and any(
+                    _is_nonempty_str(entry) and HASH_VALUE_RE.match(entry.strip())
+                    for entry in item
                 ):
-                    return True
-                if isinstance(item, (list, dict)) and _has_hash_leaf(item):
                     return True
             if _has_hash_leaf(item):
                 return True
@@ -479,7 +479,11 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
     )
     if suffix == ".json":
         try:
-            parsed = json.loads(path.read_text(encoding="utf-8"))
+            parsed = json.loads(
+                path.read_text(encoding="utf-8"),
+                parse_constant=_reject_nonstandard_constant,
+                object_pairs_hook=_reject_duplicate_keys,
+            )
         except (OSError, ValueError):
             return mismatch
         if not _has_measurement_leaf(parsed):
@@ -488,7 +492,11 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
     if suffix in (".jsonl", ".ndjson"):
         try:
             parsed_lines = [
-                json.loads(line)
+                json.loads(
+                    line,
+                    parse_constant=_reject_nonstandard_constant,
+                    object_pairs_hook=_reject_duplicate_keys,
+                )
                 for line in path.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
@@ -622,7 +630,11 @@ def _npy_parsed_header(
 
     if not head.startswith(b"\x93NUMPY") or len(head) < 10:
         return mismatch
-    major = head[6]
+    major, minor = head[6], head[7]
+    if (major, minor) not in {(1, 0), (2, 0), (3, 0)}:
+        # numpy.load() accepts only format versions 1.0/2.0/3.0; anything
+        # else is not a loadable artifact.
+        return mismatch
     if major == 1:
         (header_len,) = struct.unpack("<H", head[8:10])
         header_start = 10
@@ -1208,9 +1220,10 @@ def packet_errors(
         ):
             errors.append(
                 "ensemble.deterministic_repeats is asserted but the "
-                "evidence carries no *hash*/sha256 field binding the "
-                "repeats to recorded trajectories; an unverifiable repeat "
-                "claim is not an ensemble"
+                "evidence carries no supported repeat-hash field (the "
+                "trajectory/state_sha256 family) binding the repeats to "
+                "recorded trajectories; an unverifiable repeat claim is "
+                "not an ensemble"
             )
             has_repeats = False
         if has_repeats and ensemble.get("deterministic_repeats_identical") is not True:
@@ -1229,21 +1242,22 @@ def packet_errors(
 
             def _canonical_value(value: object) -> object:
                 # 1 and 1.0 are the same coordinate; the row matcher's ==
-                # treats them as equal, so the distinct-point check must too.
-                if isinstance(value, int) and not isinstance(value, bool):
+                # treats them as equal (recursively, through nested
+                # containers), so the distinct-point check must too.
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, int):
                     return float(value)
+                if isinstance(value, dict):
+                    return {key: _canonical_value(item) for key, item in value.items()}
+                if isinstance(value, list):
+                    return [_canonical_value(item) for item in value]
                 return value
 
             for index, entry in enumerate(sweep):
                 if isinstance(entry, dict) and entry:
                     canonical_points.append(
-                        json.dumps(
-                            {
-                                key: _canonical_value(value)
-                                for key, value in entry.items()
-                            },
-                            sort_keys=True,
-                        )
+                        json.dumps(_canonical_value(entry), sort_keys=True)
                     )
                 else:
                     errors.append(
@@ -1419,6 +1433,26 @@ def packet_errors(
                     "or maintenance tasks and unrelated scripts do not "
                     "regenerate this packet's evidence"
                 )
+            elif (
+                isinstance(claim_id, str)
+                and CLAIM_ID_RE.match(claim_id)
+                and not any(
+                    re.search(
+                        r"python[ \t].*scripts/write_citation_"
+                        + re.escape(claim_id.lower().replace("-", ""))
+                        + r"[a-z0-9_]*\.py",
+                        commands[index],
+                    )
+                    for index in non_build_indices
+                )
+            ):
+                errors.append(
+                    "no evidence.commands entry runs THIS claim's evidence "
+                    f"writer (scripts/write_citation_"
+                    f"{claim_id.lower().replace('-', '')}*.py); another "
+                    "claim's writer regenerates a different experiment and "
+                    "cannot reproduce these measurements"
+                )
             elif min(build_indices) > min(non_build_indices):
                 errors.append(
                     "evidence.commands must run the build step BEFORE the "
@@ -1511,6 +1545,12 @@ def packet_errors(
                 "raw evidence cannot demonstrate per-point coverage"
             )
         if has_rows:
+            coordinate_keys = {
+                str(key)
+                for point in (sweep if isinstance(sweep, list) else [])
+                if isinstance(point, dict)
+                for key in point
+            }
             for index, row in enumerate(raw_rows):
                 if not (isinstance(row, dict) and row):
                     errors.append(
@@ -1519,17 +1559,23 @@ def packet_errors(
                         "not raw evidence"
                     )
                     continue
+
+                def _terminal(path: str) -> str:
+                    return re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
+
                 if not any(
                     (_is_finite_number(leaf) or isinstance(leaf, bool))
-                    and not _is_bookkeeping_key(
-                        re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
-                    )
+                    and not _is_bookkeeping_key(_terminal(path))
+                    and not _is_seed_key(_terminal(path))
+                    and _terminal(path) not in coordinate_keys
                     for path, leaf in _metric_leaves(row)
                 ):
                     errors.append(
                         f"evidence.raw_rows[{index}] carries no numeric or "
                         "boolean measurement beyond bookkeeping (seed/index/"
-                        "id/...); a metadata-only record is not raw evidence"
+                        "id/...) and declared sweep coordinates; a "
+                        "coordinate restated is not an outcome, and a "
+                        "metadata-only record is not raw evidence"
                     )
         if has_paths:
             for index, raw_path in enumerate(raw_paths):

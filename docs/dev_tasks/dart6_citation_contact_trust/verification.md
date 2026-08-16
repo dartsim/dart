@@ -450,3 +450,22 @@ exactly, and `--fetch-target-refs` (run before check-lint in the three
 platform workflows) restores squash-merged target commits so the
 round-22 object-store check stays answerable after this PR merges.
 Tests: 149 -> 155 (6.20), 169 -> 175 (main).
+
+## Codex review round 24 (PR #3444) — 2026-08-16
+
+Five findings on this lane plus two mirrored from main. NPY format
+versions are whitelisted to 1.0/2.0/3.0 (a version-9.0 header is not a
+loadable artifact). Repeat binding now requires the supported
+trajectory/state_sha256 key family — `ensemble.unrelated_hash` no
+longer counts (main's CT-011 writer emits a row-level
+trajectory_sha256 to conform; this lane's CT-001 rows already did).
+The evidence-writer command must name THIS claim's writer
+(write_citation_<id>*.py): citing another claim's writer records a
+sequence that regenerates a different experiment. Raw JSON artifacts
+load through the same strict NaN/duplicate-key hooks as packets. Sweep
+point deduplication canonicalizes recursively so nested int/float
+coordinate spellings are one point, matching the row matcher. From
+main: sweep coordinates and seed keys are excluded from the
+row-measurement requirement (a coordinate restated is not an outcome),
+and CT-004's articulated hash now covers every joint state per step.
+Tests: 155 -> 161 (6.20), 175 -> 181 (main).
