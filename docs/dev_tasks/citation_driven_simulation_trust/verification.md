@@ -729,3 +729,13 @@ packets are regenerated at the round-14 commit. From #3444:
 evidence/raw/ is now reserved for raw artifacts — excluded from packet
 discovery, and lanes may not reference into it. Tests: 133 -> 134
 (main), 113 -> 114 (6.20).
+
+## Codex review round 15 (PR #3445) — 2026-08-16
+
+Three findings, all fixed on both branches: overlapping sweep points
+must be matched to DISTINCT rows (a backtracking system-of-distinct-
+representatives search replaces the independent any() matching one row
+could satisfy twice); NPY arrays with a zero dimension or header-only
+payloads are rejected; NPZ members ending in .npy are themselves parsed
+as valid non-empty arrays rather than trusted by name. Tests: 134 -> 137
+(main), 114 -> 117 (6.20).

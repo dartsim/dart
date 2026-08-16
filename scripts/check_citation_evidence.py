@@ -83,6 +83,26 @@ NUMERIC_BOOKKEEPING_KEYS = frozenset(
 )
 
 
+def _distinct_assignment_exists(match_sets: "list[set[int]]") -> bool:
+    """Backtracking search for a system of distinct representatives: every
+    declared point must map to its OWN row."""
+    ordered = sorted(match_sets, key=len)
+    used: set[int] = set()
+
+    def assign(index: int) -> bool:
+        if index == len(ordered):
+            return True
+        for row_index in ordered[index]:
+            if row_index not in used:
+                used.add(row_index)
+                if assign(index + 1):
+                    return True
+                used.remove(row_index)
+        return False
+
+    return assign(0)
+
+
 def _has_measurement_leaf(value: object) -> bool:
     """True when the value contains a numeric/boolean leaf beyond
     bookkeeping keys (the raw-rows measurement rule, applied to parsed
@@ -410,9 +430,14 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             with path.open("rb") as stream:
                 archive = zipfile.ZipFile(io.BytesIO(stream.read()))
             names = archive.namelist()
-        except OSError, zipfile.BadZipFile:
-            return mismatch
-        if not names or not any(name.endswith(".npy") for name in names):
+            npy_members = [name for name in names if name.endswith(".npy")]
+            if not npy_members:
+                return mismatch
+            for name in npy_members:
+                member_bytes = archive.read(name)
+                if _npy_header_issue(member_bytes, mismatch) is not None:
+                    return mismatch
+        except OSError, zipfile.BadZipFile, KeyError:
             return mismatch
         return None
     if suffix == ".parquet":
@@ -458,10 +483,13 @@ def _npy_header_issue(head: bytes, mismatch: str) -> "str | None":
         and {"descr", "shape", "fortran_order"} <= set(header)
         and isinstance(header["shape"], tuple)
         and all(
-            isinstance(dim, int) and not isinstance(dim, bool) and dim >= 0
+            isinstance(dim, int) and not isinstance(dim, bool) and dim >= 1
             for dim in header["shape"]
         )
     ):
+        return mismatch
+    if len(head) <= header_start + header_len:
+        # Header-only file: a declared array with no payload bytes.
         return mismatch
     return None
 
@@ -1073,20 +1101,31 @@ def packet_errors(
         # OBSERVED by a row carrying its exact coordinates, or one point's
         # measurements could be repeated to stand in for the others.
         if has_rows and isinstance(sweep, list):
-            for point in sweep:
-                if not (isinstance(point, dict) and point):
-                    continue
-                if not any(
-                    isinstance(row, dict)
+            object_points = [
+                point for point in sweep if isinstance(point, dict) and point
+            ]
+            match_sets = []
+            for point in object_points:
+                matches = {
+                    index
+                    for index, row in enumerate(raw_rows)
+                    if isinstance(row, dict)
                     and all(row.get(key) == value for key, value in point.items())
-                    for row in raw_rows
-                ):
+                }
+                if not matches:
                     errors.append(
                         f"ensemble.sweep point {point} has no matching row "
                         "in evidence.raw_rows recording those coordinates; "
                         "a declared configuration without an observation is "
                         "not swept"
                     )
+                match_sets.append(matches)
+            if all(match_sets) and not _distinct_assignment_exists(match_sets):
+                errors.append(
+                    "ensemble.sweep points cannot be matched to DISTINCT "
+                    "rows; overlapping coordinates must each have their own "
+                    "recorded observation"
+                )
         if has_rows and isinstance(seeds, list):
             for seed in seeds:
                 if not (
