@@ -1277,9 +1277,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "dd68714d6a7a928b3af784e08369469b0e945216",
+    "commit": "1cce306ff466e7fd6ea00118e9577bf4bf9b5665",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout dd68714d6a7a928b3af784e08369469b0e945216"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout 1cce306ff466e7fd6ea00118e9577bf4bf9b5665"
   },
   "title": "Rolling-direction friction dependence (DART 7 first packet)"
 }
