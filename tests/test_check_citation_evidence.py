@@ -109,6 +109,11 @@ def complete_packet() -> dict:
             "limitations": ["Single fixture."],
         },
         "review": {"passes": []},
+        "host": {
+            "platform": "test-host",
+            "python": "3.14",
+            "performance_valid": False,
+        },
     }
 
 
@@ -400,12 +405,8 @@ def test_dangling_raw_path_fails(tmp_path):
     assert any("does not resolve" in error for error in errors)
     (tmp_path / "real.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     packet["evidence"]["raw_paths"] = ["real.csv"]
-    # raw_paths carry no hash leaf, so the repeats claim needs one recorded
-    # elsewhere; a sweep ensemble sidesteps that requirement here, and
-    # path-based evidence must pin its artifact bytes.
-    del packet["ensemble"]["deterministic_repeats"]
-    del packet["ensemble"]["deterministic_repeats_identical"]
-    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    # Path-based evidence pins its artifact bytes; those digests also carry
+    # the hash-bearing evidence the repeats claim binds to.
     packet["evidence"]["artifact_digests"] = {
         "real.csv": "sha256:"
         + hashlib.sha256((tmp_path / "real.csv").read_bytes()).hexdigest()
@@ -1220,3 +1221,76 @@ def test_structurally_empty_json_artifacts_fail(tmp_path):
     assert any(
         "carries no numeric or boolean measurement content" in error for error in errors
     )
+
+
+def test_scalar_sweep_points_must_be_observed():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [0.0, 15.0]
+    packet["evidence"]["raw_rows"] = [
+        {"angle_deg": 0.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+        {"angle_deg": 99.0, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("has no row carrying that value" in error for error in errors)
+
+
+def test_sweep_ensembles_require_rows(tmp_path):
+    (tmp_path / "rows.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.csv"]
+    packet["evidence"]["artifact_digests"] = {
+        "rows.csv": "sha256:"
+        + hashlib.sha256((tmp_path / "rows.csv").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("requires inline evidence.raw_rows" in error for error in errors)
+
+
+def test_host_provenance_is_required():
+    packet = complete_packet()
+    del packet["host"]
+    errors = MODULE.packet_errors(packet)
+    assert any("missing required top-level keys" in error for error in errors)
+    packet = complete_packet()
+    del packet["host"]["performance_valid"]
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "performance_valid must be an explicit boolean" in error for error in errors
+    )
+
+
+def test_metadata_only_csv_fails(tmp_path):
+    (tmp_path / "rows.csv").write_text("note,status\nfoo,pending\n", encoding="utf-8")
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.csv"]
+    packet["evidence"]["artifact_digests"] = {
+        "rows.csv": "sha256:"
+        + hashlib.sha256((tmp_path / "rows.csv").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "carries no numeric or boolean measurement content" in error for error in errors
+    )
+
+
+def test_signature_only_webp_and_mp4_fail(tmp_path):
+    root = tmp_path / "d"
+    root.mkdir()
+    (root / "clip.webp").write_bytes(
+        b"RIFF" + b"\x00\x01\x02\x03" + b"WEBP" + b"p" * 60
+    )
+    packet = complete_packet()
+    packet["evidence"]["visual"] = ["clip.webp"]
+    packet["evidence"]["artifact_digests"] = {
+        "clip.webp": "sha256:"
+        + hashlib.sha256((root / "clip.webp").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=root)
+    assert any("structurally complete" in error for error in errors)

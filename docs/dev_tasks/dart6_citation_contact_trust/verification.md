@@ -334,3 +334,13 @@ fixed this branch's CT-001 NaN-blindness (validity gates would pass a
 NaN trajectory since NaN comparisons are False — rows now carry an
 explicit full-state finite flag gated in validity_failures). CT-001
 regenerated at the round-11 commit. Tests: 102 -> 105.
+
+## Codex review round 12 (PR #3444) — 2026-08-16, loop checkpoint
+
+Three findings here plus two shared, all fixed (mirrored with main):
+scalar sweep-point observation binding; sweep/seed ensembles require
+inline rows; required host provenance with explicit performance_valid;
+numeric-content CSV validation; WebP/MP4 container consistency. The
+review loop pauses at this checkpoint for the maintainer's decision;
+every posted finding through round 12 is addressed and pushed. Tests:
+105 -> 110.
