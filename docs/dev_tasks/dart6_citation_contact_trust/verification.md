@@ -344,3 +344,10 @@ numeric-content CSV validation; WebP/MP4 container consistency. The
 review loop pauses at this checkpoint for the maintainer's decision;
 every posted finding through round 12 is addressed and pushed. Tests:
 105 -> 110.
+
+## Pre-merge gate at the loop checkpoint — 2026-08-16
+
+Full `pixi run test-all` on the checkpoint head `886558f28f1`: exit 0,
+all phases pass (158/158). This is the pre-merge evidence for PR #3444;
+the merge decision (or a continue-the-loop call) rests with the
+maintainer.
