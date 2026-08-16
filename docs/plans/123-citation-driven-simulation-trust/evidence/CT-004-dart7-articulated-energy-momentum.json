@@ -407,8 +407,8 @@
         "max_abs_energy_drift_j": 1.1453730886021916,
         "max_abs_relative_energy_drift": 0.5674949600416408,
         "repeat_trajectory_sha256": [
-          "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b",
-          "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b"
+          "abf119f6bcd61168c35ad8ea827dec7e924a45eb6667a1b6d35b1ef2c95c1387",
+          "abf119f6bcd61168c35ad8ea827dec7e924a45eb6667a1b6d35b1ef2c95c1387"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -452,7 +452,7 @@
         },
         "steps": 500,
         "timestep_s": 0.004,
-        "trajectory_sha256": "33a3b41b64f4546027954c752949346e3288deb713e3993639cc54b00f1e6b5b"
+        "trajectory_sha256": "abf119f6bcd61168c35ad8ea827dec7e924a45eb6667a1b6d35b1ef2c95c1387"
       },
       {
         "final_total_energy_j": -1.5674156373231396,
@@ -463,8 +463,8 @@
         "max_abs_energy_drift_j": 0.5434502873429725,
         "max_abs_relative_energy_drift": 0.2692618694897877,
         "repeat_trajectory_sha256": [
-          "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03",
-          "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03"
+          "edc3e45ca617293d4b4ddd3745e5cceb426bbed431f150bc2822b3d686f98442",
+          "edc3e45ca617293d4b4ddd3745e5cceb426bbed431f150bc2822b3d686f98442"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -508,7 +508,7 @@
         },
         "steps": 1000,
         "timestep_s": 0.002,
-        "trajectory_sha256": "ca6f6cab3e3f43b60e5cf1f5d108239cd10e4a78a6287aa0d46b994c5cd9ad03"
+        "trajectory_sha256": "edc3e45ca617293d4b4ddd3745e5cceb426bbed431f150bc2822b3d686f98442"
       },
       {
         "final_total_energy_j": -1.8004734230407382,
@@ -519,8 +519,8 @@
         "max_abs_energy_drift_j": 0.26467289477035383,
         "max_abs_relative_energy_drift": 0.13113677572528915,
         "repeat_trajectory_sha256": [
-          "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a",
-          "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a"
+          "29563ff0b9fe3900df36266a1acd5059996ce5356f6c50a91c4021e93d5f92b7",
+          "29563ff0b9fe3900df36266a1acd5059996ce5356f6c50a91c4021e93d5f92b7"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -564,7 +564,7 @@
         },
         "steps": 2000,
         "timestep_s": 0.001,
-        "trajectory_sha256": "a8ab82d9906be5879e174ba1b6b38f64ce0714df75d4fa426b87c70897f39f5a"
+        "trajectory_sha256": "29563ff0b9fe3900df36266a1acd5059996ce5356f6c50a91c4021e93d5f92b7"
       },
       {
         "final_total_energy_j": -1.911266312486568,
@@ -575,8 +575,8 @@
         "max_abs_energy_drift_j": 0.1306014805077389,
         "max_abs_relative_energy_drift": 0.0647087684350685,
         "repeat_trajectory_sha256": [
-          "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73",
-          "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73"
+          "caeb8e822ea1b23f24beb6a6da3a9313d6c447176b3078032c36ed982cd37d53",
+          "caeb8e822ea1b23f24beb6a6da3a9313d6c447176b3078032c36ed982cd37d53"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -620,7 +620,7 @@
         },
         "steps": 4000,
         "timestep_s": 0.0005,
-        "trajectory_sha256": "828539234f8a9e0c7a1abc644374e751a5542dee391886e1708b8a1b82120c73"
+        "trajectory_sha256": "caeb8e822ea1b23f24beb6a6da3a9313d6c447176b3078032c36ed982cd37d53"
       },
       {
         "final_total_energy_j": -2.0437843185234734,
@@ -631,8 +631,8 @@
         "max_abs_energy_drift_j": 0.1755340480261065,
         "max_abs_relative_energy_drift": 0.08697138824179299,
         "repeat_trajectory_sha256": [
-          "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36",
-          "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36"
+          "521eb95a4346c98ef2209d21824e8d624147084f0bbfc545c2565fc97497d15a",
+          "521eb95a4346c98ef2209d21824e8d624147084f0bbfc545c2565fc97497d15a"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -676,7 +676,7 @@
         },
         "steps": 500,
         "timestep_s": 0.004,
-        "trajectory_sha256": "3b260b2aad289ad0ee2c5d0bb9a88fbc0887ed7ba0bed29b988078cfb9f6ec36"
+        "trajectory_sha256": "521eb95a4346c98ef2209d21824e8d624147084f0bbfc545c2565fc97497d15a"
       },
       {
         "final_total_energy_j": -2.0311100411781546,
@@ -687,8 +687,8 @@
         "max_abs_energy_drift_j": 0.08610771893666502,
         "max_abs_relative_energy_drift": 0.042663562644792916,
         "repeat_trajectory_sha256": [
-          "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582",
-          "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582"
+          "0e540b5812b22d2173fa7b97ef7f8afc57ff92e652d34afc263424fd7b300097",
+          "0e540b5812b22d2173fa7b97ef7f8afc57ff92e652d34afc263424fd7b300097"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -732,7 +732,7 @@
         },
         "steps": 1000,
         "timestep_s": 0.002,
-        "trajectory_sha256": "c320c585b91fb94fdffb008502a85970585970f4d7b6db6e591339c6ece79582"
+        "trajectory_sha256": "0e540b5812b22d2173fa7b97ef7f8afc57ff92e652d34afc263424fd7b300097"
       },
       {
         "final_total_energy_j": -2.02471920214893,
@@ -743,8 +743,8 @@
         "max_abs_energy_drift_j": 0.04264872954602339,
         "max_abs_relative_energy_drift": 0.02113105267654267,
         "repeat_trajectory_sha256": [
-          "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae",
-          "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae"
+          "e278c0f674dc725652569cab497ea04f8989b2fedf47e495a5baccbbae9142d7",
+          "e278c0f674dc725652569cab497ea04f8989b2fedf47e495a5baccbbae9142d7"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -788,7 +788,7 @@
         },
         "steps": 2000,
         "timestep_s": 0.001,
-        "trajectory_sha256": "74505b657816a4f2795e8817e1a4e448bf75e939797992abf2d878a4d8ddf8ae"
+        "trajectory_sha256": "e278c0f674dc725652569cab497ea04f8989b2fedf47e495a5baccbbae9142d7"
       },
       {
         "final_total_energy_j": -2.0215116473513888,
@@ -799,8 +799,8 @@
         "max_abs_energy_drift_j": 0.02121937787327255,
         "max_abs_relative_energy_drift": 0.01051350875809135,
         "repeat_trajectory_sha256": [
-          "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd",
-          "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd"
+          "ab28b12acca2a248dfa1f15d234429eef6eaf4ae7692e54e3911d3e76813268c",
+          "ab28b12acca2a248dfa1f15d234429eef6eaf4ae7692e54e3911d3e76813268c"
         ],
         "resolved": {
           "gravity_mps2": [
@@ -844,7 +844,7 @@
         },
         "steps": 4000,
         "timestep_s": 0.0005,
-        "trajectory_sha256": "dac8263daea9125b41a51bb9fed6ef1e4e965f79e4256844dfe826ea243a92dd"
+        "trajectory_sha256": "ab28b12acca2a248dfa1f15d234429eef6eaf4ae7692e54e3911d3e76813268c"
       }
     ],
     "visual": {
@@ -978,9 +978,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "efd0e8bb758fb10aa8d9606aaaae0b4015ece9e7",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout f4e9e5c11d5d3b443693cde9142bf317e2115cd3"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout efd0e8bb758fb10aa8d9606aaaae0b4015ece9e7"
   },
   "title": "Articulated energy drift versus timestep across integration families (DART 7 first packet)"
 }

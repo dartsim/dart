@@ -179,7 +179,8 @@
         "same_history_restore_sha256": [
           "26aeeada76d96c05e831b49bc015344dff3f89696f31b414673063165444d506",
           "26aeeada76d96c05e831b49bc015344dff3f89696f31b414673063165444d506"
-        ]
+        ],
+        "trajectory_sha256": "7a1aff8619cb5f4170d4573c3a21e7ed59b5b22377bf2bb13651ff4bae6c8c3c"
       },
       {
         "ballistic_control_sha256": [
@@ -247,7 +248,8 @@
         "same_history_restore_sha256": [
           "538fd382678f25ae2fb3b8d841470797336ed283c69bea3c793daa6aa1b6f34d",
           "538fd382678f25ae2fb3b8d841470797336ed283c69bea3c793daa6aa1b6f34d"
-        ]
+        ],
+        "trajectory_sha256": "a872beabf67b865b484d53bed8c24d15513c46941e1516bdc36a5c4ddbd5579a"
       }
     ],
     "visual": {
@@ -373,9 +375,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "3fe6fbfbfcdf090a8f265d7758088f50957987b0",
+    "commit": "efd0e8bb758fb10aa8d9606aaaae0b4015ece9e7",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout 3fe6fbfbfcdf090a8f265d7758088f50957987b0"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout efd0e8bb758fb10aa8d9606aaaae0b4015ece9e7"
   },
   "title": "State-vector restore equivalence under contact (DART 7 first packet)"
 }
