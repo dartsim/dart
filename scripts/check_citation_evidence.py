@@ -769,6 +769,7 @@ def packet_errors(
         if not _is_nonempty_str(configuration.get("fallback_policy")):
             errors.append("configuration.fallback_policy must be a non-empty string")
 
+    declared_points = 0
     ensemble = packet.get("ensemble")
     if not isinstance(ensemble, dict):
         errors.append("ensemble must be an object")
@@ -832,6 +833,8 @@ def packet_errors(
                     "ensemble.sweep must contain at least two DISTINCT points"
                 )
                 has_sweep = False
+            if has_sweep:
+                declared_points = max(declared_points, len(canonical_points))
         has_seeds = isinstance(seeds, list) and len(seeds) >= 2
         if has_seeds:
             for index, entry in enumerate(seeds):
@@ -847,6 +850,8 @@ def packet_errors(
             if has_seeds and len({repr(entry) for entry in seeds}) < 2:
                 errors.append("ensemble.seeds must contain at least two DISTINCT seeds")
                 has_seeds = False
+            if has_seeds:
+                declared_points = max(declared_points, len(seeds))
         if not (has_repeats or has_sweep or has_seeds):
             errors.append(
                 "ensemble must record deterministic_repeats >= 2, a sweep of "
@@ -939,6 +944,12 @@ def packet_errors(
         raw_rows = evidence.get("raw_rows")
         has_paths = isinstance(raw_paths, list) and bool(raw_paths)
         has_rows = isinstance(raw_rows, list) and bool(raw_rows)
+        if has_rows and declared_points > len(raw_rows):
+            errors.append(
+                f"ensemble declares {declared_points} sweep/seed points but "
+                f"evidence.raw_rows records only {len(raw_rows)} rows; every "
+                "declared point needs at least one recorded sample"
+            )
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
         if has_rows:
@@ -991,6 +1002,11 @@ def packet_errors(
                             f"evidence.raw_paths[{index}] {raw_path!r} "
                             f"{content_issue}"
                         )
+        referenced_paths: list[str] = []
+        if has_paths:
+            referenced_paths.extend(
+                raw_path for raw_path in raw_paths if _is_nonempty_str(raw_path)
+            )
         visual = evidence.get("visual")
         if isinstance(visual, dict):
             if visual.get("status") != "not-applicable" or not _is_nonempty_str(
@@ -1042,6 +1058,44 @@ def packet_errors(
                 "evidence.visual must list visual artifacts or be typed "
                 "not-applicable with a reason"
             )
+        if isinstance(visual, list):
+            for item in visual:
+                if _is_nonempty_str(item):
+                    referenced_paths.append(item)
+                elif isinstance(item, dict) and _is_nonempty_str(item.get("path")):
+                    referenced_paths.append(item["path"])
+        if referenced_paths:
+            digests = evidence.get("artifact_digests")
+            if not isinstance(digests, dict):
+                errors.append(
+                    "evidence.artifact_digests must map every referenced "
+                    "artifact path to its sha256; without it, review "
+                    "digests do not bind the referenced bytes"
+                )
+            else:
+                for ref in referenced_paths:
+                    recorded = digests.get(ref)
+                    if not (
+                        isinstance(recorded, str) and SCENE_DIGEST_RE.match(recorded)
+                    ):
+                        errors.append(
+                            f"evidence.artifact_digests[{ref!r}] must record "
+                            "sha256:<64 hex> for the referenced artifact"
+                        )
+                        continue
+                    resolved = _resolve_evidence_path(ref, base_dir)
+                    if resolved is not None:
+                        actual = (
+                            "sha256:"
+                            + hashlib.sha256(resolved.read_bytes()).hexdigest()
+                        )
+                        if actual != recorded:
+                            errors.append(
+                                f"evidence.artifact_digests[{ref!r}] does "
+                                "not match the referenced file's bytes; a "
+                                "swapped artifact invalidates the packet "
+                                "and its reviews"
+                            )
 
     result = packet.get("result")
     if not isinstance(result, dict):

@@ -315,3 +315,12 @@ Three findings here plus the shared newline defect, all fixed (mirrored
 with main): newline-proof command validation (a genuine round-8 regex
 defect); per-repeat hash lists for repeat counts above 2; structural
 parsing of raw-data artifacts. Tests: 96 -> 100.
+
+## Codex review round 10 (PR #3444) — 2026-08-16
+
+Two findings here plus two shared, all fixed (mirrored with main):
+declared sweep/seed points must be matched by recorded rows; the broken
+DART_CITATION_PR override removed (ownership transfer updates writer
+and validator constants together); artifact_digests bind path-based
+evidence bytes; the CT-011 full-state instrument fix is main-only (no
+6.20 restore packet). Tests: 100 -> 102.
