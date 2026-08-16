@@ -1528,3 +1528,59 @@ def test_npz_members_must_be_valid_arrays(tmp_path):
     assert any(
         "does not parse as its claimed raw-data format" in error for error in errors
     )
+
+
+def test_seeds_need_distinct_rows():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["seeds"] = [7, 11]
+    packet["evidence"]["raw_rows"] = [
+        {
+            "seed": 7,
+            "other_seed": 11,
+            "metric": 1.0,
+            "trajectory_sha256": "d" * 64,
+        },
+        {"metric": 2.0, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("DISTINCT rows" in error for error in errors)
+
+
+def test_zero_duration_windows_fail():
+    for bad in (
+        {"start_s": 1.0, "end_s": 1.0},
+        {"start_s": -2.0, "end_s": -1.0},
+    ):
+        packet = complete_packet()
+        packet["ensemble"]["measurement_window"] = bad
+        errors = MODULE.packet_errors(packet)
+        assert any(
+            "non-empty" in error and "interval" in error for error in errors
+        ), bad
+
+
+def test_invalid_host_forbids_measured_performance():
+    packet = complete_packet()
+    packet["metrics"]["performance"] = {
+        "method": "wall clock",
+        "step_time_ms": 1.2,
+    }
+    errors = MODULE.packet_errors(packet)
+    assert any("uncontrolled host" in error for error in errors)
+
+
+def test_parquet_stub_fails(tmp_path):
+    (tmp_path / "rows.parquet").write_bytes(b"PAR1PAR1")
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.parquet"]
+    packet["evidence"]["artifact_digests"] = {
+        "rows.parquet": "sha256:"
+        + hashlib.sha256((tmp_path / "rows.parquet").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )

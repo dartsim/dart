@@ -385,6 +385,7 @@
   },
   "evidence": {
     "commands": [
+      "pixi run build",
       "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct007_high_mass_ratio_packet.py"
     ],
     "raw_rows": [

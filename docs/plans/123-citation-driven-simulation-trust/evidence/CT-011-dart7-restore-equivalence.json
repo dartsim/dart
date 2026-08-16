@@ -109,6 +109,7 @@
   },
   "evidence": {
     "commands": [
+      "pixi run build",
       "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct011_restore_equivalence_packet.py"
     ],
     "raw_rows": [

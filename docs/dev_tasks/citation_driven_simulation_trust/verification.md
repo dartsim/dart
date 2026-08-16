@@ -739,3 +739,23 @@ could satisfy twice); NPY arrays with a zero dimension or header-only
 payloads are rejected; NPZ members ending in .npy are themselves parsed
 as valid non-empty arrays rather than trusted by name. Tests: 134 -> 137
 (main), 114 -> 117 (6.20).
+
+## Codex review round 16 (PR #3445) — 2026-08-16
+
+Seven findings across both PRs (the 3445 review was cut against the
+pre-round-15 head after a worktree slip delayed that push; its findings
+were all fresh regardless), all fixed: reproduction command lists now
+begin with `pixi run build` (writers emit it; existing packets migrated
+in place, content-equal); measured performance is forbidden while
+host.performance_valid is false; parquet stubs are rejected via footer
+metadata-length sanity; declared seeds need DISTINCT observed rows
+(same system-of-distinct-representatives as sweep points); time windows
+must be non-empty intervals with non-negative start; CT-007 gains a
+whole-stack fall-through criterion (lower-box sink beyond a half
+extent counts as failure — current cells all pass by 3 orders of
+margin, so the pattern is unchanged and the criterion guards future
+runs); and the 6.20 design doc's packet-contract list is aligned with
+the enforced schema (model/license provenance applies when external
+assets are used; procedural scenes carry their construction in
+scene.parameters). CT-007 regenerated at the round-16 commit. Tests:
+137 -> 141 (main), 117 -> 121 (6.20).

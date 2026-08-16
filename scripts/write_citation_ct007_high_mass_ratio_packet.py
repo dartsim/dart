@@ -366,6 +366,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
     # A stack whose boxes close more than a tenth of a box height has not been
     # held apart in any useful sense.
     collapse_threshold = 0.1
+    half = float(parameters["box_half_extent_m"])
     degraded_cells = [
         {
             "contact_solver_method": row["contact_solver_method"],
@@ -376,6 +377,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         for row in rows
         if not row["finite"]
         or (row["relative_gap_closure"] or 0.0) > collapse_threshold
+        # Whole-stack fall-through keeps the gap closure near zero while
+        # both boxes leave the ground; the sink of the LOWER box catches it.
+        or (row["lower_sink_m"] or 0.0) > half
     ]
 
     # Characterize each method's failure onset: the smallest swept ratio at
@@ -389,6 +393,9 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             and (
                 not row["finite"]
                 or (row["relative_gap_closure"] or 0.0) > collapse_threshold
+                # Whole-stack fall-through keeps the gap closure near zero while
+                # both boxes leave the ground; the sink of the LOWER box catches it.
+                or (row["lower_sink_m"] or 0.0) > half
             )
         )
         baseline_finding[method] = {
@@ -585,7 +592,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             },
         },
         "evidence": {
-            "commands": [command],
+            "commands": ["pixi run build", command],
             "raw_rows": rows,
             "visual": {
                 "status": "not-applicable",

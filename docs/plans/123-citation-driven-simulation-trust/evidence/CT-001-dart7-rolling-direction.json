@@ -173,6 +173,7 @@
   },
   "evidence": {
     "commands": [
+      "pixi run build",
       "PYTHONPATH=build/default/cpp/Release/python pixi run python scripts/write_citation_ct001_rolling_direction_packet.py"
     ],
     "raw_rows": [

@@ -449,6 +449,16 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             return mismatch
         if head[:4] != b"PAR1" or tail4 != b"PAR1":
             return mismatch
+        try:
+            with path.open("rb") as stream:
+                stream.seek(-8, 2)
+                footer = stream.read(8)
+        except OSError:
+            return mismatch
+        footer_len = int.from_bytes(footer[:4], "little")
+        file_size = path.stat().st_size
+        if not (0 < footer_len <= file_size - 12):
+            return mismatch
         return None
     return None
 
@@ -1018,9 +1028,16 @@ def packet_errors(
                 )
             start = window.get("start_s")
             end = window.get("end_s")
-            if _is_finite_number(start) and _is_finite_number(end) and start > end:
+            if (
+                _is_finite_number(start)
+                and _is_finite_number(end)
+                and (start < 0 or end <= start)
+            ):
                 errors.append(
-                    "ensemble.measurement_window start_s must not exceed end_s"
+                    "ensemble.measurement_window must be a non-empty "
+                    "interval with start_s >= 0 and end_s > start_s; a "
+                    "zero-duration or negative window contains no "
+                    "measurements"
                 )
             has_time_bounds = {"start_s", "end_s"} <= set(window)
             has_step_bounds = {"warmup_steps", "continuation_steps"} <= set(window)
@@ -1127,24 +1144,35 @@ def packet_errors(
                     "recorded observation"
                 )
         if has_rows and isinstance(seeds, list):
+            seed_match_sets = []
             for seed in seeds:
                 if not (
                     (isinstance(seed, int) and not isinstance(seed, bool))
                     or _is_nonempty_str(seed)
                 ):
                     continue
-                if not any(
-                    isinstance(row, dict)
+                matches = {
+                    index
+                    for index, row in enumerate(raw_rows)
+                    if isinstance(row, dict)
                     and any(
                         "seed" in str(key).lower() and row[key] == seed for key in row
                     )
-                    for row in raw_rows
-                ):
+                }
+                if not matches:
                     errors.append(
                         f"ensemble seed {seed!r} has no row recording it "
                         "under a seed field; a declared seed without an "
                         "observation is not an ensemble member"
                     )
+                seed_match_sets.append(matches)
+            if all(seed_match_sets) and not _distinct_assignment_exists(
+                seed_match_sets
+            ):
+                errors.append(
+                    "ensemble seeds cannot be matched to DISTINCT rows; "
+                    "every declared seed needs its own recorded observation"
+                )
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
         if (has_sweep or has_seeds) and not has_rows:
@@ -1329,6 +1357,21 @@ def packet_errors(
                 "or allocation numbers from an uncontrolled host must not "
                 "pass silently"
             )
+        elif host.get("performance_valid") is False:
+            performance_group = (
+                packet.get("metrics", {}).get("performance")
+                if isinstance(packet.get("metrics"), dict)
+                else None
+            )
+            if (
+                isinstance(performance_group, dict)
+                and performance_group.get("status") != "unsupported"
+            ):
+                errors.append(
+                    "metrics.performance publishes measurements while "
+                    "host.performance_valid is false; timing from an "
+                    "uncontrolled host must be typed unsupported"
+                )
 
     review = packet.get("review")
     if not isinstance(review, dict):

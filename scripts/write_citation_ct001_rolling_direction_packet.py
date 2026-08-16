@@ -665,7 +665,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             },
         },
         "evidence": {
-            "commands": [command],
+            "commands": ["pixi run build", command],
             "raw_rows": rows,
             "visual": {
                 "status": "not-applicable",
