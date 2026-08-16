@@ -398,7 +398,7 @@ def test_dangling_raw_path_fails(tmp_path):
     packet["evidence"]["raw_paths"] = ["does/not/exist.csv"]
     errors = MODULE.packet_errors(packet, base_dir=tmp_path)
     assert any("does not resolve" in error for error in errors)
-    (tmp_path / "real.csv").write_text("x", encoding="utf-8")
+    (tmp_path / "real.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     packet["evidence"]["raw_paths"] = ["real.csv"]
     # raw_paths carry no hash leaf, so the repeats claim needs one recorded
     # elsewhere; a sweep ensemble sidesteps that requirement here.
@@ -1093,3 +1093,48 @@ def test_placeholder_source_urls_fail():
     packet["source"]["url"] = "pending"
     errors = MODULE.packet_errors(packet)
     assert any("retrievable http(s) URL" in error for error in errors)
+
+
+def test_commands_with_embedded_newlines_fail():
+    for bad in ("pixi run check\nfalse", "pixi run check\necho hacked\n"):
+        packet = complete_packet()
+        packet["evidence"]["commands"] = [bad]
+        errors = MODULE.packet_errors(packet)
+        assert any("reproducible repository form" in error for error in errors), bad
+
+
+def test_large_repeat_claims_need_per_repeat_hash_lists():
+    packet = complete_packet()
+    packet["ensemble"]["deterministic_repeats"] = 1000
+    errors = MODULE.packet_errors(packet)
+    assert any("must show their repeats" in error for error in errors)
+    packet["evidence"]["repeat_hashes_sha256"] = ["a" * 64] * 1000
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_metadata_only_scene_parameters_fail():
+    packet = complete_packet()
+    params = {"note": "pending"}
+    packet["scene"]["parameters"] = params
+    packet["scene"]["digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(params, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    errors = MODULE.packet_errors(packet)
+    assert any("metadata-only parameters" in error for error in errors)
+
+
+def test_prose_inside_raw_data_files_fails(tmp_path):
+    (tmp_path / "rows.csv").write_text("totally unstructured prose", encoding="utf-8")
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["rows.csv"]
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )

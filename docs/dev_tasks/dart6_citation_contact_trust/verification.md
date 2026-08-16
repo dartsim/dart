@@ -308,3 +308,10 @@ contradiction not); shell tails rejected in reproduction commands;
 duplicate JSON keys rejected at load; raw-data suffix whitelist for
 raw_paths; digest-shaped hash values; http(s) source URLs. Tests:
 90 -> 96.
+
+## Codex review round 9 (PR #3444) — 2026-08-16
+
+Three findings here plus the shared newline defect, all fixed (mirrored
+with main): newline-proof command validation (a genuine round-8 regex
+defect); per-repeat hash lists for repeat counts above 2; structural
+parsing of raw-data artifacts. Tests: 96 -> 100.

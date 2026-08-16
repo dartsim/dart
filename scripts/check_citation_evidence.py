@@ -170,7 +170,7 @@ UNSUPPORTED_SENTINELS = frozenset(
 )
 
 COMMAND_RE = re.compile(
-    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+\s+)*pixi run\s+[^;|&`$]+$"
+    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+[ \t]+)*" r"pixi run[ \t]+[^;|&`$\n\r]+\Z"
 )
 HASH_VALUE_RE = re.compile(r"^(sha256:)?[0-9a-f]{32,}$")
 RAW_DATA_SUFFIXES = frozenset(
@@ -179,6 +179,28 @@ RAW_DATA_SUFFIXES = frozenset(
 NUMERIC_BOOKKEEPING_KEYS = frozenset(
     {"seed", "seeds", "index", "idx", "id", "ids", "repeat", "repeats", "run"}
 )
+
+
+def _has_hash_list(value: object, length: int) -> bool:
+    """True when a hash-named key holds a list of >= `length` digest values."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_l = str(key).lower()
+            if (
+                ("sha256" in key_l or "hash" in key_l)
+                and isinstance(item, list)
+                and len(item) >= length
+                and all(
+                    _is_nonempty_str(entry) and HASH_VALUE_RE.match(entry.strip())
+                    for entry in item
+                )
+            ):
+                return True
+            if _has_hash_list(item, length):
+                return True
+    elif isinstance(value, list):
+        return any(_has_hash_list(item, length) for item in value)
+    return False
 
 
 def _has_hash_leaf(value: object) -> bool:
@@ -299,6 +321,53 @@ def _resolve_evidence_path(raw_path: str, base_dir: "Path | None") -> "Path | No
         candidate = (root / raw_path).resolve()
         if candidate.is_file() and candidate.is_relative_to(root.resolve()):
             return candidate
+    return None
+
+
+def _raw_data_content_issue(path: "Path") -> "str | None":
+    """Why a raw-data artifact's bytes do not match its claimed format.
+
+    Mirrors the visual check: a prose file renamed to `rows.csv` must not
+    satisfy the raw-evidence requirement. JSON variants must parse; CSV/TSV
+    need delimited tabular lines; NumPy/parquet containers must carry their
+    magic bytes. Deep semantic validation of tabular contents is a recorded
+    boundary.
+    """
+    suffix = path.suffix.lower()
+    try:
+        with path.open("rb") as stream:
+            head = stream.read(1 * 1024 * 1024)
+    except OSError:
+        return "could not be read for format verification"
+    mismatch = (
+        "does not parse as its claimed raw-data format; a renamed prose "
+        "file is not raw evidence"
+    )
+    if suffix == ".json":
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return mismatch
+        return None
+    if suffix in (".jsonl", ".ndjson"):
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    json.loads(line)
+        except (OSError, ValueError):
+            return mismatch
+        return None
+    if suffix in (".csv", ".tsv"):
+        delimiter = b"," if suffix == ".csv" else b"\t"
+        first_lines = head.splitlines()[:2]
+        if not first_lines or not any(delimiter in line for line in first_lines):
+            return mismatch
+        return None
+    if suffix == ".npy":
+        return None if head.startswith(b"\x93NUMPY") else mismatch
+    if suffix in (".npz", ".parquet"):
+        ok = head.startswith(b"PK") if suffix == ".npz" else head[:4] == b"PAR1"
+        return None if ok else mismatch
     return None
 
 
@@ -631,6 +700,16 @@ def packet_errors(
         if not (isinstance(digest, str) and SCENE_DIGEST_RE.match(digest)):
             errors.append("scene.digest must match sha256:<64 hex>")
         parameters = scene.get("parameters")
+        if isinstance(parameters, dict) and parameters:
+            if not any(
+                _is_finite_number(leaf) or isinstance(leaf, bool)
+                for _, leaf in _metric_leaves(parameters)
+            ):
+                errors.append(
+                    "scene.parameters carries no numeric or boolean values; "
+                    "metadata-only parameters do not describe a scene the "
+                    "digest could bind"
+                )
         if not (isinstance(parameters, dict) and parameters):
             errors.append(
                 "scene.parameters must publish the non-empty parameter "
@@ -702,6 +781,20 @@ def packet_errors(
         has_repeats = (
             isinstance(repeats, int) and not isinstance(repeats, bool) and repeats >= 2
         )
+        if (
+            has_repeats
+            and isinstance(repeats, int)
+            and repeats > 2
+            and not _has_hash_list(packet.get("evidence"), repeats)
+        ):
+            errors.append(
+                f"ensemble.deterministic_repeats={repeats} (> 2) requires a "
+                "recorded per-repeat hash list of that length somewhere in "
+                "evidence; two verified repeats may rely on the "
+                "deterministic_repeats_identical flag plus a trajectory "
+                "digest, larger claims must show their repeats"
+            )
+            has_repeats = False
         if has_repeats and not _has_hash_leaf(packet.get("evidence")):
             errors.append(
                 "ensemble.deterministic_repeats is asserted but the "
@@ -889,6 +982,15 @@ def packet_errors(
                     continue
                 if issue is not None:
                     errors.append(f"evidence.raw_paths[{index}] {issue}")
+                    continue
+                resolved = _resolve_evidence_path(raw_path, base_dir)
+                if resolved is not None:
+                    content_issue = _raw_data_content_issue(resolved)
+                    if content_issue is not None:
+                        errors.append(
+                            f"evidence.raw_paths[{index}] {raw_path!r} "
+                            f"{content_issue}"
+                        )
         visual = evidence.get("visual")
         if isinstance(visual, dict):
             if visual.get("status") != "not-applicable" or not _is_nonempty_str(
