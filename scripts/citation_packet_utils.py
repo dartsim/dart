@@ -209,7 +209,10 @@ def record_review_pass(packet_path: "Any", reviewer: str, summary: str) -> None:
 def world_resolved_configuration(world: Any) -> dict[str, Any]:
     """Record the World's own bake-time solver resolution.
 
-    This is the authoritative answer to "which method actually ran": the
+    This is the authoritative answer to "which method the bake resolved
+    each domain to" -- the configuration that runs when a domain is
+    exercised, corroborated in packets by step-profile stage names and
+    trajectory evidence rather than trusted alone: the
     World reports, per domain, what was requested, what it resolved to, and
     why. Echoing back the requested option cannot distinguish a method that
     ran from one that was silently substituted.

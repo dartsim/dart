@@ -314,7 +314,11 @@ void defSimPartCompute(nb::module_& m)
       .def_ro(
           "resolved",
           &sim::compute::ResolvedConfigurationNote::resolved,
-          "Method family the step actually ran.")
+          "Method family the bake resolved this domain to. This is the "
+          "configuration that WILL run when the domain is exercised; it "
+          "does not by itself prove the domain was active in any step -- "
+          "corroborate execution via WorldStepProfile stage names or "
+          "trajectory evidence.")
       .def_ro(
           "reason",
           &sim::compute::ResolvedConfigurationNote::reason,

@@ -158,6 +158,13 @@ def run_single(
 
     for _ in range(step_count):
         world.step()
+        # Per-step full-state trajectory hashing: repeats that reach the
+        # same final state via different transient paths must NOT pass the
+        # determinism gate, because the published metrics are path-dependent.
+        for body in boxes:
+            state_hash.update(np.asarray(body.transform, dtype=float).tobytes())
+            state_hash.update(np.asarray(body.linear_velocity, dtype=float).tobytes())
+            state_hash.update(np.asarray(body.angular_velocity, dtype=float).tobytes())
         metrics = world.compute_step_metrics()
         max_penetration = max(max_penetration, float(metrics.max_penetration_depth))
         max_iterations = max(max_iterations, int(metrics.last_step_iterations))

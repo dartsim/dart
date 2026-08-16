@@ -175,6 +175,14 @@ def run_single(
 
     for step_index in range(step_count):
         world.step()
+        # Per-step full-state trajectory hashing: repeats that settle to the
+        # same final state via different transient paths must NOT pass the
+        # determinism gate, because the published metrics (peak penetration,
+        # settle energy gains) are path-dependent.
+        for body in bodies:
+            state_hash.update(np.asarray(body.transform, dtype=float).tobytes())
+            state_hash.update(np.asarray(body.linear_velocity, dtype=float).tobytes())
+            state_hash.update(np.asarray(body.angular_velocity, dtype=float).tobytes())
         metrics = world.compute_step_metrics()
         kinetic = float(metrics.kinetic_energy)
         total_energy = float(metrics.total_energy)

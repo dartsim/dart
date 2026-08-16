@@ -1566,6 +1566,14 @@ def validate_tree(
                             )
                             continue
                         rel = normalized
+                        if normalized.startswith("evidence/raw/"):
+                            errors.append(
+                                f"{manifest_path}: {claim_id}.lanes."
+                                f"{lane_name}.evidence entry {rel!r} points "
+                                "into evidence/raw/, which holds raw "
+                                "artifacts, not packets"
+                            )
+                            continue
                         if True:
                             if rel in lane_evidence:
                                 owner = lane_evidence[rel]
@@ -1616,11 +1624,14 @@ def validate_tree(
                 "fails closed and can never be a claim's evidence"
             )
 
+    raw_artifacts_dir = evidence_dir / "raw"
     packet_paths = (
         sorted(
             path
             for path in evidence_dir.rglob("*.json")
             if negative_dir.resolve() not in path.resolve().parents
+            and raw_artifacts_dir.resolve() not in path.resolve().parents
+            and not path.name.endswith(".expected-errors.json")
         )
         if evidence_dir.is_dir()
         else []

@@ -711,3 +711,21 @@ rejected outright — a sweep point must be an object naming its
 coordinates, replacing the value-appears-anywhere heuristic that
 unrelated measurements could satisfy. Tests: 130 -> 133 (main),
 110 -> 113 (6.20).
+
+## Codex review round 14 (PR #3445) — 2026-08-16
+
+Three findings, two substantive, all fixed: the resolved-configuration
+binding and helper docs no longer say "actually ran" — they state
+BAKE-TIME resolution (the configuration that will run when a domain is
+exercised) and direct corroboration of execution to WorldStepProfile
+stage names and trajectory evidence; activity-aware per-domain
+execution tracking is recorded as WS4 follow-up work alongside the
+per-solve residual. CT-002's repeat gate hashed only the FINAL state,
+so repeats reaching the same endpoint via different transients would
+have passed while publishing path-dependent metrics (peak penetration,
+settle energy) from one path — CT-002/003/007 now hash the full
+rigid-body state EVERY step (CT-001/011 already did); the three
+packets are regenerated at the round-14 commit. From #3444:
+evidence/raw/ is now reserved for raw artifacts — excluded from packet
+discovery, and lanes may not reference into it. Tests: 133 -> 134
+(main), 113 -> 114 (6.20).

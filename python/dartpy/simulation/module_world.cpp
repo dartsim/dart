@@ -576,11 +576,15 @@ void defSimPartWorld(nb::module_& m)
           &sim::World::getResolvedConfiguration,
           nb::rv_policy::reference_internal,
           "Per-domain solver families this World resolved at "
-          "enter_simulation_mode: what was requested, what actually ran, and "
-          "why. Empty until the World enters simulation mode, and re-recorded "
-          "on every rebake. Use this rather than echoing back the requested "
-          "option, so a benchmark or evidence packet cannot report a method "
-          "that did not run.")
+          "enter_simulation_mode: what was requested, what the bake "
+          "resolved it to, and why. Empty until the World enters "
+          "simulation mode, and re-recorded on every rebake. This is "
+          "BAKE-TIME resolution -- the configuration that will run when a "
+          "domain is exercised -- not proof that a domain was active in "
+          "any step; corroborate execution via WorldStepProfile stage "
+          "names or trajectory evidence. Use it rather than echoing back "
+          "the requested option, so a benchmark or evidence packet cannot "
+          "report a method that was never even configured.")
       .def(
           "compute_step_metrics",
           &sim::World::computeStepMetrics,
