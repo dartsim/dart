@@ -114,11 +114,11 @@
     "raw_rows": [
       {
         "ballistic_control_sha256": [
-          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9",
-          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9"
+          "16a1ec7d64ac5045e2eb17b75ae0515285dc9ef6f71e35a5e51700f68dc902fb",
+          "16a1ec7d64ac5045e2eb17b75ae0515285dc9ef6f71e35a5e51700f68dc902fb"
         ],
         "contact_solver_method": "SEQUENTIAL_IMPULSE",
-        "continuation_sha256": "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61",
+        "continuation_sha256": "26aeeada76d96c05e831b49bc015344dff3f89696f31b414673063165444d506",
         "findings": {
           "ballistic_restore_exact": true,
           "fresh_restore_matches_continuation": false,
@@ -129,18 +129,18 @@
           "same_history_restores_match": true
         },
         "fresh_restore_sha256": [
-          "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b",
-          "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b"
+          "f6d8ffae48a9d9f8a60521d53d667efec3f8b1bb6c810b334fcd68c6b25fcdfa",
+          "f6d8ffae48a9d9f8a60521d53d667efec3f8b1bb6c810b334fcd68c6b25fcdfa"
         ],
         "inplace_divergence_vs_continuation": {
           "first_divergent_step": 0,
-          "max_abs_state_delta": 0.004756158618442807
+          "max_abs_state_delta": 1.8014933537668798
         },
         "inplace_restore_sha256": [
-          "5879f6fde1ccb32093a641e2720b45a147580a93c1079a981c19888a52263d21",
-          "cc166727c022a4f0cd763d38351ea19f1177c9906c5e5ace5555abfd02b9d22d"
+          "6ee86bd7cfb895d5ec008e753be0d5208aa84889b6adef165c002605da8f3149",
+          "43afd72ea859ba81fddeb163788ada6b3d11cbe162244a15f93d4c8374b1695c"
         ],
-        "precontact_history_restore_sha256": "15cf3d42f26b04b3cb1242c75c276a113c35344f9463c7dd2349c1a34667f70b",
+        "precontact_history_restore_sha256": "f6d8ffae48a9d9f8a60521d53d667efec3f8b1bb6c810b334fcd68c6b25fcdfa",
         "resolved": {
           "contact_solver_method": "SEQUENTIAL_IMPULSE",
           "time_step_s": 0.002,
@@ -176,17 +176,17 @@
           }
         },
         "same_history_restore_sha256": [
-          "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61",
-          "0e4b9d59c31f6fa79978a4a1c4893e5adff0a010866c6a58b6e72db0f0b7aa61"
+          "26aeeada76d96c05e831b49bc015344dff3f89696f31b414673063165444d506",
+          "26aeeada76d96c05e831b49bc015344dff3f89696f31b414673063165444d506"
         ]
       },
       {
         "ballistic_control_sha256": [
-          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9",
-          "faf3d3ac5fd6ed8337fa1ea5c6061b576ab938c2be4200f8783ae1b7511142c9"
+          "16a1ec7d64ac5045e2eb17b75ae0515285dc9ef6f71e35a5e51700f68dc902fb",
+          "16a1ec7d64ac5045e2eb17b75ae0515285dc9ef6f71e35a5e51700f68dc902fb"
         ],
         "contact_solver_method": "BOXED_LCP",
-        "continuation_sha256": "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6",
+        "continuation_sha256": "538fd382678f25ae2fb3b8d841470797336ed283c69bea3c793daa6aa1b6f34d",
         "findings": {
           "ballistic_restore_exact": true,
           "fresh_restore_matches_continuation": false,
@@ -197,18 +197,18 @@
           "same_history_restores_match": true
         },
         "fresh_restore_sha256": [
-          "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe",
-          "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe"
+          "e86200daaecf1f7d3a621ca6e438f92cb8ebfef0f366b3a5da46e2eb7ad57bac",
+          "e86200daaecf1f7d3a621ca6e438f92cb8ebfef0f366b3a5da46e2eb7ad57bac"
         ],
         "inplace_divergence_vs_continuation": {
           "first_divergent_step": 0,
-          "max_abs_state_delta": 0.012694905840379356
+          "max_abs_state_delta": 1.7561984148535297
         },
         "inplace_restore_sha256": [
-          "452b08b7a2ba4943f9bc475849b3f9f37d4c62a5fbb10f8e1aa78b0bd198a3e1",
-          "a1dd32085b5ae5b6b25b48cc30f01b7402160c9be2e44fabf82670d450f04ede"
+          "59eb48d602ffd56eebd03a499414ff0d1db3d1c8f10a50cbd22c9c5f9c01e91e",
+          "919bb27b12ae8bfe0e5ca6c01cfdd71b0a0df73f12ce786e64d8eb22824e9d9f"
         ],
-        "precontact_history_restore_sha256": "0614045a6cd87e6d01c45366defb286360d98691664faf8368530329a7167fbe",
+        "precontact_history_restore_sha256": "e86200daaecf1f7d3a621ca6e438f92cb8ebfef0f366b3a5da46e2eb7ad57bac",
         "resolved": {
           "contact_solver_method": "BOXED_LCP",
           "time_step_s": 0.002,
@@ -244,8 +244,8 @@
           }
         },
         "same_history_restore_sha256": [
-          "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6",
-          "3c71899bd799aa0e56388fa7e85ec47549b4a707fda1f03a2809e168fcfb7ac6"
+          "538fd382678f25ae2fb3b8d841470797336ed283c69bea3c793daa6aa1b6f34d",
+          "538fd382678f25ae2fb3b8d841470797336ed283c69bea3c793daa6aa1b6f34d"
         ]
       }
     ],
@@ -282,11 +282,11 @@
       "inplace_divergence": {
         "BOXED_LCP": {
           "first_divergent_step": 0,
-          "max_abs_state_delta": 0.012694905840379356
+          "max_abs_state_delta": 1.7561984148535297
         },
         "SEQUENTIAL_IMPULSE": {
           "first_divergent_step": 0,
-          "max_abs_state_delta": 0.004756158618442807
+          "max_abs_state_delta": 1.8014933537668798
         }
       },
       "measured_zero_fields": [
@@ -318,7 +318,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, a five-sphere pile with a 0.5 s contact-rich warm-up, restored via World.state_vector, both contact solvers. Established: restore is NOT a function of the restored state once the world has contact history -- the in-place continuation differs from the original at the first step, and two in-place restores of the same snapshot differ from each other when different history precedes them -- while a freshly built world restoring the same vector is bit-exact and repeatable, identical histories give identical continuations, pre-contact history is harmless, and the ballistic control is exact. Everything is deterministic given full history; nothing here is nondeterminism. Root cause: the state vector is translational by design and silently omits orientation and angular velocity, so the restore is partial. The corpus row's reset cost, overhead, and concurrency halves are not measured. Says nothing about Skeleton-based state APIs, clone(), replay restore, historical DART versions, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, a five-sphere pile with a 0.5 s contact-rich warm-up, restored via World.state_vector, both contact solvers, all arms compared over the FULL rigid-body state (pose including orientation, linear and angular velocity) so rotational divergence is visible even where it does not feed translation. Established: restore is NOT a function of the restored state once the world has contact history -- the in-place continuation differs from the original at the first step, and two in-place restores of the same snapshot differ from each other when different history precedes them -- while a freshly built world restoring the same vector is bit-exact and repeatable, identical histories give identical continuations, pre-contact history is harmless, and the ballistic control is exact. Everything is deterministic given full history; nothing here is nondeterminism. Root cause: the state vector is translational by design and silently omits orientation and angular velocity, so the restore is partial. The corpus row's reset cost, overhead, and concurrency halves are not measured. Says nothing about Skeleton-based state APIs, clone(), replay restore, historical DART versions, or DART 6.",
     "disposition": "unresolved",
     "limitations": [
       "The mechanism is identified: World.state_vector is a translational state by design (per rigid body it carries position and linear velocity only -- 30 entries for the five-sphere scene -- as documented for the differentiable rigid-body path), so orientation and angular velocity are never captured or restored. A restored world keeps whatever rotational state it already had, which is exactly the history dependence measured here: after the warm-up the spheres carry finite spin (about 7 rad/s on s0) and rolled orientations, a fresh world has identity orientations and zero spin, and friction couples that rotational state into the continuation. Contact history matters only because contact is what makes spheres spin.",
@@ -372,9 +372,9 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "3fe6fbfbfcdf090a8f265d7758088f50957987b0",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout f4e9e5c11d5d3b443693cde9142bf317e2115cd3"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout 3fe6fbfbfcdf090a8f265d7758088f50957987b0"
   },
   "title": "State-vector restore equivalence under contact (DART 7 first packet)"
 }
