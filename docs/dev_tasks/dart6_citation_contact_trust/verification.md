@@ -299,3 +299,12 @@ no longer count as negative controls; step-window bounds validated as
 sane integers; reproducible-form commands; hash-bound repeat claims;
 bookkeeping-only rows rejected. The CT-001 hint was migrated in place
 (content-equal to the updated writer's emission). Tests: 84 -> 90.
+
+## Codex review round 8 (PR #3444) — 2026-08-16
+
+Three findings here plus three shared, all fixed (mirrored with main):
+open-lane dispositions must match their packets (null allowed,
+contradiction not); shell tails rejected in reproduction commands;
+duplicate JSON keys rejected at load; raw-data suffix whitelist for
+raw_paths; digest-shaped hash values; http(s) source URLs. Tests:
+90 -> 96.

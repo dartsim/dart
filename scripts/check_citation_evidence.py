@@ -169,7 +169,13 @@ UNSUPPORTED_SENTINELS = frozenset(
     {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
 )
 
-COMMAND_RE = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*pixi run\s+\S.*$")
+COMMAND_RE = re.compile(
+    r"^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s;|&`$]+\s+)*pixi run\s+[^;|&`$]+$"
+)
+HASH_VALUE_RE = re.compile(r"^(sha256:)?[0-9a-f]{32,}$")
+RAW_DATA_SUFFIXES = frozenset(
+    {".csv", ".tsv", ".json", ".jsonl", ".ndjson", ".npz", ".npy", ".parquet"}
+)
 NUMERIC_BOOKKEEPING_KEYS = frozenset(
     {"seed", "seeds", "index", "idx", "id", "ids", "repeat", "repeats", "run"}
 )
@@ -181,7 +187,8 @@ def _has_hash_leaf(value: object) -> bool:
         for key, item in value.items():
             key_l = str(key).lower()
             if ("sha256" in key_l or "hash" in key_l) and (
-                _is_nonempty_str(item) or (isinstance(item, (list, dict)) and item)
+                (_is_nonempty_str(item) and HASH_VALUE_RE.match(item.strip()))
+                or (isinstance(item, (list, dict)) and _has_hash_leaf(item))
             ):
                 return True
             if _has_hash_leaf(item):
@@ -572,8 +579,12 @@ def packet_errors(
     if not isinstance(source, dict):
         errors.append("source must be an object")
     else:
-        if not _is_nonempty_str(source.get("url")):
-            errors.append("source.url must be a non-empty string")
+        url = source.get("url")
+        if not (_is_nonempty_str(url) and re.match(r"^https?://\S+$", url.strip())):
+            errors.append(
+                "source.url must be a retrievable http(s) URL; a placeholder "
+                "does not bind the claim to its source"
+            )
         if not _is_nonempty_str(source.get("claim")):
             errors.append("source.claim must be a non-empty string")
 
@@ -865,6 +876,17 @@ def packet_errors(
                     )
                     continue
                 issue = _evidence_path_issue(raw_path, base_dir)
+                if issue is not None and "must be a relative path" in issue:
+                    errors.append(f"evidence.raw_paths[{index}] {issue}")
+                    continue
+                if PurePosixPath(raw_path).suffix.lower() not in RAW_DATA_SUFFIXES:
+                    errors.append(
+                        f"evidence.raw_paths[{index}] {raw_path!r} must name "
+                        "a raw-data artifact "
+                        f"({', '.join(sorted(RAW_DATA_SUFFIXES))}); prose or "
+                        "code files are not raw evidence"
+                    )
+                    continue
                 if issue is not None:
                     errors.append(f"evidence.raw_paths[{index}] {issue}")
         visual = evidence.get("visual")
@@ -1092,11 +1114,23 @@ def _reject_nonstandard_constant(constant: str) -> None:
     raise ValueError(f"non-standard JSON constant {constant!r}")
 
 
+def _reject_duplicate_keys(pairs: list) -> dict:
+    """Different JSON consumers disagree on duplicate keys (first vs last
+    wins), so a packet carrying one is not portable machine evidence."""
+    seen: dict = {}
+    for key, value in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate JSON object key {key!r}")
+        seen[key] = value
+    return seen
+
+
 def _load_json(path: Path, errors: list[str]) -> object | None:
     try:
         return json.loads(
             path.read_text(encoding="utf-8"),
             parse_constant=_reject_nonstandard_constant,
+            object_pairs_hook=_reject_duplicate_keys,
         )
     except (OSError, ValueError) as error:
         # json.JSONDecodeError subclasses ValueError; parse_constant raises
@@ -1131,7 +1165,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
     manifest = _load_json(manifest_path, errors)
     known_ids: set[str] = set()
     lane_evidence: dict[str, tuple[str, str]] = {}
-    closed_lane_dispositions: dict[str, object] = {}
+    lane_dispositions: dict[str, tuple[str, object]] = {}
     if manifest is not None:
         manifest_issues = manifest_errors(manifest)
         errors.extend(f"{manifest_path}: {issue}" for issue in manifest_issues)
@@ -1192,8 +1226,10 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                                     "one owner"
                                 )
                             lane_evidence[rel] = (str(claim_id), str(lane_name))
-                            if lane.get("status") == "closed":
-                                closed_lane_dispositions[rel] = lane.get("disposition")
+                            lane_dispositions[rel] = (
+                                str(lane.get("status")),
+                                lane.get("disposition"),
+                            )
 
     # Every lane-referenced path is validated as a packet, wherever it sits.
     # Enumerating only `evidence/*.json` would let a lane close a row with a
@@ -1276,7 +1312,8 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                     f"{packet_path}: target.branch {branch!r} does not match "
                     f"lane {lane_name} branch {expected_branch!r}"
                 )
-            if rel in closed_lane_dispositions:
+            lane_status, lane_disposition = lane_dispositions.get(rel, (None, None))
+            if lane_status == "closed":
                 passes = (
                     packet.get("review", {}).get("passes")
                     if isinstance(packet.get("review"), dict)
@@ -1300,19 +1337,24 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                             "two INDEPENDENT review passes (distinct "
                             "reviewers); a duplicated reviewer is one review"
                         )
-                lane_disposition = closed_lane_dispositions[rel]
+            # A lane's published disposition -- open OR closed -- must be the
+            # one its evidence records; open lanes may defer (null) but may
+            # not contradict.
+            if lane_status in ("closed", "in-progress", "audit-required"):
                 packet_disposition = (
                     packet.get("result", {}).get("disposition")
                     if isinstance(packet.get("result"), dict)
                     else None
                 )
-                if lane_disposition != packet_disposition:
-                    errors.append(
-                        f"{packet_path}: the closing lane records disposition "
-                        f"{lane_disposition!r} but the packet's result is "
-                        f"{packet_disposition!r}; the manifest cannot publish "
-                        "a conclusion its evidence does not support"
-                    )
+                if lane_status == "closed" or lane_disposition is not None:
+                    if lane_disposition != packet_disposition:
+                        errors.append(
+                            f"{packet_path}: the lane records disposition "
+                            f"{lane_disposition!r} but the packet's result "
+                            f"is {packet_disposition!r}; the manifest cannot "
+                            "publish a conclusion its evidence does not "
+                            "support"
+                        )
         if freshness_head is not None:
             commit = (
                 packet.get("target", {}).get("commit")

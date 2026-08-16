@@ -733,8 +733,8 @@ def test_non_string_lane_evidence_entry_fails(tmp_path):
 def test_raw_path_pointing_at_a_directory_fails(tmp_path):
     packet = complete_packet()
     del packet["evidence"]["raw_rows"]
-    (tmp_path / "somedir").mkdir()
-    packet["evidence"]["raw_paths"] = ["somedir"]
+    (tmp_path / "somedir.csv").mkdir()
+    packet["evidence"]["raw_paths"] = ["somedir.csv"]
     errors = MODULE.packet_errors(packet, base_dir=tmp_path)
     assert any("does not resolve" in error for error in errors)
 
@@ -1023,3 +1023,73 @@ def test_repeats_need_hash_bearing_evidence():
     assert any(
         "binding the repeats to recorded trajectories" in error for error in errors
     )
+
+
+def test_open_lane_disposition_must_match_packet(tmp_path):
+    packet = copy.deepcopy(complete_packet())  # result.disposition: unresolved
+    manifest = _minimal_manifest(["CT-001"])
+    lane = manifest["claims"][0]["lanes"][LANE]
+    lane["status"] = "in-progress"
+    lane["disposition"] = "fixed"
+    lane["evidence"] = ["evidence/packet.json"]
+    tree_dir = _write_tree(
+        tmp_path, packet=packet, negative={"schema": "x"}, manifest=manifest
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any(
+        "cannot publish a conclusion its evidence does not support" in error
+        for error in errors
+    )
+
+
+def test_commands_with_shell_tails_fail():
+    for bad in (
+        "pixi run test; false",
+        "pixi run test && rm -rf /",
+        "pixi run test | tee log",
+        "pixi run test `id`",
+    ):
+        packet = complete_packet()
+        packet["evidence"]["commands"] = [bad]
+        errors = MODULE.packet_errors(packet)
+        assert any("reproducible repository form" in error for error in errors), bad
+
+
+def test_duplicate_json_keys_fail_at_load(tmp_path):
+    tree_dir = _write_tree(tmp_path, packet=None, negative={"schema": "x"})
+    (tree_dir / "evidence" / "packet.json").write_text(
+        '{"schema": "a", "schema": "b"}', encoding="utf-8"
+    )
+    manifest = _minimal_manifest(["CT-001"])
+    manifest["claims"][0]["lanes"][LANE]["status"] = "in-progress"
+    manifest["claims"][0]["lanes"][LANE]["evidence"] = ["evidence/packet.json"]
+    (tree_dir / "claims-manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("duplicate JSON object key" in error for error in errors)
+
+
+def test_prose_raw_paths_fail(tmp_path):
+    (tmp_path / "AGENTS.md").write_text("prose", encoding="utf-8")
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["AGENTS.md"]
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("must name a raw-data artifact" in error for error in errors)
+
+
+def test_placeholder_hash_values_do_not_bind_repeats():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"lateral_drift_m": 0.5, "hash": "pending"}]
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "binding the repeats to recorded trajectories" in error for error in errors
+    )
+
+
+def test_placeholder_source_urls_fail():
+    packet = complete_packet()
+    packet["source"]["url"] = "pending"
+    errors = MODULE.packet_errors(packet)
+    assert any("retrievable http(s) URL" in error for error in errors)
