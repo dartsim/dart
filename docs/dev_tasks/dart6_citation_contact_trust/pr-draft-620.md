@@ -15,7 +15,7 @@ CT-001 detector-sweep packet`
 - Adopts the citation-trust evidence contract on the LTS branch as additive
   tooling only: a branch-local claims manifest, the fail-closed
   `pixi run check-citation-evidence` gate wired into `check-lint`, a
-  permanent negative control, 52 pytest cases, and the first `release-6.20`
+  permanent negative control, 65 pytest cases, and the first `release-6.20`
   evidence packet — a CT-001 rolling-direction sweep across the fcl, dart,
   bullet, and ode collision detectors.
 - No library, API, ABI, default, packaging, or downstream-visible change:
@@ -37,7 +37,7 @@ CT-001 detector-sweep packet`
   the design-doc sidecar, so evidence survives dev-task cleanup.
 - `scripts/check_citation_evidence.py` — the same fail-closed packet
   contract as `main`, adapted to `release-6.20` lane ownership; in
-  `check-lint`; permanent negative control; 52 tests in `test-ai-infra`
+  `check-lint`; permanent negative control; 65 tests in `test-ai-infra`
   (the pinned task list in `scripts/check_ai_infrastructure.py` is extended
   in the same change, which is how that guard is designed to grow).
 - CT-001 packet: one sphere launched sliding across a swept in-plane angle,
@@ -59,7 +59,7 @@ CT-001 detector-sweep packet`
 - `pixi run check-lint` (includes the new gate) and `pixi run test-all` —
   158/158 tests pass on the branch head.
 - `pixi run python -I scripts/run_pytest.py
-  tests/test_check_citation_evidence.py -q` — 52 passed.
+  tests/test_check_citation_evidence.py -q` — 65 passed.
 - `pixi run -e gazebo test-gz` not triggered: the diff has no collision,
   constraint, `World::step`, parser, package, or downstream-sensitive
   change (documented in the dev-task verification log with the file list).

@@ -189,3 +189,45 @@ For every later slice record:
 - Gazebo/gz command and result when affected;
 - visual evidence and semantic review when applicable;
 - independent reviews, limitations, changelog decision, and next step.
+
+## Codex review round 1 (PR #3444) — 2026-08-16
+
+Codex posted 4 reviews with 15 inline findings (P1/P2); all addressed in
+this round, fixes silent per repo convention (no thread replies):
+
+- Validator fail-closed gaps (ported identically to `main`): closed-lane
+  disposition must match the packet's `result.disposition`; the two-review
+  floor requires DISTINCT reviewers; review passes must carry a
+  `content_digest` binding them to the packet content they reviewed
+  (regeneration invalidates); `raw_rows` entries must be non-empty
+  structured records; `raw_paths`/`visual` paths must be relative,
+  non-escaping, and resolve inside approved roots; sweep/seed ensembles
+  need valid DISTINCT entries; string metric leaves are allowed only under
+  semantic keys (prose can no longer masquerade as a measurement);
+  `configuration.requested/resolved` must carry a recognizable identity
+  key with no null values; NaN/Infinity are rejected at JSON load; lane
+  evidence paths are normalized before indexing (no dual-spelling
+  owner/review bypass) and may not escape the sidecar;
+  `corpus_reference` is pinned to the canonical DART 7 corpus path and
+  branch; `target.fetch_hint` is required so target commits stay
+  reproducible after squash-merge (PR head refs survive).
+- `preserve_review` now binds carried passes to the regenerated packet's
+  content digest (stale reviews are dropped, failing closed);
+  `record_review_pass` added for digest-bound review recording.
+- CT-001 writer: the energy-gain gate now starts from the launched
+  (pre-step) state so the first contact solve is covered, and the claim
+  boundary/limitations are derived from the computed detector sets
+  (`anisotropic_detectors`, `nonconforming_detectors`,
+  `identical_detector_groups`) instead of hardcoding one historical run's
+  bullet statistics. Packet regenerated: disposition `reproduced`
+  unchanged; bullet still excluded, now by computed criteria.
+- Design doc: the ordered "Prioritize" list moved out of the durable
+  document (ordering is mutable task state; the doc now records the row
+  set and rationale only), and the document was added to the
+  `docs/design/README.md` index.
+- Validator test suite: 52 -> 65 cases (every new rejection has a test;
+  closed-lane tests rewritten for digest-bound, distinct-reviewer,
+  disposition-matching closure).
+- `pixi run check-citation-evidence` passes on the real tree; the
+  permanent negative control keeps failing (error count grew under the
+  stricter rules).

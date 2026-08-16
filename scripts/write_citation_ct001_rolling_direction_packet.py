@@ -44,6 +44,7 @@ from citation_packet_utils import (
     UNSUPPORTED_SOLVER_ITERATIONS,
     UNSUPPORTED_SOLVER_RESIDUAL,
     preserve_review,
+    target_fetch_hint,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -187,7 +188,10 @@ def run_single(
     max_energy_gain = 0.0
     max_penetration = 0.0
     contact_count_max = 0
-    previous_energy = None
+    # Start the energy-gain gate from the launched (pre-step) state so the
+    # first contact solve is covered; an initial injection that later steps
+    # dissipate must not escape the physical-validity gate.
+    previous_energy = float(sphere_skel.computeKineticEnergy())
 
     for step_index in range(step_count):
         world.step()
@@ -199,8 +203,7 @@ def run_single(
         trajectory.update(angular.tobytes())
 
         kinetic = float(sphere_skel.computeKineticEnergy())
-        if previous_energy is not None:
-            max_energy_gain = max(max_energy_gain, kinetic - previous_energy)
+        max_energy_gain = max(max_energy_gain, kinetic - previous_energy)
         previous_energy = kinetic
 
         collision_result = world.getLastCollisionResult()
@@ -415,6 +418,16 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         for detector, finding in anisotropy_findings.items()
         if finding["criteria_exceeded"] and finding["pyramid_signature"]
     )
+    # Detectors that exceed tolerance WITHOUT the pyramid signature are
+    # excluded from the reproducing set. The packet's conclusions are built
+    # from these computed sets so a build without bullet, or a bullet that
+    # starts conforming, regenerates consistent text instead of asserting
+    # one historical run's results.
+    nonconforming_detectors = sorted(
+        detector
+        for detector, finding in anisotropy_findings.items()
+        if finding["criteria_exceeded"] and not finding["pyramid_signature"]
+    )
 
     # Detectors whose trajectory hashes match exactly are one measurement, not
     # several; recording that keeps the sweep from reading as more independent
@@ -496,6 +509,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         "target": {
             "branch": "release-6.20",
             "commit": git_head(),
+            "fetch_hint": target_fetch_hint(),
         },
         "scene": {
             "id": parameters["scene_id"],
@@ -621,11 +635,25 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "horizon, default boxed-LCP constraint solver, launch "
                 "angles 0-90 deg in 15 deg steps, detectors "
                 + ", ".join(detectors)
-                + ". The claim reproduces on "
-                + ", ".join(anisotropic_detectors)
-                + ", which show the antisymmetric friction-pyramid "
-                "signature; bullet exceeds the drift tolerance without that "
-                "angular structure and is excluded. Says nothing about other "
+                + ". "
+                + (
+                    "The claim reproduces on "
+                    + ", ".join(anisotropic_detectors)
+                    + ", which show the antisymmetric friction-pyramid "
+                    "signature"
+                    if anisotropic_detectors
+                    else (
+                        "No swept detector shows the antisymmetric "
+                        "friction-pyramid signature"
+                    )
+                )
+                + (
+                    "; excluded for exceeding the drift tolerance without "
+                    "that angular structure: " + ", ".join(nonconforming_detectors)
+                    if nonconforming_detectors
+                    else ""
+                )
+                + ". Says nothing about other "
                 "speeds, shapes, stacks, historical DART versions, or DART 7."
             ),
             "limitations": [
@@ -634,18 +662,30 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "release-6.20; they are typed unsupported in "
                 "metrics.numerical rather than reported as zero, and solver "
                 "identity is type-level readback.",
-                "bullet exceeds the drift tolerance without the "
-                "antisymmetric pyramid signature: its antisymmetry residual "
-                "exceeds its own peak drift (ratio 1.79), its drift at "
-                "45 deg -- where the mechanism predicts exactly zero -- is "
-                "90% of its largest, and its penetration and energy gain are "
-                "orders of magnitude above the other detectors. Its scatter "
-                "is NOT attributed to polyhedral friction here, and it is "
-                "excluded from the reproducing set.",
-                "dart and ode produce bit-identical trajectory hashes at "
-                "every angle, so the sweep contains fewer independent "
-                "measurements than detectors; see "
-                "metrics.physical.identical_detector_groups.",
+            ]
+            + [
+                f"{detector} exceeds the drift tolerance without the "
+                "antisymmetric pyramid signature "
+                f"({anisotropy_findings[detector]['attribution']}); its "
+                "scatter is NOT attributed to polyhedral friction by this "
+                "packet and it is excluded from the reproducing set. Its "
+                "per-angle statistics are in metrics.physical and the raw "
+                "rows."
+                for detector in nonconforming_detectors
+            ]
+            + (
+                [
+                    "Detector groups "
+                    + "; ".join(", ".join(group) for group in identical_detector_groups)
+                    + " produce bit-identical trajectory hashes at every "
+                    "angle, so the sweep contains fewer independent "
+                    "measurements than detectors; see "
+                    "metrics.physical.identical_detector_groups."
+                ]
+                if identical_detector_groups
+                else []
+            )
+            + [
                 "The sweep covers 0-90 deg; pyramid orientation with a "
                 "period other than 90 deg would need a wider sweep.",
                 "Detector availability depends on the build; the packet "
@@ -654,9 +694,7 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
                 "only measures rotational-symmetry breaking per detector.",
             ],
         },
-        "review": (
-            preserve_review(output_path) if output_path is not None else {"passes": []}
-        ),
+        "review": {"passes": []},
         "host": {
             "platform": platform.platform(),
             "python": sys.version.split()[0],
@@ -668,6 +706,10 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
             ),
         },
     }
+    if output_path is not None:
+        # Rebind after assembly: only passes whose content_digest matches the
+        # regenerated packet survive (see preserve_review).
+        packet["review"] = preserve_review(output_path, packet)
     return packet
 
 

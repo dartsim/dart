@@ -109,20 +109,25 @@ non-virtual APIs after compatibility review.
 
 ## Initial DART 6 rows
 
-Prioritize:
+The durable row set for this branch (unordered — working priority lives with
+the active task state, not here):
 
-1. Audit/guard the completed `3k_shapes` and sleeping/collision performance
-   campaign.
-2. Rolling/friction-direction behavior across FCL, DART, Bullet, and ODE where
-   supported.
-3. Dense inelastic/elastic contact finite-state and failure grids.
-4. Heel-strike/toe-off raw impulse and legacy force/wrench interpretation.
-5. Contact normal/object ordering and Gazebo wrench sensor regressions.
-6. High mass-ratio stacks/manipulation and current solver fallback behavior.
-7. Existing PLAN-622 soft-contact robustness rows using perturbation ensembles.
+- the completed `3k_shapes` and sleeping/collision performance campaign
+  (audit/guard);
+- rolling/friction-direction behavior across FCL, DART, Bullet, and ODE where
+  supported;
+- dense inelastic/elastic contact finite-state and failure grids;
+- heel-strike/toe-off raw impulse and legacy force/wrench interpretation;
+- contact normal/object ordering and Gazebo wrench sensor regressions;
+- high mass-ratio stacks/manipulation and current solver fallback behavior;
+- existing PLAN-622 soft-contact robustness rows using perturbation ensembles
+  (these contribute evidence without expanding the cap).
 
-Stop after the first six common fixture families have dispositions; PLAN-622
-rows may contribute evidence without expanding the cap.
+The cap is six common fixture families with dispositions. The working order
+in which rows are attacked is mutable state and is owned by the PLAN-623
+task home (`docs/dev_tasks/dart6_citation_contact_trust/README.md`) with the
+branch manifest recording live lane status; this document records only which
+rows exist and why.
 
 ## Fix policy
 

@@ -37,10 +37,11 @@ import argparse
 import hashlib
 import json
 import math
+import posixpath
 import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DESIGN_DIR = REPO_ROOT / "docs" / "design" / "dart6_citation_driven_contact_trust"
@@ -64,6 +65,52 @@ DISPOSITIONS = (
     "unresolved",
 )
 LANE_STATUSES = ("audit-required", "in-progress", "closed", "not-applicable")
+# String metric leaves are allowed only under keys that clearly name semantic
+# metadata; everywhere else a string is prose masquerading as a measurement.
+METRIC_STRING_KEY_EXACT = frozenset(
+    {
+        "method",
+        "note",
+        "regime",
+        "unit",
+        "units",
+        "kind",
+        "signature_test",
+        "attribution",
+        "contact_solver_method",
+        "detector",
+        "criteria_exceeded",
+        "families_with_shrinking_drift",
+    }
+)
+METRIC_STRING_KEY_SUFFIXES = (
+    "_note",
+    "_notes",
+    "_semantics",
+    "_method",
+    "_methods",
+    "_reasons",
+    "_criteria",
+    "_test",
+    "_families",
+    "_groups",
+    "_detectors",
+    "_basis",
+)
+
+# configuration.requested/resolved must name a recognizable identity, not an
+# arbitrary placeholder object.
+IDENTITY_KEY_RE = re.compile(
+    r"solver|method|detector|integrator|integration|backend|family", re.I
+)
+
+# Claim identity is owned by the DART 7 corpus on `main`; the manifest may
+# not silently point anywhere else.
+CANONICAL_CORPUS_PATH = (
+    "docs/plans/123-citation-driven-simulation-trust/citation-claim-corpus.md"
+)
+CANONICAL_CORPUS_BRANCH = "main"
+
 UNSUPPORTED_SENTINELS = frozenset(
     {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
 )
@@ -100,6 +147,67 @@ def _is_finite_number(value: object) -> bool:
         isinstance(value, (int, float))
         and not isinstance(value, bool)
         and math.isfinite(value)
+    )
+
+
+def _has_identity_key(value: object) -> bool:
+    """True when any key at any depth names a solver/method/... identity
+    with a non-null value; {"placeholder": null} has none."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if IDENTITY_KEY_RE.search(str(key)) and item is not None:
+                return True
+            if _has_identity_key(item):
+                return True
+    elif isinstance(value, list):
+        return any(_has_identity_key(item) for item in value)
+    return False
+
+
+def _evidence_path_issue(raw_path: str, base_dir: "Path | None") -> "str | None":
+    """Why a packet-referenced artifact path is unacceptable, or None.
+
+    Paths must stay relative and resolve to an existing file INSIDE an
+    approved root (the sidecar directory or the repository); an absolute or
+    escaping path can satisfy a naive existence check with host-local data
+    that is neither tracked nor portable.
+    """
+    pure = PurePosixPath(raw_path)
+    if (
+        pure.is_absolute()
+        or raw_path[1:2] == ":"
+        or "\\" in raw_path
+        or ".." in pure.parts
+    ):
+        return (
+            f"{raw_path!r} must be a relative path inside the repository "
+            "evidence tree (no absolute paths, drive letters, or '..')"
+        )
+    if base_dir is None:
+        return None
+    for root in (base_dir, REPO_ROOT):
+        candidate = (root / raw_path).resolve()
+        if candidate.is_file() and candidate.is_relative_to(root.resolve()):
+            return None
+    return (
+        f"{raw_path!r} does not resolve to an existing file inside an "
+        "approved evidence root; a dangling or escaping path is prose"
+    )
+
+
+def _packet_content_digest(packet: dict) -> str:
+    """Digest of the packet minus its review block.
+
+    A review pass binds to this digest; regenerating a packet with different
+    content therefore invalidates prior passes instead of silently carrying
+    them onto evidence they never reviewed.
+    """
+    content = {key: value for key, value in packet.items() if key != "review"}
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(content, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
     )
 
 
@@ -203,6 +311,23 @@ def metric_group_errors(name: str, group: object) -> list[str]:
                     f"metrics.{name}.{path} uses the placeholder {leaf!r}; "
                     "unsupported values must be typed, not spelled"
                 )
+            elif isinstance(leaf, str):
+                terminal = re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
+                if not (
+                    terminal in METRIC_STRING_KEY_EXACT
+                    or terminal.endswith(METRIC_STRING_KEY_SUFFIXES)
+                ):
+                    errors.append(
+                        f"metrics.{name}.{path} is prose where a measurement "
+                        "is expected; keep strings under semantic keys "
+                        "(method, *_note, *_semantics, ...) or type the value "
+                        "{'status': 'unsupported', 'reason': ...}"
+                    )
+                elif not leaf.strip():
+                    errors.append(
+                        f"metrics.{name}.{path} is a blank string; record the "
+                        "annotation or drop the key"
+                    )
             elif isinstance(leaf, (int, float)) and not isinstance(leaf, bool):
                 if not math.isfinite(leaf):
                     errors.append(f"metrics.{name}.{path} contains a non-finite number")
@@ -282,6 +407,12 @@ def packet_errors(
         commit = target.get("commit")
         if not (isinstance(commit, str) and COMMIT_RE.match(commit)):
             errors.append("target.commit must be a 40-hex commit hash")
+        if not _is_nonempty_str(target.get("fetch_hint")):
+            errors.append(
+                "target.fetch_hint must record how a clean checkout fetches "
+                "target.commit (e.g. 'git fetch origin pull/<PR>/head'); a "
+                "commit that later becomes unreachable is not reproducible"
+            )
 
     scene = packet.get("scene")
     if not isinstance(scene, dict):
@@ -319,6 +450,19 @@ def packet_errors(
             value = configuration.get(side)
             if not isinstance(value, dict) or not value:
                 errors.append(f"configuration.{side} must be a non-empty object")
+                continue
+            null_keys = sorted(key for key, item in value.items() if item is None)
+            if null_keys:
+                errors.append(
+                    f"configuration.{side} carries null values at {null_keys}; "
+                    "record the identity or omit the key"
+                )
+            if not _has_identity_key(value):
+                errors.append(
+                    f"configuration.{side} records no recognizable "
+                    "solver/method/detector/integrator/backend identity field; "
+                    "an arbitrary placeholder object is not a configuration"
+                )
         if not _is_nonempty_str(configuration.get("resolved_provenance")):
             errors.append(
                 "configuration.resolved_provenance must name how the resolved "
@@ -344,8 +488,43 @@ def packet_errors(
         has_repeats = (
             isinstance(repeats, int) and not isinstance(repeats, bool) and repeats >= 2
         )
+        # A sweep or seed list only counts as an ensemble when its entries are
+        # valid and mutually distinct; [null, null] or a duplicated point is
+        # one run wearing an ensemble's clothes.
         has_sweep = isinstance(sweep, list) and len(sweep) >= 2
+        if has_sweep:
+            canonical_points: list[str] = []
+            for index, entry in enumerate(sweep):
+                if isinstance(entry, dict) and entry:
+                    canonical_points.append(json.dumps(entry, sort_keys=True))
+                elif _is_finite_number(entry) or _is_nonempty_str(entry):
+                    canonical_points.append(json.dumps(entry))
+                else:
+                    errors.append(
+                        f"ensemble.sweep[{index}] must be a non-empty object, "
+                        "finite number, or non-empty string sweep point"
+                    )
+                    has_sweep = False
+            if has_sweep and len(set(canonical_points)) < 2:
+                errors.append(
+                    "ensemble.sweep must contain at least two DISTINCT points"
+                )
+                has_sweep = False
         has_seeds = isinstance(seeds, list) and len(seeds) >= 2
+        if has_seeds:
+            for index, entry in enumerate(seeds):
+                if not (
+                    (isinstance(entry, int) and not isinstance(entry, bool))
+                    or _is_nonempty_str(entry)
+                ):
+                    errors.append(
+                        f"ensemble.seeds[{index}] must be an integer or "
+                        "non-empty string seed"
+                    )
+                    has_seeds = False
+            if has_seeds and len({repr(entry) for entry in seeds}) < 2:
+                errors.append("ensemble.seeds must contain at least two DISTINCT seeds")
+                has_seeds = False
         if not (has_repeats or has_sweep or has_seeds):
             errors.append(
                 "ensemble must record deterministic_repeats >= 2, a sweep of "
@@ -389,19 +568,24 @@ def packet_errors(
         has_rows = isinstance(raw_rows, list) and bool(raw_rows)
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
+        if has_rows:
+            for index, row in enumerate(raw_rows):
+                if not (isinstance(row, dict) and row):
+                    errors.append(
+                        f"evidence.raw_rows[{index}] must be a non-empty "
+                        "structured record; null or scalar placeholders are "
+                        "not raw evidence"
+                    )
         if has_paths:
             for index, raw_path in enumerate(raw_paths):
                 if not _is_nonempty_str(raw_path):
                     errors.append(
                         f"evidence.raw_paths[{index}] must be a non-empty string"
                     )
-                elif base_dir is not None and not any(
-                    (root / raw_path).is_file() for root in (base_dir, REPO_ROOT)
-                ):
-                    errors.append(
-                        f"evidence.raw_paths[{index}] {raw_path!r} does not "
-                        "resolve to an existing file; a dangling path is prose"
-                    )
+                    continue
+                issue = _evidence_path_issue(raw_path, base_dir)
+                if issue is not None:
+                    errors.append(f"evidence.raw_paths[{index}] {issue}")
         visual = evidence.get("visual")
         if isinstance(visual, dict):
             if visual.get("status") != "not-applicable" or not _is_nonempty_str(
@@ -411,7 +595,27 @@ def packet_errors(
                     "evidence.visual object form must be "
                     "{'status': 'not-applicable', 'reason': ...}"
                 )
-        elif not (isinstance(visual, list) and visual):
+        elif isinstance(visual, list) and visual:
+            for index, item in enumerate(visual):
+                if _is_nonempty_str(item):
+                    item_path = item
+                elif (
+                    isinstance(item, dict)
+                    and _is_nonempty_str(item.get("path"))
+                    and _is_nonempty_str(item.get("description"))
+                ):
+                    item_path = item["path"]
+                else:
+                    errors.append(
+                        f"evidence.visual[{index}] must be an artifact path "
+                        "or {'path': ..., 'description': ...}; a placeholder "
+                        "cannot stand in for visual evidence"
+                    )
+                    continue
+                issue = _evidence_path_issue(item_path, base_dir)
+                if issue is not None:
+                    errors.append(f"evidence.visual[{index}] {issue}")
+        else:
             errors.append(
                 "evidence.visual must list visual artifacts or be typed "
                 "not-applicable with a reason"
@@ -444,6 +648,7 @@ def packet_errors(
         if not isinstance(passes, list):
             errors.append("review.passes must be a list")
         else:
+            expected_digest = _packet_content_digest(packet)
             for index, entry in enumerate(passes):
                 if (
                     not isinstance(entry, dict)
@@ -452,6 +657,14 @@ def packet_errors(
                 ):
                     errors.append(
                         f"review.passes[{index}] needs non-empty reviewer and summary"
+                    )
+                    continue
+                if entry.get("content_digest") != expected_digest:
+                    errors.append(
+                        f"review.passes[{index}] is not bound to this "
+                        "packet's content (content_digest must equal "
+                        f"{expected_digest}); a review recorded against "
+                        "earlier evidence does not carry over"
                     )
 
     return errors
@@ -474,6 +687,19 @@ def manifest_errors(manifest: object) -> list[str]:
         or not _is_nonempty_str(corpus_reference.get("branch"))
     ):
         errors.append("corpus_reference must record the owning corpus path and branch")
+    else:
+        # The contract says claim identity stays owned by the DART 7 corpus
+        # on `main`; accepting any two strings would let a future manifest
+        # silently point at another corpus and fork claim IDs.
+        if corpus_reference.get("path") != CANONICAL_CORPUS_PATH:
+            errors.append(
+                f"corpus_reference.path must be {CANONICAL_CORPUS_PATH!r}; "
+                "claim identity is owned by the DART 7 corpus"
+            )
+        if corpus_reference.get("branch") != CANONICAL_CORPUS_BRANCH:
+            errors.append(
+                f"corpus_reference.branch must be {CANONICAL_CORPUS_BRANCH!r}"
+            )
 
     claims = manifest.get("claims")
     if not isinstance(claims, list) or not claims:
@@ -539,10 +765,25 @@ def manifest_errors(manifest: object) -> list[str]:
     return errors
 
 
+def _reject_nonstandard_constant(constant: str) -> None:
+    """Reject NaN/Infinity/-Infinity anywhere in a packet at load time.
+
+    Python's default loader accepts them, but they are not JSON: a packet
+    carrying one is unreadable to strict consumers and therefore not the
+    portable machine evidence the contract promises.
+    """
+    raise ValueError(f"non-standard JSON constant {constant!r}")
+
+
 def _load_json(path: Path, errors: list[str]) -> object | None:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=_reject_nonstandard_constant,
+        )
+    except (OSError, ValueError) as error:
+        # json.JSONDecodeError subclasses ValueError; parse_constant raises
+        # a plain ValueError for NaN/Infinity.
         errors.append(f"{path}: unreadable JSON ({error})")
         return None
 
@@ -573,7 +814,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
     manifest = _load_json(manifest_path, errors)
     known_ids: set[str] = set()
     lane_evidence: dict[str, tuple[str, str]] = {}
-    closed_lane_packets: set[str] = set()
+    closed_lane_dispositions: dict[str, object] = {}
     if manifest is not None:
         manifest_issues = manifest_errors(manifest)
         errors.extend(f"{manifest_path}: {issue}" for issue in manifest_issues)
@@ -607,6 +848,23 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                                 "the packet checks never reach"
                             )
                             continue
+                        # Canonicalize before indexing: `evidence/./p.json`
+                        # and `evidence/p.json` are one file and must share
+                        # one owner/one review record, and an escaping path
+                        # must not become a distinct index key.
+                        normalized = posixpath.normpath(rel)
+                        if (
+                            posixpath.isabs(normalized)
+                            or normalized.startswith("..")
+                            or "\\" in rel
+                        ):
+                            errors.append(
+                                f"{manifest_path}: {claim_id}.lanes."
+                                f"{lane_name}.evidence entry {rel!r} escapes "
+                                "the sidecar directory"
+                            )
+                            continue
+                        rel = normalized
                         if True:
                             if rel in lane_evidence:
                                 owner = lane_evidence[rel]
@@ -618,7 +876,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                                 )
                             lane_evidence[rel] = (str(claim_id), str(lane_name))
                             if lane.get("status") == "closed":
-                                closed_lane_packets.add(rel)
+                                closed_lane_dispositions[rel] = lane.get("disposition")
 
     # Every lane-referenced path is validated as a packet, wherever it sits.
     # Enumerating only `evidence/*.json` would let a lane close a row with a
@@ -701,7 +959,7 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                     f"{packet_path}: target.branch {branch!r} does not match "
                     f"lane {lane_name} branch {expected_branch!r}"
                 )
-            if rel in closed_lane_packets:
+            if rel in closed_lane_dispositions:
                 passes = (
                     packet.get("review", {}).get("passes")
                     if isinstance(packet.get("review"), dict)
@@ -711,6 +969,32 @@ def validate_tree(design_dir: Path, *, freshness_head: str | None = None) -> lis
                     errors.append(
                         f"{packet_path}: a packet closing a lane needs at "
                         "least two recorded review passes"
+                    )
+                else:
+                    reviewers = {
+                        entry.get("reviewer")
+                        for entry in passes
+                        if isinstance(entry, dict)
+                        and _is_nonempty_str(entry.get("reviewer"))
+                    }
+                    if len(reviewers) < 2:
+                        errors.append(
+                            f"{packet_path}: a packet closing a lane needs "
+                            "two INDEPENDENT review passes (distinct "
+                            "reviewers); a duplicated reviewer is one review"
+                        )
+                lane_disposition = closed_lane_dispositions[rel]
+                packet_disposition = (
+                    packet.get("result", {}).get("disposition")
+                    if isinstance(packet.get("result"), dict)
+                    else None
+                )
+                if lane_disposition != packet_disposition:
+                    errors.append(
+                        f"{packet_path}: the closing lane records disposition "
+                        f"{lane_disposition!r} but the packet's result is "
+                        f"{packet_disposition!r}; the manifest cannot publish "
+                        "a conclusion its evidence does not support"
                     )
         if freshness_head is not None:
             commit = (

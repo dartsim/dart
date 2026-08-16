@@ -1132,12 +1132,12 @@
     }
   },
   "result": {
-    "claim_boundary": "release-6.20, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, default boxed-LCP constraint solver, launch angles 0-90 deg in 15 deg steps, detectors fcl, dart, bullet, ode. The claim reproduces on dart, fcl, ode, which show the antisymmetric friction-pyramid signature; bullet exceeds the drift tolerance without that angular structure and is excluded. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 7.",
+    "claim_boundary": "release-6.20, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, default boxed-LCP constraint solver, launch angles 0-90 deg in 15 deg steps, detectors fcl, dart, bullet, ode. The claim reproduces on dart, fcl, ode, which show the antisymmetric friction-pyramid signature; excluded for exceeding the drift tolerance without that angular structure: bullet. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 7.",
     "disposition": "reproduced",
     "limitations": [
       "Per-solve LCP iteration counts, residuals, and Dantzig-vs-PGS fallback events are not exposed on release-6.20; they are typed unsupported in metrics.numerical rather than reported as zero, and solver identity is type-level readback.",
-      "bullet exceeds the drift tolerance without the antisymmetric pyramid signature: its antisymmetry residual exceeds its own peak drift (ratio 1.79), its drift at 45 deg -- where the mechanism predicts exactly zero -- is 90% of its largest, and its penetration and energy gain are orders of magnitude above the other detectors. Its scatter is NOT attributed to polyhedral friction here, and it is excluded from the reproducing set.",
-      "dart and ode produce bit-identical trajectory hashes at every angle, so the sweep contains fewer independent measurements than detectors; see metrics.physical.identical_detector_groups.",
+      "bullet exceeds the drift tolerance without the antisymmetric pyramid signature (scatter exceeding tolerance without angular structure; not attributed to polyhedral friction by this packet); its scatter is NOT attributed to polyhedral friction by this packet and it is excluded from the reproducing set. Its per-angle statistics are in metrics.physical and the raw rows.",
+      "Detector groups dart, ode produce bit-identical trajectory hashes at every angle, so the sweep contains fewer independent measurements than detectors; see metrics.physical.identical_detector_groups.",
       "The sweep covers 0-90 deg; pyramid orientation with a period other than 90 deg would need a wider sweep.",
       "Detector availability depends on the build; the packet records the swept set explicitly.",
       "This packet is not a cross-detector accuracy ranking; it only measures rotational-symmetry breaking per detector."
@@ -1196,7 +1196,8 @@
   },
   "target": {
     "branch": "release-6.20",
-    "commit": "d4f95f1298f658c3677854b127ac31dbc3279be3"
+    "commit": "ed5074fdff3e34f4ad6ffda5a95954d12bd17b29",
+    "fetch_hint": "git fetch origin pull/3444/head && git checkout <target.commit>"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }
