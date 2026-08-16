@@ -1009,7 +1009,7 @@
     "branch": "main",
     "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c"
   },
   "title": "High-mass-ratio stack conditioning baseline for the exact-cone GO/NO-GO (DART 7)"
 }

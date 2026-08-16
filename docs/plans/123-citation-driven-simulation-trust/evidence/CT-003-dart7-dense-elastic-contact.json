@@ -575,7 +575,7 @@
   "target": {
     "branch": "main",
     "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout f4e9e5c11d5d3b443693cde9142bf317e2115cd3"
   },
   "title": "Dense elastic contact energy envelope (DART 7 first packet)"
 }

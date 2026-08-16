@@ -672,7 +672,7 @@
   "target": {
     "branch": "main",
     "commit": "b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c",
-    "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
+    "fetch_hint": "git fetch origin pull/3445/head && git checkout b3fe1c9eeff0f79aaf5eedb6d59bc655a3032a1c"
   },
   "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"
 }

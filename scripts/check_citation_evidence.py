@@ -70,6 +70,28 @@ UNSUPPORTED_SENTINELS = frozenset(
     {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
 )
 
+COMMAND_RE = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_]*=\S+\s+)*pixi run\s+\S.*$")
+NUMERIC_BOOKKEEPING_KEYS = frozenset(
+    {"seed", "seeds", "index", "idx", "id", "ids", "repeat", "repeats", "run"}
+)
+
+
+def _has_hash_leaf(value: object) -> bool:
+    """True when any nested key names a hash/sha256 with a non-empty value."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_l = str(key).lower()
+            if ("sha256" in key_l or "hash" in key_l) and (
+                _is_nonempty_str(item) or (isinstance(item, (list, dict)) and item)
+            ):
+                return True
+            if _has_hash_leaf(item):
+                return True
+    elif isinstance(value, list):
+        return any(_has_hash_leaf(item) for item in value)
+    return False
+
+
 IDENTITY_PLACEHOLDER_VALUES = frozenset(
     UNSUPPORTED_SENTINELS
     | {"not measured", "pending", "todo", "missing", "unspecified"}
@@ -138,7 +160,7 @@ VISUAL_MEDIA_SUFFIXES = (
 # arbitrary placeholder object. Keys that merely mention an identity word in
 # a metadata role (method_note, backend_reason, ...) do not count.
 FETCH_HINT_RE = re.compile(
-    r"^git fetch origin pull/3445/head" r" && git checkout <target\.commit>$"
+    r"^git fetch origin pull/3445/head && git checkout ([0-9a-f]{40})$"
 )
 IDENTITY_KEY_TOKENS = frozenset(
     {
@@ -569,16 +591,26 @@ def packet_errors(
         if not (isinstance(commit, str) and COMMIT_RE.match(commit)):
             errors.append("target.commit must be a 40-hex commit hash")
         fetch_hint = target.get("fetch_hint")
-        if not (
-            _is_nonempty_str(fetch_hint) and FETCH_HINT_RE.match(fetch_hint.strip())
-        ):
+        hint_match = (
+            FETCH_HINT_RE.match(fetch_hint.strip())
+            if _is_nonempty_str(fetch_hint)
+            else None
+        )
+        if hint_match is None:
             errors.append(
-                "target.fetch_hint must be the durable PR-ref fetch command "
-                f"(matching {FETCH_HINT_RE.pattern!r}); arbitrary prose does "
-                "not make target.commit reachable from a clean checkout. "
-                "Reachability itself is guaranteed by GitHub PR head refs "
-                "surviving squash-merge and is checked at packet-writing "
-                "time via --freshness"
+                "target.fetch_hint must be the runnable durable PR-ref "
+                f"command (matching {FETCH_HINT_RE.pattern!r}); arbitrary "
+                "prose or placeholder arguments cannot be executed to reach "
+                "target.commit. Reachability itself is guaranteed by GitHub "
+                "PR head refs surviving squash-merge and is checked at "
+                "packet-writing time via --freshness"
+            )
+        elif isinstance(commit, str) and hint_match.group(1) != commit:
+            errors.append(
+                "target.fetch_hint checks out "
+                f"{hint_match.group(1)[:12]}... but target.commit is "
+                f"{commit[:12]}...; the hint must reproduce THIS packet's "
+                "target"
             )
 
     scene = packet.get("scene")
@@ -663,6 +695,14 @@ def packet_errors(
         has_repeats = (
             isinstance(repeats, int) and not isinstance(repeats, bool) and repeats >= 2
         )
+        if has_repeats and not _has_hash_leaf(packet.get("evidence")):
+            errors.append(
+                "ensemble.deterministic_repeats is asserted but the "
+                "evidence carries no *hash*/sha256 field binding the "
+                "repeats to recorded trajectories; an unverifiable repeat "
+                "claim is not an ensemble"
+            )
+            has_repeats = False
         if has_repeats and ensemble.get("deterministic_repeats_identical") is not True:
             errors.append(
                 "ensemble.deterministic_repeats is asserted without "
@@ -732,6 +772,22 @@ def packet_errors(
                 )
             has_time_bounds = {"start_s", "end_s"} <= set(window)
             has_step_bounds = {"warmup_steps", "continuation_steps"} <= set(window)
+            if has_step_bounds:
+                warmup = window.get("warmup_steps")
+                continuation = window.get("continuation_steps")
+                if not (
+                    isinstance(warmup, int)
+                    and not isinstance(warmup, bool)
+                    and warmup >= 0
+                    and isinstance(continuation, int)
+                    and not isinstance(continuation, bool)
+                    and continuation >= 1
+                ):
+                    errors.append(
+                        "ensemble.measurement_window step bounds must be "
+                        "non-negative integers with continuation_steps >= 1"
+                    )
+                    has_step_bounds = False
             if not (has_time_bounds or has_step_bounds):
                 errors.append(
                     "ensemble.measurement_window must name its bounds "
@@ -769,6 +825,16 @@ def packet_errors(
             and all(_is_nonempty_str(command) for command in commands)
         ):
             errors.append("evidence.commands must be a non-empty list of commands")
+        else:
+            for index, command in enumerate(commands):
+                if not COMMAND_RE.match(command.strip()):
+                    errors.append(
+                        f"evidence.commands[{index}] must be the "
+                        "reproducible repository form (optional VAR=value "
+                        "prefixes followed by 'pixi run ...'); arbitrary "
+                        "shell strings are not the promised reproduction "
+                        "path"
+                    )
         raw_paths = evidence.get("raw_paths")
         raw_rows = evidence.get("raw_rows")
         has_paths = isinstance(raw_paths, list) and bool(raw_paths)
@@ -785,13 +851,15 @@ def packet_errors(
                     )
                     continue
                 if not any(
-                    _is_finite_number(leaf) or isinstance(leaf, bool)
-                    for _, leaf in _metric_leaves(row)
+                    (_is_finite_number(leaf) or isinstance(leaf, bool))
+                    and re.sub(r"(\[\d+\])+$", "", path.rsplit(".", 1)[-1])
+                    not in NUMERIC_BOOKKEEPING_KEYS
+                    for path, leaf in _metric_leaves(row)
                 ):
                     errors.append(
                         f"evidence.raw_rows[{index}] carries no numeric or "
-                        "boolean measurement; a metadata-only record is not "
-                        "raw evidence"
+                        "boolean measurement beyond bookkeeping (seed/index/"
+                        "id/...); a metadata-only record is not raw evidence"
                     )
         if has_paths:
             for index, raw_path in enumerate(raw_paths):
@@ -1286,6 +1354,11 @@ def validate_tree(
     negative_paths = (
         sorted(negative_dir.rglob("*.json")) if negative_dir.is_dir() else []
     )
+    negative_paths = [
+        path
+        for path in negative_paths
+        if not path.name.endswith(".expected-errors.json")
+    ]
     if not negative_paths:
         errors.append(
             f"{negative_dir}: at least one intentionally incomplete "
@@ -1293,8 +1366,6 @@ def validate_tree(
             "fails closed"
         )
     for packet_path in negative_paths:
-        if packet_path.name.endswith(".expected-errors.json"):
-            continue
         packet = _load_json(packet_path, errors)
         if packet is None:
             continue

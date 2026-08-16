@@ -576,3 +576,24 @@ EACH seeded defect — if any single validator check regresses, its
 pinned error disappears and the control fails, instead of hiding behind
 three unrelated survivors. Sidecars added for both tracked controls.
 Tests: 101 -> 104 (main), 81 -> 84 (6.20).
+
+## Codex review round 7 (PR #3445) — 2026-08-16
+
+Seven findings across both PRs, all addressed on both branches: the
+fetch hint is now the RUNNABLE command embedding the packet's own target
+commit (validated to check out exactly target.commit; the placeholder
+form was not executable); a sidecar left behind after its control packet
+is deleted no longer counts as a negative control; step-based window
+bounds must be sane non-negative integers; evidence commands must be
+the reproducible repository form (VAR=value prefixes + 'pixi run ...');
+deterministic-repeat claims must be bound to hash-bearing recorded
+evidence; bookkeeping-only numeric rows (seed/index/id) no longer count
+as measurements; and the fetch helper documents PR-ownership semantics
+with a DART_CITATION_PR override for forward work from a later PR.
+Existing packets' hints were migrated in place to the runnable form
+embedding their recorded commits — content-equal to what the updated
+writers emit, with no simulation data touched; the recorded boundary is
+that the hint FORMAT is validator-versioned metadata, so re-running the
+recorded command at an older target commit reproduces the measurements
+but formats this one metadata field per that commit's writer. Tests:
+104 -> 110 (main), 84 -> 90 (6.20).
