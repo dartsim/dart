@@ -498,12 +498,14 @@ def test_dangling_raw_path_fails(tmp_path):
     assert any("does not resolve" in error for error in errors)
     (tmp_path / "real.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     packet["evidence"]["raw_paths"] = ["real.csv"]
-    # Path-based evidence pins its artifact bytes; those digests also carry
-    # the hash-bearing evidence the repeats claim binds to.
+    # Path-based evidence pins its artifact bytes; repeat verification is
+    # bound separately by an explicit trajectory digest (artifact digests
+    # prove file identity, not repeat determinism).
     packet["evidence"]["artifact_digests"] = {
         "real.csv": "sha256:"
         + hashlib.sha256((tmp_path / "real.csv").read_bytes()).hexdigest()
     }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
     assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
 
 
@@ -1666,3 +1668,51 @@ def test_build_must_precede_the_evidence_command():
     ]
     errors = MODULE.packet_errors(packet)
     assert any("BEFORE the evidence command" in error for error in errors)
+
+
+def test_artifact_digests_do_not_prove_repeats():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"angle_deg": 0.0, "lateral_drift_m": 0.5}]
+    packet["evidence"]["artifact_digests"] = {"x.csv": "sha256:" + "a" * 64}
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "binding the repeats to recorded trajectories" in error for error in errors
+    )
+
+
+def test_env_prefixed_build_commands_are_recognized():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "DART_PARALLEL_JOBS=4 pixi run build",
+        "pixi run python scripts/example.py",
+    ]
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_truncated_npy_payloads_fail(tmp_path):
+    header = b"{'descr': '<f8', 'fortran_order': False, 'shape': (1000000,), }"
+    header += b" " * (63 - len(header) % 64) + b"\n"
+    payload = b"\x93NUMPY\x01\x00" + len(header).to_bytes(2, "little") + header + b"x"
+    (tmp_path / "big.npy").write_bytes(payload)
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["big.npy"]
+    packet["evidence"]["artifact_digests"] = {
+        "big.npy": "sha256:"
+        + hashlib.sha256((tmp_path / "big.npy").read_bytes()).hexdigest()
+    }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_cased_bookkeeping_keys_are_still_bookkeeping():
+    for row in ({"Seed": 1}, {"run_id": 1}, {"Repeat-2": 3}):
+        packet = complete_packet()
+        row = dict(row)
+        row["trajectory_sha256"] = "d" * 64
+        packet["evidence"]["raw_rows"] = [row]
+        errors = MODULE.packet_errors(packet)
+        assert any("beyond bookkeeping" in error for error in errors), row

@@ -784,3 +784,18 @@ fields would spuriously match them); seed fields match by whole token
 (`unseeded_metric` no longer counts); the build step must PRECEDE the
 evidence command, not merely appear somewhere in the list. Tests:
 143 -> 147 (main), 123 -> 127 (6.20).
+
+## Codex review round 19 (PR #3445) — 2026-08-16
+
+Four findings, one a genuine false-positive bug in the round-17 build
+gate (env-prefixed build commands like `DART_PARALLEL_JOBS=4 pixi run
+build` passed COMMAND_RE but were not recognized as the build step,
+rejecting valid evidence) — fixed with a prefix-aware BUILD_COMMAND_RE
+and a regression test. Also: NPY payloads are verified against the
+declared array size (a million-element declaration with one payload
+byte is rejected); artifact digests no longer count as repeat
+verification — repeat claims bind to trajectory hashes in rows or the
+ensemble, with artifact_digests proving file identity only; and
+bookkeeping keys are matched case-insensitively by whole token (`Seed`,
+`run_id`, `Repeat-2` are bookkeeping; `contact_count_max` remains a
+measurement). Tests: 147 -> 151 (main), 127 -> 131 (6.20).
