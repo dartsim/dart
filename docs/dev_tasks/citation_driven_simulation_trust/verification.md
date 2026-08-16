@@ -597,3 +597,18 @@ that the hint FORMAT is validator-versioned metadata, so re-running the
 recorded command at an older target commit reproduces the measurements
 but formats this one metadata field per that commit's writer. Tests:
 104 -> 110 (main), 84 -> 90 (6.20).
+
+## Codex review round 8 (PR #3445) — 2026-08-16
+
+Six findings, all fixed on both branches: a lane's published disposition
+must match its packet's disposition on OPEN lanes too (the program's
+semantics keep dispositions on open lanes as current-best; they may be
+null but may not contradict — Codex's null-until-closed framing was
+resolved this way); reproduction commands reject shell tails
+(;, |, &, backticks, $); duplicate JSON object keys are rejected at load
+(consumer-dependent first/last-wins is not portable evidence);
+raw_paths must name raw-data artifacts (csv/tsv/json/jsonl/ndjson/
+npz/npy/parquet — prose or code files rejected); hash leaves must be
+actual hex digests, so "hash": "pending" cannot bind a repeat claim;
+and source URLs must be retrievable http(s) URLs. Tests: 110 -> 116
+(main), 90 -> 96 (6.20).
