@@ -1,0 +1,20 @@
+[
+  "target.commit must be a 40-hex commit hash",
+  "target.fetch_hint must be the durable PR-ref fetch command",
+  "scene.digest must match sha256:<64 hex>",
+  "scene.parameters must publish the non-empty parameter object",
+  "configuration.resolved must be a non-empty object",
+  "configuration.resolved_provenance must name",
+  "configuration.fallback_policy must be a non-empty string",
+  "single runs are not evidence",
+  "ensemble.measurement_window is required",
+  "metrics.physical must record a non-empty measurement 'method'",
+  "reports exact zero at ['energy_drift_j', 'max_penetration_m']",
+  "metrics.numerical is unsupported but has no non-empty reason",
+  "reports exact zero at ['wall_time_ms']",
+  "evidence.commands must be a non-empty list of commands",
+  "evidence must carry raw_rows inline or non-empty raw_paths",
+  "evidence.visual must list visual artifacts or be typed",
+  "result.claim_boundary must be a non-empty string",
+  "result.limitations must be a non-empty list"
+]

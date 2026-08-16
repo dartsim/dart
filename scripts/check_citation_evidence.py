@@ -69,6 +69,20 @@ LANE_STATUSES = ("audit-required", "in-progress", "closed", "not-applicable")
 UNSUPPORTED_SENTINELS = frozenset(
     {"", "-", "--", "n/a", "na", "none", "null", "tbd", "unknown", "unsupported"}
 )
+
+IDENTITY_PLACEHOLDER_VALUES = frozenset(
+    UNSUPPORTED_SENTINELS
+    | {"not measured", "pending", "todo", "missing", "unspecified"}
+)
+
+
+def _is_identity_value(value: object) -> bool:
+    return (
+        _is_nonempty_str(value)
+        and value.strip().lower() not in IDENTITY_PLACEHOLDER_VALUES
+    )
+
+
 LANE_KEYS = ("dart7", "dart6")
 BRANCH_BY_LANE = {"dart7": "main", "dart6": "release-6.20"}
 FIRST_WAVE_FAMILY_CAP = 6
@@ -123,7 +137,9 @@ VISUAL_MEDIA_SUFFIXES = (
 # configuration.requested/resolved must name a recognizable identity, not an
 # arbitrary placeholder object. Keys that merely mention an identity word in
 # a metadata role (method_note, backend_reason, ...) do not count.
-FETCH_HINT_RE = re.compile(r"^git fetch origin pull/3445/head\b")
+FETCH_HINT_RE = re.compile(
+    r"^git fetch origin pull/3445/head" r" && git checkout <target\.commit>$"
+)
 IDENTITY_KEY_TOKENS = frozenset(
     {
         "solver",
@@ -170,7 +186,7 @@ def _has_identity_key(value: object) -> bool:
     {"method_note": "..."} have none."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if _is_identity_key(str(key)) and _is_nonempty_str(item):
+            if _is_identity_key(str(key)) and _is_identity_value(item):
                 return True
             if _has_identity_key(item):
                 return True
@@ -259,34 +275,42 @@ def _visual_content_issue(path: "Path") -> "str | None":
     bare eight-byte signature satisfies a header check; requiring the
     container's structural begin AND end markers (plus a minimum size) means
     the artifact must at least be a complete container of its claimed type.
-    Full decoding would need an image dependency; that boundary is recorded
-    in the dev-task verification log.
+    The header and the file TAIL are read separately so large legitimate
+    files are not falsely reported truncated. Full decoding would need an
+    image dependency; that boundary is recorded in the dev-task verification
+    log.
     """
     suffix = path.suffix.lower()
     try:
+        size = path.stat().st_size
         with path.open("rb") as stream:
-            data = stream.read(8 * 1024 * 1024)
+            header = stream.read(4096)
+            if size > 4096:
+                stream.seek(-min(size, 4096), 2)
+                tail = stream.read(4096)
+            else:
+                tail = header
     except OSError:
         return "could not be read for media-signature verification"
     mismatch = (
         "is not a structurally complete media file of its claimed type; a "
         "renamed or truncated artifact is not visual evidence"
     )
-    if len(data) < 64:
+    if size < 64:
         return mismatch
-    header = data[:256]
+    stripped_tail = tail.rstrip()
     if suffix in (".png", ".apng"):
         ok = (
             header.startswith(b"\x89PNG\r\n\x1a\n")
-            and b"IHDR" in data[:64]
-            and data.rstrip().endswith(b"IEND\xaeB`\x82")
+            and b"IHDR" in header[:64]
+            and stripped_tail.endswith(b"IEND\xaeB`\x82")
         )
         return None if ok else mismatch
     if suffix in (".jpg", ".jpeg"):
-        ok = header.startswith(b"\xff\xd8\xff") and data.rstrip().endswith(b"\xff\xd9")
+        ok = header.startswith(b"\xff\xd8\xff") and stripped_tail.endswith(b"\xff\xd9")
         return None if ok else mismatch
     if suffix == ".gif":
-        ok = header.startswith((b"GIF87a", b"GIF89a")) and data.rstrip().endswith(
+        ok = header.startswith((b"GIF87a", b"GIF89a")) and stripped_tail.endswith(
             b"\x3b"
         )
         return None if ok else mismatch
@@ -297,7 +321,7 @@ def _visual_content_issue(path: "Path") -> "str | None":
     if suffix == ".webm":
         return None if header.startswith(b"\x1a\x45\xdf\xa3") else mismatch
     if suffix == ".svg":
-        ok = b"<svg" in header and b"</svg>" in data
+        ok = b"<svg" in header and b"</svg>" in stripped_tail
         return None if ok else mismatch
     return None
 
@@ -705,6 +729,15 @@ def packet_errors(
             if _is_finite_number(start) and _is_finite_number(end) and start > end:
                 errors.append(
                     "ensemble.measurement_window start_s must not exceed end_s"
+                )
+            has_time_bounds = {"start_s", "end_s"} <= set(window)
+            has_step_bounds = {"warmup_steps", "continuation_steps"} <= set(window)
+            if not (has_time_bounds or has_step_bounds):
+                errors.append(
+                    "ensemble.measurement_window must name its bounds "
+                    "(start_s/end_s or warmup_steps/continuation_steps); "
+                    "unnamed numbers do not record when measurements were "
+                    "collected"
                 )
         else:
             errors.append(
@@ -1260,6 +1293,8 @@ def validate_tree(
             "fails closed"
         )
     for packet_path in negative_paths:
+        if packet_path.name.endswith(".expected-errors.json"):
+            continue
         packet = _load_json(packet_path, errors)
         if packet is None:
             continue
@@ -1269,6 +1304,36 @@ def validate_tree(
                 f"{packet_path}: negative control produced only "
                 f"{len(issues)} validation error(s); it must stay clearly "
                 "incomplete (>= 3) or the fail-closed proof is vacuous"
+            )
+        # A sidecar pins each SEEDED defect individually: if a validator
+        # check regresses, its expected error disappears and this fails,
+        # instead of hiding behind three unrelated survivors.
+        sidecar = packet_path.with_name(
+            packet_path.name[: -len(".json")] + ".expected-errors.json"
+        )
+        if sidecar.is_file():
+            expected = _load_json(sidecar, errors)
+            if not (
+                isinstance(expected, list)
+                and expected
+                and all(_is_nonempty_str(item) for item in expected)
+            ):
+                errors.append(
+                    f"{sidecar}: must be a non-empty list of expected error "
+                    "substrings"
+                )
+            else:
+                for needle in expected:
+                    if not any(needle in issue for issue in issues):
+                        errors.append(
+                            f"{packet_path}: seeded defect no longer "
+                            f"detected (no error contains {needle!r}); a "
+                            "validator check regressed"
+                        )
+        else:
+            errors.append(
+                f"{packet_path}: negative control has no "
+                ".expected-errors.json sidecar pinning its seeded defects"
             )
 
     return errors

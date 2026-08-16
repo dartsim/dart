@@ -561,3 +561,18 @@ is a recorded boundary); fetch hints must be the durable PR-ref fetch
 command form (reachability itself is guaranteed by GitHub PR head refs
 and checked at write time via --freshness — a recorded boundary, since a
 hard existence check would break post-squash-merge CI). Tests: 97 -> 101.
+
+## Codex review round 6 (PR #3445) — 2026-08-16
+
+Six findings across both PRs, all fixed on both branches: placeholder
+identity values ("unknown", "n/a", "not measured") are rejected; the
+fetch hint must fullmatch the exact fetch-and-checkout command (prefix
+or suffix variants rejected); the media check reads the file header and
+TAIL separately so legitimate files above the old 8 MiB cap are no
+longer falsely reported truncated; measurement windows must NAME their
+bounds (start_s/end_s or warmup_steps/continuation_steps); and every
+negative control now carries an .expected-errors.json sidecar pinning
+EACH seeded defect — if any single validator check regresses, its
+pinned error disappears and the control fails, instead of hiding behind
+three unrelated survivors. Sidecars added for both tracked controls.
+Tests: 101 -> 104 (main), 81 -> 84 (6.20).
