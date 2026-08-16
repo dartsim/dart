@@ -231,3 +231,16 @@ this round, fixes silent per repo convention (no thread replies):
 - `pixi run check-citation-evidence` passes on the real tree; the
   permanent negative control keeps failing (error count grew under the
   stricter rules).
+
+## Codex review round 2 (PR #3444) — 2026-08-16
+
+Round 2 re-tested the round-1 fixes adversarially; 4 new findings, all
+fixed (rules mirrored on main): scene.parameters required (a digest
+without published content binds nothing); exhaustive metric-leaf type
+chain with booleans accepted explicitly as measured findings; reviewer
+identities normalized (strip+casefold) before the distinct-reviewer
+closure count; visual entries must carry a recognized media suffix. The
+CT-001 packet was regenerated at the round-2 commit `1a811de5bbb` so its
+recorded command runs the current writer at its recorded, fetchable
+target. Disposition unchanged (reproduced). Tests: 65 -> 69; tree
+validates; negative control still fails.
