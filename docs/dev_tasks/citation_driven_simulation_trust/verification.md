@@ -492,3 +492,21 @@ this round, fixes silent per repo convention (no thread replies):
   `fetch_hint`; `pixi run check-citation-evidence` passes on the real
   tree; the permanent negative control keeps failing with a higher error
   count under the stricter rules.
+
+## Codex review round 2 (PR #3445) — 2026-08-16
+
+Round 2 re-tested the round-1 fixes adversarially; 3 new findings, all
+fixed (mirrored where shared): scene.parameters is now required so a
+digest cannot bind to absent content; the metric-leaf type chain is
+exhaustive (booleans accepted explicitly as measured findings, anything
+else rejected); reviewer identities normalized before the
+distinct-reviewer count; visual entries must be recognized media; the
+CT-011 writer asserts its EXACT measured arm pattern and aborts naming
+any deviating arm; RESUME's unsupported-quantities list no longer names
+the landed ResolvedSolverConfiguration binding. The CT-007 finding
+(writer absent at its recorded target commit) was generalized: ALL seven
+packets regenerated at the round-2 commit `f4e9e5c11d5`, whose tree
+contains every current writer, so each recorded command plus fetch_hint
+reproduces its packet from a clean checkout. All dispositions unchanged
+(CT-001/002 reproduced; CT-003/004/005/007/011 unresolved). Tests: 85 ->
+89; tree validates; negative control still fails.

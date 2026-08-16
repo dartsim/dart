@@ -372,7 +372,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "cebf5a86799a10615f0f7a6878a1ccdf5f315db0",
+    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
     "commit_role": "Source state measured: the library and fixture ran at this commit, which is HEAD at capture time. The packet and its writer land in a later commit.",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },

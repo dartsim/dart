@@ -671,7 +671,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "ca78b0980e88617b98bdbcb84cfeb01931238d05",
+    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
   "title": "Dense 6x6x6 inelastic contact stability (DART 7 first packet)"
