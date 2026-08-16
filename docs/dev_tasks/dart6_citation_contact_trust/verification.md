@@ -371,3 +371,11 @@ step, so no regeneration was needed. Tests: 113 -> 114.
 Two findings here plus one shared, all fixed (mirrored with main):
 distinct-row sweep matching; empty-NPY rejection; NPZ member parsing.
 Tests: 114 -> 117.
+
+## Codex review round 16 (PR #3444) — 2026-08-16
+
+Three findings here plus four shared, all fixed (mirrored with main):
+distinct-row seed matching; non-empty time windows; the design doc's
+packet-contract list aligned with the enforced schema; build-step
+commands; performance-validity enforcement; parquet footer sanity.
+CT-001's commands migrated in place. Tests: 117 -> 121.

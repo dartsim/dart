@@ -72,18 +72,27 @@ to its evidence and does not copy the implementation checklist.
 ## Claim and evidence contract
 
 Use the same stable claim IDs and dispositions as DART 7, but every packet is
-explicitly `release-6.20` and records:
+explicitly `release-6.20` and records (enforced by
+`scripts/check_citation_evidence.py` — this list matches the enforced
+schema, not an aspiration beyond it):
 
-- exact base/current commit;
-- source model, license, conversion, and digest;
-- detector, constraint solver, timestep, iterations, threads, and defaults;
-- initial state/control/seed/ensemble/window;
-- contact count/profile, state/rest hash, penetration, energy/momentum,
-  residual/failure where available, timing, and allocation;
-- exact commands and host validity;
-- disposition and limitation;
-- Gazebo/gz relevance;
-- review evidence.
+- exact target commit plus the runnable durable fetch command;
+- scene identity: digest-bound parameters (source model, license, and
+  conversion provenance are recorded WHEN an external model asset is used;
+  procedurally built primitive scenes carry their full construction in
+  `scene.parameters` and have no external asset to attribute);
+- detector, constraint solver, timestep, iterations, threads, and defaults
+  (typed unsupported where the branch exposes no accessor);
+- ensemble (verified repeats, or object sweep points/seeds each bound to
+  their own recorded rows) and a named measurement window;
+- contact/trajectory hashes, penetration, energy where available;
+- exact reproducible commands (build step included) and host validity,
+  with measured timing forbidden when the host is not
+  performance-controlled;
+- disposition, claim boundary, and limitations;
+- Gazebo/gz relevance, recorded per packet in its limitations or notes
+  when a downstream-visible path is touched;
+- digest-bound review evidence.
 
 If DART 6 lacks a comparable metric, record it as unsupported or derive it in
 the harness without changing public runtime APIs. Never encode unsupported as
