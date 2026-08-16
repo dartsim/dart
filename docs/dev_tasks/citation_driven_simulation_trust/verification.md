@@ -868,3 +868,25 @@ widths are whitelisted per kind (`<i3` names no loadable dtype), and
 the harness command must invoke an evidence writer
 (`scripts/write_citation*.py`) — an existing but unrelated script is
 not a reproduction path. Tests: 169 -> 175 (main), 149 -> 155 (6.20).
+
+## Codex review round 24 (PR #3445) — 2026-08-16
+
+Two findings here plus five on the LTS lane, mirrored both ways. Sweep
+coordinates no longer count as row measurements: a row restating its
+declared coordinates (plus hashes) records no outcome, so each row
+must carry a numeric/boolean value beyond bookkeeping, seed keys, AND
+the sweep's coordinate keys. CT-004's repeat hash covered only total
+energy and angular momentum — aggregates that do not uniquely identify
+a multi-link state — so the writer now hashes every joint position and
+velocity at every step (with finiteness gating) and the packet is
+regenerated in the follow-up commit. From the LTS lane: NPY format
+versions are whitelisted to 1.0/2.0/3.0; repeat binding requires the
+supported trajectory/state_sha256 key family instead of any
+hash-named field (CT-011 now emits a row-level trajectory_sha256
+chaining all its arm state digests, regenerated alongside); the
+evidence-writer command must name THIS claim's writer
+(write_citation_<id>*.py); raw JSON artifacts load through the same
+strict NaN/duplicate-key hooks as packets; and sweep-point
+deduplication canonicalizes recursively so {"config": {"x": 1}} and
+{"config": {"x": 1.0}} are one point, matching the row matcher's
+equality. Tests: 175 -> 181 (main), 155 -> 161 (6.20).

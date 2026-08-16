@@ -271,9 +271,28 @@ def run_protocol(method_name: str, parameters: dict[str, Any]) -> dict[str, Any]
     ballistic.time = ballistic_time
     ballistic_restored = hash_continuation(ballistic, steps)
 
+    # The row-level trajectory digest chains every arm's full-state stream
+    # digest in a fixed order, so the repeat-binding contract's supported
+    # trajectory_sha256 field commits to all of this row's recorded runs.
+    trajectory_digest = hashlib.sha256(
+        "\n".join(
+            [
+                continuation_hash,
+                inplace_first,
+                inplace_second,
+                *fresh_hashes,
+                *same_history_hashes,
+                precontact_hash,
+                ballistic_continuation,
+                ballistic_restored,
+            ]
+        ).encode("utf-8")
+    ).hexdigest()
+
     return {
         "contact_solver_method": method_name,
         "resolved": resolved,
+        "trajectory_sha256": trajectory_digest,
         "continuation_sha256": continuation_hash,
         "inplace_restore_sha256": [inplace_first, inplace_second],
         "fresh_restore_sha256": fresh_hashes,

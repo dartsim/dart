@@ -1249,7 +1249,7 @@ def test_large_repeat_claims_need_per_repeat_hash_lists():
     packet["ensemble"]["deterministic_repeats"] = 1000
     errors = MODULE.packet_errors(packet)
     assert any("must show their repeats" in error for error in errors)
-    packet["evidence"]["repeat_hashes_sha256"] = ["a" * 64] * 1000
+    packet["evidence"]["repeat_trajectory_sha256"] = ["a" * 64] * 1000
     assert MODULE.packet_errors(packet) == []
 
 
@@ -2004,3 +2004,67 @@ def test_collect_target_refs_lists_packet_prs(tmp_path):
         negative={"schema": "dart.citation_claim_evidence/v1"},
     )
     assert MODULE.collect_target_refs(plan_dir) == ["pull/3445/head"]
+
+
+def test_sweep_coordinates_are_not_measurements():
+    packet = complete_packet()
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
+    packet["evidence"]["raw_rows"] = [
+        {"angle_deg": 0.0, "trajectory_sha256": "d" * 64},
+        {"angle_deg": 15.0, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("coordinate restated is not an outcome" in error for error in errors)
+
+
+def test_repeat_hashes_must_use_supported_fields():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"angle_deg": 0.0, "lateral_drift_m": 0.0}]
+    packet["ensemble"]["unrelated_hash"] = "a" * 64
+    errors = MODULE.packet_errors(packet)
+    assert any("supported repeat-hash field" in error for error in errors)
+
+
+def test_writer_commands_must_match_the_claim():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "pixi run build",
+        "pixi run python scripts/write_citation_ct011_restore_equivalence_packet.py",
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("THIS claim's evidence writer" in error for error in errors)
+
+
+def test_raw_json_artifacts_reject_nonstandard_constants(tmp_path):
+    packet = _path_packet(tmp_path, "nan.json", b'{"metric": 1.0, "bad": NaN}')
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+    packet = _path_packet(tmp_path, "dup.json", b'{"metric": 1.0, "metric": 2.0}')
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_nested_sweep_points_canonicalize_recursively():
+    packet = complete_packet()
+    packet["ensemble"]["sweep"] = [{"config": {"x": 1}}, {"config": {"x": 1.0}}]
+    packet["evidence"]["raw_rows"] = [
+        {"config": {"x": 1.0}, "lateral_drift_m": 0.0, "trajectory_sha256": "d" * 64},
+        {"config": {"x": 1.0}, "lateral_drift_m": 0.1, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("at least two DISTINCT points" in error for error in errors)
+
+
+def test_npy_versions_are_whitelisted(tmp_path):
+    data = bytearray(_npy_bytes("<f8", "1", b"\x00" * 8))
+    data[6] = 9
+    packet = _path_packet(tmp_path, "v9.npy", bytes(data))
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )

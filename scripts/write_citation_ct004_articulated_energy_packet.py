@@ -156,7 +156,25 @@ def run_single(
         metrics = world.compute_step_metrics()
         total_energy = float(metrics.total_energy)
         angular_momentum = np.asarray(metrics.angular_momentum, dtype=float)
-        if not (math.isfinite(total_energy) and np.all(np.isfinite(angular_momentum))):
+        # Total energy and angular momentum are aggregates and do not
+        # uniquely identify a multi-link state, so the repeat hash covers
+        # every joint's position and velocity at every step.
+        articulated_state = np.asarray(
+            [
+                float(value)
+                for joint in chain.joints
+                for value in (
+                    *np.atleast_1d(joint.position),
+                    *np.atleast_1d(joint.velocity),
+                )
+            ],
+            dtype=float,
+        )
+        if not (
+            math.isfinite(total_energy)
+            and np.all(np.isfinite(angular_momentum))
+            and np.all(np.isfinite(articulated_state))
+        ):
             non_finite = True
             break
         max_abs_energy_drift = max(
@@ -165,6 +183,7 @@ def run_single(
         max_abs_angular_momentum = max(
             max_abs_angular_momentum, float(np.linalg.norm(angular_momentum))
         )
+        trajectory.update(articulated_state.tobytes())
         trajectory.update(np.array([total_energy]).tobytes())
         trajectory.update(angular_momentum.tobytes())
 
