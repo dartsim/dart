@@ -405,3 +405,11 @@ Four findings here plus the shared build-task item, all fixed
 (mirrored with main): execution-command requirement; exact build-task
 matching; zero-width NPY dtypes; numeric sweep-point deduplication.
 Tests: 131 -> 135.
+
+## Codex review round 21 (PR #3444) — 2026-08-16
+
+Four findings here plus two shared, all fixed (mirrored with main):
+case-insensitive identity suffix exclusion; solver-category
+configuration requirement; harness-executing command requirement;
+finite CSV cells; Parquet dropped as an unvalidatable raw format.
+Tests: 135 -> 139.

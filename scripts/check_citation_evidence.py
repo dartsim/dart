@@ -151,11 +151,12 @@ IDENTITY_METADATA_SUFFIXES = (
 
 def _is_identity_key(key: str) -> bool:
     """Whole-token identity match: `contact_solver_method` counts,
-    `methodology` (substring only) and `method_note` (metadata role) do
-    not."""
-    if key.endswith(IDENTITY_METADATA_SUFFIXES):
+    `methodology` (substring only) and `method_note`/`Method_Note`
+    (metadata role, any case) do not."""
+    lowered = key.lower()
+    if lowered.endswith(IDENTITY_METADATA_SUFFIXES):
         return False
-    tokens = re.split(r"[^a-zA-Z0-9]+", key.lower())
+    tokens = re.split(r"[^a-zA-Z0-9]+", lowered)
     return any(token in IDENTITY_KEY_TOKENS for token in tokens)
 
 
@@ -179,7 +180,7 @@ COMMAND_RE = re.compile(
 )
 HASH_VALUE_RE = re.compile(r"^(sha256:)?[0-9a-f]{32,}$")
 RAW_DATA_SUFFIXES = frozenset(
-    {".csv", ".tsv", ".json", ".jsonl", ".ndjson", ".npz", ".npy", ".parquet"}
+    {".csv", ".tsv", ".json", ".jsonl", ".ndjson", ".npz", ".npy"}
 )
 NUMERIC_BOOKKEEPING_KEYS = frozenset(
     {"seed", "seeds", "index", "idx", "id", "ids", "repeat", "repeats", "run"}
@@ -287,6 +288,13 @@ IDENTITY_PLACEHOLDER_VALUES = frozenset(
 
 
 def _is_identity_value(value: object) -> bool:
+    if isinstance(value, list):
+        # A requested sweep of methods IS the requested identity.
+        return bool(value) and all(
+            _is_nonempty_str(entry)
+            and entry.strip().lower() not in IDENTITY_PLACEHOLDER_VALUES
+            for entry in value
+        )
     return (
         _is_nonempty_str(value)
         and value.strip().lower() not in IDENTITY_PLACEHOLDER_VALUES
@@ -329,18 +337,43 @@ def _is_finite_number(value: object) -> bool:
     )
 
 
-def _has_identity_key(value: object) -> bool:
+SOLVER_CATEGORY_TOKENS = frozenset(
+    {
+        "solver",
+        "solvers",
+        "method",
+        "methods",
+        "integrator",
+        "integration",
+        "family",
+        "families",
+    }
+)
+
+
+def _has_identity_key(value: object, tokens: "frozenset | None" = None) -> bool:
     """True when any key at any depth names a solver/method/... identity
     with a non-empty string value; {"placeholder": null} and
-    {"method_note": "..."} have none."""
+    {"method_note": "..."} have none. `tokens` restricts the accepted
+    identity categories."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if _is_identity_key(str(key)) and _is_identity_value(item):
+            if (
+                _is_identity_key(str(key))
+                and _is_identity_value(item)
+                and (
+                    tokens is None
+                    or any(
+                        token in tokens
+                        for token in re.split(r"[^a-zA-Z0-9]+", str(key).lower())
+                    )
+                )
+            ):
                 return True
-            if _has_identity_key(item):
+            if _has_identity_key(item, tokens):
                 return True
     elif isinstance(value, list):
-        return any(_has_identity_key(item) for item in value)
+        return any(_has_identity_key(item, tokens) for item in value)
     return False
 
 
@@ -436,8 +469,10 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
         for line in lines[1:50]:
             for cell in line.split(delimiter):
                 try:
-                    float(cell.strip())
+                    cell_value = float(cell.strip())
                 except ValueError:
+                    continue
+                if not math.isfinite(cell_value):
                     continue
                 has_numeric_cell = True
                 break
@@ -464,26 +499,6 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
                 if _npy_header_issue(member_bytes, mismatch) is not None:
                     return mismatch
         except (OSError, zipfile.BadZipFile, KeyError):
-            return mismatch
-        return None
-    if suffix == ".parquet":
-        try:
-            with path.open("rb") as stream:
-                stream.seek(-4, 2)
-                tail4 = stream.read(4)
-        except OSError:
-            return mismatch
-        if head[:4] != b"PAR1" or tail4 != b"PAR1":
-            return mismatch
-        try:
-            with path.open("rb") as stream:
-                stream.seek(-8, 2)
-                footer = stream.read(8)
-        except OSError:
-            return mismatch
-        footer_len = int.from_bytes(footer[:4], "little")
-        file_size = path.stat().st_size
-        if not (0 < footer_len <= file_size - 12):
             return mismatch
         return None
     return None
@@ -954,6 +969,12 @@ def packet_errors(
                     "solver/method/detector/integrator/backend identity field; "
                     "an arbitrary placeholder object is not a configuration"
                 )
+            elif not _has_identity_key(value, SOLVER_CATEGORY_TOKENS):
+                errors.append(
+                    f"configuration.{side} names no solver/method/integrator "
+                    "identity; a detector alone does not record which solver "
+                    "ran"
+                )
         if not _is_nonempty_str(configuration.get("resolved_provenance")):
             errors.append(
                 "configuration.resolved_provenance must name how the resolved "
@@ -1197,6 +1218,15 @@ def packet_errors(
                     "evidence.commands contains only build steps; a "
                     "reproduction sequence must also RUN the evidence "
                     "command"
+                )
+            elif not any(
+                re.search(r"python[ \t].*scripts/", commands[index])
+                for index in non_build_indices
+            ):
+                errors.append(
+                    "no evidence.commands entry runs a repository harness "
+                    "(python ... scripts/...); build or maintenance tasks "
+                    "alone do not regenerate evidence"
                 )
             elif min(build_indices) > min(non_build_indices):
                 errors.append(
