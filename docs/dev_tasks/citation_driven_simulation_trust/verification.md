@@ -690,3 +690,9 @@ defects or contract gaps and materially strengthened the program;
 round 12 was the first with none. Per the criterion announced in
 session, the review loop pauses here for the maintainer's decision;
 every posted finding through round 12 is addressed and pushed.
+
+## Pre-merge gate at the loop checkpoint — 2026-08-16
+
+Full `pixi run test-all` on the checkpoint head `46a0ed20f85`: exit 0,
+all phases pass. This is the pre-merge evidence for PR #3445; the
+merge decision (or a continue-the-loop call) rests with the maintainer.
