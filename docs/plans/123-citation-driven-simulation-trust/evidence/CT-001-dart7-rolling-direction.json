@@ -1198,7 +1198,7 @@
     }
   },
   "result": {
-    "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Outcome actually observed: lateral drift reaches 2.1e-3 m against a 1e-4 m isotropy tolerance, with exact nulls at 0, 45, and 90 deg and antisymmetry about 45 deg to within 1e-13 of peak, in both contact solvers; the drift criterion is the only one of the three tolerances exceeded, and every cell passes the physical-validity gate. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
+    "claim_boundary": "DART 7 main, this commit, one sphere sliding to rolling on a static ground box at v0=1 m/s, mu=0.35, dt=2 ms, 1 s horizon, SEQUENTIAL_IMPULSE and BOXED_LCP contact solvers, launch angles 0-90 deg in 15 deg steps. Outcome actually observed: lateral drift reaches 2.1e-03 m against a 1e-04 m isotropy tolerance, with exact nulls at 0 deg and antisymmetry about 45 deg to within 8e-14 of peak, in BOXED_LCP and SEQUENTIAL_IMPULSE; criteria exceeded: max_abs_lateral_drift_m, and every cell passes the physical-validity gate. Says nothing about other speeds, shapes, stacks, historical DART versions, or DART 6.",
     "disposition": "reproduced",
     "limitations": [
       "Resolved identity now comes from the World's own bake-time resolution, corroborated by per-solver trajectory-hash differences.",
@@ -1262,7 +1262,7 @@
   },
   "target": {
     "branch": "main",
-    "commit": "f4e9e5c11d5d3b443693cde9142bf317e2115cd3",
+    "commit": "5abeeb81a701d353027e3027ae227287f8cac71f",
     "commit_role": "Source state measured: the library and fixture were run at this commit, which is HEAD at capture time. The packet and its writer land in a later commit, so re-running the recorded command requires the child commit that adds the writer; the measured behavior belongs to this one.",
     "fetch_hint": "git fetch origin pull/3445/head && git checkout <target.commit>"
   },
