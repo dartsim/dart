@@ -365,3 +365,9 @@ One finding here plus shared fixes (mirrored with main): evidence/raw/
 is reserved for raw-data artifacts — excluded from packet discovery and
 un-referenceable by lanes. This branch's CT-001 already hashed per
 step, so no regeneration was needed. Tests: 113 -> 114.
+
+## Codex review round 15 (PR #3444) — 2026-08-16
+
+Two findings here plus one shared, all fixed (mirrored with main):
+distinct-row sweep matching; empty-NPY rejection; NPZ member parsing.
+Tests: 114 -> 117.

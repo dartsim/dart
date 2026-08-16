@@ -1367,3 +1367,60 @@ def test_raw_artifacts_under_evidence_raw_are_not_packets(tmp_path):
     )
     errors = MODULE.validate_tree(tree_dir)
     assert any("holds raw artifacts, not packets" in error for error in errors)
+
+
+def test_overlapping_sweep_points_need_distinct_rows():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [
+        {"angle_deg": 0.0},
+        {"angle_deg": 0.0, "detector": "fcl"},
+    ]
+    packet["evidence"]["raw_rows"] = [
+        {
+            "angle_deg": 0.0,
+            "detector": "fcl",
+            "lateral_drift_m": 0.1,
+            "trajectory_sha256": "d" * 64,
+        },
+        {"unrelated_metric": 1.0, "trajectory_sha256": "e" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("DISTINCT" in error and "own" in error for error in errors)
+
+
+def test_empty_npy_arrays_fail(tmp_path):
+    header = b"{'descr': '<f8', 'fortran_order': False, 'shape': (0,), }"
+    header += b" " * (63 - len(header) % 64) + b"\n"
+    payload = b"\x93NUMPY\x01\x00" + len(header).to_bytes(2, "little") + header
+    (tmp_path / "empty.npy").write_bytes(payload)
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["empty.npy"]
+    packet["evidence"]["artifact_digests"] = {
+        "empty.npy": "sha256:"
+        + hashlib.sha256((tmp_path / "empty.npy").read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_npz_members_must_be_valid_arrays(tmp_path):
+    import zipfile as _zip
+
+    bad = tmp_path / "bad.npz"
+    with _zip.ZipFile(bad, "w") as archive:
+        archive.writestr("member.npy", b"not an array")
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["bad.npz"]
+    packet["evidence"]["artifact_digests"] = {
+        "bad.npz": "sha256:" + hashlib.sha256(bad.read_bytes()).hexdigest()
+    }
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
