@@ -191,6 +191,7 @@ def record_review_pass(packet_path: "Any", reviewer: str, summary: str) -> None:
         {
             "reviewer": reviewer,
             "summary": summary,
+            "verdict": "pass",
             "content_digest": packet_content_digest(packet),
         }
     )

@@ -510,3 +510,12 @@ contains every current writer, so each recorded command plus fetch_hint
 reproduces its packet from a clean checkout. All dispositions unchanged
 (CT-001/002 reproduced; CT-003/004/005/007/011 unresolved). Tests: 85 ->
 89; tree validates; negative control still fails.
+
+## Codex review round 3 (PR #3445) — 2026-08-16
+
+Two findings, both fixed on both branches: identity keys must carry
+non-empty string values (`{"solver_method": ""}` no longer counts as a
+recorded identity), and review passes must record an explicit
+`verdict: "pass"` — a digest-bound entry summarizing a FAILED review can
+no longer count toward the two-review closure floor
+(`record_review_pass` stamps the verdict). Tests: 89 -> 93.
