@@ -413,3 +413,21 @@ case-insensitive identity suffix exclusion; solver-category
 configuration requirement; harness-executing command requirement;
 finite CSV cells; Parquet dropped as an unvalidatable raw format.
 Tests: 135 -> 139.
+
+## Codex review round 22 (PR #3444) — 2026-08-16
+
+Two findings on this lane plus the main-lane pair, all mirrored both
+ways. CSV/TSV finite-cell scanning now classifies columns by header:
+bookkeeping/seed columns are excluded, a header of only bookkeeping
+columns is rejected outright, and `seed,note` metadata can no longer
+satisfy the raw-measurement gate (headerless numeric tables still
+count whole). NPY/NPZ payloads are value-checked with the stdlib:
+float/complex arrays must contain at least one finite element, f2/f4/f8
+and c8/c16 decode, other float widths are rejected as unverifiable.
+From the main lane: a packet's 40-hex target commit must exist in the
+repository object store (the three platform CI check-lint checkouts
+fetch full history; shallow clones get an explicit unshallow error),
+and every `scripts/...` path in an evidence command must be a real file
+in the scripts/ tree. Network reachability of the PR ref remains with
+`--freshness`; the default gate is offline by design.
+Tests: 139 -> 149 (6.20), 159 -> 169 (main).

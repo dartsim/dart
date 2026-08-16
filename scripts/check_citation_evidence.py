@@ -34,6 +34,7 @@ This is additive tooling only: no public API, ABI, default, or runtime change.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import math
@@ -236,6 +237,34 @@ def _has_measurement_leaf(value: object) -> bool:
     )
 
 
+@functools.lru_cache(maxsize=None)
+def _git_object_status(commit: str) -> str:
+    """'exists', 'missing', 'shallow', or 'unavailable' for a commit hash in
+    THIS repository's object store.
+
+    Offline by design: the default gate proves the recorded checkout points
+    at a commit that actually exists here; network reachability through the
+    PR ref stays with `--freshness`.
+    """
+
+    def _git(*argv: str) -> "subprocess.CompletedProcess[bytes]":
+        return subprocess.run(
+            ["git", "-C", str(REPO_ROOT), *argv],
+            capture_output=True,
+            check=False,
+        )
+
+    if _git("cat-file", "-e", f"{commit}^{{commit}}").returncode == 0:
+        return "exists"
+    inside = _git("rev-parse", "--is-inside-work-tree")
+    if inside.returncode != 0 or inside.stdout.strip() != b"true":
+        return "unavailable"
+    shallow = _git("rev-parse", "--is-shallow-repository")
+    if shallow.returncode == 0 and shallow.stdout.strip() == b"true":
+        return "shallow"
+    return "missing"
+
+
 def _has_hash_list(value: object, length: int) -> bool:
     """True when a hash-named key holds a list of >= `length` digest values."""
     if isinstance(value, dict):
@@ -422,9 +451,10 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
 
     Mirrors the visual check: a prose file renamed to `rows.csv` must not
     satisfy the raw-evidence requirement. JSON variants must parse; CSV/TSV
-    need delimited tabular lines; NumPy/parquet containers must carry their
-    magic bytes. Deep semantic validation of tabular contents is a recorded
-    boundary.
+    need delimited tabular lines with a finite value in a non-bookkeeping
+    column; NumPy containers must parse structurally AND carry at least one
+    finite (or boolean/integer) element. Deep semantic validation of
+    tabular contents is a recorded boundary.
     """
     suffix = path.suffix.lower()
     try:
@@ -465,14 +495,46 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
         lines = [line for line in head.splitlines() if line.strip()]
         if len(lines) < 2 or not any(delimiter in line for line in lines[:2]):
             return mismatch
+
+        def _cell_float(cell: bytes) -> "float | None":
+            try:
+                return float(cell.strip())
+            except ValueError:
+                return None
+
+        first_row = lines[0].split(delimiter)
+        if any(_cell_float(cell) is None for cell in first_row):
+            # Header row: the finite-cell requirement applies only to
+            # columns that are not run bookkeeping (seed/index/repeat/...),
+            # so `seed,note` metadata cannot masquerade as a measurement.
+            header_names = [
+                cell.strip().decode("utf-8", "replace") for cell in first_row
+            ]
+            measurement_columns = {
+                column
+                for column, name in enumerate(header_names)
+                if not (_is_bookkeeping_key(name) or _is_seed_key(name))
+            }
+            if not measurement_columns:
+                return (
+                    "carries only bookkeeping columns "
+                    f"({', '.join(header_names)}); run metadata without a "
+                    "measurement column is not raw evidence"
+                )
+            data_lines = lines[1:50]
+        else:
+            # Headerless numeric table: every column is a candidate
+            # measurement (there is no name to classify).
+            measurement_columns = None
+            data_lines = lines[0:50]
         has_numeric_cell = False
-        for line in lines[1:50]:
-            for cell in line.split(delimiter):
-                try:
-                    cell_value = float(cell.strip())
-                except ValueError:
-                    continue
-                if not math.isfinite(cell_value):
+        for line in data_lines:
+            for column, cell in enumerate(line.split(delimiter)):
+                if measurement_columns is not None:
+                    if column not in measurement_columns:
+                        continue
+                cell_value = _cell_float(cell)
+                if cell_value is None or not math.isfinite(cell_value):
                     continue
                 has_numeric_cell = True
                 break
@@ -482,7 +544,29 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             return no_content
         return None
     if suffix == ".npy":
-        return _npy_header_issue(head, mismatch, path.stat().st_size)
+        parsed = _npy_parsed_header(head, mismatch, path.stat().st_size)
+        if isinstance(parsed, str):
+            return parsed
+        payload_offset, descr, payload_length = parsed
+
+        def _payload_chunks():
+            with path.open("rb") as stream:
+                stream.seek(payload_offset)
+                remaining = payload_length
+                while remaining > 0:
+                    block = stream.read(min(1024 * 1024, remaining))
+                    if not block:
+                        return
+                    remaining -= len(block)
+                    yield block
+
+        try:
+            value_issue = _npy_payload_value_issue(descr, _payload_chunks())
+        except OSError:
+            return "could not be read for format verification"
+        if value_issue is not None:
+            return value_issue[1]
+        return None
     if suffix == ".npz":
         try:
             import io
@@ -494,22 +578,38 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             npy_members = [name for name in names if name.endswith(".npy")]
             if not npy_members:
                 return mismatch
+            any_finite = False
+            first_value_issue: "str | None" = None
             for name in npy_members:
                 member_bytes = archive.read(name)
-                if _npy_header_issue(member_bytes, mismatch) is not None:
+                parsed = _npy_parsed_header(member_bytes, mismatch, len(member_bytes))
+                if isinstance(parsed, str):
                     return mismatch
+                payload_offset, descr, payload_length = parsed
+                payload = member_bytes[payload_offset : payload_offset + payload_length]
+                value_issue = _npy_payload_value_issue(descr, [payload])
+                if value_issue is None:
+                    any_finite = True
+                elif value_issue[0] == "unsupported":
+                    return value_issue[1]
+                elif first_value_issue is None:
+                    first_value_issue = value_issue[1]
+            if not any_finite:
+                return first_value_issue or mismatch
         except (OSError, zipfile.BadZipFile, KeyError):
             return mismatch
         return None
     return None
 
 
-def _npy_header_issue(
+def _npy_parsed_header(
     head: bytes, mismatch: str, total_size: "int | None" = None
-) -> "str | None":
+) -> "str | tuple[int, str, int]":
     """Parse the NPY header structurally (stdlib only): magic, version,
     header length, and a literal dict with descr/shape/fortran_order whose
-    shape is a tuple of non-negative ints."""
+    shape is a tuple of non-negative ints. Returns the mismatch message on
+    failure, else (payload offset, descr, payload byte length) for value
+    inspection."""
     import ast as _ast
     import struct
 
@@ -555,7 +655,47 @@ def _npy_header_issue(
     if total_size < header_start + header_len + expected_payload:
         # Truncated payload: the declared array does not fit in the file.
         return mismatch
-    return None
+    return (header_start + header_len, header["descr"], expected_payload)
+
+
+def _npy_payload_value_issue(descr: str, chunks: "object") -> "tuple[str, str] | None":
+    """('unsupported' | 'nonfinite', message) when an NPY payload proves no
+    finite measurement; None when at least one finite (or boolean/integer)
+    element is present. `descr` was already validated by the header parse."""
+    import struct
+
+    match = re.match(r"^([<>|=]?)([bifuc])([0-9]+)$", descr)
+    assert match is not None
+    byte_order, kind, itemsize_text = match.groups()
+    itemsize = int(itemsize_text)
+    if kind in ("b", "i", "u"):
+        # Booleans and integers cannot encode NaN/Inf; the non-empty shape
+        # already enforced by the header check makes them observations.
+        return None
+    scalar_width = itemsize if kind == "f" else itemsize // 2
+    scalar_code = {2: "e", 4: "f", 8: "d"}.get(scalar_width)
+    if scalar_code is None or (kind == "c" and itemsize % 2 != 0):
+        return (
+            "unsupported",
+            f"uses dtype {descr!r} whose element values the standard "
+            "library cannot decode; store measurements as f2/f4/f8 (or "
+            "c8/c16) so their finiteness stays checkable",
+        )
+    prefix = byte_order if byte_order in ("<", ">") else "="
+    element = struct.Struct(prefix + scalar_code * (1 if kind == "f" else 2))
+    carry = b""
+    for chunk in chunks:
+        data = carry + chunk if carry else chunk
+        usable = len(data) - (len(data) % element.size)
+        for parts in element.iter_unpack(data[:usable]):
+            if all(math.isfinite(part) for part in parts):
+                return None
+        carry = data[usable:]
+    return (
+        "nonfinite",
+        "contains no finite element; an all-NaN/Inf array records no "
+        "measurement and is not raw evidence",
+    )
 
 
 def _visual_content_issue(path: "Path") -> "str | None":
@@ -902,6 +1042,29 @@ def packet_errors(
                 f"{commit[:12]}...; the hint must reproduce THIS packet's "
                 "target"
             )
+        if isinstance(commit, str) and COMMIT_RE.match(commit):
+            object_status = _git_object_status(commit)
+            if object_status == "missing":
+                errors.append(
+                    f"target.commit {commit[:12]}... does not exist in this "
+                    "repository's object store; a well-shaped hash for a "
+                    "nonexistent commit attributes the measurements to no "
+                    "source revision (regenerate the packet at a real, "
+                    "pushed commit)"
+                )
+            elif object_status == "shallow":
+                errors.append(
+                    f"target.commit {commit[:12]}... cannot be verified in "
+                    "a shallow clone; fetch full history "
+                    "(git fetch --unshallow) so recorded provenance stays "
+                    "checkable"
+                )
+            elif object_status == "unavailable":
+                errors.append(
+                    "target.commit cannot be verified because no git "
+                    "object store is available; run the checker from a "
+                    "repository checkout"
+                )
 
     scene = packet.get("scene")
     if not isinstance(scene, dict):
@@ -1198,6 +1361,19 @@ def packet_errors(
                         "shell strings are not the promised reproduction "
                         "path"
                     )
+                    continue
+                for script_ref in re.findall(r"scripts/[A-Za-z0-9_.\-/]+", command):
+                    script_path = (REPO_ROOT / script_ref).resolve()
+                    if not (
+                        script_path.is_file()
+                        and script_path.is_relative_to(REPO_ROOT / "scripts")
+                    ):
+                        errors.append(
+                            f"evidence.commands[{index}] references "
+                            f"{script_ref}, which is not a file in this "
+                            "repository's scripts/ tree; a reproduction "
+                            "sequence must invoke a harness that exists"
+                        )
             build_indices = [
                 index
                 for index, command in enumerate(commands)

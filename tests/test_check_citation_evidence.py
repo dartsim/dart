@@ -8,6 +8,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,6 +17,18 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "check_citation_evidence.py"
 DESIGN_DIR = ROOT / "docs" / "design" / "dart6_citation_driven_contact_trust"
+
+# The validator verifies target commits against the real object store and
+# harness paths against the real scripts/ tree, so the passing fixture must
+# use a commit and harness that actually exist.
+HEAD_COMMIT = subprocess.run(
+    ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+HARNESS = "scripts/write_citation_ct001_rolling_direction_packet.py"
+assert (ROOT / HARNESS).is_file()
 
 
 def _load_module():
@@ -39,9 +52,9 @@ def complete_packet() -> dict:
         "source": {"url": "https://example.org/claim", "claim": "A claim."},
         "target": {
             "branch": "release-6.20",
-            "commit": "0" * 40,
+            "commit": HEAD_COMMIT,
             "fetch_hint": (
-                "git fetch origin pull/3444/head && git checkout " + "0" * 40
+                "git fetch origin pull/3444/head && git checkout " + HEAD_COMMIT
             ),
         },
         "scene": {
@@ -92,7 +105,7 @@ def complete_packet() -> dict:
         "evidence": {
             "commands": [
                 "pixi run build",
-                "pixi run python scripts/example.py",
+                "pixi run python " + HARNESS,
             ],
             "raw_rows": [
                 {
@@ -1023,12 +1036,10 @@ def test_commands_must_be_the_reproducible_pixi_form():
     packet = complete_packet()
     packet["evidence"]["commands"] = [
         "pixi run build",
-        "PYTHONPATH=build/x pixi run python scripts/write.py",
+        "PYTHONPATH=build/x pixi run python " + HARNESS,
     ]
     assert MODULE.packet_errors(packet) == []
-    packet["evidence"]["commands"] = [
-        "PYTHONPATH=build/x pixi run python scripts/write.py"
-    ]
+    packet["evidence"]["commands"] = ["PYTHONPATH=build/x pixi run python " + HARNESS]
     errors = MODULE.packet_errors(packet)
     assert any("must include the build step" in error for error in errors)
 
@@ -1560,7 +1571,7 @@ def test_seed_fields_match_by_token():
 def test_build_must_precede_the_evidence_command():
     packet = complete_packet()
     packet["evidence"]["commands"] = [
-        "pixi run python scripts/example.py",
+        "pixi run python " + HARNESS,
         "pixi run build",
     ]
     errors = MODULE.packet_errors(packet)
@@ -1581,7 +1592,7 @@ def test_env_prefixed_build_commands_are_recognized():
     packet = complete_packet()
     packet["evidence"]["commands"] = [
         "DART_PARALLEL_JOBS=4 pixi run build",
-        "pixi run python scripts/example.py",
+        "pixi run python " + HARNESS,
     ]
     assert MODULE.packet_errors(packet) == []
 
@@ -1626,7 +1637,7 @@ def test_build_suffix_tasks_do_not_count():
     packet = complete_packet()
     packet["evidence"]["commands"] = [
         "pixi run build-nothing",
-        "pixi run python scripts/example.py",
+        "pixi run python " + HARNESS,
     ]
     errors = MODULE.packet_errors(packet)
     assert any("must include the build step" in error for error in errors)
@@ -1701,3 +1712,123 @@ def test_non_finite_csv_cells_do_not_count(tmp_path):
     assert any(
         "carries no numeric or boolean measurement content" in error for error in errors
     )
+
+
+def _npy_bytes(descr: str, shape: str, payload: bytes) -> bytes:
+    header = (
+        b"{'descr': '" + descr.encode() + b"', 'fortran_order': False, "
+        b"'shape': (" + shape.encode() + b",), }"
+    )
+    header += b" " * (63 - len(header) % 64) + b"\n"
+    return b"\x93NUMPY\x01\x00" + len(header).to_bytes(2, "little") + header + payload
+
+
+def _path_packet(tmp_path, name: str, data: bytes) -> dict:
+    (tmp_path / name).write_bytes(data)
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = [name]
+    packet["evidence"]["artifact_digests"] = {
+        name: "sha256:" + hashlib.sha256(data).hexdigest()
+    }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
+    return packet
+
+
+def test_nonexistent_target_commits_fail():
+    packet = complete_packet()
+    packet["target"]["commit"] = "f" * 40
+    packet["target"]["fetch_hint"] = (
+        "git fetch origin pull/3444/head && git checkout " + "f" * 40
+    )
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "does not exist in this repository's object store" in error for error in errors
+    )
+
+
+def test_missing_harness_scripts_fail():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "pixi run build",
+        "pixi run python scripts/does_not_exist.py",
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("must invoke a harness that exists" in error for error in errors)
+
+
+def test_all_nan_npy_payloads_fail(tmp_path):
+    import struct
+
+    payload = struct.pack("<d", float("nan")) * 3
+    packet = _path_packet(tmp_path, "nan.npy", _npy_bytes("<f8", "3", payload))
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("contains no finite element" in error for error in errors)
+
+
+def test_npy_with_a_finite_value_passes(tmp_path):
+    import struct
+
+    payload = struct.pack("<d", float("nan")) + struct.pack("<d", 0.5)
+    packet = _path_packet(tmp_path, "ok.npy", _npy_bytes("<f8", "2", payload))
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_integer_npy_payloads_pass(tmp_path):
+    packet = _path_packet(
+        tmp_path, "counts.npy", _npy_bytes("<i4", "2", b"\x01\x00\x00\x00" * 2)
+    )
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_unverifiable_npy_float_widths_fail(tmp_path):
+    packet = _path_packet(tmp_path, "f16.npy", _npy_bytes("<f16", "1", b"\x00" * 16))
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("cannot decode" in error for error in errors)
+
+
+def test_all_nan_npz_members_fail(tmp_path):
+    import io
+    import struct
+    import zipfile
+
+    nan_member = _npy_bytes("<f8", "2", struct.pack("<d", float("nan")) * 2)
+    fin_member = _npy_bytes("<f8", "1", struct.pack("<d", 1.5))
+
+    def _zip(members: dict) -> bytes:
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            for name, data in members.items():
+                archive.writestr(name, data)
+        return buffer.getvalue()
+
+    packet = _path_packet(tmp_path, "nan.npz", _zip({"a.npy": nan_member}))
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("contains no finite element" in error for error in errors)
+
+    packet = _path_packet(
+        tmp_path, "mixed.npz", _zip({"a.npy": nan_member, "b.npy": fin_member})
+    )
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_bookkeeping_only_csv_columns_fail(tmp_path):
+    packet = _path_packet(tmp_path, "meta.csv", b"seed,run\n7,1\n8,2\n")
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any("run metadata without a measurement column" in error for error in errors)
+
+    packet = _path_packet(tmp_path, "notes.csv", b"seed,note\n7,control\n8,x\n")
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "carries no numeric or boolean measurement content" in error for error in errors
+    )
+
+
+def test_csv_measurement_columns_still_pass(tmp_path):
+    packet = _path_packet(tmp_path, "rows.csv", b"seed,drift_m\n7,0.25\n8,0.50\n")
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
+
+
+def test_headerless_numeric_csv_still_passes(tmp_path):
+    packet = _path_packet(tmp_path, "grid.csv", b"1.0,2.0\n3.0,4.0\n")
+    assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
