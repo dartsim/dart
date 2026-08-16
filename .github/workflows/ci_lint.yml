@@ -57,6 +57,12 @@ jobs:
         with:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
+      - name: Fetch citation packet target refs
+        # Squash merges retire topic-branch commits from branch history;
+        # the surviving refs/pull/N/head namespace is not covered by
+        # fetch-depth: 0, so fetch the refs the packets actually name.
+        run: pixi run python scripts/check_citation_evidence.py --fetch-target-refs
+
       - name: Check Lint
         run: pixi run check-lint
 

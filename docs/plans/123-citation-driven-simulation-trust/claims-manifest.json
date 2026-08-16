@@ -33,7 +33,9 @@
           "evidence": [],
           "notes": "Open PR #3377 owns exact-Coulomb FBF rolling scenes on release-6.20; reuse, do not duplicate."
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Polyhedral friction can produce direction-dependent rolling/sliding behavior."
     },
     {
       "id": "CT-002",
@@ -56,7 +58,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Dense contact may fail, become unstable, or scale poorly for some timestep/solver settings."
     },
     {
       "id": "CT-003",
@@ -79,7 +83,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Elastic dense contact may inject energy or expose solver failure."
     },
     {
       "id": "CT-004",
@@ -102,7 +108,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Articulated integration/contact accuracy must be compared at matched cost."
     },
     {
       "id": "CT-005",
@@ -125,7 +133,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://leggedrobotics.github.io/SimBenchmark/",
+      "source_claim": "Controlled robot tracking exposes whole-step speed/accuracy tradeoffs."
     },
     {
       "id": "CT-006",
@@ -169,7 +179,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://arxiv.org/abs/2405.17020",
+      "source_claim": "Exact Coulomb cones and adaptive proximal methods may improve conditioning and remove friction-pyramid anisotropy."
     },
     {
       "id": "CT-008",
@@ -254,7 +266,9 @@
           "disposition": null,
           "evidence": []
         }
-      }
+      },
+      "source_url": "https://doi.org/10.21105/joss.06771",
+      "source_claim": "Research workflows need fast reset, concurrency, low overhead, and deterministic synchronous stepping around DART."
     },
     {
       "id": "CT-012",

@@ -847,3 +847,24 @@ requirement applies only to non-bookkeeping columns, so `seed,note`
 metadata cannot close a lane. Network reachability of the PR ref
 remains with `--freshness`; the default gate is offline by design.
 Tests: 159 -> 169 (main), 139 -> 149 (6.20).
+
+## Codex review round 23 (PR #3445) — 2026-08-16
+
+Two findings here plus three on the LTS lane, mirrored both ways. A
+packet's source is now bound to the manifest: each claim that carries
+lane evidence must pin a canonical `source_url` and `source_claim`,
+and every lane-referenced packet must match them exactly — evidence
+for a different cited assertion can no longer close a lane (claims
+with no evidence yet may defer the binding; the corpus rows carry no
+URLs to pin). The round-22 object-store check is completed for the
+post-squash world: squash merges retire topic commits from branch
+history, so `--fetch-target-refs` fetches the `pull/N/head` refs the
+packets actually name, the lint workflow runs it before check-lint,
+and the missing-object error names that remedy. From the LTS lane:
+the fetch-hint regex accepts any numeric PR ref (future evidence PRs
+were previously impossible to land; the sha must still match
+target.commit and reachability stays with --freshness), NPY dtype
+widths are whitelisted per kind (`<i3` names no loadable dtype), and
+the harness command must invoke an evidence writer
+(`scripts/write_citation*.py`) — an existing but unrelated script is
+not a reproduction path. Tests: 169 -> 175 (main), 149 -> 155 (6.20).
