@@ -696,3 +696,18 @@ every posted finding through round 12 is addressed and pushed.
 Full `pixi run test-all` on the checkpoint head `46a0ed20f85`: exit 0,
 all phases pass. This is the pre-merge evidence for PR #3445; the
 merge decision (or a continue-the-loop call) rests with the maintainer.
+
+## Codex review round 13 (PR #3445) — 2026-08-16, loop resumed by maintainer
+
+Loop resumed on the maintainer's instruction. Five findings, all fixed
+on both branches: NPY headers are parsed structurally (magic, version,
+header length, literal dict with a valid shape tuple — stdlib only);
+NPZ must be a readable zip containing at least one .npy member; parquet
+needs its PAR1 footer as well as header; WebM must carry its DocType in
+the EBML header (signature-plus-padding rejected); reviewer identities
+are NFKC-normalized before the distinct count (Jos\u00e9 vs
+Jose+combining-accent is one reviewer); and scalar sweep points are now
+rejected outright — a sweep point must be an object naming its
+coordinates, replacing the value-appears-anywhere heuristic that
+unrelated measurements could satisfy. Tests: 130 -> 133 (main),
+110 -> 113 (6.20).

@@ -39,6 +39,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path, PurePosixPath
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -400,10 +401,68 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
             return no_content
         return None
     if suffix == ".npy":
-        return None if head.startswith(b"\x93NUMPY") else mismatch
-    if suffix in (".npz", ".parquet"):
-        ok = head.startswith(b"PK") if suffix == ".npz" else head[:4] == b"PAR1"
-        return None if ok else mismatch
+        return _npy_header_issue(head, mismatch)
+    if suffix == ".npz":
+        try:
+            import io
+            import zipfile
+
+            with path.open("rb") as stream:
+                archive = zipfile.ZipFile(io.BytesIO(stream.read()))
+            names = archive.namelist()
+        except OSError, zipfile.BadZipFile:
+            return mismatch
+        if not names or not any(name.endswith(".npy") for name in names):
+            return mismatch
+        return None
+    if suffix == ".parquet":
+        try:
+            with path.open("rb") as stream:
+                stream.seek(-4, 2)
+                tail4 = stream.read(4)
+        except OSError:
+            return mismatch
+        if head[:4] != b"PAR1" or tail4 != b"PAR1":
+            return mismatch
+        return None
+    return None
+
+
+def _npy_header_issue(head: bytes, mismatch: str) -> "str | None":
+    """Parse the NPY header structurally (stdlib only): magic, version,
+    header length, and a literal dict with descr/shape/fortran_order whose
+    shape is a tuple of non-negative ints."""
+    import ast as _ast
+    import struct
+
+    if not head.startswith(b"\x93NUMPY") or len(head) < 10:
+        return mismatch
+    major = head[6]
+    if major == 1:
+        (header_len,) = struct.unpack("<H", head[8:10])
+        header_start = 10
+    else:
+        if len(head) < 12:
+            return mismatch
+        (header_len,) = struct.unpack("<I", head[8:12])
+        header_start = 12
+    header_bytes = head[header_start : header_start + header_len]
+    if len(header_bytes) < header_len:
+        return mismatch
+    try:
+        header = _ast.literal_eval(header_bytes.decode("latin1").strip())
+    except ValueError, SyntaxError:
+        return mismatch
+    if not (
+        isinstance(header, dict)
+        and {"descr", "shape", "fortran_order"} <= set(header)
+        and isinstance(header["shape"], tuple)
+        and all(
+            isinstance(dim, int) and not isinstance(dim, bool) and dim >= 0
+            for dim in header["shape"]
+        )
+    ):
+        return mismatch
     return None
 
 
@@ -468,7 +527,8 @@ def _visual_content_issue(path: "Path") -> "str | None":
             return mismatch
         return None
     if suffix == ".webm":
-        return None if header.startswith(b"\x1a\x45\xdf\xa3") else mismatch
+        ok = header.startswith(b"\x1a\x45\xdf\xa3") and b"webm" in header
+        return None if ok else mismatch
     if suffix == ".svg":
         ok = b"<svg" in header and b"</svg>" in stripped_tail
         return None if ok else mismatch
@@ -879,12 +939,12 @@ def packet_errors(
             for index, entry in enumerate(sweep):
                 if isinstance(entry, dict) and entry:
                     canonical_points.append(json.dumps(entry, sort_keys=True))
-                elif _is_finite_number(entry) or _is_nonempty_str(entry):
-                    canonical_points.append(json.dumps(entry))
                 else:
                     errors.append(
-                        f"ensemble.sweep[{index}] must be a non-empty object, "
-                        "finite number, or non-empty string sweep point"
+                        f"ensemble.sweep[{index}] must be a non-empty object "
+                        "naming its coordinates (e.g. {'angle_deg': 15.0}); "
+                        "a bare scalar cannot be matched to the row that "
+                        "observed it"
                     )
                     has_sweep = False
             if has_sweep and len(set(canonical_points)) < 2:
@@ -1014,17 +1074,6 @@ def packet_errors(
         # measurements could be repeated to stand in for the others.
         if has_rows and isinstance(sweep, list):
             for point in sweep:
-                if _is_finite_number(point) or _is_nonempty_str(point):
-                    if not any(
-                        isinstance(row, dict) and point in row.values()
-                        for row in raw_rows
-                    ):
-                        errors.append(
-                            f"ensemble.sweep point {point!r} has no row "
-                            "carrying that value; a declared configuration "
-                            "without an observation is not swept"
-                        )
-                    continue
                 if not (isinstance(point, dict) and point):
                     continue
                 if not any(
@@ -1630,7 +1679,9 @@ def validate_tree(
                     )
                 else:
                     reviewers = {
-                        entry["reviewer"].strip().casefold()
+                        unicodedata.normalize(
+                            "NFKC", entry["reviewer"].strip()
+                        ).casefold()
                         for entry in passes
                         if isinstance(entry, dict)
                         and _is_nonempty_str(entry.get("reviewer"))
