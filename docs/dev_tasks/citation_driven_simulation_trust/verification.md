@@ -799,3 +799,14 @@ ensemble, with artifact_digests proving file identity only; and
 bookkeeping keys are matched case-insensitively by whole token (`Seed`,
 `run_id`, `Repeat-2` are bookkeeping; `contact_count_max` remains a
 measurement). Tests: 147 -> 151 (main), 127 -> 131 (6.20).
+
+## Codex review round 20 (PR #3445) — 2026-08-16
+
+Five findings (the build-task one reported on both PRs), all fixed:
+a commands list consisting only of build steps is rejected (a
+reproduction sequence must also RUN the evidence command); the build
+match no longer accepts invented suffixed tasks like `build-nothing`
+(exact task name, arguments allowed); zero-width NPY dtypes (`<i0`)
+are rejected; and numerically equivalent sweep points (1 vs 1.0)
+deduplicate in the distinct-point check, matching the row matcher's
+equality semantics. Tests: 151 -> 155 (main), 131 -> 135 (6.20).

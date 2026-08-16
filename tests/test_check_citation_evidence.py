@@ -1716,3 +1716,52 @@ def test_cased_bookkeeping_keys_are_still_bookkeeping():
         packet["evidence"]["raw_rows"] = [row]
         errors = MODULE.packet_errors(packet)
         assert any("beyond bookkeeping" in error for error in errors), row
+
+
+def test_build_only_command_lists_fail():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = ["pixi run build"]
+    errors = MODULE.packet_errors(packet)
+    assert any("must also RUN the evidence command" in error for error in errors)
+
+
+def test_build_suffix_tasks_do_not_count():
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "pixi run build-nothing",
+        "pixi run python scripts/example.py",
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("must include the build step" in error for error in errors)
+
+
+def test_zero_width_npy_dtypes_fail(tmp_path):
+    header = b"{'descr': '<i0', 'fortran_order': False, 'shape': (10,), }"
+    header += b" " * (63 - len(header) % 64) + b"\n"
+    payload = b"\x93NUMPY\x01\x00" + len(header).to_bytes(2, "little") + header
+    (tmp_path / "zero.npy").write_bytes(payload)
+    packet = complete_packet()
+    del packet["evidence"]["raw_rows"]
+    packet["evidence"]["raw_paths"] = ["zero.npy"]
+    packet["evidence"]["artifact_digests"] = {
+        "zero.npy": "sha256:"
+        + hashlib.sha256((tmp_path / "zero.npy").read_bytes()).hexdigest()
+    }
+    packet["ensemble"]["repeat_trajectory_sha256"] = "a" * 64
+    errors = MODULE.packet_errors(packet, base_dir=tmp_path)
+    assert any(
+        "does not parse as its claimed raw-data format" in error for error in errors
+    )
+
+
+def test_numeric_equivalent_sweep_points_deduplicate():
+    packet = complete_packet()
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 1}, {"angle_deg": 1.0}]
+    packet["evidence"]["raw_rows"] = [
+        {"angle_deg": 1.0, "lateral_drift_m": 0.1, "trajectory_sha256": "d" * 64},
+        {"angle_deg": 1.0, "lateral_drift_m": 0.1, "trajectory_sha256": "d" * 64},
+    ]
+    errors = MODULE.packet_errors(packet)
+    assert any("DISTINCT points" in error for error in errors)
