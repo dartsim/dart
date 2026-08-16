@@ -1197,7 +1197,7 @@
   "target": {
     "branch": "release-6.20",
     "commit": "1a811de5bbb9c8edb730c6d34875717e0bc2dc79",
-    "fetch_hint": "git fetch origin pull/3444/head && git checkout <target.commit>"
+    "fetch_hint": "git fetch origin pull/3444/head && git checkout 1a811de5bbb9c8edb730c6d34875717e0bc2dc79"
   },
   "title": "Rolling-direction friction dependence (release-6.20 detector sweep)"
 }

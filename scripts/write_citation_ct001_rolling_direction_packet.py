@@ -508,8 +508,8 @@ def build_packet(output_path: Path | None = None) -> dict[str, Any]:
         },
         "target": {
             "branch": "release-6.20",
-            "commit": git_head(),
-            "fetch_hint": target_fetch_hint(),
+            "commit": (head_commit := git_head()),
+            "fetch_hint": target_fetch_hint(head_commit),
         },
         "scene": {
             "id": parameters["scene_id"],

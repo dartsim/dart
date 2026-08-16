@@ -290,3 +290,12 @@ named measurement-window bounds; placeholder identity values rejected;
 header+tail media reads (no false truncation above 8 MiB); negative
 controls pinned defect-by-defect via .expected-errors.json sidecars
 (CT-019 sidecar added). Tests: 81 -> 84.
+
+## Codex review round 7 (PR #3444) — 2026-08-16
+
+Three findings here plus four shared, all fixed (mirrored with main):
+runnable fetch hints embedding the packet's own commit; orphan sidecars
+no longer count as negative controls; step-window bounds validated as
+sane integers; reproducible-form commands; hash-bound repeat claims;
+bookkeeping-only rows rejected. The CT-001 hint was migrated in place
+(content-equal to the updated writer's emission). Tests: 84 -> 90.

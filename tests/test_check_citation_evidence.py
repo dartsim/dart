@@ -41,7 +41,7 @@ def complete_packet() -> dict:
             "branch": "release-6.20",
             "commit": "0" * 40,
             "fetch_hint": (
-                "git fetch origin pull/3444/head && git checkout <target.commit>"
+                "git fetch origin pull/3444/head && git checkout " + "0" * 40
             ),
         },
         "scene": {
@@ -91,7 +91,13 @@ def complete_packet() -> dict:
         },
         "evidence": {
             "commands": ["pixi run python scripts/example.py"],
-            "raw_rows": [{"angle_deg": 0.0, "lateral_drift_m": 0.0}],
+            "raw_rows": [
+                {
+                    "angle_deg": 0.0,
+                    "lateral_drift_m": 0.0,
+                    "trajectory_sha256": "d" * 64,
+                }
+            ],
             "visual": {
                 "status": "not-applicable",
                 "reason": "numeric oracle only",
@@ -394,6 +400,11 @@ def test_dangling_raw_path_fails(tmp_path):
     assert any("does not resolve" in error for error in errors)
     (tmp_path / "real.csv").write_text("x", encoding="utf-8")
     packet["evidence"]["raw_paths"] = ["real.csv"]
+    # raw_paths carry no hash leaf, so the repeats claim needs one recorded
+    # elsewhere; a sweep ensemble sidesteps that requirement here.
+    del packet["ensemble"]["deterministic_repeats"]
+    del packet["ensemble"]["deterministic_repeats_identical"]
+    packet["ensemble"]["sweep"] = [{"angle_deg": 0.0}, {"angle_deg": 15.0}]
     assert MODULE.packet_errors(packet, base_dir=tmp_path) == []
 
 
@@ -877,7 +888,9 @@ def test_raw_rows_need_measurement_content():
     packet["evidence"]["raw_rows"] = [{"note": "pending"}]
     errors = MODULE.packet_errors(packet)
     assert any("metadata-only record" in error for error in errors)
-    packet["evidence"]["raw_rows"] = [{"lateral_drift_m": 1.5e-3}]
+    packet["evidence"]["raw_rows"] = [
+        {"lateral_drift_m": 1.5e-3, "trajectory_sha256": "f" * 64}
+    ]
     assert MODULE.packet_errors(packet) == []
 
 
@@ -906,10 +919,10 @@ def test_fetch_hint_must_be_the_durable_pr_ref_command():
     packet = complete_packet()
     packet["target"]["fetch_hint"] = "not a command"
     errors = MODULE.packet_errors(packet)
-    assert any("durable PR-ref fetch command" in error for error in errors)
+    assert any("runnable durable PR-ref" in error for error in errors)
     packet["target"]["fetch_hint"] = "git fetch origin pull/999/head"
     errors = MODULE.packet_errors(packet)
-    assert any("durable PR-ref fetch command" in error for error in errors)
+    assert any("runnable durable PR-ref" in error for error in errors)
 
 
 def test_signature_only_media_is_rejected(tmp_path):
@@ -939,7 +952,7 @@ def test_fetch_hint_suffix_or_prefix_variants_fail():
         packet = complete_packet()
         packet["target"]["fetch_hint"] = bad
         errors = MODULE.packet_errors(packet)
-        assert any("durable PR-ref fetch command" in error for error in errors), bad
+        assert any("runnable durable PR-ref" in error for error in errors), bad
 
 
 def test_negative_control_sidecar_pins_each_seeded_defect(tmp_path):
@@ -955,3 +968,58 @@ def test_negative_control_sidecar_pins_each_seeded_defect(tmp_path):
     sidecar.unlink()
     errors = MODULE.validate_tree(tree_dir)
     assert any("no .expected-errors.json sidecar" in error for error in errors)
+
+
+def test_fetch_hint_must_check_out_the_target_commit():
+    packet = complete_packet()
+    packet["target"]["fetch_hint"] = (
+        "git fetch origin pull/3444/head && git checkout " + "1" * 40
+    )
+    errors = MODULE.packet_errors(packet)
+    assert any("must reproduce THIS packet's target" in error for error in errors)
+
+
+def test_orphan_sidecar_does_not_count_as_a_control(tmp_path):
+    tree_dir = _write_tree(tmp_path, packet=None, negative={"schema": "x"})
+    (tree_dir / "evidence" / "negative-controls" / "incomplete.json").unlink()
+    errors = MODULE.validate_tree(tree_dir)
+    assert any("at least one intentionally incomplete" in error for error in errors)
+
+
+def test_step_window_bounds_must_be_sane_integers():
+    packet = complete_packet()
+    packet["ensemble"]["measurement_window"] = {
+        "warmup_steps": -1.5,
+        "continuation_steps": -2,
+    }
+    errors = MODULE.packet_errors(packet)
+    assert any("non-negative integers" in error for error in errors)
+
+
+def test_commands_must_be_the_reproducible_pixi_form():
+    for bad in ("pending", "echo success", "bash -c 'anything'"):
+        packet = complete_packet()
+        packet["evidence"]["commands"] = [bad]
+        errors = MODULE.packet_errors(packet)
+        assert any("reproducible repository form" in error for error in errors), bad
+    packet = complete_packet()
+    packet["evidence"]["commands"] = [
+        "PYTHONPATH=build/x pixi run python scripts/write.py"
+    ]
+    assert MODULE.packet_errors(packet) == []
+
+
+def test_bookkeeping_only_rows_fail():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"seed": 1, "trajectory_sha256": "e" * 64}]
+    errors = MODULE.packet_errors(packet)
+    assert any("beyond bookkeeping" in error for error in errors)
+
+
+def test_repeats_need_hash_bearing_evidence():
+    packet = complete_packet()
+    packet["evidence"]["raw_rows"] = [{"angle_deg": 0.0, "lateral_drift_m": 0.5}]
+    errors = MODULE.packet_errors(packet)
+    assert any(
+        "binding the repeats to recorded trajectories" in error for error in errors
+    )
