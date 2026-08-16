@@ -667,3 +667,26 @@ coordinates (count parity is not enough), declared seeds must appear in
 rows under a seed field, and JSON raw artifacts must parse to content
 with at least one real measurement leaf. Affected packets regenerated
 at the round-11 commit. Tests: 122 -> 125 (main), 102 -> 105 (6.20).
+
+## Codex review round 12 (PR #3445) — 2026-08-16, loop checkpoint
+
+Five findings, all coherent completions of earlier rules, none a code
+defect; all fixed on both branches: scalar sweep points must be
+observed by rows carrying that value; sweep/seed ensembles require
+inline rows (path-only evidence cannot demonstrate per-point coverage);
+`host` is now REQUIRED with an explicit `performance_valid` boolean
+(the design doc promised host-validity recording; the validator now
+enforces it); CSV/TSV artifacts need at least one numeric data cell;
+WebP/MP4 containers are checked for size-field consistency, not just
+signatures. One emergent contradiction between rounds was resolved:
+requiring rows for sweeps plus hash-bearing evidence for repeats would
+have made path-based evidence impossible under any ensemble —
+artifact_digests now count as the hash-bearing binding they genuinely
+are. Tests: 125 -> 130 (main), 105 -> 110 (6.20).
+
+LOOP CHECKPOINT after 12 rounds (findings per round:
+29-7-5-6-7-6-7-6-5-4-5-5): rounds 1-11 each contained genuine
+defects or contract gaps and materially strengthened the program;
+round 12 was the first with none. Per the criterion announced in
+session, the review loop pauses here for the maintainer's decision;
+every posted finding through round 12 is addressed and pushed.

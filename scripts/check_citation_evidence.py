@@ -121,11 +121,17 @@ def _has_hash_leaf(value: object) -> bool:
     if isinstance(value, dict):
         for key, item in value.items():
             key_l = str(key).lower()
-            if ("sha256" in key_l or "hash" in key_l) and (
-                (_is_nonempty_str(item) and HASH_VALUE_RE.match(item.strip()))
-                or (isinstance(item, (list, dict)) and _has_hash_leaf(item))
-            ):
-                return True
+            if "sha256" in key_l or "hash" in key_l or "digest" in key_l:
+                if _is_nonempty_str(item) and HASH_VALUE_RE.match(item.strip()):
+                    return True
+                if isinstance(item, dict) and any(
+                    _is_nonempty_str(entry)
+                    and HASH_VALUE_RE.match(entry.strip().removeprefix("sha256:"))
+                    for entry in item.values()
+                ):
+                    return True
+                if isinstance(item, (list, dict)) and _has_hash_leaf(item):
+                    return True
             if _has_hash_leaf(item):
                 return True
     elif isinstance(value, list):
@@ -273,7 +279,7 @@ PACKET_TOP_LEVEL_KEYS = {
     "review",
     "host",
 }
-REQUIRED_PACKET_KEYS = PACKET_TOP_LEVEL_KEYS - {"host"}
+REQUIRED_PACKET_KEYS = set(PACKET_TOP_LEVEL_KEYS)
 METRIC_GROUPS = ("physical", "numerical", "performance", "allocation")
 
 GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
@@ -376,9 +382,22 @@ def _raw_data_content_issue(path: "Path") -> "str | None":
         return None
     if suffix in (".csv", ".tsv"):
         delimiter = b"," if suffix == ".csv" else b"\t"
-        first_lines = head.splitlines()[:2]
-        if not first_lines or not any(delimiter in line for line in first_lines):
+        lines = [line for line in head.splitlines() if line.strip()]
+        if len(lines) < 2 or not any(delimiter in line for line in lines[:2]):
             return mismatch
+        has_numeric_cell = False
+        for line in lines[1:50]:
+            for cell in line.split(delimiter):
+                try:
+                    float(cell.strip())
+                except ValueError:
+                    continue
+                has_numeric_cell = True
+                break
+            if has_numeric_cell:
+                break
+        if not has_numeric_cell:
+            return no_content
         return None
     if suffix == ".npy":
         return None if head.startswith(b"\x93NUMPY") else mismatch
@@ -435,9 +454,19 @@ def _visual_content_issue(path: "Path") -> "str | None":
         )
         return None if ok else mismatch
     if suffix == ".webp":
-        return None if header[:4] == b"RIFF" and header[8:12] == b"WEBP" else mismatch
+        if not (header[:4] == b"RIFF" and header[8:12] == b"WEBP"):
+            return mismatch
+        riff_size = int.from_bytes(header[4:8], "little")
+        if riff_size + 8 != size:
+            return mismatch
+        return None
     if suffix == ".mp4":
-        return None if header[4:8] == b"ftyp" else mismatch
+        if header[4:8] != b"ftyp":
+            return mismatch
+        box_size = int.from_bytes(header[0:4], "big")
+        if not (8 <= box_size <= size):
+            return mismatch
+        return None
     if suffix == ".webm":
         return None if header.startswith(b"\x1a\x45\xdf\xa3") else mismatch
     if suffix == ".svg":
@@ -798,6 +827,8 @@ def packet_errors(
     declared_points = 0
     sweep = None
     seeds = None
+    has_sweep = False
+    has_seeds = False
     ensemble = packet.get("ensemble")
     if not isinstance(ensemble, dict):
         errors.append("ensemble must be an object")
@@ -983,6 +1014,17 @@ def packet_errors(
         # measurements could be repeated to stand in for the others.
         if has_rows and isinstance(sweep, list):
             for point in sweep:
+                if _is_finite_number(point) or _is_nonempty_str(point):
+                    if not any(
+                        isinstance(row, dict) and point in row.values()
+                        for row in raw_rows
+                    ):
+                        errors.append(
+                            f"ensemble.sweep point {point!r} has no row "
+                            "carrying that value; a declared configuration "
+                            "without an observation is not swept"
+                        )
+                    continue
                 if not (isinstance(point, dict) and point):
                     continue
                 if not any(
@@ -1017,6 +1059,12 @@ def packet_errors(
                     )
         if not (has_paths or has_rows):
             errors.append("evidence must carry raw_rows inline or non-empty raw_paths")
+        if (has_sweep or has_seeds) and not has_rows:
+            errors.append(
+                "a sweep/seed ensemble requires inline evidence.raw_rows so "
+                "each declared point's observation is checkable; path-only "
+                "raw evidence cannot demonstrate per-point coverage"
+            )
         if has_rows:
             for index, row in enumerate(raw_rows):
                 if not (isinstance(row, dict) and row):
@@ -1179,6 +1227,19 @@ def packet_errors(
             errors.append(
                 "result.limitations must be a non-empty list; every packet "
                 "has at least one honest limitation"
+            )
+
+    host = packet.get("host")
+    if not isinstance(host, dict):
+        errors.append("host must be an object recording provenance")
+    else:
+        if not _is_nonempty_str(host.get("platform")):
+            errors.append("host.platform must be a non-empty string")
+        if not isinstance(host.get("performance_valid"), bool):
+            errors.append(
+                "host.performance_valid must be an explicit boolean; timing "
+                "or allocation numbers from an uncontrolled host must not "
+                "pass silently"
             )
 
     review = packet.get("review")
