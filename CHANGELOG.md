@@ -277,6 +277,9 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Python Bindings
 
+- Added nanobind 3 compatibility for dartpy source and isolated wheel builds
+  while retaining nanobind 2 as a tested development configuration. (Follow-up
+  to [#3448](https://github.com/dartsim/dart/pull/3448))
 - Expanded dartpy bindings, documentation, autodoc stub handling, and examples
   around the nanobind surface, while keeping opt-in legacy compatibility warnings
   where migration still needs a bridge.

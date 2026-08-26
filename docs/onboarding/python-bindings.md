@@ -48,6 +48,15 @@
 
 **Result**: Simpler, faster builds with better developer experience
 
+### nanobind compatibility lanes
+
+Dartpy supports nanobind 2.9.2 through 3.x. The default Pixi environment stays
+on nanobind 2.x so normal development and `pixi run test-all` preserve the
+older supported major. PEP 517 isolated wheel builds resolve the newest
+supported major from `pyproject.toml`, so `pixi run -e py314-wheel wheel-build`
+and the hosted wheel matrix exercise nanobind 3.x. Changes to dartpy casters or
+trampolines should validate both paths.
+
 ## Architecture
 
 ### Module Structure

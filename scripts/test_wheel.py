@@ -20,6 +20,9 @@ import tempfile
 from pathlib import Path
 
 INSTALLATION_TEST = Path(__file__).resolve().parent / "test_installation.py"
+NANOBIND_COMPATIBILITY_TEST = (
+    Path(__file__).resolve().parent / "test_nanobind_compatibility.py"
+)
 
 
 def run_command(cmd, check=True):
@@ -171,6 +174,15 @@ else:
             [
                 str(python_path),
                 str(INSTALLATION_TEST),
+            ]
+        )
+        print(result.stdout.strip())
+
+        print("\nTesting nanobind compatibility paths...")
+        result = run_command(
+            [
+                str(python_path),
+                str(NANOBIND_COMPATIBILITY_TEST),
             ]
         )
         print(result.stdout.strip())
