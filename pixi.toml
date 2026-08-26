@@ -1234,6 +1234,13 @@ tracy = { cmd = "tracy-profiler" }
 [feature.profile.target.win-64.tasks]
 tracy = { cmd = "tracy-profiler.exe" }
 
+#====================================
+# Feature: Default development Python
+#====================================
+
+[feature.default-python.dependencies]
+python = "3.14.*"
+
 #======================
 # Feature: Wheel Building
 #======================
@@ -1503,11 +1510,11 @@ wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
 #==============
 
 [environments]
-default = ["assimp6"]
+default = ["assimp6", "default-python"]
 gazebo = ["gazebo"]
 mujoco = { features = ["mujoco"], no-default-feature = true }
 py310-wheel = ["assimp6", "py310-wheel"]
 py311-wheel = ["assimp6", "py311-wheel"]
 py312-wheel = ["assimp6", "py312-wheel"]
 py313-wheel = ["assimp6", "py313-wheel"]
-profile = ["profile", "assimp6"]
+profile = ["profile", "assimp6", "default-python"]
