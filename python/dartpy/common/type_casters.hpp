@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/nanobind_compat.hpp"
 #include "common/polymorphic_caster.hpp"
 
 #include <nanobind/nanobind.h>
@@ -23,7 +24,9 @@ struct polymorphic_type_caster : type_caster_base_tag {
   using Cast = precise_cast_t<T>;
 
   NB_INLINE bool from_python(
-      handle src, uint8_t flags, cleanup_list* cleanup) noexcept
+      handle src,
+      dart::python_nb::NanobindCastFlags flags,
+      cleanup_list* cleanup) noexcept
   {
     if (src.is_none()) {
       raw_ = nullptr;
@@ -32,19 +35,27 @@ struct polymorphic_type_caster : type_caster_base_tag {
     }
 
     PyObject* obj = src.ptr();
-    const std::type_info* info = nanobind::detail::nb_type_info(
-        reinterpret_cast<PyObject*>(Py_TYPE(obj)));
+    const std::type_info* info = dart::python_nb::nanobindTypeInfo(
+        handle(reinterpret_cast<PyObject*>(Py_TYPE(obj))));
 
     if (info != nullptr
         && dart::python_nb::hasPolymorphicCaster<Type>(*info)) {
-      if (!nb_type_get(info, obj, flags, cleanup,
-                       reinterpret_cast<void**>(&raw_)))
+      if (!dart::python_nb::nanobindTypeGet(
+              info,
+              obj,
+              flags,
+              cleanup,
+              reinterpret_cast<void**>(&raw_)))
         return false;
       value_ = dart::python_nb::convertPolymorphicPointer<Type>(
           static_cast<void*>(raw_), *info);
     } else {
-      if (!nb_type_get(&typeid(Type), obj, flags, cleanup,
-                       reinterpret_cast<void**>(&raw_)))
+      if (!dart::python_nb::nanobindTypeGet(
+              &typeid(Type),
+              obj,
+              flags,
+              cleanup,
+              reinterpret_cast<void**>(&raw_)))
         return false;
       value_ = dart::python_nb::adjustPolymorphicPointer<Type>(obj, raw_);
     }
@@ -76,8 +87,8 @@ struct polymorphic_type_caster : type_caster_base_tag {
             adjusted = dynamic_cast<void*>(ptr);
         }
       }
-      return nb_type_put_p(
-          &typeid(Type), actual_type, adjusted, policy, cleanup, nullptr);
+      return dart::python_nb::nanobindTypePut(
+          &typeid(Type), actual_type, adjusted, policy, cleanup);
     } else if constexpr (std::is_lvalue_reference_v<T>) {
       return from_cpp(&value, policy, cleanup);
     } else {

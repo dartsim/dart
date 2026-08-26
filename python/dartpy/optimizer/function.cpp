@@ -1,6 +1,7 @@
 #include "optimizer/function.hpp"
 
 #include "common/eigen_utils.hpp"
+#include "common/nanobind_compat.hpp"
 #include "dart/common/diagnostics.hpp"
 #include "dart/math/optimization/function.hpp"
 
@@ -17,7 +18,7 @@ namespace dart::python_nb {
 class PyFunction : public dart::math::Function
 {
 public:
-  NB_TRAMPOLINE(dart::math::Function, 2);
+  DARTPY_NB_TRAMPOLINE(dart::math::Function, 2);
 
   double eval(const Eigen::VectorXd& x) override
   {

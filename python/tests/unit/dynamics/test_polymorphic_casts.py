@@ -42,3 +42,14 @@ def test_end_effector_casts_across_frame_and_jacobian_bases():
 
     ik = end_effector.get_or_create_ik()
     assert ik.is_active()
+
+
+def test_body_node_handles_cast_in_dynamic_joint_constraints():
+    skeleton1, body1 = _make_body()
+    skeleton2, body2 = _make_body()
+
+    constraint = dart.BallJointConstraint(body1, body2, [0.0, 0.0, 0.0])
+
+    assert skeleton1.get_num_body_nodes() == 1
+    assert skeleton2.get_num_body_nodes() == 1
+    assert constraint.get_type() == dart.BallJointConstraint.get_static_type()

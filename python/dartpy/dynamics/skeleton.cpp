@@ -51,12 +51,12 @@ auto create_pair(
     delete static_cast<std::shared_ptr<dart::dynamics::Skeleton>*>(payload);
   };
   nb::object jointObj = nb::cast(jointHandle, nb::rv_policy::move);
-  nb::detail::keep_alive(
+  nanobindKeepAlive(
       jointObj.ptr(),
       new std::shared_ptr<dart::dynamics::Skeleton>(skeletonHandle),
       cleanup);
   nb::object bodyObj = nb::cast(bodyHandle, nb::rv_policy::move);
-  nb::detail::keep_alive(
+  nanobindKeepAlive(
       bodyObj.ptr(),
       new std::shared_ptr<dart::dynamics::Skeleton>(skeletonHandle),
       cleanup);

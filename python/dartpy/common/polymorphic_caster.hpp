@@ -97,15 +97,11 @@ public:
       return raw;
 
     PyTypeObject* type = Py_TYPE(source);
-    if (!nanobind::detail::nb_type_check(reinterpret_cast<PyObject*>(type)))
+    nanobind::handle typeHandle(reinterpret_cast<PyObject*>(type));
+    if (!nanobind::type_check(typeHandle))
       return raw;
 
-    const std::type_info* info
-        = nanobind::detail::nb_type_info(reinterpret_cast<PyObject*>(type));
-    if (info == nullptr)
-      return raw;
-
-    return convert(static_cast<void*>(raw), *info);
+    return convert(static_cast<void*>(raw), nanobind::type_info(typeHandle));
   }
 
 private:
