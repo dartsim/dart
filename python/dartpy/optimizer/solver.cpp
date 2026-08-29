@@ -1,6 +1,5 @@
 #include "optimizer/solver.hpp"
 
-#include "common/nanobind_compat.hpp"
 #include "dart/common/diagnostics.hpp"
 #include "dart/math/optimization/problem.hpp"
 #include "dart/math/optimization/solver.hpp"
@@ -20,7 +19,7 @@ namespace dart::python_nb {
 class PySolver : public dart::math::Solver
 {
 public:
-  DARTPY_NB_TRAMPOLINE(dart::math::Solver, 1);
+  NB_TRAMPOLINE(dart::math::Solver);
 
   bool solve() override
   {
@@ -31,13 +30,9 @@ public:
   {
     // Cache the Python string so the view stays valid after the override.
     if (!mTypeCacheInitialized) {
-#if NB_VERSION_MAJOR >= 3
       constexpr std::uint64_t getTypeHash
           = nanobind::detail::str_hash("getType");
       nb::detail::ticket nb_ticket(nb_trampoline, "getType", getTypeHash, true);
-#else
-      nb::detail::ticket nb_ticket(nb_trampoline, "getType", true);
-#endif
       mTypeCache
           = nb::cast<std::string>(nb_trampoline.base().attr(nb_ticket.key)());
       mTypeCacheInitialized = true;

@@ -1,11 +1,12 @@
 #pragma once
 
-#include "common/nanobind_compat.hpp"
+#include "common/nanobind_helpers.hpp"
 #include "common/polymorphic_caster.hpp"
 
 #include <nanobind/nanobind.h>
 
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 
 #include "dart/dynamics/frame.hpp"
@@ -25,7 +26,7 @@ struct polymorphic_type_caster : type_caster_base_tag {
 
   NB_INLINE bool from_python(
       handle src,
-      dart::python_nb::NanobindCastFlags flags,
+      std::uint32_t flags,
       cleanup_list* cleanup) noexcept
   {
     if (src.is_none()) {

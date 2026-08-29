@@ -1,6 +1,7 @@
 #include "dynamics/skeleton.hpp"
 
 #include "common/eigen_utils.hpp"
+#include "common/nanobind_helpers.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
 #include "dart/dynamics/ball_joint.hpp"

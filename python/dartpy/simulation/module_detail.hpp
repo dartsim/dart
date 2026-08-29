@@ -41,7 +41,7 @@
 // clang-format on
 
 #include "common/eigen_utils.hpp"
-#include "common/nanobind_compat.hpp"
+#include "common/nanobind_helpers.hpp"
 #include "common/repr.hpp"
 
 #include <dart/simulation/body/collision_shape.hpp>
