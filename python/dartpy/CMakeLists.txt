@@ -49,7 +49,7 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
-set(_dartpy_nanobind_min_version 2.9.2)
+set(_dartpy_nanobind_min_version 3.0.0)
 set(_dartpy_nanobind_max_version 4.0.0)
 
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
@@ -107,7 +107,7 @@ set(
   common/composite.hpp
   common/module.hpp
   common/logging.hpp
-  common/nanobind_compat.hpp
+  common/nanobind_helpers.hpp
   common/observer.hpp
   common/profile.hpp
   common/repr.hpp
