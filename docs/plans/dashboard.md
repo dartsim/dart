@@ -12,10 +12,16 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Re-baseline the WS-G cross-engine matrix and `dart` detector
-  rows on the current merged base, then use that evidence to select one
-  consolidated implementation gap or the closeout route. Keep the task active
-  while #3056 remains open.
+- Next step: Land [WP-PG.50 PR #3428](https://github.com/dartsim/dart/pull/3428)
+  through CI and review: the detector stream-quality bundle restores
+  full manifolds and stable cylinder contacts, **meets criterion 2 on
+  its original terms** (S6 fully deactivates with zero penetration; 4/5
+  seeds within the 20-second window, all tested seeds by 60 s), and
+  measures slightly faster than the audited pre-consolidation stack
+  (criterion 1 ≈3.7x). D9/D10 records live in the task README; the
+  2026-07-31 re-baseline and first full WS-G matrix (incl. HUM rows)
+  are in the task folder. Keep the task active while #3056 remains
+  open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`

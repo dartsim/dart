@@ -12,15 +12,25 @@ Related open queue at last refresh: none blocking (enablers merged:
 #3270 was closed by maintainer direction and its D1/D2 evidence now rides
 with the first real SIMD-kernel PR.
 
-Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
-criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
-cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
-(08-mujoco-comparison-lane.md) owns that work. #3366 (dartpy getDofs ownership
-bugfix) and #3367 (MuJoCo comparison harness + mujoco env + compiled dartpy
-binding), #3368 (`dart` detector AABB-tree broadphase), and #3369 (MJCF
-stacked joints and collision fidelity) have merged. The `dart` detector
-small-scene overhead WP-SS family remains in flight; the S6 `dart`
-resting-profile row is resolved by the accepted completion audit.
+Current handoff (2026-07-31): the current-base re-baseline ran on
+`718651d0d6e` (session branch `wp-pg-wsg-rebaseline-20260731`; see the
+2026-07-31 sections of RESUME.md and 01-baseline-evidence.md). Criterion 1
+was first re-verified MET on the pre-fix base (1.29x faster than the
+audited stack, same-host A/B). **Criterion 2 regressed**: the #3381
+consolidated `dart` detector's solver-facing 3-contact clamp breaks
+resting box stacks — S6 0/71 under defaults, while FCL, the audit-head
+binary, and the pre-#3381 binary all still sleep 71/71 (the latter two
+bit-exact `0xec80f734df6d5e74`). The WP-PG.50 candidate fix (full
+4-contact manifolds, pinned tests, 154/154, changelog drafted) is
+implemented and evidence-complete on the session branch but **gated on
+maintainer decisions D9 (ship/hold: resting scenes 4x faster and
+ARM-PUSHER flips to a win, vs ~2x on the always-active dense fixture and
+criterion 1 falling to ≈2.3x) and D10 (residual S6 stream-persistence
+follow-up)** — see README. The full 8-scene WS-G matrix ran pre-fix
+(first-ever HUM rows) plus a post-fix box-row rerun; standings live in
+08-mujoco-comparison-lane.md. The 2026-07-10 audit context below remains
+history: #3366/#3367/#3368/#3369 merged; the WP-SS small-scene family
+remains gated on the refreshed standings.
 
 ## Lane status
 
@@ -58,6 +68,7 @@ resting-profile row is resolved by the accepted completion audit.
 | WP-PG.40 FP/ISA contracts | WS-D | folded into WP-PG.42 | #3270 closed | maintainer direction: carry D1/D2 evidence with actual SIMD kernel PR |
 | WP-PG.41 batch math seam | WS-D | blocked (PG.10 seam evidence) | — | — |
 | WP-PG.42 SoA broadphase | WS-D | done — PR #3299 | `wp-pg-42-soa-broadphase-simd` | AVX-width finite sweep SIMD screen, scalar/SSE/NEON fallback, SIMD CI consumer coverage, contact-container macro rows, finite-finite profile scope |
+| WP-PG.50 detector stream-quality bundle (manifolds + cylinder stability + spin-invariant cap patches) | WS-F/WS-A | in review — PR #3428 open; D9 SHIP decided 2026-08-01; criterion 2 MET | `wp-pg-wsg-rebaseline-20260731` / [#3428](https://github.com/dartsim/dart/pull/3428) | Full 4-contact face manifolds, stable two-point cylinder side-line contacts (effective-radius-corrected), retained shallow crossed-cylinder contacts, and spin/permutation-canonicalized aligned cylinder-box handling, all pinned by tests (154/154; cylinder suite 32/32). S6 fully deactivates: 71/71 pen 0 at 60k on canonical + worst-creeper seeds, 4/5 seeds within the 20k window (audit stack 3/5); direct S1 interleave 0.946x vs the audited pre-consolidation stack; fcl/bullet/ode bit-identical; S2-S5 dart hashes stable. Evidence: 01-baseline-evidence.md 2026-07-31/08-01 sections; decisions in README D9/D10 |
 
 Claim flow: set the packet row to `claimed — <who/session>` with the
 `wp-pg-<nn>-<slug>` branch name, update RESUME.md, and open the packet PR
