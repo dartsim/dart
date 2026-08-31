@@ -51,6 +51,37 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="CMake build type for the default build directory.",
     )
     parser.add_argument(
+        "--benchmark-min-time",
+        default="1.0s",
+        help=(
+            "Minimum time per benchmark repetition. Use Google Benchmark's "
+            "'<float>s' format."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-min-warmup-time",
+        default="0.1",
+        help=(
+            "Minimum warmup time in seconds before each benchmark. Google "
+            "Benchmark expects a bare number for this option."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-repetitions",
+        type=int,
+        default=3,
+        help="Number of repetitions used to compute aggregate timings.",
+    )
+    parser.add_argument(
+        "--benchmark-random-interleaving",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Randomly interleave repeated benchmarks to reduce ordering, "
+            "thermal, and CPU-frequency bias."
+        ),
+    )
+    parser.add_argument(
         "--metric",
         choices=["cpu_time", "real_time"],
         default="cpu_time",
@@ -146,6 +177,16 @@ def _run_target(args: argparse.Namespace) -> Path:
     ]
     if args.benchmark_filter:
         cmd.append(f"--benchmark_filter={args.benchmark_filter}")
+    cmd.extend(
+        [
+            f"--benchmark_min_time={args.benchmark_min_time}",
+            f"--benchmark_min_warmup_time={args.benchmark_min_warmup_time}",
+            f"--benchmark_repetitions={args.benchmark_repetitions}",
+            "--benchmark_report_aggregates_only=true",
+        ]
+    )
+    if args.benchmark_random_interleaving:
+        cmd.append("--benchmark_enable_random_interleaving=true")
     cmd.extend(arg for arg in args.benchmark_args if arg != "--")
     subprocess.run(cmd, check=True)
     return args.output

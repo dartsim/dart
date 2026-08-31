@@ -610,6 +610,9 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Tests, Benchmarks, and Quality Gates
 
+- Stabilized strict native/reference collision performance gates with sustained
+  warm measurements and randomly interleaved repetitions, reducing CPU
+  frequency and benchmark-order bias without relaxing comparison thresholds.
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
