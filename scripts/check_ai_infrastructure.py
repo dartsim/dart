@@ -4537,7 +4537,8 @@ def version(command: str) -> str:
         )
     except (OSError, subprocess.TimeoutExpired):
         return "unavailable"
-    return (result.stdout or result.stderr).strip().splitlines()[0]
+    output = (result.stdout or result.stderr).strip()
+    return output.splitlines()[0] if output else "unavailable"
 
 
 def _path_inventory(paths: list[Path], root: Path) -> dict[str, Any]:
