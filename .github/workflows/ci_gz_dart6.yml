@@ -59,7 +59,7 @@ jobs:
       # this job runs their checkout, so use setup-pixi directly like the
       # release-line workflows do.
       - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.10.1
+        uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
           environments: gazebo
