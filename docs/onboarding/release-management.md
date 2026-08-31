@@ -1,7 +1,13 @@
 # Release Management
 
 DART 6.20 work targets `release-6.20` and the branch-matching DART 6.x
-milestone.
+release milestone (currently `DART 6.20.0`).
+
+Version note: `package.xml` on this branch carries the latest published
+DART 6.19.x point release forward (so a configured build can report a
+6.19.x version) and is bumped to `6.20.0` only by the release packaging
+change. The `CHANGELOG.md` section "DART 6.20.0 (Unreleased)" is the
+authoritative statement of what this branch is becoming.
 
 Release-branch PRs should:
 

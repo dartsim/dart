@@ -270,3 +270,44 @@ def test_command_renderer_drops_tool_specific_agent_metadata(tmp_path, monkeypat
 
     assert "agent: build" not in rendered
     assert "name: dart-demo" in rendered
+
+
+def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "dart-sample.md").write_text(
+        "Use `dart-nonexistent-workflow` and the `dart-demos` app with "
+        "`dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    assert errors == [
+        ".claude/commands/dart-sample.md: unknown capability "
+        "`dart-nonexistent-workflow`"
+    ]
+
+
+def test_checked_in_sources_mention_only_existing_capabilities():
+    command_names = sync.list_command_names(ROOT / ".claude" / "commands")
+    skill_names, _ = sync.list_skill_names(ROOT / ".claude" / "skills")
+
+    assert (
+        sync.unknown_capability_mention_errors(ROOT, command_names | skill_names) == []
+    )
+
+
+def test_unknown_capability_scan_allowlists_cmake_component_names(tmp_path):
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (tmp_path / "dart").mkdir()
+    (tmp_path / "dart" / "CMakeLists.txt").write_text(
+        "set(components dart-gui-osg dart-utils-urdf)\n", encoding="utf-8"
+    )
+    (commands / "dart-sample.md").write_text(
+        "Link `dart-gui-osg` and `dart-utils-urdf` from `dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []

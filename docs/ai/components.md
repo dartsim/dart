@@ -10,6 +10,8 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
 - `.codex/config.toml`: bounded project-local Codex concurrency defaults.
 - `.codex/agents/`: maintained read-only specialist profiles.
 - `.codex/hooks.json`: fast advisory Codex commit-command hook.
+- `.claude/hooks/pre-commit-guard.sh`: the shared pre-commit guard invoked by
+  `.claude/settings.json` and `.codex/hooks.json`.
 - `.claude/hooks/pre-commit-guard.ps1` and
   `scripts/pretool_guard_bridge.py`: native-Windows forwarding into the shared
   Git Bash guard.

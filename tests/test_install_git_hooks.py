@@ -1077,7 +1077,7 @@ def test_guard_runs_when_only_foreign_executable_hook_installed(tmp_path):
     "body",
     [
         "#!/bin/sh\n# DART-MANAGED-HOOK v1\npixi run check-lint-quick\n",
-        "#!/bin/sh\n# DART-MANAGED-HOOK v5\npixi run check-lint-quick\n",
+        "#!/bin/sh\n# DART-MANAGED-HOOK v7\npixi run check-lint-quick\n",
         (
             "#!/bin/sh\n# DART-MANAGED-HOOK v50\n"
             'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then\n'

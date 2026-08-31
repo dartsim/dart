@@ -32,7 +32,7 @@ See `docs/onboarding/ci-cd.md` when a gate fails.
 | Any task                             | `docs/ai/principles.md`                                                                               |
 | Architecture or component boundaries | `docs/onboarding/architecture.md`                                                                     |
 | Building or dependencies             | `docs/onboarding/building.md`, `docs/onboarding/build-system.md`                                      |
-| Testing or simulation evidence       | `docs/onboarding/testing.md`, `docs/ai/verification.md`; use `/dart-verify-sim` or `$dart-verify-sim`  |
+| Testing or simulation evidence       | `docs/onboarding/testing.md`, `docs/ai/verification.md`; use `/dart-verify-sim` (Claude Code) or `$dart-verify-sim` (Codex); OpenCode has no domain-skill adapters  |
 | Contribution, branches, or style     | `docs/onboarding/contributing.md`, `docs/onboarding/code-style.md`, `CONTRIBUTING.md`                 |
 | Documentation placement              | `docs/README.md`, `docs/information-architecture.md`, `docs/AGENTS.md`                                |
 | AI workflows or tooling              | `docs/ai/README.md`, `docs/ai/workflows.md`, `docs/ai/terminology.md`, `docs/onboarding/ai-tools.md`  |
@@ -56,12 +56,19 @@ the repository root to the working directory.
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
 - DART 7 `main` is reference evidence only. Do not import C++23, nanobind,
   `dart::io`, or DART 7-only solver/backend workflows into this branch.
-- Bug fixes that apply to DART 6 and DART 7 require separate PRs to the active
-  release branch and `main`.
+- Bug fixes that apply to DART 6 and DART 7 require separate PRs: the
+  release-branch PR first, then the matching `main` PR.
+- Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
+  release milestone (currently `DART 6.20.0`) on release-branch PRs.
+- Do not prefix commit messages or PR titles with agent tags like `[codex]`;
+  use plain descriptive titles.
+- Before every approved push to a published PR branch, first merge the latest
+  base branch into it — merge, never rebase a published PR branch.
 - GitHub mutations, pushes, PR changes, CI reruns, review-thread mutations, and
   branch deletion require explicit maintainer/user approval.
-- Never reply to AI-generated review comments; make approved local fixes
-  silently.
+- Never reply to AI-generated review comments (bot users such as
+  `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
+  `github-actions[bot]`, `copilot[bot]`); make approved local fixes silently.
 
 ## AI Capability Sources
 

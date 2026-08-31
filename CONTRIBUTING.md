@@ -88,7 +88,7 @@ their namespace, with the extension `.hpp` and `.cpp`, respectively.
 // Use absolute paths, and place these at the top.
 #include <stl_headers>
 #include <library/headers.hpp>
-#include "dart/common/pointers.hpp"
+#include "dart/common/SmartPointer.hpp"
 #include "dart/component_name/ExampleInterface.hpp"
 #include "dart/component_name/ExampleOtherInterface.hpp"
 
@@ -99,7 +99,7 @@ namespace example {
 // Use the following macro (defined in dart/common/SmartPointer.hpp) to declare
 // STL "smart" pointers. Pointers should be declared ahead of the class so
 // that the class itself can use the pointers.
-DART_COMMON_MAKE_SHARED_WEAK(ExampleClass)
+DART_COMMON_DECLARE_SHARED_WEAK(ExampleClass)
 
 /// A required Doxygen comment description for this class. This can be extended
 /// to include various useful details about the class, and can use the standard

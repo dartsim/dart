@@ -49,13 +49,18 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
-| Workflow            | Purpose                                | Platforms |
-| ------------------- | -------------------------------------- | --------- |
-| `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu    |
-| `ci_macos.yml`      | Lint, build, test                      | macOS     |
-| `ci_windows.yml`    | Lint, build, test                      | Windows   |
-| `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD   |
-| `ci_gz_physics.yml` | Gazebo integration                     | Ubuntu    |
+The CI gates that a PR check name maps to (full 12-workflow index:
+`docs/onboarding/ci-cd.md` § "Workflow Index"):
+
+| Workflow            | Purpose                                | Platforms  |
+| ------------------- | -------------------------------------- | ---------- |
+| `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu     |
+| `ci_macos.yml`      | Lint, build, test                      | macOS      |
+| `ci_windows.yml`    | Lint, build, test                      | Windows    |
+| `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD    |
+| `ci_simd.yml`       | SIMD x86 instruction-level matrix      | Ubuntu x86_64 |
+| `ci_toolchain.yml`  | Alternate toolchain build + test       | Ubuntu     |
+| `ci_gz_physics.yml` | Gazebo integration                     | Ubuntu     |
 
 ## Downstream Compatibility Policy
 
