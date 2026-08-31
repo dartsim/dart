@@ -1,8 +1,8 @@
 {
   "citations": {
     "crossref": 191,
-    "google_scholar": 401,
-    "google_scholar_checked": "2026-08-24",
+    "google_scholar": 404,
+    "google_scholar_checked": "2026-08-31",
     "google_scholar_manual_fallback": false,
     "indexed_max": 309,
     "indexed_min": 191,
@@ -15,20 +15,20 @@
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-sim",
-      "pushed_at": "2026-08-23T09:13:07Z",
+      "pushed_at": "2026-08-31T06:45:03Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1460
+      "stars": 1474
     },
     {
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-physics",
-      "pushed_at": "2026-08-21T03:21:17Z",
+      "pushed_at": "2026-08-30T07:46:00Z",
       "repo": "gazebosim/gz-physics",
       "stars": 92
     },
     {
-      "age": "1.4 years ago",
+      "age": "1.5 years ago",
       "freshness": "older",
       "label": "RobotDART",
       "pushed_at": "2025-03-15T10:36:35Z",
@@ -65,7 +65,7 @@
       "label": "MASS",
       "pushed_at": "2023-09-19T22:42:33Z",
       "repo": "lsw9021/MASS",
-      "stars": 632
+      "stars": 633
     },
     {
       "age": "5.0 years ago",
@@ -94,29 +94,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-08-24T05:04:09.596308Z",
+  "generated_at": "2026-08-31T10:55:13.994535Z",
   "packages": {
     "conda": {
-      "combined_gross": 1130612,
-      "dartpy": 284832,
-      "dartsim": 702963,
-      "dartsim-cpp": 142817
+      "combined_gross": 1146272,
+      "dartpy": 290077,
+      "dartsim": 710838,
+      "dartsim-cpp": 145357
     },
-    "homebrew_installs_365d": 18459,
-    "homebrew_on_request_365d": 1413,
-    "pepy_dartpy_all_time": 265157
+    "homebrew_installs_365d": 18461,
+    "homebrew_on_request_365d": 1418,
+    "pepy_dartpy_all_time": 265845
   },
-  "since": "2025-08-24",
+  "since": "2025-08-31",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-08-24",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-08-31",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-08-24",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-08-31",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -134,17 +134,17 @@
     "contributors_login": 55,
     "contributors_with_anon": 79,
     "created_issues_12m": 32,
-    "created_prs_12m": 1397,
+    "created_prs_12m": 1400,
     "forks": 304,
-    "latest_push": "2026-08-23",
+    "latest_push": "2026-08-30",
     "latest_release": "v6.19.4",
     "latest_release_date": "2026-07-19",
-    "merged_prs_12m": 1306,
+    "merged_prs_12m": 1311,
     "open_issues": 4,
-    "open_prs": 6,
+    "open_prs": 4,
     "releases_12m": 21,
-    "stars": 1196,
-    "watchers": 50
+    "stars": 1198,
+    "watchers": 49
   },
   "traffic": {
     "available": false,
