@@ -2465,6 +2465,9 @@ def is_related_worktree_ai_path(root: Path, path: str) -> bool:
     )
 
 
+PROBE_ERRORS = (OSError, subprocess.TimeoutExpired)
+
+
 def tool_versions() -> dict[str, str]:
     versions: dict[str, str] = {}
     for tool, args in (
@@ -2482,7 +2485,7 @@ def tool_versions() -> dict[str, str]:
             result = subprocess.run(
                 [executable, *args], capture_output=True, text=True, timeout=10
             )
-        except OSError, subprocess.TimeoutExpired:
+        except PROBE_ERRORS:
             versions[tool] = "not found"
             continue
         output = (result.stdout or result.stderr).strip()
