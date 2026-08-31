@@ -3455,9 +3455,15 @@ wheel-repair = { depends-on = [
 #==============
 
 [environments]
-default = ["py-default"]
-collision-reference = ["py-default", "collision-reference"]
-cuda = ["py-default", "cuda"]
+# default, collision-reference, and cuda share one solve group so packages
+# common to them resolve to identical versions. gazebo (standalone dependency
+# set) and py314-wheel (isolated wheel toolchain) stay independent by design.
+default = { features = ["py-default"], solve-group = "main" }
+collision-reference = { features = [
+  "py-default",
+  "collision-reference",
+], solve-group = "main" }
+cuda = { features = ["py-default", "cuda"], solve-group = "main" }
 gazebo = ["gazebo"]
 py314-wheel = ["py314-wheel"]
 
