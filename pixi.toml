@@ -3,8 +3,25 @@ name = "DART"
 version = "7.0.0"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
+license = "BSD-2-Clause"
+license-file = "LICENSE"
+# URLs mirror [project.urls] in pyproject.toml; keep the two in sync.
+repository = "https://github.com/dartsim/dart.git"
+documentation = "https://dart.readthedocs.io/"
 channels = ["conda-forge"]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+# linux-64-cuda is linux-64 with the __cuda=13 virtual package declared for the
+# solver (driver floor for the pinned CUDA 13.x toolchain). Only [feature.cuda]
+# selects it; features meant for the base platforms list the five plain names.
+platforms = [
+  "linux-64",
+  "linux-aarch64",
+  "osx-64",
+  "osx-arm64",
+  "win-64",
+  { name = "linux-64-cuda", platform = "linux-64", cuda = "13" },
+]
+# Named platform entries above require a current pixi.
+requires-pixi = ">=0.78"
 
 [dependencies]
 assimp = ">=6.0.5,<7"
@@ -53,7 +70,9 @@ urdfdom = ">=6.0.0,<7"
 nativefiledialog-extended = ">=1.3.0,<2"
 
 [tasks]
-clean = { cmd = "rm -rf build .deps .pixi pixi.lock" }
+# Removes build outputs and environments but keeps pixi.lock: the lockfile is
+# the reproducibility contract; refreshing it is `pixi update`'s job.
+clean = { cmd = "rm -rf build .deps .pixi" }
 
 config = { cmd = [
   "bash",
@@ -3129,7 +3148,10 @@ libode = ">=0.16.6,<0.17"
 
 [feature.cuda]
 channels = ["conda-forge"]
-platforms = ["linux-64"]
+# CUDA-flavored linux-64 (declares __cuda=13); defined in [workspace].platforms.
+# On machines without an NVIDIA driver, pixi warns but the environment still
+# solves and installs; CONDA_OVERRIDE_CUDA=13 silences the warning.
+platforms = ["linux-64-cuda"]
 
 [feature.cuda.activation.env]
 DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE = "ON"
@@ -3438,6 +3460,11 @@ collision-reference = ["py-default", "collision-reference"]
 cuda = ["py-default", "cuda"]
 gazebo = ["gazebo"]
 py314-wheel = ["py314-wheel"]
+
+# Restricted to the five base platforms so environments built on py-default do
+# not also solve the linux-64-cuda flavor ([feature.cuda] opts into that one).
+[feature.py-default]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [feature.py-default.dependencies]
 assimp = ">=6.0.5,<7"
