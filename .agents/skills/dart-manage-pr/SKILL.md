@@ -162,7 +162,8 @@ gh pr checks <PR_NUMBER>
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
    - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running `/dart-review-pr`) must record findings
+     separate agent session running the `dart-review-pr` workflow via
+     `/dart-review-pr` or `$dart-review-pr`) must record findings
      before merge approval; docs-only and mechanical changes are exempt.
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
@@ -179,7 +180,8 @@ gh pr checks <PR_NUMBER>
      validation on the current head after the latest pushed change
      (`pixi run test-all`, plus the Gazebo gate when downstream compatibility
      could be affected); merge only when required hosted checks and review are
-     green, the milestone is set, an independent review recorded findings, the
+     green, the milestone is set, an independent review recorded findings (or the
+     step 4 docs-only/mechanical exemption applies), the
      PR is not draft and GitHub reports it mergeable, and explicit merge
      approval is given.
    - PR comments, review re-triggers, thread resolution, reviewer requests,

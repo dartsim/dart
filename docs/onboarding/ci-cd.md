@@ -8,7 +8,7 @@ runtime, package, or downstream behavior changes.
 
 All files live in `.github/workflows/` on this branch. For PR-triggered
 workflows (the first nine rows), check names on a PR map to the workflow's
-`name:` shown here; the last three run on push, workflow call, or schedule.
+`name:` shown here; the last three run on push, workflow call, dispatch, or schedule.
 
 | Workflow file                     | Check name                  | Purpose                                          |
 | --------------------------------- | --------------------------- | ------------------------------------------------ |
@@ -20,9 +20,9 @@ workflows (the first nine rows), check names on a PR map to the workflow's
 | `ci_toolchain.yml`                | CI Toolchain (Linux)        | Alternate Linux toolchain build + test           |
 | `ci_gz_physics.yml`               | CI gz-physics               | Gazebo/gz-physics downstream integration         |
 | `codeql.yml`                      | CodeQL                      | Static security analysis                         |
-| `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
 | `api_doc.yml`                     | API Documentation           | Doxygen API docs build/publish                   |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Scheduled performance tracking dashboard        |
+| `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Performance dashboard (push/call/dispatch)      |
 | `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs              |
 
 Useful commands:
