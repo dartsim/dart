@@ -2,7 +2,7 @@
 description: analyze repository evidence without editing
 argument-hint: "<question|path|topic>"
 agent: build
-allowed-tools: Read, Grep, Glob, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh issue view:*), Bash(gh search:*)
+allowed-tools: Read, Grep, Glob, WebFetch, WebSearch, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh issue view:*), Bash(gh search:*)
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-analyze.md -->
