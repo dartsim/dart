@@ -549,7 +549,9 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
     ) + sorted((repo_root / ".claude" / "skills").glob("dart-*/SKILL.md"))
     for source_path in source_paths:
         source_content = source_path.read_text(encoding="utf-8")
-        mentioned = set(re.findall(r"`(dart-[a-z0-9-]+)`", source_content))
+        mentioned = set(
+            re.findall(r"`[/$]?(dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
+        )
         try:
             label = str(source_path.relative_to(repo_root))
         except ValueError:

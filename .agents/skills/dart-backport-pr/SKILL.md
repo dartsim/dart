@@ -54,11 +54,12 @@ release branch cannot render the claim.
    ```bash
    BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>
    if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+     if [ -n "$(git status --short)" ] || [ "$(git rev-parse "$BRANCH")" \
+         != "$(git rev-parse "origin/<RELEASE_BRANCH>")" ]; then
+       echo "existing $BRANCH is dirty or diverges from the release tip" >&2
+       exit 1  # stop and ask before resetting or cherry-picking onto it
+     fi
      git switch "$BRANCH"
-     # Reuse only a clean branch already based on the release target:
-     # `git status --short` must be empty and
-     # `git merge-base --is-ancestor origin/<RELEASE_BRANCH> "$BRANCH"` must
-     # hold; otherwise stop and ask before resetting or cherry-picking.
    else
      git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
    fi
