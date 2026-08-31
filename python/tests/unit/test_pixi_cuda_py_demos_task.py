@@ -15,55 +15,23 @@ def _tasks() -> dict:
     return tomllib.loads(PIXI.read_text(encoding="utf-8"))["tasks"]
 
 
-def _task_script(task_name: str) -> str:
-    task = _tasks()[task_name]
-    return "\n".join(str(part) for part in task["cmd"])
+def test_config_py_delegates_to_cmake_config_script() -> None:
+    """config-py is a thin wrapper over scripts/cmake_config.py.
 
+    The behaviors this file used to grep out of the embedded bash block —
+    dartpy=ON beating the cuda environment's OFF override, the stale CUDA
+    compiler-cache reset before cmake runs, and keeping the C/CXX compiler
+    cache while pinning the CUDA launcher empty — are now guarded
+    behaviorally in tests/test_cmake_config.py against the script itself.
+    """
+    task = _tasks()["config-py"]
+    cmd = [str(part) for part in task["cmd"]]
 
-def test_config_py_honors_dartpy_on_for_cuda_py_demos() -> None:
-    script = _task_script("config-py")
-
-    assert (
-        'if [ "${DART_BUILD_DARTPY_VALUE}" = "OFF" ] '
-        '&& [ "{{ dartpy }}" = "ON" ]; then'
-    ) in script
-    assert "DART_BUILD_DARTPY_VALUE=ON" in script
-
-
-def test_config_py_resets_stale_cuda_compiler_cache_before_cmake() -> None:
-    script = _task_script("config-py")
-
-    reset_index = script.index("CMake compiler cache changed")
-    cmake_index = script.index("cmake -G Ninja")
-    assert reset_index < cmake_index
-
-    assert "CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME}" in script
-    assert "CMAKE_C_COMPILER:*)" in script
-    assert "CMAKE_CXX_COMPILER:*)" in script
-    assert "CMAKE_CUDA_COMPILER:*)" in script
-    assert "CMAKE_CUDA_HOST_COMPILER:*)" in script
-    assert "CMAKE_CUDA_COMPILER_LAUNCHER:*)" in script
-    assert '[ -z "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]' in script
-    assert '[ -n "${cached_cuda_compiler_launcher}" ]' in script
-    assert 'rm -f "${CMAKE_CACHE}"' in script
-    assert 'rm -rf "${CMAKE_BUILD_DIR}/CMakeFiles"' in script
-
-
-def test_config_py_keeps_compiler_cache_for_default_and_cuda_py_demos() -> None:
-    script = _task_script("config-py")
-
-    disable_assignment = script.index(
-        "DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}"
-    )
-    gha_disable = script.index('if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then')
-    default_cache_section = script[disable_assignment:gha_disable]
-    assert "DART_DISABLE_COMPILER_CACHE_VALUE=ON" not in default_cache_section
-
-    cxx_launcher = script.index("CMAKE_CXX_COMPILER_LAUNCHER=sccache")
-    cuda_launcher = script.index(
-        'LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER:STRING="'
-    )
-    assert cxx_launcher < cuda_launcher
+    assert cmd[:3] == ["python", "scripts/cmake_config.py", "config-py"]
+    assert "--dartpy={{ dartpy }}" in cmd
+    assert "--build-type={{ build_type }}" in cmd
+    assert "--use-system-imgui={{ use_system_imgui }}" in cmd
+    assert "--build-dir={{ build_dir }}" in cmd
 
 
 def test_cmake_compiler_cache_respects_empty_cuda_launcher() -> None:

@@ -132,6 +132,18 @@ def test_sccache_gha_disabled_unsets_and_forces_cache_off():
     assert "CMAKE_CUDA_COMPILER_LAUNCHER" not in env
 
 
+def test_config_py_cuda_keeps_compiler_cache_on():
+    # Unlike config/config-debug, config-py deliberately keeps the compiler
+    # cache under CUDA so dartpy rebuilds cache host C++ translation units.
+    env = _env(DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE="ON")
+    flags = _flags(
+        MODULE.plan_config_py(
+            _opts("config-py"), env, _tools(detect_cuda_archs=lambda: "89")
+        )
+    )
+    assert flags["DART_DISABLE_COMPILER_CACHE"] == "OFF"
+
+
 def test_config_py_keeps_cuda_launcher_on_gha_kill_switch():
     env = _env(SCCACHE_GHA_ENABLED="false", CMAKE_CUDA_COMPILER_LAUNCHER="sccache")
     MODULE.plan_config_py(_opts("config-py"), env, _tools())
