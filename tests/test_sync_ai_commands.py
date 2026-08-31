@@ -618,7 +618,9 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     (commands / "dart-sample.md").write_text(
         "Use `dart-nonexistent-workflow`, `/dart-missing-slash`, and "
         "`$dart-missing-codex decide` with the `dart-demos` app, "
-        "`/dart-sample`, and `$dart-sample audit`.\n",
+        "`/dart-sample`, and `$dart-sample audit`.\n"
+        "```bash\n/dart-missing-fenced x\n$dart-sample run\n"
+        "ls /tmp/dart-not-a-capability\n```\n",
         encoding="utf-8",
     )
 
@@ -626,6 +628,7 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
 
     assert errors == [
         ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-codex`",
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-fenced`",
         ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-slash`",
         ".claude/commands/dart-sample.md: unknown capability "
         "`dart-nonexistent-workflow`",
