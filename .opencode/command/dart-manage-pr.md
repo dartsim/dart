@@ -163,8 +163,9 @@ gh pr checks <PR_NUMBER>
      validation on the current head after the latest pushed change
      (`pixi run test-all`, plus the Gazebo gate when downstream compatibility
      could be affected); merge only when required hosted checks and review are
-     green, the milestone is set, an independent review recorded findings (or the
-     step 4 docs-only/mechanical exemption applies), the
+     green, the milestone is set, an independent review recorded its outcome
+     (findings addressed, or explicitly clean; the step 4
+     docs-only/mechanical exemption also satisfies this), the
      PR is not draft and GitHub reports it mergeable, and explicit merge
      approval is given.
    - PR comments, review re-triggers, thread resolution, reviewer requests,

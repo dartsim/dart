@@ -7,8 +7,9 @@ runtime, package, or downstream behavior changes.
 ## Workflow Index
 
 All files live in `.github/workflows/` on this branch. For PR-triggered
-workflows (the first nine rows), check names on a PR map to the workflow's
-`name:` shown here; the last three run on push, workflow call, dispatch, or schedule.
+workflows (the first eight rows), check names on a PR map to the workflow's
+`name:` shown here; the remaining rows run on push, workflow call, dispatch,
+or schedule (and CodeQL is currently pinned to older branches).
 
 | Workflow file                     | Check name                  | Purpose                                          |
 | --------------------------------- | --------------------------- | ------------------------------------------------ |
@@ -19,8 +20,8 @@ workflows (the first nine rows), check names on a PR map to the workflow's
 | `ci_simd.yml`                     | CI SIMD Multi-Arch          | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
 | `ci_toolchain.yml`                | CI Toolchain (Linux)        | Alternate Linux toolchain build + test           |
 | `ci_gz_physics.yml`               | CI gz-physics               | Gazebo/gz-physics downstream integration         |
-| `codeql.yml`                      | CodeQL                      | Static security analysis                         |
 | `api_doc.yml`                     | API Documentation           | Doxygen API docs build/publish                   |
+| `codeql.yml`                      | CodeQL                      | Static security analysis — currently inactive here: its branch filter pins `release-6.17`/`release-6.16` |
 | `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Performance dashboard (push/call/dispatch)      |
 | `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs              |
