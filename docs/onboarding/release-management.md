@@ -56,10 +56,15 @@ git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HAS
 `git cherry` output uses `+` for a commit that still needs backporting and `-`
 for an equivalent patch already present on the release branch.
 
-Backport branches should start from the release branch:
+Backport branches should start from the release branch without resetting an
+existing local branch (reuse one only when it is clean and already based on
+`origin/<RELEASE_BRANCH>`; otherwise stop and ask):
 
 ```bash
-git checkout -B backport/<SOURCE_PR>-to-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
+BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>
+git show-ref --verify --quiet "refs/heads/$BRANCH" \
+  && git switch "$BRANCH" \
+  || git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
 git cherry-pick -x <COMMIT_HASH>
 ```
 

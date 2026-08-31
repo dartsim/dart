@@ -151,7 +151,8 @@ gh pr checks <PR_NUMBER>
      needs explicit maintainer/user approval and must not duplicate an active
      trigger.
    - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running `/dart-review-pr`) must record findings
+     separate agent session running the `dart-review-pr` workflow via
+     `/dart-review-pr` or `$dart-review-pr`) must record findings
      before merge approval; docs-only and mechanical changes are exempt.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
@@ -168,7 +169,8 @@ gh pr checks <PR_NUMBER>
    `pixi run test-all` and, on Linux hosts with a visible NVIDIA CUDA runtime,
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
-   are green, the milestone is set, an independent review recorded findings, the
+   are green, the milestone is set, an independent review recorded findings (or the
+   step 4 docs-only/mechanical exemption applies), the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
    ready-for-review transitions, merges, and branch deletion are external
