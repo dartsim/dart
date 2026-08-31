@@ -95,6 +95,15 @@
     names image-capable targets across both lanes.
     ([#3418](https://github.com/dartsim/dart/pull/3418))
 
+  * Audit and refresh the DART 6.20 AI harness so its guidance matches this
+    branch: document the real Pixi wheel tasks, correct milestone and
+    contributor-template facts, cover `dart/simd` and every CI workflow in
+    the component and CI maps, restore the always-loaded commit-title,
+    milestone, and merge-before-push rules with the `main`-parity merge
+    gates, and converge the shared pre-commit guard (worktree-aware
+    resolution, one managed-hook version, an unknown-capability scan):
+    [#3458](https://github.com/dartsim/dart/pull/3458)
+
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
