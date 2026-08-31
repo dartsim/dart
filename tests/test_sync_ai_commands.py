@@ -635,6 +635,23 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     ]
 
 
+def test_unknown_capability_scan_skips_other_branch_profile_sections(tmp_path):
+    module = _load_module()
+    skills = tmp_path / ".claude" / "skills" / "dart-shared"
+    skills.mkdir(parents=True)
+    (tmp_path / "docs" / "ai").mkdir(parents=True)
+    (tmp_path / "docs" / "ai" / "branch-profile.json").write_text(
+        '{"profile": "main"}\n', encoding="utf-8"
+    )
+    (skills / "SKILL.md").write_text(
+        "# Shared\n\nUse `dart-sample`.\n\n"
+        "## DART 6 (release-6.20)\n\nUse `dart-release-only-flow`.\n",
+        encoding="utf-8",
+    )
+
+    assert module.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
+
+
 def test_checked_in_sources_mention_only_existing_capabilities():
     module = _load_module()
     command_names = module.list_command_names(ROOT / ".claude" / "commands")

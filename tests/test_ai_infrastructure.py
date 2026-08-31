@@ -2199,6 +2199,25 @@ def test_tool_versions_probes_all_agent_clis(monkeypatch):
     assert versions["python"]
 
 
+def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
+    monkeypatch.setattr(infra.shutil, "which", lambda tool: f"/bin/{tool}")
+
+    def fake_run(cmd, **kwargs):
+        if "git" in cmd[0]:
+            raise subprocess.TimeoutExpired(cmd, 10)
+        if "pixi" in cmd[0]:
+            raise OSError("broken executable")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(infra.subprocess, "run", fake_run)
+
+    versions = infra.tool_versions()
+
+    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+        assert versions[tool] == "not found"
+    assert versions["python"]
+
+
 def test_doctor_report_is_read_only(tmp_path):
     root = make_repo(tmp_path, "main")
     before = _content_hashes(root)

@@ -703,12 +703,19 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
         non_capability_names |= set(
             re.findall(r"dart-[a-z0-9-]+", components_path.read_text(encoding="utf-8"))
         )
+    profile = detect_branch_profile(repo_root)
     errors: list[str] = []
     source_paths = sorted(
         (repo_root / ".claude" / "commands").glob("dart-*.md")
     ) + sorted((repo_root / ".claude" / "skills").glob("dart-*/SKILL.md"))
     for source_path in source_paths:
         source_content = source_path.read_text(encoding="utf-8")
+        if source_path.name == "SKILL.md":
+            # Shared skills may carry sections owned by the other branch
+            # profile; scan only the lines that apply to this profile.
+            source_content = "\n".join(
+                line for _, line in profile_skill_lines(source_content, profile)
+            )
         mentioned = set(
             re.findall(r"`[/$]?(dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
         ) | set(

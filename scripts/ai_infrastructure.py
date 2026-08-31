@@ -2478,10 +2478,15 @@ def tool_versions() -> dict[str, str]:
         if not executable:
             versions[tool] = "not found"
             continue
-        result = subprocess.run(
-            [executable, *args], capture_output=True, text=True, timeout=10
-        )
-        versions[tool] = (result.stdout or result.stderr).strip().splitlines()[0]
+        try:
+            result = subprocess.run(
+                [executable, *args], capture_output=True, text=True, timeout=10
+            )
+        except OSError, subprocess.TimeoutExpired:
+            versions[tool] = "not found"
+            continue
+        output = (result.stdout or result.stderr).strip()
+        versions[tool] = output.splitlines()[0] if output else "not found"
     versions["python"] = sys.version.split()[0]
     return versions
 
