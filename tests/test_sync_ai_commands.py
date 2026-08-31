@@ -287,12 +287,9 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
 
     assert errors == [
-        ".claude/commands/dart-sample.md: unknown capability "
-        "`dart-missing-codex`",
-        ".claude/commands/dart-sample.md: unknown capability "
-        "`dart-missing-fenced`",
-        ".claude/commands/dart-sample.md: unknown capability "
-        "`dart-missing-slash`",
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-codex`",
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-fenced`",
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-slash`",
         ".claude/commands/dart-sample.md: unknown capability "
         "`dart-nonexistent-workflow`",
     ]
