@@ -438,6 +438,18 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Modernized the pixi workspace for current pixi: declared workspace
+  license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
+  floor, unified the default/collision-reference/cuda environments in one
+  solve group, kept `pixi.lock` out of `pixi run clean`, consolidated the six
+  Unix-family `config*` task bodies into `scripts/cmake_config.py`
+  (behavior-preserving and contract-tested), aligned CI on
+  `setup-pixi@v0.10.2`, and pinned the wheel-publishing pixi version.
+- The pixi cuda environment now resolves against a `linux-64-cuda` platform
+  declaring the `__cuda=13` virtual package, so solves are GPU-aware;
+  driverless machines warn but keep working (`CONDA_OVERRIDE_CUDA=13`
+  silences the warning). Checkouts with a previously installed cuda
+  environment must remove it once: `rm -rf .pixi/envs/cuda`.
 - Refreshed the DART 7 README and Read the Docs package guidance so the
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
