@@ -291,7 +291,7 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `community_signals.yml`       | Community signals dashboard | Ubuntu                      | `main` push (path-scoped), schedule, manual   | N/A                |
 | `pages_deploy.yml`            | GitHub Pages deploy         | Ubuntu                      | Workflow run, manual                          | N/A                |
 | `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                              | N/A                |
-| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR, branch delete                             | N/A                |
+| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                     | N/A                |
 
 ### CI Tiering Policy
 
