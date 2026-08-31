@@ -59,6 +59,7 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -727,6 +728,9 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
 {
   gui::Panel panel;
   panel.title = "Deformable Body";
+  // Right dock column of the demos workspace (py-demos convention).
+  panel.dockSide = gui::DockSide::Right;
+  panel.initialSize = std::array<double, 2>{320.0, 440.0};
   panel.build = [state](gui::PanelBuilder& builder) {
     if (builder.button("Reset Scene")) {
       state->reset();
@@ -761,6 +765,9 @@ gui::Panel createVbdControlsPanel(const std::shared_ptr<ExampleState>& state)
 {
   gui::Panel panel;
   panel.title = "Deformable VBD";
+  // Right dock column of the demos workspace (py-demos convention).
+  panel.dockSide = gui::DockSide::Right;
+  panel.initialSize = std::array<double, 2>{320.0, 440.0};
   panel.build = [state](gui::PanelBuilder& builder) {
     builder.text("Inner solver: Vertex Block Descent");
     builder.text("graph-colored Gauss-Seidel block descent");

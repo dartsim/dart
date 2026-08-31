@@ -41,6 +41,7 @@
 // clang-format on
 
 #include "common/eigen_utils.hpp"
+#include "common/nanobind_helpers.hpp"
 #include "common/repr.hpp"
 
 #include <dart/simulation/body/collision_shape.hpp>
@@ -493,7 +494,7 @@ inline nb::list castJointsKeepingWorldAlive(
   nb::list result;
   for (auto& joint : joints) {
     nb::object jointObject = nb::cast(std::move(joint), nb::rv_policy::move);
-    nb::detail::keep_alive(jointObject.ptr(), world.ptr());
+    nanobindKeepAlive(jointObject.ptr(), world.ptr());
     result.append(jointObject);
   }
   return result;

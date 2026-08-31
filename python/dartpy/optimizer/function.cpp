@@ -17,7 +17,7 @@ namespace dart::python_nb {
 class PyFunction : public dart::math::Function
 {
 public:
-  NB_TRAMPOLINE(dart::math::Function, 2);
+  NB_TRAMPOLINE(dart::math::Function);
 
   double eval(const Eigen::VectorXd& x) override
   {

@@ -48,8 +48,9 @@ ImGui — relaunch with `pixi run dartsim` to rebuild against the docking branch
 
 Because the GUI build links one ImGui, building the library or other GUI
 examples (`pixi run build`, `pixi run config`, `pixi run ex <gui-example>`)
-switches the shared build to system ImGui; the next editor launch transparently
-rebuilds against the docking branch.
+switches the shared build to system ImGui; the next editor or demos launch
+transparently rebuilds against the docking branch (`pixi run demos` uses the
+same docking build as the editor).
 
 The editor inherits the shared `dart::gui` live performance HUD: press **F2**
 (or launch with `--perf-hud`) to toggle an overlay with per-phase CPU/GPU frame
@@ -70,7 +71,10 @@ pixi run ex dartsim --scene boxes
 ```
 
 The GUI examples are consolidated into the `dart-demos` app, where each is a
-runtime-switchable DART 7 World scene:
+runtime-switchable DART 7 World scene. Like the editor, `pixi run demos`
+builds against the ImGui docking branch, so the catalog sidebar, Simulation
+toolbar, status bar, and per-scene control panels open as a docked workspace
+(with a floating-panel fallback on system-ImGui builds):
 
 ```bash
 pixi run demos                       # browse all example scenes in one window

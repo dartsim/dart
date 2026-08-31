@@ -48,6 +48,13 @@
 
 **Result**: Simpler, faster builds with better developer experience
 
+### nanobind version policy
+
+Dartpy requires nanobind 3.x. The default Pixi environment, PEP 517 isolated
+builds, and the hosted wheel matrix all exercise that supported major. Changes
+to dartpy's custom casters, lifetime handling, or trampolines should retain the
+focused nanobind integration coverage in the Python and installed-wheel tests.
+
 ## Architecture
 
 ### Module Structure

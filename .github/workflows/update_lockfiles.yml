@@ -60,7 +60,7 @@ jobs:
         with:
           ref: ${{ matrix.base }}
       - name: Setup pixi (CI)
-        uses: prefix-dev/setup-pixi@v0.10.0
+        uses: prefix-dev/setup-pixi@v0.10.1
         with:
           cache: false
           run-install: false
@@ -69,6 +69,62 @@ jobs:
         run: |
           set -o pipefail
           pixi update --json --no-install | pixi exec pixi-diff-to-markdown >> diff.md
+      - name: Validate default Python lock policy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expected_spec=""
+          mapfile -t platforms < <(
+            pixi workspace platform list --json |
+              jq -r '.platforms[] | select(.name != "current") | .subdir'
+          )
+
+          if (( ${#platforms[@]} == 0 )); then
+            echo "No declared workspace platforms found" >&2
+            exit 1
+          fi
+
+          for platform in "${platforms[@]}"; do
+            python_package=$(
+              pixi list --locked --json -e default --platform "${platform}" '^python$'
+            )
+            if ! jq -e '
+              length == 1
+              and .[0].name == "python"
+              and .[0].requested_spec != null
+            ' <<< "${python_package}" > /dev/null; then
+              echo "Default Python lock policy failed for ${platform}:" >&2
+              jq >&2 <<< "${python_package}"
+              exit 1
+            fi
+
+            version=$(jq -r '.[0].version' <<< "${python_package}")
+            requested_spec=$(jq -r '.[0].requested_spec' <<< "${python_package}")
+            if [[ ! "${requested_spec}" =~ ^[0-9]+\.[0-9]+\.\*$ ]]; then
+              echo "Default Python must use an explicit minor-version pin;" \
+                "${platform} requested '${requested_spec}'" >&2
+              exit 1
+            fi
+
+            version_prefix=${requested_spec%\*}
+            if [[ "${version}" != "${version_prefix}"* ]]; then
+              echo "Default Python ${version} does not satisfy" \
+                "${requested_spec} on ${platform}" >&2
+              exit 1
+            fi
+
+            if [[ -z "${expected_spec}" ]]; then
+              expected_spec=${requested_spec}
+            elif [[ "${requested_spec}" != "${expected_spec}" ]]; then
+              echo "Default Python pins differ across platforms:" \
+                "expected ${expected_spec}, found ${requested_spec} on ${platform}" >&2
+              exit 1
+            fi
+
+            printf '%s: python %s (%s)\n' \
+              "${platform}" "${version}" "${requested_spec}"
+          done
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:

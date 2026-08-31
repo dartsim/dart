@@ -57,6 +57,8 @@
 namespace dart::gui::detail {
 namespace {
 
+constexpr std::string_view kGuiScalePrefix = "--gui-scale=";
+
 std::optional<std::string> getLastPathSegment(std::string value)
 {
   if (value.empty()) {
@@ -139,6 +141,41 @@ bool parseFiniteDouble(const char* value, double& out)
   }
   out = parsed;
   return true;
+}
+
+/// Parses a --gui-scale value. Returns the normalized scale, or nullopt for
+/// unparsable/non-positive input. Values outside the supported user-scale
+/// range come back clamped with a warning so a typo like `--gui-scale 20` is
+/// visible instead of silently pinned. Mirrors the DART 6 viewer semantics
+/// (dart::gui::osg::parseGuiScale) so the flag behaves the same on both GUI
+/// stacks.
+std::optional<double> parseGuiScaleValue(std::string_view text)
+{
+  const std::string value(text);
+  char* end = nullptr;
+  const double parsed = std::strtod(value.c_str(), &end);
+  if (end == value.c_str() || *end != '\0' || !std::isfinite(parsed)
+      || parsed <= 0.0) {
+    return std::nullopt;
+  }
+  const double normalized = normalizeGuiUserScale(parsed);
+  if (std::abs(normalized - parsed) > 1e-9) {
+    std::cerr << "--gui-scale " << value
+              << " is outside the supported range; clamped to " << normalized
+              << ".\n";
+  }
+  return normalized;
+}
+
+double parseGuiScaleValueOrExit(std::string_view text)
+{
+  const std::optional<double> scale = parseGuiScaleValue(text);
+  if (!scale.has_value()) {
+    std::cerr << "Invalid --gui-scale value '" << text
+              << "'. Expected a positive number.\n";
+    std::exit(2);
+  }
+  return *scale;
 }
 
 bool parseVector3(std::string_view text, Eigen::Vector3d& out)
@@ -699,6 +736,20 @@ AppOptions parseOptions(
   bool g1PackageUriExplicit = false;
   bool g1RobotUriExplicit = false;
 
+  // Environment seed for the UI scale, overridable by the command line below.
+  // Same variable and precedence as the DART 6 viewers (dart::gui::osg
+  // parseGuiScaleOptions); a bad value warns instead of aborting because an
+  // environment-wide setting should not hard-fail every GUI app.
+  if (const char* envScale = std::getenv("DART_GUI_SCALE");
+      envScale != nullptr && envScale[0] != '\0') {
+    if (const std::optional<double> scale = parseGuiScaleValue(envScale)) {
+      options.run.guiScale = *scale;
+    } else {
+      std::cerr << "Ignoring invalid DART_GUI_SCALE value '" << envScale
+                << "'. Expected a positive number.\n";
+    }
+  }
+
   for (int i = 1; i < argc; ++i) {
     const std::string_view arg(argv[i]);
     if (arg == "--frames" && i + 1 < argc) {
@@ -750,17 +801,10 @@ AppOptions parseOptions(
       }
       options.orbitLightPeriodSeconds = orbitLightPeriodSeconds;
     } else if (arg == "--gui-scale" && i + 1 < argc) {
-      char* end = nullptr;
-      const char* value = argv[++i];
-      const float guiScale = std::strtof(value, &end);
-      if (end == value || *end != '\0' || !std::isfinite(guiScale)
-          || guiScale <= 0.0f) {
-        std::cerr << "Invalid --gui-scale value '" << value
-                  << "'. Expected a positive number.\n";
-        std::exit(2);
-      }
+      options.run.guiScale = parseGuiScaleValueOrExit(argv[++i]);
+    } else if (arg.rfind(kGuiScalePrefix, 0) == 0) {
       options.run.guiScale
-          = normalizeGuiUserScale(static_cast<double>(guiScale));
+          = parseGuiScaleValueOrExit(arg.substr(kGuiScalePrefix.size()));
     } else if (
         (arg == "--render-backend" || arg == "--backend") && i + 1 < argc) {
       options.run.renderBackend = argv[++i];
@@ -874,7 +918,7 @@ AppOptions parseOptions(
              " [--orbit-light|--no-orbit-light]"
              " [--render-output color|depth]"
              " [--orbit-light-period SECONDS]"
-             " [--gui-scale N]"
+             " [--gui-scale N | --gui-scale=N]"
              " [--profile]"
              " [--perf-hud]"
              " [--render-backend default|opengl|vulkan|noop]"
@@ -914,7 +958,16 @@ AppOptions parseOptions(
              "naming them shot_<view>.ppm from the --screenshot base; "
              "--turntable\n"
              "N captures N frozen-sim frames orbiting 360 degrees as\n"
-             "shot_turnNNN.ppm.\n";
+             "shot_turnNNN.ppm.\n"
+             "--gui-scale scales panels, fonts, and the automatic window "
+             "size\n"
+             "(supported range 0.5-4; out-of-range values are clamped with "
+             "a\n"
+             "warning). The DART_GUI_SCALE environment variable seeds the "
+             "same\n"
+             "scale; the flag overrides it. DART_GUI_DPI_SCALE overrides "
+             "the\n"
+             "detected monitor DPI scale; the two multiply.\n";
       std::exit(0);
     }
   }

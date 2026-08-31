@@ -749,17 +749,19 @@ def _run_example_binary(
 def _imgui_override(target: str, run_args: list[str], smoke: bool) -> str | None:
     """ImGui variant to pin for a GUI run, or None to leave the cache as-is.
 
-    The standalone dartsim editor needs the ImGui docking branch that only the
-    fetched ImGui provides (DART_USE_SYSTEM_IMGUI=OFF); every other GUI path
-    (scene fixtures, other GUI examples) must use system ImGui (ON). Pinning the
-    value per run keeps a launch from inheriting a stale cache state left by a
-    previous run (e.g. OFF after an editor launch). Smoke runs keep their
-    externally configured cache.
+    The docked workspaces — the standalone dartsim editor and the dart-demos
+    catalog host — need the ImGui docking branch that only the fetched ImGui
+    provides (DART_USE_SYSTEM_IMGUI=OFF), matching the `py-demos` Python host.
+    Scene-fixture runs (`--scene` on the editor) and other GUI examples keep
+    system ImGui (ON). Pinning the value per run keeps a launch from inheriting
+    a stale cache state left by a previous run (e.g. OFF after an editor
+    launch). Smoke runs keep their externally configured cache.
     """
     if smoke:
         return None
     launching_docked_editor = target == "dartsim" and not _has_arg(run_args, "--scene")
-    return "OFF" if launching_docked_editor else "ON"
+    launching_docked_demos = target == "demos"
+    return "OFF" if (launching_docked_editor or launching_docked_demos) else "ON"
 
 
 def _apply_imgui_override(
@@ -801,8 +803,9 @@ def run(
     _apply_libcxx_prefix(env)
 
     # Pin the ImGui variant for GUI runs so a launch never inherits a stale
-    # build-cache state from a previous run: the editor needs the docking branch
-    # (OFF), while scene fixtures and other GUI examples need system ImGui (ON).
+    # build-cache state from a previous run: the docked workspaces (editor,
+    # demos host) need the docking branch (OFF), while scene fixtures and other
+    # GUI examples need system ImGui (ON).
     _apply_imgui_override(env, target, run_args, smoke, spec.requirements)
 
     _ensure_target_requirements(build_dir, spec, env, smoke)

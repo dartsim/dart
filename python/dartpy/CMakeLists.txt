@@ -49,13 +49,12 @@ if(NOT DEFINED PYTHON_SITE_PACKAGES)
   set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
 endif()
 
-set(_dartpy_nanobind_min_version 2.9.2)
+set(_dartpy_nanobind_min_version 3.0.0)
+set(_dartpy_nanobind_max_version 4.0.0)
 
 # Locate nanobind (prefer the copy shipped with the active Python interpreter).
-set(_dartpy_nanobind_found FALSE)
 if(DART_USE_SYSTEM_NANOBIND)
-  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
-  set(_dartpy_nanobind_found TRUE)
+  find_package(nanobind CONFIG REQUIRED)
 else()
   if(NOT DEFINED nanobind_DIR)
     execute_process(
@@ -81,13 +80,18 @@ else()
       FORCE
     )
   endif()
-  find_package(nanobind ${_dartpy_nanobind_min_version} CONFIG REQUIRED)
-  set(_dartpy_nanobind_found TRUE)
+  find_package(nanobind CONFIG REQUIRED)
 endif()
 
-if(NOT _dartpy_nanobind_found)
-  message(WARNING "nanobind is required to build dartpy; skipping target.")
-  return()
+if(
+  nanobind_VERSION VERSION_LESS _dartpy_nanobind_min_version
+  OR NOT nanobind_VERSION VERSION_LESS _dartpy_nanobind_max_version
+)
+  message(
+    FATAL_ERROR
+    "dartpy requires nanobind >=${_dartpy_nanobind_min_version},"
+    "<${_dartpy_nanobind_max_version}; found ${nanobind_VERSION}."
+  )
 endif()
 
 if(NOT DART_IO_HAS_URDF)
@@ -103,6 +107,7 @@ set(
   common/composite.hpp
   common/module.hpp
   common/logging.hpp
+  common/nanobind_helpers.hpp
   common/observer.hpp
   common/profile.hpp
   common/repr.hpp

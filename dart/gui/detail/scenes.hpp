@@ -87,6 +87,9 @@ struct DartScene
   std::function<void(dart::gui::ViewportPaneKind)> onViewportPaneActivated;
   ViewportPaneActivationState viewportPaneActivation;
   bool dockingEnabled = false;
+  /// Scene label for the built-in status panel. The demos host sets the active
+  /// demo title here; when empty the panel falls back to the fixture name.
+  std::string statusSceneLabel;
 };
 
 enum class ExampleScene

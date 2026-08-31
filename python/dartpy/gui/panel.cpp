@@ -387,7 +387,7 @@ void defGuiPanels(nb::module_& m)
           })
       .def_prop_ro(
           "selected_point",
-          [](const PanelContextView& self) {
+          [](const PanelContextView& self) -> nb::object {
             if (!self.context().selectedPoint.has_value()) {
               return nb::none();
             }
@@ -395,7 +395,7 @@ void defGuiPanels(nb::module_& m)
           })
       .def_prop_ro(
           "selected_normal",
-          [](const PanelContextView& self) {
+          [](const PanelContextView& self) -> nb::object {
             if (!self.context().selectedNormal.has_value()) {
               return nb::none();
             }
