@@ -31,7 +31,7 @@ dart.gui                 # Backend-hidden GUI descriptors and helpers
 
 - Eigen ↔ NumPy automatic conversion
 - Use `dart.io.read_skeleton()` for model loading
-- Construct directly: `dart.Skeleton()` / `dart.Skeleton("name")` and `dart.World()` (dartpy exposes no `create()` factories; C++ `World` is a value type while `Skeleton` stays shared-pointer-managed, and new C++ `World::create()` usages are gated by `pixi run check-dart7-world-promotion-blockers`)
+- Construct directly: `dart.Skeleton()` / `dart.Skeleton("name")` and `dart.World()` (dartpy exposes no `create()` factories; C++ `World` is a value type while `Skeleton` stays shared-pointer-managed, and new classic world-factory usages are gated by `pixi run check-dart7-world-promotion-blockers`)
 - Keep dartpy GUI APIs aligned with DART-owned C++ concepts.
   `dartpy.gui` exposes the constrained descriptor, debug, picking, and run-loop
   bridge.
