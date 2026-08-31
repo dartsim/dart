@@ -616,16 +616,19 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
-        "Use `dart-nonexistent-workflow` and the `dart-demos` app with "
-        "`dart-sample`.\n",
+        "Use `dart-nonexistent-workflow`, `/dart-missing-slash`, and "
+        "`$dart-missing-codex decide` with the `dart-demos` app, "
+        "`/dart-sample`, and `$dart-sample audit`.\n",
         encoding="utf-8",
     )
 
     errors = module.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
 
     assert errors == [
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-codex`",
+        ".claude/commands/dart-sample.md: unknown capability " "`dart-missing-slash`",
         ".claude/commands/dart-sample.md: unknown capability "
-        "`dart-nonexistent-workflow`"
+        "`dart-nonexistent-workflow`",
     ]
 
 

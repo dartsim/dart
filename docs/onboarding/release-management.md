@@ -57,8 +57,9 @@ git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HAS
 for an equivalent patch already present on the release branch.
 
 Backport branches should start from the release branch without resetting an
-existing local branch (reuse one only when it is clean and already based on
-`origin/<RELEASE_BRANCH>`; otherwise stop and ask):
+existing local branch (reuse one only when it is clean and its tip equals
+`origin/<RELEASE_BRANCH>`; anything else — including a branch merely
+descended from the tip — means stop and ask):
 
 ```bash
 BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>
