@@ -50,6 +50,9 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
+The CI gates that a PR check name maps to (full 18-workflow table with
+triggers: `docs/onboarding/ci-cd.md` § "Workflow Architecture"):
+
 | Workflow            | Purpose                 | Platforms  |
 | ------------------- | ----------------------- | ---------- |
 | `ci_lint.yml`       | Formatting              | Ubuntu     |
@@ -57,7 +60,10 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | `ci_macos.yml`      | Build + test            | macOS      |
 | `ci_windows.yml`    | Build + test            | Windows    |
 | `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD    |
+| `ci_altlinux.yml`   | Build + test (Docker)   | Alt Linux  |
+| `ci_simd.yml`       | SIMD build + test       | Multi-arch |
 | `ci_gz_physics.yml` | Gazebo integration      | Ubuntu     |
+| `ci_gz_dart6.yml`   | DART 6 Gazebo canary    | Ubuntu     |
 | `ci_cuda.yml`       | CUDA compile + smoke    | Ubuntu/GPU |
 
 ## CUDA Runner Policy

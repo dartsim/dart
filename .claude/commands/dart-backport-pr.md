@@ -33,14 +33,23 @@ target branch cannot render the claim.
    inventory and adapter directories against `main`. If the release branch has a
    smaller workflow surface, adapt to the release branch instead of importing
    main-only workflows.
-4. Create a release branch from the release target:
+4. Create a release branch from the release target without resetting an
+   existing local branch:
    ```bash
-   git checkout -B backport/<SOURCE_PR>-to-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
+   BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>
+   if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+     git switch "$BRANCH"
+   else
+     git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
+   fi
    ```
 5. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
 6. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
-7. Run the `dart-changelog` routine for the release-target decision before
-   opening the backport PR.
+7. Run `/dart-changelog decide` or `$dart-changelog decide` against the
+   backport diff and release target before opening the backport PR. If an entry
+   is required but needs the backport PR number, draft the decision and keep the
+   finalize/update follow-up local until explicit approval permits another
+   push. Do not skip the changelog decision just because this is a backport.
 8. Run `pixi run lint` and the smallest relevant release-branch checks.
 9. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, open the PR against the release branch with milestone

@@ -3,6 +3,7 @@ description: merge the active release branch back into main
 argument-hint: "[release-branch]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-release-merge-main.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -26,7 +27,7 @@ Merge release branch into main: $ARGUMENTS
 2. Verify the clone is not shallow and a merge base exists.
 3. Create `merge/<release-branch>-into-main` from `origin/main`.
 4. Merge the release branch with a title like
-   `Merge release-6.19 into main (v6.19.x)`.
+   `Merge release-6.20 into main (v6.20.x)`.
 5. Resolve conflicts using `docs/onboarding/release-management.md`:
    - deleted in main, updated in release: keep deleted
    - added in both: prefer main unless release has unique needed content

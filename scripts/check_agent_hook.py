@@ -97,7 +97,9 @@ def staged_snapshot(root: Path) -> Iterator[Path]:
 def main() -> int:
     args = parse_args()
     root = repository_root(args.root)
-    whitespace = _git(root, "diff", "--cached", "--check")
+    whitespace = _git(
+        root, "-c", "core.whitespace=cr-at-eol", "diff", "--cached", "--check"
+    )
     if whitespace.returncode != 0:
         print(whitespace.stdout or whitespace.stderr, end="")
         print("DART agent hook FAILED: staged diff check failed")

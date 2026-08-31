@@ -399,8 +399,8 @@ def check_codex_hooks(root: Path) -> list[str]:
             ".codex/hooks.json: handler commandWindows must equal the canonical "
             "Windows staged-guard invocation"
         )
-    if handler.get("timeout") != 10:
-        errors.append(".codex/hooks.json: timeout must equal 10 seconds")
+    if handler.get("timeout") != 15:
+        errors.append(".codex/hooks.json: timeout must equal 15 seconds")
     if handler.get("statusMessage") != CODEX_HOOK_STATUS:
         errors.append(
             ".codex/hooks.json: statusMessage must equal " f"{CODEX_HOOK_STATUS!r}"
@@ -2471,6 +2471,8 @@ def tool_versions() -> dict[str, str]:
         ("git", ("--version",)),
         ("pixi", ("--version",)),
         ("codex", ("--version",)),
+        ("claude", ("--version",)),
+        ("opencode", ("--version",)),
     ):
         executable = shutil.which(tool)
         if not executable:

@@ -31,7 +31,7 @@ LCP-based constraint solving for contacts, joint limits, and motors.
 ## Testing
 
 Unit tests: `tests/unit/constraint/`
-Integration tests: `tests/integration/test_Constraint*.cpp`
+Integration tests: none yet (`tests/integration/` has no `constraint/` subdirectory); constraint coverage lives in `tests/unit/constraint/`
 
 ## See Also
 

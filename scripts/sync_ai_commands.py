@@ -690,6 +690,35 @@ def validate_command_structure(repo_root: Path) -> bool:
     return True
 
 
+def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> list[str]:
+    """Flag command/skill sources naming capabilities absent on this branch.
+
+    Guards against a main-only workflow being cited on a release branch (or
+    vice versa). Known non-capability ``dart-`` names (the demos app and CMake
+    component names from ``dart/CMakeLists.txt``) are allowlisted.
+    """
+    non_capability_names = {"dart-demos"}
+    components_path = repo_root / "dart" / "CMakeLists.txt"
+    if components_path.is_file():
+        non_capability_names |= set(
+            re.findall(r"dart-[a-z0-9-]+", components_path.read_text(encoding="utf-8"))
+        )
+    errors: list[str] = []
+    source_paths = sorted(
+        (repo_root / ".claude" / "commands").glob("dart-*.md")
+    ) + sorted((repo_root / ".claude" / "skills").glob("dart-*/SKILL.md"))
+    for source_path in source_paths:
+        source_content = source_path.read_text(encoding="utf-8")
+        mentioned = set(re.findall(r"`(dart-[a-z0-9-]+)`", source_content))
+        try:
+            label = str(source_path.relative_to(repo_root))
+        except ValueError:
+            label = display_path(source_path)
+        for name in sorted(mentioned - expected - non_capability_names):
+            errors.append(f"{label}: unknown capability `{name}`")
+    return errors
+
+
 def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
     """Extract user-invoked workflow table rows keyed by capability name."""
     rows: dict[str, list[str]] = {}
@@ -1496,6 +1525,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
             errors.append(
                 f"{display_path(workflows_path)}: unknown capability `{name}`"
             )
+
+        errors.extend(unknown_capability_mention_errors(repo_root, expected))
 
         if "docs/ai/workflows.md" not in agents_content:
             errors.append("AGENTS.md: missing docs/ai/workflows.md catalog pointer")

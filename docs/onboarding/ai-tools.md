@@ -2,7 +2,7 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: 2026-07-31. Command/skill/adapter surfaces are
+> **Last Verified**: 2026-08-31. Command/skill/adapter surfaces are
 > continuously machine-verified by `pixi run check-ai-commands` in CI. Claude
 > Code notes were behaviorally verified on the tested version recorded in
 > [Claude Code](#claude-code); OpenCode terminology notes were checked against
@@ -248,7 +248,7 @@ To add a new DART-specific skill:
    pixi run lint  # Includes sync-ai-commands
    ```
 
-**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision detection), `dart-architecture` (core design).
+**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision detection). (`dart-architecture` already exists as a registered domain skill.)
 
 #### Cross-Agent Compatibility
 
@@ -367,8 +367,8 @@ directly. There is no separate prompt-template folder.
 
 ### Claude Code
 
-**Tested Versions**: Claude Code CLI 2.1.220 on Claude Fable 5
-(`claude-fable-5`), 2026-07-31 — `/dart-model-upgrade` exercised end to end:
+**Tested Versions**: Claude Code CLI 2.1.252 on Claude Fable 5
+(`claude-fable-5`), 2026-08-31 (initially exercised on 2.1.220, 2026-07-31) — `/dart-model-upgrade` exercised end to end:
 command and skill loading, the PreToolUse hook, and native image review of
 `agent-capture` output. Opus 5 routing and image guidance is sourced from
 current official docs; that lane was not separately exercised. Capability and
@@ -396,8 +396,8 @@ adapter surfaces stay continuously machine-verified via
 
 Current references:
 [Claude Fable 5 and Mythos 5 announcement](https://www.anthropic.com/news/claude-fable-5-mythos-5),
-[Introducing Claude Fable 5 (API surface)](https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5), and
-[Claude models overview](https://platform.claude.com/docs/en/about-claude/models/overview).
+[Introducing Claude Fable 5 (API surface)](https://platform.claude.com/docs/en/models/fable-5/introducing-claude-fable-5-and-claude-mythos-5), and
+[Claude models overview](https://platform.claude.com/docs/en/models/overview).
 
 ### OpenCode
 
@@ -434,8 +434,9 @@ hand-checked 2026-07
 
 ### OpenAI Codex
 
-**Tested Versions**: Codex CLI 0.144.1 (strict-config compatibility) and
-0.146.0 (local discovery/config/hook checks), 2026-07-29
+**Tested Versions**: Codex CLI 0.151.0 (strict-config compatibility and local
+discovery/config/hook checks), 2026-08-31 (earlier exercised on 0.144.1 and
+0.146.0, 2026-07-29)
 
 | Feature           | Location                    | Status                                |
 | ----------------- | --------------------------- | ------------------------------------- |
@@ -469,11 +470,13 @@ duplicate or pin it here. Project agents inherit the active parent model.
 `.codex/config.toml` bounds concurrency with `agents.max_threads` and delegation
 depth with `agents.max_depth`, while progressively loaded skills and owner docs
 supply task procedures. Current Codex documents `agents.max_threads` as a
-supported alias for `agents.max_concurrent_threads_per_session`; DART keeps the
-alias because the previously documented 0.144.1 client rejects the newer
-spelling under strict configuration. Revisit the spelling only when DART
-intentionally advances its minimum tested Codex version and verifies both
-strict-config paths.
+supported alias for `agents.max_concurrent_threads_per_session`; on the
+current tested client (0.151.0) both spellings load under strict
+configuration (verified 2026-08-31 with a bogus-key control proving the
+loader is strict). DART keeps the alias for compatibility with older
+clients (0.144.1 was the last tested client that rejected the newer spelling
+under strict configuration); revisit alongside a deliberate minimum-version
+advance.
 
 Project hooks are trusted-project automation, not complete enforcement.
 `PreToolUse` does not intercept every possible mutation path, and a hook may be

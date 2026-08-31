@@ -341,7 +341,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
                                     "commandWindows": (
                                         infra.CODEX_HOOK_COMMAND_WINDOWS
                                     ),
-                                    "timeout": 10,
+                                    "timeout": 15,
                                     "statusMessage": infra.CODEX_HOOK_STATUS,
                                 }
                             ],
@@ -1443,7 +1443,7 @@ def test_hook_config_rejects_unbounded_or_mutating_command(tmp_path):
     errors = infra.check_codex_hooks(root)
 
     assert any("canonical read-only guard invocation" in error for error in errors)
-    assert any("timeout must equal 10" in error for error in errors)
+    assert any("timeout must equal 15" in error for error in errors)
 
 
 def test_hook_config_requires_exact_windows_override(tmp_path):
@@ -2186,6 +2186,17 @@ def _content_hashes(root: Path) -> dict[str, str]:
         for path in root.rglob("*")
         if path.is_file() and ".git" not in path.relative_to(root).parts
     }
+
+
+def test_tool_versions_probes_all_agent_clis(monkeypatch):
+    monkeypatch.setattr(infra.shutil, "which", lambda _tool: None)
+
+    versions = infra.tool_versions()
+
+    assert set(versions) == {"git", "pixi", "codex", "claude", "opencode", "python"}
+    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+        assert versions[tool] == "not found"
+    assert versions["python"]
 
 
 def test_doctor_report_is_read_only(tmp_path):

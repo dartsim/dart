@@ -20,8 +20,8 @@ pixi run test-py       # Python tests only
 
 ## Test Naming Conventions
 
-- Unit tests: `test_<ClassName>.cpp`
-- Integration tests: `test_<Feature>.cpp`
+- Unit tests: `test_<topic>.cpp` (snake_case, e.g. `test_free_list_allocator.cpp`)
+- Integration tests: `test_<feature>.cpp` (snake_case, under a per-module subdirectory)
 - Python tests: `test_<module>.py`
 
 ## Writing Tests

@@ -611,6 +611,35 @@ def test_branch_profile_manifest_wins_on_generic_release_topic_branch(tmp_path):
     assert module.detect_branch_profile(tmp_path) == "release-6.20"
 
 
+def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
+    module = _load_module()
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "dart-sample.md").write_text(
+        "Use `dart-nonexistent-workflow` and the `dart-demos` app with "
+        "`dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    errors = module.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    assert errors == [
+        ".claude/commands/dart-sample.md: unknown capability "
+        "`dart-nonexistent-workflow`"
+    ]
+
+
+def test_checked_in_sources_mention_only_existing_capabilities():
+    module = _load_module()
+    command_names = module.list_command_names(ROOT / ".claude" / "commands")
+    skill_names, _ = module.list_skill_names(ROOT / ".claude" / "skills")
+
+    assert (
+        module.unknown_capability_mention_errors(ROOT, command_names | skill_names)
+        == []
+    )
+
+
 def test_checked_in_source_skill_tasks_and_paths_are_current():
     module = _load_module()
 
@@ -671,3 +700,19 @@ def test_agent_allowlists_keep_private_payloads_ignored():
             cwd=ROOT,
         )
         assert result.returncode == 0, f"private agent payload is unignored: {path}"
+
+
+def test_unknown_capability_scan_allowlists_cmake_component_names(tmp_path):
+    module = _load_module()
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (tmp_path / "dart").mkdir()
+    (tmp_path / "dart" / "CMakeLists.txt").write_text(
+        "set(components dart-gui-osg dart-utils-urdf)\n", encoding="utf-8"
+    )
+    (commands / "dart-sample.md").write_text(
+        "Link `dart-gui-osg` and `dart-utils-urdf` from `dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    assert module.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []

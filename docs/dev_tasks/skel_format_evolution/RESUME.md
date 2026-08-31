@@ -2,6 +2,9 @@
 
 ## Current Resume Checkpoint (2026-07-05)
 
+> Correction (2026-08-31): `work/skel-format-yaml-decision` no longer exists
+> locally or on `origin`; treat this checkpoint as historical state.
+
 `work/skel-format-yaml-decision` is the stacked writer/decision branch. It now
 has `origin/main` merged locally after Phase 2 landed as PR
 [#3288](https://github.com/dartsim/dart/pull/3288) at
