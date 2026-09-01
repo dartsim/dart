@@ -1,18 +1,18 @@
-# Find a Filament install tree for the experimental Filament GUI example.
-#
-# This module accepts Filament_ROOT or FILAMENT_ROOT and creates:
+# Find Filament for the DART GUI and create:
 #   Filament::filament
 #   Filament::matc
 #
-# Upstream Filament release archives do not currently ship CMake package files,
-# so this finder also supports the archive layout:
+# The preferred provider is the conda-forge `filament` package, whose CMake
+# package config (FilamentConfig.cmake) already defines both targets; the
+# CONFIG-first find below picks it up from the environment prefix.
+#
+# Upstream Filament release archives do not ship CMake package files, so this
+# finder also accepts Filament_ROOT or FILAMENT_ROOT pointing at the archive
+# layout:
 #   include/
 #   lib/<arch>/libfilament.a
 #   bin/matc
-#
-# The planned conda-forge recipe splits build artifacts into a `filament-static`
-# development output and a `filament` tool output. Installing `filament-static`
-# should make include/, lib/, and bin/matc visible from the same prefix.
+# including the libc++/libc++abi link handling those upstream binaries need.
 
 include(FindPackageHandleStandardArgs)
 
@@ -66,8 +66,32 @@ foreach(
   _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
 endforeach()
 
-find_package(filament CONFIG QUIET)
-find_package(Filament CONFIG QUIET)
+# An explicit root must win. Filament_ROOT only *hints* the config search, so
+# a root without CMake package files would silently lose to a packaged config
+# elsewhere on the prefix path (e.g. a conda environment): when roots are
+# given, probe them for package configs exclusively and otherwise fall through
+# to the archive-layout search below. The default config search also stays off
+# when DART explicitly selects the fetched archive
+# (DART_USE_SYSTEM_FILAMENT=OFF).
+if(_dart_filament_roots)
+  find_package(
+    filament
+    CONFIG
+    QUIET
+    PATHS ${_dart_filament_roots}
+    NO_DEFAULT_PATH
+  )
+  find_package(
+    Filament
+    CONFIG
+    QUIET
+    PATHS ${_dart_filament_roots}
+    NO_DEFAULT_PATH
+  )
+elseif(NOT DEFINED DART_USE_SYSTEM_FILAMENT OR DART_USE_SYSTEM_FILAMENT)
+  find_package(filament CONFIG QUIET)
+  find_package(Filament CONFIG QUIET)
+endif()
 
 if(TARGET filament::filament AND NOT TARGET Filament::filament)
   add_library(Filament::filament ALIAS filament::filament)
@@ -82,12 +106,26 @@ if(TARGET matc AND NOT TARGET Filament::matc)
   add_executable(Filament::matc ALIAS matc)
 endif()
 
-find_path(
-  Filament_INCLUDE_DIR
-  NAMES filament/Engine.h
-  HINTS ${_dart_filament_roots}
-  PATH_SUFFIXES include
-)
+# When explicit roots are given, every Filament-owned component (headers, the
+# Filament libraries, and matc) is searched in the roots exclusively: default
+# locations (CMAKE_PREFIX_PATH/CMAKE_LIBRARY_PATH/PATH) rank above HINTS, so a
+# conda environment on the search path could otherwise shadow the requested
+# tree — or, for a component missing from an incomplete root, silently mix
+# installations. Components missing from the roots therefore stay NOTFOUND and
+# fail the package check below instead of falling through. Support libraries
+# that Filament does not ship in every tree (zstd, libc++/libc++abi) keep a
+# root-preferred search with the regular fallback.
+if(_dart_filament_roots)
+  find_path(
+    Filament_INCLUDE_DIR
+    NAMES filament/Engine.h
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH
+  )
+else()
+  find_path(Filament_INCLUDE_DIR NAMES filament/Engine.h PATH_SUFFIXES include)
+endif()
 
 set(Filament_LIBRARIES)
 
@@ -125,17 +163,37 @@ foreach(
     shaders
 )
   string(REPLACE "-" "_" _lib_var "${_lib}")
-  find_library(
-    Filament_${_lib_var}_LIBRARY
-    NAMES ${_lib}
-    HINTS ${_dart_filament_roots}
-    PATH_SUFFIXES ${_dart_filament_library_suffixes}
-  )
+  if(_dart_filament_roots)
+    find_library(
+      Filament_${_lib_var}_LIBRARY
+      NAMES ${_lib}
+      PATHS ${_dart_filament_roots}
+      PATH_SUFFIXES ${_dart_filament_library_suffixes}
+      NO_DEFAULT_PATH
+    )
+  else()
+    find_library(
+      Filament_${_lib_var}_LIBRARY
+      NAMES ${_lib}
+      PATH_SUFFIXES ${_dart_filament_library_suffixes}
+    )
+  endif()
   if(Filament_${_lib_var}_LIBRARY)
     list(APPEND Filament_LIBRARIES "${Filament_${_lib_var}_LIBRARY}")
   endif()
 endforeach()
 
+# zstd is a support library: prefer the copy bundled with the roots, but allow
+# the regular search to provide it for trees that do not ship one.
+if(_dart_filament_roots)
+  find_library(
+    Filament_zstd_LIBRARY
+    NAMES zstd
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES ${_dart_filament_library_suffixes}
+    NO_DEFAULT_PATH
+  )
+endif()
 find_library(
   Filament_zstd_LIBRARY
   NAMES zstd
@@ -222,12 +280,17 @@ if(_dart_filament_requires_libcxx)
   endif()
 endif()
 
-find_program(
-  Filament_MATC_EXECUTABLE
-  NAMES matc matc.exe
-  HINTS ${_dart_filament_roots}
-  PATH_SUFFIXES bin
-)
+if(_dart_filament_roots)
+  find_program(
+    Filament_MATC_EXECUTABLE
+    NAMES matc matc.exe
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES bin
+    NO_DEFAULT_PATH
+  )
+else()
+  find_program(Filament_MATC_EXECUTABLE NAMES matc matc.exe PATH_SUFFIXES bin)
+endif()
 
 set(_dart_filament_required_vars)
 if(NOT TARGET Filament::filament)
@@ -260,7 +323,7 @@ else()
     Filament
     REQUIRED_VARS ${_dart_filament_required_vars}
     REASON_FAILURE_MESSAGE
-      "Install a Filament development package such as conda-forge filament-static, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
+      "Install a Filament development package such as conda-forge `filament`, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
   )
 endif()
 
