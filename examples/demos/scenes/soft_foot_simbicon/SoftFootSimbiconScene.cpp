@@ -74,6 +74,11 @@ const char* feetLabel(sfs::Feet feet)
                                  : "Rigid (rest-mesh control)";
 }
 
+// Motor-noise level the 'm' key toggles: the same 20% held actuation error
+// the motor-noise gate measures at, so what the demo shows is the gate's own
+// operating point.
+constexpr double kDemoMotorNoise = sfs::kMotorNoiseGateLevel;
+
 } // namespace
 
 //==============================================================================
@@ -87,17 +92,20 @@ DemoScene makeSoftFootSimbiconScene()
       = "A SIMBICON-balanced Atlas biped comparing soft vs rigid foot contact "
         "under pushes (Jain/Liu push recovery).";
 
-  // Persists across Rebuild/Reset (which re-run this factory); the feet toggle
-  // records the next geometry here and it is picked up on the next rebuild.
+  // Persists across Rebuild/Reset (which re-run this factory); the feet and
+  // floor toggles record the next selection here and it is picked up on the
+  // next rebuild.
   //
-  // Two environment variables exist so headless evidence capture is
-  // reproducible, since the keyboard controls below cannot be reached without a
-  // window: DART_DEMO_SOFT_FOOT_FEET selects rigid or soft geometry,
+  // Environment variables exist so headless evidence capture is reproducible,
+  // since the keyboard controls below cannot be reached without a window:
+  // DART_DEMO_SOFT_FOOT_FEET selects rigid or soft geometry,
   // DART_DEMO_SOFT_FOOT_PUSH_STEP schedules one automatic sideways push at the
   // given step so a capture shows the push-recovery behavior rather than a
-  // biped standing still, and DART_DEMO_SOFT_FOOT_PUSH_N overrides that
-  // push's magnitude so a capture can bracket the recovery threshold. None of
-  // them affects interactive use.
+  // biped standing still, DART_DEMO_SOFT_FOOT_PUSH_N overrides that push's
+  // magnitude so a capture can bracket the recovery threshold,
+  // DART_DEMO_SOFT_FOOT_NOISE sets a multiplicative motor-noise level, and
+  // DART_DEMO_SOFT_FOOT_FLOOR sets a noisy-tile-floor height amplitude in
+  // meters. None of them affects interactive use.
   auto feetSelection = std::make_shared<sfs::Feet>(sfs::Feet::Soft);
   if (const char* feetEnv = std::getenv("DART_DEMO_SOFT_FOOT_FEET")) {
     if (std::string(feetEnv) == "rigid")
@@ -112,10 +120,23 @@ DemoScene makeSoftFootSimbiconScene()
     return magnitudeEnv != nullptr ? std::atof(magnitudeEnv)
                                    : sfs::kDefaultPushMagnitude;
   }();
+  auto noiseSelection = std::make_shared<double>([]() {
+    const char* noiseEnv = std::getenv("DART_DEMO_SOFT_FOOT_NOISE");
+    return noiseEnv != nullptr ? std::atof(noiseEnv) : 0.0;
+  }());
+  auto floorSelection = std::make_shared<double>([]() {
+    const char* floorEnv = std::getenv("DART_DEMO_SOFT_FOOT_FLOOR");
+    return floorEnv != nullptr ? std::atof(floorEnv) : 0.0;
+  }());
 
-  scene.factory = [feetSelection, scriptedPushStep, scriptedPushMagnitude] {
+  scene.factory = [feetSelection,
+                   scriptedPushStep,
+                   scriptedPushMagnitude,
+                   noiseSelection,
+                   floorSelection] {
     auto state = std::make_shared<SoftFootSimbiconState>();
-    state->model = sfs::createModel(*feetSelection);
+    state->model = sfs::createModel(*feetSelection, *floorSelection);
+    sfs::setMotorNoise(state->model, *noiseSelection);
 
     DemoSceneSetup setup;
     setup.world = state->model.world;
@@ -173,8 +194,23 @@ DemoScene makeSoftFootSimbiconScene()
                                ? sfs::Feet::Rigid
                                : sfs::Feet::Soft;
         }});
+    // The floor is world structure, so like the feet it applies on the host's
+    // Reset/Rebuild; motor noise only scales what the controller writes each
+    // step, so it can toggle live.
+    setup.keyActions.push_back(KeyAction{
+        'n',
+        "Toggle noisy tile floor (applies on host Reset/Rebuild)",
+        [floorSelection] {
+          *floorSelection
+              = *floorSelection > 0.0 ? 0.0 : sfs::kFloorPaperAmplitude;
+        }});
+    setup.keyActions.push_back(KeyAction{
+        'm', "Toggle motor noise", [state, noiseSelection] {
+          *noiseSelection = *noiseSelection > 0.0 ? 0.0 : kDemoMotorNoise;
+          sfs::setMotorNoise(state->model, *noiseSelection);
+        }});
 
-    setup.renderPanel = [state, feetSelection] {
+    setup.renderPanel = [state, feetSelection, floorSelection] {
       const auto& model = state->model;
       ImGui::Text("Feet in world: %s", feetLabel(model.feet));
       if (*feetSelection != model.feet) {
@@ -183,6 +219,23 @@ DemoScene makeSoftFootSimbiconScene()
             "Pending: %s -- press the host's Reset or Rebuild to apply",
             feetLabel(*feetSelection));
       }
+      if (model.floorAmplitude > 0.0) {
+        ImGui::Text(
+            "Floor: noisy 5 cm tiles, %.1f cm amplitude",
+            100.0 * model.floorAmplitude);
+      } else {
+        ImGui::Text("Floor: flat");
+      }
+      if (*floorSelection != model.floorAmplitude) {
+        ImGui::TextColored(
+            ImVec4(1.0f, 0.80f, 0.25f, 1.0f),
+            "Pending floor change -- press the host's Reset or Rebuild to "
+            "apply");
+      }
+      if (model.motorNoise > 0.0)
+        ImGui::Text("Motor noise: +/-%.0f%%", 100.0 * model.motorNoise);
+      else
+        ImGui::Text("Motor noise: off");
 
       ImGui::Separator();
 
@@ -207,16 +260,22 @@ DemoScene makeSoftFootSimbiconScene()
       ImGui::TextWrapped(
           "a/s push the pelvis forward/back, d/f push left/right (%.0f N for "
           "%d steps). 'r' restarts the biped in place, keeping the current "
-          "feet. 't' selects the other foot geometry, which needs a new world "
-          "and so takes effect on the host's Reset or Rebuild.\n\n"
+          "feet. 't' selects the other foot geometry and 'n' the noisy tile "
+          "floor; both need a new world and so take effect on the host's "
+          "Reset or Rebuild. 'm' toggles %.0f%% held motor noise live.\n\n"
           "Compare the two. Both foot types collide as the same rest-pose "
           "mesh with the same rest inertia; only the soft one deforms. Soft "
           "feet spread far more contact points (about 51 vs 16 over a "
-          "settled window, gate-enforced at 1.5x) and recover from larger "
-          "pushes (measured 18000 N soft vs 8000 N rigid, gate-asserted "
-          "soft >= rigid) -- both Jain/Liu 2011 results.",
+          "settled window, gate-enforced at 1.5x) -- that Jain/Liu 2011 "
+          "claim reproduces. Robust push recovery never shows a soft "
+          "advantage (ensemble-measured, rigid vs soft: 8000 vs 4000 N "
+          "clean, tied 4000 vs 4000 under 20%% motor noise, 6000 vs 2000 "
+          "on the 2 cm floor); the paper's soft-advantage ordering is an "
+          "open gap tracked in the parity matrix, and the gates publish "
+          "the measured curves.",
           sfs::kDefaultPushMagnitude,
-          sfs::kPushSteps);
+          sfs::kPushSteps,
+          100.0 * kDemoMotorNoise);
     };
 
     return setup;
