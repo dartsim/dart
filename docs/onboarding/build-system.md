@@ -633,12 +633,54 @@ adds those targets.
 
 **Purpose:** Cross-platform environment and dependency management using conda-forge packages.
 
+The workspace declares `requires-pixi = ">=0.78"`: older pixi releases refuse
+the manifest with an actionable error instead of failing on syntax they do not
+understand. Workspace metadata (`license`, `repository`, `documentation`)
+mirrors `[project.urls]` in `pyproject.toml`; keep the two in sync.
+
 ### Platforms Supported
 
 - `linux-64` - Linux x86_64
+- `linux-aarch64` - Linux ARM64
 - `osx-64` - macOS x86_64 (Intel)
 - `osx-arm64` - macOS ARM64 (Apple Silicon)
 - `win-64` - Windows x86_64
+- `linux-64-cuda` - linux-64 with the `__cuda=13` virtual package declared
+  (named platform entry; only `[feature.cuda]` selects it)
+
+### CUDA Virtual Platform
+
+The cuda environment resolves against the `linux-64-cuda` named platform, so
+the solver assumes a CUDA 13 driver (`__cuda=13`, the driver floor for the
+pinned CUDA 13.x toolchain). On machines without an NVIDIA driver, pixi
+**warns** but still solves, installs, and runs the environment; set
+`CONDA_OVERRIDE_CUDA=13` to assume the driver explicitly and silence the
+warning (CI does this for the GPU-less fork-PR fallback runner in
+`ci_cuda.yml`). `pixi update` on GPU-less machines needs no override: locking
+uses the declared platform virtual packages, not local detection.
+
+One-time migration note: a cuda environment installed before the platform
+rename makes `pixi run -e cuda ...` fail with "Cannot install environment
+'cuda': no platform supported by it matches the current system". Remove the
+stale prefix once (`rm -rf .pixi/envs/cuda`) and rerun.
+
+### Environments and Solve Groups
+
+`default`, `collision-reference`, and `cuda` share one solve group, so
+packages common to them always resolve to identical versions and
+`pixi update` re-solves them together. `gazebo` (standalone dependency set)
+and `py314-wheel` (isolated wheel toolchain) stay independent by design.
+
+### Pixi Build (deferred)
+
+pixi's source-build feature ("Pixi Build", preview since 2026-07, opt-in via
+`preview = ["pixi-build"]`) could eventually let DART publish itself as a
+source conda package via the `pixi-build-cmake` backend with
+`[workspace.build-variants]` pinning the CUDA compiler. It is deliberately
+**not** adopted: upstream reserves breaking changes while in preview. Revisit
+when prefix.dev declares it stable, `pixi-build-cmake` is proven on a
+comparable C++/CUDA project, and it does not conflict with the conda-forge
+feedstock flow.
 
 ### Pixi Tasks
 
@@ -650,7 +692,16 @@ pixi run config-debug    # Configure CMake (Debug)
 pixi run config-py       # Configure with Python bindings
 pixi run config-coverage # Configure with coverage
 pixi run config-install  # Configure for installation
+pixi run config-asan     # Configure with AddressSanitizer
 ```
+
+These tasks are thin wrappers over `scripts/cmake_config.py`, the single
+owner of the shared configure logic (compiler-launcher selection, CUDA arch
+detection, `DART_*_OVERRIDE` environment plumbing). Variant differences —
+launcher policy, flag sets, build directories — are documented in that
+script; `tests/test_cmake_config.py` locks the contract. The win-64 config
+tasks and the gazebo feature's `config-gz` keep their own definitions in
+`pixi.toml`.
 
 #### Build Tasks
 
@@ -729,7 +780,7 @@ TRACY_DPI_SCALE=1.5 pixi run tracy
 #### Utility Tasks
 
 ```bash
-pixi run clean           # Clean build artifacts
+pixi run clean           # Clean build artifacts and environments (keeps pixi.lock)
 pixi run install         # Install DART to conda prefix
 pixi run generate-stubs  # Generate Python stub files
 ```

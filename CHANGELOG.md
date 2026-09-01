@@ -438,6 +438,20 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Modernized the pixi workspace for current pixi: declared workspace
+  license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
+  floor, unified the default/collision-reference/cuda environments in one
+  solve group, kept `pixi.lock` out of `pixi run clean`, consolidated the six
+  Unix-family `config*` task bodies into `scripts/cmake_config.py`
+  (behavior-preserving and contract-tested), aligned CI on
+  `setup-pixi@v0.10.2`, and pinned the wheel-publishing pixi version.
+  ([#3469](https://github.com/dartsim/dart/pull/3469))
+- The pixi cuda environment now resolves against a `linux-64-cuda` platform
+  declaring the `__cuda=13` virtual package, so solves are GPU-aware;
+  driverless machines warn but keep working (`CONDA_OVERRIDE_CUDA=13`
+  silences the warning). Checkouts with a previously installed cuda
+  environment must remove it once: `rm -rf .pixi/envs/cuda`.
+  ([#3469](https://github.com/dartsim/dart/pull/3469))
 - Made the conda-forge `filament` package (1.76.x) the default Filament
   provider on every workspace platform: the Pixi environments install it
   directly, and `DART_BUILD_GUI` now defaults to `ON` everywhere, failing the
