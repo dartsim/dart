@@ -716,8 +716,9 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
             source_content = "\n".join(
                 line for _, line in profile_skill_lines(source_content, profile)
             )
-        mentioned = set(
-            re.findall(r"`[/$]?(dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
+        unprefixed = set(re.findall(r"`(dart-[a-z0-9-]+)(?: [^`]*)?`", source_content))
+        prefixed = set(
+            re.findall(r"`[/$](dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
         ) | set(
             re.findall(r"(?:^|[\s`(])[/$](dart-[a-z0-9-]+)\b", source_content, re.M)
         )
@@ -725,7 +726,10 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
             label = str(source_path.relative_to(repo_root))
         except ValueError:
             label = display_path(source_path)
-        for name in sorted(mentioned - expected - non_capability_names):
+        # Invocation-shaped mentions (/dart-x, $dart-x) are always workflow
+        # references; the non-capability allowlist covers only prose mentions.
+        unknown = (unprefixed - expected - non_capability_names) | (prefixed - expected)
+        for name in sorted(unknown):
             errors.append(f"{label}: unknown capability `{name}`")
     return errors
 

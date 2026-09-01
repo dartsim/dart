@@ -739,3 +739,24 @@ def test_unknown_capability_scan_allowlists_cmake_component_names(tmp_path):
     )
 
     assert module.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
+
+
+def test_unknown_capability_scan_flags_prefixed_component_names(tmp_path):
+    module = _load_module()
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (tmp_path / "dart").mkdir()
+    (tmp_path / "dart" / "CMakeLists.txt").write_text(
+        "set(components dart-gui-osg)\n", encoding="utf-8"
+    )
+    (commands / "dart-sample.md").write_text(
+        "Link `dart-gui-osg` in prose, but never run `/dart-gui-osg` or "
+        "`$dart-gui-osg` from `dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    errors = module.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    assert errors == [
+        ".claude/commands/dart-sample.md: unknown capability `dart-gui-osg`"
+    ]
