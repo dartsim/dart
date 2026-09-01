@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import shlex
@@ -292,12 +293,17 @@ def _read_capture_command_specs(
 
 
 def _gui_run_demos_available() -> bool:
-    """True when the dartpy Filament viewer entry point is built.
+    """True when the dartpy Filament viewer entry point is built and runnable.
 
     Non-GUI builds omit the viewer. Without the viewer the runner returns early,
     so tests that exercise the cycle/screenshot paths skip in that configuration.
+    On macOS the viewer currently aborts on hosted CI runners (macOS CI GUI
+    runtime bring-up pending), so those paths also skip there unless
+    DART_REQUIRE_VISUAL_E2E=1 forces them on a Metal-capable host.
     """
 
+    if sys.platform == "darwin" and not os.environ.get("DART_REQUIRE_VISUAL_E2E"):
+        return False
     try:
         import dartpy as dart
     except Exception:  # pragma: no cover - dartpy import failure

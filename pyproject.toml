@@ -55,10 +55,11 @@ build-type = "Release"
 BUILD_SHARED_LIBS = "OFF"
 DART_BUILD_DARTPY = "ON"
 DART_BUILD_GUI = "ON"
-# Plain `pip install` fetches the pinned upstream Filament archive so source
-# builds work without a packaged Filament; scripts/wheel_build.py overrides
-# this to the conda-forge `filament` package for official wheels (its shared
-# libraries are grafted during wheel repair).
+# Both plain `pip install` source builds and official wheels
+# (scripts/wheel_build.py) use the pinned upstream Filament archive: it is
+# self-sufficient without a packaged Filament, and its static libraries load
+# GL lazily — the conda-forge shared build's eager libglvnd linkage cannot be
+# vendored into manylinux wheels (see scripts/wheel_build.py).
 DART_USE_SYSTEM_FILAMENT = "OFF"
 DART_BUILD_COLLISION_REFERENCE_TESTS = "OFF"
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS = "OFF"
