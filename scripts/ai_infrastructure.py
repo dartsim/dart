@@ -2488,6 +2488,9 @@ def tool_versions() -> dict[str, str]:
         except PROBE_ERRORS:
             versions[tool] = "not found"
             continue
+        if result.returncode != 0:
+            versions[tool] = "not found"
+            continue
         output = (result.stdout or result.stderr).strip()
         versions[tool] = output.splitlines()[0] if output else "not found"
     versions["python"] = sys.version.split()[0]

@@ -2207,6 +2207,10 @@ def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
             raise subprocess.TimeoutExpired(cmd, 10)
         if "pixi" in cmd[0]:
             raise OSError("broken executable")
+        if "codex" in cmd[0]:
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="error: malformed configuration"
+            )
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(infra.subprocess, "run", fake_run)
