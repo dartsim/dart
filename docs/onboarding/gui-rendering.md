@@ -61,15 +61,14 @@ implementation.
 
 ## Build Options
 
-- `DART_BUILD_GUI=ON`: builds the official Filament-backed GUI library,
-  `dartsim` executable, and smoke-test target.
-  Defaults to `ON` on Linux x86_64 source builds where DART can fetch the
-  pinned Filament archive; other platforms need an explicit Filament install or
-  `Filament_ROOT`.
-- `DART_USE_SYSTEM_FILAMENT=ON`: discovers an installed Filament tree, usually
-  through `Filament_ROOT`.
-- `DART_FETCH_FILAMENT=ON`: fetches the pinned Filament archive for supported
-  platforms when no packaged Filament install is available.
+- `DART_BUILD_GUI`: builds the official Filament-backed GUI library, `dartsim`
+  executable, and smoke-test target. Defaults to `ON` on every platform; the
+  configure fails when Filament (or another GUI dependency) is unavailable, so
+  pass `OFF` explicitly for headless builds.
+- `DART_USE_SYSTEM_FILAMENT`: `ON` (default) discovers a packaged Filament —
+  the conda-forge `filament` package (installed by the Pixi environments on
+  every workspace platform) or `Filament_ROOT` pointing at a Filament install
+  tree; `OFF` fetches the pinned upstream Filament archive.
 - `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`: registers bounded headless
   screenshot smoke tests for the DART GUI executable.
 - `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`: links the opt-in memory-layout

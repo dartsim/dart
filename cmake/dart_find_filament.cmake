@@ -1,18 +1,18 @@
-# Find a Filament install tree for the experimental Filament GUI example.
-#
-# This module accepts Filament_ROOT or FILAMENT_ROOT and creates:
+# Find Filament for the DART GUI and create:
 #   Filament::filament
 #   Filament::matc
 #
-# Upstream Filament release archives do not currently ship CMake package files,
-# so this finder also supports the archive layout:
+# The preferred provider is the conda-forge `filament` package, whose CMake
+# package config (FilamentConfig.cmake) already defines both targets; the
+# CONFIG-first find below picks it up from the environment prefix.
+#
+# Upstream Filament release archives do not ship CMake package files, so this
+# finder also accepts Filament_ROOT or FILAMENT_ROOT pointing at the archive
+# layout:
 #   include/
 #   lib/<arch>/libfilament.a
 #   bin/matc
-#
-# The planned conda-forge recipe splits build artifacts into a `filament-static`
-# development output and a `filament` tool output. Installing `filament-static`
-# should make include/, lib/, and bin/matc visible from the same prefix.
+# including the libc++/libc++abi link handling those upstream binaries need.
 
 include(FindPackageHandleStandardArgs)
 
@@ -66,8 +66,13 @@ foreach(
   _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
 endforeach()
 
-find_package(filament CONFIG QUIET)
-find_package(Filament CONFIG QUIET)
+# Skip the packaged-config search when DART explicitly selects the fetched
+# archive (DART_USE_SYSTEM_FILAMENT=OFF): a conda environment on the search
+# path could otherwise shadow the Filament_ROOT tree this finder should use.
+if(NOT DEFINED DART_USE_SYSTEM_FILAMENT OR DART_USE_SYSTEM_FILAMENT)
+  find_package(filament CONFIG QUIET)
+  find_package(Filament CONFIG QUIET)
+endif()
 
 if(TARGET filament::filament AND NOT TARGET Filament::filament)
   add_library(Filament::filament ALIAS filament::filament)
@@ -82,6 +87,20 @@ if(TARGET matc AND NOT TARGET Filament::matc)
   add_executable(Filament::matc ALIAS matc)
 endif()
 
+# When explicit roots are given they take precedence over every default search
+# location (CMAKE_PREFIX_PATH/CMAKE_LIBRARY_PATH rank above HINTS, so e.g. a
+# conda environment on the search path could otherwise shadow Filament_ROOT):
+# probe the roots exclusively first, then fall back to the regular search for
+# rootless setups. The second call is a no-op once the cache variable is set.
+if(_dart_filament_roots)
+  find_path(
+    Filament_INCLUDE_DIR
+    NAMES filament/Engine.h
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH
+  )
+endif()
 find_path(
   Filament_INCLUDE_DIR
   NAMES filament/Engine.h
@@ -125,6 +144,15 @@ foreach(
     shaders
 )
   string(REPLACE "-" "_" _lib_var "${_lib}")
+  if(_dart_filament_roots)
+    find_library(
+      Filament_${_lib_var}_LIBRARY
+      NAMES ${_lib}
+      PATHS ${_dart_filament_roots}
+      PATH_SUFFIXES ${_dart_filament_library_suffixes}
+      NO_DEFAULT_PATH
+    )
+  endif()
   find_library(
     Filament_${_lib_var}_LIBRARY
     NAMES ${_lib}
@@ -136,6 +164,15 @@ foreach(
   endif()
 endforeach()
 
+if(_dart_filament_roots)
+  find_library(
+    Filament_zstd_LIBRARY
+    NAMES zstd
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES ${_dart_filament_library_suffixes}
+    NO_DEFAULT_PATH
+  )
+endif()
 find_library(
   Filament_zstd_LIBRARY
   NAMES zstd
@@ -222,6 +259,15 @@ if(_dart_filament_requires_libcxx)
   endif()
 endif()
 
+if(_dart_filament_roots)
+  find_program(
+    Filament_MATC_EXECUTABLE
+    NAMES matc matc.exe
+    PATHS ${_dart_filament_roots}
+    PATH_SUFFIXES bin
+    NO_DEFAULT_PATH
+  )
+endif()
 find_program(
   Filament_MATC_EXECUTABLE
   NAMES matc matc.exe
@@ -260,7 +306,7 @@ else()
     Filament
     REQUIRED_VARS ${_dart_filament_required_vars}
     REASON_FAILURE_MESSAGE
-      "Install a Filament development package such as conda-forge filament-static, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
+      "Install a Filament development package such as conda-forge `filament`, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
   )
 endif()
 

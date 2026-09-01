@@ -498,40 +498,27 @@ endif()
 # Filament GUI
 if(DART_BUILD_GUI)
   if(DART_USE_SYSTEM_FILAMENT)
-    set(_dart_filament_find_quietly_was_defined FALSE)
-    if(DEFINED Filament_FIND_QUIETLY)
-      set(_dart_filament_find_quietly_was_defined TRUE)
-      set(_dart_filament_find_quietly_saved "${Filament_FIND_QUIETLY}")
-    endif()
-    if(DART_FETCH_FILAMENT)
-      set(Filament_FIND_QUIETLY TRUE)
-    endif()
     dart_find_package(Filament)
-    if(_dart_filament_find_quietly_was_defined)
-      set(Filament_FIND_QUIETLY "${_dart_filament_find_quietly_saved}")
-    else()
-      unset(Filament_FIND_QUIETLY)
-    endif()
-    unset(_dart_filament_find_quietly_saved)
-    unset(_dart_filament_find_quietly_was_defined)
-  elseif(NOT DART_FETCH_FILAMENT)
-    message(
-      FATAL_ERROR
-      "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set."
-    )
-  endif()
-
-  if(NOT Filament_FOUND AND DART_FETCH_FILAMENT)
-    message(
-      STATUS
-      "Filament was not found in system paths; fetching Filament ${DART_FILAMENT_VERSION}"
-    )
-    if(NOT DART_FILAMENT_VERSION STREQUAL "1.71.3")
+    if(NOT Filament_FOUND)
       message(
         FATAL_ERROR
-        "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version."
+        "Filament GUI was requested (DART_BUILD_GUI=ON) but no packaged "
+        "Filament was found. Install the conda-forge `filament` package, set "
+        "Filament_ROOT to a Filament install tree that contains include/, "
+        "lib/, and bin/matc, configure with -DDART_USE_SYSTEM_FILAMENT=OFF to "
+        "fetch the pinned upstream archive, or disable the GUI with "
+        "-DDART_BUILD_GUI=OFF."
       )
     endif()
+  else()
+    # Fetch the pinned upstream Filament release archive. Keep this pin inside
+    # the conda-forge `filament` window pinned in pixi.toml so both providers
+    # tell one version story; update the per-platform hashes when bumping.
+    set(_dart_filament_fetch_version "1.76.0")
+    message(
+      STATUS
+      "DART_USE_SYSTEM_FILAMENT=OFF; fetching Filament ${_dart_filament_fetch_version}"
+    )
 
     set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -569,7 +556,7 @@ if(DART_BUILD_GUI)
       set(_dart_filament_archive_platform "linux")
       set(
         _dart_filament_archive_hash
-        "d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e"
+        "08f96fbce1432d7a5faf34b3e96a186639b89663f8a215e6d2c36ad6cb73fa4a"
       )
     elseif(
       CMAKE_SYSTEM_NAME STREQUAL "Linux"
@@ -578,13 +565,13 @@ if(DART_BUILD_GUI)
       set(_dart_filament_archive_platform "arm-linux")
       set(
         _dart_filament_archive_hash
-        "048b5bffffcafcec7fcfa718fe65ef512514c65c00ed954e7bf340e003c146c2"
+        "e93995247a6064838290b40249eeddabbf1cc99b0be05f149675ec652b99bd35"
       )
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       set(_dart_filament_archive_platform "mac")
       set(
         _dart_filament_archive_hash
-        "d8f253e262d731fb60f8be7d5ae6af76651bdc597d564171790bc78ac3696e04"
+        "6f067ac0931b305c32be108679cf5b0c59a3fb51753d0c64d60d290b4f28b2db"
       )
     elseif(
       CMAKE_SYSTEM_NAME STREQUAL "Windows"
@@ -593,20 +580,20 @@ if(DART_BUILD_GUI)
       set(_dart_filament_archive_platform "windows")
       set(
         _dart_filament_archive_hash
-        "67c08eb259aec39061b02b06f56bf7910ab78c97a95da03b1f83b86b61d1d7e2"
+        "1f58ebac557dd9ce9551ad67cede02db962c31a8c6abc9c87f74dc7ee50b0098"
       )
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
       message(
         FATAL_ERROR
-        "DART_FETCH_FILAMENT has a pinned Windows Filament archive only for "
-        "x64 targets, but the configured target architecture is "
-        "'${_dart_filament_target_arch}'. Provide Filament_ROOT for this "
-        "target architecture or disable DART_BUILD_GUI."
+        "DART_USE_SYSTEM_FILAMENT=OFF has a pinned Windows Filament archive "
+        "only for x64 targets, but the configured target architecture is "
+        "'${_dart_filament_target_arch}'. Provide a packaged Filament or "
+        "Filament_ROOT for this target architecture, or disable DART_BUILD_GUI."
       )
     else()
       message(
         FATAL_ERROR
-        "DART_FETCH_FILAMENT does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide Filament_ROOT or disable DART_BUILD_GUI."
+        "DART_USE_SYSTEM_FILAMENT=OFF does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide a packaged Filament or Filament_ROOT, or disable DART_BUILD_GUI."
       )
     endif()
 
@@ -616,7 +603,7 @@ if(DART_BUILD_GUI)
       FetchContent_Populate(
         filament_prebuilt
         URL
-          "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
+          "https://github.com/google/filament/releases/download/v${_dart_filament_fetch_version}/filament-v${_dart_filament_fetch_version}-${_dart_filament_archive_platform}.tgz"
         URL_HASH SHA256=${_dart_filament_archive_hash}
         DOWNLOAD_EXTRACT_TIMESTAMP
         TRUE
@@ -634,20 +621,21 @@ if(DART_BUILD_GUI)
       "Fetched Filament install tree"
       FORCE
     )
+    unset(_dart_filament_fetch_version)
     unset(_dart_filament_archive_hash)
     unset(_dart_filament_archive_platform)
     unset(_dart_filament_arch_candidate)
     unset(_dart_filament_target_arch)
     unset(_dart_filament_target_arch_lower)
+    unset(_dart_fetched_filament_root)
 
     dart_find_package(Filament)
-  endif()
-
-  if(NOT Filament_FOUND)
-    message(
-      FATAL_ERROR
-      "Filament GUI was requested (DART_BUILD_GUI=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc."
-    )
+    if(NOT Filament_FOUND)
+      message(
+        FATAL_ERROR
+        "The fetched Filament archive did not provide a usable install tree (expected include/, lib/, and bin/matc under Filament_ROOT=${Filament_ROOT})."
+      )
+    endif()
   endif()
 
   find_package(glfw3 CONFIG REQUIRED)

@@ -160,7 +160,6 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
-   DART_FETCH_FILAMENT_OVERRIDE=ON pixi run config
    ```
 
    On Windows, Pixi configure tasks use the Visual Studio multi-config
@@ -170,11 +169,14 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    but older Visual Studio generators are rejected by CMake.
 
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
-   `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
-   Pixi GUI build is enabled on Linux x86_64 where the pinned Filament archive
-   is fetched by default; other supported platforms should provide
-   `Filament_ROOT`, set `DART_FETCH_FILAMENT_OVERRIDE=ON`, or set
-   `DART_BUILD_GUI_OVERRIDE=OFF` for a headless-only build.
+   `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The GUI builds
+   by default on every platform: the Pixi environments install the conda-forge
+   `filament` package, so the default packaged-Filament discovery
+   (`DART_USE_SYSTEM_FILAMENT=ON`) just works; set
+   `DART_BUILD_GUI_OVERRIDE=OFF` for a headless-only build. Outside Pixi,
+   install conda-forge `filament`, point `Filament_ROOT` at a Filament install
+   tree, or set `DART_USE_SYSTEM_FILAMENT=OFF` to fetch the pinned upstream
+   archive.
 
 3. Build and test:
 
@@ -327,11 +329,12 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI` - Enable the Filament-backed GUI library, `dartsim`
-  executable, and smoke-test target. Defaults to `ON` on Linux x86_64 source
-  builds where the pinned Filament archive is supported, and `OFF` elsewhere
-  unless explicitly enabled.
-- `DART_USE_SYSTEM_FILAMENT` - Discover Filament from an installed package or `Filament_ROOT`
-- `DART_FETCH_FILAMENT` - Fetch a pinned Filament archive for supported platforms when no packaged Filament install is available
+  executable, and smoke-test target. Defaults to `ON`; the configure fails
+  when Filament (or another GUI dependency) is unavailable, so disable it
+  explicitly for headless builds.
+- `DART_USE_SYSTEM_FILAMENT` - `ON` (default) discovers a packaged Filament
+  (the conda-forge `filament` package or `Filament_ROOT`); `OFF` fetches the
+  pinned upstream Filament archive instead.
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the maintained example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 - `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS` - Link the memory-layout diagnostics

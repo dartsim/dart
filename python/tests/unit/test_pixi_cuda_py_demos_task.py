@@ -41,8 +41,12 @@ def test_config_py_resets_stale_cuda_compiler_cache_before_cmake() -> None:
     assert "CMAKE_C_COMPILER:*)" in script
     assert "CMAKE_CXX_COMPILER:*)" in script
     assert "CMAKE_CUDA_COMPILER:*)" in script
-    assert "CMAKE_CUDA_HOST_COMPILER:*)" in script
     assert "CMAKE_CUDA_COMPILER_LAUNCHER:*)" in script
+    # The guard pins nvcc to the conda toolkit and compares the cached C/C++
+    # compilers against the active conda toolchain (CC/CXX) when set.
+    assert '[ "${cached_cuda_compiler}" != "${CONDA_PREFIX}/bin/nvcc" ]' in script
+    assert '[ "${cached_c_compiler}" != "${CC}" ]' in script
+    assert '[ "${cached_cxx_compiler}" != "${CXX}" ]' in script
     assert '[ -z "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]' in script
     assert '[ -n "${cached_cuda_compiler_launcher}" ]' in script
     assert 'rm -f "${CMAKE_CACHE}"' in script
