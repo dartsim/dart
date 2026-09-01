@@ -768,3 +768,29 @@ def test_unknown_capability_scan_flags_prefixed_component_names(tmp_path):
     assert errors == [
         ".claude/commands/dart-sample.md: unknown capability `dart-gui-osg`"
     ]
+
+
+def test_component_allowlist_does_not_mask_current_capabilities(tmp_path):
+    module = _load_module()
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (tmp_path / "dart").mkdir()
+    (tmp_path / "dart" / "CMakeLists.txt").write_text(
+        "set(components dart-collide)\n", encoding="utf-8"
+    )
+    (commands / "dart-sample.md").write_text(
+        "Use `dart-collide` and `/dart-collide` from `dart-sample`.\n",
+        encoding="utf-8",
+    )
+
+    with_capability = module.unknown_capability_mention_errors(
+        tmp_path, {"dart-sample", "dart-collide"}
+    )
+    without_capability = module.unknown_capability_mention_errors(
+        tmp_path, {"dart-sample"}
+    )
+
+    assert with_capability == []
+    assert without_capability == [
+        ".claude/commands/dart-sample.md: unknown capability `dart-collide`"
+    ]

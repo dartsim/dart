@@ -702,6 +702,12 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
         non_capability_names |= set(
             re.findall(r"dart-[a-z0-9-]+", components_path.read_text(encoding="utf-8"))
         )
+    # Capability identity wins over component identity: a name that is a
+    # current capability is never allowlisted, so component-name collisions
+    # cannot mask capability validation. For a retired capability whose name
+    # still matches a component, only invocation-shaped references (/dart-x,
+    # $dart-x) remain enforceable; prose mentions read as the component.
+    non_capability_names -= expected
     profile = detect_branch_profile(repo_root)
     errors: list[str] = []
     source_paths = sorted(
