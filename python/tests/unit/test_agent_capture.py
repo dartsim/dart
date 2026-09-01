@@ -182,6 +182,13 @@ def _require_visual_backend() -> None:
 def _require_usable_display() -> None:
     import ctypes.util
 
+    if sys.platform == "darwin":
+        # macOS CI GUI runtime bring-up pending: the Filament renderer aborts
+        # on hosted macOS runners. DART_REQUIRE_VISUAL_E2E=1 forces the run on
+        # a Metal-capable host.
+        if os.environ.get("DART_REQUIRE_VISUAL_E2E") == "1":
+            return
+        pytest.skip("macOS CI GUI runtime bring-up pending")
     if not sys.platform.startswith("linux"):
         return
     if not os.environ.get("DISPLAY"):
