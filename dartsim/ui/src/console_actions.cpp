@@ -911,6 +911,13 @@ ConsoleCommandResult tokenizeConsoleCommand(
   bool tokenActive = false;
   for (const char c : input) {
     if (escaping) {
+      // Backslash escapes quotes, backslashes, and whitespace; any other
+      // pair stays literal so Windows paths such as "C:\Users\me" survive
+      // console arguments instead of losing their separators.
+      if (c != '\\' && c != '\'' && c != '"'
+          && std::isspace(static_cast<unsigned char>(c)) == 0) {
+        token.push_back('\\');
+      }
       token.push_back(c);
       escaping = false;
       tokenActive = true;
