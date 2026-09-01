@@ -36,9 +36,8 @@ mutations: $ARGUMENTS
 
 - `status`: report-only; no mutations.
 - `mode=manage` (default): run the full loop below to the next terminal state.
-- `mode=merge`: maintainer-only; merges happen only under this mode. Complete
-  the step 5 pre-merge gate and merge only after explicit maintainer/user
-  approval for the merge.
+- `mode=merge`: maintainer-only; merges happen only under this mode, through
+  the step 5 pre-merge gate and explicit maintainer/user approval to merge.
 
 ## Invocation Contract
 
@@ -83,8 +82,9 @@ gh pr checks <PR_NUMBER>
 
 1. Confirm scope and policy:
    - Check that the base branch, title, and PR template are correct, and that
-     the branch-matching DART 6.x release milestone is set; if it is missing,
-     set it only after explicit maintainer/user approval.
+     the base-matching milestone is set (`DART 7.0` for a `main` base, the
+     branch-matching DART 6.x release milestone for a `release-*` base); if
+     it is missing, set it only after explicit maintainer/user approval.
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
