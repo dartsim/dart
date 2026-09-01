@@ -106,11 +106,15 @@ if(TARGET matc AND NOT TARGET Filament::matc)
   add_executable(Filament::matc ALIAS matc)
 endif()
 
-# When explicit roots are given they take precedence over every default search
-# location (CMAKE_PREFIX_PATH/CMAKE_LIBRARY_PATH rank above HINTS, so e.g. a
-# conda environment on the search path could otherwise shadow Filament_ROOT):
-# probe the roots exclusively first, then fall back to the regular search for
-# rootless setups. The second call is a no-op once the cache variable is set.
+# When explicit roots are given, every Filament-owned component (headers, the
+# Filament libraries, and matc) is searched in the roots exclusively: default
+# locations (CMAKE_PREFIX_PATH/CMAKE_LIBRARY_PATH/PATH) rank above HINTS, so a
+# conda environment on the search path could otherwise shadow the requested
+# tree — or, for a component missing from an incomplete root, silently mix
+# installations. Components missing from the roots therefore stay NOTFOUND and
+# fail the package check below instead of falling through. Support libraries
+# that Filament does not ship in every tree (zstd, libc++/libc++abi) keep a
+# root-preferred search with the regular fallback.
 if(_dart_filament_roots)
   find_path(
     Filament_INCLUDE_DIR
@@ -119,13 +123,9 @@ if(_dart_filament_roots)
     PATH_SUFFIXES include
     NO_DEFAULT_PATH
   )
+else()
+  find_path(Filament_INCLUDE_DIR NAMES filament/Engine.h PATH_SUFFIXES include)
 endif()
-find_path(
-  Filament_INCLUDE_DIR
-  NAMES filament/Engine.h
-  HINTS ${_dart_filament_roots}
-  PATH_SUFFIXES include
-)
 
 set(Filament_LIBRARIES)
 
@@ -171,18 +171,20 @@ foreach(
       PATH_SUFFIXES ${_dart_filament_library_suffixes}
       NO_DEFAULT_PATH
     )
+  else()
+    find_library(
+      Filament_${_lib_var}_LIBRARY
+      NAMES ${_lib}
+      PATH_SUFFIXES ${_dart_filament_library_suffixes}
+    )
   endif()
-  find_library(
-    Filament_${_lib_var}_LIBRARY
-    NAMES ${_lib}
-    HINTS ${_dart_filament_roots}
-    PATH_SUFFIXES ${_dart_filament_library_suffixes}
-  )
   if(Filament_${_lib_var}_LIBRARY)
     list(APPEND Filament_LIBRARIES "${Filament_${_lib_var}_LIBRARY}")
   endif()
 endforeach()
 
+# zstd is a support library: prefer the copy bundled with the roots, but allow
+# the regular search to provide it for trees that do not ship one.
 if(_dart_filament_roots)
   find_library(
     Filament_zstd_LIBRARY
@@ -286,13 +288,9 @@ if(_dart_filament_roots)
     PATH_SUFFIXES bin
     NO_DEFAULT_PATH
   )
+else()
+  find_program(Filament_MATC_EXECUTABLE NAMES matc matc.exe PATH_SUFFIXES bin)
 endif()
-find_program(
-  Filament_MATC_EXECUTABLE
-  NAMES matc matc.exe
-  HINTS ${_dart_filament_roots}
-  PATH_SUFFIXES bin
-)
 
 set(_dart_filament_required_vars)
 if(NOT TARGET Filament::filament)
