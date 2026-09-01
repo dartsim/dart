@@ -34,6 +34,7 @@ console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=5.0.1,<6"
 entt = ">=4.0.0,<5"
+filament = ">=1.76.0,<1.77"
 foonathan-memory = ">=0.7.4,<0.8"
 fmt = ">=12.1.0,<13"
 gersemi = ">=0.24.0,<0.25"
@@ -1129,7 +1130,7 @@ test-dart-gui-smoke = { cmd = [
   "--pixi-smoke",
 ], depends-on = [
   "config",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON" } }
 
 test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
@@ -1218,7 +1219,7 @@ dartsim = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
   "dartsim",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 # Diagnostic (not part of the default test suite): render the dartsim scene
 # headlessly to both the swapchain and an offscreen Filament RenderTarget and
@@ -1235,7 +1236,7 @@ gui-offscreen-parity = { cmd = [
   "--backend",
   "opengl",
   "--demo",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_GUI_OFFSCREEN_PARITY = "1", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_GUI_OFFSCREEN_PARITY = "1", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 # Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
 # switchable scenes). Builds against the fetched ImGui docking branch
@@ -2056,9 +2057,6 @@ libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
 vulkan-headers = ">=1.3.231.1,<2"
-libcxx = ">=22.1.7,<23"
-libcxxabi = ">=22.1.7,<23"
-libcxx-devel = ">=22.1.7,<23"
 
 ################################################################################
 # osx-64
@@ -2588,7 +2586,6 @@ DART_BUILD_DARTPY_OVERRIDE = "OFF"
 DART_BUILD_GUI_OVERRIDE = "OFF"
 DART_BUILD_EXAMPLES_OVERRIDE = "OFF"
 DART_BUILD_TUTORIALS_OVERRIDE = "OFF"
-DART_FETCH_FILAMENT_OVERRIDE = "OFF"
 
 [feature.cuda.dependencies]
 cuda-version = ">=13.3,<14"
@@ -2751,8 +2748,9 @@ test-gz = { cmd = """
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
-# - Wheel builds enable the Filament-backed dartpy.gui surface and fetch the
-#   pinned upstream Filament SDK when a packaged Filament provider is not used.
+# - Wheel builds enable the Filament-backed dartpy.gui surface against the
+#   conda-forge `filament` package from the wheel environment; the repair step
+#   (auditwheel/delocate/delvewheel) grafts its shared libraries into the wheel.
 
 #======================
 # Feature: Python 3.14 Wheel Building

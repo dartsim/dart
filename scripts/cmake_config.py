@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import platform
 import shutil
 import subprocess
 import sys
@@ -38,10 +37,6 @@ class Tools:
     """Injectable process/system externals (faked in tests)."""
 
     which: Callable[[str], str | None] = shutil.which
-    uname: Callable[[], tuple[str, str]] = lambda: (
-        platform.system(),
-        platform.machine(),
-    )
     detect_cuda_archs: Callable[[], str | None] = lambda: _detect_cuda_archs_impl()
     nanobind_cmake_dir: Callable[[], str] = lambda: _nanobind_cmake_dir_impl()
     host_linker_defs: Callable[[], list[str]] = cmake_host_linker_flags
@@ -111,14 +106,6 @@ def parse_cuda_archs(raw: str) -> str | None:
     if not values:
         return None
     return ";".join(sorted(set(values)))
-
-
-def filament_platform_default(tools: Tools) -> str:
-    """ON only on Linux x86_64 (the platforms with prebuilt Filament)."""
-    system, machine = tools.uname()
-    if system == "Linux" and machine in ("x86_64", "amd64"):
-        return "ON"
-    return "OFF"
 
 
 def apply_sccache_gha_disabled(
@@ -215,8 +202,7 @@ def plan_config(opts: argparse.Namespace, environ: dict, tools: Tools) -> Config
     collision_benchmarks = _override(
         environ, "DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE", "OFF"
     )
-    filament_default = filament_platform_default(tools)
-    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", filament_default)
+    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", "ON")
     examples = _override(environ, "DART_BUILD_EXAMPLES_OVERRIDE", "ON")
     demos_memory = _override(
         environ, "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE", "OFF"
@@ -229,10 +215,6 @@ def plan_config(opts: argparse.Namespace, environ: dict, tools: Tools) -> Config
     mold = _override(environ, "DART_USE_MOLD_OVERRIDE", "OFF")
     system_imgui = _override(
         environ, "DART_USE_SYSTEM_IMGUI_OVERRIDE", opts.use_system_imgui
-    )
-    system_filament = _override(environ, "DART_USE_SYSTEM_FILAMENT_OVERRIDE", "ON")
-    fetch_filament = _override(
-        environ, "DART_FETCH_FILAMENT_OVERRIDE", filament_default
     )
     gui_smoke = _override(
         environ, "DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE", "OFF"
@@ -284,8 +266,6 @@ def plan_config(opts: argparse.Namespace, environ: dict, tools: Tools) -> Config
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         f"-DDART_USE_SYSTEM_IMGUI={system_imgui}",
-        f"-DDART_USE_SYSTEM_FILAMENT={system_filament}",
-        f"-DDART_FETCH_FILAMENT={fetch_filament}",
         f"-DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS={gui_smoke}",
         "-DDART_USE_SYSTEM_NANOBIND=OFF",
         "-DDART_USE_SYSTEM_TRACY=OFF",
@@ -320,8 +300,7 @@ def plan_config_debug(
     collision_benchmarks = _override(
         environ, "DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE", "OFF"
     )
-    filament_default = filament_platform_default(tools)
-    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", filament_default)
+    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", "ON")
     examples = _override(environ, "DART_BUILD_EXAMPLES_OVERRIDE", "ON")
     demos_memory = _override(
         environ, "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE", "OFF"
@@ -330,10 +309,6 @@ def plan_config_debug(
     tutorials = _override(environ, "DART_BUILD_TUTORIALS_OVERRIDE", "ON")
     tests = _override(environ, "DART_BUILD_TESTS_OVERRIDE", "ON")
     system_imgui = _override(environ, "DART_USE_SYSTEM_IMGUI_OVERRIDE", "ON")
-    system_filament = _override(environ, "DART_USE_SYSTEM_FILAMENT_OVERRIDE", "ON")
-    fetch_filament = _override(
-        environ, "DART_FETCH_FILAMENT_OVERRIDE", filament_default
-    )
     gui_smoke = _override(
         environ, "DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE", "OFF"
     )
@@ -382,8 +357,6 @@ def plan_config_debug(
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         f"-DDART_USE_SYSTEM_IMGUI={system_imgui}",
-        f"-DDART_USE_SYSTEM_FILAMENT={system_filament}",
-        f"-DDART_FETCH_FILAMENT={fetch_filament}",
         f"-DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS={gui_smoke}",
         "-DDART_USE_SYSTEM_NANOBIND=OFF",
         "-DDART_USE_SYSTEM_TRACY=OFF",
@@ -399,7 +372,6 @@ _CUDA_CACHE_KEYS = {
     "CMAKE_C_COMPILER": "c_compiler",
     "CMAKE_CXX_COMPILER": "cxx_compiler",
     "CMAKE_CUDA_COMPILER": "cuda_compiler",
-    "CMAKE_CUDA_HOST_COMPILER": "cuda_host_compiler",
     "CMAKE_CUDA_COMPILER_LAUNCHER": "cuda_compiler_launcher",
 }
 
@@ -407,13 +379,13 @@ _CUDA_CACHE_KEYS = {
 def _cuda_cache_reset_needed(
     cache_lines: list[str],
     environ: dict,
-    host_cc: str,
-    host_cxx: str,
     conda_prefix: str,
 ) -> bool:
-    """CUDA compiler-change guard: a build dir configured with different
-    compilers (or a launcher that is now unset) must drop its cache metadata
-    so CMake does not mix toolchains."""
+    """CUDA compiler-change guard: reset build dirs whose cached compilers no
+    longer match the current toolchain (nvcc pinned to the conda toolkit; the
+    C/C++ compilers compared against the active CC/CXX when set, which also
+    catches dirs configured by the retired system-host-compiler workaround),
+    or whose cached CUDA launcher is set while the environment's is not."""
     cached = {v: "" for v in _CUDA_CACHE_KEYS.values()}
     for line in cache_lines:
         key, sep, value = line.partition("=")
@@ -423,13 +395,11 @@ def _cuda_cache_reset_needed(
         slot = _CUDA_CACHE_KEYS.get(name)
         if slot is not None:
             cached[slot] = value
-    if cached["c_compiler"] != host_cc:
-        return True
-    if cached["cxx_compiler"] != host_cxx:
-        return True
     if cached["cuda_compiler"] != f"{conda_prefix}/bin/nvcc":
         return True
-    if cached["cuda_host_compiler"] and cached["cuda_host_compiler"] != host_cxx:
+    if environ.get("CC") and cached["c_compiler"] != environ["CC"]:
+        return True
+    if environ.get("CXX") and cached["cxx_compiler"] != environ["CXX"]:
         return True
     if (
         not environ.get("CMAKE_CUDA_COMPILER_LAUNCHER")
@@ -477,40 +447,22 @@ def plan_config_py(opts: argparse.Namespace, environ: dict, tools: Tools) -> Con
     remove_paths: list[str] = []
     messages: list[str] = []
     if cuda == "ON":
-        # Host compiler for the CUDA-enabled dartpy + GUI build. The prebuilt
-        # Filament libraries reference glibc symbols newer than the conda
-        # portability sysroot (glibc 2.28) exports, so the conda toolchain
-        # cannot link the GUI. Build C/C++ (and the final link) with the host
-        # system compiler, while CUDA keeps the conda nvcc; nvcc's host pass
-        # uses the same system compiler (CMAKE_CUDA_HOST_COMPILER) so C, C++,
-        # and the CUDA host pass all target the same host glibc.
-        # CMAKE_CUDA_RUNTIME_LIBRARY=Shared avoids the static runtime's conda
-        # sysroot deps. Overridable via DART_CUDA_HOST_CC / DART_CUDA_HOST_CXX.
-        host_cc = _override(environ, "DART_CUDA_HOST_CC", "/usr/bin/cc")
-        host_cxx = _override(environ, "DART_CUDA_HOST_CXX", "/usr/bin/c++")
-        environ["CC"] = host_cc
-        environ["CXX"] = host_cxx
-        # The conda libc++ (which Filament needs) lives in the conda lib dir;
-        # add it as link-time search path and runtime rpath on every C++ link.
-        compiler_defs = [
-            f"-DCMAKE_C_COMPILER={host_cc}",
-            f"-DCMAKE_CXX_COMPILER={host_cxx}",
-            f"-DCMAKE_CUDA_COMPILER={conda_prefix}/bin/nvcc",
-            f"-DCMAKE_CUDA_HOST_COMPILER={host_cxx}",
-            "-DCMAKE_CUDA_RUNTIME_LIBRARY=Shared",
-            f"-DCMAKE_CXX_STANDARD_LIBRARIES=-Wl,-L,{conda_prefix}/lib,-rpath,{conda_prefix}/lib",
-        ]
-        # nvcc reports the conda CUDA toolkit's sysroot lib dirs as implicit
-        # link dirs, so -lm/-lrt could resolve to conda sysroot linker
-        # scripts; prepend the host multiarch lib dir so host glibc wins.
-        host_libdir = _override(
-            environ, "DART_CUDA_HOST_LIBDIR", "/usr/lib/x86_64-linux-gnu"
-        )
-        environ["LDFLAGS"] = f"-L{host_libdir} " + environ.get("LDFLAGS", "")
+        # CUDA toolchain for the CUDA-enabled dartpy + GUI build. Pin nvcc to
+        # the conda toolkit so CMake does not pick up an older system nvcc;
+        # the conda compiler (activated by the cuda feature) builds the C/C++
+        # sources and the final link, and nvcc's host pass follows it via the
+        # env's NVCC_PREPEND_FLAGS. The packaged conda-forge Filament is built
+        # against the conda sysroot, so the system-host-compiler/glibc
+        # workaround that used to live here is unnecessary. The cache guard
+        # resets build dirs whose cached compilers no longer match the current
+        # toolchain (including dirs configured by the retired workaround) and
+        # clears a stale CUDA launcher (sccache can leave nvcc/fatbinary
+        # without its generated PTX input). No effect on non-CUDA builds.
+        compiler_defs = [f"-DCMAKE_CUDA_COMPILER={conda_prefix}/bin/nvcc"]
         cache_path = f"{build_dir}/CMakeCache.txt"
         cache_lines = tools.read_text_lines(cache_path)
         if cache_lines is not None and _cuda_cache_reset_needed(
-            cache_lines, environ, host_cc, host_cxx, conda_prefix
+            cache_lines, environ, conda_prefix
         ):
             messages.append(
                 f"CMake compiler cache changed for {build_dir}; "
@@ -592,11 +544,7 @@ def plan_config_coverage(
         environ, "DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE", "OFF"
     )
     disable_cache = _override(environ, "DART_DISABLE_COMPILER_CACHE", "OFF")
-    filament_default = filament_platform_default(tools)
-    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", filament_default)
-    fetch_filament = _override(
-        environ, "DART_FETCH_FILAMENT_OVERRIDE", filament_default
-    )
+    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", "ON")
     forced = apply_sccache_gha_disabled(environ, unset_cuda_launcher=False)
     if forced:
         disable_cache = forced
@@ -624,7 +572,6 @@ def plan_config_coverage(
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",
-        f"-DDART_FETCH_FILAMENT={fetch_filament}",
         "-DDART_USE_SYSTEM_TRACY=OFF",
         f"-DDART_VERBOSE={verbose}",
         *host_defs,
@@ -649,11 +596,7 @@ def plan_config_install(
     """
     verbose = _require_env(environ, "DART_VERBOSE")
     build_type = _require_env(environ, "BUILD_TYPE")
-    filament_default = filament_platform_default(tools)
-    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", filament_default)
-    fetch_filament = _override(
-        environ, "DART_FETCH_FILAMENT_OVERRIDE", filament_default
-    )
+    gui = _override(environ, "DART_BUILD_GUI_OVERRIDE", "ON")
     collision_tests = _override(
         environ, "DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE", "OFF"
     )
@@ -689,7 +632,6 @@ def plan_config_install(
         "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
         "-DDART_USE_SYSTEM_GOOGLETEST=ON",
         "-DDART_USE_SYSTEM_IMGUI=ON",
-        f"-DDART_FETCH_FILAMENT={fetch_filament}",
         "-DDART_USE_SYSTEM_NANOBIND=OFF",
         "-DDART_USE_SYSTEM_TRACY=OFF",
         f"-DDART_VERBOSE={verbose}",

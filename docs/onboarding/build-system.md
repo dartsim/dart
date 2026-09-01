@@ -53,10 +53,9 @@ wiring). For the practical how-to-build guide, see
 ### Key Build Options
 
 ```cmake
-DART_BUILD_GUI          = ON   # Filament-backed GUI; Linux x86_64 default
+DART_BUILD_GUI          = ON   # Filament-backed GUI; fails if deps are missing
+DART_USE_SYSTEM_FILAMENT = ON  # Packaged Filament / Filament_ROOT; OFF fetches
 DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS = OFF # Opt-in dart-demos diagnostics
-DART_USE_SYSTEM_FILAMENT = ON  # Use installed Filament or Filament_ROOT
-DART_FETCH_FILAMENT     = ON   # Fetch pinned Filament archive fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_PROFILE_TRACY          = OFF  # Enable Tracy profiler backend (developer-only)
@@ -205,16 +204,19 @@ dart/
 
 #### DART GUI Stack
 
-- **Version:** Filament 1.71.3 for the pinned Linux x86_64 fetch.
+- **Version:** conda-forge `filament` ≥ 1.76.0, < 1.77 (pinned in `pixi.toml`;
+  matches the package's ABI run-export window).
 - **Purpose:** Maintained built-in 3D visualization and interaction renderer.
 - **Windowing/UI:** GLFW3 and Dear ImGui are private backend dependencies.
 - **Options:**
-  - `DART_BUILD_GUI=ON` builds `dart-gui`, the `dartsim` executable, and the
-    Filament smoke-test target. It defaults to `ON` only on Linux x86_64, where
-    the pinned Filament archive is supported.
-  - `DART_FETCH_FILAMENT=ON` fetches the pinned Filament archive for supported
-    platforms.
-  - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
+  - `DART_BUILD_GUI` builds `dart-gui`, the `dartsim` executable, and the
+    Filament smoke-test target. Defaults to `ON` on every platform; the
+    configure fails when Filament (or another GUI dependency) is unavailable,
+    so pass `OFF` explicitly for headless builds. The Pixi environments
+    install conda-forge `filament` on every workspace platform.
+  - `DART_USE_SYSTEM_FILAMENT=ON` (default) discovers a packaged Filament
+    install (conda-forge `filament` or `Filament_ROOT`); `OFF` fetches the
+    pinned upstream Filament archive, mirroring `DART_USE_SYSTEM_IMGUI`.
   - `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON` links the opt-in memory-layout
     panel/session/model into `dart-demos`. It defaults to `OFF`, which removes
     its object code and scene calls from the executable. Test builds may still
@@ -241,17 +243,23 @@ active build.
 #### Filament
 
 - **Purpose:** DART's maintained built-in GUI renderer.
-- **Options:**
-  - **Enable**: `DART_BUILD_GUI=ON`
-  - **System Mode** (`DART_USE_SYSTEM_FILAMENT=ON`): Finds an installed
-    Filament tree, typically through `Filament_ROOT`
-  - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
-    Filament archive for supported platforms, including official dartpy wheels
+- **Provider:** The conda-forge `filament` package is the default
+  (`DART_USE_SYSTEM_FILAMENT=ON`): shared libraries, `matc` and the other
+  Filament tools, and a CMake package config exporting `Filament::filament`
+  and `Filament::matc`. Non-conda builds can instead set `Filament_ROOT` to
+  any Filament install tree with `include/`, `lib/`, and `bin/matc`
+  (`cmake/dart_find_filament.cmake` handles the upstream archive layout and
+  its libc++ linkage), or set `DART_USE_SYSTEM_FILAMENT=OFF` to fetch the
+  pinned upstream archive (kept on the same version line as the conda-forge
+  pin in `pixi.toml`). Official dartpy wheels link the conda-forge package
+  from the wheel environment and graft its shared libraries during wheel
+  repair; plain `pip install` source builds default to the fetch path via
+  `pyproject.toml`.
+- **Enable:** `DART_BUILD_GUI` (`ON` by default; see above).
 - **Public build flag:** Keep `DART_BUILD_GUI` as the single public option for
   the GUI surface. Filament is the maintained backend, so do not add
   backend-specific public toggles such as `DART_BUILD_GUI_FILAMENT`; use
-  dependency-selection options such as `DART_USE_SYSTEM_FILAMENT` and
-  `DART_FETCH_FILAMENT` for packaged versus fetched Filament.
+  `DART_USE_SYSTEM_FILAMENT` for packaged versus fetched Filament.
 - **Migration:** The full replacement plan lives in
   [gui-rendering.md](gui-rendering.md). New public GUI APIs should describe
   DART concepts and keep Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,

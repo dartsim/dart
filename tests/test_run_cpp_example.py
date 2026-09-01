@@ -67,8 +67,6 @@ def test_filament_config_forwards_memory_diagnostics_build_override(
     monkeypatch.setattr(module, "_configure", capture_configure)
     env = {
         "DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE": "ON",
-        "DART_FETCH_FILAMENT_OVERRIDE": "ON",
-        "DART_USE_SYSTEM_FILAMENT_OVERRIDE": "OFF",
     }
 
     module._ensure_filament(tmp_path, env, smoke=False)

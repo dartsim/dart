@@ -27,7 +27,6 @@ MODULE = _load_module()
 def _tools(
     *,
     which=lambda name: None,
-    uname=lambda: ("Linux", "x86_64"),
     detect_cuda_archs=lambda: None,
     nanobind_cmake_dir=lambda: "/nb/cmake",
     host_linker_defs=lambda: [],
@@ -35,7 +34,6 @@ def _tools(
 ):
     return MODULE.Tools(
         which=which,
-        uname=uname,
         detect_cuda_archs=detect_cuda_archs,
         nanobind_cmake_dir=nanobind_cmake_dir,
         host_linker_defs=host_linker_defs,
@@ -68,7 +66,7 @@ def test_config_default_flags():
     assert plan.build_dir == "build/default/cpp/Release"
     assert flags["CMAKE_BUILD_TYPE"] == "Release"
     assert flags["DART_BUILD_DARTPY"] == "ON"
-    assert flags["DART_BUILD_GUI"] == "ON"  # Linux x86_64 filament default
+    assert flags["DART_BUILD_GUI"] == "ON"  # defaults ON on every platform
     assert flags["DART_BUILD_TESTS"] == "ON"
     assert flags["DART_USE_MOLD"] == "OFF"
     assert flags["DART_ENABLE_EXPERIMENTAL_CUDA"] == "OFF"
@@ -78,13 +76,12 @@ def test_config_default_flags():
     assert not plan.remove_paths
 
 
-def test_config_gui_platform_default_off_elsewhere():
-    plan = MODULE.plan_config(
-        _opts("config"), _env(), _tools(uname=lambda: ("Darwin", "arm64"))
-    )
-    flags = _flags(plan)
-    assert flags["DART_BUILD_GUI"] == "OFF"
-    assert flags["DART_FETCH_FILAMENT"] == "OFF"
+def test_config_has_no_filament_provider_flags():
+    # conda-forge filament is a workspace dependency; the retired
+    # DART_USE_SYSTEM_FILAMENT/DART_FETCH_FILAMENT flags are gone.
+    flags = _flags(MODULE.plan_config(_opts("config"), _env(), _tools()))
+    assert "DART_USE_SYSTEM_FILAMENT" not in flags
+    assert "DART_FETCH_FILAMENT" not in flags
 
 
 def test_config_env_overrides_beat_arg_defaults():
@@ -209,44 +206,56 @@ def test_config_py_build_dir_falls_back_to_build_type():
     assert plan.build_dir == "build/default/cpp/Release-docking"
 
 
-def test_config_py_cuda_uses_host_compilers_and_typed_launcher():
+def test_config_py_cuda_pins_conda_nvcc_and_typed_launcher():
+    # The conda toolchain builds C/C++ (activation sets CC/CXX); the script
+    # only pins nvcc and leaves the environment untouched.
     env = _env(DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE="ON", LDFLAGS="-Lorig")
     plan = MODULE.plan_config_py(
         _opts("config-py"), env, _tools(detect_cuda_archs=lambda: "89")
     )
-    assert env["CC"] == "/usr/bin/cc"
-    assert env["CXX"] == "/usr/bin/c++"
-    assert env["LDFLAGS"] == "-L/usr/lib/x86_64-linux-gnu -Lorig"
-    assert "-DCMAKE_C_COMPILER=/usr/bin/cc" in plan.cmake_args
+    assert "CC" not in env
+    assert env["LDFLAGS"] == "-Lorig"
     assert "-DCMAKE_CUDA_COMPILER=/prefix/bin/nvcc" in plan.cmake_args
-    assert "-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/c++" in plan.cmake_args
-    assert "-DCMAKE_CUDA_RUNTIME_LIBRARY=Shared" in plan.cmake_args
+    assert "-DCMAKE_CUDA_HOST_COMPILER" not in " ".join(plan.cmake_args)
     assert "-DCMAKE_CUDA_COMPILER_LAUNCHER:STRING=" in plan.cmake_args
 
 
 def test_config_py_cuda_cache_reset_on_compiler_change():
-    cache = [
-        "CMAKE_C_COMPILER:FILEPATH=/prefix/bin/cc",
-        "CMAKE_CXX_COMPILER:FILEPATH=/prefix/bin/c++",
-        "CMAKE_CUDA_COMPILER:FILEPATH=/prefix/bin/nvcc",
+    # A stale nvcc (e.g. system nvcc) forces the reset.
+    stale_nvcc = [
+        "CMAKE_CUDA_COMPILER:FILEPATH=/usr/bin/nvcc",
     ]
     env = _env(DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE="ON")
     plan = MODULE.plan_config_py(
-        _opts("config-py"), env, _tools(read_text_lines=lambda path: cache)
+        _opts("config-py"), env, _tools(read_text_lines=lambda path: stale_nvcc)
     )
     assert plan.remove_paths == [
         "build/default/cpp/Release/CMakeCache.txt",
         "build/default/cpp/Release/CMakeFiles",
     ]
 
-    matching = [
+    # C/C++ compilers are compared only when CC/CXX are set (conda activation
+    # sets them in the cuda env); a dir configured by the retired host-compiler
+    # workaround then no longer matches and is reset.
+    workaround_dir = [
         "CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc",
         "CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++",
         "CMAKE_CUDA_COMPILER:FILEPATH=/prefix/bin/nvcc",
     ]
+    env = _env(
+        DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE="ON",
+        CC="/prefix/bin/cc",
+        CXX="/prefix/bin/c++",
+    )
+    plan = MODULE.plan_config_py(
+        _opts("config-py"), env, _tools(read_text_lines=lambda path: workaround_dir)
+    )
+    assert plan.remove_paths != []
+
+    # Without CC/CXX in the environment the C/C++ comparison is skipped.
     env = _env(DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE="ON")
     plan = MODULE.plan_config_py(
-        _opts("config-py"), env, _tools(read_text_lines=lambda path: matching)
+        _opts("config-py"), env, _tools(read_text_lines=lambda path: workaround_dir)
     )
     assert plan.remove_paths == []
 

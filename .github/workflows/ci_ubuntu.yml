@@ -981,7 +981,6 @@ jobs:
             extra_cxxflags: "-D__cpp_concepts=202002L -Wno-builtin-macro-redefined"
     env:
       DART_PARALLEL_JOBS: 2
-      LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'
