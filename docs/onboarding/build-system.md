@@ -251,10 +251,13 @@ active build.
   (`cmake/dart_find_filament.cmake` handles the upstream archive layout and
   its libc++ linkage), or set `DART_USE_SYSTEM_FILAMENT=OFF` to fetch the
   pinned upstream archive (kept on the same version line as the conda-forge
-  pin in `pixi.toml`). Official dartpy wheels link the conda-forge package
-  from the wheel environment and graft its shared libraries during wheel
-  repair; plain `pip install` source builds default to the fetch path via
-  `pyproject.toml`.
+  pin in `pixi.toml`). Official dartpy wheels and plain `pip install` source
+  builds both use the fetched archive (`DART_USE_SYSTEM_FILAMENT=OFF` via
+  `scripts/wheel_build.py` and `pyproject.toml`): the static archive loads GL
+  lazily, whereas the conda-forge shared build's eager libglvnd linkage cannot
+  be vendored into manylinux wheels — auditwheel grafts only the
+  non-whitelisted half of glvnd and `import dartpy` crashes when the grafted
+  and host copies mix.
 - **Enable:** `DART_BUILD_GUI` (`ON` by default; see above).
 - **Public build flag:** Keep `DART_BUILD_GUI` as the single public option for
   the GUI surface. Filament is the maintained backend, so do not add
