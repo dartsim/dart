@@ -69,8 +69,9 @@ def main(argv: list[str]) -> int:
         "-DDART_BUILD_TUTORIALS=OFF",
         "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
-        "-DDART_USE_SYSTEM_FILAMENT=OFF",
-        "-DDART_FETCH_FILAMENT=ON",
+        # Override pyproject.toml's fetch default: official wheels link the
+        # wheel environment's conda-forge Filament, grafted during repair.
+        "-DDART_USE_SYSTEM_FILAMENT=ON",
         f"-DDART_DISABLE_COMPILER_CACHE={disable_compiler_cache}",
     ]
     cmake_args.extend(cmake_host_linker_flags())
