@@ -695,9 +695,18 @@ its comments. Rapid, repeated `@codex review` requests across many quick rounds
 can slow or suspend Codex: observed review latency grows round over round and a
 later re-trigger can receive no review at all. If Codex stays silent well beyond
 its usual turnaround after a re-trigger, treat it as a throttle/timeout blocker,
-not a reason to re-request. Record the converged state as evidence instead — all
-surfaced findings fixed and their threads resolved — and report the throttle
-rather than re-spamming the PR with more triggers.
+not a reason to re-request. Weekly usage limits are the same class of blocker:
+when quota is exhausted mid-loop, record the converged state plus local
+verification (gates, tests, and an independent or role-separated review pass)
+instead of waiting for another hosted round. Record the converged state as
+evidence — all surfaced findings fixed and their threads resolved — and report
+the throttle rather than re-spamming the PR with more triggers.
+
+Codex re-emits every unresolved inline thread verbatim on later rounds, even
+when the current head already contains the fix. Verify each re-raised comment
+against the current head; once a thread is genuinely addressed, resolve it
+(after the approval that covers thread resolution) before the next round —
+otherwise the no-issues verdict cannot converge no matter how many rounds run.
 
 ### Updating Published PRs
 
