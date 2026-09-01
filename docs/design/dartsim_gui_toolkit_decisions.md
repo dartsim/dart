@@ -363,9 +363,10 @@ Scope it honestly:
 - **Update (2026-08-31): Filament provider defaults to conda-forge.** The
   `filament` package (1.76.x, all five workspace platforms, shared libs +
   `matc` + CMake package config) is the default provider
-  (`DART_USE_SYSTEM_FILAMENT=ON`), installed by the Pixi environments and
-  grafted into official dartpy wheels during wheel repair; the linux-64 libc++
-  pins and the CUDA host-compiler workaround it obsoleted were removed.
+  (`DART_USE_SYSTEM_FILAMENT=ON`), installed by the Pixi environments; the
+  linux-64 libc++ pins and the CUDA host-compiler workaround it obsoleted were
+  removed. Wheels stay on the fetched static archive: the conda shared
+  build's eager libglvnd linkage cannot be vendored into manylinux wheels.
   `DART_USE_SYSTEM_FILAMENT=OFF` fetches the pinned upstream 1.76.x archive
   (imgui-style provider toggle, replacing `DART_FETCH_FILAMENT`), keeping
   non-conda source builds and sdist `pip install` self-sufficient;

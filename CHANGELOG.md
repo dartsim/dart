@@ -440,16 +440,17 @@ compatibility remains on the active DART 6 LTS branch._
 
 - Made the conda-forge `filament` package (1.76.x) the default Filament
   provider on every workspace platform: the Pixi environments install it
-  directly, official dartpy wheels link it from the wheel environment and
-  graft its shared libraries during wheel repair, and `DART_BUILD_GUI` now
-  defaults to `ON` everywhere, failing the configure when GUI dependencies
-  are missing. `DART_USE_SYSTEM_FILAMENT=OFF` fetches the pinned upstream
-  1.76.x archive (imgui-style provider toggle, replacing
-  `DART_FETCH_FILAMENT` and `DART_FILAMENT_VERSION`), which also keeps plain
-  `pip install` source builds self-sufficient. Removed the workarounds the
-  default libc++ archive fetch used to require — the linux-64 libc++ pins and
-  the CUDA host-compiler/glibc override — so CUDA builds use the conda
-  toolchain end to end. ([#3463](https://github.com/dartsim/dart/pull/3463))
+  directly, and `DART_BUILD_GUI` now defaults to `ON` everywhere, failing the
+  configure when GUI dependencies are missing. `DART_USE_SYSTEM_FILAMENT=OFF`
+  fetches the pinned upstream 1.76.x archive (imgui-style provider toggle,
+  replacing `DART_FETCH_FILAMENT` and `DART_FILAMENT_VERSION`); official
+  dartpy wheels and plain `pip install` source builds use that fetched
+  archive, whose static libraries load GL lazily — the conda-forge shared
+  build's eager libglvnd linkage cannot be vendored into manylinux wheels.
+  Removed the workarounds the default libc++ archive fetch used to require —
+  the linux-64 libc++ pins and the CUDA host-compiler/glibc override — so
+  CUDA builds use the conda toolchain end to end.
+  ([#3463](https://github.com/dartsim/dart/pull/3463))
 - Refreshed the DART 7 README and Read the Docs package guidance so the
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API

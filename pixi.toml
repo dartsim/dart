@@ -3220,8 +3220,10 @@ test-gz = { cmd = """
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
 # - Wheel builds enable the Filament-backed dartpy.gui surface against the
-#   conda-forge `filament` package from the wheel environment; the repair step
-#   (auditwheel/delocate/delvewheel) grafts its shared libraries into the wheel.
+#   pinned upstream Filament archive (DART_USE_SYSTEM_FILAMENT=OFF in
+#   scripts/wheel_build.py): the static archive loads GL lazily, whereas the
+#   conda-forge shared build's eager libglvnd linkage cannot be vendored into
+#   manylinux wheels (see scripts/wheel_build.py for the failure mode).
 
 #======================
 # Feature: Python 3.14 Wheel Building
@@ -3260,6 +3262,11 @@ auditwheel = ">=6.7.0,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=26.0.3,<27"
 libglvnd = ">=1.7.0,<2"
+# The pinned upstream Filament archive the wheels link against is built with
+# libc++ (see scripts/wheel_build.py); auditwheel grafts these into the wheel.
+libcxx = ">=22.1.7,<23"
+libcxxabi = ">=22.1.7,<23"
+libcxx-devel = ">=22.1.7,<23"
 
 [feature.py314-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
