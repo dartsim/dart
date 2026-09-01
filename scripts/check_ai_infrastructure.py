@@ -4535,7 +4535,7 @@ def version(command: str) -> str:
             text=True,
             timeout=5,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired, UnicodeDecodeError):
         return "unavailable"
     if result.returncode != 0:
         return "unavailable"

@@ -10,7 +10,7 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | Layer | Primary paths | Responsibility and boundary |
 | --- | --- | --- |
 | Foundations | `dart/common/`, `dart/math/` | Shared utilities, resources, logging, memory, geometry, and math used by higher layers |
-| SIMD | `dart/simd/` | Header-only SIMD abstraction (dynamic dispatch, Eigen bridges, geometry/math kernels) used by performance-sensitive layers; validated by the `CI SIMD Multi-Arch` workflow |
+| SIMD | `dart/simd/` | Header-only SIMD abstraction (compile-time backend selection via `config.hpp` macros — scalar/SSE/AVX/AVX2/AVX-512/NEON — plus dynamically sized matrix/vector types, Eigen bridges, and geometry/math kernels) used by performance-sensitive layers; validated by the `CI SIMD Multi-Arch` workflow |
 | Multibody model | `dart/dynamics/` | Skeletons, bodies, joints, shapes, aspects, kinematics, and dynamics state |
 | Collision | `dart/collision/` | Collision detector abstraction plus the DART-owned `dart`, FCL, Bullet, and ODE implementations selected through existing components |
 | Constraints | `dart/constraint/`, `dart/lcpsolver/` | Contact and joint constraints, LCP-based solving (Lemke/Dantzig in `dart/lcpsolver/`), and solver-owned per-step state |
