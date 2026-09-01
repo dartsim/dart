@@ -735,9 +735,15 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
             label = str(source_path.relative_to(repo_root))
         except ValueError:
             label = display_path(source_path)
+        bare = set(
+            re.findall(r"(?<![\w$/-])(dart-[a-z0-9-]+)(?![a-z0-9-])", source_content)
+        )
         # Invocation-shaped mentions (/dart-x, $dart-x) are always workflow
-        # references; the non-capability allowlist covers only prose mentions.
-        unknown = (unprefixed - expected - non_capability_names) | (prefixed - expected)
+        # references; the non-capability allowlist covers only prose mentions
+        # (inline code or bare text).
+        unknown = ((unprefixed | bare) - expected - non_capability_names) | (
+            prefixed - expected
+        )
         for name in sorted(unknown):
             errors.append(f"{label}: unknown capability `{name}`")
     return errors
