@@ -283,7 +283,8 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
         "ls /tmp/dart-not-a-capability\n```\n"
         "Also try **/dart-missing-bold**, _/dart-missing-italic_, and\n"
         "_$dart-sample_ forms. Use dart-missing-bare or _dart-missing-underbare_\n"
-        "for plain prose.\n",
+        "for plain prose. |/dart-missing-cell| in tables, and the source path\n"
+        ".claude/commands/dart-missing-path.md also count.\n",
         encoding="utf-8",
     )
 
@@ -293,9 +294,11 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
     assert errors == [
         prefix + "`dart-missing-bare`",
         prefix + "`dart-missing-bold`",
+        prefix + "`dart-missing-cell`",
         prefix + "`dart-missing-codex`",
         prefix + "`dart-missing-fenced`",
         prefix + "`dart-missing-italic`",
+        prefix + "`dart-missing-path`",
         prefix + "`dart-missing-slash`",
         prefix + "`dart-missing-underbare`",
         prefix + "`dart-nonexistent-workflow`",
@@ -311,26 +314,7 @@ def test_checked_in_sources_mention_only_existing_capabilities():
     )
 
 
-def test_unknown_capability_scan_allowlists_cmake_component_names(tmp_path):
-    commands = tmp_path / ".claude" / "commands"
-    commands.mkdir(parents=True)
-    (tmp_path / "dart" / "collision").mkdir(parents=True)
-    (tmp_path / "dart" / "CMakeLists.txt").write_text(
-        "set(components dart-gui-osg dart-utils-urdf)\n", encoding="utf-8"
-    )
-    (tmp_path / "dart" / "collision" / "CMakeLists.txt").write_text(
-        "add_library(dart-collision-native)\n", encoding="utf-8"
-    )
-    (commands / "dart-sample.md").write_text(
-        "Link `dart-gui-osg`, `dart-utils-urdf`, and `dart-collision-native` "
-        "from `dart-sample`.\n",
-        encoding="utf-8",
-    )
-
-    assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
-
-
-def test_unknown_capability_scan_flags_prefixed_component_names(tmp_path):
+def test_unknown_capability_scan_uses_only_the_explicit_ledger(tmp_path):
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (tmp_path / "dart").mkdir()
@@ -338,25 +322,38 @@ def test_unknown_capability_scan_flags_prefixed_component_names(tmp_path):
         "set(components dart-gui-osg)\n", encoding="utf-8"
     )
     (commands / "dart-sample.md").write_text(
-        "Link `dart-gui-osg` in prose, but never run `/dart-gui-osg` or "
-        "`$dart-gui-osg` from `dart-sample`.\n",
+        "Link `dart-gui-osg` and run the `dart-demos` app from `dart-sample`.\n",
         encoding="utf-8",
     )
 
     errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
 
+    # CMake names are not harvested; only the explicit ledger exempts names.
     assert errors == [
         ".claude/commands/dart-sample.md: unknown capability `dart-gui-osg`"
     ]
 
 
-def test_component_allowlist_does_not_mask_current_capabilities(tmp_path):
+def test_unknown_capability_scan_never_exempts_invocation_forms(tmp_path):
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
-    (tmp_path / "dart").mkdir()
-    (tmp_path / "dart" / "CMakeLists.txt").write_text(
-        "set(components dart-collide)\n", encoding="utf-8"
+    (commands / "dart-sample.md").write_text(
+        "Run `/dart-demos` or `$dart-demos` from `dart-sample`.\n",
+        encoding="utf-8",
     )
+
+    errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    # Even ledger names are workflow references when written as invocations.
+    assert errors == [
+        ".claude/commands/dart-sample.md: unknown capability `dart-demos`"
+    ]
+
+
+def test_ledger_does_not_mask_current_or_retired_capabilities(tmp_path, monkeypatch):
+    monkeypatch.setattr(sync, "NON_CAPABILITY_DART_NAMES", frozenset({"dart-collide"}))
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
         "Use `dart-collide` and `/dart-collide` from `dart-sample`.\n",
         encoding="utf-8",
@@ -365,11 +362,80 @@ def test_component_allowlist_does_not_mask_current_capabilities(tmp_path):
     with_capability = sync.unknown_capability_mention_errors(
         tmp_path, {"dart-sample", "dart-collide"}
     )
-    without_capability = sync.unknown_capability_mention_errors(
-        tmp_path, {"dart-sample"}
-    )
+    retired = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
 
+    # A current capability wins over its ledger entry; once retired, the
+    # invocation form still errors even though the prose form is exempt.
     assert with_capability == []
-    assert without_capability == [
+    assert retired == [
         ".claude/commands/dart-sample.md: unknown capability `dart-collide`"
     ]
+
+
+def test_source_path_references_are_always_validated(tmp_path):
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "dart-sample.md").write_text(
+        "See `.claude/skills/dart-missing-skill` (no slash), "
+        "(see .claude/skills/dart-missing-paren) and the ledger path "
+        "`.claude/skills/dart-demos`, plus the sibling links "
+        "[next](./dart-missing-sibling.md) and [dir](./dart-missing-dir/).\n",
+        encoding="utf-8",
+    )
+
+    errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    prefix = ".claude/commands/dart-sample.md: unknown capability "
+    assert errors == [
+        prefix + "`dart-demos`",
+        prefix + "`dart-missing-dir`",
+        prefix + "`dart-missing-paren`",
+        prefix + "`dart-missing-sibling`",
+        prefix + "`dart-missing-skill`",
+    ]
+
+
+def test_unclosed_fence_in_skill_is_reported_not_skipped(tmp_path):
+    skills = tmp_path / ".claude" / "skills" / "dart-shared"
+    skills.mkdir(parents=True)
+    (tmp_path / "docs" / "ai").mkdir(parents=True)
+    (tmp_path / "docs" / "ai" / "branch-profile.json").write_text(
+        '{"profile": "main"}\n', encoding="utf-8"
+    )
+    (skills / "SKILL.md").write_text(
+        "# Shared\n\n## DART 6 (release-6.20)\n\n```bash\nnever closed\n\n"
+        "## Back\n\nUse `dart-hidden-by-fence`.\n",
+        encoding="utf-8",
+    )
+
+    errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
+
+    assert errors == [
+        ".claude/skills/dart-shared/SKILL.md: unclosed code fence opened at line 5"
+    ]
+
+
+def test_wrapped_hyphen_fragment_is_not_reported_as_garbage(tmp_path):
+    commands = tmp_path / ".claude" / "commands"
+    commands.mkdir(parents=True)
+    (commands / "dart-sample.md").write_text(
+        "Run the dart-fix-\nci loop from `dart-sample`.\n", encoding="utf-8"
+    )
+
+    assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
+
+
+def test_unknown_capability_scan_skips_other_branch_profile_sections(tmp_path):
+    commands = tmp_path / ".claude" / "skills" / "dart-shared"
+    commands.mkdir(parents=True)
+    (tmp_path / "docs" / "ai").mkdir(parents=True)
+    (tmp_path / "docs" / "ai" / "branch-profile.json").write_text(
+        '{"profile": "release-6.20"}\n', encoding="utf-8"
+    )
+    (commands / "SKILL.md").write_text(
+        "# Shared\n\nUse `dart-sample`.\n\n"
+        "## DART 7 (main)\n\nUse `dart-main-only-flow`.\n",
+        encoding="utf-8",
+    )
+
+    assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
