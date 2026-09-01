@@ -44,13 +44,13 @@ visual exception when rendering is unavailable or not applicable.
    NVIDIA CUDA runtime.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
    After approval, create the release-branch PR with the branch-matching DART
-   6.x patch milestone and reference the downstream issue.
+   6.x release milestone and reference the downstream issue.
 8. Create the matching `main` PR with milestone `DART 7.0`; adapt API
    differences if needed.
 
 ## Release-Line Differences
 
-- DART 7 commonly uses `DART_WARN()` and `<dart/All.hpp>`.
+- DART 7 commonly uses `DART_WARN()` and `<dart/all.hpp>`.
 - DART 6 LTS may use `dtwarn << ...`, `<dart/dart.hpp>`, and older test CMake patterns.
 
 ## Output

@@ -45,7 +45,7 @@ All source files should include a copyright header. We use the year of first pub
       first, then a `main` PR
 - [ ] PR uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Target milestone is set (`DART 7.0` for `main`, branch-matching DART 6.x
-      patch milestone for the active DART 6 LTS branch)
+      release milestone for the active DART 6 LTS branch)
 - [ ] `CHANGELOG.md` is updated according to
       [the changelog guide](docs/onboarding/changelog.md), or the PR explains
       why no changelog entry is needed

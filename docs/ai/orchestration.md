@@ -89,7 +89,7 @@ A work packet is the unit of handoff. Packets live inside the owning numbered
 plan file (or a dev-task folder for multi-session implementation), never in a
 separate tracking system. Every packet records:
 
-- **ID** — `WP-<plan>.<n>` (for example `WP-091.3`), stable once published.
+- **ID** — `WP-<plan>.<n>` (for example `WP-122.3`), stable once published.
 - **Objective** — one sentence; what is true after the packet lands.
 - **Value** — the user, maintainer, research, release, or architecture value
   that justifies doing this packet now.
@@ -239,7 +239,7 @@ How any session — human or agent — finds work and avoids collisions:
      heading. The plan file as merged on the default branch is the canonical
      state; the local marker covers sessions sharing a checkout.
   2. A remote branch named `wp-<plan>-<n>-<slug>` (for example
-     `wp-091-13-contact-assembly`). Executors create this branch at claim
+     `wp-122-1-harness-manifest`). Executors create this branch at claim
      time; it becomes a cross-machine signal once pushed, and pushing —
      like any GitHub mutation — happens only with explicit maintainer/user
      approval.

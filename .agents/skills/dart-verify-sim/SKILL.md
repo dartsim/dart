@@ -43,9 +43,9 @@ report or `image-verdict` is not visual review.
 
 ## Image-capable review loop
 
-Current image-capable targets (GPT-5.6 Sol Max in Codex; Claude Fable 5 and
-Opus 5 in Claude Code) support native image input and original-detail
-inspection.
+All current routed targets are image-capable (the GPT-5.6 family in Codex;
+all current Claude lanes — Fable 5, Opus 5, Sonnet 5, Haiku 4.5 — in Claude
+Code) and support native image input and original-detail inspection.
 Keep this loop capability-based so a future model-upgrade audit can replace the
 target-specific note without cloning the skill.
 

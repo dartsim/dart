@@ -82,7 +82,7 @@ compatibility surfaces, not just factory registration:
 ## Testing
 
 Unit tests: `tests/unit/collision/`
-Integration tests: `tests/integration/test_Collision*.cpp`
+Integration tests: `tests/integration/collision/` (snake_case `test_*.cpp`)
 ASAN testing: `pixi run test-asan` (catches memory errors like use-after-free)
 
 For native-runtime changes, include the focused collision unit tests plus

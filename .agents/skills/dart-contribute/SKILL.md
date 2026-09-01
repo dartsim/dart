@@ -47,7 +47,7 @@ gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
 Use `--base main --milestone "DART 7.0"` for main PRs and the
-branch-matching DART 6.x patch milestone for active DART 6 LTS PRs.
+branch-matching DART 6.x release milestone for active DART 6 LTS PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 

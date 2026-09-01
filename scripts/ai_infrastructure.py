@@ -399,8 +399,8 @@ def check_codex_hooks(root: Path) -> list[str]:
             ".codex/hooks.json: handler commandWindows must equal the canonical "
             "Windows staged-guard invocation"
         )
-    if handler.get("timeout") != 10:
-        errors.append(".codex/hooks.json: timeout must equal 10 seconds")
+    if handler.get("timeout") != 15:
+        errors.append(".codex/hooks.json: timeout must equal 15 seconds")
     if handler.get("statusMessage") != CODEX_HOOK_STATUS:
         errors.append(
             ".codex/hooks.json: statusMessage must equal " f"{CODEX_HOOK_STATUS!r}"
@@ -2465,21 +2465,34 @@ def is_related_worktree_ai_path(root: Path, path: str) -> bool:
     )
 
 
+PROBE_ERRORS = (OSError, subprocess.TimeoutExpired, UnicodeDecodeError)
+
+
 def tool_versions() -> dict[str, str]:
     versions: dict[str, str] = {}
     for tool, args in (
         ("git", ("--version",)),
         ("pixi", ("--version",)),
         ("codex", ("--version",)),
+        ("claude", ("--version",)),
+        ("opencode", ("--version",)),
     ):
         executable = shutil.which(tool)
         if not executable:
             versions[tool] = "not found"
             continue
-        result = subprocess.run(
-            [executable, *args], capture_output=True, text=True, timeout=10
-        )
-        versions[tool] = (result.stdout or result.stderr).strip().splitlines()[0]
+        try:
+            result = subprocess.run(
+                [executable, *args], capture_output=True, text=True, timeout=10
+            )
+        except PROBE_ERRORS:
+            versions[tool] = "not found"
+            continue
+        if result.returncode != 0:
+            versions[tool] = "not found"
+            continue
+        output = (result.stdout or result.stderr).strip()
+        versions[tool] = output.splitlines()[0] if output else "not found"
     versions["python"] = sys.version.split()[0]
     return versions
 

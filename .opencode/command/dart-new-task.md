@@ -52,7 +52,7 @@ Read these files first:
    assessed headless/debug-layer evidence or record why it is not applicable.
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
-   (`DART 7.0` for `main`, branch-matching DART 6.x patch milestone for the
+   (`DART 7.0` for `main`, branch-matching DART 6.x release milestone for the
    active DART 6 LTS branch); follow `.github/PULL_REQUEST_TEMPLATE.md`
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
@@ -71,7 +71,7 @@ Read these files first:
   `docs/plans/solver-family-intake.md` — including its solver-contract
   conformance and solver-identity/metrics items; the standing rule in
   `docs/design/dart7_architecture_assessment.md` applies, and new families
-  must not bypass the PLAN-091 contracts. Derive an evidence matrix from the
+  must not bypass the standing solver-contract rules (PLAN-091 is archived; current routing runs through `docs/plans/dashboard.md`, the intake checklist, and the owner docs named in the assessment). Derive an evidence matrix from the
   paper, project page, reference source, videos, and demos. Do not call the task
   complete until DART implements all algorithms/features on required CPU and GPU
   backends, ports all experiments/demos into tests/benchmarks/py-demos, records

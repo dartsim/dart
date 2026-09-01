@@ -1633,6 +1633,9 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
+> Correction (2026-08-31): `feature/rigid-ipc-paper-parity` is no longer
+> present on `origin`; treat this checkpoint as historical state.
+
 CURRENT (2026-05-30): `feature/rigid-ipc-paper-parity`, branched off `main`,
 pushed to `origin/feature/rigid-ipc-paper-parity`. All earlier rigid IPC manifest
 

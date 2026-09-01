@@ -41,7 +41,7 @@ Located in `dart/io/`:
 ## Testing
 
 Unit tests: `tests/unit/io/`
-Integration tests: `tests/integration/test_*Parser*.cpp`
+Integration tests: `tests/integration/io/` (snake_case `test_*.cpp`, e.g. `test_urdf_parser.cpp`)
 
 ## See Also
 

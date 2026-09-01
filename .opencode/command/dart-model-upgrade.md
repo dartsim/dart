@@ -159,8 +159,12 @@ well it investigates simulation state with text-first and visual/debug evidence.
    assess existing coverage and report missing cases without adding them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, relevant
-   docs/AI checks from `docs/ai/verification.md`, including
+   docs/AI checks from `docs/ai/verification.md`, and
    `pixi run check-docs-policy` when the durable context layer is touched.
+   Treat gates as evidence, not formality: runner probes must execute a real
+   body under hostile ambient controls (reject zero-body successes), inactive
+   tests need reached predicates, CTest must run without ambient selectors or
+   neutralizing properties, and pytest stays on the trusted root config.
    `audit-only` must use read-only lint gates such as `pixi run check-lint`;
    only `apply` runs auto-fixing `pixi run lint` before a commit. Complete the
    principle audit and two clean role-separated reviews. Label unavailable
@@ -171,9 +175,11 @@ well it investigates simulation state with text-first and visual/debug evidence.
     Only in `apply` mode, make the changelog decision, promote durable guidance,
     and remove the temporary dev-task folder in the completing change. Load
     `docs/onboarding/changelog.md` for that closeout decision instead of
-    carrying it through the audit. For shared infrastructure, finish and merge
-    DART 7 first; then inspect `release-6.20` from its own current base and
-    record an apply/adapt/omit verdict. Never copy DART 7-only paths or
+    carrying it through the audit. For shared infrastructure, finish and
+    merge DART 7 first, then inspect `release-6.20` from its own base and
+    record apply/adapt/omit; on explicit maintainer request for parallel
+    release work, keep branches independent and re-audit the final main
+    state before the DART 6 PR publishes. Never copy DART 7-only paths or
     assumptions into the intentionally smaller release catalog. Pushes, PRs,
     comments, review re-triggers, and other GitHub mutations require explicit
     maintainer/user approval.

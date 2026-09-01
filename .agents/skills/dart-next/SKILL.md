@@ -58,7 +58,7 @@ Interpret `$ARGUMENTS` as optional constraints:
   requested scope. Default to `small`, meaning one focused local session.
 - `focus=<topic>`: prefer a focus area without making it the only allowed
   candidate. Examples: `ai-native`, `easy-start`, `algorithm`, `compute`,
-  `release`, `ci`, `docs`, `python`, `io`, `PLAN-020`, `world_split`,
+  `release`, `ci`, `docs`, `python`, `io`, `PLAN-122`, `world_split`,
   `dartpy`, or a file path.
 - `area=<dimension>`: alias for `focus=<dimension>`.
 - Any issue, PR, branch, milestone, failing check, file path, or user-stated
