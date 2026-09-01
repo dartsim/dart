@@ -24,7 +24,7 @@ or schedule (and CodeQL is currently pinned to older branches).
 | `codeql.yml`                      | CodeQL                      | Static security analysis — currently inactive here: its branch filter pins `release-6.17`/`release-6.16` |
 | `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Performance dashboard (push/call/dispatch)      |
-| `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs              |
+| `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs — currently inactive here: its target matrix pins `main`/`release-6.17` |
 
 Useful commands:
 
