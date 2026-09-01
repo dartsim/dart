@@ -2211,6 +2211,8 @@ def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
             return subprocess.CompletedProcess(
                 cmd, 1, stdout="", stderr="error: malformed configuration"
             )
+        if "claude" in cmd[0]:
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(infra.subprocess, "run", fake_run)

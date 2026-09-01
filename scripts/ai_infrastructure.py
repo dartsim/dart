@@ -2465,7 +2465,7 @@ def is_related_worktree_ai_path(root: Path, path: str) -> bool:
     )
 
 
-PROBE_ERRORS = (OSError, subprocess.TimeoutExpired)
+PROBE_ERRORS = (OSError, subprocess.TimeoutExpired, UnicodeDecodeError)
 
 
 def tool_versions() -> dict[str, str]:
