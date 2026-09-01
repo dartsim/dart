@@ -449,7 +449,7 @@ compatibility remains on the active DART 6 LTS branch._
   `pip install` source builds self-sufficient. Removed the workarounds the
   default libc++ archive fetch used to require — the linux-64 libc++ pins and
   the CUDA host-compiler/glibc override — so CUDA builds use the conda
-  toolchain end to end. ([#TBD](https://github.com/dartsim/dart/pulls))
+  toolchain end to end. ([#3463](https://github.com/dartsim/dart/pull/3463))
 - Refreshed the DART 7 README and Read the Docs package guidance so the
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
