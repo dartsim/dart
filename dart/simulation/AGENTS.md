@@ -31,7 +31,7 @@ World container and time-stepping for the DART 7 simulation API.
 ## Testing
 
 Unit tests: `tests/unit/simulation/`
-Integration tests: `tests/integration/test_World*.cpp`
+Integration tests: none yet (`tests/integration/` has no `simulation/` subdirectory); world/simulation coverage lives in `tests/unit/simulation/`
 
 ## See Also
 

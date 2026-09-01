@@ -28,7 +28,7 @@ Dynamics code uses `DART_ASSERT` for algorithmic invariants and `DART_WARN` for 
 ## Testing
 
 Unit tests: `tests/unit/dynamics/`
-Integration tests: `tests/integration/test_Dynamics*.cpp`
+Integration tests: `tests/integration/dynamics/` (snake_case `test_*.cpp`)
 
 ## See Also
 

@@ -72,7 +72,7 @@ gh pr checks <PR_NUMBER>
 1. Confirm scope and policy:
    - Check that the base branch, title, and PR template are correct.
    - Verify the milestone is set before merge: `DART 7.0` for a `main` base, the
-     branch-matching DART 6.x patch milestone for a `release-*` base. If it is
+     branch-matching DART 6.x release milestone for a `release-*` base. If it is
      missing, set it only after explicit maintainer/user approval.
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
@@ -135,8 +135,10 @@ gh pr checks <PR_NUMBER>
      needs explicit maintainer/user approval and must not duplicate an active
      trigger.
    - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running `/dart-review-pr`) must record findings
-     before merge approval; docs-only and mechanical changes are exempt.
+     separate agent session running the `dart-review-pr` workflow via
+     `/dart-review-pr` or `$dart-review-pr`) must record its outcome —
+     findings, or an explicitly clean result — before merge approval;
+     docs-only and mechanical changes are exempt.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
@@ -152,7 +154,9 @@ gh pr checks <PR_NUMBER>
    `pixi run test-all` and, on Linux hosts with a visible NVIDIA CUDA runtime,
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
-   are green, the milestone is set, an independent review recorded findings, the
+   are green, the milestone is set, an independent review recorded a clean
+   result on the current post-fix head (after findings, a clean re-review;
+   the step 4 docs-only/mechanical exemption also satisfies this), the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
    ready-for-review transitions, merges, and branch deletion are external

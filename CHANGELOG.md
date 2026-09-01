@@ -503,6 +503,15 @@ compatibility remains on the active DART 6 LTS branch._
   and the simulation image-review guidance names image-capable targets
   capability-neutrally across both lanes.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
+- Audited and refreshed the AI harness so its guidance matches the current
+  repository, model, and tool state: corrected module test locations, dartpy
+  construction guidance, archived-plan examples, milestone wording, and the
+  CI workflow table; scoped the dual-use-safety note to Claude Fable 5 with
+  current model ids and refreshed tested-version stamps; and converged the
+  shared pre-commit guard with `release-6.20` (CRLF-safe whitespace checks,
+  one managed-hook version, worktree-aware resolution, agent-CLI versions in
+  `ai-doctor`, and an unknown-capability scan over workflow sources).
+  ([#3457](https://github.com/dartsim/dart/pull/3457))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))

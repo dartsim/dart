@@ -83,6 +83,11 @@ asks for the autonomous project-home loop.
 
 ## Updating Models And Coding Agents
 
+Routing itself is owned by § "Model Routing" below; this section only names
+the workflow trigger. (Cross-branch note: the `release-6.20` harness titles
+its routing owner "Updating Models And Coding Agents" — do not locate the
+owner by section title when backporting.)
+
 Use `$dart-model-upgrade` in Codex or `/dart-model-upgrade` in
 Claude/OpenCode when a request names a model, reasoning mode, Codex/tool
 release, migration, or model-compatibility audit. The workflow refreshes live
@@ -178,14 +183,18 @@ bounded entry per validated lane:
   the Mythos-class tier above Opus) for the hardest ambiguous or
   long-horizon work; Opus 5 (`claude-opus-5`) as the everyday strong default
   for substantial engineering work such as architecture, deep analysis, and
-  agentic coding (Claude Code fast mode also runs on Opus); Sonnet 5 for
-  standard bounded work; and Haiku 4.5 for quick lookups. Reasoning effort
-  is a session-level setting; reserve `max` effort for one hard task rather
-  than making it a default. Fable 5 and Opus 5 ship safety classifiers that
-  can occasionally refuse dual-use content; treat such a refusal as expected
-  model behavior rather than a DART harness defect. If the refused task is
-  legitimate DART work, restate it with its physics/simulation context made
-  explicit, and surface it to a maintainer if it still refuses.
+  agentic coding (Claude Code fast mode, toggled with `/fast` on Opus 5/4.8,
+  also runs on Opus); Sonnet 5 (`claude-sonnet-5`) for standard bounded
+  work; and Haiku 4.5 (`claude-haiku-4-5-20251001`) for quick lookups.
+  Reasoning effort is a session-level setting; reserve `max` effort for one
+  hard task rather than making it a default. Fable 5 ships additional safety
+  measures for dual-use capabilities that can occasionally refuse dual-use
+  content; treat such a refusal as expected model behavior rather than a
+  DART harness defect. (Mythos 5 is the same underlying model without those
+  measures, restricted to approved organizations — do not try to select
+  it.) If the refused task is legitimate DART work, restate it with its
+  physics/simulation context made explicit, and surface it to a maintainer
+  if it still refuses.
 
 The read-only project profiles in `.codex/agents/` inherit the selected parent
 model.

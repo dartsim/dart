@@ -77,8 +77,8 @@ modifiers. Interpret arguments in this order:
 Examples:
 
 ```text
-$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport
-$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport --slice
+$dart-resume docs/dev_tasks/skel_format_evolution
+$dart-resume docs/dev_tasks/skel_format_evolution --slice
 $dart-resume PR 2991
 ```
 

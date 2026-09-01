@@ -3,6 +3,7 @@ description: select and execute one orchestrator-authored work packet from a num
 argument-hint: "[WP-<plan>.<n>|PLAN-NNN]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-execute-packet.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -23,8 +24,8 @@ Read these files first:
 
 `$ARGUMENTS` is optional and takes one of three forms:
 
-- `WP-<plan>.<n>` (for example `WP-091.13`) — execute exactly that packet.
-- `PLAN-NNN` (for example `PLAN-091`) — select the first available packet in
+- `WP-<plan>.<n>` (for example `WP-122.1`) — execute exactly that packet.
+- `PLAN-NNN` (for example `PLAN-122`) — select the first available packet in
   that plan.
 - empty — auto-select: walk `docs/plans/dashboard.md` top to bottom (document
   order is priority); for each `Active` entry whose owner doc is a numbered
