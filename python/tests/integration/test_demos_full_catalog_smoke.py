@@ -8,6 +8,7 @@ pytest guard keeps the same contract visible in CI.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import re
 import sys
@@ -31,6 +32,11 @@ def _simulation_has(*names: str) -> bool:
 def test_all_registered_scenes_build_step_and_render() -> None:
     if not _simulation_has("World"):
         pytest.skip("dartpy.World unavailable in this build")
+    if sys.platform == "darwin" and not os.environ.get("DART_REQUIRE_VISUAL_E2E"):
+        pytest.skip(
+            "macOS CI GUI runtime bring-up pending; "
+            "set DART_REQUIRE_VISUAL_E2E=1 to force the viewer smoke"
+        )
 
     import dartpy as dart
     from examples.demos import runner
