@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
+#include <dart/gui/export.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
@@ -399,7 +400,10 @@ AppOptions parseOptions(
     char* argv[],
     const std::optional<dart::gui::RunOptions>& runDefaults = std::nullopt);
 
-DartScene createDartScene(const AppOptions& options);
+// Exported for the GUI unit tests: on Windows the tests link the dart-gui-core
+// DLL, so a symbol they call must carry DART_GUI_API even though it is
+// internal.
+DART_GUI_API DartScene createDartScene(const AppOptions& options);
 
 std::vector<dart::gui::RenderableDescriptor> collectSceneRenderables(
     const DartScene& scene);
