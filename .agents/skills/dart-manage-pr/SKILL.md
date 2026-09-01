@@ -170,9 +170,9 @@ gh pr checks <PR_NUMBER>
    `pixi run test-all` and, on Linux hosts with a visible NVIDIA CUDA runtime,
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
-   are green, the milestone is set, an independent review recorded its
-   outcome (findings addressed, or explicitly clean; the step 4
-   docs-only/mechanical exemption also satisfies this), the
+   are green, the milestone is set, an independent review recorded a clean
+   result on the current post-fix head (after findings, a clean re-review;
+   the step 4 docs-only/mechanical exemption also satisfies this), the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
    ready-for-review transitions, merges, and branch deletion are external
