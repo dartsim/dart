@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import platform
 import re
 import shutil
 import subprocess
@@ -329,49 +328,9 @@ def _env_option(env: dict[str, str], name: str, default: str) -> str:
     return env.get(name, default)
 
 
-def _is_linux_x86_64() -> bool:
-    machine = platform.machine().lower()
-    return sys.platform.startswith("linux") and machine in {"x86_64", "amd64"}
-
-
-def _has_filament_root(env: dict[str, str]) -> bool:
-    return bool(env.get("Filament_ROOT") or env.get("FILAMENT_ROOT"))
-
-
-def _default_fetch_filament(env: dict[str, str]) -> str:
-    if _has_filament_root(env):
-        return "OFF"
-    return "ON" if _is_linux_x86_64() else "OFF"
-
-
-def _default_use_system_filament(fetch_filament: str) -> str:
-    return "OFF" if fetch_filament.upper() == "ON" else "ON"
-
-
 def _prepend_env_path(env: dict[str, str], name: str, value: Path) -> None:
     current = env.get(name)
     env[name] = f"{value}{os.pathsep}{current}" if current else str(value)
-
-
-def _apply_libcxx_prefix(env: dict[str, str]) -> None:
-    prefix = env.get("LIBCXX_PREFIX")
-    if not prefix:
-        conda_prefix = env.get("CONDA_PREFIX")
-        if conda_prefix:
-            lib_dir = Path(conda_prefix) / "lib"
-            if any(lib_dir.glob("libc++.*")) and any(lib_dir.glob("libc++abi.*")):
-                prefix = conda_prefix
-    if not prefix:
-        return
-
-    lib_dir = Path(prefix) / "lib"
-    _prepend_env_path(env, "CMAKE_LIBRARY_PATH", lib_dir)
-    if sys.platform.startswith("linux"):
-        _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
-    elif sys.platform == "darwin":
-        _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
-    elif os.name == "nt":
-        _prepend_env_path(env, "PATH", Path(prefix) / "bin")
 
 
 def _configure(
@@ -390,21 +349,10 @@ def _option_override(
 
 
 def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
-    fetch_filament = _env_option(
-        env, "DART_FETCH_FILAMENT_OVERRIDE", _default_fetch_filament(env)
-    )
-    use_system_filament = _env_option(
-        env,
-        "DART_USE_SYSTEM_FILAMENT_OVERRIDE",
-        _default_use_system_filament(fetch_filament),
-    )
-
     desired = {
         "DART_BUILD_GUI": "ON",
         "DART_BUILD_EXAMPLES": "ON",
         "DART_BUILD_TUTORIALS": "OFF",
-        "DART_USE_SYSTEM_FILAMENT": use_system_filament,
-        "DART_FETCH_FILAMENT": fetch_filament,
     }
     if smoke:
         desired["DART_BUILD_TESTS"] = "ON"
@@ -611,7 +559,6 @@ def _runtime_env(
     env: dict[str, str], build_dir: Path, software_gl: bool
 ) -> dict[str, str]:
     runtime_env = env.copy()
-    _apply_libcxx_prefix(runtime_env)
     _prepend_runtime_library_path(runtime_env, build_dir)
     if software_gl:
         runtime_env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -800,7 +747,6 @@ def run(
     env = os.environ.copy()
     env["BUILD_TYPE"] = build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
-    _apply_libcxx_prefix(env)
 
     # Pin the ImGui variant for GUI runs so a launch never inherits a stale
     # build-cache state from a previous run: the docked workspaces (editor,

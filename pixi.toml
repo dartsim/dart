@@ -17,6 +17,7 @@ console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=5.0.1,<6"
 entt = ">=4.0.0,<5"
+filament = ">=1.76.0,<1.77"
 foonathan-memory = ">=0.7.4,<0.8"
 fmt = ">=12.1.0,<13"
 gersemi = ">=0.24.0,<0.25"
@@ -90,13 +91,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
 fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
-DART_FILAMENT_PLATFORM_DEFAULT=OFF
-case "$(uname -s)-$(uname -m)" in
-  Linux-x86_64|Linux-amd64)
-    DART_FILAMENT_PLATFORM_DEFAULT=ON
-    ;;
-esac
-DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_VALUE=${DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE:-OFF}
 # The demos panel needs the library instrumentation, so it defaults to the demos
@@ -106,11 +101,6 @@ DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
 DART_USE_MOLD_VALUE=${DART_USE_MOLD_OVERRIDE:-OFF}
 DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-{{ use_system_imgui }}}
-DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
-if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
-  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
-fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
@@ -180,8 +170,6 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} \
-  -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
-  -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=OFF \
@@ -604,13 +592,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
 fi
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
-DART_FILAMENT_PLATFORM_DEFAULT=OFF
-case "$(uname -s)-$(uname -m)" in
-  Linux-x86_64|Linux-amd64)
-    DART_FILAMENT_PLATFORM_DEFAULT=ON
-    ;;
-esac
-DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_VALUE=${DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE:-OFF}
 # The demos panel needs the library instrumentation, so it defaults to the demos
@@ -619,11 +601,6 @@ DART_BUILD_MEMORY_DIAGNOSTICS_VALUE=${DART_BUILD_MEMORY_DIAGNOSTICS_OVERRIDE:-${
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
 DART_USE_SYSTEM_IMGUI_VALUE=${DART_USE_SYSTEM_IMGUI_OVERRIDE:-ON}
-DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
-if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
-  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
-fi
 DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
@@ -692,8 +669,6 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} \
-  -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
-  -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=OFF \
@@ -964,70 +939,37 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ] \
     fi
   fi
 fi
-# Host compiler for the CUDA-enabled dartpy + GUI build. The prebuilt Filament
-# libraries reference glibc symbols newer than the conda portability sysroot
-# (glibc 2.28) exports, so the conda toolchain cannot link the GUI. Build the C
-# and C++ sources (and the final link) with the host system compiler instead (it
-# ships a newer glibc, exactly as the default environment already does), while
-# CUDA itself keeps using the conda nvcc (pinned so CMake does not pick up an
-# older system nvcc); the conda env's NVCC_PREPEND_FLAGS already routes nvcc's
-# host pass through the conda compiler, and the resulting .cu objects only need
-# older glibc symbols, so the system-compiler final link resolves everything.
-# Overridable via DART_CUDA_HOST_CC / DART_CUDA_HOST_CXX for hosts/CI whose
-# system compiler lives elsewhere. No effect on non-CUDA builds.
+# CUDA toolchain for the CUDA-enabled dartpy + GUI build. Pin nvcc to the conda
+# toolkit so CMake does not pick up an older system nvcc; the conda compiler
+# (activated by the cuda feature) builds the C/C++ sources and the final link,
+# and nvcc's host pass follows it via the env's NVCC_PREPEND_FLAGS. The
+# packaged conda-forge Filament is built against the conda sysroot, so the
+# system-host-compiler/glibc workaround that used to live here is unnecessary.
+# The cache guard resets build dirs whose cached compilers no longer match the
+# current toolchain (including dirs configured by the retired workaround) and
+# clears a stale CUDA launcher (sccache can leave nvcc/fatbinary without its
+# generated PTX input). No effect on non-CUDA builds.
 COMPILER_DEFS=""
 if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
-  DART_CUDA_HOST_CC_VALUE=${DART_CUDA_HOST_CC:-/usr/bin/cc}
-  DART_CUDA_HOST_CXX_VALUE=${DART_CUDA_HOST_CXX:-/usr/bin/c++}
-  export CC=${DART_CUDA_HOST_CC_VALUE}
-  export CXX=${DART_CUDA_HOST_CXX_VALUE}
-  # The conda libc++ (which Filament needs) lives in the conda lib dir. The
-  # system compiler does not search it by default, and the conda LDFLAGS -L /
-  # -rpath are not reliably applied to every target, so add the conda lib dir as
-  # both a link-time search path (so Filaments -lc++ resolves) and a runtime
-  # rpath (so the conda GUI libraries such as libglfw load) via
-  # CMAKE_CXX_STANDARD_LIBRARIES, which is appended to every C++ link. Scoped to
-  # the cuda build, so the default environment is untouched.
-  #
-  # Use the system compiler as nvcc's host too (CMAKE_CUDA_HOST_COMPILER), so C,
-  # C++, and the CUDA host pass all target the same host glibc (2.38). Otherwise
-  # nvcc's host defaults to the conda compiler (via NVCC_PREPEND_FLAGS), whose
-  # startup objects and implicit link drag the conda sysroot glibc (libm/librt
-  # linker scripts with absolute /lib64 paths, and __libc_csu_* startup symbols
-  # removed in glibc 2.34) that the system-compiler final link cannot resolve.
-  # CMAKE_CUDA_RUNTIME_LIBRARY=Shared links the shared libcudart (the default
-  # Static runtime drags the same conda sysroot deps).
-  COMPILER_DEFS="-DCMAKE_C_COMPILER=${DART_CUDA_HOST_CC_VALUE} -DCMAKE_CXX_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_COMPILER=${CONDA_PREFIX}/bin/nvcc -DCMAKE_CUDA_HOST_COMPILER=${DART_CUDA_HOST_CXX_VALUE} -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared -DCMAKE_CXX_STANDARD_LIBRARIES=-Wl,-L,${CONDA_PREFIX}/lib,-rpath,${CONDA_PREFIX}/lib"
-  # nvcc still reports the conda CUDA toolkit's sysroot lib dirs as implicit link
-  # dirs, so -lm/-lrt could resolve to the conda sysroot glibc linker scripts
-  # (absolute /lib64 paths). Prepend the host multiarch lib dir so they resolve
-  # to the valid host glibc first. Safe now that the CUDA host is the system
-  # compiler too. Defaults to the linux-64 layout (the cuda feature is linux-64
-  # only); override with DART_CUDA_HOST_LIBDIR if your distro differs.
-  DART_CUDA_HOST_LIBDIR_VALUE=${DART_CUDA_HOST_LIBDIR:-/usr/lib/x86_64-linux-gnu}
-  export LDFLAGS="-L${DART_CUDA_HOST_LIBDIR_VALUE} ${LDFLAGS:-}"
+  COMPILER_DEFS="-DCMAKE_CUDA_COMPILER=${CONDA_PREFIX}/bin/nvcc"
   CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME}
   CMAKE_CACHE=${CMAKE_BUILD_DIR}/CMakeCache.txt
   if [ -f "${CMAKE_CACHE}" ]; then
     cached_c_compiler=
     cached_cxx_compiler=
     cached_cuda_compiler=
-    cached_cuda_host_compiler=
     cached_cuda_compiler_launcher=
     while IFS='=' read -r cache_key cache_value; do
       case "${cache_key}" in
         CMAKE_C_COMPILER:*) cached_c_compiler=${cache_value} ;;
         CMAKE_CXX_COMPILER:*) cached_cxx_compiler=${cache_value} ;;
         CMAKE_CUDA_COMPILER:*) cached_cuda_compiler=${cache_value} ;;
-        CMAKE_CUDA_HOST_COMPILER:*) cached_cuda_host_compiler=${cache_value} ;;
         CMAKE_CUDA_COMPILER_LAUNCHER:*) cached_cuda_compiler_launcher=${cache_value} ;;
       esac
     done < "${CMAKE_CACHE}"
-    if [ "${cached_c_compiler}" != "${DART_CUDA_HOST_CC_VALUE}" ] \
-      || [ "${cached_cxx_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ] \
-      || [ "${cached_cuda_compiler}" != "${CONDA_PREFIX}/bin/nvcc" ] \
-      || { [ -n "${cached_cuda_host_compiler}" ] \
-        && [ "${cached_cuda_host_compiler}" != "${DART_CUDA_HOST_CXX_VALUE}" ]; } \
+    if [ "${cached_cuda_compiler}" != "${CONDA_PREFIX}/bin/nvcc" ] \
+      || { [ -n "${CC:-}" ] && [ "${cached_c_compiler}" != "${CC}" ]; } \
+      || { [ -n "${CXX:-}" ] && [ "${cached_cxx_compiler}" != "${CXX}" ]; } \
       || { [ -z "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ] \
         && [ -n "${cached_cuda_compiler_launcher}" ]; }; then
       echo "CMake compiler cache changed for ${CMAKE_BUILD_DIR}; resetting cache metadata."
@@ -1507,7 +1449,7 @@ test-dart-gui-smoke = { cmd = [
   "--pixi-smoke",
 ], depends-on = [
   "config",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON" } }
 
 test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
@@ -1544,14 +1486,7 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-DART_FILAMENT_PLATFORM_DEFAULT=OFF
-case "$(uname -s)-$(uname -m)" in
-  Linux-x86_64|Linux-amd64)
-    DART_FILAMENT_PLATFORM_DEFAULT=ON
-    ;;
-esac
-DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -1593,7 +1528,6 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
-    -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
     -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     ${HOST_LINKER_DEFS[@]+"${HOST_LINKER_DEFS[@]}"} \
@@ -1660,7 +1594,7 @@ dartsim = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
   "dartsim",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 # Diagnostic (not part of the default test suite): render the dartsim scene
 # headlessly to both the swapchain and an offscreen Filament RenderTarget and
@@ -1677,7 +1611,7 @@ gui-offscreen-parity = { cmd = [
   "--backend",
   "opengl",
   "--demo",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_GUI_OFFSCREEN_PARITY = "1", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_GUI_OFFSCREEN_PARITY = "1", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
 # Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
 # switchable scenes). Builds against the fetched ImGui docking branch
@@ -2101,17 +2035,7 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_FILAMENT_PLATFORM_DEFAULT=OFF
-case "$(uname -s)-$(uname -m)" in
-  Linux-x86_64|Linux-amd64)
-    DART_FILAMENT_PLATFORM_DEFAULT=ON
-    ;;
-esac
-DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
-if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
-  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
-fi
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -2153,7 +2077,6 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
-    -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
     -DDART_USE_SYSTEM_NANOBIND=OFF \
     -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
@@ -2608,9 +2531,6 @@ libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
 vulkan-headers = ">=1.3.231.1,<2"
-libcxx = ">=22.1.7,<23"
-libcxxabi = ">=22.1.7,<23"
-libcxx-devel = ">=22.1.7,<23"
 
 ################################################################################
 # osx-64
@@ -3137,7 +3057,6 @@ DART_BUILD_DARTPY_OVERRIDE = "OFF"
 DART_BUILD_GUI_OVERRIDE = "OFF"
 DART_BUILD_EXAMPLES_OVERRIDE = "OFF"
 DART_BUILD_TUTORIALS_OVERRIDE = "OFF"
-DART_FETCH_FILAMENT_OVERRIDE = "OFF"
 
 [feature.cuda.dependencies]
 cuda-version = ">=13.3,<14"
@@ -3300,8 +3219,9 @@ test-gz = { cmd = """
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
-# - Wheel builds enable the Filament-backed dartpy.gui surface and fetch the
-#   pinned upstream Filament SDK when a packaged Filament provider is not used.
+# - Wheel builds enable the Filament-backed dartpy.gui surface against the
+#   conda-forge `filament` package from the wheel environment; the repair step
+#   (auditwheel/delocate/delvewheel) grafts its shared libraries into the wheel.
 
 #======================
 # Feature: Python 3.14 Wheel Building
