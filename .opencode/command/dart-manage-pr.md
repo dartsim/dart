@@ -136,8 +136,9 @@ gh pr checks <PR_NUMBER>
      trigger.
    - For substantive code PRs, an independent review session (a human, or a
      separate agent session running the `dart-review-pr` workflow via
-     `/dart-review-pr` or `$dart-review-pr`) must record findings
-     before merge approval; docs-only and mechanical changes are exempt.
+     `/dart-review-pr` or `$dart-review-pr`) must record its outcome —
+     findings, or an explicitly clean result — before merge approval;
+     docs-only and mechanical changes are exempt.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
