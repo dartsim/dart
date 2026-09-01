@@ -288,8 +288,8 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `codeql.yml`                  | Static security analysis    | Ubuntu                      | `main` push/PR (code paths), schedule, manual | Yes (path filters) |
 | `benchmark_pr_comparison.yml` | Benchmark PR comparison     | Ubuntu                      | PR (label-gated)                              | N/A                |
 | `performance_dashboard.yml`   | Performance dashboard       | Ubuntu                      | `main` push (path-scoped), schedule, manual   | N/A                |
-| `community_signals.yml`       | Community signals dashboard | Ubuntu                      | `main` push (path-scoped), schedule, manual   | N/A                |
-| `pages_deploy.yml`            | GitHub Pages deploy         | Ubuntu                      | Workflow run, manual                          | N/A                |
+| `community_signals.yml`       | Community signals dashboard | Self-hosted Linux | `main` push (path-scoped), schedule, manual   | N/A                |
+| `pages_deploy.yml`            | GitHub Pages deploy         | Self-hosted Linux | Workflow run, manual                          | N/A                |
 | `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                              | N/A                |
 | `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                     | N/A                |
 
