@@ -10,6 +10,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # github/codeql-action/* must move as one unit. init writes a config file
+      # stamped with its own version, and analyze/upload-sarif refuse to read a
+      # config written by a different version ("Loaded a configuration file for
+      # version X, but running version Y"). Ungrouped, Dependabot opens one PR
+      # per sub-action and each one alone breaks the CodeQL workflow.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
 
   - package-ecosystem: "docker"
     # Devcontainer Dockerfile lives under the hidden .devcontainer directory.
