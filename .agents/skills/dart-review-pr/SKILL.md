@@ -89,8 +89,9 @@ activity signal or submitted review, do not post a duplicate trigger.
 3. Ask for explicit maintainer/user approval before push, thread resolution,
    PR comment, or review re-trigger
 4. If approved, push the fix silently
-5. If approved, resolve only reviewed and addressed thread IDs via GraphQL (see
-   ai-tools.md)
+5. If approved, resolve only the review threads that were actually reviewed
+   and addressed (thread resolution is approval-gated; see
+   `docs/onboarding/ai-tools.md` § "Approval Boundaries")
 6. After the approved push, if the fixes addressed Codex review comments, ask
    for explicit maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment $1 --body "@codex review"`
@@ -108,7 +109,7 @@ activity signal or submitted review, do not post a duplicate trigger.
     required hosted checks unless a maintainer explicitly approves a policy
     bypass
 
-Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"
+Review rules owner: `docs/onboarding/ai-tools.md` § "AI Review Comments" and § "Approval Boundaries"
 
 ## Output
 

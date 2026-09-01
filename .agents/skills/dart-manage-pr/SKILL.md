@@ -1,6 +1,6 @@
 ---
 name: dart-manage-pr
-description: "DART Manage PR: manage an open DART pull request through CI, review, and cleanup"
+description: "DART Manage PR: manage an open DART pull request through CI, review, merge, and cleanup"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-manage-pr.md -->
@@ -32,6 +32,13 @@ mutations: $ARGUMENTS
 @docs/onboarding/ci-cd.md
 @docs/onboarding/ai-tools.md
 
+## Modes
+
+- `status`: report-only; no mutations.
+- `mode=manage` (default): run the full loop below to the next terminal state.
+- `mode=merge`: maintainer-only; merges happen only under this mode, through
+  the step 5 pre-merge gate and explicit maintainer/user approval to merge.
+
 ## Invocation Contract
 
 When the user says `manage <PR>` or `continue managing <PR>` without limiting
@@ -41,20 +48,19 @@ loop to the next terminal state:
 - required policy metadata checked and corrected when stale;
 - CI monitored until green, failed, or blocked;
 - merge conflicts reproduced and resolved locally;
-- review comments addressed, pushed, resolved, and re-reviewed when appropriate;
+- review comments addressed, pushed, resolved, re-reviewed when appropriate;
 - PR body/testing evidence refreshed when it no longer matches the branch.
 
-This explicit approval covers routine PR-maintenance mutations needed for that
-loop: additive fix commits and pushes, PR description/metadata corrections,
-resolving already-addressed review threads, rerunning failed CI jobs, and
-requesting a fresh AI review after follow-up fixes. It does **not** cover
-merging the PR into the target branch, force-pushes, branch deletion, PR
-closure, base-branch changes, or human reviewer requests; ask separately for
-those.
+This explicit approval covers routine PR-maintenance mutations for that loop:
+additive fix commits and pushes, description/metadata corrections, resolving
+already-addressed review threads, rerunning failed CI jobs, and requesting a
+fresh AI review after follow-up fixes. It does **not** cover merging (see
+`mode=merge`), force-pushes, branch deletion, PR closure, base-branch changes,
+or human reviewer requests; ask separately for those.
 
-Do not call the PR managed just because checks are green. Continue until the PR
-is mergeable with required checks complete and addressed review threads are
-resolved, or until a concrete blocker remains.
+Do not call the PR managed just because checks are green: continue until it is
+mergeable with required checks complete and addressed threads resolved, or a
+concrete blocker remains.
 
 ## Identify the PR
 
@@ -75,40 +81,33 @@ gh pr checks <PR_NUMBER>
 ## Workflow
 
 1. Confirm scope and policy:
-   - Check that the base branch, milestone, title, and PR template are correct.
+   - Check that the base branch, title, and PR template are correct, and that
+     the base-matching milestone is set (`DART 7.0` for a `main` base, the
+     branch-matching DART 6.x release milestone for a `release-*` base); if
+     it is missing, set it only after explicit maintainer/user approval.
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body is readable and follows template order: Summary,
-     Motivation / Problem, Changes / Key Changes, optional Before / After,
-     Testing, Breaking Changes, and Related Issues / PRs. Keep Summary first as
-     the skimmable user/downstream outcome; if problem context must lead, fold
-     it into Summary and keep the fuller why in Motivation. Mechanics belong in
-     Changes unless they explain user-visible risk.
+   - Confirm the PR body is readable and follows template order (Summary first
+     as the skimmable user/downstream outcome, then Motivation, Changes,
+     optional Before / After, Testing, Breaking Changes, Related Issues /
+     PRs); mechanics belong in Changes unless they explain user-visible risk.
    - When the PR has meaningful user-facing API, workflow, behavior, or
-     performance impact, confirm the body has a concise Before / After section
-     that compares the relevant old and new surfaces. For performance claims,
-     ensure the baseline is explicit: CPU path, parent commit, `main`, or prior
-     implementation, plus workload, metric, and important limitations. Each
-     row should be phrased as a user-visible before/after, with backend details
-     used only as supporting context.
-   - For visual PR evidence, ensure transient screenshots, headless renders,
-     GIFs, and videos are hosted as GitHub PR/issue Markdown attachments
-     (`https://github.com/user-attachments/assets/...`) rather than committed to
-     the branch. If evidence files were committed only for the PR description,
-     remove them and replace the PR body entry with a GitHub attachment URL. If
-     the current tooling cannot upload an attachment, ask a maintainer to upload
-     the local artifact through the PR editor instead of keeping it under
-     `docs/assets/`.
+     performance impact, confirm a concise Before / After section compares the
+     old and new surfaces, with an explicit baseline for performance claims
+     (path, parent commit or `main`, workload, metric, limitations) and rows
+     phrased as user-visible before/after.
+   - Ensure transient visual evidence (screenshots, headless renders, GIFs,
+     videos) is hosted as GitHub PR/issue Markdown attachments
+     (`https://github.com/user-attachments/assets/...`), never committed to
+     the branch; if evidence files were committed only for the PR body, remove
+     them and link an attachment URL instead (ask a maintainer to upload when
+     tooling cannot).
    - For claim-dependent 3D behavior, verify an optional `Visual verification`
      subsection agrees with the text oracle and records claims, limitations,
      view/debug layers, and reproduce commands.
-   - Inspect local state before editing:
-     ```bash
-     git status --short --branch
-     git diff --stat
-     git diff --check
-     ```
+   - Inspect local state before editing: `git status --short --branch`,
+     `git diff --stat`, `git diff --check`.
 2. Monitor CI:
    ```bash
    gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
@@ -129,11 +128,10 @@ gh pr checks <PR_NUMBER>
      code or behavior changed.
    - Commit only intended files. Push only after explicit maintainer/user
      approval, then continue monitoring the PR.
-   - For already-published PRs, prefer additive follow-up commits so reviewers
-     can inspect each update. Amend or force-push only after explicit
-     maintainer/user approval and only when the user explicitly requests it or
-     when there is a clear reason such as removing sensitive content or
-     repairing broken branch history.
+   - For already-published PRs, prefer additive follow-up commits. Amend or
+     force-push only after explicit maintainer/user approval, when the user
+     explicitly requests it or a clear reason exists (removing sensitive
+     content, repairing broken history).
    - Before every push, first merge the latest base branch into the PR branch
      (on every push, not just the first) so each pushed/CI-tested state reflects
      the current target base branch and conflicts surface early:
@@ -144,10 +142,8 @@ gh pr checks <PR_NUMBER>
      git push                                 # after explicit approval
      ```
      The local base merge is a routine pre-push step; the push itself still
-     requires explicit maintainer/user approval. Do not rebase a published PR
-     branch by default because it invalidates existing CI runs and makes PR
-     review/comment history harder to follow. Rebase or force-push only when the
-     maintainer explicitly requests it.
+     requires explicit maintainer/user approval. Never rebase or force-push a
+     published PR branch unless the maintainer explicitly requests it.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as
@@ -165,6 +161,10 @@ gh pr checks <PR_NUMBER>
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
+   - For substantive code PRs, an independent review session (a human, or a
+     separate session running `dart-review-pr` via `/dart-review-pr` or
+     `$dart-review-pr`) must record its outcome — findings or an explicitly
+     clean result — before merge approval; docs-only/mechanical are exempt.
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
    - After posting `@codex review`, keep monitoring until a submitted review,
@@ -173,39 +173,39 @@ gh pr checks <PR_NUMBER>
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
    - If the PR is draft, mark it ready after explicit approval once Codex is
-     clean and local validation passed on the current head: `pixi run test-all`
-     for build coverage, `pixi run test`/`pixi run test-py` for affected
-     C++/Python behavior, plus the Gazebo gate when package or downstream
-     compatibility could be affected. Hosted CI may still be pending.
-   - Confirm required hosted checks are passing before merge.
-   - Do not merge unless explicitly asked or the workflow clearly includes merge.
+     clean and local validation passed on the current head (`pixi run
+     test-all`; focused `pixi run test`/`test-py` and the Gazebo gate as the
+     touched surface requires). Hosted CI may still be pending.
+   - `mode=merge` gate (maintainer-only): before any merge, re-run local
+     validation on the current head after the latest pushed change
+     (`pixi run test-all`, plus the Gazebo gate when downstream compatibility
+     could be affected); merge only when required hosted checks and review are
+     green, the milestone is set, an independent review recorded a clean
+     result on the current post-fix head (after findings, a clean re-review;
+     the step 4 docs-only/mechanical exemption also satisfies this), the
+     PR is not draft and GitHub reports it mergeable, and explicit merge
+     approval is given.
    - PR comments, review re-triggers, thread resolution, reviewer requests,
      ready-for-review transitions, merges, and branch deletion are external
      mutations and require explicit maintainer/user approval.
-   - Confirm the merge method from repository settings or the user. Recent DART
-     PRs usually use single-parent PR-title commits, so prefer squash/rebase
-     over merge commits unless the repository settings or user request differ.
-   - Use the current head SHA when merging so a moved branch cannot be merged
+   - Confirm the merge method from repository settings or the user (recent
+     DART PRs prefer squash/rebase single-parent PR-title commits) and use the
+     current head SHA when merging so a moved branch cannot be merged
      accidentally.
 6. Clean up after merge:
-   - Confirm the PR merged and identify the head branch before deleting.
-   - After explicit maintainer/user approval, prefer merge-time deletion with
-     the approved merge method and head SHA:
+   - Confirm the PR merged and identify the head branch before deleting. After
+     explicit maintainer/user approval, prefer merge-time deletion with the
+     approved merge method and head SHA:
      ```bash
      gh pr merge <PR_NUMBER> --squash --match-head-commit <HEAD_SHA> --delete-branch
      ```
      Use `--rebase` or `--merge` instead of `--squash` when requested.
    - After explicit maintainer/user approval, otherwise delete only the PR
-     branch after confirming it has landed:
-     ```bash
-     git push origin --delete <HEAD_BRANCH>
-     git switch <BASE_BRANCH>
-     git pull --ff-only
-     git branch -D <HEAD_BRANCH>
-     ```
-     Use force-delete locally only after explicit maintainer/user approval and
-     after confirming the PR branch has landed; squash and rebase merges do not
-     preserve the branch tip in target-branch ancestry.
+     branch after confirming it has landed (`git push origin --delete
+     <HEAD_BRANCH>`, then update the local checkout); force-delete locally
+     only after explicit maintainer/user approval and after confirming the
+     branch landed — squash/rebase merges do not preserve the branch tip in
+     target-branch ancestry.
 
 ## Output
 

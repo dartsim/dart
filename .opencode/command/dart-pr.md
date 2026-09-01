@@ -108,7 +108,7 @@ Use these practices:
    | Target                          | Milestone                      |
    | ------------------------------- | ------------------------------ |
    | `main`                          | `DART 7.0`                     |
-   | Active DART 6 LTS `release-6.*` | Branch-matching DART 6.x patch |
+   | Active DART 6 LTS `release-6.*` | Branch-matching DART 6.x release |
 
 4. For bug fixes, use the dual-PR flow: fix the active DART 6 LTS branch first,
    then cherry-pick or reapply to `main`.

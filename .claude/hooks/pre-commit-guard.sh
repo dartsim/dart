@@ -1,8 +1,8 @@
 #!/bin/sh
-# DART PreToolUse guard for Codex/Claude Bash `git commit` calls.
+# DART Claude Code/Codex PreToolUse guard for Bash `git commit` calls.
 #
-# Wired via `.codex/hooks.json` and `.claude/settings.json`. It enforces the
-# fast Tier-0 gate for agent sessions even before `pixi run install-hooks` has
+# Wired via .claude/settings.json and .codex/hooks.json. It enforces the
+# fast staged-file gate for agent sessions even before `pixi run install-hooks` has
 # been run, so an agent cannot commit past the gate by forgetting it.
 #
 # Contract:
@@ -626,16 +626,7 @@ def unwrap_wrapper(tokens, i, head):
             if token.startswith(("--format=", "--output=")):
                 i += 1
                 continue
-            if token in {
-                "-a",
-                "--append",
-                "-p",
-                "--portability",
-                "-q",
-                "--quiet",
-                "-v",
-                "--verbose",
-            }:
+            if token in {"-a", "--append", "-p", "--portability", "-q", "--quiet", "-v", "--verbose"}:
                 i += 1
                 continue
             return i
@@ -662,6 +653,29 @@ def unwrap_wrapper(tokens, i, head):
             return None
         return i
     return i
+
+
+def git_common_dir(path):
+    result = subprocess.run(
+        ["git", "-C", path, "rev-parse", "--git-common-dir"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    common = result.stdout.strip()
+    if not os.path.isabs(common):
+        common = os.path.join(path, common)
+    return os.path.realpath(common)
+
+
+def git_worktree_root(path):
+    result = subprocess.run(
+        ["git", "-C", path, "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    return os.path.realpath(result.stdout.strip()) if result.returncode == 0 else ""
 
 
 def is_git_commit(text):
@@ -850,64 +864,25 @@ def is_git_commit(text):
             ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
-            target_repo_root = ""
+            project = (
+                os.environ.get("CLAUDE_PROJECT_DIR")
+                or os.environ.get("CODEX_PROJECT_DIR")
+                or os.getcwd()
+            )
             if target_dir:
-                project = os.environ.get("CLAUDE_PROJECT_DIR")
                 try:
-                    target_top = subprocess.run(
-                        ["git", "-C", target_dir, "rev-parse", "--show-toplevel"],
-                        capture_output=True,
-                        text=True,
-                    )
-                    project_top = subprocess.run(
-                        ["git", "-C", project, "rev-parse", "--show-toplevel"],
-                        capture_output=True,
-                        text=True,
-                    ) if project else None
-                    if target_top.returncode == 0:
-                        target_repo_root = target_top.stdout.strip()
+                    target_common = git_common_dir(target_dir)
+                    project_common = git_common_dir(project) if project else None
                     if (
                         project
-                        and target_top.returncode == 0
-                        and project_top
-                        and project_top.returncode == 0
-                        and os.path.realpath(target_top.stdout.strip())
-                        != os.path.realpath(project_top.stdout.strip())
+                        and target_common
+                        and project_common
+                        and target_common != project_common
                     ):
-                        target_common = subprocess.run(
-                            [
-                                "git",
-                                "-C",
-                                target_dir,
-                                "rev-parse",
-                                "--path-format=absolute",
-                                "--git-common-dir",
-                            ],
-                            capture_output=True,
-                            text=True,
-                        )
-                        project_common = subprocess.run(
-                            [
-                                "git",
-                                "-C",
-                                project,
-                                "rev-parse",
-                                "--path-format=absolute",
-                                "--git-common-dir",
-                            ],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if not (
-                            target_common.returncode == 0
-                            and project_common.returncode == 0
-                            and os.path.realpath(target_common.stdout.strip())
-                            == os.path.realpath(project_common.stdout.strip())
-                        ):
-                            continue  # commit into an unrelated repository
+                        continue  # commit into another repository
                     if (
                         project
-                        and target_top.returncode != 0
+                        and target_common is None
                         and not os.path.realpath(target_dir).startswith(
                             os.path.realpath(project) + os.sep
                         )
@@ -915,11 +890,12 @@ def is_git_commit(text):
                         continue  # non-repo path outside this project
                 except OSError:
                     pass
+            gate_target_dir = target_dir or project
             if no_verify:
-                return "commit-no-verify", target_repo_root
+                return "commit-no-verify", git_worktree_root(gate_target_dir)
             if hooks_path_override:
-                return "commit-hooks-override", target_repo_root
-            return "commit", target_repo_root
+                return "commit-hooks-override", git_worktree_root(gate_target_dir)
+            return "commit", git_worktree_root(gate_target_dir)
     return "skip", ""
 
 
@@ -954,7 +930,7 @@ if [ "$verdict" != "commit" ] \
     exit 0
 fi
 
-repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}"
+repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}}"
 
 if [ "$verdict" = "commit" ]; then
     # If the executable git pre-commit hook is the current DART-managed hook,
@@ -968,7 +944,7 @@ if [ "$verdict" = "commit" ]; then
             *) hook_path="$repo_root/$hook_path" ;;
         esac
         if [ -x "$hook_path" ] \
-            && grep -Fq "DART-MANAGED-HOOK v6  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
+            && grep -Fq "DART-MANAGED-HOOK v7  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
             && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
             exit 0
         fi

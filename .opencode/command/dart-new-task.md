@@ -55,7 +55,7 @@ Read these files first:
    and remote topic-branch name:
    `branch=$(git branch --show-current); git push -u origin "HEAD:${branch}"`.
    Then create the draft PR against `<target-branch>` with the branch-matching
-   DART 6.x patch milestone and `.github/PULL_REQUEST_TEMPLATE.md`.
+   DART 6.x release milestone and `.github/PULL_REQUEST_TEMPLATE.md`.
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
    maps, or long-lived decisions into release/onboarding/AI docs.

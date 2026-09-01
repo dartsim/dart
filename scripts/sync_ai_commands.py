@@ -22,9 +22,11 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
+PROFILE_READ_ERRORS = (OSError, json.JSONDecodeError, AttributeError)
 CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
@@ -530,6 +532,150 @@ def validate_command_structure(repo_root: Path) -> bool:
     return True
 
 
+def profile_skill_lines(content: str, profile: str) -> list[tuple[int, str]]:
+    """Return numbered lines outside sections owned by the other branch."""
+    if profile not in {"main", "release-6.20"}:
+        raise ValueError(f"unknown branch profile: {profile}")
+
+    excluded_level: int | None = None
+    included: list[tuple[int, str]] = []
+    excluded_marker = "dart 6" if profile == "main" else "dart 7"
+    fence_char = ""
+    fence_length = 0
+    fence_open_line = 0
+
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        stripped = line.lstrip()
+        if fence_char:
+            if re.match(rf"^{re.escape(fence_char)}{{{fence_length},}}\s*$", stripped):
+                fence_char = ""
+                fence_length = 0
+            if excluded_level is None:
+                included.append((line_number, line))
+            continue
+        fence = re.match(r"^(`{3,}|~{3,})", stripped)
+        if fence:
+            fence_char = fence.group(1)[0]
+            fence_length = len(fence.group(1))
+            fence_open_line = line_number
+            if excluded_level is None:
+                included.append((line_number, line))
+            continue
+        heading = re.match(r"^(#{1,6})\s+(.+?)\s*$", stripped)
+        if heading:
+            level = len(heading.group(1))
+            if excluded_level is not None and level <= excluded_level:
+                excluded_level = None
+            if excluded_marker in heading.group(2).casefold():
+                excluded_level = level
+        if excluded_level is None:
+            included.append((line_number, line))
+
+    if fence_char:
+        raise ValueError(f"unclosed code fence opened at line {fence_open_line}")
+    return included
+
+
+def detect_branch_profile(repo_root: Path) -> str:
+    """Return the branch profile used for branch-headed skill sections."""
+    profile_path = repo_root / "docs" / "ai" / "branch-profile.json"
+    try:
+        declared = json.loads(profile_path.read_text(encoding="utf-8")).get("profile")
+    except PROFILE_READ_ERRORS:
+        declared = None
+    if declared in {"main", "release-6.20"}:
+        return declared
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "branch", "--show-current"],
+        capture_output=True,
+        text=True,
+    )
+    return "release-6.20" if "release-6.20" in result.stdout else "main"
+
+
+# Deliberate non-capability ``dart-`` names mentioned in workflow sources
+# (for example the demos app). Extend this reviewed ledger explicitly when a
+# new non-capability name (such as a CMake component) is first mentioned;
+# harvesting names from the build system would let an incidental collision
+# silently exempt a retired capability.
+NON_CAPABILITY_DART_NAMES = frozenset({"dart-demos"})
+
+
+def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> list[str]:
+    """Flag command/skill sources naming capabilities absent on this branch.
+
+    Guards against a main-only workflow being cited on a release branch (or
+    vice versa). Non-capability ``dart-`` names must be listed in the
+    explicit ``NON_CAPABILITY_DART_NAMES`` ledger; capability identity
+    always wins, so a name that is a current capability is never exempt.
+    """
+    non_capability_names = NON_CAPABILITY_DART_NAMES - expected
+    profile = detect_branch_profile(repo_root)
+    errors: list[str] = []
+    source_paths = sorted(
+        (repo_root / ".claude" / "commands").glob("dart-*.md")
+    ) + sorted((repo_root / ".claude" / "skills").glob("dart-*/SKILL.md"))
+    for source_path in source_paths:
+        source_content = source_path.read_text(encoding="utf-8")
+        if source_path.name == "SKILL.md":
+            # Shared skills may carry sections owned by the other branch
+            # profile; scan only the lines that apply to this profile.
+            try:
+                source_content = "\n".join(
+                    line for _, line in profile_skill_lines(source_content, profile)
+                )
+            except ValueError as exc:
+                errors.append(f"{source_path.relative_to(repo_root)}: {exc}")
+                continue
+        unprefixed = set(
+            re.findall(r"`(dart-[a-z0-9-]*[a-z0-9])(?: [^`]*)?`", source_content)
+        )
+        prefixed = set(
+            re.findall(r"`[/$](dart-[a-z0-9-]*[a-z0-9])(?: [^`]*)?`", source_content)
+        ) | set(
+            re.findall(
+                r"(?:^|[\s`(*_\[\"'>|,;=])[/$](dart-[a-z0-9-]*[a-z0-9])(?![a-z0-9-])",
+                source_content,
+                re.M,
+            )
+        )
+        try:
+            label = str(source_path.relative_to(repo_root))
+        except ValueError:
+            label = display_path(source_path)
+        bare = set(
+            re.findall(
+                r"(?<![A-Za-z0-9$/-])(dart-[a-z0-9-]*[a-z0-9])(?![a-z0-9-])",
+                source_content,
+            )
+        )
+        source_refs = (
+            set(
+                re.findall(
+                    r"(?:\.claude/commands/|\.opencode/command/)"
+                    r"(dart-[a-z0-9-]*[a-z0-9])\.md",
+                    source_content,
+                )
+            )
+            | set(
+                re.findall(
+                    r"(?:\.claude|\.agents)/skills/(dart-[a-z0-9-]*[a-z0-9])(?![a-z0-9-])",
+                    source_content,
+                )
+            )
+            | set(re.findall(r"\./(dart-[a-z0-9-]*[a-z0-9])(?:\.md|/)", source_content))
+        )
+        # Invocation-shaped mentions (/dart-x, $dart-x) and canonical source
+        # paths are always workflow references; the non-capability ledger
+        # covers only prose mentions (inline code or bare text).
+        unknown = ((unprefixed | bare) - expected - non_capability_names) | (
+            (prefixed | source_refs) - expected
+        )
+        for name in sorted(unknown):
+            errors.append(f"{label}: unknown capability `{name}`")
+    return errors
+
+
 def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
     """Extract user-invoked workflow table rows keyed by capability name."""
     rows: dict[str, list[str]] = {}
@@ -547,7 +693,7 @@ def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) < 5:
             continue
-        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
+        match = re.fullmatch(r"`(dart-[a-z0-9-]*[a-z0-9])`", cells[0])
         if match:
             rows[match.group(1)] = cells
 
@@ -571,7 +717,7 @@ def parse_domain_skill_rows(workflow_content: str) -> dict[str, list[str]]:
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if len(cells) < 3:
             continue
-        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
+        match = re.fullmatch(r"`(dart-[a-z0-9-]*[a-z0-9])`", cells[0])
         if match:
             rows[match.group(1)] = cells
 
@@ -1282,26 +1428,18 @@ def validate_ai_docs(repo_root: Path) -> bool:
 
         approval_workflows = {
             "dart-backport-pr",
-            "dart-benchmark-packet",
             "dart-branch-cleanup",
             "dart-changelog",
-            "dart-close-issue",
-            "dart-deps",
             "dart-docs-update",
             "dart-downstream-fix",
             "dart-fix-ci",
-            "dart-fix-issue",
             "dart-manage-pr",
             "dart-mechanical-refactor",
             "dart-new-task",
-            "dart-next",
             "dart-pr",
             "dart-release-ci-fix",
-            "dart-release-merge-main",
-            "dart-release-packaging",
             "dart-resume",
             "dart-review-pr",
-            "dart-triage-issue",
         }
         for name in sorted(approval_workflows & command_names):
             cells = workflow_rows.get(name)
@@ -1311,12 +1449,14 @@ def validate_ai_docs(repo_root: Path) -> bool:
                     f"{display_path(workflows_path)}: `{name}` missing approval gate"
                 )
 
-        documented = set(re.findall(r"`(dart-[a-z0-9-]+)`", workflow_content))
+        documented = set(re.findall(r"`(dart-[a-z0-9-]*[a-z0-9])`", workflow_content))
         extra = documented - expected
         for name in sorted(extra):
             errors.append(
                 f"{display_path(workflows_path)}: unknown capability `{name}`"
             )
+
+        errors.extend(unknown_capability_mention_errors(repo_root, expected))
 
         if "docs/ai/workflows.md" not in agents_content:
             errors.append("AGENTS.md: missing docs/ai/workflows.md catalog pointer")

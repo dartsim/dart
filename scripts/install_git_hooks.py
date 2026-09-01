@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install DART's git ``pre-commit`` hook (the fast Tier-0 safety gate).
+"""Install DART's git ``pre-commit`` hook (the fast staged-file gate).
 
 Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
 ``scripts/check_agent_hook.py --profile staged`` with a compatible Python
@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "6"
+HOOK_VERSION = "7"
 
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
 # interpreter, then a compatible PATH python3. In an older linked worktree or

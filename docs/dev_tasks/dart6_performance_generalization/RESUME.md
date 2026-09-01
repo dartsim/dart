@@ -9,8 +9,9 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**2026-07-10: the current-head completion audit RAN** (release-6.20 @
-`db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
+**2026-07-10: completion audit RAN at the then-current head** (release-6.20 @
+`db255a08e8e`, 2026-07-09 — dozens of commits behind the branch tip by late
+August 2026; re-run before treating these numbers as current; artifacts `/tmp/audit_head_20260710T011207Z`):
 
 - Criterion 1 (S1 primary fixture 3x): **MET** — 120/dart/1 RTF 0.126447
   (3.51x the 0.036 round-2 baseline), avg step 7.908 ms, hash

@@ -49,8 +49,12 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
 Bug fixes that apply to both DART 6 and DART 7 need both a release-branch PR
-and a `main` PR. Dependency-minimization work on DART 6.20 must preserve
+and a `main` PR — open the release-branch PR first, then the matching `main`
+PR. (Shared AI-infrastructure and model-upgrade change sets follow the
+opposite, normally-main-first order described in `dart-model-upgrade`; the
+two rules cover different change classes.) Dependency-minimization work on
+DART 6.20 must preserve
 installed headers, package components, and downstream behavior unless a
 maintainer explicitly approves a breaking change.
 
-Use the branch-matching DART 6.x milestone for release-branch PRs.
+Use the branch-matching DART 6.x release milestone for release-branch PRs.
