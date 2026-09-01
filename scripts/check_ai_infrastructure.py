@@ -4537,6 +4537,8 @@ def version(command: str) -> str:
         )
     except (OSError, subprocess.TimeoutExpired):
         return "unavailable"
+    if result.returncode != 0:
+        return "unavailable"
     output = (result.stdout or result.stderr).strip()
     return output.splitlines()[0] if output else "unavailable"
 

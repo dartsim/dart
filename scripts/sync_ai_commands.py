@@ -553,7 +553,9 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
         prefixed = set(
             re.findall(r"`[/$](dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
         ) | set(
-            re.findall(r"(?:^|[\s`(])[/$](dart-[a-z0-9-]+)\b", source_content, re.M)
+            re.findall(
+                r"(?:^|[\s`(*_\[\"'>])[/$](dart-[a-z0-9-]+)\b", source_content, re.M
+            )
         )
         try:
             label = str(source_path.relative_to(repo_root))
