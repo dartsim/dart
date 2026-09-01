@@ -23,6 +23,7 @@ from ai_infrastructure import (
     run_checks,
     scenario_results,
     tool_versions,
+    workflow_source_pins,
     working_tree_state,
 )
 from install_git_hooks import HOOK_TEMPLATE, SENTINEL
@@ -254,6 +255,7 @@ def _model_harness_inventory(
             "project": project_pins,
             "project_agents": project_agent_pins,
             "custom_agents": custom_agent_pins,
+            "workflow_sources": workflow_source_pins(root),
         },
         "project_agent_config": displayed_agent_config,
         "instruction_context": _instruction_context_inventory(root),
@@ -493,6 +495,8 @@ def main() -> int:
             "  model harness: "
             f"{project_pin_count} project pins, "
             f"{len(model_harness['model_pins']['custom_agents'])} agent pins, "
+            f"{len(model_harness['model_pins']['workflow_sources'])} "
+            "workflow-source pins, "
             f"{model_harness['workflow_sources']['longest']['lines']}/"
             f"{model_harness['domain_skill_sources']['longest']['lines']} "
             "lines in longest workflow/domain skill, "

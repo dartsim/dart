@@ -512,6 +512,10 @@ compatibility remains on the active DART 6 LTS branch._
   one managed-hook version, worktree-aware resolution, agent-CLI versions in
   `ai-doctor`, and an unknown-capability scan over workflow sources).
   ([#3457](https://github.com/dartsim/dart/pull/3457))
+- Routed Claude Code work to Claude Fable 5.1 and made `docs/ai/README.md`
+  § "Model Routing" the only AI-infra surface that names models, enforced by
+  new `check-ai-infra` gates; `docs/onboarding/ai-tools.md` records the tested
+  versions and comparison-lane mechanics.
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))

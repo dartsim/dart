@@ -6,6 +6,7 @@ import ast
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1059,6 +1060,19 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
     assert "## Model Routing" in routing_owner
     assert "**Codex — " in routing_owner
     assert "**Claude Code — " in routing_owner
+    routing_section = routing_owner.split("## Model Routing", 1)[1].split("\n## ", 1)[0]
+    lanes = [block for block in routing_section.split("\n- **")[1:]]
+    assert len(lanes) >= 2
+    for lane in lanes:
+        assert "accept native image input" in lane, lane[:60]
+    families = {
+        family.lower() for family in re.findall(r"claude-([a-z]+)-\d", routing_section)
+    }
+    assert families, "routing owner names no Claude model ids"
+    for family in families:
+        assert infra.MODEL_NAME_PATTERN.search(f"claude-{family}-9")
+        assert infra.MODEL_NAME_PATTERN.search(f"{family.title()} 9")
+    assert infra.MODEL_NAME_PATTERN.search("gpt-9")
 
     compliance = sync.parse_command_frontmatter(
         (ROOT / ".claude" / "commands" / "dart-audit-agent-compliance.md").read_text()
@@ -2243,6 +2257,7 @@ def test_doctor_report_is_read_only(tmp_path):
         "project": [],
         "project_agents": [],
         "custom_agents": [],
+        "workflow_sources": [],
     }
     assert model_harness["project_agent_config"] == {
         "max_threads": 4,
@@ -2330,6 +2345,81 @@ def test_doctor_reports_custom_agent_model_pin_for_upgrade_audit(tmp_path):
     assert result["inventory"]["model_harness"]["model_pins"]["custom_agents"] == [
         {"path": ".codex/agents/dart_scout.toml", "keys": ["model"]}
     ]
+
+
+@pytest.mark.parametrize("key", infra.WORKFLOW_SOURCE_PIN_KEYS)
+@pytest.mark.parametrize(
+    "relative",
+    (".claude/commands/dart-new-task.md", ".claude/skills/dart-verify-sim/SKILL.md"),
+)
+def test_infra_rejects_workflow_source_model_or_effort_pin(tmp_path, relative, key):
+    root = make_repo(tmp_path, "main")
+    path = root / relative
+    body = path.read_text()
+    assert body.startswith("---\n"), "fixture sources carry YAML frontmatter"
+    value = {"model": "claude-fable-5-1", "effort": "xhigh"}[key]
+    path.write_text(body.replace("---\n", f"---\n{key}: {value}\n", 1))
+
+    errors = infra.check_workflow_source_pins(root)
+
+    assert errors == [
+        f"{relative}: frontmatter must not pin {key} "
+        '(model routing lives in docs/ai/README.md § "Model Routing")'
+    ]
+    assert not ai_doctor.report(root, "main")["ok"]
+    assert ai_doctor.report(root, "main")["inventory"]["model_harness"]["model_pins"][
+        "workflow_sources"
+    ] == [{"path": relative, "kind": "frontmatter", "keys": [key]}]
+
+
+@pytest.mark.parametrize("key", infra.CLAUDE_SETTINGS_PIN_KEYS)
+def test_infra_rejects_claude_project_settings_pin(tmp_path, key):
+    root = make_repo(tmp_path, "main")
+    path = root / ".claude" / "settings.json"
+    settings = json.loads(path.read_text())
+    settings[key] = "claude-sonnet-5" if key == "model" else {"x": 1}
+    path.write_text(json.dumps(settings))
+
+    errors = infra.check_workflow_source_pins(root)
+
+    assert errors == [
+        f".claude/settings.json: project settings must not pin {key} "
+        '(model routing lives in docs/ai/README.md § "Model Routing")'
+    ]
+    assert not ai_doctor.report(root, "main")["ok"]
+
+
+def test_infra_rejects_model_names_outside_routing_owner(tmp_path):
+    root = make_repo(tmp_path, "main")
+    assert infra.check_model_name_owner(root) == []
+    skill = root / ".claude/skills/dart-verify-sim/SKILL.md"
+    skill.write_text(skill.read_text() + "\nRoute vision work to opus 5 only.\n")
+    (root / "docs/onboarding/ai-tools.md").write_text("Tested on Claude Fable 5.1\n")
+
+    errors = infra.check_model_name_owner(root)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(".claude/skills/dart-verify-sim/SKILL.md:")
+    assert 'docs/ai/README.md § "Model Routing"' in errors[0]
+    assert errors[0].endswith("Route vision work to opus 5 only.")
+    assert any(
+        "model names belong in" in error for error in infra.run_checks(root, "main")
+    )
+
+
+def test_model_names_live_only_in_routing_owner():
+    """The real checkout keeps model names in the routing owner and the
+    tested-version evidence; `pixi run check-ai-infra` enforces the same rule."""
+    assert infra.check_model_name_owner(ROOT) == []
+    scanned = {
+        path.relative_to(ROOT).as_posix() for path in infra.model_name_scan_paths(ROOT)
+    }
+    assert "AGENTS.md" in scanned
+    assert ".claude/skills/dart-verify-sim/SKILL.md" in scanned
+    assert "docs/onboarding/agent-sim-verification.md" in scanned
+    assert ".codex/config.toml" in scanned
+    assert "docs/ai/README.md" not in scanned
+    assert "docs/onboarding/ai-tools.md" not in scanned
 
 
 def test_doctor_model_harness_inventory_stays_json_safe_on_toml_type_error(tmp_path):

@@ -185,7 +185,10 @@ faster; it must not be the only path.
 `pixi run check-ai-infra` adds runtime and drift validation beyond adapter
 parity. It checks Codex agent/config/hook schema and safety, documented Pixi
 tasks and tracked paths, nested `AGENTS.md` discovery, branch-profile
-references, generated ownership, the machine-readable routing scenarios, and
+references, generated ownership, model-routing ownership (no `model`/`effort`
+frontmatter pins in workflow sources and no model names outside
+`docs/ai/README.md` § "Model Routing" or the tested-version evidence in
+`docs/onboarding/ai-tools.md`), the machine-readable routing scenarios, and
 canonical pytest/CTest task and tracked-workflow wiring. Direct pytest/CTest
 invocations in Pixi tasks or workflows are rejected so each pytest/CTest-backed
 tracked gate crosses a guarded runner. Its completion path also executes bounded

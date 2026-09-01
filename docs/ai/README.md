@@ -171,30 +171,45 @@ DART uses the two-role operating model in `docs/ai/orchestration.md`: an
 orchestrator session owns understanding, decomposition, sequencing, and review,
 while executor sessions implement one well-defined work packet at a time.
 
-No project model or reasoning effort is pinned. Routing is per tool lane, one
-bounded entry per validated lane:
+No project model or reasoning effort is pinned: `.codex/config.toml`, the
+Codex agent profiles, `.claude/settings.json`, and command or skill frontmatter
+(`model`, `effort`) stay unset so the session choice wins, and
+`pixi run check-ai-infra` rejects such pins. Routing is per tool lane, one
+bounded entry per validated lane, and every lane states that its models accept
+native image input because `dart-verify-sim` relies on it:
 
 - **Codex — GPT-5.6 family.** Use Sol for difficult ambiguous work, Terra for
   everyday or read-heavy work, and Luna for clear repeatable work. Max gives
   one hard task more reasoning time; Ultra is for independently parallelizable
   work when the user explicitly authorized delegation. Most tasks need
-  neither.
-- **Claude Code — current Claude models.** Use Fable 5 (`claude-fable-5`,
-  the Mythos-class tier above Opus) for the hardest ambiguous or
-  long-horizon work; Opus 5 (`claude-opus-5`) as the everyday strong default
-  for substantial engineering work such as architecture, deep analysis, and
-  agentic coding (Claude Code fast mode, toggled with `/fast` on Opus 5/4.8,
-  also runs on Opus); Sonnet 5 (`claude-sonnet-5`) for standard bounded
-  work; and Haiku 4.5 (`claude-haiku-4-5-20251001`) for quick lookups.
-  Reasoning effort is a session-level setting; reserve `max` effort for one
-  hard task rather than making it a default. Fable 5 ships additional safety
-  measures for dual-use capabilities that can occasionally refuse dual-use
-  content; treat such a refusal as expected model behavior rather than a
-  DART harness defect. (Mythos 5 is the same underlying model without those
-  measures, restricted to approved organizations — do not try to select
-  it.) If the refused task is legitimate DART work, restate it with its
-  physics/simulation context made explicit, and surface it to a maintainer
-  if it still refuses.
+  neither. Sol, Terra, and Luna accept native image input.
+- **Claude Code — current Claude models.** Use Fable 5.1 (`claude-fable-5-1`,
+  the Mythos-class tier above Opus) for the hardest ambiguous or long-horizon
+  work, or when Opus 5 at higher effort still falls short on the task; Opus 5
+  (`claude-opus-5`) as the everyday strong default for substantial engineering
+  work such as architecture, deep analysis, and agentic coding (Claude Code
+  fast mode, toggled with `/fast`, runs only on Opus 5/4.8); Sonnet 5
+  (`claude-sonnet-5`) for standard bounded work; and Haiku 4.5
+  (`claude-haiku-4-5-20251001`) for quick lookups. Fable 5 (`claude-fable-5`)
+  stays served as a legacy model; do not route new work to it. All four
+  current models accept native image input. Reasoning effort is a
+  session-level setting that defaults to `high`. On Fable 5.1, `medium`
+  roughly matches Fable 5 at lower cost, so step down for routine or
+  read-heavy turns; `xhigh` and `max` carry its largest gains but also its
+  longest thinking time, so reserve them for one capability-sensitive task
+  rather than a default. Fable 5.1 ships additional safety measures for
+  dual-use capabilities that can occasionally refuse dual-use content; treat
+  such a refusal as expected model behavior rather than a DART harness defect.
+  (Mythos 5.1 is the same underlying model with safeguards tuned for its
+  trusted-access program and is not generally available — do not try to
+  select it.)
+  If the refused task is legitimate DART work, restate it with its
+  physics/simulation context made explicit, ask "are there bugs in this
+  program?" rather than "does this compile?", keep base64 blobs out of tool
+  output, and surface it to a maintainer if it still refuses.
+
+A model-upgrade audit re-verifies native image input before adding or
+replacing a lane.
 
 The read-only project profiles in `.codex/agents/` inherit the selected parent
 model.

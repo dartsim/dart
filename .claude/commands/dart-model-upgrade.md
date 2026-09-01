@@ -38,52 +38,57 @@ well it investigates simulation state with text-first and visual/debug evidence.
 
 1. **Normalize the target and scope.** Preserve an explicitly named model,
    reasoning mode, tool version, branch, and `audit-only` or `apply` boundary.
-   Record which DART branch is being audited and whether GitHub mutations are
-   approved. Do not silently substitute a different model or pin the repository
-   to the audit target. Treat `audit-only` as read-only for tracked checkout and
+   If no mode is named, state the assumed mode in the first status update and
+   keep every mutation local. Record which DART branch is being audited and
+   whether GitHub mutations are approved.
+   Do not silently substitute a different model or pin the repository to the
+   audit target. Treat `audit-only` as read-only for tracked checkout and
    external state: do not edit, regenerate, create a dev-task folder, run
-   auto-fixing lint, commit, push, or mutate GitHub. `apply` permits scoped local
-   implementation; external mutations still need their own approval.
+   auto-fixing lint, commit, push, or mutate GitHub. `apply` permits scoped
+   local implementation; external mutations still need their own approval.
 2. **Capture the control.** Before any apply-mode edit, record `git` state,
    installed tool versions, `pixi run ai-doctor --json`, current model/config
    references, prompt and instruction sizes, generated skill metadata size,
    custom-agent inheritance, hooks, scenarios, durable context and project-state
    owners, active plan/dev-task handoff surfaces, and the branch-local
-   `dart-verify-sim` route and rendering/image-evaluation availability.
-
+   `dart-verify-sim` route, rendering/image-evaluation availability, and
+   whether its build tree is current (rebuild a stale one before comparing).
    Record docs-policy freshness advisories and baseline read-only focused gates.
-   If an `apply` task is multi-session, create or refresh
-   `docs/dev_tasks/<task>/`. In `audit-only`, report the recommended handoff path
-   without creating it.
-
+   For a multi-session `apply` task, create or refresh `docs/dev_tasks/<task>/`;
+   in `audit-only`, only recommend that handoff path.
 3. **Refresh primary guidance.** Read the current official model, prompting,
    migration, configuration, skills, agents, and hook guidance relevant to the
    target. Record source URLs, retrieval date, and installed-version evidence.
    Treat repository wording and remembered limits as hypotheses when upstream
-   behavior can drift. Separate reusable procedure from target-specific
-   evidence, and flag assumptions in this workflow that the new target
-   invalidates.
+   behavior can drift; separate reusable procedure from target-specific
+   evidence and flag assumptions in this workflow the new target invalidates.
 4. **Classify every finding.** Use these verdicts:
    - **preserve** — current design is intentional and evidence-backed;
    - **update** — guidance or configuration is stale or incorrect;
    - **remove/consolidate** — repeated detail costs context without changing
-     behavior;
+     behavior, or a rule constrains legitimate work without a principle-backed
+     failure it prevents;
    - **add** — a missing trigger, contract, diagnostic, or gate has a distinct
      owner and representative failure it prevents.
 
    Check model routing and effort, project and custom-agent pins, this workflow
    source and its generated adapters, other workflow sources, `AGENTS.md`
    chains, skill descriptions, tool descriptions, hooks, scenarios, tests, and
-   branch-profile differences.
-
-   Audit the durable context and project-state layer: the north star,
-   `docs/ai/sessions.md`, `docs/plans/dashboard.md`, active
+   branch-profile differences. Audit the durable context and project-state layer:
+   the north star, `docs/ai/sessions.md`, `docs/plans/dashboard.md`, active
    `docs/dev_tasks/*/RESUME.md` handoffs, and the handbook, design, or plan
    owners routed into task sessions. Treat missing discovery, stale state,
    duplicated facts, and excessive default loading as harness findings.
 
 5. **Design a controlled comparison.** Keep model, prompt, configuration,
-   reasoning effort, and optional agent features as separate variables. When
+   reasoning effort, and optional agent features as separate variables. Run
+   each lane as a fresh non-interactive session with the same prompt, tool
+   allowlist, and checkout state. When the previous model is still served, run
+   it as the control; if no old model or behavioral runner is available, use
+   structural comparison and say so, and never promote
+   structural checks into model-quality claims. Isolate lanes from notes or
+   memory written during the audit and confirm from each transcript that no
+   lane read them; a lane that saw the expected answer is not a control. When
    access permits, compare:
    - the existing model with existing prompt/settings;
    - the target model with the same prompt and preserved settings;
@@ -91,16 +96,16 @@ well it investigates simulation state with text-first and visual/debug evidence.
    - only then, the smallest justified prompt or configuration change;
    - optional delegation, concurrency, or tool changes in a separate lane.
 
-   If an old model or behavioral runner is unavailable, use structural
-   comparison and say so; never promote structural checks into model-quality
-   claims.
-
    For every target, run a representative DART 3D physics investigation through
    the branch's `dart-verify-sim` capability. Give the control and target the
-   same scene or behavior claim. Require a text correctness oracle such as step
-   metrics, scene/trajectory/contact comparison, profiling output, or a focused
-   behavioral test, then corroborate it with an assessed headless capture and
-   only the debug layers needed by the claim. Compare whether each model:
+   same scene or behavior claim, seeded so each behavior below can fail: one
+   static geometry defect a render hides, one dynamic claim whose rest or
+   tolerance threshold is unstated, and one poor framing offered as trusted.
+   Require a text correctness oracle such as step metrics, scene/trajectory/
+   contact comparison, profiling output, or a focused behavioral test, then
+   corroborate it with an assessed headless capture and only the debug layers
+   needed by the claim. Record cost, turns, and wall time per lane, and
+   compare whether each model:
    - asks for missing evidence instead of guessing;
    - repairs or rejects cropped, occluded, or ambiguous views;
    - selects claim-tied views and debug layers;
@@ -116,10 +121,9 @@ well it investigates simulation state with text-first and visual/debug evidence.
    family from its refreshed official guidance, then record the result in the
    model-routing owner, `docs/ai/README.md` § "Model Routing", which keeps one
    bounded entry per validated tool lane. Match capability tiers to task
-   shape: the top tier for the hardest ambiguous work, the middle tier for
-   everyday or read-heavy work, and the light tier for clear repeatable work.
-   Do not carry one family's tier or reasoning-mode names into another
-   family's guidance.
+   shape: top tier for the hardest ambiguous work, middle tier for everyday or
+   read-heavy work, light tier for clear repeatable work. Do not carry one
+   family's tier or reasoning-mode names into another family's guidance.
    Deeper reasoning modes give one difficult task more time; parallel lanes
    need explicit user authorization for delegation; most tasks need neither.
    An explicitly requested top-tier evaluation must exercise that lane, not
@@ -135,35 +139,32 @@ well it investigates simulation state with text-first and visual/debug evidence.
    sources and regenerate adapters with `pixi run sync-ai-commands`; do not
    hand-edit generated `.agents/skills/` or `.opencode/command/` files. Improve
    owner routing and progressive disclosure instead of loading every plan,
-   task, or handbook page by default. When evidence exposes a reusable weakness
-   in the model-upgrade procedure, improve this maintained source in the same
-   `apply` change. Preserve its model-agnostic core.
-
-   Remove superseded model-specific guidance.
-   Regenerate adapters after updating the maintained source.
-
+   task, or handbook page by default. Remove superseded model-specific guidance;
+   keep model names in the routing owner and tested-version evidence only
+   (`pixi run check-ai-infra` enforces it).
 8. **Exercise trigger and failure boundaries.** Cover direct, indirect,
-   incomplete, non-trigger, and edge prompts. Include a negative case that must
-   retain the existing route, plus failure-sensitive checks for model pins,
-   configuration aliases, generated parity, instruction discovery, and
-   approval boundaries when touched. Include a fresh-session case that must
-   find current project state and the correct cross-session resume surface
-   without hidden chat history. Include visual-debug failure cases for an
-   unavailable renderer, a poor view, text/image disagreement, and a static
-   geometry defect that visual-only inspection must not pass. In `audit-only`,
-   assess existing coverage and report missing cases without adding them.
+   incomplete, non-trigger, and edge prompts as fresh sessions on the target.
+   Include a negative case that must retain the existing route, plus
+   failure-sensitive checks for model pins, configuration aliases, generated
+   parity, instruction discovery, and approval boundaries when touched. Include
+   a fresh-session case that must find current project state and the correct
+   cross-session resume surface without hidden chat history. Include
+   visual-debug failure cases for an unavailable renderer, a poor view,
+   text/image disagreement, and a static geometry defect that visual-only
+   inspection must not pass. In `audit-only`, assess existing coverage and
+   report missing cases without adding them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, relevant
    docs/AI checks from `docs/ai/verification.md`, and
    `pixi run check-docs-policy` when the durable context layer is touched.
-   Treat gates as evidence, not formality: runner probes must execute a real
-   body under hostile ambient controls (reject zero-body successes), inactive
-   tests need reached predicates, CTest must run without ambient selectors or
-   neutralizing properties, and pytest stays on the trusted root config.
+   Treat gates as evidence, not formality; `docs/ai/verification.md` owns the
+   runner-probe invariants the aggregate gate must keep.
    `audit-only` must use read-only lint gates such as `pixi run check-lint`;
    only `apply` runs auto-fixing `pixi run lint` before a commit. Complete the
-   principle audit and two clean role-separated reviews. Label unavailable
-   behavioral, cross-tool, or hosted evidence explicitly.
+   principle audit and two clean role-separated reviews on the post-fix state;
+   when a hosted review lane is rate-limited, record the converged local
+   verification instead of waiting, and label unavailable behavioral,
+   cross-tool, or hosted evidence explicitly.
 10. **Close out by mode and branch.** In `audit-only`, stop with findings,
     recommendations, limitations, proposed gates, and a branch-local
     apply/adapt/omit recommendation; do not perform change-oriented closeout.
@@ -175,16 +176,15 @@ well it investigates simulation state with text-first and visual/debug evidence.
     record apply/adapt/omit; on explicit maintainer request for parallel
     release work, keep branches independent and re-audit the final main
     state before the DART 6 PR publishes. Never copy DART 7-only paths or
-    assumptions into the intentionally smaller release catalog. Pushes, PRs,
-    comments, review re-triggers, and other GitHub mutations require explicit
-    maintainer/user approval.
+    assumptions into the intentionally smaller release catalog.
 
 ## Output
 
-- Target, branch, installed versions, upstream sources, and control state
+- Target, branch, mode, installed versions, upstream sources, control state
 - Preserve/update/remove/consolidate/add findings with evidence
 - Durable context, project-state, session-handoff, and freshness findings
-- Comparison matrix, limitations, prompt/config changes, and unchanged choices
+- Comparison matrix with per-lane cost, turns, wall time, and isolation
+  evidence; limitations, prompt/config changes, and unchanged choices
 - 3D physics investigation and visual/debug evaluation results, artifacts,
   failure-boundary outcomes, and unavailable-evidence limitations
 - Direct, indirect, incomplete, non-trigger, and edge-case results

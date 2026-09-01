@@ -23,6 +23,17 @@ PROFILES = ("main", "release-6.20")
 MAX_AGENTS_BYTES = 32 * 1024
 EXCLUDED_DIRS = {".git", ".pixi", "build", "external", "node_modules"}
 AGENT_NAMES = ("dart_scout", "dart_reviewer", "dart_release_auditor")
+WORKFLOW_SOURCE_PIN_KEYS = ("model", "effort")
+CLAUDE_SETTINGS_PIN_KEYS = ("model", "effortLevel", "modelSettings")
+MODEL_ROUTING_OWNER = "docs/ai/README.md"
+MODEL_COMPATIBILITY_OWNER = "docs/onboarding/ai-tools.md"
+MODEL_NAME_PATTERN = re.compile(
+    r"\b(?:fable|mythos|opus|sonnet|haiku)\s+\d"
+    r"|\bclaude-(?:fable|mythos|opus|sonnet|haiku)-\d"
+    r"|\bgpt-\d",
+    re.IGNORECASE,
+)
+MODEL_NAME_SCAN_SUFFIXES = {".md", ".toml", ".json", ".sh", ".ps1"}
 LEGACY_PYTEST_SELECTION_VARIABLES = (
     "DARTPY_PYTEST_ARGS",
     "DARTPY_PYTEST_SOURCES",
@@ -296,6 +307,112 @@ def check_codex_config(root: Path) -> list[str]:
             ".codex/config.toml: project config must not pin "
             + ", ".join(sorted(forbidden))
         )
+    return errors
+
+
+def workflow_source_paths(root: Path) -> list[Path]:
+    """Editable Claude command and skill sources, the surfaces adapters derive from."""
+    return [
+        *sorted((root / ".claude" / "commands").glob("*.md")),
+        *sorted((root / ".claude" / "skills").glob("*/SKILL.md")),
+    ]
+
+
+def workflow_source_pins(root: Path) -> list[dict[str, object]]:
+    """Report ``model``/``effort`` frontmatter keys found in workflow sources.
+
+    Claude Code honors those keys in command and skill frontmatter, so one
+    stray key would silently override the session model or effort for that
+    workflow. DART routes models per tool lane in ``docs/ai/README.md`` and
+    pins nothing in sources. The check and ``ai-doctor`` share this inventory.
+    """
+    import sync_ai_commands as sync
+
+    pins: list[dict[str, object]] = []
+    for path in workflow_source_paths(root):
+        meta = sync.parse_frontmatter(
+            path.read_text(errors="replace"), list(WORKFLOW_SOURCE_PIN_KEYS)
+        )
+        keys = sorted(key for key in WORKFLOW_SOURCE_PIN_KEYS if key in meta)
+        if keys:
+            pins.append(
+                {
+                    "path": path.relative_to(root).as_posix(),
+                    "kind": "frontmatter",
+                    "keys": keys,
+                }
+            )
+    settings_path = root / ".claude" / "settings.json"
+    if settings_path.is_file():
+        settings = _load_json(settings_path, [])
+        keys = sorted(
+            key
+            for key in CLAUDE_SETTINGS_PIN_KEYS
+            if isinstance(settings, dict) and key in settings
+        )
+        if keys:
+            pins.append(
+                {
+                    "path": settings_path.relative_to(root).as_posix(),
+                    "kind": "project settings",
+                    "keys": keys,
+                }
+            )
+    return pins
+
+
+def check_workflow_source_pins(root: Path) -> list[str]:
+    return [
+        f"{pin['path']}: {pin['kind']} must not pin "
+        + ", ".join(str(key) for key in pin["keys"])
+        + f' (model routing lives in {MODEL_ROUTING_OWNER} § "Model Routing")'
+        for pin in workflow_source_pins(root)
+    ]
+
+
+def model_name_scan_paths(root: Path) -> list[Path]:
+    """AI harness sources that must not name models.
+
+    Covers every instruction file, the AI and handbook docs, the editable
+    command and skill sources, the Claude hooks, and the Codex runtime.
+    Generated adapters are byte-derived from these sources and stay in sync
+    through ``check-ai-commands``; plans, design docs, and dev tasks are not
+    harness sources and may name models for their own reasons.
+    """
+    candidates = list(_source_files(root))
+    candidates.extend(
+        root / name for name in ("CLAUDE.md", "GEMINI.md") if (root / name).is_file()
+    )
+    for base in (".claude/hooks", ".codex", "docs/onboarding"):
+        candidates.extend(path for path in (root / base).rglob("*") if path.is_file())
+    return sorted(
+        {
+            path
+            for path in candidates
+            if path.suffix in MODEL_NAME_SCAN_SUFFIXES
+            and path.relative_to(root).as_posix()
+            not in {MODEL_ROUTING_OWNER, MODEL_COMPATIBILITY_OWNER}
+        }
+    )
+
+
+def check_model_name_owner(root: Path) -> list[str]:
+    """Keep model and family names in the routing owner and tested-version evidence.
+
+    Every other harness source points at ``docs/ai/README.md`` § "Model
+    Routing" so a model upgrade edits one entry instead of chasing copies.
+    """
+    errors: list[str] = []
+    for path in model_name_scan_paths(root):
+        relative = path.relative_to(root).as_posix()
+        for lineno, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
+            if MODEL_NAME_PATTERN.search(line):
+                errors.append(
+                    f"{relative}:{lineno}: model names belong in "
+                    f'{MODEL_ROUTING_OWNER} § "Model Routing" or the '
+                    f"tested-version evidence in {MODEL_COMPATIBILITY_OWNER}, "
+                    f"not here: {line.strip()}"
+                )
     return errors
 
 
@@ -2403,6 +2520,8 @@ def run_checks(root: Path, profile: str) -> list[str]:
     checks = (
         check_codex_config,
         check_custom_agents,
+        check_workflow_source_pins,
+        check_model_name_owner,
         check_codex_hooks,
         check_claude_hooks,
         check_agents_chains,
