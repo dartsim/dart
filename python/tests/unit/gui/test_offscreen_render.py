@@ -49,6 +49,15 @@ pytestmark = [
         not _can_open_linux_display(),
         reason="Filament OpenGL headless rendering requires a usable DISPLAY/Xvfb",
     ),
+    pytest.mark.skipif(
+        sys.platform == "darwin"
+        and not os.environ.get("DART_REQUIRE_VISUAL_E2E"),
+        reason=(
+            "macOS CI GUI runtime bring-up pending: the Filament offscreen "
+            "renderer aborts on hosted macOS runners; set "
+            "DART_REQUIRE_VISUAL_E2E=1 to force on a Metal-capable host"
+        ),
+    ),
 ]
 
 

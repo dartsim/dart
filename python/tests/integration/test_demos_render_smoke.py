@@ -23,6 +23,11 @@ import pytest
 
 
 def _viewer_available() -> bool:
+    # The Filament viewer aborts on hosted macOS CI runners (macOS CI GUI
+    # runtime bring-up pending); DART_REQUIRE_VISUAL_E2E=1 forces the render
+    # smoke on a Metal-capable host.
+    if sys.platform == "darwin" and not os.environ.get("DART_REQUIRE_VISUAL_E2E"):
+        return False
     try:
         import dartpy
     except Exception:  # pragma: no cover - dartpy import failure
