@@ -145,9 +145,9 @@ gh pr checks <PR_NUMBER>
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
    - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running the `dart-review-pr` workflow via
-     `/dart-review-pr` or `$dart-review-pr`) must record findings
-     before merge approval; docs-only and mechanical changes are exempt.
+     separate session running `dart-review-pr` via `/dart-review-pr` or
+     `$dart-review-pr`) must record its outcome — findings or an explicitly
+     clean result — before merge approval; docs-only/mechanical are exempt.
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
    - After posting `@codex review`, keep monitoring until a submitted review,
