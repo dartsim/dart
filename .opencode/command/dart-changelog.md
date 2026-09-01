@@ -39,7 +39,8 @@ Interpret `$ARGUMENTS` as one of these modes when present:
 - `audit`: scan a release section or PR set for missing, duplicate,
   over-detailed, misplaced, or stale entries.
 - `release-audit`: alias for `audit` when the caller is finalizing a release
-  section through `dart-release-packaging`.
+  section as part of release packaging (see
+  `docs/onboarding/release-management.md`).
 
 If no mode is given, infer the smallest mode that satisfies the caller's need.
 
@@ -112,8 +113,9 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
 6. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release
    shape genuinely needs it.
-7. Add the best evidence link:
-   - if a PR number exists, use `([#1234](https://github.com/dartsim/dart/pull/1234))`;
+7. Add the best evidence link, matching this branch's established style
+   (`*` bullets; the bare `[#1234](https://github.com/dartsim/dart/pull/1234)`
+   link on its own line at the end of the entry):
    - if no PR number exists yet, draft without the link and leave the follow-up
      local until explicit approval permits another push or PR update.
 8. For release audits, consolidate noisy implementation ledgers, confirm

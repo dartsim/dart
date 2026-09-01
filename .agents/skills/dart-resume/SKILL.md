@@ -34,6 +34,15 @@ Resume unfinished work to its real completion contract: $ARGUMENTS
 @docs/ai/verification.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
+@docs/onboarding/changelog.md
+
+## Argument Handling
+
+`$ARGUMENTS` may name a branch, PR, issue, or `docs/dev_tasks/<task>` path;
+scope-limiting modes are honored when given: `status` (report only),
+`audit-only` (no edits), `plan-only` (plan, no execution), `slice` /
+`next-slice` (one bounded increment). With no argument, infer the target from
+the current branch and dev-task state during recon.
 
 ## Workflow
 
@@ -105,6 +114,10 @@ evidence ledger first, not as cleanup inventory:
   oracle first, then capture assessed claim-tied images/debug layers or record
   a DISPLAY/Xvfb unavailable/not-applicable reason. A screenshot alone is not
   proof.
+- Before finalizing a resumed task that changes behavior, public API,
+  packaging, CI, docs workflow, AI-infra workflow, or user-visible docs, run
+  the `dart-changelog` decision (`decide`/`finalize`) per
+  `docs/onboarding/changelog.md`.
 - Push with the same local and remote topic-branch name only after explicit
   maintainer/user approval:
   `branch=$(git branch --show-current); git push -u origin "HEAD:${branch}"`.
@@ -112,12 +125,12 @@ evidence ledger first, not as cleanup inventory:
   force-push only after explicit maintainer/user approval and only when the user
   explicitly requests it or when there is a clear reason such as removing
   sensitive content or repairing broken branch history.
-- If an already-published PR needs the latest target branch, use explicit
-  maintainer/user approval to update that published branch by merging the
-  target branch and pushing normally. Do not rebase published PR branches by
-  default because that invalidates existing CI runs and makes PR review/comment
-  history harder to follow. Rebase or force-push only when the maintainer
-  explicitly requests it.
+- Before every approved push to a published PR branch, first fetch and merge
+  the latest target base branch into it (on every push, not just the first),
+  then push normally after explicit maintainer/user approval. Do not rebase
+  published PR branches by default because that invalidates existing CI runs
+  and makes PR review/comment history harder to follow. Rebase or force-push
+  only when the maintainer explicitly requests it.
 
 ## Safety
 

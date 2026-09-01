@@ -43,7 +43,7 @@ visual exception when OSG/Xvfb is unavailable or not applicable.
    compatibility could be affected.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
    After approval, create the release-branch PR with the branch-matching DART
-   6.x patch milestone and reference the downstream issue.
+   6.x release milestone and reference the downstream issue.
 8. Create the matching `main` PR with milestone `DART 7.0`; adapt API
    differences if needed.
 

@@ -47,7 +47,7 @@ git push -u origin "HEAD:${branch}"
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
-Use the branch-matching DART 6.x patch milestone for release-branch PRs. Use
+Use the branch-matching DART 6.x release milestone for release-branch PRs. Use
 `--base main --milestone "DART 7.0"` only for the separate DART 7 companion PR
 when a bug fix also applies to `main`.
 
@@ -76,7 +76,7 @@ approval:
 | Target Branch                          | Milestone                      |
 | -------------------------------------- | ------------------------------ |
 | `main`                                 | `DART 7.0` (or next major)     |
-| Active DART 6 LTS `release-6.*` branch | Branch-matching DART 6.x patch |
+| Active DART 6 LTS `release-6.*` branch | Branch-matching DART 6.x release |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
@@ -115,17 +115,20 @@ exists, check if `CHANGELOG.md` needs updating:
 | Dependency bumps                 | ⚠️ Maybe (if user-facing)            |
 | Typo fixes                       | ❌ No                                |
 
-Format: `- Reader-visible outcome. ([#PR](https://github.com/dartsim/dart/pull/PR))`
+Format: match the file's established style — `*` bullets nested under the
+category bullet, with the bare PR link on its own line at the end:
+
+```markdown
+* Category
+
+  * Reader-visible outcome, stated for release readers:
+    [#2446](https://github.com/dartsim/dart/pull/2446)
+```
 
 Keep entries concise. If details need more than a few wrapped lines, move the
 details to the owner doc, plan, or migration note and link that document.
 Do not add one bullet per PR when several PRs ship one reader-visible outcome;
 merge them into one human-readable release-note entry.
-
-```bash
-# Example entry in CHANGELOG.md under appropriate section:
-- Added AI-native documentation with AGENTS.md and module-specific guides. ([#2446](https://github.com/dartsim/dart/pull/2446))
-```
 
 ## Code Review
 

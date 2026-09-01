@@ -36,6 +36,10 @@ the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
 audits the current diff, and `dart_release_auditor` compares `main` with the
 DART 6.20 compatibility surface.
 
+**Tested Versions**: Claude Code CLI 2.1.252 (Claude Fable 5), Codex CLI
+0.151.0, OpenCode 1.18.21, 2026-08-31 — discovery, config, and hook checks
+exercised locally on this branch.
+
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
 includes configuration, prompts, generated adapters, runtime tooling, durable
 `docs/` context, session handoffs, and a representative DART 6 OSG
@@ -76,7 +80,8 @@ The following actions require explicit maintainer/user approval:
 - posting PR or issue comments;
 - rerunning CI;
 - resolving review threads;
-- deleting local or remote branches after explicit maintainer/user approval.
+- deleting local or remote branches (explicit maintainer/user approval,
+  like every item in this list).
 
 ## AI Review Comments
 
