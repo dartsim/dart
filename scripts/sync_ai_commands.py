@@ -698,8 +698,7 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
     component names from ``dart/CMakeLists.txt``) are allowlisted.
     """
     non_capability_names = {"dart-demos"}
-    components_path = repo_root / "dart" / "CMakeLists.txt"
-    if components_path.is_file():
+    for components_path in sorted((repo_root / "dart").rglob("CMakeLists.txt")):
         non_capability_names |= set(
             re.findall(r"dart-[a-z0-9-]+", components_path.read_text(encoding="utf-8"))
         )

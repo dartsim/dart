@@ -733,12 +733,16 @@ def test_unknown_capability_scan_allowlists_cmake_component_names(tmp_path):
     module = _load_module()
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
-    (tmp_path / "dart").mkdir()
+    (tmp_path / "dart" / "collision").mkdir(parents=True)
     (tmp_path / "dart" / "CMakeLists.txt").write_text(
         "set(components dart-gui-osg dart-utils-urdf)\n", encoding="utf-8"
     )
+    (tmp_path / "dart" / "collision" / "CMakeLists.txt").write_text(
+        "add_library(dart-collision-native)\n", encoding="utf-8"
+    )
     (commands / "dart-sample.md").write_text(
-        "Link `dart-gui-osg` and `dart-utils-urdf` from `dart-sample`.\n",
+        "Link `dart-gui-osg`, `dart-utils-urdf`, and `dart-collision-native` "
+        "from `dart-sample`.\n",
         encoding="utf-8",
     )
 
