@@ -736,7 +736,9 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
         except ValueError:
             label = display_path(source_path)
         bare = set(
-            re.findall(r"(?<![\w$/-])(dart-[a-z0-9-]+)(?![a-z0-9-])", source_content)
+            re.findall(
+                r"(?<![A-Za-z0-9$/-])(dart-[a-z0-9-]+)(?![a-z0-9-])", source_content
+            )
         )
         # Invocation-shaped mentions (/dart-x, $dart-x) are always workflow
         # references; the non-capability allowlist covers only prose mentions
