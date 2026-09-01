@@ -1087,9 +1087,12 @@ TEST(DartsimProjectActions, SaveWithDialogCanForceSaveAsForExistingProject)
       [&](const ui::ProjectFileDialogRequest& request) {
         dialogCalled = true;
         EXPECT_EQ(request.kind, ui::ProjectFileDialogKind::Save);
-        EXPECT_EQ(
-            request.defaultPath,
-            std::filesystem::temp_directory_path().string());
+        // Compare as filesystem paths: macOS reports temp_directory_path()
+        // with a trailing slash, while the request carries the project's
+        // parent directory without one.
+        EXPECT_TRUE(
+            std::filesystem::equivalent(
+                request.defaultPath, std::filesystem::temp_directory_path()));
         EXPECT_EQ(request.defaultName, original.filename().string());
         return ui::ProjectFileDialogResult{
             ui::ProjectFileDialogStatus::Selected, saveAs.string(), {}};
