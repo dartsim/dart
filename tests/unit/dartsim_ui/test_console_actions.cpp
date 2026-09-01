@@ -91,6 +91,23 @@ TEST(DartsimConsoleActions, TokenizesQuotedArgumentsAndReportsErrors)
   ASSERT_EQ(tokens.size(), 2u);
   EXPECT_EQ(tokens[1], "body\\");
 
+  // Windows path separators survive quoted and bare arguments: backslash
+  // escapes only quotes, backslashes, and whitespace.
+  EXPECT_TRUE(
+      ui::tokenizeConsoleCommand(
+          "open \"C:\\Users\\me\\scene.dartsim\"", tokens)
+          .ok);
+  ASSERT_EQ(tokens.size(), 2u);
+  EXPECT_EQ(tokens[1], "C:\\Users\\me\\scene.dartsim");
+
+  EXPECT_TRUE(ui::tokenizeConsoleCommand("open C:\\dir\\a.dartsim", tokens).ok);
+  ASSERT_EQ(tokens.size(), 2u);
+  EXPECT_EQ(tokens[1], "C:\\dir\\a.dartsim");
+
+  EXPECT_TRUE(ui::tokenizeConsoleCommand("rename a\\\\b", tokens).ok);
+  ASSERT_EQ(tokens.size(), 2u);
+  EXPECT_EQ(tokens[1], "a\\b");
+
   const auto unclosed = ui::tokenizeConsoleCommand("rename \"base", tokens);
   EXPECT_FALSE(unclosed.ok);
   EXPECT_EQ(unclosed.message, "Unclosed quote");
