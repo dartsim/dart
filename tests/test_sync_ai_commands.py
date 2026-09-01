@@ -281,7 +281,8 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
         "`/dart-sample`, and `$dart-sample audit`.\n"
         "```bash\n/dart-missing-fenced x\n$dart-sample run\n"
         "ls /tmp/dart-not-a-capability\n```\n"
-        "Also try **/dart-missing-bold** and _$dart-sample_ forms.\n",
+        "Also try **/dart-missing-bold**, _/dart-missing-italic_, and\n"
+        "_$dart-sample_ forms.\n",
         encoding="utf-8",
     )
 
@@ -292,6 +293,7 @@ def test_unknown_capability_mention_scan_flags_absent_workflow(tmp_path):
         prefix + "`dart-missing-bold`",
         prefix + "`dart-missing-codex`",
         prefix + "`dart-missing-fenced`",
+        prefix + "`dart-missing-italic`",
         prefix + "`dart-missing-slash`",
         prefix + "`dart-nonexistent-workflow`",
     ]

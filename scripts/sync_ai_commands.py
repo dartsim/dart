@@ -554,7 +554,9 @@ def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> li
             re.findall(r"`[/$](dart-[a-z0-9-]+)(?: [^`]*)?`", source_content)
         ) | set(
             re.findall(
-                r"(?:^|[\s`(*_\[\"'>])[/$](dart-[a-z0-9-]+)\b", source_content, re.M
+                r"(?:^|[\s`(*_\[\"'>])[/$](dart-[a-z0-9-]+)(?![a-z0-9-])",
+                source_content,
+                re.M,
             )
         )
         try:
