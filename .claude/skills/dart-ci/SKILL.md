@@ -49,7 +49,7 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
-The CI gates that a PR check name maps to (full 12-workflow index:
+The CI workflows that a failing PR check belongs to (full 12-workflow index:
 `docs/onboarding/ci-cd.md` § "Workflow Index"):
 
 | Workflow            | Purpose                                | Platforms  |

@@ -6,12 +6,15 @@ runtime, package, or downstream behavior changes.
 
 ## Workflow Index
 
-All files live in `.github/workflows/` on this branch. For PR-triggered
-workflows (the first eight rows), check names on a PR map to the workflow's
-`name:` shown here; the remaining rows run on push, workflow call, dispatch,
-or schedule (and CodeQL is currently pinned to older branches).
+All files live in `.github/workflows/` on this branch. The first eight rows
+are PR-triggered; the remaining rows run on push, workflow call, dispatch, or
+schedule (and CodeQL is currently pinned to older branches). Note that
+`gh pr checks` lists job-level check names (for example `coverage` under the
+`CI Linux` workflow); map a failing check to its workflow via the run's
+workflow name shown here (`gh pr checks` exposes it in the `workflow` JSON
+field).
 
-| Workflow file                     | Check name                  | Purpose                                          |
+| Workflow file                     | Workflow name               | Purpose                                          |
 | --------------------------------- | --------------------------- | ------------------------------------------------ |
 | `ci_ubuntu.yml`                   | CI Linux                    | Linux AI checks, lint, build, test, coverage     |
 | `ci_macos.yml`                    | CI macOS                    | macOS lint, build, test                          |
