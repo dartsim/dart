@@ -32,31 +32,6 @@ from cmake_host_linker_flags import cmake_host_linker_flags
 ON_OFF = ("ON", "OFF")
 
 
-@dataclass
-class Tools:
-    """Injectable process/system externals (faked in tests)."""
-
-    which: Callable[[str], str | None] = shutil.which
-    detect_cuda_archs: Callable[[], str | None] = lambda: _detect_cuda_archs_impl()
-    nanobind_cmake_dir: Callable[[], str] = lambda: _nanobind_cmake_dir_impl()
-    host_linker_defs: Callable[[], list[str]] = cmake_host_linker_flags
-    read_text_lines: Callable[[str], list[str] | None] = (
-        lambda path: _read_text_lines_impl(path)
-    )
-
-
-@dataclass
-class ConfigPlan:
-    """Everything main() needs to execute one configure."""
-
-    build_dir: str
-    cmake_args: list[str]
-    # Paths to delete before configuring (coverage wipes its build dir; the
-    # config-py CUDA compiler-change guard drops stale cache metadata).
-    remove_paths: list[str] = field(default_factory=list)
-    messages: list[str] = field(default_factory=list)
-
-
 def _read_text_lines_impl(path: str) -> list[str] | None:
     try:
         with open(path, encoding="utf-8", errors="replace") as handle:
@@ -94,6 +69,29 @@ def _detect_cuda_archs_impl() -> str | None:
     except OSError, subprocess.CalledProcessError:
         return None
     return parse_cuda_archs(result.stdout)
+
+
+@dataclass
+class Tools:
+    """Injectable process/system externals (faked in tests)."""
+
+    which: Callable[[str], str | None] = shutil.which
+    detect_cuda_archs: Callable[[], str | None] = _detect_cuda_archs_impl
+    nanobind_cmake_dir: Callable[[], str] = _nanobind_cmake_dir_impl
+    host_linker_defs: Callable[[], list[str]] = cmake_host_linker_flags
+    read_text_lines: Callable[[str], list[str] | None] = _read_text_lines_impl
+
+
+@dataclass
+class ConfigPlan:
+    """Everything main() needs to execute one configure."""
+
+    build_dir: str
+    cmake_args: list[str]
+    # Paths to delete before configuring (coverage wipes its build dir; the
+    # config-py CUDA compiler-change guard drops stale cache metadata).
+    remove_paths: list[str] = field(default_factory=list)
+    messages: list[str] = field(default_factory=list)
 
 
 def parse_cuda_archs(raw: str) -> str | None:
