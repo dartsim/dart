@@ -151,7 +151,9 @@ faster; it must not be the only path.
   skills;
 - machine-readable capability manifest coverage;
 - effective capability parity across Claude Code, OpenCode, and Codex;
-- command and skill frontmatter, descriptions, and size budgets;
+- command and skill frontmatter, descriptions, and size budgets (budgets
+  are measured on the generated adapters, which add a few header lines over
+  the `.claude/` source, so keep sources several lines under the limit);
 - required command structure: an `argument-hint` frontmatter key plus
   `## Required Reading`, `## Workflow`, and `## Output` sections in order;
 - required `docs/ai/` policy documents exist;
@@ -167,7 +169,18 @@ faster; it must not be the only path.
   dev-task cleanup cannot choose a durable owner without the placement matrix;
 - approval-boundary wording around GitHub, CI, branch, and review-thread
   mutations;
-- private-path references in `docs/ai/`.
+- private-path references in `docs/ai/`;
+- capability-name references in workflow and skill sources: every
+  `dart-*` mention — inline code, `/`- or `$`-prefixed invocation in any
+  Markdown context, bare prose, or canonical source path — must name a
+  capability that exists on this branch. A deliberate non-capability
+  `dart-*` name (for example the demos app) is added to the explicit
+  `NON_CAPABILITY_DART_NAMES` ledger in `scripts/sync_ai_commands.py`;
+  the ledger never exempts invocation or path forms, and names are not
+  harvested from the build system, so an incidental collision cannot
+  silently exempt a retired capability. When extending a text-scanning
+  check like this one, enumerate the mention-form input space up front
+  rather than patching one escape at a time.
 
 `pixi run check-ai-infra` adds runtime and drift validation beyond adapter
 parity. It checks Codex agent/config/hook schema and safety, documented Pixi
