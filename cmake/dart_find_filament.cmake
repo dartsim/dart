@@ -66,10 +66,29 @@ foreach(
   _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
 endforeach()
 
-# Skip the packaged-config search when DART explicitly selects the fetched
-# archive (DART_USE_SYSTEM_FILAMENT=OFF): a conda environment on the search
-# path could otherwise shadow the Filament_ROOT tree this finder should use.
-if(NOT DEFINED DART_USE_SYSTEM_FILAMENT OR DART_USE_SYSTEM_FILAMENT)
+# An explicit root must win. Filament_ROOT only *hints* the config search, so
+# a root without CMake package files would silently lose to a packaged config
+# elsewhere on the prefix path (e.g. a conda environment): when roots are
+# given, probe them for package configs exclusively and otherwise fall through
+# to the archive-layout search below. The default config search also stays off
+# when DART explicitly selects the fetched archive
+# (DART_USE_SYSTEM_FILAMENT=OFF).
+if(_dart_filament_roots)
+  find_package(
+    filament
+    CONFIG
+    QUIET
+    PATHS ${_dart_filament_roots}
+    NO_DEFAULT_PATH
+  )
+  find_package(
+    Filament
+    CONFIG
+    QUIET
+    PATHS ${_dart_filament_roots}
+    NO_DEFAULT_PATH
+  )
+elseif(NOT DEFINED DART_USE_SYSTEM_FILAMENT OR DART_USE_SYSTEM_FILAMENT)
   find_package(filament CONFIG QUIET)
   find_package(Filament CONFIG QUIET)
 endif()
