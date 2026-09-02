@@ -29,6 +29,18 @@ def _benchmark_row(max_friction: float) -> dict[str, object]:
     arg = int(round(max_friction * 10.0))
     name = f"BM_AvbdDemo2dFrictionCoefficientSweep/{arg}"
     return {
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_public_avbd_rigid": 1.0,
+        "runtime_identity_variational_multibody": 0.0,
+        "runtime_identity_contract_passed": 1.0,
+        "public_avbd_family": 1.0,
+        "resolved_rigid_body_avbd": 1.0,
+        "resolved_rigid_contact_avbd": 1.0,
+        "resolved_rigid_pair_constraint_avbd": 0.0,
+        "resolved_rigid_pair_constraint_not_applicable": 1.0,
+        "resolved_multibody_variational": 0.0,
         "collision_shapes": 12.0,
         "cpu_time": 100.0 + arg,
         "friction_samples": 11.0,
@@ -223,9 +235,10 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
     assert packet["packet"] == "avbd_friction_coefficient_sweep"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
-        "recorded_from": "friction coefficient sweep benchmark scene counters",
-        "rigid_contact_selection": "contact_solver_method",
-        "rigid_contact_solver": "sequential_impulse",
+        "multibody_integration_family": "none",
+        "recorded_from": "friction sweep benchmark runtime identity counters",
+        "rigid_contact_selection": "world_solver_family",
+        "rigid_contact_solver": "avbd",
         "rigid_point_joint_solver": "none",
     }
     assert packet["scene"] == "avbd_demo2d_dynamic_friction"
@@ -408,6 +421,19 @@ def test_avbd_friction_coefficient_sweep_packet_rejects_missing_value(
     benchmark_json = _write_benchmark_json(tmp_path, omit=2.5)
 
     with pytest.raises(SystemExit, match="missing max_friction values: 2.5"):
+        module.main(["--benchmark-json", str(benchmark_json)])
+
+
+def test_friction_packet_rejects_runtime_identity_counter_mutation(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(PACKET_SCRIPT, "write_avbd_friction_coefficient_sweep_packet")
+    benchmark_json = _write_benchmark_json(tmp_path)
+    data = json.loads(benchmark_json.read_text())
+    data["benchmarks"][0]["runtime_identity_public_avbd_rigid"] = 0.0
+    benchmark_json.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="exactly one runtime solver identity"):
         module.main(["--benchmark-json", str(benchmark_json)])
 
 

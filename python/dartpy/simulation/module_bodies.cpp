@@ -596,6 +596,11 @@ void defSimPartBodies(nb::module_& m)
       .def_ro("body_count", &sim::DeformableSolverDiagnostics::bodyCount)
       .def_ro("node_count", &sim::DeformableSolverDiagnostics::nodeCount)
       .def_ro("edge_count", &sim::DeformableSolverDiagnostics::edgeCount)
+      .def_ro("vbd_body_count", &sim::DeformableSolverDiagnostics::vbdBodyCount)
+      .def_ro("vbd_sweeps", &sim::DeformableSolverDiagnostics::vbdSweeps)
+      .def_ro(
+          "vbd_vertex_updates",
+          &sim::DeformableSolverDiagnostics::vbdVertexUpdates)
       .def_ro(
           "solver_iterations",
           &sim::DeformableSolverDiagnostics::solverIterations)
@@ -632,6 +637,21 @@ void defSimPartBodies(nb::module_& m)
       .def_ro(
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
+      .def_ro(
+          "surface_contact_candidate_capacity_requested",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidateCapacityRequested)
+      .def_ro(
+          "surface_contact_candidate_capacity_resolved",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidateCapacityResolved)
+      .def_ro(
+          "surface_contact_candidate_count_peak",
+          &sim::DeformableSolverDiagnostics::surfaceContactCandidateCountPeak)
+      .def_ro(
+          "surface_contact_candidate_overflow_count",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCandidateOverflowCount)
       .def_ro(
           "surface_contact_candidate_builds",
           &sim::DeformableSolverDiagnostics::surfaceContactCandidateBuilds)

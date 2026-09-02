@@ -46,6 +46,8 @@ void defSimPartWorld(nb::module_& m)
              bool differentiable,
              sim::RigidBodySolver rigidBodySolver,
              const sim::RigidConstraintOptions& rigidConstraintOptions,
+             std::size_t rigidCollisionCandidatePairCapacity,
+             std::size_t rigidCollisionContactCapacity,
              const sim::MultibodyOptions& multibodyOptions,
              sim::ContactSolverMethod contactSolverMethod,
              sim::ContactGradientMode contactGradientMode,
@@ -59,6 +61,10 @@ void defSimPartWorld(nb::module_& m)
             options.differentiable = differentiable;
             options.rigidBodySolver = rigidBodySolver;
             options.rigidConstraintOptions = rigidConstraintOptions;
+            options.rigidCollisionCapacityOptions.candidatePairCapacity
+                = rigidCollisionCandidatePairCapacity;
+            options.rigidCollisionCapacityOptions.contactCapacity
+                = rigidCollisionContactCapacity;
             options.multibodyOptions = multibodyOptions;
             options.contactSolverMethod = contactSolverMethod;
             options.contactGradientMode = contactGradientMode;
@@ -73,6 +79,8 @@ void defSimPartWorld(nb::module_& m)
           nb::arg("rigid_body_solver")
           = sim::RigidBodySolver::SequentialImpulse,
           nb::arg("rigid_constraint_options") = sim::RigidConstraintOptions{},
+          nb::arg("rigid_collision_candidate_pair_capacity") = 0,
+          nb::arg("rigid_collision_contact_capacity") = 0,
           nb::arg("multibody_options") = sim::MultibodyOptions{},
           nb::arg("contact_solver_method")
           = sim::ContactSolverMethod::SequentialImpulse,
@@ -605,6 +613,12 @@ void defSimPartWorld(nb::module_& m)
           [](sim::World& self, const sim::RigidConstraintOptions& options) {
             self.setRigidConstraintOptions(options);
           })
+      .def_prop_ro(
+          "rigid_collision_candidate_pair_capacity",
+          &sim::World::getRigidCollisionCandidatePairCapacity)
+      .def_prop_ro(
+          "rigid_collision_contact_capacity",
+          &sim::World::getRigidCollisionContactCapacity)
       .def_prop_rw(
           "multibody_options",
           &sim::World::getMultibodyOptions,

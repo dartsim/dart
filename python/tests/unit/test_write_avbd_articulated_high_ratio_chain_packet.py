@@ -134,11 +134,38 @@ def test_avbd_articulated_high_ratio_chain_packet_records_evidence(
     )
 
     packet = json.loads(output.read_text())
+    assert packet["schema_version"] == 1
+    assert "resolved_solver_identity" not in packet
+    assert "resolved_multibody_identity" not in packet
+    assert packet["evidence_boundary"] == {
+        "artifact_status": "legacy_unbound",
+        "avbd_performance_claim_supported": False,
+        "avbd_solver_evidence": False,
+        "capture_artifacts_accessible": False,
+        "current_build_bound": False,
+        "historical_identifiers_retained": True,
+        "historical_measurements_preserved": True,
+        "measurement_runtime_identity_recorded": False,
+        "plan104_avbd_row_closure_supported": False,
+        "semantic_visual_review_recorded": False,
+        "reason": (
+            "This legacy packet preserves historical hashes and timing metadata "
+            "whose source artifacts and runtime identity counters are unavailable. "
+            "The current fixture selects variational multibody integration, but "
+            "that source audit does not bind the historical measurement."
+        ),
+        "supported_scope": (
+            "historical_variational_multibody_capture_hash_and_cpu_metadata"
+        ),
+    }
     assert packet["scene"] == "avbd_articulated_high_ratio_chain"
     assert packet["target"] == {
         "complete_paper_reproduction": False,
         "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
-        "scope": "narrow five-link articulated-chain smoke with a 200:1 heavy tip",
+        "scope": (
+            "historical five-link variational-multibody smoke with a 200:1 "
+            "heavy tip; not AVBD solver evidence"
+        ),
     }
     assert packet["scene_invariants"] == {
         "light_link_mass": 1.0,
@@ -158,7 +185,7 @@ def test_avbd_articulated_high_ratio_chain_packet_records_evidence(
         "time_step": 0.005,
     }
     assert (
-        "paper-scale visual artifact and same-hardware comparison for the 50-link 50,000:1 chain"
+        "implement an actual AVBD 50-link 50,000:1 high-ratio fixture"
         in packet["remaining_gates"]
     )
 

@@ -409,6 +409,6 @@ SCENE = PythonDemoScene(
     title="AVBD Articulated Compliant Breakable Motor (sx)",
     category="AVBD Rigid Constraints (sx)",
     summary="A finite same-multibody prismatic motor breaks from its combined "
-    "physical row load, resets strong, and fractures again when re-armed.",
+    "solver-row load metric, resets strong, and fractures again when re-armed.",
     build=build,
 )

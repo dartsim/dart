@@ -34,6 +34,7 @@
 #include "common/module.hpp"
 #include "common/type_casters.hpp"
 #include "constraint/module.hpp"
+#include "dart/capture_source_provenance.hpp"
 #include "dart/config.hpp"
 #include "dynamics/module.hpp"
 
@@ -63,6 +64,12 @@ NB_MODULE(_dartpy, m)
 #else
   m.attr("__version__") = DART_VERSION;
 #endif
+
+  m.attr("__capture_source_provenance_digest__")
+      = DART_CAPTURE_SOURCE_PROVENANCE_DIGEST;
+  m.attr("__capture_source_git_head__") = DART_CAPTURE_SOURCE_GIT_HEAD;
+  m.attr("__capture_build_configuration_digest__")
+      = DART_CAPTURE_BUILD_CONFIGURATION_DIGEST;
 
   auto common
       = m.def_submodule("common", "Common utilities backed by nanobind");

@@ -11,18 +11,17 @@ as a visually adjudicated DART parameter.
 
 from __future__ import annotations
 
-from collections import deque
-from collections.abc import Sequence
-from dataclasses import dataclass
 import hashlib
 import math
 import struct
+from collections import deque
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
-
-import numpy as np
 
 import dartpy as dart
 import dartpy as sx
+import numpy as np
 
 from .._world_bridge import WorldRenderBridge
 from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
@@ -70,6 +69,8 @@ _FNV1A_64_OFFSET_BASIS = 14695981039346656037
 _FNV1A_64_PRIME = 1099511628211
 _FNV1A_64_MASK = (1 << 64) - 1
 _SCENE_SPEC_FINGERPRINT_TAG = "avbd-paper-breakable-wall/v3"
+_EXPECTED_SCENE_SPEC_FINGERPRINT = "8ca3fbfa00c3dce9"
+_JOINT_START_STIFFNESS = 1.0e5
 
 PAPER_REFERENCE: dict[str, Any] = {
     "paper": {
@@ -123,9 +124,7 @@ PAPER_REFERENCE: dict[str, Any] = {
 }
 
 OUTCOME_METRIC_THRESHOLDS: dict[str, Any] = {
-    "impact_damage_displacement_threshold": (
-        _IMPACT_DAMAGE_DISPLACEMENT_THRESHOLD
-    ),
+    "impact_damage_displacement_threshold": (_IMPACT_DAMAGE_DISPLACEMENT_THRESHOLD),
     "retained_displacement_threshold": _RETAINED_DISPLACEMENT_THRESHOLD,
     "impact_band_radius": _IMPACT_BAND_RADIUS,
     "outside_radius": _OUTSIDE_RADIUS,
@@ -134,7 +133,7 @@ OUTCOME_METRIC_THRESHOLDS: dict[str, Any] = {
 OUTCOME_ORACLE: dict[str, Any] = {
     **OUTCOME_METRIC_THRESHOLDS,
     "evaluation_frame": _OUTCOME_FRAME,
-    "joint_evidence_frames": (60, _OUTCOME_FRAME),
+    "joint_evidence_frames": (60, _OUTCOME_FRAME, 600),
     "minimum_displaced_bricks_per_impact_band": 4,
     "minimum_outside_retained_fraction": 0.95,
     "minimum_total_retained_fraction": 0.95,
@@ -170,10 +169,20 @@ def _fnv1a_64_update(state: int, payload: bytes) -> int:
     return state
 
 
-def _scene_spec_fingerprint(
+def _hash_scene_spec(
+    *,
+    time_step: float,
+    gravity: float,
+    constraint_iterations: int,
+    brick_size: np.ndarray,
+    body_parameters: Sequence[float],
+    impact_targets_xz: Sequence[tuple[float, float]],
+    ground_size: np.ndarray,
+    ground_friction: float,
+    break_force: float,
     topology_records: Sequence[tuple[int, int, int]],
 ) -> str:
-    """Hash the exact reconstructed scene contract shared with the benchmark."""
+    """Hash effective Figure 13 scene values in the shared v3 wire format."""
     state = _FNV1A_64_OFFSET_BASIS
 
     def update_u64(value: int) -> None:
@@ -187,40 +196,282 @@ def _scene_spec_fingerprint(
     encoded_tag = _SCENE_SPEC_FINGERPRINT_TAG.encode("utf-8")
     update_u64(len(encoded_tag))
     state = _fnv1a_64_update(state, encoded_tag)
-    update_f64(_TIME_STEP)
-    update_f64(_GRAVITY)
-    update_u64(_RIGID_CONSTRAINT_ITERATIONS)
+    update_f64(time_step)
+    update_f64(gravity)
+    update_u64(constraint_iterations)
     update_u64(_WALL_COLUMNS)
     update_u64(_WALL_ROWS)
-    for value in _BRICK_SIZE:
+    for value in brick_size:
         update_f64(float(value))
-    for value in (
-        _BRICK_DENSITY,
-        _BRICK_FRICTION,
-        _BRICK_SPACING_X,
-        _BRICK_SPACING_Z,
-        _BRICK_BASE_CLEARANCE,
-        _BALL_RADIUS,
-        _BALL_MASS,
-        _BALL_FRICTION,
-        _BALL_START_Y,
-        _BALL_LAUNCH_SPEED,
-    ):
-        update_f64(value)
-    update_u64(len(_IMPACT_TARGETS_XZ))
-    for target_x, target_z in _IMPACT_TARGETS_XZ:
+    for value in body_parameters:
+        update_f64(float(value))
+    update_u64(len(impact_targets_xz))
+    for target_x, target_z in impact_targets_xz:
         update_f64(target_x)
         update_f64(target_z)
-    for value in _GROUND_SIZE:
+    for value in ground_size:
         update_f64(float(value))
-    update_f64(_GROUND_FRICTION)
-    update_f64(_BREAK_FORCE)
+    update_f64(ground_friction)
+    update_f64(break_force)
     update_u64(len(topology_records))
     for kind, parent_index, child_index in topology_records:
         update_u64(kind)
         update_u64(parent_index)
         update_u64(child_index)
     return f"{state:016x}"
+
+
+def _effective_scene_spec_fingerprint(
+    *,
+    world: sx.World,
+    ground: sx.RigidBody,
+    bricks: Sequence[sx.RigidBody],
+    balls: Sequence[sx.RigidBody],
+    joints: Sequence[sx.Joint],
+    topology_records: Sequence[tuple[int, int, int]],
+) -> str:
+    """Validate and hash the effective runtime scene before simulation starts."""
+
+    def fail(label: str, actual: object, expected: object) -> None:
+        raise RuntimeError(
+            "breakable-wall effective scene drifted: "
+            f"{label}: expected {expected!r}, got {actual!r}"
+        )
+
+    def require_equal(label: str, actual: object, expected: object) -> None:
+        if actual != expected:
+            fail(label, actual, expected)
+
+    def require_scalar(label: str, actual: float, expected: float) -> None:
+        if not math.isfinite(actual) or not math.isclose(
+            actual, expected, rel_tol=1.0e-12, abs_tol=1.0e-12
+        ):
+            fail(label, actual, expected)
+
+    def require_vector(label: str, actual: object, expected: object) -> np.ndarray:
+        actual_array = np.asarray(actual, dtype=float)
+        expected_array = np.asarray(expected, dtype=float)
+        if not np.isfinite(actual_array).all() or not np.allclose(
+            actual_array, expected_array, rtol=1.0e-12, atol=1.0e-12
+        ):
+            fail(label, actual_array.tolist(), expected_array.tolist())
+        return actual_array
+
+    require_scalar("time step", float(world.time_step), _TIME_STEP)
+    require_vector("gravity", world.gravity, (0.0, 0.0, _GRAVITY))
+    require_equal(
+        "constraint iterations",
+        int(world.rigid_constraint_options.iterations),
+        _RIGID_CONSTRAINT_ITERATIONS,
+    )
+    require_equal(
+        "rigid body count", world.num_rigid_bodies, 1 + len(bricks) + len(balls)
+    )
+    require_equal("world joint count", world.num_joints, len(joints))
+    require_equal("brick count", len(bricks), _BRICK_COUNT)
+    require_equal("ball count", len(balls), len(_IMPACT_TARGETS_XZ))
+    require_equal("joint count", len(joints), _BREAKABLE_JOINTS)
+    require_equal("topology record count", len(topology_records), len(joints))
+
+    identity = np.eye(4)
+
+    def single_shape(
+        label: str, body: sx.RigidBody, shape_type: sx.CollisionShapeType
+    ) -> sx.CollisionShape:
+        shapes = body.collision_shapes
+        require_equal(f"{label} shape count", len(shapes), 1)
+        shape = shapes[0]
+        require_equal(f"{label} shape type", shape.type, shape_type)
+        require_vector(f"{label} local transform", shape.local_transform, identity)
+        return shape
+
+    ground_shape = single_shape("ground", ground, sx.CollisionShapeType.BOX)
+    ground_size = 2.0 * np.asarray(ground_shape.half_extents, dtype=float)
+    require_vector("ground size", ground_size, _GROUND_SIZE)
+    require_equal("ground static", ground.is_static, True)
+    require_equal("ground kinematic", ground.is_kinematic, False)
+    require_vector(
+        "ground position",
+        ground.translation,
+        (0.0, 0.0, -0.5 * float(ground_size[2])),
+    )
+    require_vector("ground rotation", ground.rotation, np.eye(3))
+    require_vector("ground linear velocity", ground.linear_velocity, np.zeros(3))
+    require_vector("ground angular velocity", ground.angular_velocity, np.zeros(3))
+    require_vector("ground force", ground.force, np.zeros(3))
+    require_vector("ground torque", ground.torque, np.zeros(3))
+    require_scalar("ground restitution", float(ground.restitution), 0.0)
+    ground_friction = float(ground.friction)
+    require_scalar("ground friction", ground_friction, _GROUND_FRICTION)
+
+    first_brick_shape = single_shape("brick 0", bricks[0], sx.CollisionShapeType.BOX)
+    brick_size = 2.0 * np.asarray(first_brick_shape.half_extents, dtype=float)
+    require_vector("brick size", brick_size, _BRICK_SIZE)
+    brick_volume = float(np.prod(brick_size))
+    if not math.isfinite(brick_volume) or brick_volume <= 0.0:
+        fail("brick volume", brick_volume, "finite and positive")
+    brick_density = float(bricks[0].mass) / brick_volume
+    brick_friction = float(bricks[0].friction)
+    spacing_x = float(bricks[1].translation[0] - bricks[0].translation[0])
+    spacing_z = float(bricks[_WALL_COLUMNS].translation[2] - bricks[0].translation[2])
+    base_clearance = float(bricks[0].translation[2] - 0.5 * brick_size[2])
+    require_scalar("brick density", brick_density, _BRICK_DENSITY)
+    require_scalar("brick friction", brick_friction, _BRICK_FRICTION)
+    require_scalar("brick spacing x", spacing_x, _BRICK_SPACING_X)
+    require_scalar("brick spacing z", spacing_z, _BRICK_SPACING_Z)
+    require_scalar("brick base clearance", base_clearance, _BRICK_BASE_CLEARANCE)
+    brick_mass = brick_density * brick_volume
+    brick_inertia = _full_box_inertia(brick_size, brick_mass)
+    for row in range(_WALL_ROWS):
+        for column in range(_WALL_COLUMNS):
+            index = row * _WALL_COLUMNS + column
+            brick = bricks[index]
+            shape = single_shape(f"brick {index}", brick, sx.CollisionShapeType.BOX)
+            require_vector(f"brick {index} size", 2.0 * shape.half_extents, brick_size)
+            require_equal(f"brick {index} static", brick.is_static, False)
+            require_equal(f"brick {index} kinematic", brick.is_kinematic, False)
+            course_offset = 0.5 if row % 2 else 0.0
+            require_vector(
+                f"brick {index} position",
+                brick.translation,
+                (
+                    (column - 0.5 * (_WALL_COLUMNS - 1) + course_offset) * spacing_x,
+                    0.0,
+                    base_clearance + 0.5 * brick_size[2] + row * spacing_z,
+                ),
+            )
+            require_vector(f"brick {index} rotation", brick.rotation, np.eye(3))
+            require_vector(
+                f"brick {index} linear velocity", brick.linear_velocity, np.zeros(3)
+            )
+            require_vector(
+                f"brick {index} angular velocity", brick.angular_velocity, np.zeros(3)
+            )
+            require_vector(f"brick {index} force", brick.force, np.zeros(3))
+            require_vector(f"brick {index} torque", brick.torque, np.zeros(3))
+            require_scalar(f"brick {index} mass", float(brick.mass), brick_mass)
+            require_vector(f"brick {index} inertia", brick.inertia, brick_inertia)
+            require_scalar(
+                f"brick {index} friction", float(brick.friction), brick_friction
+            )
+            require_scalar(f"brick {index} restitution", float(brick.restitution), 0.0)
+
+    first_ball_shape = single_shape("ball 0", balls[0], sx.CollisionShapeType.SPHERE)
+    ball_radius = float(first_ball_shape.radius)
+    ball_mass = float(balls[0].mass)
+    ball_friction = float(balls[0].friction)
+    ball_start_y = float(balls[0].translation[1])
+    ball_launch_speed = float(balls[0].linear_velocity[1])
+    require_scalar("ball radius", ball_radius, _BALL_RADIUS)
+    require_scalar("ball mass", ball_mass, _BALL_MASS)
+    require_scalar("ball friction", ball_friction, _BALL_FRICTION)
+    require_scalar("ball start y", ball_start_y, _BALL_START_Y)
+    require_scalar("ball launch speed", ball_launch_speed, _BALL_LAUNCH_SPEED)
+    ball_inertia = 2.0 / 5.0 * ball_mass * ball_radius * ball_radius * np.eye(3)
+    impact_targets_xz: list[tuple[float, float]] = []
+    for index, ball in enumerate(balls):
+        shape = single_shape(f"ball {index}", ball, sx.CollisionShapeType.SPHERE)
+        require_scalar(f"ball {index} radius", float(shape.radius), ball_radius)
+        target_xz = (float(ball.translation[0]), float(ball.translation[2]))
+        impact_targets_xz.append(target_xz)
+        require_vector(
+            f"ball {index} position",
+            ball.translation,
+            (target_xz[0], ball_start_y, target_xz[1]),
+        )
+        require_vector(f"ball {index} rotation", ball.rotation, np.eye(3))
+        require_vector(
+            f"ball {index} linear velocity",
+            ball.linear_velocity,
+            (0.0, ball_launch_speed, 0.0),
+        )
+        require_vector(
+            f"ball {index} angular velocity", ball.angular_velocity, np.zeros(3)
+        )
+        require_vector(f"ball {index} force", ball.force, np.zeros(3))
+        require_vector(f"ball {index} torque", ball.torque, np.zeros(3))
+        require_equal(f"ball {index} static", ball.is_static, False)
+        require_equal(f"ball {index} kinematic", ball.is_kinematic, False)
+        require_scalar(f"ball {index} mass", float(ball.mass), ball_mass)
+        require_vector(f"ball {index} inertia", ball.inertia, ball_inertia)
+        require_scalar(f"ball {index} friction", float(ball.friction), ball_friction)
+        require_scalar(f"ball {index} restitution", float(ball.restitution), 0.0)
+    require_vector("impact targets xz", impact_targets_xz, _IMPACT_TARGETS_XZ)
+
+    indexed_bodies = (ground, *bricks)
+    break_force = float(joints[0].break_force)
+    require_scalar("break force", break_force, _BREAK_FORCE)
+    finite_vbd_rows = world.rigid_body_solver == sx.RigidBodySolver.VBD
+    for index, (joint, topology) in enumerate(
+        zip(joints, topology_records, strict=True)
+    ):
+        kind, parent_index, child_index = topology
+        if kind not in (1, 2, 3):
+            fail(f"joint {index} topology kind", kind, "one of 1, 2, 3")
+        if not 0 <= parent_index < len(indexed_bodies):
+            fail(f"joint {index} parent index", parent_index, "valid body index")
+        if not 0 <= child_index < len(indexed_bodies):
+            fail(f"joint {index} child index", child_index, "valid body index")
+        require_equal(f"joint {index} type", joint.type, sx.JointType.FIXED)
+        require_equal(f"joint {index} broken", joint.is_broken, False)
+        require_equal(
+            f"joint {index} parent",
+            joint.parent_rigid_body.name,
+            indexed_bodies[parent_index].name,
+        )
+        require_equal(
+            f"joint {index} child",
+            joint.child_rigid_body.name,
+            indexed_bodies[child_index].name,
+        )
+        require_scalar(
+            f"joint {index} break force", float(joint.break_force), break_force
+        )
+        policy = joint.constraint_projection_policy
+        require_scalar(
+            f"joint {index} start stiffness",
+            float(policy.start_stiffness),
+            _JOINT_START_STIFFNESS,
+        )
+        for field in ("linear_stiffness", "angular_stiffness"):
+            stiffness = float(getattr(policy, field))
+            if finite_vbd_rows:
+                require_scalar(
+                    f"joint {index} {field}", stiffness, _JOINT_START_STIFFNESS
+                )
+            elif not math.isinf(stiffness) or stiffness < 0.0:
+                fail(f"joint {index} {field}", stiffness, "positive infinity")
+
+    fingerprint = _hash_scene_spec(
+        # Runtime values above are validated with one tight cross-language
+        # tolerance, then serialized from their canonical intended values.
+        # This avoids making the fingerprint depend on cancellation such as
+        # `(x + spacing) - x` while still failing closed on scene drift.
+        time_step=_TIME_STEP,
+        gravity=_GRAVITY,
+        constraint_iterations=_RIGID_CONSTRAINT_ITERATIONS,
+        brick_size=_BRICK_SIZE,
+        body_parameters=(
+            _BRICK_DENSITY,
+            _BRICK_FRICTION,
+            _BRICK_SPACING_X,
+            _BRICK_SPACING_Z,
+            _BRICK_BASE_CLEARANCE,
+            _BALL_RADIUS,
+            _BALL_MASS,
+            _BALL_FRICTION,
+            _BALL_START_Y,
+            _BALL_LAUNCH_SPEED,
+        ),
+        impact_targets_xz=_IMPACT_TARGETS_XZ,
+        ground_size=_GROUND_SIZE,
+        ground_friction=_GROUND_FRICTION,
+        break_force=_BREAK_FORCE,
+        topology_records=topology_records,
+    )
+    if fingerprint != _EXPECTED_SCENE_SPEC_FINGERPRINT:
+        fail("scene fingerprint", fingerprint, _EXPECTED_SCENE_SPEC_FINGERPRINT)
+    return fingerprint
 
 
 def _serialize_and_validate_resolved_configuration(
@@ -284,8 +535,7 @@ def _brick_position(row: int, column: int) -> np.ndarray:
     course_offset = 0.5 if row % 2 else 0.0
     return np.array(
         [
-            (column - 0.5 * (_WALL_COLUMNS - 1) + course_offset)
-            * _BRICK_SPACING_X,
+            (column - 0.5 * (_WALL_COLUMNS - 1) + course_offset) * _BRICK_SPACING_X,
             0.0,
             _BRICK_BASE_CLEARANCE
             + 0.5 * float(_BRICK_SIZE[2])
@@ -321,16 +571,16 @@ def _add_breakable_fixed_joint(
 ) -> sx.Joint:
     spec = sx.JointSpec(name=name, type=sx.JointType.FIXED)
     joint = world.add_joint(parent, child, spec)
+    policy = joint.constraint_projection_policy
+    policy.start_stiffness = _JOINT_START_STIFFNESS
+    joint.constraint_projection_policy = policy
     joint.break_force = _BREAK_FORCE
     return joint
 
 
 def _positions(bodies: Sequence[sx.RigidBody]) -> np.ndarray:
     return np.asarray(
-        [
-            np.asarray(body.translation, dtype=float).reshape(3)
-            for body in bodies
-        ],
+        [np.asarray(body.translation, dtype=float).reshape(3) for body in bodies],
         dtype=float,
     )
 
@@ -351,13 +601,11 @@ def _fixed_joint_evidence(
         parent_transform = np.asarray(parent.transform, dtype=float).reshape(4, 4)
         child_transform = np.asarray(child.transform, dtype=float).reshape(4, 4)
         initial_anchor = child_transform[:3, 3].copy()
-        local_anchor_parent = (
-            parent_transform[:3, :3].T
-            @ (initial_anchor - parent_transform[:3, 3])
+        local_anchor_parent = parent_transform[:3, :3].T @ (
+            initial_anchor - parent_transform[:3, 3]
         )
-        local_anchor_child = (
-            child_transform[:3, :3].T
-            @ (initial_anchor - child_transform[:3, 3])
+        local_anchor_child = child_transform[:3, :3].T @ (
+            initial_anchor - child_transform[:3, 3]
         )
         evidence.append(
             _FixedJointEvidence(
@@ -370,8 +618,7 @@ def _fixed_joint_evidence(
                 local_anchor_parent=local_anchor_parent,
                 local_anchor_child=local_anchor_child,
                 target_relative_rotation=(
-                    parent_transform[:3, :3].T
-                    @ child_transform[:3, :3]
+                    parent_transform[:3, :3].T @ child_transform[:3, :3]
                 ),
                 initial_anchor=initial_anchor,
             )
@@ -410,12 +657,8 @@ def _joint_constraint_evidence(
     broken_outside_impact_regions = 0
 
     for record in records:
-        parent_rotation = np.asarray(
-            record.parent.rotation, dtype=float
-        ).reshape(3, 3)
-        child_rotation = np.asarray(
-            record.child.rotation, dtype=float
-        ).reshape(3, 3)
+        parent_rotation = np.asarray(record.parent.rotation, dtype=float).reshape(3, 3)
+        child_rotation = np.asarray(record.child.rotation, dtype=float).reshape(3, 3)
         parent_anchor = (
             np.asarray(record.parent.translation, dtype=float).reshape(3)
             + parent_rotation @ record.local_anchor_parent
@@ -430,11 +673,7 @@ def _joint_constraint_evidence(
             record.target_relative_rotation.T @ current_relative_rotation
         )
         impact_distances = [
-            float(
-                np.linalg.norm(
-                    record.initial_anchor[[0, 2]] - np.asarray(target)
-                )
-            )
+            float(np.linalg.norm(record.initial_anchor[[0, 2]] - np.asarray(target)))
             for target in _IMPACT_TARGETS_XZ
         ]
         nearest_impact_index = int(np.argmin(impact_distances))
@@ -476,11 +715,7 @@ def _joint_constraint_evidence(
         return float(max(values, default=0.0))
 
     def rms(values: Sequence[float]) -> float:
-        return (
-            float(np.sqrt(np.mean(np.square(values))))
-            if values
-            else 0.0
-        )
+        return float(np.sqrt(np.mean(np.square(values)))) if values else 0.0
 
     broken_joint_ids_digest = hashlib.sha256()
     for joint_id in sorted(broken_joint_ids):
@@ -509,21 +744,15 @@ def _joint_constraint_evidence(
         "maximum_unbroken_joint_angular_residual_radians": maximum(
             unbroken_angular_residuals
         ),
-        "maximum_unbroken_joint_linear_residual": maximum(
-            unbroken_linear_residuals
-        ),
+        "maximum_unbroken_joint_linear_residual": maximum(unbroken_linear_residuals),
         "maximum_outside_impact_unbroken_joint_angular_residual_radians": (
             maximum(outside_unbroken_angular_residuals)
         ),
         "maximum_outside_impact_unbroken_joint_linear_residual": maximum(
             outside_unbroken_linear_residuals
         ),
-        "rms_unbroken_joint_angular_residual_radians": rms(
-            unbroken_angular_residuals
-        ),
-        "rms_unbroken_joint_linear_residual": rms(
-            unbroken_linear_residuals
-        ),
+        "rms_unbroken_joint_angular_residual_radians": rms(unbroken_angular_residuals),
+        "rms_unbroken_joint_linear_residual": rms(unbroken_linear_residuals),
         "rms_outside_impact_unbroken_joint_angular_residual_radians": rms(
             outside_unbroken_angular_residuals
         ),
@@ -584,8 +813,7 @@ def compute_outcome_metrics(
     outside_mask = np.ones(_BRICK_COUNT, dtype=bool)
     for target in _IMPACT_TARGETS_XZ:
         outside_mask &= (
-            np.linalg.norm(initial_xz - np.asarray(target), axis=1)
-            > _OUTSIDE_RADIUS
+            np.linalg.norm(initial_xz - np.asarray(target), axis=1) > _OUTSIDE_RADIUS
         )
     retained_mask = displacements < retained_displacement_threshold
     outside_count = int(np.count_nonzero(outside_mask))
@@ -598,21 +826,14 @@ def compute_outcome_metrics(
     joint_constraint_evidence = _joint_constraint_evidence(
         joint_evidence,
         include_broken_records=frame
-        in {
-            int(value)
-            for value in outcome_oracle.get("joint_evidence_frames", ())
-        },
+        in {int(value) for value in outcome_oracle.get("joint_evidence_frames", ())},
     )
     broken_joints = sum(1 for joint in joints if joint.is_broken)
     unbroken_joints = len(joints) - broken_joints
     include_broken_records = frame in {
-        int(value)
-        for value in outcome_oracle.get("joint_evidence_frames", ())
+        int(value) for value in outcome_oracle.get("joint_evidence_frames", ())
     }
-    if (
-        joint_constraint_evidence["unbroken_joint_residual_count"]
-        != unbroken_joints
-    ):
+    if joint_constraint_evidence["unbroken_joint_residual_count"] != unbroken_joints:
         raise RuntimeError(
             "breakable-wall joint evidence count drifted: "
             f"expected {unbroken_joints} unbroken records, got "
@@ -626,8 +847,7 @@ def compute_outcome_metrics(
         )
     if (
         include_broken_records
-        and len(joint_constraint_evidence["broken_joint_records"])
-        != broken_joints
+        and len(joint_constraint_evidence["broken_joint_records"]) != broken_joints
     ):
         raise RuntimeError(
             "breakable-wall detailed broken-joint evidence count drifted: "
@@ -643,14 +863,10 @@ def compute_outcome_metrics(
         and joint_constraint_evidence["joint_residuals_finite"]
         and all(
             np.all(
-                np.isfinite(
-                    np.asarray(body.linear_velocity, dtype=float).reshape(3)
-                )
+                np.isfinite(np.asarray(body.linear_velocity, dtype=float).reshape(3))
             )
             and np.all(
-                np.isfinite(
-                    np.asarray(body.angular_velocity, dtype=float).reshape(3)
-                )
+                np.isfinite(np.asarray(body.angular_velocity, dtype=float).reshape(3))
             )
             for body in (*bricks, *balls)
         )
@@ -661,8 +877,7 @@ def compute_outcome_metrics(
         threshold_checks = {
             "finite_state": finite_state,
             "damage_in_three_impact_bands": all(
-                count
-                >= outcome_oracle["minimum_displaced_bricks_per_impact_band"]
+                count >= outcome_oracle["minimum_displaced_bricks_per_impact_band"]
                 for count in impact_band_displaced_counts
             ),
             "outside_wall_retained": (
@@ -685,18 +900,12 @@ def compute_outcome_metrics(
                 == outcome_oracle["expected_broken_joint_ids_sha256"]
             ),
             "retained_joint_rows_satisfied": (
-                joint_constraint_evidence[
-                    "maximum_unbroken_joint_linear_residual"
-                ]
-                <= outcome_oracle[
-                    "maximum_unbroken_joint_linear_residual"
-                ]
+                joint_constraint_evidence["maximum_unbroken_joint_linear_residual"]
+                <= outcome_oracle["maximum_unbroken_joint_linear_residual"]
                 and joint_constraint_evidence[
                     "maximum_unbroken_joint_angular_residual_radians"
                 ]
-                <= outcome_oracle[
-                    "maximum_unbroken_joint_angular_residual_radians"
-                ]
+                <= outcome_oracle["maximum_unbroken_joint_angular_residual_radians"]
             ),
         }
         evaluated = frame >= evaluation_frame
@@ -713,18 +922,12 @@ def compute_outcome_metrics(
                     unbroken_joints >= outcome_oracle["minimum_unbroken_joints"]
                 ),
                 "retained_joint_rows_satisfied": (
-                    joint_constraint_evidence[
-                        "maximum_unbroken_joint_linear_residual"
-                    ]
-                    <= outcome_oracle[
-                        "maximum_unbroken_joint_linear_residual"
-                    ]
+                    joint_constraint_evidence["maximum_unbroken_joint_linear_residual"]
+                    <= outcome_oracle["maximum_unbroken_joint_linear_residual"]
                     and joint_constraint_evidence[
                         "maximum_unbroken_joint_angular_residual_radians"
                     ]
-                    <= outcome_oracle[
-                        "maximum_unbroken_joint_angular_residual_radians"
-                    ]
+                    <= outcome_oracle["maximum_unbroken_joint_angular_residual_radians"]
                 ),
                 "wall_retained": (
                     total_retained_fraction
@@ -743,24 +946,16 @@ def compute_outcome_metrics(
                     unbroken_joints >= outcome_oracle["minimum_unbroken_joints"]
                 ),
                 "retained_joint_rows_satisfied": (
-                    joint_constraint_evidence[
-                        "maximum_unbroken_joint_linear_residual"
-                    ]
-                    <= outcome_oracle[
-                        "maximum_unbroken_joint_linear_residual"
-                    ]
+                    joint_constraint_evidence["maximum_unbroken_joint_linear_residual"]
+                    <= outcome_oracle["maximum_unbroken_joint_linear_residual"]
                     and joint_constraint_evidence[
                         "maximum_unbroken_joint_angular_residual_radians"
                     ]
-                    <= outcome_oracle[
-                        "maximum_unbroken_joint_angular_residual_radians"
-                    ]
+                    <= outcome_oracle["maximum_unbroken_joint_angular_residual_radians"]
                 ),
                 "wall_bends": (
                     float(np.max(wall_normal_displacements))
-                    >= outcome_oracle[
-                        "minimum_maximum_wall_normal_displacement"
-                    ]
+                    >= outcome_oracle["minimum_maximum_wall_normal_displacement"]
                 ),
                 "wall_bend_is_distributed": (
                     float(np.sqrt(np.mean(np.square(wall_normal_displacements))))
@@ -770,9 +965,7 @@ def compute_outcome_metrics(
                     int(
                         np.count_nonzero(
                             wall_normal_displacements
-                            >= outcome_oracle[
-                                "bent_brick_displacement_threshold"
-                            ]
+                            >= outcome_oracle["bent_brick_displacement_threshold"]
                         )
                     )
                     >= outcome_oracle["minimum_bent_bricks"]
@@ -786,15 +979,11 @@ def compute_outcome_metrics(
             threshold_checks = {
                 "finite_state": finite_state,
                 "initial_fracture_remains_visible": (
-                    broken_joints
-                    >= outcome_oracle["minimum_final_broken_joints"]
+                    broken_joints >= outcome_oracle["minimum_final_broken_joints"]
                 ),
                 "fracture_identity_unchanged": (
-                    broken_joints
-                    == outcome_oracle["expected_broken_joints"]
-                    and joint_constraint_evidence[
-                        "broken_joint_ids_sha256"
-                    ]
+                    broken_joints == outcome_oracle["expected_broken_joints"]
+                    and joint_constraint_evidence["broken_joint_ids_sha256"]
                     == outcome_oracle["expected_broken_joint_ids_sha256"]
                     and joint_constraint_evidence[
                         "broken_joints_outside_impact_regions"
@@ -803,15 +992,10 @@ def compute_outcome_metrics(
                     and joint_constraint_evidence[
                         "outside_impact_unbroken_joint_residual_count"
                     ]
-                    == outcome_oracle[
-                        "expected_outside_impact_unbroken_joint_count"
-                    ]
+                    == outcome_oracle["expected_outside_impact_unbroken_joint_count"]
                 ),
                 "damage_in_three_impact_bands": all(
-                    count
-                    >= outcome_oracle[
-                        "minimum_displaced_bricks_per_impact_band"
-                    ]
+                    count >= outcome_oracle["minimum_displaced_bricks_per_impact_band"]
                     for count in impact_band_displaced_counts
                 ),
                 "retained_rows_fail_outside_impacts": (
@@ -842,19 +1026,13 @@ def compute_outcome_metrics(
                 ),
                 "outside_wall_collapses": (
                     outside_retained_fraction
-                    <= outcome_oracle[
-                        "maximum_collapse_outside_retained_fraction"
-                    ]
+                    <= outcome_oracle["maximum_collapse_outside_retained_fraction"]
                 ),
                 "wall_collapses": (
                     total_retained_fraction
-                    <= outcome_oracle[
-                        "maximum_collapse_total_retained_fraction"
-                    ]
+                    <= outcome_oracle["maximum_collapse_total_retained_fraction"]
                     and float(np.max(wall_normal_displacements))
-                    >= outcome_oracle[
-                        "minimum_collapse_wall_normal_displacement"
-                    ]
+                    >= outcome_oracle["minimum_collapse_wall_normal_displacement"]
                 ),
             }
             evaluated = True
@@ -863,12 +1041,10 @@ def compute_outcome_metrics(
             threshold_checks = {
                 "finite_state": finite_state,
                 "fracture_activated": (
-                    broken_joints
-                    >= outcome_oracle["minimum_initial_broken_joints"]
+                    broken_joints >= outcome_oracle["minimum_initial_broken_joints"]
                 ),
                 "initial_fracture_confined_to_impact_regions": (
-                    broken_joints
-                    <= outcome_oracle["maximum_initial_broken_joints"]
+                    broken_joints <= outcome_oracle["maximum_initial_broken_joints"]
                     and unbroken_joints
                     >= outcome_oracle["minimum_initial_unbroken_joints"]
                     and joint_constraint_evidence[
@@ -878,33 +1054,25 @@ def compute_outcome_metrics(
                 ),
                 "initial_fracture_covers_three_impacts": all(
                     count
-                    >= outcome_oracle[
-                        "minimum_initial_broken_joints_per_impact_region"
-                    ]
+                    >= outcome_oracle["minimum_initial_broken_joints_per_impact_region"]
                     for count in joint_constraint_evidence[
                         "broken_joint_impact_region_counts"
                     ]
                 ),
                 "initial_fracture_identity_matches": (
                     broken_joints == outcome_oracle["expected_broken_joints"]
-                    and joint_constraint_evidence[
-                        "broken_joint_ids_sha256"
-                    ]
+                    and joint_constraint_evidence["broken_joint_ids_sha256"]
                     == outcome_oracle["expected_broken_joint_ids_sha256"]
                     and joint_constraint_evidence[
                         "outside_impact_unbroken_joint_residual_count"
                     ]
-                    == outcome_oracle[
-                        "expected_outside_impact_unbroken_joint_count"
-                    ]
+                    == outcome_oracle["expected_outside_impact_unbroken_joint_count"]
                 ),
                 "initial_retained_joint_rows_bounded": (
                     joint_constraint_evidence[
                         "maximum_outside_impact_unbroken_joint_linear_residual"
                     ]
-                    <= outcome_oracle[
-                        "maximum_initial_outside_joint_linear_residual"
-                    ]
+                    <= outcome_oracle["maximum_initial_outside_joint_linear_residual"]
                     and joint_constraint_evidence[
                         "maximum_outside_impact_unbroken_joint_angular_residual_radians"
                     ]
@@ -914,9 +1082,7 @@ def compute_outcome_metrics(
                 ),
                 "wall_initially_retained": (
                     total_retained_fraction
-                    >= outcome_oracle[
-                        "minimum_initial_total_retained_fraction"
-                    ]
+                    >= outcome_oracle["minimum_initial_total_retained_fraction"]
                 ),
             }
             evaluated = frame == evaluation_frame
@@ -932,17 +1098,19 @@ def compute_outcome_metrics(
         "status": (
             "pass"
             if thresholds_pass
-            else "fail"
-            if evaluated
-            else "pre-evaluation"
-            if frame < evaluation_frame
-            else "between-checkpoints"
+            else (
+                "fail"
+                if evaluated
+                else (
+                    "pre-evaluation"
+                    if frame < evaluation_frame
+                    else "between-checkpoints"
+                )
+            )
         ),
         "thresholds_pass": thresholds_pass,
         "threshold_checks": threshold_checks,
-        "impact_damage_displacement_threshold": (
-            impact_damage_displacement_threshold
-        ),
+        "impact_damage_displacement_threshold": (impact_damage_displacement_threshold),
         "retained_displacement_threshold": retained_displacement_threshold,
         "impact_band_displaced_counts": impact_band_displaced_counts,
         "outside_brick_count": outside_count,
@@ -952,16 +1120,13 @@ def compute_outcome_metrics(
         "unbroken_joints": unbroken_joints,
         **joint_constraint_evidence,
         "max_brick_displacement": float(np.max(displacements)),
-        "maximum_wall_normal_displacement": float(
-            np.max(wall_normal_displacements)
-        ),
+        "maximum_wall_normal_displacement": float(np.max(wall_normal_displacements)),
         "rms_wall_normal_displacement": float(
             np.sqrt(np.mean(np.square(wall_normal_displacements)))
         ),
         "bent_brick_count": int(
             np.count_nonzero(
-                wall_normal_displacements
-                >= bent_brick_displacement_threshold
+                wall_normal_displacements >= bent_brick_displacement_threshold
             )
         ),
         "ball_positions": ball_positions.tolist(),
@@ -984,7 +1149,7 @@ def build_solver_variant(
     capture_assessment_frames: tuple[int, ...],
     resolved_solver_key: str | None = None,
 ) -> SceneSetup:
-    """Build one matched Figure 13 solver row from the shared reconstruction."""
+    """Build one cross-solver row from the shared DART reconstruction."""
     scene_id = f"{solver_key}_paper_breakable_wall"
     object_prefix = f"{solver_key}_paper"
     world = sx.World(
@@ -1088,9 +1253,7 @@ def build_solver_variant(
             joint.constraint_projection_policy = policy
 
     balls: list[sx.RigidBody] = []
-    sphere_inertia = (
-        2.0 / 5.0 * _BALL_MASS * _BALL_RADIUS * _BALL_RADIUS * np.eye(3)
-    )
+    sphere_inertia = 2.0 / 5.0 * _BALL_MASS * _BALL_RADIUS * _BALL_RADIUS * np.eye(3)
     for index, (target_x, target_z) in enumerate(_IMPACT_TARGETS_XZ):
         ball = world.add_rigid_body(
             f"{object_prefix}_wall_ball_{index}",
@@ -1117,7 +1280,14 @@ def build_solver_variant(
     resolved_configuration = _serialize_and_validate_resolved_configuration(
         world, resolved_solver_key or solver_key
     )
-    scene_spec_fingerprint = _scene_spec_fingerprint(topology_records)
+    scene_spec_fingerprint = _effective_scene_spec_fingerprint(
+        world=world,
+        ground=ground,
+        bricks=bricks,
+        balls=balls,
+        joints=joints,
+        topology_records=topology_records,
+    )
     view_assessment_available = _view_assessment_available()
     capture_camera = (
         dart.gui.orbit_camera(
@@ -1206,10 +1376,7 @@ def build_solver_variant(
         )
         view_report = None
         assessed_frames = {int(frame) for frame in capture_assessment_frames}
-        if (
-            view_assessment_available
-            and metrics["frame"] in assessed_frames
-        ):
+        if view_assessment_available and metrics["frame"] in assessed_frames:
             # capture_metrics() is also a public text-oracle callback, so it
             # can be invoked after direct World.step(n=...) calls that bypass
             # the demo runner's render-provider synchronization.
@@ -1240,6 +1407,7 @@ def build_solver_variant(
             "rigid_body_solver": world.rigid_body_solver.name,
             "resolved_configuration": resolved_configuration,
             "scene_spec_fingerprint": scene_spec_fingerprint,
+            "effective_scene_contract_passed": True,
             "view_assessment_available": view_assessment_available,
             "view_report": view_report,
             "rigid_bodies": world.num_rigid_bodies,
@@ -1279,12 +1447,10 @@ def build_solver_variant(
         )
         builder.text(f"displaced bricks in impact bands: {impact_bands}")
         builder.text(
-            "outside retained: "
-            f"{100.0 * metrics['outside_retained_fraction']:.1f}%"
+            "outside retained: " f"{100.0 * metrics['outside_retained_fraction']:.1f}%"
         )
         builder.text(
-            "total retained: "
-            f"{100.0 * metrics['total_retained_fraction']:.1f}%"
+            "total retained: " f"{100.0 * metrics['total_retained_fraction']:.1f}%"
         )
         builder.text(f"outcome oracle: {metrics['status']}")
         builder.plot_lines("Broken joints", list(broken_history))
@@ -1305,11 +1471,13 @@ def build_solver_variant(
             "bricks": tuple(bricks),
             "balls": tuple(balls),
             "joints": tuple(joints),
+            "topology_records": tuple(topology_records),
             "initial_brick_positions": initial_brick_positions.copy(),
             "paper_reference": paper_reference,
             "outcome_oracle": outcome_oracle,
             "resolved_configuration": tuple(resolved_configuration),
             "scene_spec_fingerprint": scene_spec_fingerprint,
+            "effective_scene_contract_passed": True,
             "outcome_metrics": sample_metrics,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
@@ -1325,13 +1493,13 @@ def build() -> SceneSetup:
         solver_display="AVBD",
         paper_reference=PAPER_REFERENCE,
         outcome_oracle=OUTCOME_ORACLE,
-        capture_assessment_frames=(60, _OUTCOME_FRAME),
+        capture_assessment_frames=(60, _OUTCOME_FRAME, 600),
     )
 
 
 SCENE = PythonDemoScene(
     id="avbd_paper_breakable_wall",
-    title="AVBD Paper Breakable Wall (sx)",
+    title="AVBD Figure 13 Reconstruction (sx)",
     category="AVBD Rigid Constraints (sx)",
     summary="A publication-shaped Figure 13 wall hit by three balls, with public "
     "AVBD contacts, 20 sweeps, and a quantitative retained-wall oracle.",

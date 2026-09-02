@@ -19,6 +19,11 @@ import dartpy as sx
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
+# This contact-free spring curtain intentionally has no surface triangles, so
+# its theoretical valid-pair bound is zero; one is the documented nonzero floor
+# used by explicit evidence-scene capacity contracts.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 1
+
 
 def _make_cloth_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
@@ -70,6 +75,9 @@ def _make_cloth_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
     options.edges = edges
     options.edge_stiffness = 120.0
     options.damping = 0.6
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
     return options
 
 
@@ -126,7 +134,7 @@ def build() -> SceneSetup:
             builder.text(f"mean node speed: {mean_speed:.3f} m/s")
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
-            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+            builder.text(f"VBD sweeps: {diagnostics.vbd_sweeps}")
         if sag_history:
             builder.separator()
             builder.plot_lines("Cloth sag", list(sag_history))

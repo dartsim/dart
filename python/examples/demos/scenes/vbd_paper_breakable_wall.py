@@ -1,4 +1,8 @@
-"""Matched fixed-penalty VBD row for the Figure 13 breakable wall."""
+"""Fixed-penalty VBD row for the shared DART Figure 13 reconstruction.
+
+This reconstruction contains rigid bricks and rigid constraints only, so the
+per-deformable-body surface-candidate capacity contract does not apply.
+"""
 
 from __future__ import annotations
 
@@ -26,7 +30,7 @@ OUTCOME_ORACLE: dict[str, Any] = {
     **OUTCOME_METRIC_THRESHOLDS,
     "evaluation_frame": 18,
     "retention_evaluation_frame": 120,
-    "joint_evidence_frames": (18, 120),
+    "joint_evidence_frames": (18, 120, 600),
     "maximum_broken_joints": 0,
     "minimum_unbroken_joints": 712,
     "minimum_maximum_wall_normal_displacement": 0.10,
@@ -49,15 +53,17 @@ def build() -> SceneSetup:
         capture_assessment_frames=(
             int(OUTCOME_ORACLE["evaluation_frame"]),
             int(OUTCOME_ORACLE["retention_evaluation_frame"]),
+            600,
         ),
     )
 
 
 SCENE = PythonDemoScene(
     id="vbd_paper_breakable_wall",
-    title="VBD Paper Breakable Wall (sx)",
+    title="VBD Figure 13 Reconstruction (sx)",
     category="VBD Rigid Constraints (sx)",
-    summary="The matched fixed-penalty Figure 13 wall row: 20 sweeps, retained "
+    summary="The fixed-penalty row of DART's shared publication-shaped Figure "
+    "13 reconstruction: 20 sweeps, retained "
     "topology, and a quantitative bending oracle.",
     build=build,
 )

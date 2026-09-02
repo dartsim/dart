@@ -34,6 +34,42 @@ BENCHMARKS = (
 BENCHMARK_ARGS = (1, 8, 32)
 
 
+def _runtime_identity_counters(benchmark: str) -> dict[str, float]:
+    if benchmark.startswith("BM_AvbdRigid"):
+        return {
+            "runtime_identity_recorded": 1.0,
+            "runtime_identity_applicable": 1.0,
+            "runtime_identity_not_applicable": 0.0,
+            "runtime_identity_public_avbd_rigid": 1.0,
+            "runtime_identity_variational_multibody": 0.0,
+            "runtime_identity_contract_passed": 1.0,
+            "public_avbd_family": 1.0,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0,
+            "resolved_rigid_pair_constraint_not_applicable": 0.0,
+            "resolved_multibody_variational": 0.0,
+        }
+    return {
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_public_avbd_rigid": 0.0,
+        "runtime_identity_variational_multibody": 1.0,
+        "runtime_identity_contract_passed": 1.0,
+        "public_avbd_family": 0.0,
+        "public_sequential_impulse_family": 1.0,
+        "resolved_rigid_body_avbd": 0.0,
+        "resolved_rigid_contact_avbd": 0.0,
+        "resolved_rigid_body_sequential_impulse": 1.0,
+        "resolved_rigid_contact_sequential_impulse": 1.0,
+        "resolved_rigid_pair_constraint_sequential_impulse": 0.0,
+        "resolved_rigid_pair_constraint_not_applicable": 1.0,
+        "configured_multibody_variational": 1.0,
+        "resolved_multibody_variational": 1.0,
+    }
+
+
 def _benchmark_row(
     benchmark: str,
     arg: int,
@@ -45,6 +81,7 @@ def _benchmark_row(
 ) -> dict[str, object]:
     name = f"{benchmark}/{arg}"
     row: dict[str, object] = {
+        **_runtime_identity_counters(benchmark),
         "breakable_joints": float(arg if breakable_joints is None else breakable_joints),
         "cpu_time": float(arg * 1000 + index * 100),
         "iterations": 10,
@@ -131,11 +168,8 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
     assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_breakable_joint_scale"
     assert packet["resolved_solver_identity"] == {
-        "avbd_rigid_contact_config_emplaced": False,
-        "recorded_from": "breakable joint scale benchmark row family",
-        "rigid_contact_selection": "not_applicable",
-        "rigid_contact_solver": "none",
-        "rigid_point_joint_solver": "avbd",
+        "identity_scope": "per_benchmark_row",
+        "recorded_from": "breakable joint benchmark runtime identity counters",
     }
     assert packet["scene"] == "avbd_breakable_joint_scale"
     assert packet["target"]["broad_breakable_constraint_complete"] is False
@@ -145,6 +179,14 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
     )
     assert packet["benchmark"]["benchmark"] == "avbd_breakable_joint_scale"
     assert packet["benchmark"]["benchmarks"] == list(BENCHMARKS)
+    assert {
+        row["resolved_solver_identity"]["multibody_integration_family"]
+        for row in packet["benchmark"]["rows"]
+    } == {"none", "variational"}
+    assert {
+        row["resolved_solver_identity"]["rigid_contact_solver"]
+        for row in packet["benchmark"]["scale_data"]
+    } == {"avbd", "sequential_impulse"}
     assert packet["benchmark"]["invariants"] == {
         "break_force_n": 1.0e12,
         "breakable_joints": [1, 8, 32],
@@ -159,7 +201,11 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
     assert len(packet["benchmark"]["scale_data"]) == len(BENCHMARKS) * len(
         BENCHMARK_ARGS
     )
-    assert packet["benchmark"]["scale_data"][0] == {
+    assert {
+        key: value
+        for key, value in packet["benchmark"]["scale_data"][0].items()
+        if key != "resolved_solver_identity"
+    } == {
         "benchmark": "BM_AvbdRigidBreakableJointStep/1",
         "breakable_joints": 1,
         "cpu_time_per_step_ns": 1000.0,
@@ -168,7 +214,11 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
         "time_unit": "ns",
         "variant": "rigid_fixed",
     }
-    assert packet["benchmark"]["scale_data"][-1] == {
+    assert {
+        key: value
+        for key, value in packet["benchmark"]["scale_data"][-1].items()
+        if key != "resolved_solver_identity"
+    } == {
         "benchmark": "BM_AvbdArticulatedSphericalPairBreakableJointStep/32",
         "breakable_joints": 32,
         "cpu_time_per_step_ns": 32400.0,
@@ -192,6 +242,25 @@ def test_avbd_breakable_joint_scale_packet_rejects_missing_row(
         SystemExit,
         match="missing breakable-joint scale rows: .*BM_AvbdRigidBreakableJointStep/32",
     ):
+        module.main(["--benchmark-json", str(benchmark_json)])
+
+
+def test_breakable_joint_packet_rejects_runtime_identity_counter_mutation(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    benchmark_json = _write_benchmark_json(tmp_path)
+    data = json.loads(benchmark_json.read_text())
+    target = next(
+        row
+        for row in data["benchmarks"]
+        if row.get("aggregate_name") == "median"
+        and row["run_name"].startswith("BM_AvbdArticulatedBreakableJointStep/")
+    )
+    target["runtime_identity_contract_passed"] = 0.0
+    benchmark_json.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="runtime_identity_contract_passed"):
         module.main(["--benchmark-json", str(benchmark_json)])
 
 

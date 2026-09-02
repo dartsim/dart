@@ -1,4 +1,4 @@
-"""Matched sequential-impulse row for the Figure 13 breakable wall."""
+"""Sequential-impulse row for the shared DART Figure 13 reconstruction."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ SEQUENTIAL_IMPULSE_OUTCOME_ORACLE: dict[str, Any] = {
     **OUTCOME_METRIC_THRESHOLDS,
     "evaluation_frame": 14,
     "collapse_evaluation_frame": 120,
-    "joint_evidence_frames": (14, 120),
+    "joint_evidence_frames": (14, 120, 600),
     "minimum_initial_broken_joints": 3,
     "maximum_initial_broken_joints": 20,
     "minimum_initial_unbroken_joints": 690,
@@ -45,7 +45,7 @@ SEQUENTIAL_IMPULSE_OUTCOME_ORACLE: dict[str, Any] = {
 
 
 def build() -> SceneSetup:
-    """Build the matched public sequential-impulse comparison row."""
+    """Build the public SI row of the shared DART reconstruction."""
     return build_solver_variant(
         rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
         solver_key="sequential_impulse",
@@ -59,6 +59,7 @@ def build() -> SceneSetup:
                     "collapse_evaluation_frame"
                 ]
             ),
+            600,
         ),
         resolved_solver_key="sequential-impulse",
     )
@@ -66,9 +67,10 @@ def build() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id="sequential_impulse_paper_breakable_wall",
-    title="Sequential Impulse Paper Breakable Wall (sx)",
+    title="Sequential Impulse Figure 13 Reconstruction (sx)",
     category="Sequential Impulse Rigid Constraints (sx)",
-    summary="The matched Figure 13 sequential-impulse row: 20 PGS sweeps, "
+    summary="The SI row of DART's shared publication-shaped Figure 13 "
+    "reconstruction: 20 PGS sweeps, "
     "impulse-derived fracture, and non-velocity post-stabilization.",
     build=build,
 )

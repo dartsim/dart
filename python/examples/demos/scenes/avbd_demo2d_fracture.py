@@ -217,7 +217,7 @@ def build() -> SceneSetup:
         )
         # Preserve the source scene's numeric control. The source breaks only
         # its torque-arm-scaled angular dual row, whereas DART's public
-        # break_force covers the combined physical fixed-joint row load. This
+        # break_force covers DART's combined fixed-joint solver-row metric. This
         # is a source-shaped lifecycle row, not a source-trajectory oracle.
         joint.break_force = _BREAK_FORCE
         joints.append(joint)

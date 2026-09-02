@@ -9,6 +9,7 @@ guarantee is that the runner itself stays healthy.
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
 import pathlib
@@ -29,18 +30,101 @@ if str(_PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(_PYTHON_DIR))
 
 import pytest
-
-from examples.demos import make_demo_scenes, run  # noqa: E402
 from examples.demos.runner import (  # noqa: E402
+    _RIGID_WORKFLOW_RELATED_EVIDENCE,
     CAPTURE_METRICS_INFO_KEY,
     REPLAY_TIMELINE_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     RIGID_VISUAL_WORKFLOW_LABELS,
     PythonDemoScene,
-    _RIGID_WORKFLOW_RELATED_EVIDENCE,
     _viewer_catalog_title,
 )
+
+from examples.demos import make_demo_scenes, run  # noqa: E402
+
+_AVBD_RIGID_DEMO_MODULES = (
+    "avbd_empty_baseline",
+    "avbd_demo2d_cards",
+    "avbd_demo2d_dynamic_friction",
+    "avbd_demo2d_fracture",
+    "avbd_demo2d_ground",
+    "avbd_demo2d_hanging_rope",
+    "avbd_demo2d_heavy_rope",
+    "avbd_demo2d_joint_grid",
+    "avbd_demo2d_motor",
+    "avbd_demo2d_net",
+    "avbd_demo2d_pyramid",
+    "avbd_demo2d_rod",
+    "avbd_demo2d_rope",
+    "avbd_demo2d_soft_body",
+    "avbd_demo2d_spring",
+    "avbd_demo2d_spring_ratio",
+    "avbd_demo2d_stack",
+    "avbd_demo2d_stack_ratio",
+    "avbd_demo2d_static_friction",
+    "avbd_demo3d_breakable",
+    "avbd_demo3d_bridge",
+    "avbd_demo3d_dynamic_friction",
+    "avbd_demo3d_ground",
+    "avbd_demo3d_heavy_rope",
+    "avbd_demo3d_pyramid",
+    "avbd_demo3d_rope",
+    "avbd_demo3d_soft_body",
+    "avbd_demo3d_spring",
+    "avbd_demo3d_spring_ratio",
+    "avbd_demo3d_stack",
+    "avbd_demo3d_stack_ratio",
+    "avbd_demo3d_static_friction",
+)
+
+
+def _strict_deformable_surface_pair_bound(options: Any) -> int:
+    """Mirror the checked valid PT+EE topology bound used by World bake."""
+
+    tetrahedra = list(options.tetrahedra)
+    triangles = [
+        (int(face.node_a), int(face.node_b), int(face.node_c))
+        for face in options.surface_triangles
+    ]
+    if not triangles and tetrahedra:
+        face_counts: dict[tuple[int, int, int], int] = {}
+        for tet in tetrahedra:
+            a, b, c, d = (
+                int(tet.node_a),
+                int(tet.node_b),
+                int(tet.node_c),
+                int(tet.node_d),
+            )
+            for face in ((a, c, b), (a, b, d), (a, d, c), (b, c, d)):
+                key = tuple(sorted(face))
+                face_counts[key] = face_counts.get(key, 0) + 1
+        triangles = [face for face, count in face_counts.items() if count == 1]
+    if not triangles:
+        return 0
+
+    edges: set[tuple[int, int]] = set()
+    for a, b, c in triangles:
+        edges.update(
+            {
+                tuple(sorted((a, b))),
+                tuple(sorted((b, c))),
+                tuple(sorted((c, a))),
+            }
+        )
+    if tetrahedra:
+        surface_points = len({node for face in triangles for node in face})
+    else:
+        surface_points = len(options.positions)
+    point_triangle = surface_points * len(triangles) - 3 * len(triangles)
+    degrees: dict[int, int] = {}
+    for a, b in edges:
+        degrees[a] = degrees.get(a, 0) + 1
+        degrees[b] = degrees.get(b, 0) + 1
+    edge_edge = len(edges) * (len(edges) - 1) // 2 - sum(
+        degree * (degree - 1) // 2 for degree in degrees.values()
+    )
+    return point_triangle + edge_edge
 
 
 @pytest.fixture(autouse=True)
@@ -238,9 +322,7 @@ def _read_rigid_visual_readme_workflow_rows() -> list[tuple[str, str]]:
         if line.startswith("## "):
             if in_workflow_section:
                 break
-            in_workflow_section = (
-                line == "## Rigid body visual verification workflow"
-            )
+            in_workflow_section = line == "## Rigid body visual verification workflow"
             continue
         if not in_workflow_section or not line.startswith("| "):
             continue
@@ -253,8 +335,7 @@ def _read_rigid_visual_readme_workflow_rows() -> list[tuple[str, str]]:
 
 def _read_rigid_visual_readme_workflow_ids() -> list[str]:
     return [
-        scene_id
-        for _order_label, scene_id in _read_rigid_visual_readme_workflow_rows()
+        scene_id for _order_label, scene_id in _read_rigid_visual_readme_workflow_rows()
     ]
 
 
@@ -417,6 +498,47 @@ def test_registry_has_scenes() -> None:
     for scene in scenes:
         assert scene.id and scene.title and scene.category and scene.summary
         assert callable(scene.build)
+
+
+def test_vbd_deformable_evidence_caps_cover_all_delayed_surface_pairs() -> None:
+    if not _deformable_bindings_available():
+        pytest.skip("dartpy deformable bindings unavailable in this build")
+
+    from examples.demos.scenes import (
+        vbd_beam,
+        vbd_cloth,
+        vbd_net,
+        vbd_obstacle_drape,
+        vbd_self_fold,
+        vbd_tilted_strand,
+    )
+
+    cases = (
+        ("beam", vbd_beam._make_beam_options(8), 6_909),
+        ("cloth", vbd_cloth._make_cloth_options(17, 13), 1),
+        ("net", vbd_net._make_net_options(9, 5), 1),
+        (
+            "obstacle_drape",
+            vbd_obstacle_drape._make_cloth_options(
+                side=vbd_obstacle_drape._CLOTH_SIDE,
+                spacing=vbd_obstacle_drape._CLOTH_SPACING,
+                height=vbd_obstacle_drape._CLOTH_HEIGHT,
+            ),
+            1,
+        ),
+        ("self_fold", vbd_self_fold._make_two_layer_options(), 22_066),
+        ("tilted_strand", vbd_tilted_strand._make_strand_options(), 1),
+    )
+    for name, options, expected in cases:
+        bound = _strict_deformable_surface_pair_bound(options)
+        capacity = int(options.surface_contact_candidate_capacity)
+        assert capacity == expected, name
+        assert capacity > 0, name
+        # The empty-topology scenes use the documented floor. Contact-bearing
+        # scenes use the full valid-pair bound, which is stronger than merely
+        # covering the active set observed at bake: no delayed pose can request
+        # a larger unique PT+EE set without changing frozen topology.
+        assert capacity >= max(1, bound), (name, capacity, bound)
 
 
 def test_runner_cycle_returns_zero() -> None:
@@ -1419,9 +1541,7 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
 def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
     scenes = make_demo_scenes()
     by_id = {scene.id: scene for scene in scenes}
-    workflow_ids = {
-        scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()
-    }
+    workflow_ids = {scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()}
     rows = _read_rigid_visual_capture_first_ipc_rows()
 
     assert rows == [
@@ -1516,15 +1636,10 @@ def test_rigid_visual_workflow_capture_metric_docs_match_hooks() -> None:
 
 def test_world_related_evidence_routes_report_capture_metrics() -> None:
     import numpy as np
-
-    from examples.demos.scenes.articulated import (
-        SCENE as ARTICULATED_SCENE,
-        build as build_articulated,
-    )
-    from examples.demos.scenes.floating_base import (
-        SCENE as FLOATING_BASE_SCENE,
-        build as build_floating_base,
-    )
+    from examples.demos.scenes.articulated import SCENE as ARTICULATED_SCENE
+    from examples.demos.scenes.articulated import build as build_articulated
+    from examples.demos.scenes.floating_base import SCENE as FLOATING_BASE_SCENE
+    from examples.demos.scenes.floating_base import build as build_floating_base
 
     assert FLOATING_BASE_SCENE.category == "World Rigid Body"
     assert FLOATING_BASE_SCENE.id == "floating_base"
@@ -1571,10 +1686,7 @@ def test_world_related_evidence_routes_report_capture_metrics() -> None:
 
     articulated_metrics = articulated_setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert articulated_metrics["row"] == "articulated"
-    assert (
-        articulated_metrics["related_source_row"]
-        == "rigid_multibody_dynamics_terms"
-    )
+    assert articulated_metrics["related_source_row"] == "rigid_multibody_dynamics_terms"
     assert articulated_metrics["solver"] == "articulated_sx_world"
     assert articulated_metrics["scope"] == "broader_two_link_arm"
     assert articulated_metrics["dofs"] == pytest.approx(
@@ -1938,9 +2050,9 @@ def test_diff_pre_contact_surrogate_reports_pre_contact_metrics() -> None:
     assert capture_metrics["modes"]["ANALYTIC"]["next_z"] == pytest.approx(
         capture_metrics["analytic_next_z"]
     )
-    assert capture_metrics["modes"]["PRE_CONTACT_SURROGATE"][
-        "next_z"
-    ] == pytest.approx(capture_metrics["surrogate_next_z"])
+    assert capture_metrics["modes"]["PRE_CONTACT_SURROGATE"]["next_z"] == pytest.approx(
+        capture_metrics["surrogate_next_z"]
+    )
     assert np.isfinite(
         [
             float(capture_metrics["post_step_clearance"]),
@@ -2129,7 +2241,9 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
     compliance_attrs = {
         name
         for name in loop_attrs
-        if any(token in name.lower() for token in ("compliance", "stiffness", "damping"))
+        if any(
+            token in name.lower() for token in ("compliance", "stiffness", "damping")
+        )
     }
     assert not compliance_attrs, (
         "Public loop-closure compliance API appeared; update the rigid-body "
@@ -2171,9 +2285,7 @@ def test_rigid_visual_verification_capture_commands_match_workflow() -> None:
         / "rigid-body-visual-verification.md"
     )
     readme = root / "python" / "examples" / "demos" / "README.md"
-    workflow_ids = [
-        scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()
-    ]
+    workflow_ids = [scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()]
     table_specs = _read_rigid_visual_table_capture_specs()
 
     sidecar_capture_specs = _read_capture_command_specs(
@@ -2237,9 +2349,7 @@ def test_rigid_visual_motion_capture_video_flags_are_documented() -> None:
 
 def test_rigid_visual_workflow_continue_on_failure_is_documented() -> None:
     root = pathlib.Path(__file__).resolve().parents[3]
-    helper_text = (root / "scripts" / "capture_py_demo.py").read_text(
-        encoding="utf-8"
-    )
+    helper_text = (root / "scripts" / "capture_py_demo.py").read_text(encoding="utf-8")
     assert "--continue-on-failure" in helper_text
 
     expected_tokens = (
@@ -2327,14 +2437,18 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
     ]
     assert [scene_id for scene_id, *_rest in expected_specs] == related_scene_ids
 
-    marker = "Capture every non-numbered related-evidence route with the docked UI visible:"
+    marker = (
+        "Capture every non-numbered related-evidence route with the docked UI visible:"
+    )
     sidecar_specs = _read_capture_command_specs(sidecar, marker)
     readme_specs = _read_capture_command_specs(readme, marker)
 
     assert sidecar_specs == expected_specs
     assert readme_specs == expected_specs
     capture_py_demo = _capture_py_demo_module()
-    assert list(capture_py_demo.rigid_workflow_related_capture_specs()) == expected_specs
+    assert (
+        list(capture_py_demo.rigid_workflow_related_capture_specs()) == expected_specs
+    )
 
 
 def test_rigid_visual_capture_first_packets_are_documented() -> None:
@@ -2358,7 +2472,9 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
         for _scene_id, _question, _signals, command, _scope in packet_rows
     ] == expected_specs
 
-    marker = "Capture the heavier Rigid IPC stack packets when the question is what happens"
+    marker = (
+        "Capture the heavier Rigid IPC stack packets when the question is what happens"
+    )
     readme_specs = _read_capture_command_specs(readme, marker)
     assert readme_specs == expected_specs
 
@@ -2378,13 +2494,9 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
     )
     full_packet_end = full_packet_start + len(expected_specs) - 1
 
-    row_range_marker = (
-        "For targeted reruns after a failed or manually inspected row"
-    )
+    row_range_marker = "For targeted reruns after a failed or manually inspected row"
     for path in (readme, sidecar):
-        row_range_tail = path.read_text(encoding="utf-8").split(
-            row_range_marker, 1
-        )[1]
+        row_range_tail = path.read_text(encoding="utf-8").split(row_range_marker, 1)[1]
         row_range_intro, row_range_rest = row_range_tail.split("```bash", 1)
         row_range_block = row_range_rest.split("```", 1)[0]
         row_range_section = row_range_intro + row_range_block
@@ -2427,7 +2539,9 @@ def test_rigid_visual_direct_ipc_shelf_captures_are_documented() -> None:
     assert sidecar_specs == expected_specs
     assert readme_specs == expected_specs
     capture_py_demo = _capture_py_demo_module()
-    assert list(capture_py_demo.rigid_workflow_ipc_shelf_capture_specs()) == expected_specs
+    assert (
+        list(capture_py_demo.rigid_workflow_ipc_shelf_capture_specs()) == expected_specs
+    )
 
 
 def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
@@ -2479,13 +2593,17 @@ def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
     assert capture_metrics["world_time"] > 0.0
     assert capture_metrics["lane_count"] == len(controller.lanes)
     assert capture_metrics["selected_lane"]["key"] == controller._selected_lane().key
-    assert capture_metrics["selected_lane"]["label"] == controller._selected_lane().label
+    assert (
+        capture_metrics["selected_lane"]["label"] == controller._selected_lane().label
+    )
     assert capture_metrics["controls"]["pair_index"] == controller.pair_index
     assert capture_metrics["controls"]["penetration"] == pytest.approx(
         controller.penetration
     )
     assert capture_metrics["total_contact_count"] == metrics["total_contact_count"]
-    assert capture_metrics["selected_contact_count"] == metrics["selected_contact_count"]
+    assert (
+        capture_metrics["selected_contact_count"] == metrics["selected_contact_count"]
+    )
     assert capture_metrics["max_depth"] == pytest.approx(metrics["max_depth"])
     assert capture_metrics["selected_max_depth"] == pytest.approx(
         metrics["selected_max_depth"]
@@ -2544,7 +2662,6 @@ def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
 
 def test_rigid_body_modes_compare_dynamic_static_kinematic_semantics() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_body_modes import build
 
     setup = build()
@@ -2618,7 +2735,6 @@ def test_rigid_body_modes_compare_dynamic_static_kinematic_semantics() -> None:
 
 def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_body import build
 
     setup = build()
@@ -2655,9 +2771,7 @@ def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None
     assert capture_metrics["dynamic_body_count"] == pytest.approx(
         float(len(controller.dynamic_bodies))
     )
-    assert capture_metrics["baseline_max_speed"] == pytest.approx(
-        metrics["max_speed"]
-    )
+    assert capture_metrics["baseline_max_speed"] == pytest.approx(metrics["max_speed"])
     assert capture_metrics["baseline_min_height"] == pytest.approx(
         metrics["min_height"]
     )
@@ -2697,7 +2811,6 @@ def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None
 
 def test_rigid_external_loads_scale_force_and_torque_response() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_external_loads import build
 
     setup = build()
@@ -2816,7 +2929,6 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
 
 def test_rigid_free_flight_preserves_initial_state_diagnostics() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_free_flight import build
 
     setup = build()
@@ -2850,7 +2962,9 @@ def test_rigid_free_flight_preserves_initial_state_diagnostics() -> None:
     assert float(metrics["spin_momentum_ratio"]) == pytest.approx(
         controller.inertia_ratio
     )
-    assert float(metrics["spin_energy_ratio"]) == pytest.approx(controller.inertia_ratio)
+    assert float(metrics["spin_energy_ratio"]) == pytest.approx(
+        controller.inertia_ratio
+    )
 
     assert controller._drift_error_history
     assert controller._arc_error_history
@@ -2884,7 +2998,6 @@ def test_rigid_free_flight_preserves_initial_state_diagnostics() -> None:
 
 def test_rigid_frame_hierarchy_tracks_body_fixed_frame() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_frame_hierarchy import build
 
     setup = build()
@@ -2903,7 +3016,9 @@ def test_rigid_frame_hierarchy_tracks_body_fixed_frame() -> None:
     sensor_transform = np.asarray(controller.sensor.transform, dtype=float)
     local_transform = np.asarray(controller.sensor.local_transform, dtype=float)
     reconstructed = body_transform @ local_transform
-    relative = np.asarray(controller.sensor.relative_transform(controller.body), dtype=float)
+    relative = np.asarray(
+        controller.sensor.relative_transform(controller.body), dtype=float
+    )
 
     assert controller.sensor.parent_frame == controller.body
     assert sensor_transform[:3, 3].tolist() == pytest.approx(
@@ -2943,7 +3058,6 @@ def test_rigid_frame_hierarchy_tracks_body_fixed_frame() -> None:
 
 def test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_timestep_sensitivity import build
 
     setup = build()
@@ -3340,7 +3454,6 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
 
 def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_collision_casts import build
 
     setup = build()
@@ -3387,9 +3500,7 @@ def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:
     assert capture_metrics["controls"]["enable_all_ray_hits"] is True
     assert capture_metrics["ray_hit_count"] == 2
     assert capture_metrics["ray_first_target"] == "near_sensor_target"
-    assert capture_metrics["ray_first_fraction"] == pytest.approx(
-        ray["first_fraction"]
-    )
+    assert capture_metrics["ray_first_fraction"] == pytest.approx(ray["first_fraction"])
     assert capture_metrics["sphere_hit_count"] == 2
     assert capture_metrics["sphere_first_target"] == "near_sensor_target"
     assert capture_metrics["sphere_first_toi"] == pytest.approx(
@@ -3437,7 +3548,6 @@ def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:
 
 def test_rigid_solver_compare_records_wall_response() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_solver_compare import build
 
     setup = build()
@@ -3452,14 +3562,12 @@ def test_rigid_solver_compare_records_wall_response() -> None:
     snapshot = controller.capture_replay_state()
     assert timeline["signal_label"] == "Position divergence"
     assert timeline["signal"](snapshot) == pytest.approx(controller._delta_history[-1])
-    assert (
-        timeline["markers"]({"clearance_history": {"case": [0.12, 0.049]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"clearance_history": {"case": [0.12, 0.09]}})
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {"clearance_history": {"case": [0.12, 0.049]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"clearance_history": {"case": [0.12, 0.09]}}
+    ) == pytest.approx(0.0)
     for case in controller.cases:
         metrics = controller._last_metrics[case.label]
         assert np.isfinite(float(metrics["speed"]))
@@ -3476,7 +3584,9 @@ def test_rigid_solver_compare_records_wall_response() -> None:
     assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
     assert capture_metrics["executor"] == controller._executors[0][0]
     assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
-    assert capture_metrics["solver_pair"] == [case.solver.name for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [
+        case.solver.name for case in controller.cases
+    ]
     assert capture_metrics["controls"]["executor_index"] == pytest.approx(
         controller.executor_index
     )
@@ -3493,7 +3603,6 @@ def test_rigid_solver_compare_records_wall_response() -> None:
 
 def test_rigid_restitution_ladder_orders_rebound_height() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_restitution_ladder import build
 
     setup = build()
@@ -3507,12 +3616,14 @@ def test_rigid_restitution_ladder_orders_rebound_height() -> None:
     high = controller._last_metrics["high"]
     assert controller._max_rebound_height["dead"] < 0.12
     assert controller._max_rebound_height["middle"] > 0.18
-    assert controller._max_rebound_height["high"] > 2.0 * controller._max_rebound_height[
-        "middle"
-    ]
-    assert controller._max_upward_velocity["high"] > controller._max_upward_velocity[
-        "middle"
-    ]
+    assert (
+        controller._max_rebound_height["high"]
+        > 2.0 * controller._max_rebound_height["middle"]
+    )
+    assert (
+        controller._max_upward_velocity["high"]
+        > controller._max_upward_velocity["middle"]
+    )
     for key, metrics in controller._last_metrics.items():
         assert controller._had_contact[key] is True
         assert max(controller._contact_history[key]) >= 1.0
@@ -3550,8 +3661,8 @@ def test_rigid_restitution_ladder_orders_rebound_height() -> None:
 
 def test_rigid_material_mixing_applies_pair_rules() -> None:
     import math
-    import numpy as np
 
+    import numpy as np
     from examples.demos.scenes.rigid_material_mixing import build
 
     setup = build()
@@ -3616,7 +3727,6 @@ def test_rigid_material_mixing_applies_pair_rules() -> None:
 
 def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_contact_manipulation import build
 
     setup = build()
@@ -3658,9 +3768,7 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     assert capture_metrics["controls"]["launch_speed"] == pytest.approx(
         controller.launch_speed
     )
-    assert capture_metrics["controls"]["friction"] == pytest.approx(
-        controller.friction
-    )
+    assert capture_metrics["controls"]["friction"] == pytest.approx(controller.friction)
     assert capture_metrics["controls"]["pusher_mass"] == pytest.approx(
         controller.pusher_mass
     )
@@ -3708,41 +3816,34 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     assert timeline["markers"]({"divergence_history": [0.0, 0.012]}) == pytest.approx(
         1.0
     )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "case": {
-                        "contact_count": 0.0,
-                        "gap": 0.010,
-                        "status": "approaching",
-                        "target_travel": 0.02,
-                    }
+    assert timeline["markers"](
+        {
+            "last_metrics": {
+                "case": {
+                    "contact_count": 0.0,
+                    "gap": 0.010,
+                    "status": "approaching",
+                    "target_travel": 0.02,
                 }
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"contact_history": {"case": [0.0, 1.0]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "divergence_history": [0.004],
-                "last_metrics": {
-                    "case": {
-                        "contact_count": 0.0,
-                        "gap": 0.080,
-                        "status": "approaching",
-                        "target_travel": 0.02,
-                    }
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"contact_history": {"case": [0.0, 1.0]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "divergence_history": [0.004],
+            "last_metrics": {
+                "case": {
+                    "contact_count": 0.0,
+                    "gap": 0.080,
+                    "status": "approaching",
+                    "target_travel": 0.02,
+                }
+            },
+        }
+    ) == pytest.approx(0.0)
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._travel_history["Sequential impulse"])
     )
@@ -3753,7 +3854,6 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
 
 def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_kinematic_driver import build
 
     setup = build()
@@ -3800,8 +3900,7 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_kinematic_driver"
     assert (
-        capture_metrics["comparison_axis"]
-        == "prescribed_tangential_contact_response"
+        capture_metrics["comparison_axis"] == "prescribed_tangential_contact_response"
     )
     assert capture_metrics["solver"] == "ipc_kinematic_driver_with_si_caveat"
     assert capture_metrics["executor"] == controller._executor_label()
@@ -3828,9 +3927,7 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
         capture_metrics["lanes"]["si_caveat"]["rigid_body_solver"]
         == "SEQUENTIAL_IMPULSE"
     )
-    assert capture_metrics["ipc_grip_box_travel"] == pytest.approx(
-        grip["box_travel"]
-    )
+    assert capture_metrics["ipc_grip_box_travel"] == pytest.approx(grip["box_travel"])
     assert capture_metrics["ipc_grip_min_abs_support_gap"] == pytest.approx(
         min(abs(value) for value in controller._gap_history["ipc_grip"])
     )
@@ -3850,71 +3947,56 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         controller._box_history["ipc_grip"][-1]
     )
-    assert (
-        timeline["markers"]({"box_history": {"ipc_grip": [0.0, 0.041]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"slip_history": {"ipc_slip": [0.0, 0.081]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"last_metrics": {"ipc_grip": {"contact_count": 1.0}}}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "ipc_grip": {
-                        "box_travel": 0.02,
-                        "contact_count": 0.0,
-                        "driver_travel": 0.05,
-                        "status": "partial drag",
-                    },
-                    "si_caveat": {"status": "static-like caveat"},
-                }
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "driver_history": {"ipc_grip": [0.0, 0.05]},
-                "last_metrics": {
-                    "si_caveat": {"status": "static-like caveat"},
+    assert timeline["markers"](
+        {"box_history": {"ipc_grip": [0.0, 0.041]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"slip_history": {"ipc_slip": [0.0, 0.081]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"ipc_grip": {"contact_count": 1.0}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "last_metrics": {
+                "ipc_grip": {
+                    "box_travel": 0.02,
+                    "contact_count": 0.0,
+                    "driver_travel": 0.05,
+                    "status": "partial drag",
                 },
+                "si_caveat": {"status": "static-like caveat"},
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "box_history": {"ipc_grip": [0.01]},
-                "last_metrics": {
-                    "ipc_grip": {
-                        "box_travel": 0.01,
-                        "contact_count": 0.0,
-                        "driver_travel": 0.02,
-                        "status": "partial drag",
-                    },
-                    "ipc_slip": {"slip": 0.02},
-                    "si_caveat": {"status": "static-like caveat"},
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "driver_history": {"ipc_grip": [0.0, 0.05]},
+            "last_metrics": {
+                "si_caveat": {"status": "static-like caveat"},
+            },
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "box_history": {"ipc_grip": [0.01]},
+            "last_metrics": {
+                "ipc_grip": {
+                    "box_travel": 0.01,
+                    "contact_count": 0.0,
+                    "driver_travel": 0.02,
+                    "status": "partial drag",
                 },
-                "slip_history": {"ipc_slip": [0.02]},
-            }
-        )
-        == pytest.approx(0.0)
-    )
+                "ipc_slip": {"slip": 0.02},
+                "si_caveat": {"status": "static-like caveat"},
+            },
+            "slip_history": {"ipc_slip": [0.02]},
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_kinematic_normal_push import build
 
     setup = build()
@@ -3954,10 +4036,7 @@ def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_kinematic_normal_push"
-    assert (
-        capture_metrics["comparison_axis"]
-        == "prescribed_normal_contact_response"
-    )
+    assert capture_metrics["comparison_axis"] == "prescribed_normal_contact_response"
     assert capture_metrics["solver"] == (
         "ipc_penetration_caveat_vs_sequential_impulse_push"
     )
@@ -4008,65 +4087,50 @@ def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
             - controller._target_history["ipc_normal"][-1]
         )
     )
-    assert (
-        timeline["markers"](
-            {
-                "target_history": {
-                    "ipc_normal": [0.0, 0.01],
-                    "si_caveat": [0.0, 0.071],
-                }
+    assert timeline["markers"](
+        {
+            "target_history": {
+                "ipc_normal": [0.0, 0.01],
+                "si_caveat": [0.0, 0.071],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"depth_history": {"ipc_normal": [0.0, 0.051]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"contact_history": {"si_caveat": [0.0, 1.0]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"last_metrics": {"ipc_normal": {"status": "ipc penetration caveat"}}}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"last_metrics": {"si_caveat": {"target_travel": 0.081}}}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "target_history": {
-                    "ipc_normal": [0.01],
-                    "si_caveat": [0.04],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"depth_history": {"ipc_normal": [0.0, 0.051]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"contact_history": {"si_caveat": [0.0, 1.0]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"ipc_normal": {"status": "ipc penetration caveat"}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"si_caveat": {"target_travel": 0.081}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "target_history": {
+                "ipc_normal": [0.01],
+                "si_caveat": [0.04],
+            },
+            "last_metrics": {
+                "ipc_normal": {
+                    "contact_count": 0.0,
+                    "max_depth": 0.02,
+                    "status": "partial push",
                 },
-                "last_metrics": {
-                    "ipc_normal": {
-                        "contact_count": 0.0,
-                        "max_depth": 0.02,
-                        "status": "partial push",
-                    },
-                    "si_caveat": {
-                        "contact_count": 0.0,
-                        "status": "partial push",
-                        "target_travel": 0.04,
-                    },
+                "si_caveat": {
+                    "contact_count": 0.0,
+                    "status": "partial push",
+                    "target_travel": 0.04,
                 },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_contact_solver_compare import build
 
     setup = build()
@@ -4083,33 +4147,24 @@ def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         controller._divergence_history[-1]
     )
-    assert (
-        timeline["markers"](
-            {
-                "contact_history": {"case": [0.0, 2.0]},
-                "depth_history": {"case": [0.0, 0.0]},
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "contact_history": {"case": [0.0, 1.0]},
-                "depth_history": {"case": [0.0, 0.001]},
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "contact_history": {"case": [0.0, 1.0]},
-                "depth_history": {"case": [0.0, 0.0]},
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {
+            "contact_history": {"case": [0.0, 2.0]},
+            "depth_history": {"case": [0.0, 0.0]},
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "contact_history": {"case": [0.0, 1.0]},
+            "depth_history": {"case": [0.0, 0.001]},
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "contact_history": {"case": [0.0, 1.0]},
+            "depth_history": {"case": [0.0, 0.0]},
+        }
+    ) == pytest.approx(0.0)
     methods = [case.world.contact_solver_method for case in controller.cases]
     assert methods[0].name == "SEQUENTIAL_IMPULSE"
     assert methods[1].name == "BOXED_LCP"
@@ -4140,9 +4195,7 @@ def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     )
     assert set(capture_metrics["cases"]) == {case.label for case in controller.cases}
     assert (
-        capture_metrics["cases"]["Sequential impulse contacts"][
-            "contact_solver_method"
-        ]
+        capture_metrics["cases"]["Sequential impulse contacts"]["contact_solver_method"]
         == "SEQUENTIAL_IMPULSE"
     )
     assert (
@@ -4172,9 +4225,9 @@ def test_rigid_link_contact_exercises_multibody_contact_response() -> None:
     assert mid_capture_metrics["contact_scope"] == "multibody_link_contact"
     assert mid_capture_metrics["rigid_body_solver"] == "SEQUENTIAL_IMPULSE"
     assert set(mid_capture_metrics["lanes"]) == {"drop", "slide", "push"}
-    assert mid_capture_metrics["lanes"]["push"][
-        "target_travel"
-    ] == pytest.approx(mid_metrics["push_target_travel"])
+    assert mid_capture_metrics["lanes"]["push"]["target_travel"] == pytest.approx(
+        mid_metrics["push_target_travel"]
+    )
     assert mid_capture_metrics["history"]["push_max_contacts"] >= 1.0
 
     for _ in range(530):
@@ -4199,9 +4252,7 @@ def test_rigid_link_contact_exercises_multibody_contact_response() -> None:
     assert controller._slide_speed_history
     assert controller._push_target_travel_history
     assert controller.ground.friction == pytest.approx(controller.ground_friction)
-    assert controller.ground.restitution == pytest.approx(
-        controller.ground_restitution
-    )
+    assert controller.ground.restitution == pytest.approx(controller.ground_restitution)
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["executor"] == controller._executor_label()
     assert capture_metrics["controls"]["executor_index"] == pytest.approx(
@@ -4222,9 +4273,10 @@ def test_rigid_link_contact_exercises_multibody_contact_response() -> None:
     assert capture_metrics["lanes"]["push"]["target_travel"] == pytest.approx(
         metrics["push_target_travel"]
     )
-    assert capture_metrics["metrics"]["contact_body_kinds"] == metrics[
-        "contact_body_kinds"
-    ]
+    assert (
+        capture_metrics["metrics"]["contact_body_kinds"]
+        == metrics["contact_body_kinds"]
+    )
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._step_ms_history)
     )
@@ -4237,10 +4289,10 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     from examples.demos.scenes.contact import build as link_contact_build
     from examples.demos.scenes.rigid_body import build as rigid_body_build
     from examples.demos.scenes.rigid_body_modes import build as body_modes_build
+    from examples.demos.scenes.rigid_collision_casts import build as casts_build
     from examples.demos.scenes.rigid_collision_query_options import (
         build as query_options_build,
     )
-    from examples.demos.scenes.rigid_collision_casts import build as casts_build
     from examples.demos.scenes.rigid_contact_inspector import build as contact_build
     from examples.demos.scenes.rigid_contact_manipulation import (
         build as manipulation_build,
@@ -4254,16 +4306,12 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     from examples.demos.scenes.rigid_distance_spring import (
         build as distance_spring_build,
     )
-    from examples.demos.scenes.rigid_executor_equivalence import (
-        build as executor_build,
-    )
-    from examples.demos.scenes.rigid_external_loads import (
-        build as external_loads_build,
-    )
+    from examples.demos.scenes.rigid_executor_equivalence import build as executor_build
+    from examples.demos.scenes.rigid_external_loads import build as external_loads_build
     from examples.demos.scenes.rigid_fixed_joint import build as fixed_joint_build
-    from examples.demos.scenes.rigid_friction_threshold import build as friction_build
     from examples.demos.scenes.rigid_frame_hierarchy import build as frame_build
     from examples.demos.scenes.rigid_free_flight import build as free_flight_build
+    from examples.demos.scenes.rigid_friction_threshold import build as friction_build
     from examples.demos.scenes.rigid_joint_motor_limits import (
         build as motor_limit_build,
     )
@@ -4274,16 +4322,10 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     from examples.demos.scenes.rigid_kinematic_normal_push import (
         build as normal_push_build,
     )
-    from examples.demos.scenes.rigid_link_point_loads import (
-        build as point_loads_build,
-    )
-    from examples.demos.scenes.rigid_link_center_of_mass import (
-        build as link_com_build,
-    )
-    from examples.demos.scenes.rigid_link_jacobian import (
-        build as link_jacobian_build,
-    )
     from examples.demos.scenes.rigid_limited_joints import build as limited_joint_build
+    from examples.demos.scenes.rigid_link_center_of_mass import build as link_com_build
+    from examples.demos.scenes.rigid_link_jacobian import build as link_jacobian_build
+    from examples.demos.scenes.rigid_link_point_loads import build as point_loads_build
     from examples.demos.scenes.rigid_loop_closure import build as loop_closure_build
     from examples.demos.scenes.rigid_material_mixing import (
         build as material_mixing_build,
@@ -4297,20 +4339,14 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     from examples.demos.scenes.rigid_restitution_ladder import (
         build as restitution_build,
     )
-    from examples.demos.scenes.rigid_screw_joint_pitch import (
-        build as screw_joint_build,
-    )
+    from examples.demos.scenes.rigid_screw_joint_pitch import build as screw_joint_build
     from examples.demos.scenes.rigid_solver_compare import build as solver_build
-    from examples.demos.scenes.rigid_spin_roll_coupling import (
-        build as spin_roll_build,
-    )
+    from examples.demos.scenes.rigid_spin_roll_coupling import build as spin_roll_build
     from examples.demos.scenes.rigid_stack_stability import build as stack_build
     from examples.demos.scenes.rigid_step_diagnostics import (
         build as step_diagnostics_build,
     )
-    from examples.demos.scenes.rigid_timestep_sensitivity import (
-        build as timestep_build,
-    )
+    from examples.demos.scenes.rigid_timestep_sensitivity import build as timestep_build
 
     contact = contact_build().info["rigid_contact_inspector_controller"]
     contact.pair_index = len(contact.lanes) - 1
@@ -4808,9 +4844,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     fixed.restore_replay_state(fixed_state)
     assert fixed.perturbation == pytest.approx(0.31)
 
-    distance_spring = distance_spring_build().info[
-        "rigid_distance_spring_controller"
-    ]
+    distance_spring = distance_spring_build().info["rigid_distance_spring_controller"]
     distance_spring.executor_index = len(distance_spring._executors) - 1
     distance_spring.initial_stretch = 0.41
     distance_spring.gravity_scale = 0.35
@@ -4881,8 +4915,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert motor_limit.motor_joint.velocity_upper_limits.tolist() == pytest.approx(
         [0.24]
     )
-    assert motor_limit.limited_force_joint.effort_upper_limits.tolist() == pytest.approx(
-        [3.5]
+    assert (
+        motor_limit.limited_force_joint.effort_upper_limits.tolist()
+        == pytest.approx([3.5])
     )
 
     passive_joint = passive_joint_build().info[
@@ -4917,9 +4952,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert passive_joint.slip_force == pytest.approx(11.0)
     assert passive_joint.armature_force == pytest.approx(9.5)
     assert passive_joint.armature == pytest.approx(8.0)
-    damped = next(
-        lane for lane in passive_joint.lanes if lane.key == "spring_damper"
-    )
+    damped = next(lane for lane in passive_joint.lanes if lane.key == "spring_damper")
     stiction = next(lane for lane in passive_joint.lanes if lane.key == "stiction")
     armature_reference = next(
         lane for lane in passive_joint.lanes if lane.key == "armature_reference"
@@ -5039,9 +5072,7 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     multibody_solver_family = multibody_solver_family_build().info[
         "rigid_multibody_solver_family_controller"
     ]
-    multibody_solver_family.executor_index = (
-        len(multibody_solver_family._executors) - 1
-    )
+    multibody_solver_family.executor_index = len(multibody_solver_family._executors) - 1
     multibody_solver_family.gravity_scale = 0.61
     multibody_state = multibody_solver_family.capture_replay_state()
     multibody_solver_family.executor_index = 0
@@ -5105,9 +5136,9 @@ def test_rigid_friction_threshold_separates_stick_and_slip_lanes() -> None:
     )
     assert capture_metrics["above_speed"] == pytest.approx(metrics["above"]["speed"])
     assert set(capture_metrics["lanes"]) == {"below", "controlled", "above"}
-    assert capture_metrics["lanes"]["controlled"]["metrics"]["friction"] == pytest.approx(
-        controller.controlled_mu
-    )
+    assert capture_metrics["lanes"]["controlled"]["metrics"][
+        "friction"
+    ] == pytest.approx(controller.controlled_mu)
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._distance_history["below"])
     )
@@ -5117,7 +5148,6 @@ def test_rigid_friction_threshold_separates_stick_and_slip_lanes() -> None:
 
 def test_rigid_spin_roll_coupling_converts_slip_to_roll() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_spin_roll_coupling import build
 
     setup = build()
@@ -5166,9 +5196,7 @@ def test_rigid_spin_roll_coupling_converts_slip_to_roll() -> None:
     assert capture_metrics["solver_enum"] == "SEQUENTIAL_IMPULSE"
     assert capture_metrics["held_fixed"]["solver"] == "Sequential impulse"
     assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
-    assert capture_metrics["controls"]["friction"] == pytest.approx(
-        controller.friction
-    )
+    assert capture_metrics["controls"]["friction"] == pytest.approx(controller.friction)
     assert capture_metrics["controls"]["launch_speed"] == pytest.approx(
         controller.launch_speed
     )
@@ -5220,24 +5248,18 @@ def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         controller._position_divergence[-1]
     )
-    assert (
-        timeline["markers"]({"position_divergence": [0.0], "contact_delta": [0.0]})
-        == pytest.approx(0.0)
-    )
-    assert (
-        timeline["markers"]({"position_divergence": [2.0e-8], "contact_delta": [0.0]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"velocity_divergence": [2.0e-8], "contact_delta": [0.0]}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"position_divergence": [0.0], "contact_delta": [1.0]})
-        == pytest.approx(1.0)
-    )
+    assert timeline["markers"](
+        {"position_divergence": [0.0], "contact_delta": [0.0]}
+    ) == pytest.approx(0.0)
+    assert timeline["markers"](
+        {"position_divergence": [2.0e-8], "contact_delta": [0.0]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"velocity_divergence": [2.0e-8], "contact_delta": [0.0]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"position_divergence": [0.0], "contact_delta": [1.0]}
+    ) == pytest.approx(1.0)
     for metrics in controller._last_metrics.values():
         assert float(metrics["contact_count"]) >= 0.0
         assert float(metrics["step_ms"]) >= 0.0
@@ -5276,7 +5298,6 @@ def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
 
 def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     import numpy as np
-
     from examples.demos.scenes.rigid_stack_stability import build
 
     setup = build()
@@ -5315,47 +5336,29 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     timeline = setup.info["replay_timeline"]
     snapshot = controller.capture_replay_state()
     assert timeline["signal_label"] == "Top x divergence"
-    assert timeline["signal"](snapshot) == pytest.approx(
-        controller._delta_history[-1]
-    )
-    assert timeline["markers"]({"delta_history": [0.0, 0.011]}) == pytest.approx(
-        1.0
-    )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "case": {"min_clearance": 0.0005, "status": "settling"}
+    assert timeline["signal"](snapshot) == pytest.approx(controller._delta_history[-1])
+    assert timeline["markers"]({"delta_history": [0.0, 0.011]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"case": {"min_clearance": 0.0005, "status": "settling"}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"case": {"top_drift": 0.021, "status": "settling"}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"case": {"status": "collapsed"}}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "delta_history": [0.004],
+            "last_metrics": {
+                "case": {
+                    "min_clearance": 0.02,
+                    "status": "stable",
+                    "top_drift": 0.004,
                 }
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"last_metrics": {"case": {"top_drift": 0.021, "status": "settling"}}}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"last_metrics": {"case": {"status": "collapsed"}}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "delta_history": [0.004],
-                "last_metrics": {
-                    "case": {
-                        "min_clearance": 0.02,
-                        "status": "stable",
-                        "top_drift": 0.004,
-                    }
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+            },
+        }
+    ) == pytest.approx(0.0)
 
     metrics = controller._last_metrics["IPC barrier"]
     assert float(metrics["min_clearance"]) > -0.002
@@ -5375,9 +5378,7 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     assert capture_metrics["held_fixed"]["time_step_ms"] == pytest.approx(
         capture_metrics["time_step_ms"]
     )
-    assert capture_metrics["controls"]["friction"] == pytest.approx(
-        controller.friction
-    )
+    assert capture_metrics["controls"]["friction"] == pytest.approx(controller.friction)
     assert capture_metrics["controls"]["top_mass_ratio"] == pytest.approx(
         controller.top_mass_ratio
     )
@@ -5468,39 +5469,30 @@ def test_rigid_fixed_joint_verifier_restores_captured_transform() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         controller._translation_error_history[-1]
     )
-    assert (
-        timeline["markers"]({"translation_error_history": [0.0, 0.011]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"orientation_error_history": [0.0, 0.021]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"speed_history": [0.0, 0.051]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"last_metrics": {"payload_angular_speed": 0.051}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "translation_error_history": [0.005],
-                "orientation_error_history": [0.005],
-                "speed_history": [0.010],
-                "angular_speed_history": [0.010],
-                "last_metrics": {
-                    "translation_error": 0.005,
-                    "orientation_error": 0.005,
-                    "payload_speed": 0.010,
-                    "payload_angular_speed": 0.010,
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {"translation_error_history": [0.0, 0.011]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"orientation_error_history": [0.0, 0.021]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"]({"speed_history": [0.0, 0.051]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"last_metrics": {"payload_angular_speed": 0.051}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "translation_error_history": [0.005],
+            "orientation_error_history": [0.005],
+            "speed_history": [0.010],
+            "angular_speed_history": [0.010],
+            "last_metrics": {
+                "translation_error": 0.005,
+                "orientation_error": 0.005,
+                "payload_speed": 0.010,
+                "payload_angular_speed": 0.010,
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
@@ -5587,40 +5579,28 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         capture_metrics["metrics"]["payload_release_distance"]
     )
-    assert (
-        timeline["markers"]({"broken_history": [0.0, 1.0]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"release_history": [0.0, 0.011]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "status": "broken",
-                    "payload_release_distance": 0.0,
-                    "broken": 1.0,
-                }
+    assert timeline["markers"]({"broken_history": [0.0, 1.0]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"release_history": [0.0, 0.011]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "last_metrics": {
+                "status": "broken",
+                "payload_release_distance": 0.0,
+                "broken": 1.0,
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "release_history": [0.002],
-                "broken_history": [0.0],
-                "last_metrics": {
-                    "status": "intact",
-                    "payload_release_distance": 0.002,
-                    "broken": 0.0,
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "release_history": [0.002],
+            "broken_history": [0.0],
+            "last_metrics": {
+                "status": "intact",
+                "payload_release_distance": 0.002,
+                "broken": 0.0,
+            },
+        }
+    ) == pytest.approx(0.0)
 
     setup.info["reset_breakage_lifecycle"]()
     assert not joint.is_broken
@@ -5700,9 +5680,7 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
         controller.offset_stiffness
     )
     assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
-    assert capture_metrics["spring_lanes"] == [
-        lane.label for lane in controller.lanes
-    ]
+    assert capture_metrics["spring_lanes"] == [lane.label for lane in controller.lanes]
     assert set(capture_metrics["lanes"]) == set(metrics)
     assert capture_metrics["distance_spring_free_abs_stretch"] == pytest.approx(
         abs(float(metrics["free"]["stretch"]))
@@ -5739,38 +5717,32 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
     timeline = setup.info["replay_timeline"]
     snapshot = controller.capture_replay_state()
     latest_sprung_stretch = max(
-        abs(controller._stretch_history[key][-1])
-        for key in ("soft", "stiff", "offset")
+        abs(controller._stretch_history[key][-1]) for key in ("soft", "stiff", "offset")
     )
     assert timeline["signal_label"] == "Max spring stretch"
     assert timeline["signal"](snapshot) == pytest.approx(latest_sprung_stretch)
-    assert (
-        timeline["markers"]({"stretch_history": {"soft": [0.0, 0.26]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"angular_speed_history": {"offset": [0.0, 1.1]}})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "stretch_history": {
-                    "soft": [0.03],
-                    "stiff": [0.04],
-                    "offset": [0.02],
-                },
-                "angular_speed_history": {"offset": [0.2]},
-                "last_metrics": {
-                    "offset": {
-                        "stretch": 0.02,
-                        "angular_speed": 0.2,
-                    }
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {"stretch_history": {"soft": [0.0, 0.26]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"angular_speed_history": {"offset": [0.0, 1.1]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "stretch_history": {
+                "soft": [0.03],
+                "stiff": [0.04],
+                "offset": [0.02],
+            },
+            "angular_speed_history": {"offset": [0.2]},
+            "last_metrics": {
+                "offset": {
+                    "stretch": 0.02,
+                    "angular_speed": 0.2,
+                }
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:
@@ -5854,37 +5826,29 @@ def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:
     )
     assert timeline["signal_label"] == "Locked-axis error"
     assert timeline["signal"](snapshot) == pytest.approx(latest_locked_error)
-    assert (
-        timeline["markers"]({"hinge_radius_error_history": [0.0, 0.02]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"hinge_yaw_history": [0.0, 0.12]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"]({"slider_axis_travel_history": [0.55, 0.62]})
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "hinge_radius_error_history": [0.001],
-                "hinge_z_error_history": [0.001],
-                "slider_orthogonal_error_history": [0.001],
-                "hinge_yaw_history": [0.02],
-                "slider_axis_travel_history": [0.57],
-                "last_metrics": {
-                    "hinge_radius_error": 0.001,
-                    "hinge_z_error": 0.001,
-                    "slider_orthogonal_error": 0.001,
-                    "hinge_yaw": 0.02,
-                    "slider_axis_travel": 0.57,
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {"hinge_radius_error_history": [0.0, 0.02]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"]({"hinge_yaw_history": [0.0, 0.12]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"slider_axis_travel_history": [0.55, 0.62]}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "hinge_radius_error_history": [0.001],
+            "hinge_z_error_history": [0.001],
+            "slider_orthogonal_error_history": [0.001],
+            "hinge_yaw_history": [0.02],
+            "slider_axis_travel_history": [0.57],
+            "last_metrics": {
+                "hinge_radius_error": 0.001,
+                "hinge_z_error": 0.001,
+                "slider_orthogonal_error": 0.001,
+                "hinge_yaw": 0.02,
+                "slider_axis_travel": 0.57,
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
@@ -5931,15 +5895,9 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_joint_motor_limits"
-    assert (
-        capture_metrics["comparison_axis"]
-        == "world_multibody_actuator_limit_family"
-    )
+    assert capture_metrics["comparison_axis"] == "world_multibody_actuator_limit_family"
     assert capture_metrics["solver"] == "world_multibody_joint_actuators"
-    assert (
-        capture_metrics["constraint"]
-        == "velocity_motor_position_limit_effort_cap"
-    )
+    assert capture_metrics["constraint"] == "velocity_motor_position_limit_effort_cap"
     assert capture_metrics["held_fixed"] == {
         "solver": "World multibody joint actuators",
         "joint_axes": "x-axis prismatic rails and y-axis revolute stop",
@@ -5991,7 +5949,9 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
     assert capture_metrics["joint_motor_force_acceleration_gap"] == pytest.approx(
         float(metrics["force_acceleration_gap"])
     )
-    assert capture_metrics["motor_speed"] == pytest.approx(float(metrics["motor_speed"]))
+    assert capture_metrics["motor_speed"] == pytest.approx(
+        float(metrics["motor_speed"])
+    )
     assert capture_metrics["motor_expected_speed"] == pytest.approx(
         float(metrics["motor_expected_speed"])
     )
@@ -6026,59 +5986,47 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
     assert timeline["signal"](snapshot) == pytest.approx(
         controller._force_position_gap_history[-1]
     )
-    assert (
-        timeline["markers"](
-            {
-                "limited_acceleration_history": [0.0, 2.0],
-                "open_acceleration_history": [0.0, 3.0],
-                "force_position_gap_history": [0.0],
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "controls": {"command_speed": 0.55, "velocity_limit": 0.30},
-                "motor_speed_history": [0.0, 0.28],
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "controls": {"position_limit": 0.35},
-                "limit_angle_history": [0.0, 0.34],
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "controls": {
-                    "command_speed": 0.20,
-                    "velocity_limit": 0.30,
-                    "position_limit": 0.35,
-                },
-                "motor_speed_history": [0.10],
-                "limit_angle_history": [0.20],
-                "limit_error_history": [0.0],
-                "limited_acceleration_history": [2.0],
-                "open_acceleration_history": [2.1],
-                "force_position_gap_history": [0.02],
-                "last_metrics": {
-                    "motor_speed": 0.10,
-                    "position_limit_angle": 0.20,
-                    "position_limit_error": 0.0,
-                    "force_acceleration_gap": 0.10,
-                    "force_position_gap": 0.02,
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"](
+        {
+            "limited_acceleration_history": [0.0, 2.0],
+            "open_acceleration_history": [0.0, 3.0],
+            "force_position_gap_history": [0.0],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "controls": {"command_speed": 0.55, "velocity_limit": 0.30},
+            "motor_speed_history": [0.0, 0.28],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "controls": {"position_limit": 0.35},
+            "limit_angle_history": [0.0, 0.34],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "controls": {
+                "command_speed": 0.20,
+                "velocity_limit": 0.30,
+                "position_limit": 0.35,
+            },
+            "motor_speed_history": [0.10],
+            "limit_angle_history": [0.20],
+            "limit_error_history": [0.0],
+            "limited_acceleration_history": [2.0],
+            "open_acceleration_history": [2.1],
+            "force_position_gap_history": [0.02],
+            "last_metrics": {
+                "motor_speed": 0.10,
+                "position_limit_angle": 0.20,
+                "position_limit_error": 0.0,
+                "force_acceleration_gap": 0.10,
+                "force_position_gap": 0.02,
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_joint_passive_parameters_order_passive_response() -> None:
@@ -6189,9 +6137,7 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["controls"]["armature_force"] == pytest.approx(
         controller.armature_force
     )
-    assert capture_metrics["controls"]["armature"] == pytest.approx(
-        controller.armature
-    )
+    assert capture_metrics["controls"]["armature"] == pytest.approx(controller.armature)
     expected_lanes = [lane.key for lane in controller.lanes]
     assert capture_metrics["joint_lanes"] == expected_lanes
     assert capture_metrics["lane_order"] == expected_lanes
@@ -6202,9 +6148,7 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
         capture_metrics["lanes"]["spring_only"]["joint"]
         == controller.lanes[0].joint.name
     )
-    assert capture_metrics["lanes"]["slip"]["metrics"]["status"] == str(
-        slip["status"]
-    )
+    assert capture_metrics["lanes"]["slip"]["metrics"]["status"] == str(slip["status"])
     assert capture_metrics["spring_only_position"] == pytest.approx(
         float(spring["position"])
     )
@@ -6265,7 +6209,9 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["history"]["slip_max_speed"] == pytest.approx(
         max(controller._speed_history["slip"])
     )
-    assert capture_metrics["history"]["armature_heavy_max_abs_acceleration"] == pytest.approx(
+    assert capture_metrics["history"][
+        "armature_heavy_max_abs_acceleration"
+    ] == pytest.approx(
         max(abs(value) for value in controller._accel_history["armature_heavy"])
     )
     timeline = setup.info["replay_timeline"]
@@ -6276,85 +6222,70 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     )
     assert timeline["signal_label"] == "Armature position gap"
     assert timeline["signal"](snapshot) == pytest.approx(latest_armature_gap)
-    assert (
-        timeline["markers"](
-            {
-                "energy_history": {
-                    "spring_only": [2.0],
-                    "spring_damper": [1.7],
-                }
+    assert timeline["markers"](
+        {
+            "energy_history": {
+                "spring_only": [2.0],
+                "spring_damper": [1.7],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "position_history": {
-                    "stiction": [0.0],
-                    "slip": [0.06],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "position_history": {
+                "stiction": [0.0],
+                "slip": [0.06],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "position_history": {
-                    "armature_reference": [0.10],
-                    "armature_heavy": [0.03],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "position_history": {
+                "armature_reference": [0.10],
+                "armature_heavy": [0.03],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "accel_history": {
-                    "armature_reference": [0.75],
-                    "armature_heavy": [0.10],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "accel_history": {
+                "armature_reference": [0.75],
+                "armature_heavy": [0.10],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "position_history": {
-                    "stiction": [0.0],
-                    "slip": [0.02],
-                    "armature_reference": [0.04],
-                    "armature_heavy": [0.02],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "position_history": {
+                "stiction": [0.0],
+                "slip": [0.02],
+                "armature_reference": [0.04],
+                "armature_heavy": [0.02],
+            },
+            "energy_history": {
+                "spring_only": [2.0],
+                "spring_damper": [1.9],
+            },
+            "accel_history": {
+                "armature_reference": [0.30],
+                "armature_heavy": [0.10],
+            },
+            "last_metrics": {
+                "spring_only": {"energy": 2.0},
+                "spring_damper": {"energy": 1.9},
+                "stiction": {"position": 0.0},
+                "slip": {"position": 0.02},
+                "armature_reference": {
+                    "position": 0.04,
+                    "acceleration": 0.30,
                 },
-                "energy_history": {
-                    "spring_only": [2.0],
-                    "spring_damper": [1.9],
+                "armature_heavy": {
+                    "position": 0.02,
+                    "acceleration": 0.10,
                 },
-                "accel_history": {
-                    "armature_reference": [0.30],
-                    "armature_heavy": [0.10],
-                },
-                "last_metrics": {
-                    "spring_only": {"energy": 2.0},
-                    "spring_damper": {"energy": 1.9},
-                    "stiction": {"position": 0.0},
-                    "slip": {"position": 0.02},
-                    "armature_reference": {
-                        "position": 0.04,
-                        "acceleration": 0.30,
-                    },
-                    "armature_heavy": {
-                        "position": 0.02,
-                        "acceleration": 0.10,
-                    },
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
@@ -6460,9 +6391,7 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
         zero["status"]
     )
     assert capture_metrics["zero_pitch"] == pytest.approx(float(zero["pitch"]))
-    assert capture_metrics["zero_pitch_angle"] == pytest.approx(
-        float(zero["angle"])
-    )
+    assert capture_metrics["zero_pitch_angle"] == pytest.approx(float(zero["angle"]))
     assert capture_metrics["screw_joint_zero_pitch_axial_travel"] == pytest.approx(
         float(zero["axial_travel"])
     )
@@ -6482,9 +6411,7 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert capture_metrics["reverse_to_fine_pitch_ratio"] == pytest.approx(-1.0)
     assert capture_metrics["fine_angle"] == pytest.approx(float(fine["angle"]))
     assert capture_metrics["coarse_angle"] == pytest.approx(float(coarse["angle"]))
-    assert capture_metrics["reverse_angle"] == pytest.approx(
-        float(reverse["angle"])
-    )
+    assert capture_metrics["reverse_angle"] == pytest.approx(float(reverse["angle"]))
     assert capture_metrics["fine_axial_travel"] == pytest.approx(
         float(fine["axial_travel"])
     )
@@ -6563,61 +6490,49 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     )
     assert timeline["signal_label"] == "Coarse/fine travel gap"
     assert timeline["signal"](snapshot) == pytest.approx(latest_travel_gap)
-    assert (
-        timeline["markers"](
-            {
-                "travel_history": {
-                    "fine_pitch": [-0.11],
-                    "coarse_pitch": [-0.18],
-                }
+    assert timeline["markers"](
+        {
+            "travel_history": {
+                "fine_pitch": [-0.11],
+                "coarse_pitch": [-0.18],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "travel_history": {
-                    "zero_pitch": [0.0],
-                    "fine_pitch": [-0.09],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "travel_history": {
+                "zero_pitch": [0.0],
+                "fine_pitch": [-0.09],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "angle_history": {
-                    "fine_pitch": [-0.30],
-                    "reverse_pitch": [0.30],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "angle_history": {
+                "fine_pitch": [-0.30],
+                "reverse_pitch": [0.30],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "travel_history": {
-                    "zero_pitch": [0.005],
-                    "fine_pitch": [-0.04],
-                    "coarse_pitch": [-0.06],
-                },
-                "angle_history": {
-                    "fine_pitch": [-0.10],
-                    "reverse_pitch": [0.10],
-                },
-                "last_metrics": {
-                    "zero_pitch": {"axial_travel": 0.005},
-                    "fine_pitch": {"axial_travel": -0.04, "angle": -0.10},
-                    "coarse_pitch": {"axial_travel": -0.06},
-                    "reverse_pitch": {"angle": 0.10},
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "travel_history": {
+                "zero_pitch": [0.005],
+                "fine_pitch": [-0.04],
+                "coarse_pitch": [-0.06],
+            },
+            "angle_history": {
+                "fine_pitch": [-0.10],
+                "reverse_pitch": [0.10],
+            },
+            "last_metrics": {
+                "zero_pitch": {"axial_travel": 0.005},
+                "fine_pitch": {"axial_travel": -0.04, "angle": -0.10},
+                "coarse_pitch": {"axial_travel": -0.06},
+                "reverse_pitch": {"angle": 0.10},
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
@@ -6824,9 +6739,7 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert capture_metrics["max_identity_error"] == pytest.approx(
         max(float(value["identity_error"]) for value in metrics.values())
     )
-    assert capture_metrics["step_ms"] == pytest.approx(
-        controller._step_ms_history[-1]
-    )
+    assert capture_metrics["step_ms"] == pytest.approx(controller._step_ms_history[-1])
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._step_ms_history)
     )
@@ -6855,58 +6768,47 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     )
     assert timeline["signal_label"] == "Response norm gap"
     assert timeline["signal"](snapshot) == pytest.approx(latest_response_gap)
-    assert (
-        timeline["markers"](
-            {
-                "response_history": {
-                    "coupled_two_link": [2.0],
-                    "heavy_distal": [0.5],
-                }
+    assert timeline["markers"](
+        {
+            "response_history": {
+                "coupled_two_link": [2.0],
+                "heavy_distal": [0.5],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert timeline["markers"]({"coupling_history": [0.12]}) == pytest.approx(
-        1.0
-    )
-    assert (
-        timeline["markers"](
-            {
-                "tau_history": {
-                    "coupled_two_link": [3.0],
-                    "heavy_distal": [5.5],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"]({"coupling_history": [0.12]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "tau_history": {
+                "coupled_two_link": [3.0],
+                "heavy_distal": [5.5],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "response_history": {
-                    "coupled_two_link": [1.2],
-                    "heavy_distal": [0.9],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "response_history": {
+                "coupled_two_link": [1.2],
+                "heavy_distal": [0.9],
+            },
+            "coupling_history": [0.05],
+            "tau_history": {
+                "coupled_two_link": [3.0],
+                "heavy_distal": [4.0],
+            },
+            "last_metrics": {
+                "coupled_two_link": {
+                    "response_norm": 1.2,
+                    "coupling": 0.05,
+                    "tau_norm": 3.0,
                 },
-                "coupling_history": [0.05],
-                "tau_history": {
-                    "coupled_two_link": [3.0],
-                    "heavy_distal": [4.0],
+                "heavy_distal": {
+                    "response_norm": 0.9,
+                    "tau_norm": 4.0,
                 },
-                "last_metrics": {
-                    "coupled_two_link": {
-                        "response_norm": 1.2,
-                        "coupling": 0.05,
-                        "tau_norm": 3.0,
-                    },
-                    "heavy_distal": {
-                        "response_norm": 0.9,
-                        "tau_norm": 4.0,
-                    },
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
@@ -6932,9 +6834,7 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
     high_initial = initial_metrics["high_inertia"]
 
     assert float(centered_initial["offset"]) == pytest.approx(0.0)
-    assert float(centered_initial["gravity_torque"]) == pytest.approx(
-        0.0, abs=1.0e-12
-    )
+    assert float(centered_initial["gravity_torque"]) == pytest.approx(0.0, abs=1.0e-12)
     assert float(centered_initial["expected_acceleration"]) == pytest.approx(
         0.0, abs=1.0e-12
     )
@@ -7156,9 +7056,7 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
     assert capture_metrics["link_com_max_acceleration_error"] == pytest.approx(
         max(abs(float(value["acceleration_error"])) for value in metrics.values())
     )
-    assert capture_metrics["step_ms"] == pytest.approx(
-        controller._step_ms_history[-1]
-    )
+    assert capture_metrics["step_ms"] == pytest.approx(controller._step_ms_history[-1])
     assert capture_metrics["max_step_ms"] == pytest.approx(
         max(controller._step_ms_history)
     )
@@ -7175,9 +7073,9 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
             if len(accel_error_samples) > 1
             else accel_error_samples
         )
-        assert capture_metrics["history"][
-            f"{lane_key}_max_abs_angle"
-        ] == pytest.approx(max(abs(value) for value in controller._angle_history[lane_key]))
+        assert capture_metrics["history"][f"{lane_key}_max_abs_angle"] == pytest.approx(
+            max(abs(value) for value in controller._angle_history[lane_key])
+        )
         assert capture_metrics["history"][
             f"{lane_key}_max_abs_acceleration"
         ] == pytest.approx(
@@ -7188,10 +7086,14 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
         ] == pytest.approx(max(abs(value) for value in accel_error_samples))
         assert capture_metrics["history"][
             f"{lane_key}_max_abs_gravity_torque"
-        ] == pytest.approx(max(abs(value) for value in controller._torque_history[lane_key]))
+        ] == pytest.approx(
+            max(abs(value) for value in controller._torque_history[lane_key])
+        )
         assert capture_metrics["history"][
             f"{lane_key}_max_abs_energy"
-        ] == pytest.approx(max(abs(value) for value in controller._energy_history[lane_key]))
+        ] == pytest.approx(
+            max(abs(value) for value in controller._energy_history[lane_key])
+        )
     timeline = setup.info["replay_timeline"]
     snapshot = controller.capture_replay_state()
     latest_angle_spread = abs(
@@ -7200,58 +7102,46 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
     )
     assert timeline["signal_label"] == "Mirrored COM angle spread"
     assert timeline["signal"](snapshot) == pytest.approx(latest_angle_spread)
-    assert (
-        timeline["markers"](
-            {
-                "angle_history": {
-                    "positive": [0.10],
-                    "negative": [-0.09],
-                }
+    assert timeline["markers"](
+        {
+            "angle_history": {
+                "positive": [0.10],
+                "negative": [-0.09],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "angle_history": {
-                    "centered": [0.0],
-                    "positive": [0.09],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "angle_history": {
+                "centered": [0.0],
+                "positive": [0.09],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "angle_history": {
-                    "positive": [0.18],
-                    "high_inertia": [0.10],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "angle_history": {
+                "positive": [0.18],
+                "high_inertia": [0.10],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "angle_history": {
-                    "centered": [0.002],
-                    "positive": [0.04],
-                    "negative": [-0.03],
-                    "high_inertia": [0.035],
-                },
-                "last_metrics": {
-                    "centered": {"angle": 0.002},
-                    "positive": {"angle": 0.04},
-                    "negative": {"angle": -0.03},
-                    "high_inertia": {"angle": 0.035},
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "angle_history": {
+                "centered": [0.002],
+                "positive": [0.04],
+                "negative": [-0.03],
+                "high_inertia": [0.035],
+            },
+            "last_metrics": {
+                "centered": {"angle": 0.002},
+                "positive": {"angle": 0.04},
+                "negative": {"angle": -0.03},
+                "high_inertia": {"angle": 0.035},
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
@@ -7299,34 +7189,25 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     snapshot = controller.capture_replay_state()
     assert timeline["signal_label"] == "Link-origin speed"
     assert timeline["signal"](snapshot) == pytest.approx(controller._speed_history[-1])
-    assert timeline["signal"]({"last_metrics": {"linear_speed": 0.42}}) == pytest.approx(
-        0.42
-    )
+    assert timeline["signal"](
+        {"last_metrics": {"linear_speed": 0.42}}
+    ) == pytest.approx(0.42)
     assert timeline["markers"]({"speed_history": [0.76]}) == pytest.approx(1.0)
     assert timeline["markers"]({"tau0_history": [-0.51]}) == pytest.approx(1.0)
     assert timeline["markers"]({"tau1_history": [0.51]}) == pytest.approx(1.0)
-    assert timeline["markers"]({"world_body_gap_history": [0.11]}) == pytest.approx(
-        1.0
-    )
-    assert timeline["markers"]({"fd_error_history": [1.2e-6]}) == pytest.approx(
-        1.0
-    )
-    assert timeline["markers"]({"power_error_history": [1.2e-9]}) == pytest.approx(
-        1.0
-    )
-    assert (
-        timeline["markers"](
-            {
-                "speed_history": [0.20],
-                "tau0_history": [0.10],
-                "tau1_history": [0.10],
-                "world_body_gap_history": [0.04],
-                "fd_error_history": [2.0e-7],
-                "power_error_history": [2.0e-10],
-            }
-        )
-        == pytest.approx(0.0)
-    )
+    assert timeline["markers"]({"world_body_gap_history": [0.11]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"fd_error_history": [1.2e-6]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"power_error_history": [1.2e-9]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "speed_history": [0.20],
+            "tau0_history": [0.10],
+            "tau1_history": [0.10],
+            "world_body_gap_history": [0.04],
+            "fd_error_history": [2.0e-7],
+            "power_error_history": [2.0e-10],
+        }
+    ) == pytest.approx(0.0)
 
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
@@ -7351,9 +7232,7 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert capture_metrics["wrench_angle_deg"] == pytest.approx(
         controller.wrench_angle_deg
     )
-    assert capture_metrics["wrench_moment"] == pytest.approx(
-        controller.wrench_moment
-    )
+    assert capture_metrics["wrench_moment"] == pytest.approx(controller.wrench_moment)
     assert capture_metrics["controls"]["motion_speed"] == pytest.approx(
         controller.motion_speed
     )
@@ -7375,9 +7254,7 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
         "jacobian_transpose_wrench",
         "world_body_jacobian_gap",
     ]
-    assert capture_metrics["joint_names"] == [
-        joint.name for joint in controller.joints
-    ]
+    assert capture_metrics["joint_names"] == [joint.name for joint in controller.joints]
     assert capture_metrics["link"] == controller.links[-1].name
     assert capture_metrics["metrics"]["status"] == str(metrics["status"])
     for metric_key, metric_value in metrics.items():
@@ -7437,9 +7314,9 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert capture_metrics["history"]["max_linear_speed"] == pytest.approx(
         max(controller._speed_history)
     )
-    assert capture_metrics["history"][
-        "max_finite_difference_error"
-    ] == pytest.approx(max(controller._fd_error_history))
+    assert capture_metrics["history"]["max_finite_difference_error"] == pytest.approx(
+        max(controller._fd_error_history)
+    )
     assert capture_metrics["history"]["max_power_error"] == pytest.approx(
         max(controller._power_error_history)
     )
@@ -7624,10 +7501,7 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
     assert capture_metrics["row"] == "rigid_loop_closure"
     assert capture_metrics["comparison_axis"] == "loop_closure_family_policy_selection"
     assert capture_metrics["solver"] == "variational_rigid_multibody_loop_closure"
-    assert (
-        capture_metrics["scope"]
-        == "point_distance_rigid_closure_family_selection"
-    )
+    assert capture_metrics["scope"] == "point_distance_rigid_closure_family_selection"
     assert capture_metrics["held_fixed"] == {
         "solver": "variational_rigid_multibody_loop_closure",
         "contacts": "off",
@@ -7640,16 +7514,13 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
         "gravity_scale": pytest.approx(controller.gravity_scale),
         "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
     }
-    assert capture_metrics["executor"] == controller._executors[
-        controller.executor_index
-    ][0]
+    assert (
+        capture_metrics["executor"]
+        == controller._executors[controller.executor_index][0]
+    )
     assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
-    assert capture_metrics["world_time"] == pytest.approx(
-        controller.primary_world.time
-    )
-    assert capture_metrics["gravity_scale"] == pytest.approx(
-        controller.gravity_scale
-    )
+    assert capture_metrics["world_time"] == pytest.approx(controller.primary_world.time)
+    assert capture_metrics["gravity_scale"] == pytest.approx(controller.gravity_scale)
     assert capture_metrics["controls"]["executor_index"] == pytest.approx(
         controller.executor_index
     )
@@ -7679,9 +7550,7 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
         assert case_payload["closure"] == case.closure.name
         assert case_payload["target_point"] == pytest.approx(case.target_point)
         assert case_payload["anchor_point"] == pytest.approx(case.anchor_point)
-        assert case_payload["target_distance"] == pytest.approx(
-            case.target_distance
-        )
+        assert case_payload["target_distance"] == pytest.approx(case.target_distance)
         for metric_key, metric_value in metrics[case.label].items():
             serialized = case_payload["metrics"][metric_key]
             if isinstance(metric_value, bool):
@@ -7796,59 +7665,47 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
     assert timeline["markers"](
         {"residual_ratio_history": {"POINT": [1.0e9]}}
     ) == pytest.approx(1.0)
-    assert (
-        timeline["markers"](
-            {
-                "residual_history": {
-                    "POINT residual": [0.90],
-                    "POINT solved": [1.0e-9],
+    assert timeline["markers"](
+        {
+            "residual_history": {
+                "POINT residual": [0.90],
+                "POINT solved": [1.0e-9],
+            }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {"orientation_error_history": {"RIGID residual": [0.20]}}
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "last_metrics": {
+                "DISTANCE solved": {
+                    "distance_error": 1.0e-9,
+                    "tip_error": 0.20,
                 }
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {"orientation_error_history": {"RIGID residual": [0.20]}}
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "DISTANCE solved": {
-                        "distance_error": 1.0e-9,
-                        "tip_error": 0.20,
-                    }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "residual_ratio_history": {
+                "POINT": [10.0],
+                "DISTANCE": [12.0],
+                "RIGID": [11.0],
+            },
+            "residual_history": {
+                "POINT residual": [0.20],
+                "POINT solved": [0.10],
+            },
+            "orientation_error_history": {"RIGID residual": [0.02]},
+            "last_metrics": {
+                "DISTANCE solved": {
+                    "distance_error": 0.02,
+                    "tip_error": 0.04,
                 }
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "residual_ratio_history": {
-                    "POINT": [10.0],
-                    "DISTANCE": [12.0],
-                    "RIGID": [11.0],
-                },
-                "residual_history": {
-                    "POINT residual": [0.20],
-                    "POINT solved": [0.10],
-                },
-                "orientation_error_history": {"RIGID residual": [0.02]},
-                "last_metrics": {
-                    "DISTANCE solved": {
-                        "distance_error": 0.02,
-                        "tip_error": 0.04,
-                    }
-                },
-            }
-        )
-        == pytest.approx(0.0)
-    )
+            },
+        }
+    ) == pytest.approx(0.0)
 
 
 def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
@@ -7885,8 +7742,12 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     variational_residual = metrics["variational_residual"]
     variational_solved = metrics["variational_solved"]
 
-    assert controller.cases[0].closure.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
-    assert controller.cases[1].closure.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
+    assert (
+        controller.cases[0].closure.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
+    )
+    assert (
+        controller.cases[1].closure.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
+    )
     assert controller.cases[2].closure.dynamics == sx.ClosureDynamicsPolicy.SOLVE
     assert float(semi["coordinates"]) == pytest.approx(3.0)
     assert float(variational_residual["coordinates"]) == pytest.approx(3.0)
@@ -7922,66 +7783,52 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
             }
         }
     ) == pytest.approx(31.0)
-    assert timeline["markers"]({"solve_ratio_history": [1.0e9]}) == pytest.approx(
-        1.0
-    )
-    assert (
-        timeline["markers"](
-            {
-                "residual_history": {
-                    "semi_residual": [0.10],
-                    "variational_residual": [0.65],
-                    "variational_solved": [0.02],
-                }
+    assert timeline["markers"]({"solve_ratio_history": [1.0e9]}) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "residual_history": {
+                "semi_residual": [0.10],
+                "variational_residual": [0.65],
+                "variational_solved": [0.02],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "tip_error_history": {
-                    "semi_residual": [0.30],
-                    "variational_residual": [0.22],
-                    "variational_solved": [1.0e-9],
-                }
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "tip_error_history": {
+                "semi_residual": [0.30],
+                "variational_residual": [0.22],
+                "variational_solved": [1.0e-9],
             }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "last_metrics": {
-                    "semi_residual": {"residual": 0.30, "tip_error": 0.30},
-                    "variational_residual": {"residual": 0.20, "tip_error": 0.20},
-                    "variational_solved": {
-                        "residual": 1.0e-9,
-                        "tip_error": 1.0e-9,
-                    },
-                }
-            }
-        )
-        == pytest.approx(1.0)
-    )
-    assert (
-        timeline["markers"](
-            {
-                "residual_history": {
-                    "semi_residual": [0.12],
-                    "variational_residual": [0.15],
-                    "variational_solved": [0.10],
-                },
-                "solve_ratio_history": [10.0],
-                "tip_error_history": {
-                    "semi_residual": [0.12],
-                    "variational_residual": [0.15],
-                    "variational_solved": [0.10],
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "last_metrics": {
+                "semi_residual": {"residual": 0.30, "tip_error": 0.30},
+                "variational_residual": {"residual": 0.20, "tip_error": 0.20},
+                "variational_solved": {
+                    "residual": 1.0e-9,
+                    "tip_error": 1.0e-9,
                 },
             }
-        )
-        == pytest.approx(0.0)
-    )
+        }
+    ) == pytest.approx(1.0)
+    assert timeline["markers"](
+        {
+            "residual_history": {
+                "semi_residual": [0.12],
+                "variational_residual": [0.15],
+                "variational_solved": [0.10],
+            },
+            "solve_ratio_history": [10.0],
+            "tip_error_history": {
+                "semi_residual": [0.12],
+                "variational_residual": [0.15],
+                "variational_solved": [0.10],
+            },
+        }
+    ) == pytest.approx(0.0)
 
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
@@ -8006,12 +7853,8 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     }
     assert capture_metrics["executor"] == controller._executor_label()
     assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
-    assert capture_metrics["world_time"] == pytest.approx(
-        controller.primary_world.time
-    )
-    assert capture_metrics["gravity_scale"] == pytest.approx(
-        controller.gravity_scale
-    )
+    assert capture_metrics["world_time"] == pytest.approx(controller.primary_world.time)
+    assert capture_metrics["gravity_scale"] == pytest.approx(controller.gravity_scale)
     assert capture_metrics["controls"]["executor_index"] == pytest.approx(
         controller.executor_index
     )
@@ -8100,6 +7943,17 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
         )
 
 
+@pytest.mark.parametrize("module_name", _AVBD_RIGID_DEMO_MODULES)
+def test_avbd_rigid_demo_builds_select_public_avbd_solver(
+    module_name: str,
+) -> None:
+    sx = _require_simulation_experimental_symbols("World", "RigidBodySolver")
+    module = importlib.import_module(f"examples.demos.scenes.{module_name}")
+    setup = module.build()
+    sx_world = setup.info["sx_world"]
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
+
+
 def test_avbd_empty_baseline_demo_steps_empty_world() -> None:
     sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")
 
@@ -8111,7 +7965,11 @@ def test_avbd_empty_baseline_demo_steps_empty_world() -> None:
     assert sx_world.num_rigid_bodies == 0
     assert sx_world.num_multibodies == 0
     assert sx_world.num_joints == 0
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.AVBD
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert setup.info["source_demo_rows"] == (
         "avbd-demo2d empty",
         "avbd-demo3d empty",
@@ -8186,15 +8044,15 @@ def test_avbd_demo2d_motor_scene_matches_source_row() -> None:
     assert sx_world.time_step == pytest.approx(1.0 / 60.0)
     assert sx_world.gravity.tolist() == pytest.approx([0.0, -10.0, 0.0])
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        20.0
-    )
-    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[0] == pytest.approx(
-        -50.0
-    )
-    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[0] == pytest.approx(
-        50.0
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(20.0)
+    assert np.asarray(joint.effort_lower_limits, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-50.0)
+    assert np.asarray(joint.effort_upper_limits, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(50.0)
 
     initial_translation = np.asarray(bar.translation, dtype=float).reshape(3)
     initial_speed = float(np.asarray(bar.angular_velocity, dtype=float).reshape(3)[2])
@@ -8285,12 +8143,12 @@ def test_avbd_demo2d_dynamic_friction_scene_matches_source_row() -> None:
 
     final_high = np.asarray(high_friction_box.translation, dtype=float).reshape(3)
     final_zero = np.asarray(zero_friction_box.translation, dtype=float).reshape(3)
-    high_velocity = np.asarray(
-        high_friction_box.linear_velocity, dtype=float
-    ).reshape(3)
-    zero_velocity = np.asarray(
-        zero_friction_box.linear_velocity, dtype=float
-    ).reshape(3)
+    high_velocity = np.asarray(high_friction_box.linear_velocity, dtype=float).reshape(
+        3
+    )
+    zero_velocity = np.asarray(zero_friction_box.linear_velocity, dtype=float).reshape(
+        3
+    )
     high_speed = float(np.linalg.norm(high_velocity[:2]))
     zero_speed = float(np.linalg.norm(zero_velocity[:2]))
     assert sx_world.time == pytest.approx(60.0 * sx_world.time_step)
@@ -9043,9 +8901,7 @@ def test_avbd_demo2d_joint_grid_scene_matches_source_row() -> None:
         [np.asarray(cell.translation, dtype=float).reshape(3) for cell in cells]
     )
     assert np.isfinite(initial_positions).all()
-    assert np.asarray(grid[0][0].translation).tolist() == pytest.approx(
-        [0.0, 0.0, 0.0]
-    )
+    assert np.asarray(grid[0][0].translation).tolist() == pytest.approx([0.0, 0.0, 0.0])
     assert np.asarray(grid[24][24].translation).tolist() == pytest.approx(
         [24.0, 24.0, 0.0]
     )
@@ -9056,8 +8912,12 @@ def test_avbd_demo2d_joint_grid_scene_matches_source_row() -> None:
             for y in range(25):
                 parent = grid[x - 1][y]
                 child = grid[x][y]
-                parent_translation = np.asarray(parent.translation, dtype=float).reshape(3)
-                child_translation = np.asarray(child.translation, dtype=float).reshape(3)
+                parent_translation = np.asarray(
+                    parent.translation, dtype=float
+                ).reshape(3)
+                child_translation = np.asarray(child.translation, dtype=float).reshape(
+                    3
+                )
                 parent_rotation = np.asarray(parent.rotation, dtype=float).reshape(3, 3)
                 child_rotation = np.asarray(child.rotation, dtype=float).reshape(3, 3)
                 translation_error = np.linalg.norm(
@@ -9071,8 +8931,12 @@ def test_avbd_demo2d_joint_grid_scene_matches_source_row() -> None:
             for y in range(1, 25):
                 parent = grid[x][y - 1]
                 child = grid[x][y]
-                parent_translation = np.asarray(parent.translation, dtype=float).reshape(3)
-                child_translation = np.asarray(child.translation, dtype=float).reshape(3)
+                parent_translation = np.asarray(
+                    parent.translation, dtype=float
+                ).reshape(3)
+                child_translation = np.asarray(child.translation, dtype=float).reshape(
+                    3
+                )
                 parent_rotation = np.asarray(parent.rotation, dtype=float).reshape(3, 3)
                 child_rotation = np.asarray(child.rotation, dtype=float).reshape(3, 3)
                 translation_error = np.linalg.norm(
@@ -9191,12 +9055,12 @@ def test_avbd_demo2d_soft_body_scene_matches_source_row() -> None:
     assert not sx_world.is_collision_pair_ignored(grids[0][0][0], grids[0][1][0])
     assert all(joint.type == sx.JointType.FIXED for joint in joints)
     assert [joint.num_dofs for joint in joints[:10]] == [0] * 10
-    assert [joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]] == pytest.approx(
-        [1000.0] * 10
-    )
-    assert [joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]] == pytest.approx(
-        [100.0] * 10
-    )
+    assert [
+        joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]
+    ] == pytest.approx([1000.0] * 10)
+    assert [
+        joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]
+    ] == pytest.approx([100.0] * 10)
     assert [len(cell.collision_shapes) for cell in cells] == [1] * 150
     assert [cell.friction for cell in cells[:10]] == pytest.approx([0.5] * 10)
     assert sum(1 for cell in cells if cell.is_static) == 0
@@ -9292,9 +9156,9 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
     assert len(joints) == 49
     assert all(joint.type == sx.JointType.SPHERICAL for joint in joints)
     assert [joint.num_dofs for joint in joints] == [3] * 49
-    assert [joint.constraint_projection_policy.start_stiffness for joint in joints] == pytest.approx(
-        [1.0e6] * 49
-    )
+    assert [
+        joint.constraint_projection_policy.start_stiffness for joint in joints
+    ] == pytest.approx([1.0e6] * 49)
     assert [len(link.collision_shapes) for link in links] == [1] * 50
     assert [link.friction for link in links] == pytest.approx([0.5] * 50)
     assert links[0].is_static
@@ -9317,12 +9181,14 @@ def test_avbd_demo2d_hanging_rope_scene_matches_source_row() -> None:
         errors = []
         for index, (parent, child) in enumerate(zip(links, links[1:])):
             child_anchor = heavy_child_anchor if index == 48 else regular_child_anchor
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -9417,12 +9283,14 @@ def test_avbd_demo2d_rope_scene_matches_source_row() -> None:
     def endpoint_errors() -> list[float]:
         errors = []
         for parent, child in zip(links, links[1:]):
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -9924,12 +9792,14 @@ def test_avbd_demo2d_heavy_rope_scene_matches_source_row() -> None:
         errors = []
         for index, (parent, child) in enumerate(zip(links, links[1:])):
             child_anchor = heavy_child_anchor if index == 18 else regular_child_anchor
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -10060,12 +9930,14 @@ def test_avbd_demo2d_net_scene_matches_source_row() -> None:
     def endpoint_errors() -> list[float]:
         errors = []
         for parent, child in zip(links, links[1:]):
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -10203,9 +10075,7 @@ def test_avbd_demo2d_fracture_scene_matches_source_row() -> None:
         setup.world.step()
 
     final_chain = np.asarray(chain[5].translation, dtype=float).reshape(3)
-    final_top_block = np.asarray(falling_blocks[-1].translation, dtype=float).reshape(
-        3
-    )
+    final_top_block = np.asarray(falling_blocks[-1].translation, dtype=float).reshape(3)
     assert sx_world.time == pytest.approx(6.0 * sx_world.time_step)
     assert np.isfinite(final_chain).all()
     assert np.isfinite(final_top_block).all()
@@ -10266,7 +10136,9 @@ def test_avbd_demo3d_breakable_scene_matches_source_row() -> None:
     assert sum(len(body.collision_shapes) for body in falling_blocks) == 5
 
     initial_chain = np.asarray(chain[5].translation, dtype=float).reshape(3)
-    initial_top_block = np.asarray(falling_blocks[-1].translation, dtype=float).reshape(3)
+    initial_top_block = np.asarray(falling_blocks[-1].translation, dtype=float).reshape(
+        3
+    )
     for _ in range(6):
         assert setup.pre_step is not None
         setup.pre_step()
@@ -10288,6 +10160,7 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
 
     from examples.demos.scenes.avbd_paper_breakable_wall import (
         OUTCOME_ORACLE,
+        _effective_scene_spec_fingerprint,
         build,
     )
 
@@ -10297,6 +10170,7 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     bricks = setup.info["bricks"]
     balls = setup.info["balls"]
     joints = setup.info["joints"]
+    topology_records = setup.info["topology_records"]
     reference = setup.info["paper_reference"]
 
     assert reference["source_locator"] == "Section 5.4 and Figure 13, PDF page 10"
@@ -10342,17 +10216,119 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     assert sum(len(body.collision_shapes) for body in (ground, *bricks, *balls)) == 256
     assert [brick.mass for brick in bricks] == pytest.approx([9.0] * 252)
     assert [ball.mass for ball in balls] == pytest.approx([40.0] * 3)
+    assert setup.info["scene_spec_fingerprint"] == "8ca3fbfa00c3dce9"
+
+    original_ground_friction = ground.friction
+    ground.friction = original_ground_friction + 0.125
+    with pytest.raises(RuntimeError, match="ground friction"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=topology_records,
+        )
+    ground.friction = original_ground_friction
+
+    with pytest.raises(RuntimeError, match="world joint count"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints[:-1],
+            topology_records=topology_records[:-1],
+        )
+
+    representative_brick = bricks[len(bricks) // 2]
+    original_brick_restitution = representative_brick.restitution
+    representative_brick.restitution = 0.25
+    with pytest.raises(RuntimeError, match="brick 126 restitution"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=topology_records,
+        )
+    representative_brick.restitution = original_brick_restitution
+
+    original_ball_velocity = np.asarray(balls[0].linear_velocity).copy()
+    balls[0].linear_velocity = original_ball_velocity + np.array([1.0, 0.0, 0.0])
+    with pytest.raises(RuntimeError, match="ball 0 linear velocity"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=topology_records,
+        )
+    balls[0].linear_velocity = original_ball_velocity
+
+    mutated_topology = list(topology_records)
+    kind, parent_index, _ = mutated_topology[0]
+    mutated_topology[0] = (kind, parent_index, mutated_topology[1][2])
+    with pytest.raises(RuntimeError, match="joint 0 child"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=mutated_topology,
+        )
+
+    representative_joint = joints[len(joints) // 2]
+    original_policy = representative_joint.constraint_projection_policy
+    original_policy_values = (
+        original_policy.start_stiffness,
+        original_policy.linear_stiffness,
+        original_policy.angular_stiffness,
+    )
+    mutated_policy = sx.JointConstraintProjectionPolicy(
+        start_stiffness=original_policy_values[0] + 1000.0,
+        linear_stiffness=original_policy_values[1],
+        angular_stiffness=original_policy_values[2],
+    )
+    representative_joint.constraint_projection_policy = mutated_policy
+    with pytest.raises(RuntimeError, match="joint 356 start stiffness"):
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=topology_records,
+        )
+    representative_joint.constraint_projection_policy = (
+        sx.JointConstraintProjectionPolicy(
+            start_stiffness=original_policy_values[0],
+            linear_stiffness=original_policy_values[1],
+            angular_stiffness=original_policy_values[2],
+        )
+    )
+
+    assert (
+        _effective_scene_spec_fingerprint(
+            world=sx_world,
+            ground=ground,
+            bricks=bricks,
+            balls=balls,
+            joints=joints,
+            topology_records=topology_records,
+        )
+        == setup.info["scene_spec_fingerprint"]
+    )
 
     brick_positions = np.asarray(
         [np.asarray(brick.translation, dtype=float).reshape(3) for brick in bricks]
     ).reshape(12, 21, 3)
     assert brick_positions[:, :, 1] == pytest.approx(np.zeros((12, 21)))
-    assert brick_positions[0, :, 0] == pytest.approx(
-        np.linspace(-6.2, 6.2, num=21)
-    )
-    assert brick_positions[1, :, 0] == pytest.approx(
-        np.linspace(-5.89, 6.51, num=21)
-    )
+    assert brick_positions[0, :, 0] == pytest.approx(np.linspace(-6.2, 6.2, num=21))
+    assert brick_positions[1, :, 0] == pytest.approx(np.linspace(-5.89, 6.51, num=21))
     assert brick_positions[:, 0, 2] == pytest.approx(
         [0.145 + 0.27 * row for row in range(12)]
     )
@@ -10362,18 +10338,15 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     np.testing.assert_allclose(
         ball_positions,
         np.array(
-                [
-                    [-3.10, -5.0, 1.55],
-                    [-0.31, -5.0, 1.75],
-                    [3.10, -5.0, 2.35],
-                ]
+            [
+                [-3.10, -5.0, 1.55],
+                [-0.31, -5.0, 1.75],
+                [3.10, -5.0, 2.35],
+            ]
         ),
     )
     ball_velocities = np.asarray(
-        [
-            np.asarray(ball.linear_velocity, dtype=float).reshape(3)
-            for ball in balls
-        ]
+        [np.asarray(ball.linear_velocity, dtype=float).reshape(3) for ball in balls]
     )
     np.testing.assert_allclose(
         ball_velocities, np.tile(np.array([[0.0, 24.0, 0.0]]), (3, 1))
@@ -10391,8 +10364,7 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     assert outcome["thresholds_pass"] is True
     assert all(outcome["threshold_checks"].values())
     assert all(
-        count
-        >= OUTCOME_ORACLE["minimum_displaced_bricks_per_impact_band"]
+        count >= OUTCOME_ORACLE["minimum_displaced_bricks_per_impact_band"]
         for count in outcome["impact_band_displaced_counts"]
     )
     assert (
@@ -10409,17 +10381,16 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
         <= OUTCOME_ORACLE["maximum_broken_joints"]
     )
     assert outcome["unbroken_joints"] >= OUTCOME_ORACLE["minimum_unbroken_joints"]
-    assert (
-        outcome["broken_joint_identity_count"] == outcome["broken_joints"]
-    )
+    assert outcome["broken_joint_identity_count"] == outcome["broken_joints"]
     assert (
         outcome["broken_joint_ids_sha256"]
         == OUTCOME_ORACLE["expected_broken_joint_ids_sha256"]
     )
     assert len(outcome["broken_joint_records"]) == outcome["broken_joints"]
-    assert len(
-        {record["id"] for record in outcome["broken_joint_records"]}
-    ) == outcome["broken_joints"]
+    assert (
+        len({record["id"] for record in outcome["broken_joint_records"]})
+        == outcome["broken_joints"]
+    )
     assert (
         sum(outcome["broken_joint_impact_region_counts"])
         + outcome["broken_joints_outside_impact_regions"]
@@ -10431,9 +10402,7 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     )
     assert (
         outcome["maximum_unbroken_joint_angular_residual_radians"]
-        <= OUTCOME_ORACLE[
-            "maximum_unbroken_joint_angular_residual_radians"
-        ]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_angular_residual_radians"]
     )
     assert outcome["last_step_iterations"] == 20
 
@@ -10441,9 +10410,9 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     assert capture_metrics["solver"] == "public_avbd"
     assert capture_metrics["rigid_body_solver"] == "AVBD"
     assert capture_metrics["rigid_constraint_options"] == {"iterations": 20}
-    assert (
-        capture_metrics["resolved_configuration"]
-        == list(setup.info["resolved_configuration"])
+    assert capture_metrics["effective_scene_contract_passed"] is True
+    assert capture_metrics["resolved_configuration"] == list(
+        setup.info["resolved_configuration"]
     )
     fingerprint = capture_metrics["scene_spec_fingerprint"]
     assert len(fingerprint) == 16
@@ -10452,10 +10421,7 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
         hasattr(sx.gui, name)
         for name in ("OrbitCamera", "ProjectionOptions", "assess_view_quality")
     )
-    assert (
-        capture_metrics["view_assessment_available"]
-        is view_assessment_available
-    )
+    assert capture_metrics["view_assessment_available"] is view_assessment_available
     if view_assessment_available:
         assert capture_metrics["view_report"]["pass"] is True
         assert capture_metrics["view_report"]["issues"] == []
@@ -10501,12 +10467,9 @@ def test_avbd_paper_breakable_wall_outcome_is_deterministic() -> None:
     ):
         assert outcomes[0][key] == pytest.approx(outcomes[1][key])
     assert (
-        outcomes[0]["broken_joint_ids_sha256"]
-        == outcomes[1]["broken_joint_ids_sha256"]
+        outcomes[0]["broken_joint_ids_sha256"] == outcomes[1]["broken_joint_ids_sha256"]
     )
-    assert outcomes[0]["broken_joint_records"] == outcomes[1][
-        "broken_joint_records"
-    ]
+    assert outcomes[0]["broken_joint_records"] == outcomes[1]["broken_joint_records"]
 
     for collection in ("bricks", "balls"):
         positions = [
@@ -10519,17 +10482,15 @@ def test_avbd_paper_breakable_wall_outcome_is_deterministic() -> None:
             for setup in setups
         ]
         np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1.0e-12)
-    assert [
-        joint.is_broken for joint in setups[0].info["joints"]
-    ] == [joint.is_broken for joint in setups[1].info["joints"]]
+    assert [joint.is_broken for joint in setups[0].info["joints"]] == [
+        joint.is_broken for joint in setups[1].info["joints"]
+    ]
 
 
 def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> None:
     sx = _require_simulation_experimental_symbols("World")
 
-    from examples.demos.scenes.avbd_paper_breakable_wall import (
-        build as build_avbd,
-    )
+    from examples.demos.scenes.avbd_paper_breakable_wall import build as build_avbd
     from examples.demos.scenes.sequential_impulse_paper_breakable_wall import (
         SEQUENTIAL_IMPULSE_OUTCOME_ORACLE,
         build,
@@ -10571,8 +10532,7 @@ def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> 
         <= outcome_oracle["maximum_initial_broken_joints"]
     )
     assert (
-        fracture["unbroken_joints"]
-        >= outcome_oracle["minimum_initial_unbroken_joints"]
+        fracture["unbroken_joints"] >= outcome_oracle["minimum_initial_unbroken_joints"]
     )
     assert (
         fracture["total_retained_fraction"]
@@ -10583,20 +10543,13 @@ def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> 
         fracture["broken_joint_ids_sha256"]
         == outcome_oracle["expected_broken_joint_ids_sha256"]
     )
-    assert (
-        fracture["broken_joints_outside_impact_regions"] == 0
-    )
+    assert fracture["broken_joints_outside_impact_regions"] == 0
     assert all(
-        count
-        >= outcome_oracle[
-            "minimum_initial_broken_joints_per_impact_region"
-        ]
+        count >= outcome_oracle["minimum_initial_broken_joints_per_impact_region"]
         for count in fracture["broken_joint_impact_region_counts"]
     )
     assert len(fracture["broken_joint_records"]) == fracture["broken_joints"]
-    assert {
-        record["id"] for record in fracture["broken_joint_records"]
-    } == {
+    assert {record["id"] for record in fracture["broken_joint_records"]} == {
         "sequential_impulse_paper_wall_horizontal_08_15",
         "sequential_impulse_paper_wall_vertical_04_05_05_05",
         "sequential_impulse_paper_wall_vertical_05_04_06_05",
@@ -10604,20 +10557,12 @@ def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> 
         "sequential_impulse_paper_wall_vertical_08_15_09_15",
     }
     assert (
-        fracture[
-            "maximum_outside_impact_unbroken_joint_linear_residual"
-        ]
-        <= outcome_oracle[
-            "maximum_initial_outside_joint_linear_residual"
-        ]
+        fracture["maximum_outside_impact_unbroken_joint_linear_residual"]
+        <= outcome_oracle["maximum_initial_outside_joint_linear_residual"]
     )
     assert (
-        fracture[
-            "maximum_outside_impact_unbroken_joint_angular_residual_radians"
-        ]
-        <= outcome_oracle[
-            "maximum_initial_outside_joint_angular_residual_radians"
-        ]
+        fracture["maximum_outside_impact_unbroken_joint_angular_residual_radians"]
+        <= outcome_oracle["maximum_initial_outside_joint_angular_residual_radians"]
     )
     assert fracture["last_step_iterations"] == 20
 
@@ -10645,8 +10590,7 @@ def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> 
         <= outcome_oracle["maximum_final_broken_joints"]
     )
     assert (
-        collapse["unbroken_joints"]
-        >= outcome_oracle["minimum_final_unbroken_joints"]
+        collapse["unbroken_joints"] >= outcome_oracle["minimum_final_unbroken_joints"]
     )
     assert (
         collapse["outside_retained_fraction"]
@@ -10660,53 +10604,35 @@ def test_sequential_impulse_paper_breakable_wall_matches_figure13_contract() -> 
         collapse["maximum_wall_normal_displacement"]
         >= outcome_oracle["minimum_collapse_wall_normal_displacement"]
     )
-    assert (
-        collapse["broken_joint_ids_sha256"]
-        == fracture["broken_joint_ids_sha256"]
-    )
-    assert {
-        record["id"] for record in collapse["broken_joint_records"]
-    } == {
+    assert collapse["broken_joint_ids_sha256"] == fracture["broken_joint_ids_sha256"]
+    assert {record["id"] for record in collapse["broken_joint_records"]} == {
         record["id"] for record in fracture["broken_joint_records"]
     }
     assert (
-        collapse[
-            "maximum_outside_impact_unbroken_joint_linear_residual"
-        ]
-        >= outcome_oracle[
-            "minimum_collapse_outside_joint_maximum_linear_residual"
-        ]
+        collapse["maximum_outside_impact_unbroken_joint_linear_residual"]
+        >= outcome_oracle["minimum_collapse_outside_joint_maximum_linear_residual"]
     )
     assert (
         collapse["rms_outside_impact_unbroken_joint_linear_residual"]
-        >= outcome_oracle[
-            "minimum_collapse_outside_joint_rms_linear_residual"
-        ]
+        >= outcome_oracle["minimum_collapse_outside_joint_rms_linear_residual"]
     )
     assert (
-        collapse[
-            "maximum_outside_impact_unbroken_joint_angular_residual_radians"
-        ]
+        collapse["maximum_outside_impact_unbroken_joint_angular_residual_radians"]
         >= outcome_oracle[
             "minimum_collapse_outside_joint_maximum_angular_residual_radians"
         ]
     )
     assert (
-        collapse[
-            "rms_outside_impact_unbroken_joint_angular_residual_radians"
-        ]
-        >= outcome_oracle[
-            "minimum_collapse_outside_joint_rms_angular_residual_radians"
-        ]
+        collapse["rms_outside_impact_unbroken_joint_angular_residual_radians"]
+        >= outcome_oracle["minimum_collapse_outside_joint_rms_angular_residual_radians"]
     )
     assert collapse["last_step_iterations"] == 20
 
     collapse_capture = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert collapse_capture["outcome"]["checkpoint"] == "collapse"
     assert collapse_capture["outcome"]["thresholds_pass"] is True
-    assert (
-        collapse_capture["resolved_configuration"]
-        == list(setup.info["resolved_configuration"])
+    assert collapse_capture["resolved_configuration"] == list(
+        setup.info["resolved_configuration"]
     )
 
 
@@ -10741,9 +10667,7 @@ def test_sequential_impulse_paper_breakable_wall_is_deterministic() -> None:
         "last_step_iterations",
         "contact_count",
     ):
-        assert fracture_outcomes[0][key] == pytest.approx(
-            fracture_outcomes[1][key]
-        )
+        assert fracture_outcomes[0][key] == pytest.approx(fracture_outcomes[1][key])
 
     for setup in setups:
         setup.info["sx_world"].step(
@@ -10769,9 +10693,7 @@ def test_sequential_impulse_paper_breakable_wall_is_deterministic() -> None:
         "last_step_iterations",
         "contact_count",
     ):
-        assert collapse_outcomes[0][key] == pytest.approx(
-            collapse_outcomes[1][key]
-        )
+        assert collapse_outcomes[0][key] == pytest.approx(collapse_outcomes[1][key])
     for checkpoint_outcomes in (fracture_outcomes, collapse_outcomes):
         assert (
             checkpoint_outcomes[0]["broken_joint_ids_sha256"]
@@ -10792,17 +10714,15 @@ def test_sequential_impulse_paper_breakable_wall_is_deterministic() -> None:
             for setup in setups
         ]
         np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1e-12)
-    assert [
-        joint.is_broken for joint in setups[0].info["joints"]
-    ] == [joint.is_broken for joint in setups[1].info["joints"]]
+    assert [joint.is_broken for joint in setups[0].info["joints"]] == [
+        joint.is_broken for joint in setups[1].info["joints"]
+    ]
 
 
 def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
     sx = _require_simulation_experimental_symbols("World")
 
-    from examples.demos.scenes.avbd_paper_breakable_wall import (
-        build as build_avbd,
-    )
+    from examples.demos.scenes.avbd_paper_breakable_wall import build as build_avbd
     from examples.demos.scenes.vbd_paper_breakable_wall import (
         OUTCOME_ORACLE,
         build,
@@ -10849,9 +10769,7 @@ def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
     )
     assert (
         bend["maximum_unbroken_joint_angular_residual_radians"]
-        <= OUTCOME_ORACLE[
-            "maximum_unbroken_joint_angular_residual_radians"
-        ]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_angular_residual_radians"]
     )
     assert bend["last_step_iterations"] == 20
 
@@ -10885,9 +10803,7 @@ def test_vbd_paper_breakable_wall_matches_figure13_contract() -> None:
     )
     assert (
         retention["maximum_unbroken_joint_angular_residual_radians"]
-        <= OUTCOME_ORACLE[
-            "maximum_unbroken_joint_angular_residual_radians"
-        ]
+        <= OUTCOME_ORACLE["maximum_unbroken_joint_angular_residual_radians"]
     )
 
 
@@ -10936,9 +10852,7 @@ def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
         "last_step_iterations",
         "contact_count",
     ):
-        assert retention_outcomes[0][key] == pytest.approx(
-            retention_outcomes[1][key]
-        )
+        assert retention_outcomes[0][key] == pytest.approx(retention_outcomes[1][key])
 
     for collection in ("bricks", "balls"):
         positions = [
@@ -10951,9 +10865,9 @@ def test_vbd_paper_breakable_wall_checkpoints_are_deterministic() -> None:
             for setup in setups
         ]
         np.testing.assert_allclose(positions[0], positions[1], rtol=0.0, atol=1.0e-12)
-    assert [
-        joint.is_broken for joint in setups[0].info["joints"]
-    ] == [joint.is_broken for joint in setups[1].info["joints"]]
+    assert [joint.is_broken for joint in setups[0].info["joints"]] == [
+        joint.is_broken for joint in setups[1].info["joints"]
+    ]
 
 
 def _fixed_chain_anchor_errors(chain: tuple[Any, ...]) -> list[float]:
@@ -10963,12 +10877,14 @@ def _fixed_chain_anchor_errors(chain: tuple[Any, ...]) -> list[float]:
     child_anchor = np.array([-0.5, 0.0, 0.0])
     errors = []
     for parent, child in zip(chain, chain[1:]):
-        parent_point = np.asarray(parent.translation, dtype=float).reshape(
-            3
-        ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-        child_point = np.asarray(child.translation, dtype=float).reshape(
-            3
-        ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+        parent_point = (
+            np.asarray(parent.translation, dtype=float).reshape(3)
+            + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+        )
+        child_point = (
+            np.asarray(child.translation, dtype=float).reshape(3)
+            + np.asarray(child.rotation, dtype=float) @ child_anchor
+        )
         errors.append(float(np.linalg.norm(parent_point - child_point)))
     return errors
 
@@ -10987,7 +10903,7 @@ def _assert_source_fixed_joint_fracture_resets(
     assert max(_fixed_chain_anchor_errors(chain)) < 1.0e-12
 
     # These ports preserve source topology and the source's numeric threshold,
-    # but DART evaluates a combined physical row-load norm instead of the
+    # but DART evaluates a combined solver-row metric instead of the
     # source's torque-arm-scaled angular dual predicate. Use a deterministic
     # DART horizon without claiming source-trajectory equivalence.
     for _ in range(fracture_evaluation_frame):
@@ -11489,12 +11405,14 @@ def test_avbd_demo3d_rope_scene_matches_source_row() -> None:
     def endpoint_errors() -> list[float]:
         errors = []
         for parent, child in zip(links, links[1:]):
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -11609,12 +11527,14 @@ def test_avbd_demo3d_heavy_rope_scene_matches_source_row() -> None:
         errors = []
         for index, (parent, child) in enumerate(zip(links, links[1:])):
             child_anchor = heavy_child_anchor if index == 18 else regular_child_anchor
-            parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-            child_point = np.asarray(child.translation, dtype=float).reshape(
-                3
-            ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+            parent_point = (
+                np.asarray(parent.translation, dtype=float).reshape(3)
+                + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+            )
+            child_point = (
+                np.asarray(child.translation, dtype=float).reshape(3)
+                + np.asarray(child.rotation, dtype=float) @ child_anchor
+            )
             errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -11816,17 +11736,15 @@ def test_avbd_demo3d_soft_body_scene_matches_source_row() -> None:
     assert sx_world.is_collision_pair_ignored(grids[0][1][0][0], grids[0][0][0][1])
     assert sx_world.is_collision_pair_ignored(grids[0][0][0][0], grids[0][0][1][1])
     assert sx_world.is_collision_pair_ignored(grids[0][0][0][0], grids[0][1][1][0])
-    assert not sx_world.is_collision_pair_ignored(
-        grids[0][0][0][0], grids[0][1][0][0]
-    )
+    assert not sx_world.is_collision_pair_ignored(grids[0][0][0][0], grids[0][1][0][0])
     assert all(joint.type == sx.JointType.FIXED for joint in joints)
     assert [joint.num_dofs for joint in joints[:10]] == [0] * 10
-    assert [joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]] == pytest.approx(
-        [1000.0] * 10
-    )
-    assert [joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]] == pytest.approx(
-        [250.0] * 10
-    )
+    assert [
+        joint.constraint_projection_policy.linear_stiffness for joint in joints[:10]
+    ] == pytest.approx([1000.0] * 10)
+    assert [
+        joint.constraint_projection_policy.angular_stiffness for joint in joints[:10]
+    ] == pytest.approx([250.0] * 10)
     assert [len(cell.collision_shapes) for cell in cells] == [1] * 192
     assert [cell.friction for cell in cells[:10]] == pytest.approx([0.5] * 10)
     assert sum(1 for cell in cells if cell.is_static) == 0
@@ -11957,12 +11875,14 @@ def test_avbd_demo3d_bridge_scene_matches_source_row() -> None:
         errors = []
         for parent, child in zip(planks, planks[1:]):
             for parent_anchor, child_anchor in zip(parent_anchors, child_anchors):
-                parent_point = np.asarray(parent.translation, dtype=float).reshape(
-                    3
-                ) + np.asarray(parent.rotation, dtype=float) @ parent_anchor
-                child_point = np.asarray(child.translation, dtype=float).reshape(
-                    3
-                ) + np.asarray(child.rotation, dtype=float) @ child_anchor
+                parent_point = (
+                    np.asarray(parent.translation, dtype=float).reshape(3)
+                    + np.asarray(parent.rotation, dtype=float) @ parent_anchor
+                )
+                child_point = (
+                    np.asarray(child.translation, dtype=float).reshape(3)
+                    + np.asarray(child.rotation, dtype=float) @ child_anchor
+                )
                 errors.append(float(np.linalg.norm(parent_point - child_point)))
         return errors
 
@@ -12142,7 +12062,9 @@ def test_avbd_prismatic_motor_demo_drives_slider() -> None:
         setup.world.step()
 
     final_position = np.asarray(slider.translation, dtype=float).reshape(3)
-    measured_speed = float(np.asarray(slider.linear_velocity, dtype=float).reshape(3)[0])
+    measured_speed = float(
+        np.asarray(slider.linear_velocity, dtype=float).reshape(3)[0]
+    )
     assert float(final_position[0]) > float(initial_position[0]) + 0.05
     assert measured_speed == pytest.approx(target_speed, abs=0.45)
     assert np.linalg.norm(final_position[1:] - base_position[1:]) < 1.0e-6
@@ -12196,11 +12118,14 @@ def test_avbd_articulated_revolute_motor_demo_reverses_command() -> None:
     switch_time = float(setup.info["command_switch_time"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
-    assert joint.actuator_type == sx.ActuatorType.VELOCITY
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        target_speed
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
     )
+    assert joint.actuator_type == sx.ActuatorType.VELOCITY
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(target_speed)
 
     def yaw() -> float:
         rotation = np.asarray(rotor.rotation, dtype=float).reshape(3, 3)
@@ -12222,7 +12147,9 @@ def test_avbd_articulated_revolute_motor_demo_reverses_command() -> None:
     assert sx_world.time > switch_time
     assert reversed_command == pytest.approx(-target_speed)
     assert yaw() < yaw_before_switch - 0.05
-    assert np.linalg.norm(np.asarray(rotor.translation, dtype=float).reshape(3)) < 1.0e-6
+    assert (
+        np.linalg.norm(np.asarray(rotor.translation, dtype=float).reshape(3)) < 1.0e-6
+    )
 
 
 def test_avbd_articulated_prismatic_motor_demo_reverses_command() -> None:
@@ -12240,11 +12167,14 @@ def test_avbd_articulated_prismatic_motor_demo_reverses_command() -> None:
     switch_time = float(setup.info["command_switch_time"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
-    assert joint.actuator_type == sx.ActuatorType.VELOCITY
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        target_speed
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
     )
+    assert joint.actuator_type == sx.ActuatorType.VELOCITY
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(target_speed)
 
     def position() -> np.ndarray:
         return np.asarray(carriage.translation, dtype=float).reshape(3)
@@ -12284,7 +12214,10 @@ def test_avbd_articulated_motor_breakable_joint_demo_resets_motor_rows() -> None
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -12319,9 +12252,9 @@ def test_avbd_articulated_motor_breakable_joint_demo_resets_motor_rows() -> None
 
     step(6)
     assert not joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
     assert np.linalg.norm(translation()) < 1.0e-6
     assert yaw() < reset_yaw - 1.0e-3
     axis = np.asarray(rotor.rotation, dtype=float).reshape(3, 3) @ np.array(
@@ -12333,9 +12266,9 @@ def test_avbd_articulated_motor_breakable_joint_demo_resets_motor_rows() -> None
     assert not joint.is_broken
     step(1)
     assert joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
 
 
 def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> None:
@@ -12355,7 +12288,10 @@ def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> 
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.num_dofs == 1
     assert joint.child_link == carriage
@@ -12397,9 +12333,9 @@ def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> 
 
     step(6)
     assert not joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
     assert orthogonal_norm() < 1.0e-6
     assert np.linalg.norm(np.asarray(carriage.rotation) - np.eye(3)) < 1.0e-6
     assert float(position() @ axis) < reset_axis_position - 1.0e-3
@@ -12408,12 +12344,14 @@ def test_avbd_articulated_prismatic_motor_breakable_joint_demo_resets_rows() -> 
     assert not joint.is_broken
     step(1)
     assert joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
 
 
-def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows() -> None:
+def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows() -> (
+    None
+):
     import numpy as np
 
     sx = _require_simulation_experimental_symbols("World", "ActuatorType")
@@ -12430,7 +12368,10 @@ def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows(
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.PRISMATIC
     assert joint.actuator_type == sx.ActuatorType.VELOCITY
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -12468,9 +12409,9 @@ def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows(
 
     step(6)
     assert not joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
     assert orthogonal_norm() < 1.0e-6
     assert np.linalg.norm(np.asarray(carriage.rotation) - np.eye(3)) < 1.0e-6
     assert float(position() @ axis) < reset_axis_position - 1.0e-3
@@ -12479,12 +12420,14 @@ def test_avbd_articulated_prismatic_pair_motor_breakable_joint_demo_resets_rows(
     assert not joint.is_broken
     step(1)
     assert joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
 
 
-def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows() -> None:
+def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows() -> (
+    None
+):
     import numpy as np
 
     sx = _require_simulation_experimental_symbols("World", "ActuatorType")
@@ -12500,7 +12443,10 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
     target_speed = float(setup.info["target_speed"])
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.REVOLUTE
     assert joint.num_dofs == 1
     assert joint.child_link == rotor
@@ -12539,9 +12485,9 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
 
     step(6)
     assert not joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
     assert np.linalg.norm(translation()) < 1.0e-6
     assert yaw() < reset_yaw - 1.0e-3
     axis = np.asarray(rotor.rotation, dtype=float).reshape(3, 3) @ np.array(
@@ -12553,9 +12499,9 @@ def test_avbd_articulated_world_revolute_motor_breakable_joint_demo_resets_rows(
     assert not joint.is_broken
     step(1)
     assert joint.is_broken
-    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[0] == pytest.approx(
-        -target_speed
-    )
+    assert np.asarray(joint.command_velocity, dtype=float).reshape(1)[
+        0
+    ] == pytest.approx(-target_speed)
 
 
 def test_avbd_articulated_compliant_joints_demo_preserves_free_coordinates() -> None:
@@ -12579,7 +12525,9 @@ def test_avbd_articulated_compliant_joints_demo_preserves_free_coordinates() -> 
     assert joints["spherical"].type == sx.JointType.SPHERICAL
     assert joints["revolute"].type == sx.JointType.REVOLUTE
     assert joints["prismatic"].type == sx.JointType.PRISMATIC
-    assert all(joint.actuator_type == sx.ActuatorType.PASSIVE for joint in joints.values())
+    assert all(
+        joint.actuator_type == sx.ActuatorType.PASSIVE for joint in joints.values()
+    )
     assert all(
         joint.constraint_projection_policy.start_stiffness
         == pytest.approx(setup.info["start_stiffness"])
@@ -12643,8 +12591,7 @@ def test_avbd_articulated_compliant_motors_demo_drives_free_coordinates() -> Non
     assert joints["hinge"].type == sx.JointType.REVOLUTE
     assert joints["slider"].type == sx.JointType.PRISMATIC
     assert all(
-        joint.actuator_type == sx.ActuatorType.VELOCITY
-        for joint in joints.values()
+        joint.actuator_type == sx.ActuatorType.VELOCITY for joint in joints.values()
     )
     assert all(
         joint.constraint_projection_policy.start_stiffness
@@ -12774,7 +12721,10 @@ def test_avbd_articulated_high_ratio_chain_demo_swings_and_resets() -> None:
     replay_state = setup.info["replay_state"]
     initial_tip = np.asarray(setup.info["initial_tip"], dtype=float).reshape(3)
 
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert sx_world.num_joints == 0
     assert multibody.num_dofs == len(joints)
     assert len(links) == 5
@@ -12816,7 +12766,10 @@ def test_avbd_paper_scale_high_ratio_chain_demo_builds_and_resets() -> None:
     reset_chain = setup.info["reset_chain"]
     initial_tip = np.asarray(setup.info["initial_tip"], dtype=float).reshape(3)
 
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert sx_world.multibody_options.variational_max_iterations == 200
     assert sx_world.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
     assert multibody.num_dofs == len(joints)
@@ -12853,9 +12806,7 @@ def test_avbd_breakable_joint_demo_marks_and_resets_joint() -> None:
     base = setup.info["base"]
     payload = setup.info["payload"]
     captured_offset = np.asarray(setup.info["captured_offset"], dtype=float).reshape(3)
-    captured_rotation = np.asarray(
-        setup.info["captured_payload_rotation"], dtype=float
-    )
+    captured_rotation = np.asarray(setup.info["captured_payload_rotation"], dtype=float)
     break_force = float(setup.info["break_force"])
 
     assert sx_world.num_joints == 1
@@ -12899,7 +12850,9 @@ def test_avbd_breakable_joint_demo_marks_and_resets_joint() -> None:
     assert not joint.is_broken
     assert np.linalg.norm(reset_base_translation - initial_base) < 1.0e-9
     assert (
-        np.linalg.norm((reset_payload_translation - reset_base_translation) - captured_offset)
+        np.linalg.norm(
+            (reset_payload_translation - reset_base_translation) - captured_offset
+        )
         < 1.0e-3
     )
     assert np.linalg.norm(reset_rotation - captured_rotation) < 1.0e-3
@@ -12927,9 +12880,7 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
     base = setup.info["base"]
     payload = setup.info["payload"]
     captured_offset = np.asarray(setup.info["captured_offset"], dtype=float).reshape(3)
-    captured_rotation = np.asarray(
-        setup.info["captured_payload_rotation"], dtype=float
-    )
+    captured_rotation = np.asarray(setup.info["captured_payload_rotation"], dtype=float)
 
     assert sx_world.num_joints == 1
     assert _fixed_joint_count(sx_world) == 0
@@ -12949,19 +12900,16 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
     base_translation = np.asarray(base.translation, dtype=float).reshape(3)
     payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
     broken_rotation = np.asarray(payload.rotation, dtype=float)
-    assert np.linalg.norm((payload_translation - base_translation) - captured_offset) > (
-        1.0e-3
-    )
+    assert np.linalg.norm(
+        (payload_translation - base_translation) - captured_offset
+    ) > (1.0e-3)
     assert np.linalg.norm(broken_rotation - captured_rotation) > 1.0e-3
 
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "avbd_rigid_spherical_breakable_joint"
     assert capture_metrics["solver"] == "avbd_rigid_joints"
-    assert (
-        capture_metrics["constraint"]
-        == "spherical_break_force_anchor_lifecycle"
-    )
+    assert capture_metrics["constraint"] == "spherical_break_force_anchor_lifecycle"
     assert capture_metrics["related_source_row"] == "rigid_joint_breakage"
     assert capture_metrics["status"] == "broken"
     assert capture_metrics["broken"] == pytest.approx(1.0)
@@ -12995,7 +12943,9 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
     reset_rotation = np.asarray(payload.rotation, dtype=float)
     assert not joint.is_broken
     assert (
-        np.linalg.norm((reset_payload_translation - reset_base_translation) - captured_offset)
+        np.linalg.norm(
+            (reset_payload_translation - reset_base_translation) - captured_offset
+        )
         < 1.0e-3
     )
     assert np.linalg.norm(reset_rotation - captured_rotation) > 1.0e-4
@@ -13028,7 +12978,10 @@ def test_avbd_articulated_breakable_joint_demo_marks_and_resets_joint() -> None:
     ).reshape(3)
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
     assert not joint.is_broken
     with pytest.raises(Exception, match="parent endpoint"):
@@ -13065,7 +13018,9 @@ def test_avbd_articulated_breakable_joint_demo_marks_and_resets_joint() -> None:
     assert joint.is_broken
 
 
-def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose() -> None:
+def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose() -> (
+    None
+):
     import numpy as np
 
     sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")
@@ -13083,7 +13038,10 @@ def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose()
     relative_transform = setup.info["relative_transform"]
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.FIXED
     assert joint.num_dofs == 0
     assert joint.parent_link == base
@@ -13099,10 +13057,7 @@ def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose()
     assert joint.is_broken
     broken_relative = np.asarray(relative_transform(), dtype=float)
     assert np.linalg.norm(broken_relative[:3, 3] - captured_relative[:3, 3]) > 1.0e-3
-    assert (
-        np.linalg.norm(broken_relative[:3, :3] - captured_relative[:3, :3])
-        > 1.0e-3
-    )
+    assert np.linalg.norm(broken_relative[:3, :3] - captured_relative[:3, :3]) > 1.0e-3
 
     reset_joint = setup.info["reset_joint"]
     reset_joint(float(setup.info["reset_break_force"]))
@@ -13116,10 +13071,7 @@ def test_avbd_articulated_fixed_pair_breakable_joint_demo_resets_relative_pose()
     reset_relative = np.asarray(relative_transform(), dtype=float)
     assert not joint.is_broken
     assert np.linalg.norm(reset_relative[:3, 3] - captured_relative[:3, 3]) < 1.0e-5
-    assert (
-        np.linalg.norm(reset_relative[:3, :3] - captured_relative[:3, :3])
-        < 1.0e-5
-    )
+    assert np.linalg.norm(reset_relative[:3, :3] - captured_relative[:3, :3]) < 1.0e-5
 
     setup.info["rearm_weak_joint"]()
     assert not joint.is_broken
@@ -13152,7 +13104,10 @@ def test_avbd_articulated_spherical_breakable_joint_demo_resets_anchor_only() ->
     )
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
     assert joint.break_force == pytest.approx(float(setup.info["break_force"]))
@@ -13196,7 +13151,9 @@ def test_avbd_articulated_spherical_breakable_joint_demo_resets_anchor_only() ->
     assert joint.is_broken
 
 
-def test_avbd_articulated_spherical_pair_breakable_joint_demo_resets_anchor_only() -> None:
+def test_avbd_articulated_spherical_pair_breakable_joint_demo_resets_anchor_only() -> (
+    None
+):
     import numpy as np
 
     sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")
@@ -13218,7 +13175,10 @@ def test_avbd_articulated_spherical_pair_breakable_joint_demo_resets_anchor_only
     )
 
     assert sx_world.num_joints == 1
-    assert sx_world.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
+    assert (
+        sx_world.multibody_options.integration_family
+        == sx.MultibodyIntegrationFamily.VARIATIONAL
+    )
     assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
     assert joint.parent_link == base

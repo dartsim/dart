@@ -84,7 +84,22 @@ def _sha256(path: Path) -> str:
     return sha256(path.read_bytes()).hexdigest()
 
 
-def _write_image_verdict(tmp_path: Path) -> Path:
+def _write_image_verdict(
+    tmp_path: Path,
+    *,
+    image_sha256: str | None = None,
+    omit_image_sha256: bool = False,
+) -> Path:
+    screenshot = tmp_path / "capture" / "avbd_articulated_compliant_joints.png"
+    image: dict[str, object] = {
+        "height": 3,
+        "path": "avbd_articulated_compliant_joints.png",
+        "width": 4,
+    }
+    if not omit_image_sha256:
+        image["sha256"] = (
+            _sha256(screenshot) if image_sha256 is None else image_sha256
+        )
     path = tmp_path / "capture" / "image_verdict.json"
     path.write_text(
         json.dumps(
@@ -93,11 +108,7 @@ def _write_image_verdict(tmp_path: Path) -> Path:
                     "contrast": {"pass": False},
                     "non_blank": {"pass": True},
                 },
-                "image": {
-                    "height": 3,
-                    "path": "avbd_articulated_compliant_joints.png",
-                    "width": 4,
-                },
+                "image": image,
                 "machine_scope": "pixel-integrity",
                 "metadata": {
                     "scene": "avbd_articulated_compliant_joints",
@@ -145,6 +156,26 @@ def _write_visual_review(tmp_path: Path) -> Path:
     return path
 
 
+VARIATIONAL_RUNTIME_COUNTERS = {
+    "runtime_identity_recorded": 1.0,
+    "runtime_identity_applicable": 1.0,
+    "runtime_identity_not_applicable": 0.0,
+    "runtime_identity_public_avbd_rigid": 0.0,
+    "runtime_identity_variational_multibody": 1.0,
+    "runtime_identity_contract_passed": 1.0,
+    "public_avbd_family": 0.0,
+    "public_sequential_impulse_family": 1.0,
+    "resolved_rigid_body_avbd": 0.0,
+    "resolved_rigid_contact_avbd": 0.0,
+    "resolved_rigid_body_sequential_impulse": 1.0,
+    "resolved_rigid_contact_sequential_impulse": 1.0,
+    "resolved_rigid_pair_constraint_sequential_impulse": 1.0,
+    "resolved_rigid_pair_constraint_not_applicable": 0.0,
+    "configured_multibody_variational": 1.0,
+    "resolved_multibody_variational": 1.0,
+}
+
+
 def _write_benchmark_json(
     tmp_path: Path,
     *,
@@ -160,6 +191,7 @@ def _write_benchmark_json(
             compliant_joints += 1
         rows.append(
             {
+                **VARIATIONAL_RUNTIME_COUNTERS,
                 "aggregate_name": "median",
                 "compliant_joints": float(compliant_joints),
                 "cpu_time": float(1000 * arg),
@@ -280,13 +312,13 @@ def test_avbd_articulated_compliant_joints_packet_records_evidence(
     assert packet["scene"] == "avbd_articulated_compliant_joints"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
+        "multibody_integration_family": "variational",
         "recorded_from": (
-            "contact-free py-demo and articulated compliant-joint "
-            "benchmark row family"
+            "articulated compliant-joint benchmark runtime identity counters"
         ),
-        "rigid_contact_selection": "not_applicable",
-        "rigid_contact_solver": "none",
-        "rigid_point_joint_solver": "avbd",
+        "rigid_contact_selection": "contact_solver_method",
+        "rigid_contact_solver": "sequential_impulse",
+        "rigid_point_joint_solver": "sequential_impulse",
     }
     assert packet["scene_invariants"]["joint_types"] == [
         "spherical",
@@ -424,6 +456,126 @@ def test_avbd_articulated_compliant_joints_packet_rejects_wrong_parent(
         SystemExit,
         match="exact-parent mutation parent_commit must be 0b0154573b8",
     ):
+        module.main(
+            [
+                "--capture-manifest",
+                str(capture_manifest),
+                "--image-verdict-json",
+                str(image_verdict),
+                "--visual-review-json",
+                str(visual_review),
+                "--benchmark-json",
+                str(benchmark_json),
+                "--exact-parent-mutation-json",
+                str(exact_parent_mutation),
+            ]
+        )
+
+
+def test_avbd_articulated_compliant_joints_packet_binds_image_verdict_sha256(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    capture_manifest = _write_capture_manifest(tmp_path)
+    image_verdict = _write_image_verdict(tmp_path)
+    visual_review = _write_visual_review(tmp_path)
+    benchmark_json = _write_benchmark_json(tmp_path)
+    exact_parent_mutation = _write_exact_parent_mutation(tmp_path)
+    output = tmp_path / "packet.json"
+
+    assert (
+        module.main(
+            [
+                "--capture-manifest",
+                str(capture_manifest),
+                "--image-verdict-json",
+                str(image_verdict),
+                "--visual-review-json",
+                str(visual_review),
+                "--benchmark-json",
+                str(benchmark_json),
+                "--exact-parent-mutation-json",
+                str(exact_parent_mutation),
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    packet = json.loads(output.read_text())
+    screenshot = tmp_path / "capture" / "avbd_articulated_compliant_joints.png"
+    recorded = packet["visual_capture"]["image_verdict"]["image_sha256"]
+    assert recorded == _sha256(screenshot)
+    assert recorded == packet["visual_capture"]["screenshot"]["sha256"]
+
+
+def test_avbd_articulated_compliant_joints_packet_rejects_foreign_image_verdict(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    capture_manifest = _write_capture_manifest(tmp_path)
+    image_verdict = _write_image_verdict(tmp_path, image_sha256="0" * 64)
+    visual_review = _write_visual_review(tmp_path)
+    benchmark_json = _write_benchmark_json(tmp_path)
+    exact_parent_mutation = _write_exact_parent_mutation(tmp_path)
+
+    with pytest.raises(
+        SystemExit,
+        match="image verdict image sha256 does not match capture screenshot",
+    ):
+        module.main(
+            [
+                "--capture-manifest",
+                str(capture_manifest),
+                "--image-verdict-json",
+                str(image_verdict),
+                "--visual-review-json",
+                str(visual_review),
+                "--benchmark-json",
+                str(benchmark_json),
+                "--exact-parent-mutation-json",
+                str(exact_parent_mutation),
+            ]
+        )
+
+
+@pytest.mark.parametrize(
+    ("verdict_kwargs", "expected_message"),
+    [
+        (
+            {"omit_image_sha256": True},
+            "image verdict image sha256 must be a 64-character lowercase "
+            "hexadecimal string",
+        ),
+        (
+            {"image_sha256": "z" * 64},
+            "image verdict image sha256 must be hexadecimal",
+        ),
+        (
+            {"image_sha256": "0" * 63},
+            "image verdict image sha256 must be a 64-character lowercase "
+            "hexadecimal string",
+        ),
+        (
+            {"image_sha256": "A" * 64},
+            "image verdict image sha256 must use canonical lowercase hexadecimal",
+        ),
+    ],
+)
+def test_avbd_articulated_compliant_joints_packet_rejects_malformed_image_sha256(
+    tmp_path: Path,
+    verdict_kwargs: dict[str, object],
+    expected_message: str,
+) -> None:
+    module = _load_packet_module()
+    capture_manifest = _write_capture_manifest(tmp_path)
+    image_verdict = _write_image_verdict(tmp_path, **verdict_kwargs)
+    visual_review = _write_visual_review(tmp_path)
+    benchmark_json = _write_benchmark_json(tmp_path)
+    exact_parent_mutation = _write_exact_parent_mutation(tmp_path)
+
+    with pytest.raises(SystemExit, match=expected_message):
         module.main(
             [
                 "--capture-manifest",

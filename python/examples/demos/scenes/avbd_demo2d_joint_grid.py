@@ -177,7 +177,11 @@ def _fixed_pose_error(
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+    )
 
     grid: list[list[sx.RigidBody]] = []
     cells: list[sx.RigidBody] = []

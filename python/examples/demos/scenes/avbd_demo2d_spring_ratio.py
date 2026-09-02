@@ -139,7 +139,11 @@ def _anchor_world_position(body: sx.RigidBody, local_anchor: np.ndarray) -> np.n
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+    )
 
     links: list[sx.RigidBody] = []
     for index in range(_LINK_COUNT):

@@ -64,7 +64,11 @@ def _source_row() -> dict[str, Any]:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+    )
 
     ground = world.add_rigid_body("avbd_demo2d_ground_slab", position=(0.0, 0.0, 0.0))
     ground.is_static = True

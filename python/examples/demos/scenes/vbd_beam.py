@@ -28,6 +28,12 @@ _KUHN = (
     (0, 5, 1, 7),
 )
 
+# Strict all-pairs bound for the derived 8-cell boundary surface: 36 surface
+# points, 68 triangles, and 102 unique edges produce 2,244 nonincident PT plus
+# 4,665 nonadjacent EE pairs. This explicit evidence-scene contract covers any
+# delayed active set instead of relying on the smaller automatic bake cap.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 6_909
+
 
 def _make_beam_options(length_cubes: int) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
@@ -67,10 +73,14 @@ def _make_beam_options(length_cubes: int) -> "sx.DeformableBodyOptions":
                     corner[tet[2]],
                     corner[tet[3]]))
     options.tetrahedra = tetrahedra
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
 
     material = sx.DeformableMaterialProperties()
     material.youngs_modulus = 3.0e4
     material.poisson_ratio = 0.3
+    material.use_finite_element_elasticity = True
     options.material = material
     options.damping = 2.0
     return options
@@ -137,7 +147,7 @@ def build() -> SceneSetup:
             builder.text(f"mean node speed: {mean_speed:.3f} m/s")
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
-            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+            builder.text(f"VBD sweeps: {diagnostics.vbd_sweeps}")
         if tip_sag_history:
             builder.separator()
             builder.plot_lines("Tip sag", list(tip_sag_history))

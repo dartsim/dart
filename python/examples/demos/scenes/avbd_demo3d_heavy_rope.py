@@ -159,7 +159,11 @@ def _anchor_world_position(body: sx.RigidBody, local_anchor: np.ndarray) -> np.n
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, _GRAVITY))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, 0.0, _GRAVITY),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+    )
 
     ground = _add_source_box(
         world,
