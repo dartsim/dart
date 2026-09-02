@@ -62,8 +62,8 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
   `dart-verify-sim`. Pair a text correctness oracle with `agent-capture`, view
   assessment, and claim-relevant engine debug layers; inspect the artifact and
   sidecar instead of relying only on command success.
-- If the user explicitly asks for `pixi run ex dartsim`, also run that exact
-  entry point and terminate it after confirming the GUI binary launches.
+- If the user explicitly asks for the `dartsim` app, run `pixi run dartsim`
+  and terminate it after confirming the GUI binary launches.
 
 ## Key Files
 

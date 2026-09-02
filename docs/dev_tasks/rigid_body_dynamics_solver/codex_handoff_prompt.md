@@ -76,4 +76,4 @@ under `DART_BUILD_GUI=ON` and renders the stepping World.
 
 Constraints: **no Claude/AI attribution** in commits or PR. Track work in
 `docs/`, not GitHub issues. dartpy Pythonic (snake_case, properties). Don't name
-"Genesis" in code/docs; don't modify `/home/js/multiphysics-api-design.md`.
+"Genesis" in code/docs; don't modify the maintainer's external multiphysics API design notes.

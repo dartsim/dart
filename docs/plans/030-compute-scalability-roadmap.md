@@ -7,6 +7,8 @@ rationale owner for scalable-compute decisions is
 this numbered plan file exists only to hold PLAN-030 roadmap state (the Phase 6
 backlog and progress log) that must not live in the design doc, per
 [`AGENTS.md`](AGENTS.md) and [`../design/AGENTS.md`](../design/AGENTS.md).
+The [`030-compute-resource-access/`](030-compute-resource-access/) sidecar
+holds this plan's mission and evaluator notes.
 
 ## Phase 6 backlog
 

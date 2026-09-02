@@ -129,7 +129,5 @@ for static geometry.
 
 ## DART 6 (release-6.20)
 
-Equivalent capture over OpenSceneGraph: `dart::gui::osg::setUpOffscreenViewer`
-/ `captureOffscreen` + dartpy bindings, `pixi run capture` (needs a real X
-server or Xvfb), the ported image tooling, and `pixi run bm-boxes-headless` for
-rendering-free determinism checksums.
+Use that branch's own `dart-verify-sim` skill; its OpenSceneGraph capture path
+and task names differ from `main`.

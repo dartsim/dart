@@ -67,7 +67,31 @@ explicit `pixi run lint` and task-specific gates remain required.
 
 ## Adding A Workflow
 
-1. Add the concise workflow source under `.claude/commands/dart-<name>.md`.
+1. Add the concise workflow source under `.claude/commands/dart-<name>.md`
+   with this structure (the sync check enforces the frontmatter key and the
+   three sections in order; do not pin `model` or `effort`):
+
+   ```markdown
+   ---
+   description: brief lowercase description
+   argument-hint: "<topic>"
+   ---
+
+   ## Required Reading
+
+   @AGENTS.md
+   @docs/onboarding/relevant-doc.md
+
+   ## Workflow
+
+   1. Step one
+   2. Step two
+
+   ## Output
+
+   - Summarize the outcome and validation for `$ARGUMENTS`.
+   ```
+
 2. Keep detailed policy in `docs/ai/` or `docs/onboarding/`.
 3. Add the workflow to `docs/ai/workflows.md`.
 4. Add the workflow to `docs/ai/capabilities.json`.
@@ -105,6 +129,8 @@ Route durable learnings to one owner:
 - AI component mechanics, source surfaces, and structural checks: this file.
 - Tool compatibility and generated-adapter caveats:
   `docs/onboarding/ai-tools.md`.
+- Automated PR review handling and the review-fix loop:
+  `docs/onboarding/ai-reviews.md`.
 - Documentation bucket placement and future restructure criteria:
   `docs/information-architecture.md`.
 - Reusable user-invoked workflow: `.claude/commands/`, synced to generated
@@ -151,9 +177,8 @@ faster; it must not be the only path.
   skills;
 - machine-readable capability manifest coverage;
 - effective capability parity across Claude Code, OpenCode, and Codex;
-- command and skill frontmatter, descriptions, and size budgets (budgets
-  are measured on the generated adapters, which add a few header lines over
-  the `.claude/` source, so keep sources several lines under the limit);
+- command and skill frontmatter, descriptions, and line budgets (measured on
+  the editable `.claude/` sources; generated adapters add a fixed header);
 - required command structure: an `argument-hint` frontmatter key plus
   `## Required Reading`, `## Workflow`, and `## Output` sections in order;
 - required `docs/ai/` policy documents exist;
@@ -209,8 +234,8 @@ recovery commands but never synchronizes files or installs hooks.
 `pixi run check-docs-policy` also enforces documentation lifecycle rules that
 are outside generated-adapter sync, including docs bucket visibility,
 the root information-architecture owner links, dev-task shape, plan cleanup
-invariants, dashboard entry budgets (at most 40 lines per `### PLAN-` block
-and 15 lines per `- Next step:` field), the no-`Complete`-entries rule for
+invariants, the dashboard entry budgets owned by `docs/plans/README.md`, the
+no-`Complete`-entries rule for
 `docs/plans/dashboard.md` (completed plans move to `docs/plans/archive.md`,
 whose entry shape is also checked), the `docs/ai/` frontmatter pilot, and
 the `docs/readthedocs/papers.md` catalog schema, pilot-scoped internal

@@ -380,6 +380,52 @@ metadata, visual reflectance factors, unsupported shapes, and DART
 output reparsed through `UrdfParser`; do not route URDF export through
 `dart::io` until a reviewed multi-format write API exists.
 
+## YAML is not a DART model format
+
+DART 7 removed SKEL instead of redesigning it as YAML (the literal proposal in
+[issue #496](https://github.com/dartsim/dart/issues/496) is rejected). A YAML
+wrapper over URDF/SDF/MJCF would be a second syntax whose semantics still
+belong to those upstream formats, making every parser rule, default, include
+and resource behavior, and diagnostic a parity burden without improving
+interchange; YAML aliases and cycles, parser-subset differences, and emitter
+style instability also leak into validation and round-trip behavior. Legacy
+SKEL assets migrate to URDF, SDF, or MJCF, or stay on a DART 6 release branch.
+
+Consequences: do not add `yaml-cpp`, `ModelFormat::Yaml`, a `YamlParser`,
+`.yaml`/`.yml` format inference, or a SKEL-to-YAML migration path. A
+DART-owned YAML scene format is worth considering only for a DART-owned
+problem that URDF, SDF, MJCF, and USD do not solve (most plausibly editor
+project save/load), and that belongs to the dartsim project model or a future
+scene-serialization design, with writers from day one.
+
+Reconsideration bar: before any future YAML implementation starts, the owning
+doc must define (1) the user workflow YAML uniquely enables; (2) whether the
+target is `Skeleton`, the DART 7 `World`, or a dartsim project file; (3) a
+versioned schema and migration policy; (4) a restricted YAML profile stating
+how aliases, anchors, merge keys, multi-document streams, duplicate keys, and
+cycles are rejected or normalized; (5) import tests for valid and malformed
+input; (6) export tests proving stable, readable output; (7) round-trip tests
+that load, write, re-load, and compare the DART-owned model; and (8) a
+changelog or migration note explaining why the existing formats are not
+sufficient for the accepted workflow.
+
+## Adding a writer format
+
+Writer APIs stay format-owned under `dart::io` until more than one accepted
+writer contract exists. MJCF or USD writers come only after their read-side
+semantics are mature enough in DART to define a truthful round-trip contract.
+Reuse `tests/helpers/io_round_trip_helpers.hpp` for body, joint, DoF, and
+shape comparisons. A new writer format is accepted when: a public or
+intentionally internal writer API exists; focused C++ tests load a
+representative model, write it, re-load it, and compare names, topology, joint
+types, transforms, limits, inertial data, visual and collision geometry, and
+resource URIs where the format supports them; unsupported features return
+structured errors or clear diagnostics; project save/load stays in the
+scene/project layer rather than conflating editor metadata with interchange
+export; the documentation states which DART constructs are representable in
+the format and which are intentionally not; and `CHANGELOG.md` records the
+user-visible export capability before the implementation PR merges.
+
 ## Parked writer expansion criteria
 
 The DART 7 writer surface is intentionally conservative. Future SDF expansion

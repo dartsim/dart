@@ -391,7 +391,6 @@ def _recovery(
             ".claude/hooks/pre-commit-guard.sh",
             ".claude/hooks/pre-commit-guard.ps1",
             "scripts/pretool_guard_bridge.py",
-            "commit guard",
         )
     ):
         add(
@@ -399,7 +398,7 @@ def _recovery(
             "git diff -- .codex/hooks.json .claude/hooks/pre-commit-guard.sh "
             ".claude/hooks/pre-commit-guard.ps1 scripts/pretool_guard_bridge.py",
         )
-    if "AGENTS chain" in joined or "instruction discovery" in joined:
+    if "AGENTS chain" in joined:
         add("instruction discovery or context budget failed", "pixi run check-ai-infra")
     if "Pixi task" in joined:
         add("a documented Pixi task alias is missing", "pixi task list")

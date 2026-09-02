@@ -108,6 +108,9 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 **Update discipline:**
 
+- When a `docs/plans/dashboard.md` entry owns the task, its `- Next step:`
+  field is the single owner of the next step; the task `README.md` and
+  `RESUME.md` point at that entry instead of copying it
 - Update `RESUME.md` **before** ending your session
 - Update after significant progress (don't wait until "done")
 - Keep it current — stale resume prompts are worse than none

@@ -385,7 +385,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
                 )
 
             line_count = len(content.splitlines())
-            if line_count > MAX_SKILL_LINES:
+            if label == ".claude/skills" and line_count > MAX_SKILL_LINES:
                 errors.append(
                     f"{path_label}: {line_count} lines exceeds "
                     f"{MAX_SKILL_LINES}-line skill budget"
@@ -415,7 +415,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
                 errors.append(f"{path_label}: description should not end with a period")
 
             line_count = len(content.splitlines())
-            if line_count > MAX_COMMAND_LINES:
+            if label == ".claude/commands" and line_count > MAX_COMMAND_LINES:
                 errors.append(
                     f"{path_label}: {line_count} lines exceeds "
                     f"{MAX_COMMAND_LINES}-line command budget"

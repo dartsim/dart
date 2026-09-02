@@ -686,10 +686,10 @@ def test_checked_in_source_skill_tasks_and_paths_are_current():
     assert "## Expected CI Times" not in ci_skill
 
 
-def test_ai_tools_new_command_template_matches_enforced_structure():
-    content = (ROOT / "docs" / "onboarding" / "ai-tools.md").read_text()
-    template = content.split("### Adding a New Command", 1)[1].split(
-        "### Adding a New Skill", 1
+def test_components_workflow_template_matches_enforced_structure():
+    content = (ROOT / "docs" / "ai" / "components.md").read_text()
+    template = content.split("## Adding A Workflow", 1)[1].split(
+        "## Adding A Domain Skill", 1
     )[0]
 
     assert "argument-hint:" in template

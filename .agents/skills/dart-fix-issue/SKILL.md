@@ -36,11 +36,9 @@ Fix GitHub issue: $ARGUMENTS
 
 ## Workflow
 
-If the issue's fix depends on model/scene structure, simulation, dynamics,
-collision/contact/constraints, or GUI output, route through `dart-verify-sim`:
-pair the focused behavioral oracle with assessed, claim-tied visual evidence,
-or document a visual exception when rendering is unavailable or not
-applicable.
+If the fix depends on 3D structure or behavior, route through
+`dart-verify-sim`: text oracle plus assessed visual evidence, or a recorded
+exception.
 
 1. `gh issue view $1` - Validate issue
 2. Classify whether the issue is a bug fix that applies to the active DART 6
@@ -48,9 +46,8 @@ applicable.
    `origin/release-6.*` branch; otherwise start from `origin/main`.
 3. Fix with minimal changes + add regression test. For dual-PR bug fixes, fix
    the active DART 6 LTS branch first, then cherry-pick or reapply to `main`.
-4. `pixi run lint`, then run the smallest relevant tests; use
-   `pixi run test-all` before finalizing when feasible, and also
-   `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime
+4. `pixi run lint`, then the smallest relevant tests and the task-type gate
+   set from `docs/ai/verification.md`
 5. Before PR creation, invoke the `dart-changelog` routine to decide whether
    `CHANGELOG.md` needs an entry, then fill `.github/PULL_REQUEST_TEMPLATE.md`.
 6. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`

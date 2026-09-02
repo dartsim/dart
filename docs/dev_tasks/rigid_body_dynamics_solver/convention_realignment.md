@@ -146,6 +146,6 @@ python/tests/unit/simulation/test_experimental_world.py -q`
 - Track remaining work in `docs/` (RESUME.md), **not** GitHub issues.
 - dartpy must stay Pythonic (snake_case, properties).
 - Do not name "Genesis" in core code/docs. Do not modify
-  `/home/js/multiphysics-api-design.md`.
+  the maintainer's external multiphysics API design notes.
 - Re-fetch `origin/main` before merging; expect possible re-conflicts since main
   actively refactors this subsystem.

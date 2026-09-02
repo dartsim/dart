@@ -110,71 +110,16 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 | `.codex/hooks.json`           | Codex project command hooks         | When a lifecycle trigger or hook gate changes   |
 | `docs/onboarding/ai-tools.md` | Tool compatibility details          | When tool compatibility changes                 |
 
-### Adding a New Command
+### Adding a Command or Skill
 
-1. Create `.claude/commands/dart-<name>.md`:
-
-   ```markdown
-   ---
-   description: brief description
-   argument-hint: "<topic>"
-   ---
-
-   ## Required Reading
-
-   @AGENTS.md
-   @docs/onboarding/relevant-doc.md
-
-   ## Workflow
-
-   1. Step one
-   2. Step two
-
-   ## Output
-
-   - Summarize the outcome and validation for `$ARGUMENTS`.
-   ```
-
-2. Sync to OpenCode and Codex: `pixi run lint` (includes `sync-ai-commands`)
-
-3. Update `docs/ai/workflows.md` so the command is discoverable from the workflow catalog
-
-4. Update `docs/ai/capabilities.json` so the command is represented in the
-   machine-readable capability manifest
-
-5. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
-
-Codex does not use project slash-command files directly. The sync script
-generates a Codex skill adapter from each workflow source, so `/dart-fix-ci`
-becomes `$dart-fix-ci`.
-
-### Adding a New Skill
-
-1. Create `.claude/skills/dart-<name>/SKILL.md`:
-
-   ```markdown
-   ---
-   name: dart-<name>
-   description: When to use this skill
-   ---
-
-   # Skill Title
-
-   ## Quick Reference
-
-   ...
-
-   ## Full Documentation
-
-   See: `docs/onboarding/relevant-doc.md`
-   ```
-
-2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
-
-3. Update `docs/ai/workflows.md` so the skill is discoverable from the workflow catalog
-
-4. Update `docs/ai/capabilities.json` so the skill is represented in the
-   machine-readable capability manifest
+`docs/ai/components.md` owns the steps: add the `.claude/commands/dart-<name>.md`
+or `.claude/skills/dart-<name>/SKILL.md` source, add the catalog rows in
+`docs/ai/workflows.md` and `docs/ai/capabilities.json`, then run
+`pixi run sync-ai-commands` and `pixi run check-ai-commands` (both are part of
+`pixi run lint`). Keep command files concise and action-oriented and put
+background material in `docs/onboarding/*.md`. Codex does not use project
+slash-command files directly; the sync script generates a `$dart-*` skill
+adapter from each workflow source, so `/dart-fix-ci` becomes `$dart-fix-ci`.
 
 ### Skill Design Principles
 
@@ -231,24 +176,6 @@ For module details: `<module>/AGENTS.md`
 - `path/to/main/file`
 - `path/to/tests`
 ```
-
-#### Creating New Skills
-
-To add a new DART-specific skill:
-
-1. Create skill directory and file:
-
-   ```bash
-   mkdir -p .claude/skills/dart-<name>
-   # Create SKILL.md following the template above
-   ```
-
-2. Sync to all tool directories:
-   ```bash
-   pixi run lint  # Includes sync-ai-commands
-   ```
-
-**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision detection). (`dart-architecture` already exists as a registered domain skill.)
 
 #### Cross-Agent Compatibility
 
@@ -424,7 +351,8 @@ Current references:
 ### OpenCode
 
 **Verified**: generated command adapters continuously via `pixi run
-check-ai-commands` in CI; behavior notes hand-checked 2026-07
+check-ai-commands` in CI; behavior notes checked against current OpenCode docs
+on 2026-09-01 with OpenCode 1.18.21 installed
 
 | Feature      | Location                    | Status                              |
 | ------------ | --------------------------- | ----------------------------------- |
@@ -434,8 +362,12 @@ check-ai-commands` in CI; behavior notes hand-checked 2026-07
 
 **Notes**:
 
-- Reads `.claude/skills/` for Claude compatibility
-- Does NOT read `.claude/commands/` (use `.opencode/command/` instead)
+- Discovers skills from `.opencode/skills/`, `.claude/skills/`, and
+  `.agents/skills/` (project and home directories)
+- Does NOT read `.claude/commands/`. Current OpenCode docs name
+  `.opencode/commands/`; the installed 1.18.21 client also accepts DART's
+  generated `.opencode/command/` (both spellings are in the binary). Move the
+  generated path when the singular form stops loading.
 - Commands support frontmatter: `description`, `agent`, `model`
 
 ### Gemini CLI
@@ -458,7 +390,8 @@ hand-checked 2026-07
 
 **Tested Versions**: Codex CLI 0.151.0 (strict-config compatibility and local
 discovery/config/hook checks), 2026-08-31 (earlier exercised on 0.144.1 and
-0.146.0, 2026-07-29)
+0.146.0, 2026-07-29). Codex 0.152.0 is installed as of 2026-09-01 but was not
+re-exercised (weekly usage limit); its `--help` lists a `doctor` subcommand.
 
 | Feature           | Location                    | Status                                |
 | ----------------- | --------------------------- | ------------------------------------- |
@@ -470,7 +403,8 @@ discovery/config/hook checks), 2026-08-31 (earlier exercised on 0.144.1 and
 
 **Setup and diagnosis**:
 
-1. Trust the checkout so project `.codex/` layers may load.
+1. Trust the checkout so project `.codex/` layers may load; run `codex doctor`
+   when the installation, config, auth, or runtime itself looks unhealthy.
 2. Run `pixi run ai-setup` to synchronize generated adapters and install the
    cross-tool Git hook.
 3. Run `pixi run ai-doctor`. Resolve every reported missing or stale surface.
@@ -489,16 +423,11 @@ mode, put the generated adapter in the goal text, such as
 
 Use the current model and reasoning guidance in `docs/ai/README.md`; do not
 duplicate or pin it here. Project agents inherit the active parent model.
-`.codex/config.toml` bounds concurrency with `agents.max_threads` and delegation
-depth with `agents.max_depth`, while progressively loaded skills and owner docs
-supply task procedures. Current Codex documents `agents.max_threads` as a
-supported alias for `agents.max_concurrent_threads_per_session`; on the
-current tested client (0.151.0) both spellings load under strict
-configuration (verified 2026-08-31 with a bogus-key control proving the
-loader is strict). DART keeps the alias for compatibility with older
-clients (0.144.1 was the last tested client that rejected the newer spelling
-under strict configuration); revisit alongside a deliberate minimum-version
-advance.
+`.codex/config.toml` bounds concurrency with `agents.max_threads` (Codex's
+documented alias for `agents.max_concurrent_threads_per_session`; both spellings
+load on the tested client and `check-ai-infra` accepts either, exactly one) and
+delegation depth with `agents.max_depth`, while progressively loaded skills and
+owner docs supply task procedures.
 
 Project hooks are trusted-project automation, not complete enforcement.
 `PreToolUse` does not intercept every possible mutation path, and a hook may be
@@ -617,300 +546,9 @@ Contributors can create personal instruction files that are gitignored:
 
 ## Handling Automated Reviews
 
-When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
-
-### Independent Review Lane
-
-For substantive code PRs, an independent reviewer session — a human, or a
-separate agent session running `/dart-review-pr` that did not author the
-change — records findings before merge approval. Docs-only and mechanical
-changes are exempt. This complements `@codex review`; it does not replace it.
-`dart-manage-pr` checks this gate in `mode=merge`.
-
-### Detecting AI-Generated Reviews
-
-**Bot usernames always end with `[bot]`:**
-
-- `chatgpt-codex-connector[bot]` — Codex automated reviews
-- `github-actions[bot]` — GitHub Actions automated comments
-- `github-code-quality[bot]` — GitHub code-quality review comments
-- `copilot[bot]` — GitHub Copilot suggestions
-
-**If the reviewer username ends in `[bot]`, treat it as an automated review.**
-
-### Rules for AI Agents (CRITICAL)
-
-**NEVER reply to AI-generated review comments. This means:**
-
-- ❌ **NO** `gh pr comment` commands responding to bot feedback
-- ❌ **NO** PR comment replies acknowledging or addressing bot feedback
-- ❌ **NO** comments like "Addressed the Codex review feedback"
-- ✅ **YES** Make the local code fix silently
-- ✅ **YES** Ask for explicit maintainer/user approval before any push, PR
-  comment, thread resolution, reviewer request, merge, or review re-trigger
-
-**The code change IS the response. No acknowledgment needed.**
-
-**Guidance for AI agents addressing automated reviews**:
-
-- Address the feedback in code locally, then ask before external mutations
-- If the feedback is valid, implement the fix without commenting
-- If the feedback appears incorrect (false positive):
-  1. **Verify** the claim is false by running standalone tests or examining the code
-  2. **Add a test** that explicitly documents the correct behavior AND refutes the claim
-  3. Example: If Codex claims `hprod([2,3,5,7])` returns 294 instead of 210:
-     ```cpp
-     EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
-     EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
-     ```
-  4. Add the test locally (no comment needed) - the test serves as permanent documentation
-- **Follow the review-fix loop** (see workflow below)
-
-This avoids noisy bot-to-bot conversations while still leveraging automated verification.
-
-> **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
-
-### Codex Review For Draft PRs
-
-For fast-moving work, trigger the first Codex review while the PR is still a
-draft when explicit maintainer/user approval covers PR comments. Use a top-level
-comment:
-
-```bash
-gh pr comment <PR> --body "@codex review"
-```
-
-This keeps the PR draft for human readiness while getting automated feedback
-early. If a Codex activity signal or submitted review already appears, do not
-post a duplicate trigger. After posting, wait for a submitted review, a no-issues
-comment, a thumbs-up reaction, or an eyes reaction before treating the trigger as
-accepted; do not re-trigger unless there is a concrete timeout/blocker or a
-follow-up push addressed Codex findings.
-
-After an approved follow-up push that addresses Codex review comments, request a
-fresh top-level Codex review with `@codex review`. This is the normal completion
-step for a Codex review-fix round, not an inline reply. A manual trigger is a PR
-comment and still requires explicit maintainer/user approval.
-
-### Draft Ready Fast Path
-
-To move quickly without bypassing branch protection, a draft PR can be marked
-ready for review once all of these are true on the current head:
-
-- Codex review has no unresolved actionable threads, or the latest Codex result
-  is a no-issues comment/reaction.
-- Local validation passed after the last pushed change, and the worktree is
-  clean: default `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux
-  hosts with a visible NVIDIA CUDA runtime.
-- PR metadata is correct: base, milestone, title, template, and testing
-  evidence match the current branch.
-
-Hosted CI may still be pending when the draft is marked ready. Merge still waits
-for branch protection and required checks unless a maintainer explicitly
-approves a policy bypass.
-
-### Codex Re-Trigger Cadence And Throttling
-
-After explicit maintainer/user approval for the PR comment, re-trigger Codex at
-most once per review-fix round, and only after an approved push that addressed
-its comments. Rapid, repeated `@codex review` requests across many quick rounds
-can slow or suspend Codex: observed review latency grows round over round and a
-later re-trigger can receive no review at all. If Codex stays silent well beyond
-its usual turnaround after a re-trigger, treat it as a throttle/timeout blocker,
-not a reason to re-request. Weekly usage limits are the same class of blocker:
-when quota is exhausted mid-loop, record the converged state plus local
-verification (gates, tests, and an independent or role-separated review pass)
-instead of waiting for another hosted round. Record the converged state as
-evidence — all surfaced findings fixed and their threads resolved — and report
-the throttle rather than re-spamming the PR with more triggers.
-
-Codex re-emits every unresolved inline thread verbatim on later rounds, even
-when the current head already contains the fix. Verify each re-raised comment
-against the current head; once a thread is genuinely addressed, resolve it
-(after the approval that covers thread resolution) before the next round —
-otherwise the no-issues verdict cannot converge no matter how many rounds run.
-
-### Updating Published PRs
-
-Prefer additive follow-up commits for updates to already-published PRs. This
-keeps review history inspectable and makes each review round clear. Pushing any
-such update is an external mutation that requires explicit maintainer/user
-approval.
-
-#### Merge The Base Branch Before Every Push (MANDATORY)
-
-**Before every push, first merge the latest base branch (usually `main`) into
-the working branch.** Do this on every push, not just the first, so each
-pushed/CI-tested state reflects current `main` and conflicts surface early
-instead of at merge time.
-
-```bash
-git fetch origin <base-branch>
-git merge --no-ff origin/<base-branch>   # never rebase a published PR branch
-# rebuild + retest if the merge touched code, then push (an approved mutation)
-git push
-```
-
-Merging the base in locally is a routine pre-push step. The `git push` itself is
-still an external mutation that requires explicit maintainer/user approval. Do
-not rebase published PR branches by default: rebasing invalidates existing CI
-runs and makes PR review/comment history harder to follow. Rebase or force-push
-only when the maintainer explicitly requests it.
-
-Amend or force-push only when the user explicitly requests it or when there is a
-clear reason, such as removing sensitive content, repairing broken branch
-history, or cleaning up noisy local work before the PR is first published.
-Force-pushes are PR mutations and require explicit maintainer/user approval.
-
-If a push is rejected because the remote PR branch moved, fetch the PR branch
-and inspect the local/remote divergence before retrying. When the remote already
-contains an equivalent fix, validate the remote PR head instead of pushing a
-duplicate follow-up commit, and realign the local branch to the remote head
-after preserving any useful local-only work on a backup branch. Do not leave the
-main working checkout detached or visibly diverged while continuing PR
-management; it makes later status, IDE branch indicators, and CI evidence easy
-to misread.
-
-If a PR was temporarily based on another PR branch, and that base PR lands into
-`main`, GitHub may retarget the dependent PR to `main` and mark it behind. Treat
-the retargeted branch as the new base state: fetch `main`, merge `origin/main`
-into the published PR branch, confirm the diff against `origin/main` still
-contains only the intended changes, run the required gates, then push only with
-explicit maintainer/user approval. Do not keep acting on stale checks from the
-pre-retarget head; the post-merge-base push is the state that matters.
-
-### Review-Fix Loop Workflow
-
-After identifying an AI-generated review comment to address:
-
-1. **Make the code fix**
-2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
-3. **Ask for explicit maintainer/user approval before external mutations**
-4. **If approved, commit and push** silently (no reply to the comment)
-5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If the addressed review was Codex, after the approved push, ask for
-   explicit maintainer/user approval for the PR comment, then re-trigger the
-   review**:
-   `gh pr comment <PR> --body "@codex review"`
-7. **Monitor for results**:
-   - New review comments → repeat from step 1
-   - "No issues" or 👍 reaction + local validation on the current head: default
-     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
-     → draft PR is ready for human review
-
-Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
-fix valid findings locally, push only after approval, and do not post an
-acknowledgment reply. The `@codex review` re-trigger is only for Codex review
-rounds.
-
-**Agents MUST:**
-
-- Run `pixi run lint` before EVERY commit (CI will fail otherwise)
-- Treat PR comments, pushes, thread resolution, reviewer requests, merges, and
-  review re-triggers as external mutations that require explicit approval
-- Keep local fixes read-only with respect to GitHub until that approval exists
-
-### GraphQL Commands for Thread Resolution
-
-```bash
-# List unresolved threads (get thread IDs)
-gh api graphql -f query='
-  query {
-    repository(owner: "dartsim", name: "dart") {
-      pullRequest(number: PR_NUMBER) {
-        reviewThreads(first: 20) {
-          nodes { id isResolved path line }
-        }
-      }
-    }
-  }
-' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
-
-# Resolve a thread by ID only after explicit maintainer/user approval
-gh api graphql -f query='
-  mutation {
-    resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
-      thread { isResolved }
-    }
-  }
-'
-
-# Resolve only reviewed, addressed thread IDs after approval. Do not
-# bulk-resolve unresolved threads; that can hide human feedback or unresolved
-# bot findings.
-```
-
-**Why resolve after explicit maintainer/user approval**: Clicking "Resolve
-conversation" in the UI adds no comment noise. The code change is the response;
-the resolved thread shows the fix was acknowledged after the maintainer/user
-approved the PR mutation.
-
-### Autonomous Review-Fix-Monitor Loop
-
-For agents iterating on automated reviews, the complete loop is:
-
-```
-1. Fetch latest review comments
-2. For each comment:
-   a. Implement the fix (or add a test refuting a false positive)
-   b. Run `pixi run lint` (MANDATORY)
-   c. Build and run relevant tests
-   d. Ask for explicit maintainer/user approval before push or PR mutation
-3. If approved, commit and push silently (no reply to bot comment)
-4. If approved, resolve addressed threads via GraphQL
-5. If the addressed review was Codex, after the approved push, ask for explicit
-   maintainer/user approval for the PR comment, then re-trigger:
-   `gh pr comment <PR> --body "@codex review"`
-6. For non-Codex bot findings, including `github-code-quality[bot]`, do not
-   re-trigger Codex solely for those fixes unless Codex review comments were
-   also addressed in the same push
-7. Monitor CI: `gh pr checks <PR>`
-8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
-9. If new review has comments → go to step 2
-10. If no new comments AND local validation passed on the current head (default
-    `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts)
-    → mark draft PRs ready for human review after approval
-11. Keep monitoring hosted CI until required checks pass before merge
-```
-
-**Checking for new reviews:**
-
-```bash
-# List all reviews with timestamps
-gh api repos/dartsim/dart/pulls/<PR>/reviews \
-  --jq '.[] | "ID:\(.id) User:\(.user.login) State:\(.state) At:\(.submitted_at)"'
-
-# Fetch comments from a specific review
-gh api repos/dartsim/dart/pulls/<PR>/reviews/<REVIEW_ID>/comments \
-  --jq '.[] | "File:\(.path) Line:\(.line // .original_line) Body:\(.body)"'
-```
-
-**Monitoring CI:**
-
-```bash
-# Check all CI status checks
-gh pr checks <PR>
-
-# Watch until all checks complete (useful for waiting)
-gh pr checks <PR> --watch
-```
-
-During DART's long CI matrix (the full run can take a couple of hours, with
-`Release Tests` as the long pole), `gh pr checks --watch` can exit early on a
-transient network error (for example a dropped `api.github.com` connection) and
-look like completion. For long runs prefer a resilient poll that re-queries
-`gh pr checks <PR>` on an interval, tolerates transient failures, and stops only
-when nothing is pending, any check fails, or the head SHA moves.
-
-**Stop conditions:**
-
-- Codex review returns no comments (or only 👍 reactions)
-- Local validation passes on the current head for draft-ready state: default
-  `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
-- All required CI checks pass for merge-ready state
-- Pre-existing failures (e.g., `simulation` "Not Run") can be ignored
-
----
+Automated-review handling (bot detection, the review-fix loop, Codex
+re-trigger cadence, draft-ready criteria, base-branch merges, and thread
+resolution) lives in [ai-reviews.md](ai-reviews.md).
 
 ## Known Limitations
 

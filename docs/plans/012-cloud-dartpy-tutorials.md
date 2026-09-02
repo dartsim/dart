@@ -40,15 +40,14 @@ concepts.
 - The [MuJoCo Python tutorial notebook](https://github.com/google-deepmind/mujoco/blob/main/python/tutorial.ipynb)
   demonstrates the user experience target: GitHub-hosted notebook, package
   install cell, GPU/EGL setup for rendering, and inline media output.
-- `origin/feature/filament-gui-full-execution` is the relevant renderer branch.
-  At inspected head `3871046d40d`, it promotes the Filament-backed GUI under
-  `DART_BUILD_GUI`, documents `dartpy.gui` as the public Python GUI surface,
-  and carries headless screenshot paths through the `dartsim` app and restored
-  GUI examples. It does not yet prove Colab execution.
-- Current `main` still tracks Filament through the active dev-task notes under
-  [`docs/dev_tasks/filament_gui/`](../dev_tasks/filament_gui/) and records
-  headless smoke evidence in
-  [`05-testing.md`](../dev_tasks/filament_gui/05-testing.md).
+- The Filament-backed GUI (`DART_BUILD_GUI`), the public `dartpy.gui` surface,
+  and the headless screenshot paths through the `dartsim` app and restored GUI
+  examples have landed on `main` (the former renderer branch is retired). Colab
+  execution is still unproven.
+- The Filament GUI work that this plan depends on has landed; its durable
+  owners are [`docs/onboarding/gui-rendering.md`](../onboarding/gui-rendering.md)
+  and the archived PLAN-060/090 entries in [`archive.md`](archive.md). The
+  former `docs/dev_tasks/filament_gui/` folder is retired.
 
 ## Platform Decision
 

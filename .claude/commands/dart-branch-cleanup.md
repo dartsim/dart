@@ -45,7 +45,7 @@ Default to `analyze` if the requested mode is ambiguous.
 4. For each branch:
    ```bash
    git rev-list --left-right --count <TARGET>...<BRANCH>
-   git log --oneline <TARGET>..<BRANCH>
+   git log --format='%h %cs %s' <TARGET>..<BRANCH>
    git diff --stat <TARGET>..<BRANCH>
    git cherry -v <TARGET> <BRANCH>
    ```

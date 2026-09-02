@@ -57,19 +57,18 @@ gh run view <RUN_ID> --log-failed
 
 ## Simulation And Visual End-to-End Checks
 
-When a failure or change depends on scene structure, dynamics,
-collision/contact, simulation stepping, GUI output, or a visual example, also
-load `dart-verify-sim`. Use its text-first oracle and then an assessed headless
-capture with claim-relevant debug layers. Record a concrete no-visual reason
-only when that corroboration is unavailable or not applicable.
+When a failure or change depends on 3D structure or behavior, also load
+`dart-verify-sim`: text-first oracle, then an assessed headless capture with
+claim-relevant debug layers, or a concrete reason when visual corroboration is
+unavailable or not applicable.
 
 ## Gotchas
 
 - `pixi run build` builds libraries only, NOT the unit-test binaries. If you run
   `ctest` without building the test target first, you may execute stale binaries
-  that silently pass. Build the test target before running its label, e.g. for
-  the simulation suite: `pixi run build-simulation-tests` (target
-  `dart_simulation_tests`) before `ctest -L simulation`.
+  that silently pass. Use the guarded runner tasks (for example
+  `pixi run test-simulation`, which builds `dart_simulation_tests` first)
+  instead of a raw `ctest -L <label>` against a stale binary.
 - `pixi run test-all` is the default-environment full gate. On Linux hosts with
   a visible NVIDIA CUDA runtime, also run `pixi run -e cuda test-all`; the CUDA
   run preserves the `cuda` Pixi environment and executes the CUDA CTest +

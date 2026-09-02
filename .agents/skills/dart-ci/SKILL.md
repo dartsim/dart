@@ -12,10 +12,9 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 
 Load this skill when debugging CI failures or working with GitHub Actions.
 
-When the failing claim depends on model/scene structure, physics behavior, or
-GUI/rendering output, also load `dart-verify-sim` and reproduce it with a text
-oracle plus assessed visual evidence. Document a visual exception when that
-renderer is unavailable or not applicable in the failing environment.
+When the failing claim depends on 3D structure or behavior, also load
+`dart-verify-sim` and reproduce it with a text oracle plus assessed visual
+evidence, or record why that renderer is unavailable in the failing environment.
 
 ## Quick Commands
 

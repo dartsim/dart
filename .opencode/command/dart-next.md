@@ -1,5 +1,5 @@
 ---
-description: select and execute the next bounded DART task
+description: choose the next bounded DART task from plans, issues, and CI, then route it
 argument-hint: "[mode=select|execute|pr] [size=...] [focus=...]"
 agent: build
 ---
@@ -18,13 +18,13 @@ Select and execute the next bounded DART task: $ARGUMENTS
 @docs/ai/north-star.md
 @docs/ai/workflows.md
 @docs/ai/verification.md
-@docs/plans/README.md
 @docs/plans/dashboard.md
-@docs/plans/north-star-roadmap.md
 @docs/dev_tasks/README.md
-@docs/onboarding/contributing.md
-@docs/onboarding/ci-cd.md
-@docs/onboarding/ai-tools.md
+
+Load `docs/plans/README.md`, `docs/plans/north-star-roadmap.md`,
+`docs/onboarding/contributing.md`, `docs/onboarding/ci-cd.md`, and
+`docs/onboarding/ai-tools.md` only when the selected mode or routed workflow
+needs them.
 
 ## Arguments
 
@@ -92,6 +92,7 @@ After selection, follow the most specific DART workflow:
 | -------------------------- | ------------------------------------------------------- |
 | New implementation task    | `$dart-new-task` in Codex or `/dart-new-task` elsewhere |
 | Existing dev task          | `$dart-resume` in Codex or `/dart-resume` elsewhere     |
+| Numbered-plan work packet  | `$dart-execute-packet` or `/dart-execute-packet`        |
 | Plan-only change           | `$dart-plan-update` in Codex or `/dart-plan-update`     |
 | Docs-only change           | `$dart-docs-update` in Codex or `/dart-docs-update`     |
 | GitHub issue fix           | `$dart-fix-issue` in Codex or `/dart-fix-issue`         |
@@ -130,13 +131,8 @@ creation, PR comment, reviewer request, review re-trigger, review-thread
 resolution, ready-for-review transition, CI rerun, merge, or branch deletion.
 
 After a PR exists and explicit approval covers PR management, use
-`$dart-manage-pr` or `/dart-manage-pr` for CI, review, and cleanup. For the
-first Codex review on a draft PR, prefer a top-level `@codex review` after
-explicit approval for PR comments; it can run while the PR remains draft. Once
-Codex is clean and local validation passes on the current head (default
-`pixi run test-all`, plus `pixi run -e cuda test-all` on Linux hosts with a
-visible NVIDIA CUDA runtime), the draft is ready to mark ready for human review
-after approval, while merge still waits for required hosted checks.
+`$dart-manage-pr` or `/dart-manage-pr` for CI, review, and cleanup; the Codex
+review trigger and draft-ready criteria live in `docs/onboarding/ai-reviews.md`.
 
 ## Output
 

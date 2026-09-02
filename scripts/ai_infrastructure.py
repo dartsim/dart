@@ -23,6 +23,23 @@ PROFILES = ("main", "release-6.20")
 MAX_AGENTS_BYTES = 32 * 1024
 EXCLUDED_DIRS = {".git", ".pixi", "build", "external", "node_modules"}
 AGENT_NAMES = ("dart_scout", "dart_reviewer", "dart_release_auditor")
+SIMULATION_ROUTE_CONSUMERS = (
+    ".claude/commands/dart-backport-pr.md",
+    ".claude/commands/dart-downstream-fix.md",
+    ".claude/commands/dart-fix-ci.md",
+    ".claude/commands/dart-fix-issue.md",
+    ".claude/commands/dart-manage-pr.md",
+    ".claude/commands/dart-new-task.md",
+    ".claude/commands/dart-pr.md",
+    ".claude/commands/dart-resume.md",
+    ".claude/commands/dart-review-pr.md",
+    ".claude/commands/dart-ultrawork.md",
+    ".claude/skills/dart-build/SKILL.md",
+    ".claude/skills/dart-ci/SKILL.md",
+    ".claude/skills/dart-io/SKILL.md",
+    ".claude/skills/dart-python/SKILL.md",
+    ".claude/skills/dart-test/SKILL.md",
+)
 WORKFLOW_SOURCE_PIN_KEYS = ("model", "effort")
 CLAUDE_SETTINGS_PIN_KEYS = ("model", "effortLevel", "modelSettings")
 MODEL_ROUTING_OWNER = "docs/ai/README.md"
@@ -117,8 +134,11 @@ AI_PREFIXES = (
     "docs/README.md",
     "docs/ai/",
     "docs/design/ai_spec_kit_assessment.md",
+    "docs/onboarding/agent-sim-verification.md",
+    "docs/onboarding/ai-reviews.md",
     "docs/onboarding/ai-tools.md",
     "docs/onboarding/contributing.md",
+    "docs/information-architecture.md",
     "docs/onboarding/release-management.md",
     "scripts/ai_",
     "scripts/check_ai_",
@@ -272,40 +292,85 @@ def _load_json(path: Path, errors: list[str]) -> dict:
     return data
 
 
-def check_codex_config(root: Path) -> list[str]:
-    errors: list[str] = []
-    path = root / ".codex" / "config.toml"
-    data = _load_toml(path, errors)
-    if set(data) != {"agents"}:
-        errors.append(".codex/config.toml: root keys must equal agents")
-    agents = data.get("agents", {})
-    if not isinstance(agents, dict):
-        errors.append(".codex/config.toml: agents must be a table")
-        return errors
-    if set(agents) != {"max_threads", "max_depth"}:
-        errors.append(
-            ".codex/config.toml: agents keys must equal "
-            "max_threads, max_depth (the compatibility spelling keeps "
-            "Codex 0.144 strict config support)"
-        )
-    if type(agents.get("max_threads")) is not int or agents.get("max_threads") != 4:
-        errors.append(
-            ".codex/config.toml: agents.max_threads must equal 4 "
-            "for Codex 0.144 compatibility"
-        )
-    if type(agents.get("max_depth")) is not int or agents.get("max_depth") != 1:
-        errors.append(".codex/config.toml: agents.max_depth must equal 1")
-    forbidden = {
+CODEX_CONCURRENCY_KEYS = ("max_threads", "max_concurrent_threads_per_session")
+CODEX_MAX_THREADS = 4
+CODEX_MAX_DEPTH = 1
+CODEX_FORBIDDEN_PROJECT_KEYS = frozenset(
+    {
         "model",
         "model_reasoning_effort",
         "review_model",
         "approval_policy",
         "sandbox_mode",
-    } & set(data)
-    if forbidden:
+    }
+)
+CODEX_FORBIDDEN_AGENT_KEYS = frozenset(
+    {"default_subagent_model", "default_subagent_reasoning_effort"}
+)
+
+
+def check_codex_config(root: Path) -> list[str]:
+    """Keep the project Codex config bounded and pin-free.
+
+    DART bounds project agent concurrency and delegation depth; it pins no
+    model, effort, approval, or sandbox policy. Codex documents
+    ``agents.max_threads`` as an alias for
+    ``agents.max_concurrent_threads_per_session``, so either spelling is fine
+    as long as exactly one is present.
+    """
+    errors: list[str] = []
+    path = root / ".codex" / "config.toml"
+    data = _load_toml(path, errors)
+    if "agents" not in data:
+        errors.append(".codex/config.toml: agents table is required")
+    pinned = sorted(set(data) & CODEX_FORBIDDEN_PROJECT_KEYS)
+    if pinned:
         errors.append(
-            ".codex/config.toml: project config must not pin "
-            + ", ".join(sorted(forbidden))
+            ".codex/config.toml: project config must not pin " + ", ".join(pinned)
+        )
+    unexpected = sorted(set(data) - {"agents"} - CODEX_FORBIDDEN_PROJECT_KEYS)
+    if unexpected:
+        errors.append(
+            ".codex/config.toml: unexpected root keys: " + ", ".join(unexpected)
+        )
+    agents = data.get("agents", {})
+    if not isinstance(agents, dict):
+        errors.append(".codex/config.toml: agents must be a table")
+        return errors
+    spellings = [key for key in CODEX_CONCURRENCY_KEYS if key in agents]
+    if len(spellings) != 1:
+        errors.append(
+            ".codex/config.toml: agents must set exactly one of "
+            + " or ".join(CODEX_CONCURRENCY_KEYS)
+        )
+    agent_pins = sorted(set(agents) & CODEX_FORBIDDEN_AGENT_KEYS)
+    if agent_pins:
+        errors.append(
+            ".codex/config.toml: agents must not pin " + ", ".join(agent_pins)
+        )
+    unexpected_agent_keys = sorted(
+        set(agents)
+        - set(CODEX_CONCURRENCY_KEYS)
+        - {"max_depth"}
+        - CODEX_FORBIDDEN_AGENT_KEYS
+    )
+    if unexpected_agent_keys:
+        errors.append(
+            ".codex/config.toml: unexpected agents keys: "
+            + ", ".join(unexpected_agent_keys)
+        )
+    for key in spellings:
+        value = agents.get(key)
+        if type(value) is not int or not 1 <= value <= CODEX_MAX_THREADS:
+            errors.append(
+                f".codex/config.toml: agents.{key} must be an integer from 1 to "
+                f"{CODEX_MAX_THREADS} (DART bounds project agent concurrency)"
+            )
+    depth = agents.get("max_depth")
+    if type(depth) is not int or not 0 <= depth <= CODEX_MAX_DEPTH:
+        errors.append(
+            f".codex/config.toml: agents.max_depth must be an integer from 0 to "
+            f"{CODEX_MAX_DEPTH} (DART bounds delegation depth)"
         )
     return errors
 
@@ -417,19 +482,18 @@ def check_model_name_owner(root: Path) -> list[str]:
 
 
 def check_custom_agents(root: Path) -> list[str]:
+    """Validate every Codex project agent profile; the three named ones must exist."""
+    import sync_ai_commands as sync
+
     errors: list[str] = []
     agents_dir = root / ".codex" / "agents"
-    actual = {path.stem for path in agents_dir.glob("*.toml")}
+    profiles = sorted(agents_dir.glob("*.toml"))
+    actual = {path.stem for path in profiles}
     missing = set(AGENT_NAMES) - actual
-    extra = actual - set(AGENT_NAMES)
     if missing:
         errors.append(f".codex/agents: missing agents: {', '.join(sorted(missing))}")
-    if extra:
-        errors.append(f".codex/agents: unexpected agents: {', '.join(sorted(extra))}")
-    for name in AGENT_NAMES:
-        path = agents_dir / f"{name}.toml"
-        if not path.is_file():
-            continue
+    for path in profiles:
+        name = path.stem
         data = _load_toml(path, errors)
         if set(data) != {
             "name",
@@ -446,8 +510,11 @@ def check_custom_agents(root: Path) -> list[str]:
         description = data.get("description", "")
         if not isinstance(description, str) or not description.strip():
             errors.append(f"{path}: description must be non-empty")
-        elif len(description) > 200:
-            errors.append(f"{path}: description exceeds 200 characters")
+        elif len(description) > sync.CODEX_DESC_LIMIT:
+            errors.append(
+                f"{path}: description exceeds the {sync.CODEX_DESC_LIMIT}-character "
+                "Codex limit"
+            )
         instructions = data.get("developer_instructions", "")
         if not isinstance(instructions, str) or not instructions.strip():
             errors.append(f"{path}: developer_instructions must be non-empty")
@@ -516,8 +583,12 @@ def check_codex_hooks(root: Path) -> list[str]:
             ".codex/hooks.json: handler commandWindows must equal the canonical "
             "Windows staged-guard invocation"
         )
-    if handler.get("timeout") != 15:
-        errors.append(".codex/hooks.json: timeout must equal 15 seconds")
+    timeout = handler.get("timeout")
+    if type(timeout) is not int or not 1 <= timeout <= 15:
+        errors.append(
+            ".codex/hooks.json: timeout must be an integer of at most 15 seconds "
+            "(fast guard budget)"
+        )
     if handler.get("statusMessage") != CODEX_HOOK_STATUS:
         errors.append(
             ".codex/hooks.json: statusMessage must equal " f"{CODEX_HOOK_STATUS!r}"
@@ -1149,7 +1220,6 @@ def check_ci_wiring(root: Path) -> list[str]:
         "pixi run agent-capture",
         "--scene box_on_ground --steps 250 --focus box --auto-views 1",
         "--layers contacts collision_bounds labels",
-        "--width 320 --height 240",
         "--out /tmp/dart-agent-visual-smoke --prefix smoke",
         "pixi run image-verdict",
         "/tmp/dart-agent-visual-smoke/smoke_auto0.png",
@@ -1575,9 +1645,20 @@ def _check_ctest_runner_commands(root: Path, errors: list[str]) -> None:
         ),
     )
     if actual != expected:
+        first = next(
+            (
+                index
+                for index, pair in enumerate(zip(actual, expected))
+                if pair[0] != pair[1]
+            ),
+            min(len(actual), len(expected)),
+        )
+        got = actual[first] if first < len(actual) else "<missing>"
+        want = expected[first] if first < len(expected) else "<extra>"
         errors.append(
             f"{relative}: commands and lexical control flow must exactly match "
-            "the canonical clean-environment runner"
+            "the canonical clean-environment runner (first difference at command "
+            f"{first}: got {got!r}, expected {want!r})"
         )
 
 
@@ -1840,6 +1921,20 @@ def _run_pytest_semantic_probes(root: Path, probe_root: Path) -> list[str]:
     runner = root / "scripts" / "run_pytest.py"
     if not runner.is_file():
         return [f"{prefix}: scripts/run_pytest.py is missing"]
+    try:
+        importable = subprocess.run(
+            [sys.executable, "-c", "import pytest"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return [f"{prefix}: pytest importability probe failed: {exc}"]
+    if importable.returncode != 0:
+        return [
+            f"{prefix}: pytest is not importable by {sys.executable}; run the gate "
+            "through `pixi run check-ai-infra` so the project interpreter is used"
+        ]
 
     controlled = probe_root / "controlled"
     hostile = probe_root / "hostile"
@@ -2396,72 +2491,16 @@ def validate_scenarios(
                     "docs/onboarding/agent-sim-verification.md",
                     "dart-verify-sim",
                 ),
-                ".codex/agents/dart_scout.toml": (
-                    "collision/contact/constraints",
-                    "text correctness oracle",
-                    "claim-tied assessed visual",
-                ),
-                ".codex/agents/dart_reviewer.toml": (
-                    "text-first evidence",
-                    "visual/debug-layer",
-                ),
-                ".claude/commands/dart-new-task.md": (
-                    "route through `dart-verify-sim`",
-                    "record why it is not applicable",
-                ),
-                ".claude/commands/dart-ultrawork.md": (
-                    "routes through `dart-verify-sim`",
-                ),
-                ".claude/commands/dart-resume.md": ("route through `dart-verify-sim`",),
-                ".claude/commands/dart-pr.md": ("use `dart-verify-sim`",),
-                ".claude/commands/dart-manage-pr.md": ("Visual verification",),
-                ".claude/commands/dart-review-pr.md": (
-                    "require the `dart-verify-sim` text oracle",
-                    "accepting a screenshot alone",
-                ),
-                ".claude/skills/dart-build/SKILL.md": ("dart-verify-sim",),
-                ".claude/skills/dart-test/SKILL.md": (
-                    "load `dart-verify-sim`",
-                    "unavailable or not applicable",
-                ),
-                ".claude/skills/dart-io/SKILL.md": (
-                    "also load `dart-verify-sim`",
-                    "claim-tied visual corroboration",
-                ),
-                ".claude/skills/dart-python/SKILL.md": (
-                    "also load `dart-verify-sim`",
-                    "collision/contact/constraints",
-                    "GUI/rendering output",
-                    "visual exception",
-                ),
-                ".claude/skills/dart-ci/SKILL.md": (
-                    "also load `dart-verify-sim`",
-                    "visual exception",
-                ),
-                ".claude/commands/dart-downstream-fix.md": (
-                    "route through `dart-verify-sim`",
-                    "visual exception",
-                ),
-                ".claude/commands/dart-backport-pr.md": (
-                    "target branch's `dart-verify-sim`",
-                    "visual exception",
-                ),
-                ".claude/commands/dart-fix-ci.md": (
-                    "use `dart-verify-sim`",
-                    "visual exception",
-                ),
-                ".claude/commands/dart-fix-issue.md": (
-                    "route through `dart-verify-sim`",
-                    "collision/contact/constraints",
-                    "visual exception",
-                ),
+                ".codex/agents/dart_scout.toml": ("dart-verify-sim",),
+                ".codex/agents/dart_reviewer.toml": ("text-first evidence",),
                 "docs/ai/verification.md": (
                     "agent-capture",
                     "text correctness",
                     "If rendering is unavailable",
-                    "name replacement evidence",
                 ),
             }
+            for relative in SIMULATION_ROUTE_CONSUMERS:
+                consumer_markers[relative] = ("dart-verify-sim",)
             for relative, markers in consumer_markers.items():
                 try:
                     consumer_text = (root / relative).read_text()
