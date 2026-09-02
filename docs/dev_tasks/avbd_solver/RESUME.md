@@ -191,8 +191,10 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. VBD/AVBD is 0.9551x, SI/AVBD is 1.6233x,
-and SI/VBD is 1.6997x. Outcomes
+duplicated in this mutable handoff. On the sealed `c549b9f24de` evidence
+VBD/AVBD is 0.8706x, SI/AVBD is 0.9033x, and SI/VBD is 1.0376x (median CPU
+cost per step; the earlier 0.9551x / 1.6233x / 1.6997x figures were the
+pre-audit head's). Outcomes
 intentionally differ, and there is no source achieved-accuracy or
 same-hardware denominator for this reconstructed scene; no raw cost ratio is a
 speedup, parity, or quality claim.

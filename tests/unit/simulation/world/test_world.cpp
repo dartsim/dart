@@ -11207,6 +11207,7 @@ TEST(World, RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing)
         (after.pose.translation() - fresh.pose.translation()).norm(), 1e-6);
   }
 }
+
 TEST(World, RigidSequentialImpulseRevoluteMotorRowsAreActiveWithoutContacts)
 {
   namespace sx = dart::simulation;

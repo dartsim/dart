@@ -4973,17 +4973,18 @@ TEST(AvbdRigidBlock, RigidContactManifoldWarmStartProjectsFrictionDualOntoCone)
   EXPECT_NEAR(frictionInventory[0].state.lambda, 2.4, 1e-12);
   EXPECT_NEAR(frictionInventory[1].state.lambda, 3.2, 1e-12);
 
-  // A per-axis clamp would keep (4, 1); the cone keeps its |.| = sqrt(17) < 4
-  // pair untouched, which distinguishes the two models.
-  seed(10.0, 3.9, 0.5);
+  // |(4, 1)| = sqrt(17) > 4: a per-axis clamp would keep (4, 1) because each
+  // component sits inside [-4, 4]; the radial projection scales the pair by
+  // 4 / sqrt(17), which distinguishes the two models.
+  seed(10.0, 4.0, 1.0);
   build();
-  EXPECT_NEAR(frictionInventory[0].state.lambda, 3.9, 1e-12);
-  EXPECT_NEAR(frictionInventory[1].state.lambda, 0.5, 1e-12);
+  EXPECT_NEAR(frictionInventory[0].state.lambda, 3.880570000581328, 1e-12);
+  EXPECT_NEAR(frictionInventory[1].state.lambda, 0.970142500145332, 1e-12);
 }
 // A multi-point manifold keeps its continuation while its material points move
-// by less than half the manifold's point separation (settling or sliding), and
-// still cold-starts when a point is replaced so no rank can inherit another
-// point's dual.
+// by less than a tenth of the manifold's smallest point separation (settling
+// or sliding), and still cold-starts when a point is replaced so no rank can
+// inherit another point's dual.
 TEST(AvbdRigidBlock, RigidContactManifoldMultiPointIdentityToleratesSmallMotion)
 {
   vbd::AvbdRigidContactManifoldRowScratch rowScratch;
@@ -5057,12 +5058,93 @@ TEST(AvbdRigidBlock, RigidContactManifoldMultiPointIdentityToleratesSmallMotion)
         normalInventory[i].state.lambda, 10.0 + static_cast<double>(i));
   }
 
+  // The unit square's smallest joint point distance is sqrt(2) (both local
+  // points move together), so the tolerance is 0.1 * sqrt(2). A uniform
+  // translation by d moves every rank by d * sqrt(2): d = 0.098 stays inside
+  // the tolerance and d = 0.102 crosses it, which pins the tenth.
+  seed();
+  for (auto& contact : contacts) {
+    contact.point += Vec3(0.098, 0.0, 0.0);
+  }
+  build();
+  EXPECT_EQ(retainedCount(), points.size());
+  seed();
+  for (auto& contact : contacts) {
+    contact.point += Vec3(0.102, 0.0, 0.0);
+  }
+  build();
+  EXPECT_EQ(retainedCount(), 0u);
+  build();
+
   // One corner vanishes and a replacement appears elsewhere: same cardinality,
   // but a rank moved by a full separation, so the group cold-starts.
   seed();
   contacts[3].point = Vec3(5.0, 5.0, 0.0);
   build();
   EXPECT_EQ(retainedCount(), 0u);
+}
+
+//==============================================================================
+// A non-finite body state poisons the canonical local points; the identity
+// comparison must then cold-start instead of treating the NaN distance as
+// "not greater than the tolerance".
+TEST(AvbdRigidBlock, RigidContactManifoldNonFiniteLocalPointsColdStart)
+{
+  vbd::AvbdRigidContactManifoldRowScratch rowScratch;
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const vbd::AvbdContactEndpointId endpointA{
+      1u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      2u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 0)};
+  const std::array<Vec3, 2> points{Vec3(0.0, 0.0, 0.0), Vec3(1.0, 0.0, 0.0)};
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(points.size());
+  for (std::size_t i = 0; i < contacts.size(); ++i) {
+    contacts[i].bodyA = 0u;
+    contacts[i].bodyB = 1u;
+    contacts[i].endpointA = endpointA;
+    contacts[i].endpointB = endpointB;
+    contacts[i].point = points[i];
+    contacts[i].normalFromAtoB = Vec3::UnitZ();
+    contacts[i].depth = 0.1;
+    contacts[i].frictionCoefficient = 0.4;
+    contacts[i].startStiffness = 10.0;
+    contacts[i].maxStiffness = 1.0e4;
+    contacts[i].row = static_cast<std::uint32_t>(i);
+  }
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  const auto build = [&] {
+    vbd::buildAvbdRigidContactManifoldRows(
+        states,
+        contacts,
+        normalInventory,
+        frictionInventory,
+        normalRows,
+        frictionRows,
+        rowScratch,
+        warmStart);
+  };
+  build();
+  ASSERT_EQ(normalInventory.size(), points.size());
+  for (std::size_t i = 0; i < normalInventory.size(); ++i) {
+    normalInventory[i].state.lambda = 10.0 + static_cast<double>(i);
+  }
+  const std::size_t coldStartsBefore = rowScratch.contactIdentityColdStarts;
+
+  // A diverged step leaves NaN in body A's position; every canonical local
+  // point on A becomes NaN and no rank may inherit its dual.
+  states[0].position = Vec3(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0);
+  build();
+  ASSERT_EQ(normalInventory.size(), points.size());
+  for (std::size_t i = 0; i < normalInventory.size(); ++i) {
+    EXPECT_DOUBLE_EQ(normalInventory[i].state.lambda, 0.0);
+  }
+  EXPECT_EQ(rowScratch.contactIdentityColdStarts, coldStartsBefore + 1u);
 }
 //==============================================================================
 TEST(AvbdRigidBlock, RigidContactManifoldRowsDriveSeparation)

@@ -598,10 +598,12 @@ digest is unchanged, while the 484 retained rows outside all impacts have
 large measured linear and angular residuals and the wall globally collapses.
 Both captures pass engine ViewReports, pixel integrity, and separate semantic
 review, while benchmark runtime counters prove that public SI contact and pair
-rows both ran 20 sweeps. The AVBD row separately discloses that 79 of its 154
-broken identities lie outside the selected impact regions; it therefore
-claims localized displacement damage and tightly satisfied retained rows, not
-localized broken topology. XPBD, exact unpublished constants, a source-matched
+rows both ran 20 sweeps. The AVBD row separately discloses that under the immutable
+paper profile only 36 attachments break (5 inside each selected impact region
+plus 21 outside), no brick is displaced, and the wall stands; it therefore
+claims three localized joint-break clusters and tightly satisfied retained
+rows on a standing wall, and its semantic review records visual agreement
+with Figure 13(d) as not proven. XPBD, exact unpublished constants, a source-matched
 four-method edit, CUDA, and achieved-accuracy reference performance remain
 open.
 

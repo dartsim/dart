@@ -593,6 +593,22 @@ def test_runtime_provenance_drift_accepts_lazily_mapped_harness_modules() -> Non
     assert provenance.capture_runtime_provenance_drift(initial, final) == []
 
 
+def test_runtime_provenance_drift_rejects_a_newly_mapped_dart_library() -> None:
+    # Harness modules may appear late; a DART library may not, because the
+    # loaded DART library set is compared exactly outside the image inventory.
+    ext = {"file": "_dartpy.so", "path": "/ext/_dartpy.so", "sha256": "b" * 64, "size_bytes": 1}
+    lib = {"file": "libdart.so", "path": "/lib/libdart.so", "sha256": "a" * 64, "size_bytes": 2}
+    extra = {"file": "libdart-gui.so", "path": "/lib/libdart-gui.so", "sha256": "e" * 64, "size_bytes": 4}
+    initial = _runtime_snapshot([ext, lib])
+    final = _runtime_snapshot([ext, lib, extra])
+    final["loaded_dart_libraries"] = initial["loaded_dart_libraries"] + [
+        {"path": "/lib/libdart-gui.so", "sha256": "e" * 64}
+    ]
+    assert provenance.capture_runtime_provenance_drift(initial, final) == [
+        "loaded_dart_libraries changed"
+    ]
+
+
 def test_runtime_provenance_drift_rejects_changed_or_unmapped_images() -> None:
     ext = {"file": "_dartpy.so", "path": "/ext/_dartpy.so", "sha256": "b" * 64, "size_bytes": 1}
     lib = {"file": "libdart.so", "path": "/lib/libdart.so", "sha256": "a" * 64, "size_bytes": 2}

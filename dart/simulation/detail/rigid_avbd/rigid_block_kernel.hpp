@@ -2340,6 +2340,13 @@ struct AvbdRigidContactManifoldRowScratch
 
   AvbdRigidContactManifoldRowScratch() = default;
 
+  /// Number of manifold builds that discarded every contact row's continuation
+  /// because a multi-point group's identity could not be proven (a rank moved
+  /// by more than a tenth of the group's point separation, a point was
+  /// replaced, or a local point was non-finite). Diagnostic only: the
+  /// cold-start itself is the fail-closed behaviour, this makes it auditable.
+  std::size_t contactIdentityColdStarts = 0;
+
   explicit AvbdRigidContactManifoldRowScratch(
       ::dart::common::MemoryAllocator& allocator)
     : activeContacts(ContactAllocator{allocator}),
@@ -2763,15 +2770,20 @@ inline void buildAvbdRigidContactManifoldRows(
               // and sliding move every material point by a small fraction of
               // that separation per step, whereas a vanished point with a
               // replacement moves at least one rank by a large fraction of it
-              // and must cold-start.
+              // and must cold-start. The comparison is written so that a
+              // non-finite tolerance (an all-NaN group leaves the separation
+              // at infinity) or a non-finite point distance also cold-starts:
+              // a poisoned identity never inherits continuation.
               const double tolerance
                   = 0.1 * groupPointSeparation(currentBegin, currentGroupSize);
               for (std::size_t offset = 0u; offset < currentGroupSize;
                    ++offset) {
                 const auto& previous = previousBegin[offset];
                 const auto& current = currentBegin[offset];
-                if (!(previous.key == current.key)
-                    || identityPointDistance(previous, current) > tolerance) {
+                if (!(previous.key == current.key) || !std::isfinite(tolerance)
+                    || !(
+                        identityPointDistance(previous, current)
+                        <= tolerance)) {
                   ambiguousContactIdentity = true;
                   break;
                 }
@@ -2781,6 +2793,7 @@ inline void buildAvbdRigidContactManifoldRows(
           currentIndex += currentGroupSize;
         }
         if (ambiguousContactIdentity) {
+          ++scratch.contactIdentityColdStarts;
           normalInventory.records().clear();
           frictionInventory.records().clear();
         }
@@ -3199,14 +3212,6 @@ inline void buildAvbdRigidContactManifoldRows(
       frictionDescriptors,
       {});
 }
-
-//==============================================================================
-/// One-shot convenience overload. No material-point identity survives this
-/// call, so scalar continuation is discarded as well: reusing it without the
-/// matching identity proof could alias multi-point spatial ranks. Returned
-/// friction rows do not retain an anchor pointer. Multi-frame callers must
-/// retain and pass `AvbdRigidContactManifoldRowScratch` through the overload
-/// above.
 
 //==============================================================================
 template <typename LinearRowVector>
@@ -4695,6 +4700,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           }
 
           if (std::isnan(normalForce)) {
+            // A NaN normal force marks a poisoned row whose own force is
+            // already non-finite. The cone stays at its step high-water mark
+            // because bounds never decrease within a sweep (the Hessian was
+            // assembled against them); it is not reopened or widened here.
             return stepLimit();
           }
           const double liveLimit

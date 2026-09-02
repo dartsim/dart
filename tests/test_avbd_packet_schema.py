@@ -7,6 +7,7 @@ enum through the single mapping in the schema module.
 """
 
 import importlib.util
+import math
 import sys
 from pathlib import Path
 
@@ -832,6 +833,9 @@ def test_evidence_project_appended_flags_match_the_benchmark_runner():
     )
     assert runner_spec is not None and runner_spec.loader is not None
     runner = importlib.util.module_from_spec(runner_spec)
+    # The runner imports its sibling scripts by module name.
+    if str(SCRIPT.parent) not in sys.path:
+        sys.path.insert(0, str(SCRIPT.parent))
     runner_spec.loader.exec_module(runner)
     assert set(schema.EVIDENCE_PROJECT_APPENDED_FLAGS) == set(
         runner.PROJECT_APPENDED_FLAG_KEYS
@@ -861,3 +865,36 @@ def test_stable_counter_stddev_noise_bound_separates_float_artifacts_from_drift(
     assert not schema.stable_counter_stddev_is_noise("rigid_avbd_beta", 1.0, 10.0)
     assert schema.stable_counter_stddev_is_noise("rigid_avbd_beta", 0.0, 10.0)
     assert not schema.stable_counter_stddev_is_noise(word, None, 1.0)
+
+
+def test_fingerprint_word_noise_bound_is_exact_at_its_boundary():
+    schema = _load_module()
+    reference = 1260079489.0
+    bound = schema.FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND * reference
+    assert schema.FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND == 4.0 * 2.0**-26
+    assert schema.stable_counter_stddev_is_noise(
+        "scene_spec_fingerprint_lo", bound, reference
+    )
+    assert not schema.stable_counter_stddev_is_noise(
+        "scene_spec_fingerprint_lo", math.nextafter(bound, math.inf), reference
+    )
+    # Five repetitions of a 2^32 word: sqrt(5) * v * 2^-26 must stay inside.
+    largest_word = 4294967295.0
+    assert schema.stable_counter_stddev_is_noise(
+        "scene_spec_fingerprint_hi",
+        math.sqrt(5.0) * largest_word * 2.0**-26,
+        largest_word,
+    )
+
+
+def test_evidence_definition_requires_a_token_boundary_before_appended_flags():
+    schema = _load_module()
+    name = "CMAKE_SHARED_LINKER_FLAGS"
+    assert schema.evidence_definition_matches(
+        name, "-fuse-ld=lld", "-fuse-ld=lld -Wl,--no-undefined"
+    )
+    assert not schema.evidence_definition_matches(
+        name, "-fuse-ld=lld", "-fuse-ld=lld-Wl,--no-undefined"
+    )
+    assert schema.evidence_definition_matches(name, "", "-Wl,--no-undefined")
+    assert not schema.evidence_definition_matches(name, "", "-Wl,--no-undefined -O3")

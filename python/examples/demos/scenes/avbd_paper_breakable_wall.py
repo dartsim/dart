@@ -137,13 +137,15 @@ OUTCOME_ORACLE: dict[str, Any] = {
     # Re-derived on 2026-09-02 from the deterministic public AVBD run under the
     # immutable paper profile (alpha 0.95 on contact rows too): the balls lodge
     # in the wall instead of rebounding, the anchored wall transmits the
-    # impulse to the ground, and the wall keeps standing with three localized
-    # joint-break clusters of five joints each plus 21 breaks outside the
-    # impact regions and no brick displaced beyond the damage threshold. The
+    # impulse to the ground, and the wall keeps standing with five broken
+    # joints inside each impact region plus 21 breaks outside them (58 % of the
+    # breaks, so the damage is bounded, not localized) and no brick displaced
+    # beyond the damage threshold. The
     # earlier private contact configuration (alpha 0) broke 154 joints with
     # displaced impact bands; that outcome is not reproduced by the paper
     # profile, so this oracle no longer claims displaced-brick damage.
     "minimum_broken_joints_per_impact_region": 4,
+    "maximum_broken_joints_outside_impact_regions": 21,
     "minimum_outside_retained_fraction": 0.95,
     "minimum_total_retained_fraction": 0.95,
     "minimum_broken_joints": 30,
@@ -890,6 +892,10 @@ def compute_outcome_metrics(
                 for count in joint_constraint_evidence[
                     "broken_joint_impact_region_counts"
                 ]
+            ),
+            "outside_breaks_bounded": (
+                joint_constraint_evidence["broken_joints_outside_impact_regions"]
+                <= outcome_oracle["maximum_broken_joints_outside_impact_regions"]
             ),
             "outside_wall_retained": (
                 outside_retained_fraction

@@ -79,7 +79,6 @@
 #include <vector>
 
 #include <cmath>
-#include <cstdio>
 
 #ifndef DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS
   #define DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS 0
@@ -6777,6 +6776,7 @@ void expectPaperRegularizedJointDecay(
         << "step " << step;
   }
 }
+
 //==============================================================================
 // Fixed-joint rows should join the public AVBD contact projection without a
 // private per-body compatibility opt-in.
@@ -6830,6 +6830,7 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
   EXPECT_NEAR(
       sphere->getTranslation().z(), 0.5 - 0.01 * std::pow(alpha, 41), 1e-4);
 }
+
 //==============================================================================
 // Private fixed-joint rows should also project rigid bodies when no contact
 // rows are present, so the World path does not depend on contact activation.
@@ -6871,6 +6872,7 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 // Missing private fixed-joint configs should be initialized from the
 // design-time pose on opt-in rigid bodies when simulation mode starts, not
@@ -6921,6 +6923,7 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 // Private rigid-body revolute ECS joints should configure the same point-joint
 // primitive as fixed joints, but leave the configured hinge axis free.
@@ -7158,6 +7161,7 @@ TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
       Eigen::AngleAxisd(link.getTransform().linear()).angle(), 0.5, 1e-6);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 // The public prismatic facade should project drift orthogonal to the slide axis
 // while leaving translation along that axis unconstrained.
@@ -7200,6 +7204,7 @@ TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
   EXPECT_NEAR(link.getTranslation().z(), 1.5, 1e-6);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 // Saving a public fixed joint before simulation should preserve the AVBD row
 // config and the joint-relative anchors captured at creation time.
@@ -7272,6 +7277,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
 {
@@ -7373,6 +7379,7 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
+
 //==============================================================================
 // Sequential Impulse owns hard public pair rows alongside ordinary contact
 // rows. Its iteration-budgeted post stabilization reduces pre-existing pose

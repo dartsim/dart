@@ -44,10 +44,14 @@ PLAN104_CLAIMS_MIN_SCHEMA_VERSION = 5
 # fingerprint in one repetition moves the stddev by a large fraction of the
 # word itself, so a relative bound separates the two by many orders.
 # The squared term of a word `v` carries an absolute rounding error of about
-# ulp(v^2) = v^2 * 2^-52, so the reported spread of identical words is bounded
-# by roughly v * 2^-26 (about 19 for v ~ 1.26e9). Twice that bound still sits
-# six orders below any real fingerprint change.
-FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND = 2.0 * 2.0**-26
+# ulp(v^2) = v^2 * 2^-52; accumulating n such terms and cancelling against
+# n * mean^2 leaves an error of up to about n * ulp(v^2), whose square root is
+# sqrt(n) * v * 2^-26 (about 19 * sqrt(n) for v ~ 1.26e9; the observed spread
+# for five repetitions is 17.9). The bound below allows sqrt(n) <= 4, i.e. up
+# to sixteen repetitions in any accumulation order, and still sits six orders
+# below any real fingerprint change (a different word moves the spread by a
+# large fraction of v itself, and the mean/median words stop agreeing).
+FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND = 4.0 * 2.0**-26
 FINGERPRINT_WORD_COUNTER_SUFFIXES = ("_fingerprint_hi", "_fingerprint_lo")
 
 
@@ -100,8 +104,14 @@ def evidence_definition_matches(name: str, expected: str, compiled: object) -> b
         return False
     if not compiled.startswith(expected):
         return False
-    suffix = compiled[len(expected) :].split()
-    return bool(suffix) and set(suffix) <= tokens
+    suffix = compiled[len(expected) :]
+    # The appended options must start at a token boundary: a bare
+    # concatenation such as `<expected>-Wl,--no-undefined` is not the value
+    # CMake produces and could hide an edited pin.
+    if expected and not suffix[:1].isspace():
+        return False
+    appended = suffix.split()
+    return bool(appended) and set(appended) <= tokens
 
 
 # Packet-level source seal: an ordered list of repository files whose bytes the

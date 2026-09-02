@@ -63,18 +63,25 @@ This folder is the temporary working surface; the durable owner is the plan.
   still/video each) and their semantic reviews are sealed to capture-source
   digest
   `115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43`
-  with the embedded Git HEAD of the sealed source commit. One quiet-host
+  and record the sealed source commit's Git HEAD (the validators recompute
+  the digest; the recorded head is format-checked, not looked up in git).
+  One quiet-host
   five-repeat Release run through `scripts/run_figure13_benchmark.py`
   recorded median CPU costs of 16.050815 ms AVBD, 13.973706 ms VBD,
   and 14.499464 ms Sequential Impulse, with CPU CVs of 0.99%,
-  0.65%, and 0.28%, respectively. Packet hashes are
-  validated transitively by `check-avbd-packets`; this tracker intentionally
-  does not duplicate those mutable values. The same-host ratios are
+  0.65%, and 0.28%, respectively. Packet file hashes are
+  validated transitively by `check-avbd-packets`; this tracker quotes only the
+  capture-source seal digest above and does not duplicate the mutable packet
+  hashes. The same-host ratios are
   descriptive costs, not speedup or achieved-accuracy equivalence claims.
   The AVBD row's outcome changed under the immutable paper profile (see its
   packet section below): the wall stays standing with three localized
   joint-break clusters, so its semantic review records visual agreement with
-  Figure 13(d) as not proven.
+  Figure 13(d) as not proven. The zero-trust audit ladder also made the
+  public AVBD and VBD Figure 13 steps about 1.75x and 1.5x slower than the
+  pre-audit head (Sequential Impulse unchanged); the sealed medians carry
+  that overhead, and the attributed cause and follow-up are recorded under
+  the deferred maintenance items below.
   Figure 13 and video row 12 remain partial: exact source constants, XPBD, a
   source-matched four-method edit, CUDA, and achieved-accuracy reference
   performance are open.
@@ -91,8 +98,8 @@ This folder is the temporary working surface; the durable owner is the plan.
   passes 310/310 `ctest` entries (including `test_boxed_lcp_contact` 133/133,
   `test_avbd_rigid_block` 141/141, `test_world` 504/504,
   `test_world_resolved_configuration` 37/37), the evidence-script unit tests
-  pass, and `tests/test_check_avbd_packets.py` passes once the three Figure 13
-  packets are regenerated. The full default `pixi run test-all` and the CUDA
+  pass, and `tests/test_check_avbd_packets.py` passes on the regenerated
+  Figure 13 packets. The full default `pixi run test-all` and the CUDA
   `pixi run -e cuda test-all` gates are recorded in the RESUME stop point
   when they have run on the final bytes; a green CUDA environment gate still
   would not close the missing solver-specific VBD/AVBD GPU-parity predicates.
@@ -215,7 +222,15 @@ mechanism:
   wall oracles budget; and
 - consolidate SI per-step joint-view walks, skip SI container reserves for
   non-SI families, and record post-stabilization work in the step-iteration
-  diagnostic.
+  diagnostic; and
+- memoize the rigid block kernel's per-body-visit world points, orientation
+  errors, and SO(3) left-Jacobian inverse (all pure functions of the body
+  state and row constants, so the result stays bitwise identical). The
+  zero-trust audit ladder made the public AVBD and VBD Figure 13 steps about
+  1.75x and 1.5x slower than the pre-audit head (callgrind: the same 610k
+  body solves execute 24.0 G instead of 13.6 G instructions, dominated by
+  those recomputations); Sequential Impulse is unchanged. Any kernel edit
+  changes a capture root, so this reseals the Figure 13 evidence.
 
 ## Verified Local Packet: Section 3.5 Quasi-Newton Hessian
 
@@ -411,7 +426,7 @@ All linked canonical method rows remain partial.
   semantic review against the pinned paper page; the long-horizon video
   decodes to 600 frames at 60 fps. The scene and benchmark share fingerprint
   `8ca3fbfa00c3dce9`. Capture manifests bind the sealed capture-source
-  digest and embedded Git HEAD, the loaded runtime images, the screenshot,
+  digest and record its Git HEAD, the loaded runtime images, the screenshot,
   and the scene-metrics log; the benchmark JSON binds the same source tree,
   its benchmark translation unit, the evidence build configuration, the
   quiet-host gate, and the in-run watchdog.

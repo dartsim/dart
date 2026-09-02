@@ -702,6 +702,10 @@ def test_paper_packet_rejects_capture_and_benchmark_source_drift(
     path.write_text(json.dumps(packet))
     errors = _packet_errors(module, path)
     assert any("benchmark source hash" in error for error in errors)
+    # The benchmark context must still cross-bind to the provenance hash.
+    assert any(
+        "benchmark.context.dart_benchmark_source_sha256" in error for error in errors
+    ), errors
 
 
 def test_linked_packet_validation_reaches_transitive_avbd_source(
@@ -1231,7 +1235,7 @@ def test_legacy_non_evidence_boundary_mutations_fail_closed(
 
 def test_misclassified_schema_v3_packet_requires_non_evidence_boundary(tmp_path):
     module = _load_module()
-    name = "avbd-breakable-motor-scale-packet.json"
+    name = "avbd-articulated-compliant-motors-packet.json"
     path = _write_packet(
         tmp_path,
         name,
@@ -1254,7 +1258,7 @@ def test_misclassified_schema_v3_packet_requires_non_evidence_boundary(tmp_path)
 
 def test_legacy_v3_allowlisted_packet_rejects_schema_downgrade(tmp_path):
     module = _load_module()
-    name = "avbd-breakable-joint-scale-packet.json"
+    name = "avbd-articulated-compliant-joints-packet.json"
     assert module.LEGACY_PACKET_SCHEMA_VERSIONS[name] == 3
     path = _write_packet(tmp_path, name, {"schema_version": 1})
 
@@ -1265,10 +1269,37 @@ def test_legacy_v3_allowlisted_packet_rejects_schema_downgrade(tmp_path):
     ), errors
 
 
-def test_legacy_v5_allowlisted_packet_stays_readable(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("name", "retired_version"),
+    (
+        ("avbd-paper-breakable-wall-packet.json", 5),
+        ("avbd-paper-vbd-comparison-packet.json", 5),
+        ("avbd-paper-sequential-impulse-comparison-packet.json", 5),
+        ("avbd-breakable-joint-scale-packet.json", 3),
+        ("avbd-breakable-motor-scale-packet.json", 3),
+    ),
+)
+def test_regenerated_filename_rejects_its_retired_schema_version(
+    tmp_path, name, retired_version
+):
+    # Once a filename carries current evidence it leaves the legacy allowlist,
+    # so writing it back at the version it was first committed with fails.
+    module = _load_module()
+    assert name not in module.LEGACY_PACKET_SCHEMA_VERSIONS
+    path = _write_packet(tmp_path, name, {"schema_version": retired_version})
+
+    errors = _packet_errors(module, path)
+
+    assert any(
+        f"new AVBD packets must be written at schema_version "
+        f"{module.AVBD_PACKET_SCHEMA_VERSION}" in error
+        for error in errors
+    ), errors
+
+
+def test_retired_figure13_schema_5_is_not_readable(tmp_path, monkeypatch):
     module = _load_module()
     name = "avbd-paper-breakable-wall-packet.json"
-    assert module.LEGACY_PACKET_SCHEMA_VERSIONS[name] == 5
     monkeypatch.setattr(module, "_paper_figure13_consistency_errors", lambda *_args: [])
     monkeypatch.setattr(module, "_source_provenance_errors", lambda *_args: [])
     monkeypatch.setattr(
@@ -1291,7 +1322,13 @@ def test_legacy_v5_allowlisted_packet_stays_readable(tmp_path, monkeypatch):
         },
     )
 
-    assert _packet_errors(module, path) == []
+    errors = _packet_errors(module, path)
+
+    assert any(
+        f"new AVBD packets must be written at schema_version "
+        f"{module.AVBD_PACKET_SCHEMA_VERSION}" in error
+        for error in errors
+    ), errors
 
 
 def test_legacy_figure13_version_cannot_bypass_filename_consistency():
@@ -1309,8 +1346,7 @@ def test_legacy_figure13_version_cannot_bypass_filename_consistency():
     "name",
     (
         "avbd-demo2d-pyramid-packet.json",
-        "avbd-breakable-joint-scale-packet.json",
-        "avbd-paper-breakable-wall-packet.json",
+        "avbd-articulated-compliant-joints-packet.json",
     ),
 )
 def test_legacy_filename_migrated_to_current_schema_is_accepted(
@@ -2925,6 +2961,18 @@ def test_figure13_rejects_avbd_parameter_profile_note_outside_avbd_family():
 
     assert any("filename-specific notes" in error for error in errors), errors
     assert any("unexpected notes" in error for error in errors), errors
+
+
+def test_figure13_rejects_real_valued_profile_counter_drift():
+    module = _load_module()
+    packet = _timing_gate_packet()
+    for row in packet["benchmark"]["methods"]["avbd"]["rows"]:
+        if "rigid_avbd_alpha" in row:
+            row["rigid_avbd_alpha"] = 0.94
+
+    errors = module._paper_benchmark_timing_errors(packet, _TIMING_GATE_PACKET_NAME)
+
+    assert any("rigid_avbd_alpha" in error for error in errors), errors
 
 
 def test_figure13_rejects_fractional_fingerprint_counter_drift():

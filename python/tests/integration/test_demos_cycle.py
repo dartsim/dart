@@ -10374,6 +10374,10 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
         for count in outcome["broken_joint_impact_region_counts"]
     )
     assert (
+        outcome["broken_joints_outside_impact_regions"]
+        <= OUTCOME_ORACLE["maximum_broken_joints_outside_impact_regions"]
+    )
+    assert (
         outcome["outside_retained_fraction"]
         >= OUTCOME_ORACLE["minimum_outside_retained_fraction"]
     )

@@ -272,8 +272,12 @@ dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
     // family and their continuation survives AVBD <-> Sequential Impulse
     // crossings, so their warm start (Equation 19) and penalty ramp follow one
     // schedule, the immutable paper profile, whichever family owns the
-    // contacts and hard joints. Sequential Impulse owns its joints and motors
-    // itself, so these values reach only the spring rows here.
+    // contacts and hard joints. This branch serves both non-AVBD families:
+    // Sequential Impulse owns its joints and motors itself, so the values reach
+    // only the spring rows; fixed-penalty VBD still builds private point-joint
+    // and motor rows, but its finite-material rows bypass the Equation 18
+    // regularization and the ramp, and the fixed-penalty solve clears every
+    // inventory before and after, so the values are inert there too.
     const dvbd::AvbdRigidParameterProfile& profile
         = dvbd::kAvbdRigidPaper2025Profile;
     options.warmStart.alpha = profile.alpha;
@@ -2194,6 +2198,7 @@ void RigidBodyContactStage::
     m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
   }
 }
+
 //==============================================================================
 void RigidBodyContactStage::setIterations(std::size_t iterations) noexcept
 {

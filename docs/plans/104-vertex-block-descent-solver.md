@@ -435,8 +435,9 @@ frame-60 capture remains an explicit pre-evaluation state. All three AVBD
 engine ViewReports pass, the runtime scene and benchmark share fingerprint
 `8ca3fbfa00c3dce9`, and the nine sealed captures (three per method, each with
 a 600-frame long-horizon still and video) bind capture-source digest
-`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and the
-embedded Git HEAD of the sealed source commit. Capture manifests bind the
+`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and
+record the sealed source commit's Git HEAD (the validators recompute the
+digest; the head is format-checked, not looked up in git). Capture manifests bind the
 sealed source tree, the loaded runtime images, and their artifacts; the
 benchmark binds that same source tree, its translation unit, the evidence build
 configuration, the quiet-host gate, and the in-run watchdog. The sealed
@@ -466,7 +467,7 @@ outside impact bands and 19.05% overall remain placed, with 2.878 m maximum
 wall-normal displacement, and the 600-frame capture keeps the collapsed wall.
 All three SI renders pass. The same sealed benchmark recorded 14.499464 ms SI
 median CPU cost per step with 0.28% CPU CV. Its
-1.6233x SI/AVBD and 1.6997x SI/VBD ratios are descriptive only. Frame 120 is
+0.9033x SI/AVBD and 1.0376x SI/VBD ratios are descriptive only. Frame 120 is
 the only shared quantitative
 checkpoint across the three method rows; the earlier frame-14, frame-18, and
 frame-60 checkpoints are per-family diagnostic oracles, not cross-method
@@ -1505,6 +1506,20 @@ owning code, never as standalone doc or cleanup PRs.
   (measured at roughly a quarter of a 201-box step). Memoize against a
   world state version or let `execute` consume the preflight span once no
   intervening stage can move a body.
+- Memoize the rigid block kernel's per-body-visit world points, orientation
+  errors, and SO(3) left-Jacobian inverse. The zero-trust audit ladder
+  (`99c1f411d7f`..`2760f9bb496`) made the public AVBD and VBD Figure 13
+  steps about 1.75x and 1.5x slower than the pre-audit head while the
+  Sequential Impulse step is unchanged; callgrind shows the same 610k body
+  solves executing 24.0 G instead of 13.6 G instructions because
+  `avbdRigidSo3LeftJacobianInverse` is rebuilt for every axis row of a
+  joint and `avbdRigidBodyWorldPoint` / `normalizeAvbdRigidOrientation`
+  run 4.7x / 2x more often (value, direction, and quasi-Newton paths each
+  recompute them). All are pure functions of the body state and row
+  constants, so memoization is bitwise identical; the exact Jacobian
+  itself is a Newton-path correctness change and stays. Any kernel edit
+  changes a capture root, so the Figure 13 evidence must be resealed with
+  it.
 
 ## Acceptance Criteria
 
@@ -1576,8 +1591,8 @@ demo, benchmark, and packet by the solver that actually executes. VBD has 38
 partial and 50 missing rows; AVBD has 64 partial and 24 missing rows; neither
 has a complete row. The sealed Figure 13 reconstruction binds capture-source
 digest
-`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and the
-embedded Git HEAD of the sealed source commit; the packets validate the
+`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and
+record the sealed source commit's Git HEAD; the packets validate the
 benchmark translation-unit digest, the evidence build configuration, and the
 benchmark JSON transitively. Its median CPU costs/CVs are 16.050815 ms/0.99%
 AVBD, 13.973706 ms/0.65% VBD, and 14.499464 ms/0.28% Sequential Impulse.

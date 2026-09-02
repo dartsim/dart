@@ -383,6 +383,7 @@ def _outcome(module, frame: int) -> dict[str, Any]:
             "fracture_count_bounded": True,
             "fracture_identity_matches": True,
             "fracture_in_three_impact_regions": expected["damage"],
+            "outside_breaks_bounded": True,
             "outside_wall_retained": True,
             "retained_joint_rows_satisfied": True,
             "total_wall_retained": True,
@@ -462,6 +463,41 @@ def _metrics(module, frame: int) -> dict[str, Any]:
             "size": [8, 6],
         },
     }
+
+
+def test_scene_metric_events_require_view_reports_only_at_assessed_frames(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    events = [
+        {
+            "event": "scene_capture_metrics",
+            "frame": frame,
+            "metrics": _metrics(module, frame),
+            "scene": module.SCENE_ID,
+            "source": "py-demo-scene",
+        }
+        for frame in range(1, 4)
+    ]
+    # The scene assesses the view only at its checkpoint frames; a null report
+    # elsewhere is the recorded contract, not missing evidence.
+    events[1]["metrics"]["view_report"] = None
+    log = tmp_path / "scene_metrics.jsonl"
+    log.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+
+    read = module._read_scene_metric_events(
+        log, expected_frame=3, height=6, width=8, assessed_frames=(3,)
+    )
+    assert [event["frame"] for event in read] == [1, 2, 3]
+
+    events[2]["metrics"]["view_report"] = None
+    log.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+    with pytest.raises(
+        module.AvbdPaperBreakableWallPacketError, match="missing engine ViewReport"
+    ):
+        module._read_scene_metric_events(
+            log, expected_frame=3, height=6, width=8, assessed_frames=(3,)
+        )
 
 
 def _write_capture(module, tmp_path: Path, frame: int, label: str) -> tuple[Path, Path]:

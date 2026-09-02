@@ -180,6 +180,7 @@ _BREAKABLE_WALL_OUTCOME_ORACLE: dict[str, object] = {
     "impact_damage_displacement_threshold": 0.1,
     "joint_evidence_frames": [60, 120, 600],
     "maximum_broken_joints": 60,
+    "maximum_broken_joints_outside_impact_regions": 21,
     "maximum_unbroken_joint_angular_residual_radians": 0.002,
     "maximum_unbroken_joint_linear_residual": 0.002,
     "minimum_broken_joints": 30,
@@ -298,6 +299,7 @@ PAPER_FIGURE13_SPECS: dict[str, dict[str, Any]] = {
                     "fracture_count_bounded",
                     "fracture_identity_matches",
                     "fracture_in_three_impact_regions",
+                    "outside_breaks_bounded",
                     "outside_wall_retained",
                     "retained_joint_rows_satisfied",
                     "total_wall_retained",
@@ -318,6 +320,7 @@ PAPER_FIGURE13_SPECS: dict[str, dict[str, Any]] = {
                     "fracture_count_bounded",
                     "fracture_identity_matches",
                     "fracture_in_three_impact_regions",
+                    "outside_breaks_bounded",
                     "outside_wall_retained",
                     "retained_joint_rows_satisfied",
                     "total_wall_retained",
@@ -339,6 +342,7 @@ PAPER_FIGURE13_SPECS: dict[str, dict[str, Any]] = {
                     "fracture_count_bounded",
                     "fracture_identity_matches",
                     "fracture_in_three_impact_regions",
+                    "outside_breaks_bounded",
                     "outside_wall_retained",
                     "retained_joint_rows_satisfied",
                     "total_wall_retained",
@@ -629,43 +633,36 @@ LEGACY_IDENTITY_EXEMPT_PACKETS = frozenset(
 # Sequential Impulse family. Their writers now emit the current schema when
 # regenerated. Keep only these exact historical names readable; a new filename
 # must use AVBD_PACKET_SCHEMA_VERSION so it cannot claim the retired v3 solver
-# identity contract.
+# identity contract. A filename leaves this set the moment its packet is
+# regenerated at the current schema (the breakable scale packets left at
+# schema 6), so a later downgrade of current evidence is rejected outright.
 LEGACY_PRE_SI_PAIR_ROW_PACKETS = frozenset(
     {
         "avbd-articulated-compliant-fracture-packet.json",
         "avbd-articulated-compliant-joints-packet.json",
         "avbd-articulated-compliant-motors-packet.json",
-        "avbd-breakable-joint-scale-packet.json",
-        "avbd-breakable-motor-scale-packet.json",
         "avbd-friction-coefficient-sweep-packet.json",
         "avbd-paper-scale-high-ratio-iteration-sweep-packet.json",
     }
 )
 
-# These schema-version 5 Figure 13 packets predate the solver-configuration
+# The schema-version 5 Figure 13 packets predate the solver-configuration
 # fingerprint, multibody identity, and numeric Table 2 binding introduced by
-# schema version 6. They remain valid partial evidence under their exact
-# historical filenames, but the parity checker never accepts a legacy packet
-# as row-closing evidence.
-LEGACY_PRE_SOLVER_CONFIGURATION_PACKETS = frozenset(
-    {
-        "avbd-paper-breakable-wall-packet.json",
-        "avbd-paper-sequential-impulse-comparison-packet.json",
-        "avbd-paper-vbd-comparison-packet.json",
-    }
-)
+# schema version 6. All three were regenerated at schema 6, so no committed
+# packet remains at version 5 and that contract is retired: a Figure 13
+# filename at schema 5 is rejected like any other stale version.
 
 # Pin each historical filename to the one legacy version it was committed
 # with. A legacy filename may move directly to the current schema when its
-# packet is regenerated, but it may not claim any other retired contract.
+# packet is regenerated; once it has, it leaves this map so the current
+# evidence cannot be downgraded back to a readable historical contract.
 LEGACY_PACKET_SCHEMA_VERSIONS = {
     **{name: 1 for name in LEGACY_IDENTITY_EXEMPT_PACKETS},
     **{name: 3 for name in LEGACY_PRE_SI_PAIR_ROW_PACKETS},
-    **{name: 5 for name in LEGACY_PRE_SOLVER_CONFIGURATION_PACKETS},
 }
 LEGACY_SCHEMA_EXEMPT_PACKETS = frozenset(LEGACY_PACKET_SCHEMA_VERSIONS)
 
-# Identity-free schema-v1 packets and the seven schema-v3 packets whose
+# Identity-free schema-v1 packets and the five schema-v3 packets whose
 # historical labels did not identify the runtime solver remain readable only
 # as explicitly bounded historical artifacts. The boundary lives in the
 # packet, not just this allowlist, so downstream readers cannot accidentally
@@ -689,12 +686,6 @@ LEGACY_NON_EVIDENCE_BOUNDARY_SCOPES = {
     ),
     "avbd-articulated-compliant-motors-packet.json": (
         "historical_variational_multibody_artifact_and_cpu_metadata_only"
-    ),
-    "avbd-breakable-joint-scale-packet.json": (
-        "historical_mixed_solver_cpu_metadata_only"
-    ),
-    "avbd-breakable-motor-scale-packet.json": (
-        "historical_variational_multibody_cpu_metadata_only"
     ),
     "avbd-friction-coefficient-sweep-packet.json": (
         "historical_sequential_impulse_cpu_and_visual_metadata_only"
