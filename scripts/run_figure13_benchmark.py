@@ -39,6 +39,16 @@ DEFAULT_SAMPLE_INTERVAL_SECONDS = 1.0
 DEFAULT_MAX_NORMALIZED_LOAD = 0.25
 MIN_WARMUP_SECONDS = 1.0
 EVIDENCE_BUILD_MARKER = "DART_FIGURE13_EVIDENCE_BUILD:BOOL=ON"
+# Flag variables the project extends in scope after the caller's cache value;
+# the compiled record may carry those project-appended tokens.
+PROJECT_APPENDED_FLAG_KEYS = frozenset(
+    {
+        "CMAKE_CXX_FLAGS",
+        "CMAKE_EXE_LINKER_FLAGS",
+        "CMAKE_MODULE_LINKER_FLAGS",
+        "CMAKE_SHARED_LINKER_FLAGS",
+    }
+)
 EVIDENCE_CMAKE_DEFINITIONS = (
     "BUILD_SHARED_LIBS=ON",
     "BUILD_TESTING=ON",
@@ -383,10 +393,24 @@ def _load_build_configuration(build_dir: Path) -> dict[str, object]:
         name, expected = definition.split("=", maxsplit=1)
         if name not in BUILD_CONFIGURATION_KEYS:
             continue
-        if entries.get(name) != expected:
-            raise Figure13BenchmarkError(
-                f"compiled build configuration {name} must be {expected!r}"
-            )
+        compiled = entries.get(name)
+        if compiled == expected:
+            continue
+        # The cache proves the caller injected no flags; the project itself
+        # appends link options in scope (for example `-Wl,--no-undefined` for
+        # shared libraries), which the compiled record must keep verbatim
+        # because its digest binds the exact flags the benchmark was built
+        # with. Accept only such project-appended suffixes.
+        if (
+            name in PROJECT_APPENDED_FLAG_KEYS
+            and isinstance(compiled, str)
+            and compiled.startswith(expected)
+            and compiled[len(expected) :].strip()
+        ):
+            continue
+        raise Figure13BenchmarkError(
+            f"compiled build configuration {name} must be {expected!r}"
+        )
     if entries.get("CMAKE_GENERATOR") != "Ninja":
         raise Figure13BenchmarkError(
             "compiled build configuration generator must be Ninja"

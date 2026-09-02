@@ -267,6 +267,53 @@ def test_build_configuration_rejects_optimized_flag_drift(tmp_path: Path) -> Non
         runner._load_build_configuration(build_dir)
 
 
+def _write_evidence_build_dir(tmp_path: Path, configuration) -> Path:
+    build_dir = tmp_path / "build"
+    build_dir.mkdir()
+    cache_values = {
+        definition.split("=", maxsplit=1)[0]: definition.split("=", maxsplit=1)[1]
+        for definition in runner.EVIDENCE_CMAKE_DEFINITIONS
+    }
+    cache_values["CMAKE_GENERATOR"] = "Ninja"
+    (build_dir / "CMakeCache.txt").write_text(
+        "".join(
+            f"{name}:{'BOOL' if name == 'DART_FIGURE13_EVIDENCE_BUILD' else 'STRING'}={value}\n"
+            for name, value in cache_values.items()
+        ),
+        encoding="utf-8",
+    )
+    manifest = build_dir / "generated" / "dart" / "capture_build_configuration.txt"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        runner._configuration_record(configuration["values"]), encoding="utf-8"
+    )
+    return build_dir
+
+
+def test_build_configuration_accepts_project_appended_link_flags(
+    tmp_path: Path,
+) -> None:
+    # The cache proves the caller injected nothing; the project itself appends
+    # `-Wl,--no-undefined` to the shared linker flags in scope, and the compiled
+    # record keeps that exact value.
+    configuration = _build_configuration(
+        CMAKE_SHARED_LINKER_FLAGS=" -Wl,--no-undefined"
+    )
+    build_dir = _write_evidence_build_dir(tmp_path, configuration)
+    loaded = runner._load_build_configuration(build_dir)
+    assert loaded["values"]["CMAKE_SHARED_LINKER_FLAGS"] == " -Wl,--no-undefined"
+
+
+def test_build_configuration_rejects_replaced_link_flags(tmp_path: Path) -> None:
+    configuration = _build_configuration(CMAKE_SHARED_LINKER_FLAGS="-Wl,-O2")
+    build_dir = _write_evidence_build_dir(tmp_path, configuration)
+    with pytest.raises(
+        runner.Figure13BenchmarkError,
+        match="CMAKE_SHARED_LINKER_FLAGS must be ''",
+    ):
+        runner._load_build_configuration(build_dir)
+
+
 def test_evidence_rejects_loaded_library_with_stale_compiled_source(
     tmp_path: Path,
 ) -> None:
